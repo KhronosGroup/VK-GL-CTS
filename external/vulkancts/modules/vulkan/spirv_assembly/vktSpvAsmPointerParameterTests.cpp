@@ -559,11 +559,14 @@ void addComputePointerWorkgroupMemoryVariablePointersTest(tcu::TestCaseGroup *gr
     const string shaderSource =
         "                          OpCapability Shader\n"
         "                          OpCapability VariablePointers\n"
+        "                          OpCapability WorkgroupMemoryExplicitLayoutKHR\n"
         "                          OpExtension \"SPV_KHR_variable_pointers\"\n"
         "                          OpExtension \"SPV_KHR_storage_buffer_storage_class\"\n"
+        "                          OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"\n"
         "                     %1 = OpExtInstImport \"GLSL.std.450\"\n"
         "                          OpMemoryModel Logical GLSL450\n"
-        "                          OpEntryPoint GLCompute %main \"main\" %gl_LocalInvocationID\n"
+        "                          OpEntryPoint GLCompute %main \"main\" %gl_LocalInvocationID %dataOutput "
+        "%sharedData\n"
         "                          OpExecutionMode %main LocalSize 16 1 1\n"
         "                          OpSource GLSL 430\n"
         "                          OpMemberDecorate %Output 0 Offset 0\n"
@@ -676,10 +679,12 @@ void addComputePointerWorkgroupMemoryVariablePointersTest(tcu::TestCaseGroup *gr
     spec.outputs.push_back(BufferSp(new Float32Buffer(expectedOutput)));
     requiredFeatures.extVariablePointers.variablePointers = true;
     spec.extensions.push_back("VK_KHR_variable_pointers");
+    spec.extensions.push_back("VK_KHR_workgroup_memory_explicit_layout");
 
     spec.assembly                = shaderSource;
     spec.numWorkGroups           = IVec3(1, 1, 1);
     spec.requestedVulkanFeatures = requiredFeatures;
+    spec.spirvVersion            = SPIRV_VERSION_1_4;
 
     group->addChild(new SpvAsmComputeShaderCase(testCtx, "workgroup_memory_variable_pointers", spec));
 }

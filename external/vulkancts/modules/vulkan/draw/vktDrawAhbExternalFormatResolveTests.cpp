@@ -1556,7 +1556,8 @@ void AhbExternalFormatResolveTestCase::initPrograms(SourceCollections &programCo
         {"u", uintMax.c_str()}, // uint
         {"", "1.0f"},           // float
     };
-    const uint32_t typeCount = sizeof(possibleTypes) / sizeof(possibleTypes[0]);
+    const uint32_t typeCount  = sizeof(possibleTypes) / sizeof(possibleTypes[0]);
+    const bool formatHasAlpha = AndroidHardwareBufferInstance::hasFormatAlpha(m_params.m_format);
 
     for (uint32_t i = 0; i < typeCount; ++i)
     {
@@ -1567,7 +1568,8 @@ void AhbExternalFormatResolveTestCase::initPrograms(SourceCollections &programCo
 
                << "const " << possibleTypes[i].first << "vec4 reference_colors[] =\n"
                << "{\n"
-               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, " << possibleTypes[i].second << "),\n"
+               << "    " << possibleTypes[i].first << "vec4(0.0f, 0.0f, 0.0f, "
+               << (formatHasAlpha ? "0.0f" : possibleTypes[i].second) << "),\n"
                << "    " << possibleTypes[i].first << "vec4(" << possibleTypes[i].second << ", 0.0f, 0.0f, "
                << possibleTypes[i].second << "),\n"
                << "    " << possibleTypes[i].first << "vec4(0.0f, " << possibleTypes[i].second << ", 0.0f, "

@@ -61,5 +61,5 @@ Move<VkCudaModuleNV>				createCudaModuleNV					(const DeviceInterface& vk, VkDev
 Move<VkCudaFunctionNV>				createCudaFunctionNV				(const DeviceInterface& vk, VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkMicromapEXT>					createMicromapEXT					(const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkOpticalFlowSessionNV>		createOpticalFlowSessionNV			(const DeviceInterface& vk, VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
+Move<VkExternalComputeQueueNV>		createExternalComputeQueueNV		(const DeviceInterface& vk, VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkAccelerationStructureKHR>	createAccelerationStructure2KHR		(const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
-Move<VkMicromapEXT>					createMicromap2EXT					(const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);

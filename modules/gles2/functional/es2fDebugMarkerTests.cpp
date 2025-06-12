@@ -133,7 +133,9 @@ public:
                 else
                     getSimpleRndString(message, rnd, maxMsgLen);
 
-                if (nullTerminate)
+                // According to spec: https://registry.khronos.org/OpenGL/extensions/EXT/EXT_debug_marker.txt
+                // "If <length> is 0 then <marker> is assumed to be null-terminated."
+                if (nullTerminate || !passLength)
                     message.push_back(char(0));
 
                 {

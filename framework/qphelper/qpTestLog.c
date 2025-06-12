@@ -173,6 +173,8 @@ static const qpKeyStringMap s_qpTestResultMap[] = {
     {QP_TEST_RESULT_TIMEOUT, "Timeout"},
     {QP_TEST_RESULT_WAIVER, "Waiver"},
     {QP_TEST_RESULT_DEVICE_LOST, "DeviceLost"},
+    {QP_TEST_RESULT_ENFORCE_DEFAULT_CONTEXT, "EnforceDefaultContext"},
+    {QP_TEST_RESULT_ENFORCE_DEFAULT_INSTANCE, "EnforceDefaultInstance"},
 
     /* Add new values here if needed, remember to update qpTestResult enumeration. */
 
@@ -1548,6 +1550,14 @@ bool qpTestLog_writeRaw(qpTestLog *log, const char *rawContents)
         qpTestLog_flushFile(log);
 
     return true;
+}
+
+void qpTestLog_setSplitSlices(qpTestLog *log, bool value)
+{
+    if (value)
+        log->flags |= QP_TEST_LOG_SPLIT_SLICES;
+    else
+        log->flags &= (~QP_TEST_LOG_SPLIT_SLICES);
 }
 
 uint32_t qpTestLog_getLogFlags(const qpTestLog *log)

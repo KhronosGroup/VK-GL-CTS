@@ -409,7 +409,7 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters &&params)
     , m_resourcesWithoutProfiles(params.resourcesWithoutProfiles)
     , m_outOfOrderDecoding(params.outOfOrderDecoding)
     , m_alwaysRecreateDPB(params.alwaysRecreateDPB)
-    , m_intraOnlyDecoding(params.intraOnlyDecoding)
+    , m_intraOnlyDecodingNoSetupRef(params.intraOnlyDecodingNoSetupRef)
 {
     std::fill(m_pictureToDpbSlotMap.begin(), m_pictureToDpbSlotMap.end(), -1);
     reinitializeFormatsForProfile(params.profile);
@@ -444,6 +444,11 @@ void VideoBaseDecoder::Deinitialize()
     VkDevice device            = m_deviceContext->device;
     VkQueue queueDecode        = m_deviceContext->decodeQueue;
     VkQueue queueTransfer      = m_deviceContext->transferQueue;
+
+    // Sometimes(eg. scaling lists decoding tesets) decoding finishes before the current
+    // picture params are flushed, which leads to a memory leak and validation errors.
+    if (m_currentPictureParameters)
+        m_currentPictureParameters->FlushPictureParametersQueue(m_videoSession);
 
     if (queueDecode)
         vkd.queueWaitIdle(queueDecode);
@@ -562,7 +567,8 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
         (VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
     VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
-    if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain))
+    if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain) &&
+        !m_intraOnlyDecodingNoSetupRef)
     {
         dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR |
                         VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -625,7 +631,7 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
     uint32_t configDpbSlots = (pnvsi->nMinNumDpbSlots > 0) ? pnvsi->nMinNumDpbSlots : maxDpbSlots;
     configDpbSlots          = std::min<uint32_t>(configDpbSlots, maxDpbSlots);
 
-    if (m_intraOnlyDecoding)
+    if (m_intraOnlyDecodingNoSetupRef)
     {
         maxDpbSlots    = 0;
         configDpbSlots = 0;
@@ -1244,7 +1250,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
         p->setupSlot.pStdReferenceInfo             = &p->setupSlotInfo;
         setupReferenceSlot.pNext                   = &p->setupSlot;
 
-        if (!m_intraOnlyDecoding)
+        if (!m_intraOnlyDecodingNoSetupRef)
         {
             DE_ASSERT(m_maxNumDpbSlots <= STD_VIDEO_AV1_NUM_REF_FRAMES + 1); // + 1 for scratch slot
             uint32_t refDpbUsedAndValidMask = 0;
@@ -1531,7 +1537,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
     }
     else
     {
-        if (!pPicParams->filmGrainEnabled)
+        if (!pPicParams->filmGrainEnabled && !m_intraOnlyDecodingNoSetupRef)
         {
             pOutputPictureResource = &cachedParameters->currentOutputPictureResource;
         }
@@ -1566,7 +1572,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
                                                (uint32_t)cachedParameters->decodedPictureInfo.displayHeight};
     }
 
-    if (dpbAndOutputCoincide() && !pPicParams->filmGrainEnabled)
+    if (dpbAndOutputCoincide() && !pPicParams->filmGrainEnabled && !m_intraOnlyDecodingNoSetupRef)
     {
         // For the Output Coincide, the DPB and destination output resources are the same.
         pPicParams->decodeFrameInfo.dstPictureResource = pPicParams->dpbSetupPictureResource;
@@ -1575,7 +1581,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         // This is if a multi-layered image is used for the DPB and the output (since they coincide).
         cachedParameters->decodedPictureInfo.imageLayerIndex = pPicParams->dpbSetupPictureResource.baseArrayLayer;
     }
-    else if (pOutputPictureResourceInfo)
+    else if (pOutputPictureResourceInfo || m_intraOnlyDecodingNoSetupRef)
     {
         // For Output Distinct transition the image to DECODE_DST
         if (pOutputPictureResourceInfo->currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
@@ -1589,7 +1595,8 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         }
     }
 
-    if (cachedParameters->currentDpbPictureResourceInfo.currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+    if (!m_intraOnlyDecodingNoSetupRef &&
+        cachedParameters->currentDpbPictureResourceInfo.currentImageLayout == VK_IMAGE_LAYOUT_UNDEFINED)
     {
         VkImageMemoryBarrier2KHR dpbBarrier = makeImageMemoryBarrier2(
             VK_PIPELINE_STAGE_2_VIDEO_DECODE_BIT_KHR, VK_ACCESS_2_VIDEO_DECODE_READ_BIT_KHR,

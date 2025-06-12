@@ -22,7 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "es3fNegativeShaderApiTests.hpp"
-#include "es3fApiCase.hpp"
 #include "gluShaderProgram.hpp"
 #include "gluContextInfo.hpp"
 #include "deUniquePtr.hpp"
@@ -53,6 +52,19 @@ static const char *fragmentShaderSource = "#version 300 es\n"
                                           "{\n"
                                           "    fragColor = vec4(0.0);\n"
                                           "}\n\0";
+
+static const char *glFragDepthRedeclarationFragSource = "#version 300 es\n"
+                                                        "#extension GL_EXT_conservative_depth: enable\n"
+                                                        "out highp float gl_FragDepth;\n"
+                                                        "void main (void)\n"
+                                                        "{\n"
+                                                        "}\n\0";
+
+static const char *glFragDepthRedeclarationFragExtNotEnabledSource = "#version 300 es\n"
+                                                                     "out highp float gl_FragDepth;\n"
+                                                                     "void main (void)\n"
+                                                                     "{\n"
+                                                                     "}\n\0";
 
 static const char *uniformTestVertSource = "#version 300 es\n"
                                            "uniform mediump vec4 vec4_v;\n"
@@ -91,8 +103,18 @@ NegativeShaderApiTests::~NegativeShaderApiTests(void)
 
 void NegativeShaderApiTests::init(void)
 {
+    glu::RenderContext &renderContext = m_context.getRenderContext();
+    glu::ContextType contextType      = renderContext.getType();
+    if (!glu::isContextTypeGLCore(contextType) && glu::isContextTypeES(contextType) &&
+        glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 0)))
+    {
+        addChild(
+            new ApiCaseRedeclaringGlFragDepth(m_context, "redeclaring_gl_frag_depth", "gl_FragDepth redeclaration"));
+        addChild(new ApiCaseRedeclaringGlFragDepthExtensionNotEnabled(
+            m_context, "redeclaring_gl_frag_depth_extension_not_enabled",
+            "gl_FragDepth redeclaration without extension enabled in shader"));
+    }
     // Shader control commands
-
     ES3F_ADD_API_CASE(create_shader, "Invalid glCreateShader() usage", {
         m_log << TestLog::Section("", "GL_INVALID_ENUM is generated if shaderType is not an accepted value.");
         glCreateShader(-1);
@@ -2029,6 +2051,107 @@ void NegativeShaderApiTests::init(void)
         expectError(GL_NO_ERROR);
     });
 }
+
+void ApiCaseRedeclaringGlFragDepth::test(void)
+{
+    m_log << TestLog::Section("", "gl_FragDepth redeclaration");
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+    glu::ShaderProgram program(m_context.getRenderContext(),
+                               glu::makeVtxFragSources(vertexShaderSource, glFragDepthRedeclarationFragSource));
+
+    auto isOkProgram                  = program.isOk();
+    auto conservative_depth_supported = m_context.getContextInfo().isExtensionSupported("GL_EXT_conservative_depth");
+    auto at_least_es30 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 0));
+
+    if (at_least_es30)
+    {
+        if (conservative_depth_supported)
+        {
+            if (isOkProgram)
+            {
+                m_log << TestLog::Section(
+                    "", "GL_EXT_conservative_depth extension is supported, gl_FragDepth redeclaration is allowed");
+                m_log << TestLog::EndSection;
+            }
+            else
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL, "Fail, fragment shader compile/link error");
+            }
+        }
+        else if (!conservative_depth_supported && !isOkProgram)
+        {
+            m_log << TestLog::Section(
+                "", "GL_EXT_conservative_depth extension is not supported, gl_FragDepth redeclaration is not allowed");
+            m_log << TestLog::EndSection;
+        }
+        else
+        {
+            m_testCtx.setTestResult(QP_TEST_RESULT_FAIL,
+                                    "Fail, GL_EXT_conservative_depth extension is not supported; gl_FragDepth "
+                                    "redeclaration must cause a compile failure");
+        }
+    }
+    else
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+    }
+
+    m_log << TestLog::EndSection;
+}
+
+void ApiCaseRedeclaringGlFragDepthExtensionNotEnabled::test(void)
+{
+    m_log << TestLog::Section("", "gl_FragDepth redeclaration without extension enabled in shader");
+    m_testCtx.setTestResult(QP_TEST_RESULT_PASS, "Pass");
+
+    glu::ShaderProgram program(
+        m_context.getRenderContext(),
+        glu::makeVtxFragSources(vertexShaderSource, glFragDepthRedeclarationFragExtNotEnabledSource));
+
+    auto isOkProgram                  = program.isOk();
+    auto conservative_depth_supported = m_context.getContextInfo().isExtensionSupported("GL_EXT_conservative_depth");
+    auto at_least_es30 = glu::contextSupports(m_context.getRenderContext().getType(), glu::ApiType::es(3, 0));
+
+    if (at_least_es30)
+    {
+        if (conservative_depth_supported)
+        {
+            if (!isOkProgram)
+            {
+                m_log << TestLog::Section("", "GL_EXT_conservative_depth extension is supported but not enabled in "
+                                              "shader, gl_FragDepth redeclaration is not allowed");
+                m_log << TestLog::EndSection;
+            }
+            else
+            {
+                m_testCtx.setTestResult(QP_TEST_RESULT_FAIL,
+                                        "Fail, GL_EXT_conservative_depth extension is supported and not enabled in "
+                                        "shader. There should be compile/link error");
+            }
+        }
+        else if (!conservative_depth_supported && !isOkProgram)
+        {
+            m_log << TestLog::Section("", "GL_EXT_conservative_depth extension is not supported and not enabled in "
+                                          "shader, gl_FragDepth redeclaration is not allowed");
+            m_log << TestLog::EndSection;
+        }
+        else
+        {
+            m_testCtx.setTestResult(
+                QP_TEST_RESULT_FAIL,
+                "Fail, GL_EXT_conservative_depth extension is not supported and not enabled in shader; "
+                "gl_FragDepth redeclaration must cause a compile failure");
+        }
+    }
+    else
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+    }
+
+    m_log << TestLog::EndSection;
+}
+//};
 
 } // namespace Functional
 } // namespace gles3

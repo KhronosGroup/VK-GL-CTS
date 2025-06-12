@@ -376,6 +376,7 @@ IVec2 RandomizedRenderGrid::getOrigin(void) const
 
     DE_ASSERT(currentOrigin.x() >= 0 && (currentOrigin.x() + m_cellSize.x()) <= m_targetSize.x());
     DE_ASSERT(currentOrigin.y() >= 0 && (currentOrigin.y() + m_cellSize.y()) <= m_targetSize.y());
+    DE_UNREF(m_targetSize); // For release builds.
 
     return currentOrigin;
 }

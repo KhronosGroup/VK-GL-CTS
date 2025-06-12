@@ -15679,6 +15679,14 @@ dEQP-VKSC.synchronization.op.single_queue.timeline_semaphore.write_update_buffer
 dEQP-VKSC.synchronization.op.single_queue.timeline_semaphore.write_update_index_buffer_read_index_input.buffer_20
 dEQP-VKSC.synchronization.smoke.binary_semaphores
 dEQP-VKSC.synchronization.smoke.fences
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_buffer_arbitrary
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_buffer_external
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_buffer_foreign
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_buffer_ignored
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_arbitrary
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_external
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_foreign
+dEQP-VKSC.synchronization.smoke.queue_type_ignore_image_ignored
 dEQP-VKSC.synchronization.smoke.timeline_semaphores
 dEQP-VKSC.synchronization.timeline_semaphore.device_host.misc.initial_value
 dEQP-VKSC.synchronization.timeline_semaphore.device_host.misc.max_difference_value

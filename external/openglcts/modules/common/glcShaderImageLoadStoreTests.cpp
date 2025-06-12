@@ -4206,7 +4206,6 @@ class AdvancedAllStagesOneImage : public ShaderImageLoadStoreBase
 
     virtual long Run()
     {
-        const int kSize = 64;
         if (!IsVSFSAvailable(1, 1) || !IsImageAtomicSupported())
             return NOT_SUPPORTED;
         /* Note that we use imageAtomicCompSwap on the vertex
@@ -4232,8 +4231,8 @@ class AdvancedAllStagesOneImage : public ShaderImageLoadStoreBase
                                        "void main() {" NL "  gl_Position = i_position;" NL
                                        "  imageAtomicCompSwap(g_image, ivec2(0, gl_VertexID), 0u, 100u);" NL "}";
         const char *const glsl_fs =
-            NL "#define KSIZE 64" NL "layout(r32ui, binding = 3) coherent uniform uimage2D g_image;" NL
-               "void main() {" NL "  imageAtomicAdd(g_image, ivec2(0, int(gl_FragCoord.x) & 0x03), 0x1u);" NL "}";
+            NL "layout(r32ui, binding = 3) coherent uniform uimage2D g_image;" NL "void main() {" NL
+               "  imageAtomicAdd(g_image, ivec2(0, int(gl_FragCoord.x) & 0x03), 0x1u);" NL "}";
         m_program = BuildProgram(glsl_vs, glsl_fs, true, true);
         const char *const glsl_cs =
             NL "#define KSIZE 4" NL "layout (local_size_x = KSIZE) in;" NL
@@ -4257,7 +4256,6 @@ class AdvancedAllStagesOneImage : public ShaderImageLoadStoreBase
 
         glBindImageTexture(3, m_texture, 0, GL_FALSE, 0, GL_READ_WRITE, GL_R32UI);
 
-        glViewport(0, 0, kSize, kSize);
         glBindVertexArray(m_vao);
         glDrawArraysInstanced(GL_TRIANGLE_STRIP, 0, 4, 1);
         glMemoryBarrier(GL_SHADER_IMAGE_ACCESS_BARRIER_BIT);
@@ -4272,14 +4270,20 @@ class AdvancedAllStagesOneImage : public ShaderImageLoadStoreBase
         glMemoryBarrier(GL_BUFFER_UPDATE_BARRIER_BIT);
         uvec4 *map_data = (uvec4 *)glMapBufferRange(GL_SHADER_STORAGE_BUFFER, 0, 4 * 4 * 4, GL_MAP_READ_BIT);
 
-        if (!CompareValues(map_data, 2, uvec4(1024 + 100, 0, 0, 1)))
-            return ERROR;
+        for (int i = 0; i < 4; ++i)
+        {
+            uint32_t expectedValue = ((getWindowWidth() / 4) * getWindowHeight()) + 100;
+            if (i < getWindowWidth() % 4)
+                // Handle remainder when width is not perfectly divisible by 4.
+                expectedValue += getWindowHeight();
+            if (!CompareValues(&map_data[i], 1, uvec4(expectedValue, 0, 0, 1)))
+                return ERROR;
+        }
         return NO_ERROR;
     }
 
     virtual long Cleanup()
     {
-        glViewport(0, 0, getWindowWidth(), getWindowHeight());
         glUseProgram(0);
         glDeleteBuffers(1, &m_buffer);
         glDeleteBuffers(1, &m_vbo);

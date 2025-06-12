@@ -21,7 +21,8 @@
  *
  *//*!
  * \file
- * \brief Tests for VK_AMD_mixed_attachment_samples
+ * \brief Tests for VK_AMD_mixed_attachment_samples or
+ *   VK_NV_framebuffer_mixed_samples+VK_NV_coverage_reduction_mode
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineMultisampleMixedAttachmentSamplesTests.hpp"
@@ -178,7 +179,7 @@ void preparePipelineWrapper(
     const uint32_t subpassNdx, const UVec2 &renderSize,
     const VkImageAspectFlags depthStencilAspect, //!< Used to determine which D/S tests to turn on
     const VkSampleCountFlagBits numSamples, const bool sampleShadingEnable, const bool useFragmentShadingRate,
-    const VkSampleLocationsInfoEXT *pSampleLocationsInfo = nullptr)
+    const bool useCoverageReductionModeTruncate, const VkSampleLocationsInfoEXT *pSampleLocationsInfo = nullptr)
 {
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
     std::vector<VkVertexInputAttributeDescription> vertexInputAttributeDescriptions;
@@ -231,8 +232,26 @@ void preparePipelineWrapper(
     if (pSampleLocationsInfo)
     {
         pipelineSampleLocationsCreateInfo.sampleLocationsInfo = *pSampleLocationsInfo;
+        pipelineSampleLocationsCreateInfo.pNext               = pipelineMultisampleStateInfo.pNext;
         pipelineMultisampleStateInfo.pNext                    = &pipelineSampleLocationsCreateInfo;
     }
+
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCoverageReductionStateCreateInfoNV pipelineCoverageReductionStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_COVERAGE_REDUCTION_STATE_CREATE_INFO_NV, // VkStructureType                                  sType;
+        nullptr,                               // const void*                                      pNext;
+        0U,                                    // VkPipelineCoverageReductionStateCreateFlagsNV    flags;
+        VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV // VkCoverageReductionModeNV                        coverageReductionMode;
+    };
+
+    if (useCoverageReductionModeTruncate)
+    {
+        pipelineCoverageReductionStateCreateInfo.pNext = pipelineMultisampleStateInfo.pNext;
+        pipelineMultisampleStateInfo.pNext             = &pipelineCoverageReductionStateCreateInfo;
+    }
+#else
+    DE_UNREF(useCoverageReductionModeTruncate);
+#endif // !CTS_USES_VULKANSC
 
     // Simply increment the buffer
     const VkStencilOpState stencilOpState =
@@ -871,6 +890,12 @@ void draw(Context &context, const TestParams &params, WorkingData &wd)
     const VkDevice device                 = context.getDevice();
     const uint32_t numSubpasses           = static_cast<uint32_t>(wd.perSubpass.size());
 
+#ifdef CTS_USES_VULKANSC
+    const bool useCoverageReductionModeTruncate = false;
+#else
+    const bool useCoverageReductionModeTruncate = context.getCoverageReductionModeFeatures().coverageReductionMode;
+#endif
+
     RenderPassWrapper renderPass;
     std::vector<VkSampleLocationsInfoEXT> perSubpassSampleLocationsInfo;
     std::vector<VkAttachmentSampleLocationsEXT> attachmentSampleLocations;
@@ -991,14 +1016,15 @@ void draw(Context &context, const TestParams &params, WorkingData &wd)
     {
         const VkSampleLocationsInfoEXT *pSampleLocationsInfo =
             (params.useProgrammableSampleLocations ? &perSubpassSampleLocationsInfo[subpassNdx] : nullptr);
+        const bool sampleShading = (params.perSubpassSamples[subpassNdx].numColorSamples != VK_SAMPLE_COUNT_1_BIT);
 
         pipelines.emplace_back(vki, vk, physicalDevice, device, context.getDeviceExtensions(),
                                params.pipelineConstructionType);
         preparePipelineWrapper(pipelines.back(), pipelineLayout, *renderPass, vertexModule, fragmentModule,
                                /*use vertex input*/ true, subpassNdx, wd.renderSize,
                                getImageAspectFlags(params.depthStencilFormat),
-                               params.perSubpassSamples[subpassNdx].numCoverageSamples,
-                               /*use sample shading*/ true, params.useFragmentShadingRate, pSampleLocationsInfo);
+                               params.perSubpassSamples[subpassNdx].numCoverageSamples, sampleShading,
+                               params.useFragmentShadingRate, useCoverageReductionModeTruncate, pSampleLocationsInfo);
     }
 
     const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT,
@@ -1102,9 +1128,9 @@ void dispatchImageCheck(Context &context, const TestParams &params, WorkingData 
         const VkDescriptorImageInfo colorImageInfo = makeDescriptorImageInfo(
             VK_NULL_HANDLE, *subpassData.colorImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const VkDescriptorImageInfo depthImageInfo = makeDescriptorImageInfo(
-            VK_NULL_HANDLE, *subpassData.depthOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VK_NULL_HANDLE, *subpassData.depthOnlyImageView, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
         const VkDescriptorImageInfo stencilImageInfo = makeDescriptorImageInfo(
-            VK_NULL_HANDLE, *subpassData.stencilOnlyImageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            VK_NULL_HANDLE, *subpassData.stencilOnlyImageView, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
         DescriptorSetUpdateBuilder builder;
 
@@ -1287,20 +1313,60 @@ void createPerSubpassData(Context &context, const TestParams &params, WorkingDat
 
 void checkRequirements(Context &context, TestParams params)
 {
-    context.requireDeviceFunctionality("VK_AMD_mixed_attachment_samples");
+    bool const amdMixedSamples = context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples");
+    bool const nvMixedSamples  = context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples") &&
+                                context.isDeviceFunctionalitySupported("VK_NV_coverage_reduction_mode");
+
+    if (!amdMixedSamples && !nvMixedSamples)
+        TCU_THROW(NotSupportedError, "VK_AMD_mixed_attachment_samples and VK_NV_framebuffer_mixed_samples with "
+                                     "VK_NV_coverage_reduction_mode are not supported");
 
     if (params.useProgrammableSampleLocations)
         context.requireDeviceFunctionality("VK_EXT_sample_locations");
+
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
+#ifndef CTS_USES_VULKANSC
+    std::vector<vk::VkFramebufferMixedSamplesCombinationNV> nvCombinations;
+    if (nvMixedSamples)
+    {
+        uint32_t combinationCount = 0U;
+        vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, nullptr);
+        const vk::VkFramebufferMixedSamplesCombinationNV defaultCombination = vk::initVulkanStructure();
+        nvCombinations.resize(combinationCount, defaultCombination);
+        vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount,
+                                                                            nvCombinations.data());
+    }
+#endif // !CTS_USES_VULKANSC
 
     for (uint32_t subpassNdx = 0; subpassNdx < static_cast<uint32_t>(params.perSubpassSamples.size()); ++subpassNdx)
     {
         const TestParams::SampleCount &samples = params.perSubpassSamples[subpassNdx];
         checkSampleRequirements(context, samples.numColorSamples, samples.numDepthStencilSamples,
                                 !params.useProgrammableSampleLocations);
-    }
 
-    const auto &vki           = context.getInstanceInterface();
-    const auto physicalDevice = context.getPhysicalDevice();
+#ifndef CTS_USES_VULKANSC
+        if (nvMixedSamples)
+        {
+            bool combinationFound = false;
+            for (auto const &combination : nvCombinations)
+            {
+                if (combination.coverageReductionMode == VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV &&
+                    combination.rasterizationSamples == samples.numCoverageSamples &&
+                    combination.depthStencilSamples == samples.numDepthStencilSamples &&
+                    combination.colorSamples == samples.numColorSamples)
+                {
+                    combinationFound = true;
+                    break;
+                }
+            }
+            if (!combinationFound)
+                TCU_THROW(NotSupportedError,
+                          "VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV not supported for this sample combination");
+        }
+#endif // !CTS_USES_VULKANSC
+    }
 
     if (params.useFragmentShadingRate)
     {
@@ -1560,6 +1626,12 @@ void drawResolve(Context &context, const TestParams &params, WorkingData &wd)
     const VkDevice device                 = context.getDevice();
     const bool needResolve                = (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT);
 
+#ifdef CTS_USES_VULKANSC
+    const bool useCoverageReductionModeTruncate = false;
+#else
+    const bool useCoverageReductionModeTruncate = context.getCoverageReductionModeFeatures().coverageReductionMode;
+#endif
+
     RenderPassWrapper renderPass;
 
     // Create a render pass and a framebuffer
@@ -1665,7 +1737,7 @@ void drawResolve(Context &context, const TestParams &params, WorkingData &wd)
 
     preparePipelineWrapper(pipeline, pipelineLayout, *renderPass, vertexModule, fragmentModule, useVertexInput,
                            subpassNdx, wd.renderSize, getImageAspectFlags(params.depthStencilFormat),
-                           params.numCoverageSamples, sampleShading, false);
+                           params.numCoverageSamples, sampleShading, false, useCoverageReductionModeTruncate);
 
     beginCommandBuffer(vk, *cmdBuffer);
 
@@ -1696,12 +1768,49 @@ void drawResolve(Context &context, const TestParams &params, WorkingData &wd)
 
 void checkRequirements(Context &context, TestParams params)
 {
-    context.requireDeviceFunctionality("VK_AMD_mixed_attachment_samples");
+    bool const amdMixedSamples = context.isDeviceFunctionalitySupported("VK_AMD_mixed_attachment_samples");
+    bool const nvMixedSamples  = context.isDeviceFunctionalitySupported("VK_NV_framebuffer_mixed_samples") &&
+                                context.isDeviceFunctionalitySupported("VK_NV_coverage_reduction_mode");
+
+    if (!amdMixedSamples && !nvMixedSamples)
+        TCU_THROW(NotSupportedError, "VK_AMD_mixed_attachment_samples and VK_NV_framebuffer_mixed_samples with "
+                                     "VK_NV_coverage_reduction_mode are not supported");
 
     checkSampleRequirements(context, params.numColorSamples, params.numDepthStencilSamples,
                             false /* require standard sample locations */);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           params.pipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
+    if (nvMixedSamples)
+    {
+        const auto &vki           = context.getInstanceInterface();
+        const auto physicalDevice = context.getPhysicalDevice();
+
+        uint32_t combinationCount = 0U;
+        vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount, nullptr);
+        const vk::VkFramebufferMixedSamplesCombinationNV defaultCombination = vk::initVulkanStructure();
+        std::vector<vk::VkFramebufferMixedSamplesCombinationNV> nvCombinations(combinationCount, defaultCombination);
+        vki.getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV(physicalDevice, &combinationCount,
+                                                                            nvCombinations.data());
+
+        bool combinationFound = false;
+        for (auto const &combination : nvCombinations)
+        {
+            if (combination.coverageReductionMode == VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV &&
+                combination.rasterizationSamples == params.numCoverageSamples &&
+                combination.depthStencilSamples == params.numDepthStencilSamples &&
+                combination.colorSamples == params.numColorSamples)
+            {
+                combinationFound = true;
+                break;
+            }
+        }
+        if (!combinationFound)
+            TCU_THROW(NotSupportedError,
+                      "VK_COVERAGE_REDUCTION_MODE_TRUNCATE_NV not supported for this sample combination");
+    }
+#endif // !CTS_USES_VULKANSC
 
     if (params.numColorSamples != VK_SAMPLE_COUNT_1_BIT)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);

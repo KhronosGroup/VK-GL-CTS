@@ -84,6 +84,7 @@ public:
     void setPipelineCreateFlags(VkPipelineCreateFlags pipelineCreateFlags);
     void setPipelineCreatePNext(void *pipelineCreatePNext);
     void setSubgroupSize(uint32_t subgroupSize);
+    void addPushConstantRange(const VkPushConstantRange &range);
     void buildPipeline(void);
     void bind(VkCommandBuffer commandBuffer);
 
@@ -105,6 +106,7 @@ private:
 
     Move<VkPipeline> m_pipeline;
     Move<VkPipelineLayout> m_pipelineLayout;
+    std::vector<VkPushConstantRange> m_pushConstantRanges;
 #ifndef CTS_USES_VULKANSC
     Move<VkShaderEXT> m_shader;
 #endif

@@ -1,4 +1,4 @@
-cmake_minimum_required(VERSION 2.8)
+cmake_minimum_required(VERSION 3.11)
 project(video-generator-wrapper)
 
 option(BUILD_EXAMPLES "Build examples" OFF)

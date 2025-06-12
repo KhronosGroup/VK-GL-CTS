@@ -1,0 +1,127 @@
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 11
+; Bound: 63
+; Schema: 0
+               OpCapability Shader
+               OpCapability Float16
+               OpCapability StorageBuffer16BitAccess
+               OpExtension "SPV_KHR_16bit_storage"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %gl_LocalInvocationIndex
+               OpExecutionMode %main LocalSize 64 1 1
+               OpSource GLSL 460
+               OpSourceExtension "GL_EXT_shader_explicit_arithmetic_types"
+               OpName %main "main"
+               OpName %idx "idx"
+               OpName %gl_LocalInvocationIndex "gl_LocalInvocationIndex"
+               OpName %PushConstantBlock "PushConstantBlock"
+               OpMemberName %PushConstantBlock 0 "count"
+               OpName %_ ""
+               OpName %s "s"
+               OpName %SignificandBlock "SignificandBlock"
+               OpMemberName %SignificandBlock 0 "significands"
+               OpName %__0 ""
+               OpName %e "e"
+               OpName %ExponentsBlock "ExponentsBlock"
+               OpMemberName %ExponentsBlock 0 "exponents"
+               OpName %__1 ""
+               OpName %r "r"
+               OpName %ResultsBlock "ResultsBlock"
+               OpMemberName %ResultsBlock 0 "results"
+               OpName %__2 ""
+               OpDecorate %gl_LocalInvocationIndex BuiltIn LocalInvocationIndex
+               OpDecorate %PushConstantBlock Block
+               OpMemberDecorate %PushConstantBlock 0 Offset 0
+               OpDecorate %_runtimearr_v2half ArrayStride 4
+               OpDecorate %SignificandBlock BufferBlock
+               OpMemberDecorate %SignificandBlock 0 NonWritable
+               OpMemberDecorate %SignificandBlock 0 Offset 0
+               OpDecorate %__0 NonWritable
+               OpDecorate %__0 Binding 0
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %_runtimearr_v2int ArrayStride 8
+               OpDecorate %ExponentsBlock BufferBlock
+               OpMemberDecorate %ExponentsBlock 0 NonWritable
+               OpMemberDecorate %ExponentsBlock 0 Offset 0
+               OpDecorate %__1 NonWritable
+               OpDecorate %__1 Binding 1
+               OpDecorate %__1 DescriptorSet 0
+               OpDecorate %_runtimearr_v2half_0 ArrayStride 4
+               OpDecorate %ResultsBlock BufferBlock
+               OpMemberDecorate %ResultsBlock 0 Offset 0
+               OpDecorate %__2 Binding 2
+               OpDecorate %__2 DescriptorSet 0
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+%gl_LocalInvocationIndex = OpVariable %_ptr_Input_uint Input
+%PushConstantBlock = OpTypeStruct %uint
+%_ptr_PushConstant_PushConstantBlock = OpTypePointer PushConstant %PushConstantBlock
+          %_ = OpVariable %_ptr_PushConstant_PushConstantBlock PushConstant
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+       %bool = OpTypeBool
+       %half = OpTypeFloat 16
+     %v2half = OpTypeVector %half 2
+%_ptr_Function_v2half = OpTypePointer Function %v2half
+%_runtimearr_v2half = OpTypeRuntimeArray %v2half
+%SignificandBlock = OpTypeStruct %_runtimearr_v2half
+%_ptr_Uniform_SignificandBlock = OpTypePointer Uniform %SignificandBlock
+        %__0 = OpVariable %_ptr_Uniform_SignificandBlock Uniform
+%_ptr_Uniform_v2half = OpTypePointer Uniform %v2half
+      %v2int = OpTypeVector %int 2
+%_ptr_Function_v2int = OpTypePointer Function %v2int
+%_runtimearr_v2int = OpTypeRuntimeArray %v2int
+%ExponentsBlock = OpTypeStruct %_runtimearr_v2int
+%_ptr_Uniform_ExponentsBlock = OpTypePointer Uniform %ExponentsBlock
+        %__1 = OpVariable %_ptr_Uniform_ExponentsBlock Uniform
+%_ptr_Uniform_v2int = OpTypePointer Uniform %v2int
+%_runtimearr_v2half_0 = OpTypeRuntimeArray %v2half
+%ResultsBlock = OpTypeStruct %_runtimearr_v2half_0
+%_ptr_Uniform_ResultsBlock = OpTypePointer Uniform %ResultsBlock
+        %__2 = OpVariable %_ptr_Uniform_ResultsBlock Uniform
+     %v3uint = OpTypeVector %uint 3
+    %uint_64 = OpConstant %uint 64
+     %uint_1 = OpConstant %uint 1
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_64 %uint_1 %uint_1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+        %idx = OpVariable %_ptr_Function_uint Function
+          %s = OpVariable %_ptr_Function_v2half Function
+          %e = OpVariable %_ptr_Function_v2int Function
+          %r = OpVariable %_ptr_Function_v2half Function
+         %11 = OpLoad %uint %gl_LocalInvocationIndex
+               OpStore %idx %11
+         %12 = OpLoad %uint %idx
+         %19 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+         %20 = OpLoad %uint %19
+         %22 = OpULessThan %bool %12 %20
+               OpSelectionMerge %24 None
+               OpBranchConditional %22 %23 %24
+         %23 = OpLabel
+         %33 = OpLoad %uint %idx
+         %35 = OpAccessChain %_ptr_Uniform_v2half %__0 %int_0 %33
+         %36 = OpLoad %v2half %35
+               OpStore %s %36
+         %44 = OpLoad %uint %idx
+         %46 = OpAccessChain %_ptr_Uniform_v2int %__1 %int_0 %44
+         %47 = OpLoad %v2int %46
+               OpStore %e %47
+         %49 = OpLoad %v2half %s
+         %50 = OpLoad %v2int %e
+         %51 = OpExtInst %v2half %1 Ldexp %49 %50
+               OpStore %r %51
+         %56 = OpLoad %uint %idx
+         %57 = OpLoad %v2half %r
+         %58 = OpAccessChain %_ptr_Uniform_v2half %__2 %int_0 %56
+               OpStore %58 %57
+               OpBranch %24
+         %24 = OpLabel
+               OpReturn
+               OpFunctionEnd

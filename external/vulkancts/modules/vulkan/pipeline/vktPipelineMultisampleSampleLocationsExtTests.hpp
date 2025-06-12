@@ -21,7 +21,7 @@
  *
  *//*!
  * \file
- * \brief Tests for VK_EXT_sample_locations
+ * \brief Tests for VK_EXT_sample_locations or with standard locations
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
@@ -32,9 +32,9 @@ namespace vkt
 namespace pipeline
 {
 
-tcu::TestCaseGroup *createMultisampleSampleLocationsExtTests(tcu::TestContext &testCtx,
-                                                             vk::PipelineConstructionType pipelineConstructionType,
-                                                             bool useFragmentShadingRate);
+tcu::TestCaseGroup *createMultisampleSampleLocationsTests(tcu::TestContext &testCtx,
+                                                          vk::PipelineConstructionType pipelineConstructionType,
+                                                          bool useFragmentShadingRate, bool useStdLocations);
 
 } // namespace pipeline
 } // namespace vkt

@@ -63,44 +63,6 @@ namespace video
 using namespace vk;
 using namespace std;
 
-// <Temporary workaround for outdated xml in spec for VK_KHR_device_address_commands>
-// cts main has tests for VK_KHR_video_maintenance2 but this extension is not merged to
-// VK_KHR_device_address_commands spec branch
-#ifdef VK_KHR_VIDEO_MAINTENANCE_2_EXTENSION_NAME
-#error xml was updated - remove whole ifdef workaround
-#else
-const VkStructureType VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR =
-    VK_STRUCTURE_TYPE_APPLICATION_INFO;
-const VkStructureType VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR =
-    VK_STRUCTURE_TYPE_APPLICATION_INFO;
-const VkStructureType VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR =
-    VK_STRUCTURE_TYPE_APPLICATION_INFO;
-const VkVideoSessionCreateFlagBitsKHR VK_VIDEO_SESSION_CREATE_INLINE_SESSION_PARAMETERS_BIT_KHR =
-    VK_VIDEO_SESSION_CREATE_PROTECTED_CONTENT_BIT_KHR;
-struct VkVideoDecodeH264InlineSessionParametersInfoKHR
-{
-    VkStructureType sType;
-    const void *pNext;
-    const StdVideoH264SequenceParameterSet *pStdSPS;
-    const StdVideoH264PictureParameterSet *pStdPPS;
-};
-struct VkVideoDecodeH265InlineSessionParametersInfoKHR
-{
-    VkStructureType sType;
-    const void *pNext;
-    const StdVideoH265VideoParameterSet *pStdVPS;
-    const StdVideoH265SequenceParameterSet *pStdSPS;
-    const StdVideoH265PictureParameterSet *pStdPPS;
-};
-struct VkVideoDecodeAV1InlineSessionParametersInfoKHR
-{
-    VkStructureType sType;
-    const void *pNext;
-    const StdVideoAV1SequenceHeader *pStdSequenceHeader;
-};
-#endif
-// </Temporary workaround end>
-
 #define MAKEFRAMERATE(num, den) (((num) << 14) | (den))
 #define NV_FRAME_RATE_NUM(rate) ((rate) >> 14)
 #define NV_FRAME_RATE_DEN(rate) ((rate)&0x3fff)
@@ -332,7 +294,7 @@ class VulkanVideoSession : public VkVideoRefCountBase
 {
     enum
     {
-        MAX_BOUND_MEMORY = 9
+        MAX_BOUND_MEMORY = 40
     };
 
 public:
@@ -879,7 +841,7 @@ public:
         bool resourcesWithoutProfiles{};
         bool outOfOrderDecoding{};
         bool alwaysRecreateDPB{};
-        bool intraOnlyDecoding{};
+        bool intraOnlyDecodingNoSetupRef{};
         size_t pictureParameterUpdateTriggerHack{0};
         bool forceDisableFilmGrain{false};
         VkSharedBaseObj<VulkanVideoFrameBuffer> framebuffer;
@@ -1029,7 +991,7 @@ public:
     bool m_resourcesWithoutProfiles{false};
     bool m_outOfOrderDecoding{false};
     bool m_alwaysRecreateDPB{false};
-    bool m_intraOnlyDecoding{false};
+    bool m_intraOnlyDecodingNoSetupRef{false};
     vector<VkParserPerFrameDecodeParameters *> m_pPerFrameDecodeParameters;
     vector<VkParserDecodePictureInfo *> m_pVulkanParserDecodePictureInfo;
     vector<NvVkDecodeFrameData *> m_pFrameDatas;

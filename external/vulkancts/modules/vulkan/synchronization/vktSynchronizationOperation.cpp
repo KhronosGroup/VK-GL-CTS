@@ -3291,7 +3291,9 @@ public:
                << "; ++sampleNdx)\n"
                   "    imageStore(msImage, ivec2(gx, gy), sampleNdx, uvec4(value));\n"
                   "}\n";
-        programCollection.glslSources.add("comp") << glu::ComputeSource(source.str().c_str());
+
+        if (!programCollection.glslSources.contains("comp"))
+            programCollection.glslSources.add("comp") << glu::ComputeSource(source.str().c_str());
     }
 
     uint32_t getInResourceUsageFlags(void) const
@@ -4471,7 +4473,8 @@ public:
                 << "    gl_Position = v_in_position;\n"
                 << "}\n";
 
-            programCollection.glslSources.add("draw_vert") << glu::VertexSource(src.str());
+            if (!programCollection.glslSources.contains("draw_vert"))
+                programCollection.glslSources.add("draw_vert") << glu::VertexSource(src.str());
         }
 
         // Fragment
@@ -4492,7 +4495,8 @@ public:
                 << (isIntegerFormat ? toString(clearValue.color.uint32) : toString(clearValue.color.float32)) << ");\n"
                 << "}\n";
 
-            programCollection.glslSources.add("draw_frag") << glu::FragmentSource(src.str());
+            if (!programCollection.glslSources.contains("draw_frag"))
+                programCollection.glslSources.add("draw_frag") << glu::FragmentSource(src.str());
         }
     }
 
@@ -5136,7 +5140,8 @@ public:
                 << "    gl_Position = v_in_position;\n"
                 << main.str() << "}\n";
 
-            programCollection.glslSources.add("read_ib_vert") << glu::VertexSource(src.str());
+            if (!programCollection.glslSources.contains("read_ib_vert"))
+                programCollection.glslSources.add("read_ib_vert") << glu::VertexSource(src.str());
         }
 
         // Fragment
@@ -5151,7 +5156,8 @@ public:
                 << "    o_color = vec4(1.0);\n"
                 << "}\n";
 
-            programCollection.glslSources.add("read_ib_frag") << glu::FragmentSource(src.str());
+            if (!programCollection.glslSources.contains("read_ib_frag"))
+                programCollection.glslSources.add("read_ib_frag") << glu::FragmentSource(src.str());
         }
 
         // Compute
@@ -5166,7 +5172,8 @@ public:
                 << "{\n"
                 << main.str() << "}\n";
 
-            programCollection.glslSources.add("read_ib_comp") << glu::ComputeSource(src.str());
+            if (!programCollection.glslSources.contains("read_ib_comp"))
+                programCollection.glslSources.add("read_ib_comp") << glu::ComputeSource(src.str());
         }
     }
 
@@ -5505,7 +5512,9 @@ public:
                     << "    gl_PointSize = 1.0f;\n"
                     << "}\n";
             }
-            programCollection.glslSources.add("input_vert") << glu::VertexSource(src.str());
+
+            if (!programCollection.glslSources.contains("input_vert"))
+                programCollection.glslSources.add("input_vert") << glu::VertexSource(src.str());
         }
 
         // Fragment
@@ -5519,7 +5528,9 @@ public:
                 << "{\n"
                 << "    o_color = vec4(1.0);\n"
                 << "}\n";
-            programCollection.glslSources.add("input_frag") << glu::FragmentSource(src.str());
+
+            if (!programCollection.glslSources.contains("input_frag"))
+                programCollection.glslSources.add("input_frag") << glu::FragmentSource(src.str());
         }
     }
 

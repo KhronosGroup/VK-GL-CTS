@@ -895,6 +895,9 @@ void SingleThreadRenderCase::executeForContexts(EGLDisplay display, EGLSurface s
     int subpixelBits = 0;
     m_gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
 
+    // Destroy programs before releasing context.
+    programs.clear();
+
     EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 
     // Render reference.
@@ -1156,6 +1159,9 @@ void MultiThreadRenderCase::executeForContexts(EGLDisplay display, EGLSurface su
 
     int subpixelBits = 0;
     m_gl.getIntegerv(GL_SUBPIXEL_BITS, &subpixelBits);
+
+    // Destroy programs before releasing context.
+    programs.clear();
 
     EGLU_CHECK_CALL(egl, makeCurrent(display, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT));
 

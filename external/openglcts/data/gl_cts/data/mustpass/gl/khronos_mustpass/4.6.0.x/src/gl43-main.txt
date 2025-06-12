@@ -6131,3 +6131,5 @@ KHR-GL43.aggressive_optimizations.cos_vec2_vert
 KHR-GL43.aggressive_optimizations.cos_vec2_frag
 KHR-GL43.aggressive_optimizations.cos_vec3_vert
 KHR-GL43.aggressive_optimizations.cos_vec3_frag
+KHR-GL43.texture_buffer_size_clamping.*
+KHR-GL43.clear_tex_image.*

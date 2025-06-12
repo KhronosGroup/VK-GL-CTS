@@ -8,7 +8,7 @@ using ExtPropVect = std::vector<vk::VkExtensionProperties>;
 using IsSupportedFun = bool (*)(const tcu::UVec2&, const ExtPropVect&, const ExtPropVect&);
 using DependencyCheckVect = std::vector<std::pair<const char*, IsSupportedFun> >;
 
-bool isCompatibile(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)
+bool isCompatible(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)
 {
 	// return true when tested api version is greater
 	// or equal to version represented by two uints
@@ -143,7 +143,7 @@ bool check_VK_KHR_display_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP
 
 bool check_VK_EXT_texture_compression_astc_hdr(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -385,7 +385,7 @@ bool check_VK_KHR_shader_clock(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 
 bool check_VK_KHR_global_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -423,7 +423,7 @@ bool check_VK_EXT_pci_bus_info(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 
 bool check_VK_KHR_shader_terminate_invocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -437,7 +437,7 @@ bool check_VK_KHR_shader_terminate_invocation(const tcu::UVec2& v, const ExtProp
 
 bool check_VK_EXT_subgroup_size_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -446,7 +446,7 @@ bool check_VK_EXT_subgroup_size_control(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_KHR_fragment_shading_rate(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -547,7 +547,7 @@ bool check_VK_EXT_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_EXT_extended_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -561,7 +561,7 @@ bool check_VK_EXT_extended_dynamic_state(const tcu::UVec2& v, const ExtPropVect&
 
 bool check_VK_EXT_shader_demote_to_helper_invocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -575,7 +575,7 @@ bool check_VK_EXT_shader_demote_to_helper_invocation(const tcu::UVec2& v, const 
 
 bool check_VK_EXT_texel_buffer_alignment(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -613,7 +613,7 @@ bool check_VK_EXT_custom_border_color(const tcu::UVec2& v, const ExtPropVect& vI
 
 bool check_VK_KHR_synchronization2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -627,7 +627,7 @@ bool check_VK_KHR_synchronization2(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_EXT_ycbcr_2plane_444_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -641,7 +641,7 @@ bool check_VK_EXT_ycbcr_2plane_444_formats(const tcu::UVec2& v, const ExtPropVec
 
 bool check_VK_EXT_image_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -655,7 +655,7 @@ bool check_VK_EXT_image_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_KHR_copy_commands2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -669,7 +669,7 @@ bool check_VK_KHR_copy_commands2(const tcu::UVec2& v, const ExtPropVect& vIEP, c
 
 bool check_VK_EXT_4444_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -714,7 +714,7 @@ bool check_VK_NV_external_sci_sync(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_NV_external_memory_sci_buf(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -726,12 +726,12 @@ bool check_VK_NV_external_memory_sci_buf(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_EXT_extended_dynamic_state2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -764,12 +764,12 @@ bool check_VK_NV_external_sci_sync2(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -795,7 +795,7 @@ bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPr
 
 bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -809,7 +809,7 @@ bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_KHR_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -847,7 +847,7 @@ bool check_VK_NV_device_diagnostic_checkpoints(const tcu::UVec2& v, const ExtPro
 
 bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);

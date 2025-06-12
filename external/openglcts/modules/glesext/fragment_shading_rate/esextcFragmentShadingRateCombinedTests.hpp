@@ -97,6 +97,7 @@ private:
     glw::GLint m_srTexelWidth;
     glw::GLint m_srTexelHeight;
     std::vector<uint32_t> m_simulationCache;
+    glw::GLenum m_framebufferFormat;
 };
 
 } // namespace glcts

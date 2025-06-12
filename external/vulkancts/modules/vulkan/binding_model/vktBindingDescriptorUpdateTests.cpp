@@ -157,6 +157,8 @@ struct SamplerlessParams
     vk::VkDescriptorType type;
     PointerCase pointer;
     uint32_t descriptorSet;
+    bool useGeneralLayout;
+    bool useComputePipeline;
 };
 
 class SamplerlessDescriptorWriteTestCase : public vkt::TestCase
@@ -180,7 +182,7 @@ private:
     SamplerlessParams m_params;
 };
 
-class SamplerlessDescriptorWriteTestInstance : public vkt::TestInstance
+class SamplerlessDescriptorWriteTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
     SamplerlessDescriptorWriteTestInstance(Context &context, const SamplerlessParams &params);
@@ -189,10 +191,11 @@ public:
     }
 
     vk::VkSampler getSamplerHandle(void) const;
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) override;
 
     vk::VkExtent3D getMainImageExtent(void) const;
     vk::VkImageUsageFlags getMainImageUsage(void) const;
+    vk::VkImageUsageFlags getFbImageUsage(void) const;
     vk::VkImageLayout getMainImageShaderLayout(void) const;
 
     static const vk::VkFormat kImageFormat = SamplerlessDescriptorWriteTestCase::kImageFormat;
@@ -261,6 +264,25 @@ void SamplerlessDescriptorWriteTestCase::initPrograms(vk::SourceCollections &pro
                    << "}\n";
 
     programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentShader.str());
+
+    std::ostringstream computeShader;
+
+    if (m_params.type != vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+    {
+        computeShader << "#version 450\n"
+                      << "layout(local_size_x = 1, local_size_y = 1) in;\n"
+                      << extensions << descriptorDecl << "\n"
+                      << "layout(set=" << std::to_string(m_params.descriptorSet)
+                      << ", binding=1, rgba8) uniform image2D color_out;\n"
+                      << "void main()\n"
+                      << "{\n"
+                      << "    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);\n"
+                      << "    vec4 color = " << readOp << ";\n"
+                      << "    imageStore(color_out, pixelCoords, color);\n"
+                      << "}\n";
+
+        programCollection.glslSources.add("comp") << glu::ComputeSource(computeShader.str());
+    }
 }
 
 vk::VkFormatFeatureFlagBits SamplerlessDescriptorWriteTestCase::getMainImageFeature(void) const
@@ -309,7 +331,7 @@ vkt::TestInstance *SamplerlessDescriptorWriteTestCase::createInstance(Context &c
 
 SamplerlessDescriptorWriteTestInstance::SamplerlessDescriptorWriteTestInstance(Context &context,
                                                                                const SamplerlessParams &params)
-    : vkt::TestInstance{context}
+    : vkt::MultiQueueRunnerTestInstance(context, params.useComputePipeline ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
     , m_params(params)
 {
 }
@@ -400,9 +422,23 @@ vk::VkImageUsageFlags SamplerlessDescriptorWriteTestInstance::getMainImageUsage(
     return usage;
 }
 
+vk::VkImageUsageFlags SamplerlessDescriptorWriteTestInstance::getFbImageUsage(void) const
+{
+    vk::VkImageUsageFlags usage = vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (!m_params.useComputePipeline)
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    else
+        usage |= vk::VK_IMAGE_USAGE_STORAGE_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    return usage;
+}
+
 vk::VkImageLayout SamplerlessDescriptorWriteTestInstance::getMainImageShaderLayout(void) const
 {
     vk::VkImageLayout layout = vk::VK_IMAGE_LAYOUT_UNDEFINED;
+
+    if (m_params.useGeneralLayout)
+        return vk::VK_IMAGE_LAYOUT_GENERAL;
 
     switch (m_params.type)
     {
@@ -421,13 +457,13 @@ vk::VkImageLayout SamplerlessDescriptorWriteTestInstance::getMainImageShaderLayo
     return layout;
 }
 
-tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
+tcu::TestStatus SamplerlessDescriptorWriteTestInstance::queuePass(const QueueData &queueData)
 {
     const auto &vkd       = m_context.getDeviceInterface();
     const auto device     = m_context.getDevice();
     auto &allocator       = m_context.getDefaultAllocator();
-    const auto queue      = m_context.getUniversalQueue();
-    const auto queueIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto queue      = queueData.handle;
+    const auto queueIndex = queueData.familyIndex;
     const auto tcuFormat  = vk::mapVkFormat(kImageFormat);
 
     const vk::VkImageCreateInfo mainImgCreateInfo = {
@@ -449,22 +485,22 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
     };
 
     const vk::VkImageCreateInfo fbImgCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,   // VkStructureType sType;
-        nullptr,                                   // const void* pNext;
-        0u,                                        // VkImageCreateFlags flags;
-        vk::VK_IMAGE_TYPE_2D,                      // VkImageType imageType;
-        kImageFormat,                              // VkFormat format;
-        kFramebufferExtent,                        // VkExtent3D extent;
-        1u,                                        // uint32_t mipLevels;
-        1u,                                        // uint32_t arrayLayers;
-        vk::VK_SAMPLE_COUNT_1_BIT,                 // VkSampleCountFlagBits samples;
-        vk::VK_IMAGE_TILING_OPTIMAL,               // VkImageTiling tiling;
-        (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | // VkImageUsageFlags usage;
-         vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT),     // Used when verifying the image.
-        vk::VK_SHARING_MODE_EXCLUSIVE,             // VkSharingMode sharingMode;
-        1u,                                        // uint32_t queueFamilyIndexCount;
-        &queueIndex,                               // const uint32_t* pQueueFamilyIndices;
-        vk::VK_IMAGE_LAYOUT_UNDEFINED,             // VkImageLayout initialLayout;
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                 // const void* pNext;
+        0u,                                      // VkImageCreateFlags flags;
+        vk::VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        kImageFormat,                            // VkFormat format;
+        kFramebufferExtent,                      // VkExtent3D extent;
+        1u,                                      // uint32_t mipLevels;
+        1u,                                      // uint32_t arrayLayers;
+        vk::VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+        vk::VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        (getFbImageUsage() |                     // VkImageUsageFlags usage;
+         vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT),   // Used when verifying the image.
+        vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        1u,                                      // uint32_t queueFamilyIndexCount;
+        &queueIndex,                             // const uint32_t* pQueueFamilyIndices;
+        vk::VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
     // Create main and framebuffer images.
@@ -486,215 +522,333 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
     const vk::BufferWithMemory resultsBuffer{vkd, device, allocator, resultsBufferInfo,
                                              vk::MemoryRequirement::HostVisible};
 
-    const std::vector<tcu::Vec4> fullScreenQuad = {
-        {-1.f, -1.f, 0.f, 1.f}, {1.f, -1.f, 0.f, 1.f}, {-1.f, 1.f, 0.f, 1.f},
-        {-1.f, 1.f, 0.f, 1.f},  {1.f, -1.f, 0.f, 1.f}, {1.f, 1.f, 0.f, 1.f},
-    };
-
-    // Vertex buffer.
-    const vk::VkDeviceSize vertexBufferSize =
-        static_cast<vk::VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
-    const auto vertexBufferInfo = vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    const vk::BufferWithMemory vertexBuffer{vkd, device, allocator, vertexBufferInfo,
-                                            vk::MemoryRequirement::HostVisible};
-
-    // Copy data to vertex buffer.
-    const auto &vertexAlloc  = vertexBuffer.getAllocation();
-    const auto vertexDataPtr = reinterpret_cast<char *>(vertexAlloc.getHostPtr()) + vertexAlloc.getOffset();
-    deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
-    vk::flushAlloc(vkd, device, vertexAlloc);
-
-    // Descriptor set layouts.
-    vk::DescriptorSetLayoutBuilder layoutBuilder;
-    std::vector<vk::Move<vk::VkDescriptorSetLayout>> descriptorSetLayouts;
-    // Create layouts for required amount of empty descriptor sets before the one that is actually used.
-    for (uint32_t descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
+    if (!m_params.useComputePipeline)
     {
+        const std::vector<tcu::Vec4> fullScreenQuad = {
+            {-1.f, -1.f, 0.f, 1.f}, {1.f, -1.f, 0.f, 1.f}, {-1.f, 1.f, 0.f, 1.f},
+            {-1.f, 1.f, 0.f, 1.f},  {1.f, -1.f, 0.f, 1.f}, {1.f, 1.f, 0.f, 1.f},
+        };
+
+        // Vertex buffer.
+        const vk::VkDeviceSize vertexBufferSize =
+            static_cast<vk::VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
+        const auto vertexBufferInfo = vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        const vk::BufferWithMemory vertexBuffer{vkd, device, allocator, vertexBufferInfo,
+                                                vk::MemoryRequirement::HostVisible};
+
+        // Copy data to vertex buffer.
+        const auto &vertexAlloc  = vertexBuffer.getAllocation();
+        const auto vertexDataPtr = reinterpret_cast<char *>(vertexAlloc.getHostPtr()) + vertexAlloc.getOffset();
+        deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
+        vk::flushAlloc(vkd, device, vertexAlloc);
+
+        // Descriptor set layouts.
+        vk::DescriptorSetLayoutBuilder layoutBuilder;
+        std::vector<vk::Move<vk::VkDescriptorSetLayout>> descriptorSetLayouts;
+        // Create layouts for required amount of empty descriptor sets before the one that is actually used.
+        for (uint32_t descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
+        {
+            descriptorSetLayouts.push_back(layoutBuilder.build(vkd, device));
+        }
+        // Create a layout for the descriptor set that is actually used.
+        layoutBuilder.addSingleBinding(m_params.type, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
         descriptorSetLayouts.push_back(layoutBuilder.build(vkd, device));
-    }
-    // Create a layout for the descriptor set that is actually used.
-    layoutBuilder.addSingleBinding(m_params.type, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
-    descriptorSetLayouts.push_back(layoutBuilder.build(vkd, device));
 
-    // Descriptor pool.
-    vk::DescriptorPoolBuilder poolBuilder;
-    poolBuilder.addType(m_params.type);
-    const auto descriptorPool = poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                                                  m_params.descriptorSet + 1);
+        // Descriptor pool.
+        vk::DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(m_params.type);
+        const auto descriptorPool = poolBuilder.build(
+            vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, m_params.descriptorSet + 1);
 
-    // Descriptor sets.
-    std::vector<vk::Move<vk::VkDescriptorSet>> descriptorSets;
-    for (uint32_t descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
-    {
-        descriptorSets.push_back(
-            vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayouts[descIdx].get()));
-    }
-    descriptorSets.push_back(
-        vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayouts[m_params.descriptorSet].get()));
+        // Descriptor sets.
+        std::vector<vk::Move<vk::VkDescriptorSet>> descriptorSets;
+        for (uint32_t descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
+        {
+            descriptorSets.push_back(
+                vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayouts[descIdx].get()));
+        }
+        descriptorSets.push_back(vk::makeDescriptorSet(vkd, device, descriptorPool.get(),
+                                                       descriptorSetLayouts[m_params.descriptorSet].get()));
 
-    // Update descriptor set with the descriptor.
-    // IMPORTANT: the chosen sampler handle is used here.
-    vk::DescriptorSetUpdateBuilder updateBuilder;
-    const auto descriptorImageInfo =
-        vk::makeDescriptorImageInfo(getSamplerHandle(), mainView.get(), getMainImageShaderLayout());
-    updateBuilder.writeSingle(descriptorSets[m_params.descriptorSet].get(),
-                              vk::DescriptorSetUpdateBuilder::Location::binding(0u), m_params.type,
-                              &descriptorImageInfo);
-    updateBuilder.update(vkd, device);
+        // Update descriptor set with the descriptor.
+        // IMPORTANT: the chosen sampler handle is used here.
+        vk::DescriptorSetUpdateBuilder updateBuilder;
+        const auto descriptorImageInfo =
+            vk::makeDescriptorImageInfo(getSamplerHandle(), mainView.get(), getMainImageShaderLayout());
+        updateBuilder.writeSingle(descriptorSets[m_params.descriptorSet].get(),
+                                  vk::DescriptorSetUpdateBuilder::Location::binding(0u), m_params.type,
+                                  &descriptorImageInfo);
+        updateBuilder.update(vkd, device);
 
-    // Shader modules.
-    const auto vertexModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-    const auto fragModule   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+        // Shader modules.
+        const auto vertexModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+        const auto fragModule   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
-    // Render pass.
-    const vk::VkAttachmentDescription fbAttachment = {
-        0u,                                           // VkAttachmentDescriptionFlags flags;
-        kImageFormat,                                 // VkFormat format;
-        vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
-        vk::VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
-        vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
-        vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
-        vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
-        vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
-    };
-
-    std::vector<vk::VkAttachmentDescription> attachmentDescs;
-    attachmentDescs.push_back(fbAttachment);
-
-    if (m_params.type == vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-    {
-        // Add it as a frame buffer attachment.
-        const vk::VkAttachmentDescription inputAttachment = {
+        // Render pass.
+        const vk::VkImageLayout attachmentLayout =
+            m_params.useGeneralLayout ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        const vk::VkAttachmentDescription fbAttachment = {
             0u,                                   // VkAttachmentDescriptionFlags flags;
             kImageFormat,                         // VkFormat format;
             vk::VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits samples;
-            vk::VK_ATTACHMENT_LOAD_OP_LOAD,       // VkAttachmentLoadOp loadOp;
-            vk::VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp storeOp;
+            vk::VK_ATTACHMENT_LOAD_OP_CLEAR,      // VkAttachmentLoadOp loadOp;
+            vk::VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp storeOp;
             vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
             vk::VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
-            getMainImageShaderLayout(),           // VkImageLayout initialLayout;
-            getMainImageShaderLayout(),           // VkImageLayout finalLayout;
+            vk::VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout initialLayout;
+            attachmentLayout,                     // VkImageLayout finalLayout;
         };
 
-        attachmentDescs.push_back(inputAttachment);
-    }
+        std::vector<vk::VkAttachmentDescription> attachmentDescs;
+        attachmentDescs.push_back(fbAttachment);
 
-    std::vector<vk::VkAttachmentReference> inputAttachments;
-    if (m_params.type == vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+        if (m_params.type == vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+        {
+            // Add it as a frame buffer attachment.
+            const vk::VkAttachmentDescription inputAttachment = {
+                0u,                                   // VkAttachmentDescriptionFlags flags;
+                kImageFormat,                         // VkFormat format;
+                vk::VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits samples;
+                vk::VK_ATTACHMENT_LOAD_OP_LOAD,       // VkAttachmentLoadOp loadOp;
+                vk::VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp storeOp;
+                vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
+                vk::VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
+                getMainImageShaderLayout(),           // VkImageLayout initialLayout;
+                getMainImageShaderLayout(),           // VkImageLayout finalLayout;
+            };
+
+            attachmentDescs.push_back(inputAttachment);
+        }
+
+        std::vector<vk::VkAttachmentReference> inputAttachments;
+        if (m_params.type == vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+        {
+            const vk::VkAttachmentReference inputRef = {
+                1u,                         // uint32_t attachment;
+                getMainImageShaderLayout(), // VkImageLayout layout;
+            };
+
+            inputAttachments.push_back(inputRef);
+        }
+
+        const vk::VkAttachmentReference colorRef = {
+            0u,                                           // uint32_t attachment;
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
+        };
+        const std::vector<vk::VkAttachmentReference> colorAttachments(1u, colorRef);
+
+        const vk::VkSubpassDescription subpass = {
+            0u,                                             // VkSubpassDescriptionFlags flags;
+            vk::VK_PIPELINE_BIND_POINT_GRAPHICS,            // VkPipelineBindPoint pipelineBindPoint;
+            static_cast<uint32_t>(inputAttachments.size()), // uint32_t inputAttachmentCount;
+            (inputAttachments.empty() ? nullptr :
+                                        inputAttachments.data()), // const VkAttachmentReference* pInputAttachments;
+            static_cast<uint32_t>(colorAttachments.size()),       // uint32_t colorAttachmentCount;
+            colorAttachments.data(),                              // const VkAttachmentReference* pColorAttachments;
+            0u,                                                   // const VkAttachmentReference* pResolveAttachments;
+            nullptr, // const VkAttachmentReference* pDepthStencilAttachment;
+            0u,      // uint32_t preserveAttachmentCount;
+            nullptr, // const uint32_t* pPreserveAttachments;
+        };
+        const std::vector<vk::VkSubpassDescription> subpasses(1u, subpass);
+
+        const vk::VkRenderPassCreateInfo renderPassInfo = {
+            vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                       // const void* pNext;
+            0u,                                            // VkRenderPassCreateFlags flags;
+            static_cast<uint32_t>(attachmentDescs.size()), // uint32_t attachmentCount;
+            attachmentDescs.data(),                        // const VkAttachmentDescription* pAttachments;
+            static_cast<uint32_t>(subpasses.size()),       // uint32_t subpassCount;
+            subpasses.data(),                              // const VkSubpassDescription* pSubpasses;
+            0u,                                            // uint32_t dependencyCount;
+            nullptr,                                       // const VkSubpassDependency* pDependencies;
+        };
+        const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
+
+        // Framebuffer.
+        std::vector<vk::VkImageView> attachments;
+        attachments.push_back(fbView.get());
+        if (m_params.type == vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
+            attachments.push_back(mainView.get());
+        const auto framebuffer = vk::makeFramebuffer(
+            vkd, device, renderPass.get(), static_cast<uint32_t>(attachments.size()), attachments.data(),
+            kFramebufferExtent.width, kFramebufferExtent.height, kFramebufferExtent.depth);
+
+        // Pipeline layout.
+        const auto pipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayouts);
+
+        // Graphics pipeline.
+        const std::vector<vk::VkViewport> viewports(1u, vk::makeViewport(kFramebufferExtent));
+        const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(kFramebufferExtent));
+
+        const auto pipeline = vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(),
+                                                       VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, fragModule.get(),
+                                                       renderPass.get(), viewports, scissors);
+
+        // Command pool and command buffer.
+        const auto cmdPool =
+            vk::createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+        const auto cmdBufferPtr =
+            vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto cmdBuffer = cmdBufferPtr.get();
+
+        // Draw quad.
+        const vk::VkRect2D renderArea = vk::makeRect2D(kFramebufferExtent);
+        const tcu::Vec4 clearFbColor(0.0f, 0.0f, 0.0f, 1.0f);
+        const vk::VkDeviceSize vertexBufferOffset = 0ull;
+
+        const auto vtxBufferBarrier =
+            vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                                        vertexBuffer.get(), 0ull, vertexBufferSize);
+        const auto preClearBarrier = vk::makeImageMemoryBarrier(
+            0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mainImage.get(), colorSubresourceRange);
+        const auto postClearBarrier = vk::makeImageMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, getMainImageShaderLayout(), mainImage.get(),
+            colorSubresourceRange);
+        const auto clearDescColor = vk::makeClearValueColor(kDescriptorColor);
+
+        vk::beginCommandBuffer(vkd, cmdBuffer);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u,
+                               0u, nullptr, 1u, &vtxBufferBarrier, 0u, nullptr);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                               0u, nullptr, 0u, nullptr, 1u, &preClearBarrier);
+        vkd.cmdClearColorImage(cmdBuffer, mainImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               &clearDescColor.color, 1u, &colorSubresourceRange);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
+                                   vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                               0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
+
+        vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, clearFbColor);
+        vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+        vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(),
+                                  m_params.descriptorSet, 1u, &descriptorSets[m_params.descriptorSet].get(), 0u,
+                                  nullptr);
+        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        vkd.cmdDraw(cmdBuffer, static_cast<uint32_t>(fullScreenQuad.size()), 1u, 0u, 0u);
+        vk::endRenderPass(vkd, cmdBuffer);
+
+        const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width),
+                                  static_cast<int>(kFramebufferExtent.height)};
+        vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
+
+        vk::endCommandBuffer(vkd, cmdBuffer);
+        vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+        m_context.resetCommandPoolForVKSC(device, *cmdPool);
+    }
+    else // Compute pipeline
     {
-        const vk::VkAttachmentReference inputRef = {
-            1u,                         // uint32_t attachment;
-            getMainImageShaderLayout(), // VkImageLayout layout;
-        };
+        // Descriptor set layouts.
+        vk::DescriptorSetLayoutBuilder layoutBuilder;
+        std::vector<vk::Move<vk::VkDescriptorSetLayout>> descriptorSetLayouts;
+        // Create layouts for required amount of empty descriptor sets before the one that is actually used.
+        for (uint32_t descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
+        {
+            descriptorSetLayouts.push_back(layoutBuilder.build(vkd, device));
+        }
+        // Create a layout for the descriptor set that is actually used.
+        layoutBuilder.addSingleBinding(m_params.type, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+        layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+        descriptorSetLayouts.push_back(layoutBuilder.build(vkd, device));
 
-        inputAttachments.push_back(inputRef);
+        // Descriptor pool.
+        vk::DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(m_params.type);
+        poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        const auto descriptorPool = poolBuilder.build(
+            vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, m_params.descriptorSet + 1);
+
+        // Descriptor sets.
+        std::vector<vk::Move<vk::VkDescriptorSet>> descriptorSets;
+        for (uint32_t descIdx = 0u; descIdx < m_params.descriptorSet; descIdx++)
+        {
+            descriptorSets.push_back(
+                vk::makeDescriptorSet(vkd, device, descriptorPool.get(), descriptorSetLayouts[descIdx].get()));
+        }
+        descriptorSets.push_back(vk::makeDescriptorSet(vkd, device, descriptorPool.get(),
+                                                       descriptorSetLayouts[m_params.descriptorSet].get()));
+
+        // Update descriptor set with the descriptor.
+        // IMPORTANT: the chosen sampler handle is used here.
+        vk::DescriptorSetUpdateBuilder updateBuilder;
+        const auto descriptorImageInfo =
+            vk::makeDescriptorImageInfo(getSamplerHandle(), mainView.get(), getMainImageShaderLayout());
+        updateBuilder.writeSingle(descriptorSets[m_params.descriptorSet].get(),
+                                  vk::DescriptorSetUpdateBuilder::Location::binding(0u), m_params.type,
+                                  &descriptorImageInfo);
+        const auto descriptorStorageImageInfo =
+            vk::makeDescriptorImageInfo(VK_NULL_HANDLE, fbView.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
+        updateBuilder.writeSingle(descriptorSets[m_params.descriptorSet].get(),
+                                  vk::DescriptorSetUpdateBuilder::Location::binding(1u),
+                                  vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorStorageImageInfo);
+        updateBuilder.update(vkd, device);
+
+        // Shader modules.
+        const auto computeModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+
+        // Pipeline layout.
+        const auto pipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayouts);
+
+        const auto pipeline = vk::makeComputePipeline(vkd, device, pipelineLayout.get(), computeModule.get());
+
+        // Command pool and command buffer.
+        const auto cmdPool =
+            vk::createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+        const auto cmdBufferPtr =
+            vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto cmdBuffer = cmdBufferPtr.get();
+
+        const auto clearDescColor = vk::makeClearValueColor(kDescriptorColor);
+
+        const auto mainPreClearBarrier = vk::makeImageMemoryBarrier(
+            0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mainImage.get(), colorSubresourceRange);
+        const auto mainPostClearBarrier = vk::makeImageMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            getMainImageShaderLayout(), mainImage.get(), colorSubresourceRange);
+
+        const auto storagePreClearBarrier =
+            vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+                                       vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, fbImage.get(), colorSubresourceRange);
+        const auto storagePostClearBarrier = vk::makeImageMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_GENERAL, fbImage.get(), colorSubresourceRange);
+
+        vk::beginCommandBuffer(vkd, cmdBuffer);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                               0u, nullptr, 0u, nullptr, 1u, &mainPreClearBarrier);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                               0u, nullptr, 0u, nullptr, 1u, &storagePreClearBarrier);
+
+        vkd.cmdClearColorImage(cmdBuffer, mainImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               &clearDescColor.color, 1u, &colorSubresourceRange);
+        vkd.cmdClearColorImage(cmdBuffer, fbImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               &clearDescColor.color, 1u, &colorSubresourceRange);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               0u, 0u, nullptr, 0u, nullptr, 1u, &mainPostClearBarrier);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               0u, 0u, nullptr, 0u, nullptr, 1u, &storagePostClearBarrier);
+
+        vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
+        vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(),
+                                  m_params.descriptorSet, 1u, &descriptorSets[m_params.descriptorSet].get(), 0u,
+                                  nullptr);
+        vkd.cmdDispatch(cmdBuffer, kFramebufferExtent.width, kFramebufferExtent.height, 1);
+
+        const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width),
+                                  static_cast<int>(kFramebufferExtent.height)};
+        vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize,
+                              vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_GENERAL);
+
+        vk::endCommandBuffer(vkd, cmdBuffer);
+        vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+        m_context.resetCommandPoolForVKSC(device, *cmdPool);
     }
-
-    const vk::VkAttachmentReference colorRef = {
-        0u,                                           // uint32_t attachment;
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
-    };
-    const std::vector<vk::VkAttachmentReference> colorAttachments(1u, colorRef);
-
-    const vk::VkSubpassDescription subpass = {
-        0u,                                             // VkSubpassDescriptionFlags flags;
-        vk::VK_PIPELINE_BIND_POINT_GRAPHICS,            // VkPipelineBindPoint pipelineBindPoint;
-        static_cast<uint32_t>(inputAttachments.size()), // uint32_t inputAttachmentCount;
-        (inputAttachments.empty() ? nullptr :
-                                    inputAttachments.data()), // const VkAttachmentReference* pInputAttachments;
-        static_cast<uint32_t>(colorAttachments.size()),       // uint32_t colorAttachmentCount;
-        colorAttachments.data(),                              // const VkAttachmentReference* pColorAttachments;
-        0u,                                                   // const VkAttachmentReference* pResolveAttachments;
-        nullptr,                                              // const VkAttachmentReference* pDepthStencilAttachment;
-        0u,                                                   // uint32_t preserveAttachmentCount;
-        nullptr,                                              // const uint32_t* pPreserveAttachments;
-    };
-    const std::vector<vk::VkSubpassDescription> subpasses(1u, subpass);
-
-    const vk::VkRenderPassCreateInfo renderPassInfo = {
-        vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                       // const void* pNext;
-        0u,                                            // VkRenderPassCreateFlags flags;
-        static_cast<uint32_t>(attachmentDescs.size()), // uint32_t attachmentCount;
-        attachmentDescs.data(),                        // const VkAttachmentDescription* pAttachments;
-        static_cast<uint32_t>(subpasses.size()),       // uint32_t subpassCount;
-        subpasses.data(),                              // const VkSubpassDescription* pSubpasses;
-        0u,                                            // uint32_t dependencyCount;
-        nullptr,                                       // const VkSubpassDependency* pDependencies;
-    };
-    const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
-
-    // Framebuffer.
-    std::vector<vk::VkImageView> attachments;
-    attachments.push_back(fbView.get());
-    if (m_params.type == vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT)
-        attachments.push_back(mainView.get());
-    const auto framebuffer = vk::makeFramebuffer(
-        vkd, device, renderPass.get(), static_cast<uint32_t>(attachments.size()), attachments.data(),
-        kFramebufferExtent.width, kFramebufferExtent.height, kFramebufferExtent.depth);
-
-    // Pipeline layout.
-    const auto pipelineLayout = vk::makePipelineLayout(vkd, device, descriptorSetLayouts);
-
-    // Graphics pipeline.
-    const std::vector<vk::VkViewport> viewports(1u, vk::makeViewport(kFramebufferExtent));
-    const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(kFramebufferExtent));
-
-    const auto pipeline =
-        vk::makeGraphicsPipeline(vkd, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE,
-                                 VK_NULL_HANDLE, fragModule.get(), renderPass.get(), viewports, scissors);
-
-    // Command pool and command buffer.
-    const auto cmdPool =
-        vk::createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
-    const auto cmdBufferPtr =
-        vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-    const auto cmdBuffer = cmdBufferPtr.get();
-
-    // Draw quad.
-    const vk::VkRect2D renderArea = vk::makeRect2D(kFramebufferExtent);
-    const tcu::Vec4 clearFbColor(0.0f, 0.0f, 0.0f, 1.0f);
-    const vk::VkDeviceSize vertexBufferOffset = 0ull;
-
-    const auto vtxBufferBarrier =
-        vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-                                    vertexBuffer.get(), 0ull, vertexBufferSize);
-    const auto preClearBarrier =
-        vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
-                                   vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, mainImage.get(), colorSubresourceRange);
-    const auto postClearBarrier = vk::makeImageMemoryBarrier(
-        vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT | vk::VK_ACCESS_COLOR_ATTACHMENT_READ_BIT,
-        vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, getMainImageShaderLayout(), mainImage.get(), colorSubresourceRange);
-    const auto clearDescColor = vk::makeClearValueColor(kDescriptorColor);
-
-    vk::beginCommandBuffer(vkd, cmdBuffer);
-
-    vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u, 0u,
-                           nullptr, 1u, &vtxBufferBarrier, 0u, nullptr);
-    vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
-                           nullptr, 0u, nullptr, 1u, &preClearBarrier);
-    vkd.cmdClearColorImage(cmdBuffer, mainImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearDescColor.color,
-                           1u, &colorSubresourceRange);
-    vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                           vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
-                               vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                           0u, 0u, nullptr, 0u, nullptr, 1u, &postClearBarrier);
-
-    vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea, clearFbColor);
-    vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
-    vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(),
-                              m_params.descriptorSet, 1u, &descriptorSets[m_params.descriptorSet].get(), 0u, nullptr);
-    vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-    vkd.cmdDraw(cmdBuffer, static_cast<uint32_t>(fullScreenQuad.size()), 1u, 0u, 0u);
-    vk::endRenderPass(vkd, cmdBuffer);
-
-    const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width), static_cast<int>(kFramebufferExtent.height)};
-    vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
-
-    vk::endCommandBuffer(vkd, cmdBuffer);
-    vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
-    m_context.resetCommandPoolForVKSC(device, *cmdPool);
 
     // Check results.
     const auto &resultsBufferAlloc = resultsBuffer.getAllocation();
@@ -702,7 +856,8 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::iterate(void)
 
     const auto resultsBufferPtr =
         reinterpret_cast<const char *>(resultsBufferAlloc.getHostPtr()) + resultsBufferAlloc.getOffset();
-    const tcu::ConstPixelBufferAccess resultPixels{tcuFormat, copySize[0], copySize[1], 1, resultsBufferPtr};
+    const tcu::ConstPixelBufferAccess resultPixels{tcuFormat, static_cast<int>(kFramebufferExtent.width),
+                                                   static_cast<int>(kFramebufferExtent.height), 1, resultsBufferPtr};
 
     bool pass = true;
     for (int x = 0; pass && x < resultPixels.getWidth(); ++x)
@@ -740,19 +895,35 @@ tcu::TestCaseGroup *createSamplerlessWriteTests(tcu::TestContext &testCtx)
         std::make_pair(PointerCase::DESTROYED, "sampler_destroyed"),
     };
 
+    const char *pipelineCases[] = {
+        "graphics",
+        "compute",
+    };
+
     for (const auto &typeCase : descriptorTypes)
         for (const auto &pointerCase : pointerCases)
             for (uint32_t descriptorSet = 0u; descriptorSet < 2u; descriptorSet++)
-            {
-                std::string caseName = typeCase.second + "_" + pointerCase.second;
-                SamplerlessParams params{typeCase.first, pointerCase.first, descriptorSet};
-                if (descriptorSet > 0u)
-                {
-                    caseName += "_set_" + std::to_string(descriptorSet);
-                }
+                for (uint32_t layoutNdx = 0; layoutNdx < 2u; ++layoutNdx)
+                    for (uint32_t pipelineNdx = 0u; pipelineNdx < 2u; pipelineNdx++)
+                    {
+                        if ((typeCase.first == vk::VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT) && (pipelineNdx != 0))
+                            continue;
 
-                group->addChild(new SamplerlessDescriptorWriteTestCase(testCtx, caseName, params));
-            }
+                        const bool useGeneralLayout   = layoutNdx == 1;
+                        const bool useComputePipeline = pipelineNdx == 1;
+                        std::string caseName          = typeCase.second + "_" + pointerCase.second;
+                        if (useGeneralLayout)
+                            caseName += "_general_layout";
+                        SamplerlessParams params{typeCase.first, pointerCase.first, descriptorSet, useGeneralLayout,
+                                                 useComputePipeline};
+                        if (descriptorSet > 0u)
+                        {
+                            caseName += "_set_" + std::to_string(descriptorSet);
+                        }
+                        caseName += std::string("_") + pipelineCases[pipelineNdx];
+
+                        group->addChild(new SamplerlessDescriptorWriteTestCase(testCtx, caseName, params));
+                    }
 
     return group.release();
 }
@@ -760,7 +931,7 @@ tcu::TestCaseGroup *createSamplerlessWriteTests(tcu::TestContext &testCtx)
 class RandomDescriptorUpdateTestCase : public vkt::TestCase
 {
 public:
-    RandomDescriptorUpdateTestCase(tcu::TestContext &testCtx, const std::string &name);
+    RandomDescriptorUpdateTestCase(tcu::TestContext &testCtx, const std::string &name, bool useComputePipeline);
     virtual ~RandomDescriptorUpdateTestCase(void)
     {
     }
@@ -769,17 +940,21 @@ public:
     virtual vkt::TestInstance *createInstance(Context &context) const;
 
 private:
+    const bool m_useCompute;
 };
 
-class RandomDescriptorUpdateTestInstance : public vkt::TestInstance
+class RandomDescriptorUpdateTestInstance : public vkt::MultiQueueRunnerTestInstance
 {
 public:
-    RandomDescriptorUpdateTestInstance(Context &context);
+    RandomDescriptorUpdateTestInstance(Context &context, bool useComputePipeline);
     virtual ~RandomDescriptorUpdateTestInstance(void)
     {
     }
 
-    virtual tcu::TestStatus iterate(void);
+    virtual tcu::TestStatus queuePass(const QueueData &queueData) override;
+
+    vk::VkShaderStageFlags getShaderStage();
+    vk::VkImageUsageFlags getImageUsage();
 
     static const vk::VkExtent3D kFramebufferExtent;
     static const vk::VkFormat kImageFormat;
@@ -788,6 +963,7 @@ public:
     static const uint32_t kNumIterations;
 
 private:
+    const bool m_useCompute;
     deRandom m_random;
 };
 
@@ -797,8 +973,10 @@ const uint32_t RandomDescriptorUpdateTestInstance::kNumBuffers              = 3u
 const uint32_t RandomDescriptorUpdateTestInstance::kNumOffsets              = 5u;
 const uint32_t RandomDescriptorUpdateTestInstance::kNumIterations           = 1000u;
 
-RandomDescriptorUpdateTestCase::RandomDescriptorUpdateTestCase(tcu::TestContext &testCtx, const std::string &name)
+RandomDescriptorUpdateTestCase::RandomDescriptorUpdateTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                                               bool useComputePipeline)
     : vkt::TestCase(testCtx, name)
+    , m_useCompute(useComputePipeline)
 {
 }
 
@@ -825,37 +1003,74 @@ void RandomDescriptorUpdateTestCase::initPrograms(vk::SourceCollections &program
                    << "}\n";
 
     programCollection.glslSources.add("frag") << glu::FragmentSource(fragmentShader.str());
+
+    std::ostringstream computeShader;
+
+    computeShader << "#version 450\n"
+                  << "layout(set = 0, binding = 0) uniform buf\n"
+                  << "{\n"
+                  << "    vec4 data0;\n"
+                  << "    vec4 data1;\n"
+                  << "};\n"
+                  << "layout(set=0, binding=1, rgba16f) uniform image2D color_out;\n"
+                  << "layout(set=0, binding=2, rgba16f) uniform image2D color_temp;\n"
+                  << "layout(local_size_x = 1, local_size_y = 1) in;\n"
+                  << "void main()\n"
+                  << "{\n"
+                  << "    ivec2 pixelCoords = ivec2(gl_GlobalInvocationID.xy);\n"
+                  << "    vec4 srcColor = data0 + data1;\n"
+                  << "    vec4 dstColor = imageLoad(color_temp, pixelCoords);\n"
+                  << "    vec4 blendedColor;\n"
+                  << "    blendedColor.rgb = srcColor.rgb + dstColor.rgb;\n" // Additive blending for color
+                  << "    blendedColor.a = srcColor.a;\n"                    // Overwrite for a chanel
+                  << "    imageStore(color_out, pixelCoords, blendedColor);\n"
+                  << "}\n";
+
+    programCollection.glslSources.add("comp") << glu::ComputeSource(computeShader.str());
 }
 
 vkt::TestInstance *RandomDescriptorUpdateTestCase::createInstance(Context &context) const
 {
-    return new RandomDescriptorUpdateTestInstance(context);
+    return new RandomDescriptorUpdateTestInstance(context, m_useCompute);
 }
 
-RandomDescriptorUpdateTestInstance::RandomDescriptorUpdateTestInstance(Context &context) : vkt::TestInstance(context)
+RandomDescriptorUpdateTestInstance::RandomDescriptorUpdateTestInstance(Context &context, bool useComputePipeline)
+    : vkt::MultiQueueRunnerTestInstance(context, useComputePipeline ? vkt::COMPUTE_QUEUE : vkt::GRAPHICS_QUEUE)
+    , m_useCompute(useComputePipeline)
 {
     deRandom_init(&m_random, 0);
 }
 
-tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
+tcu::TestStatus RandomDescriptorUpdateTestInstance::queuePass(const QueueData &queueData)
 {
     const auto &vkd       = m_context.getDeviceInterface();
     const auto device     = m_context.getDevice();
     auto &allocator       = m_context.getDefaultAllocator();
-    const auto queue      = m_context.getUniversalQueue();
-    const auto queueIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto queue      = queueData.handle;
+    const auto queueIndex = queueData.familyIndex;
     const auto tcuFormat  = vk::mapVkFormat(kImageFormat);
-    vk::DescriptorSetLayoutBuilder builder;
 
-    builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+    vk::DescriptorSetLayoutBuilder builder;
+    builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, getShaderStage());
+    if (m_useCompute)
+    {
+        builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, getShaderStage());
+        builder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, getShaderStage());
+    }
 
     vk::Unique<vk::VkDescriptorSetLayout> layout(builder.build(vkd, device, (vk::VkDescriptorSetLayoutCreateFlags)0));
 
     // Create descriptor pool
+    vk::DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1);
+    if (m_useCompute)
+    {
+        poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1);
+        poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1);
+    }
+
     vk::Unique<vk::VkDescriptorPool> descriptorPool(
-        vk::DescriptorPoolBuilder()
-            .addType(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1)
-            .build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
+        poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
 
     // Create descriptor set
     const vk::VkDescriptorSetAllocateInfo setAllocateInfo = {
@@ -942,17 +1157,17 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 
     // Create framebuffer image and view.
     const vk::VkImageCreateInfo fbImgCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,   // VkStructureType            sType
-        nullptr,                                   // const void*                pNext
-        0u,                                        // VkImageCreateFlags        flags
-        vk::VK_IMAGE_TYPE_2D,                      // VkImageType                imageType
-        kImageFormat,                              // VkFormat                    format
-        kFramebufferExtent,                        // VkExtent3D                extent
-        1u,                                        // uint32_t                    mipLevels
-        1u,                                        // uint32_t                    arrayLayers
-        vk::VK_SAMPLE_COUNT_1_BIT,                 // VkSampleCountFlagBits    samples
-        vk::VK_IMAGE_TILING_OPTIMAL,               // VkImageTiling            tiling
-        (vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | // VkImageUsageFlags        usage
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
+        nullptr,                                 // const void*                pNext
+        0u,                                      // VkImageCreateFlags        flags
+        vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
+        kImageFormat,                            // VkFormat                    format
+        kFramebufferExtent,                      // VkExtent3D                extent
+        1u,                                      // uint32_t                    mipLevels
+        1u,                                      // uint32_t                    arrayLayers
+        vk::VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples
+        vk::VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling            tiling
+        (getImageUsage() |                       // VkImageUsageFlags        usage
          vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
         vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
         1u,                            // uint32_t                    queueFamilyIndexCount
@@ -973,117 +1188,6 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
     const vk::BufferWithMemory resultsBuffer(vkd, device, allocator, resultsBufferInfo,
                                              vk::MemoryRequirement::HostVisible);
 
-    const std::vector<tcu::Vec4> fullScreenQuad = {{-1.f, -1.f, 0.f, 1.f}, {1.f, -1.f, 0.f, 1.f}, {-1.f, 1.f, 0.f, 1.f},
-                                                   {-1.f, 1.f, 0.f, 1.f},  {1.f, -1.f, 0.f, 1.f}, {1.f, 1.f, 0.f, 1.f}};
-
-    // Vertex buffer.
-    const vk::VkDeviceSize vertexBufferSize =
-        static_cast<vk::VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
-    const auto vertexBufferInfo = vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    const vk::BufferWithMemory vertexBuffer(vkd, device, allocator, vertexBufferInfo,
-                                            vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::Coherent);
-
-    // Copy data to vertex buffer.
-    const auto &vertexAlloc  = vertexBuffer.getAllocation();
-    const auto vertexDataPtr = reinterpret_cast<char *>(vertexAlloc.getHostPtr()) + vertexAlloc.getOffset();
-    deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
-    vk::flushAlloc(vkd, device, vertexAlloc);
-
-    // Shader modules.
-    const auto vertexModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-    const auto fragModule   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
-
-    // Render pass.
-    const vk::VkAttachmentDescription fbAttachment = {
-        0u,                                           // VkAttachmentDescriptionFlags        flags
-        kImageFormat,                                 // VkFormat                            format
-        vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits            samples
-        vk::VK_ATTACHMENT_LOAD_OP_LOAD,               // VkAttachmentLoadOp                loadOp
-        vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp                storeOp
-        vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp                stencilLoadOp
-        vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp                stencilStoreOp
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                    initialLayout
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // VkImageLayout                    finalLayout
-    };
-
-    std::vector<vk::VkAttachmentDescription> attachmentDescs;
-    attachmentDescs.push_back(fbAttachment);
-
-    const vk::VkAttachmentReference colorRef = {
-        0u,                                           // uint32_t            attachment
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout    layout
-    };
-    const std::vector<vk::VkAttachmentReference> colorAttachments(1u, colorRef);
-
-    const vk::VkSubpassDescription subpass = {
-        0u,                                             // VkSubpassDescriptionFlags        flags
-        vk::VK_PIPELINE_BIND_POINT_GRAPHICS,            // VkPipelineBindPoint                pipelineBindPoint
-        0u,                                             // uint32_t                            inputAttachmentCount
-        nullptr,                                        // const VkAttachmentReference*        pInputAttachments
-        static_cast<uint32_t>(colorAttachments.size()), // uint32_t                            colorAttachmentCount
-        colorAttachments.data(),                        // const VkAttachmentReference*        pColorAttachments
-        0u,                                             // const VkAttachmentReference*        pResolveAttachments
-        nullptr,                                        // const VkAttachmentReference*        pDepthStencilAttachment
-        0u,                                             // uint32_t                            preserveAttachmentCount
-        nullptr                                         // const uint32_t*                    pPreserveAttachments
-    };
-    const std::vector<vk::VkSubpassDescription> subpasses(1u, subpass);
-
-    const vk::VkRenderPassCreateInfo renderPassInfo = {
-        vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
-        nullptr,                                       // const void*                        pNext
-        0u,                                            // VkRenderPassCreateFlags            flags
-        static_cast<uint32_t>(attachmentDescs.size()), // uint32_t                            attachmentCount
-        attachmentDescs.data(),                        // const VkAttachmentDescription*    pAttachments
-        static_cast<uint32_t>(subpasses.size()),       // uint32_t                            subpassCount
-        subpasses.data(),                              // const VkSubpassDescription*        pSubpasses
-        0u,                                            // uint32_t                            dependencyCount
-        nullptr,                                       // const VkSubpassDependency*        pDependencies
-    };
-    const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
-
-    // Framebuffer.
-    std::vector<vk::VkImageView> attachments;
-    attachments.push_back(fbView.get());
-    const auto framebuffer = vk::makeFramebuffer(
-        vkd, device, renderPass.get(), static_cast<uint32_t>(attachments.size()), attachments.data(),
-        kFramebufferExtent.width, kFramebufferExtent.height, kFramebufferExtent.depth);
-
-    // Pipeline layout.
-    const auto pipelineLayout = vk::makePipelineLayout(vkd, device, layout.get());
-
-    // Graphics pipeline.
-    const std::vector<vk::VkViewport> viewports(1u, vk::makeViewport(kFramebufferExtent));
-    const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(kFramebufferExtent));
-
-    // Use additive alpha blending to accumulate results from all iterations.
-    const vk::VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
-        VK_TRUE,                     // VkBool32                    blendEnable
-        vk::VK_BLEND_FACTOR_ONE,     // VkBlendFactor            srcColorBlendFactor
-        vk::VK_BLEND_FACTOR_ONE,     // VkBlendFactor            dstColorBlendFactor
-        vk::VK_BLEND_OP_ADD,         // VkBlendOp                colorBlendOp
-        vk::VK_BLEND_FACTOR_ONE,     // VkBlendFactor            srcAlphaBlendFactor
-        vk::VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            dstAlphaBlendFactor
-        vk::VK_BLEND_OP_ADD,         // VkBlendOp                alphaBlendOp
-        vk::VK_COLOR_COMPONENT_R_BIT // VkColorComponentFlags    colorWriteMask
-            | vk::VK_COLOR_COMPONENT_G_BIT | vk::VK_COLOR_COMPONENT_B_BIT | vk::VK_COLOR_COMPONENT_A_BIT};
-
-    const vk::VkPipelineColorBlendStateCreateInfo colorBlendState = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
-        nullptr,                    // const void*                                    pNext
-        0u,                         // VkPipelineColorBlendStateCreateFlags            flags
-        VK_FALSE,                   // VkBool32                                        logicOpEnable
-        vk::VK_LOGIC_OP_CLEAR,      // VkLogicOp                                    logicOp
-        1u,                         // uint32_t                                        attachmentCount
-        &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState*    pAttachments
-        {1.0f, 1.0f, 1.0f, 1.0f}    // float                                        blendConstants[4]
-    };
-
-    const auto pipeline = vk::makeGraphicsPipeline(
-        vkd, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        fragModule.get(), renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
-        nullptr, nullptr, nullptr, nullptr, &colorBlendState);
-
     // Command pool and command buffer.
     const auto cmdPool =
         vk::createCommandPool(vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
@@ -1091,209 +1195,657 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
         vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     const auto cmdBuffer = cmdBufferPtr.get();
 
-    const vk::VkRect2D renderArea             = vk::makeRect2D(kFramebufferExtent);
-    const vk::VkDeviceSize vertexBufferOffset = 0ull;
+    tcu::Vec4 expColor;
 
-    const auto vtxBufferBarrier =
-        vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-                                    vertexBuffer.get(), 0ull, vertexBufferSize);
-    const auto fbBarrier =
-        vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
-                                   vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, fbImage.get(), colorSubresourceRange);
-
-    vk::VkClearValue clearValue;
-    clearValue.color.float32[0] = 0.0f;
-    clearValue.color.float32[1] = 0.0f;
-    clearValue.color.float32[2] = 0.0f;
-    clearValue.color.float32[3] = 1.0f;
-
-    const vk::VkClearAttachment clearAttachment = {
-        vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
-        0u,                            // uint32_t                colorAttachment
-        clearValue                     // VkClearValue            clearValue
-    };
-
-    const vk::VkClearRect clearRect = {
-        vk::makeRect2D(kFramebufferExtent), // VkRect2D    rect
-        0u,                                 // uint32_t    baseArrayLayer
-        1u                                  // uint32_t    layerCount
-    };
-
-    vk::beginCommandBuffer(vkd, cmdBuffer);
-    vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u, 0u,
-                           nullptr, 1u, &vtxBufferBarrier, 0u, nullptr);
-    vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                           vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
-                           &fbBarrier);
-    vk::endCommandBuffer(vkd, cmdBuffer);
-    vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
-    m_context.resetCommandPoolForVKSC(device, *cmdPool);
-
-    struct DescriptorWrite
+    if (!m_useCompute)
     {
-        uint32_t bufferId;       // Which buffer to use for the descriptor update.
-        vk::VkDeviceSize offset; // The offset for the descriptor update.
-        vk::VkDeviceSize range;  // The range for the descriptor update.
-    };
+        const std::vector<tcu::Vec4> fullScreenQuad = {{-1.f, -1.f, 0.f, 1.f}, {1.f, -1.f, 0.f, 1.f},
+                                                       {-1.f, 1.f, 0.f, 1.f},  {-1.f, 1.f, 0.f, 1.f},
+                                                       {1.f, -1.f, 0.f, 1.f},  {1.f, 1.f, 0.f, 1.f}};
 
-    // Each iteration operates on a descriptor mutation which decides the source of the descriptor update.
-    struct DescriptorMutation
-    {
-        bool update;                         // Determines if a descriptor update is performed.
-        uint32_t numDraws;                   // The number of consecutive draw calls in a loop.
-        std::vector<DescriptorWrite> writes; // Multiple redundant writes can be performed.
-        // Other ideas to implement:
-        // - Sometimes also update the buffer contents.
-        // - Multiple descriptor sets.
-    };
+        // Vertex buffer.
+        const vk::VkDeviceSize vertexBufferSize =
+            static_cast<vk::VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
+        const auto vertexBufferInfo = vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        const vk::BufferWithMemory vertexBuffer(vkd, device, allocator, vertexBufferInfo,
+                                                vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::Coherent);
 
-    std::vector<DescriptorMutation> descriptorMutations;
+        // Copy data to vertex buffer.
+        const auto &vertexAlloc  = vertexBuffer.getAllocation();
+        const auto vertexDataPtr = reinterpret_cast<char *>(vertexAlloc.getHostPtr()) + vertexAlloc.getOffset();
+        deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
+        vk::flushAlloc(vkd, device, vertexAlloc);
 
-    // Keep track of the expected result while generating the mutations.
-    tcu::Vec4 uboValue0;
-    tcu::Vec4 uboValue1;
-    tcu::Vec4 expectedColor(0.0f, 0.0f, 0.0f, 1.0f);
-    DescriptorWrite descWrite = {0u, 0u, 32u};
+        // Shader modules.
+        const auto vertexModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+        const auto fragModule   = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
-    for (uint32_t i = 0; i < kNumIterations; i++)
-    {
-        while (true)
+        // Render pass.
+        const vk::VkAttachmentDescription fbAttachment = {
+            0u,                                           // VkAttachmentDescriptionFlags        flags
+            kImageFormat,                                 // VkFormat                            format
+            vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits            samples
+            vk::VK_ATTACHMENT_LOAD_OP_LOAD,               // VkAttachmentLoadOp                loadOp
+            vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp                storeOp
+            vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp                stencilLoadOp
+            vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp                stencilStoreOp
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout                    initialLayout
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL  // VkImageLayout                    finalLayout
+        };
+
+        std::vector<vk::VkAttachmentDescription> attachmentDescs;
+        attachmentDescs.push_back(fbAttachment);
+
+        const vk::VkAttachmentReference colorRef = {
+            0u,                                           // uint32_t            attachment
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout    layout
+        };
+        const std::vector<vk::VkAttachmentReference> colorAttachments(1u, colorRef);
+
+        const vk::VkSubpassDescription subpass = {
+            0u,                                             // VkSubpassDescriptionFlags        flags
+            vk::VK_PIPELINE_BIND_POINT_GRAPHICS,            // VkPipelineBindPoint                pipelineBindPoint
+            0u,                                             // uint32_t                            inputAttachmentCount
+            nullptr,                                        // const VkAttachmentReference*        pInputAttachments
+            static_cast<uint32_t>(colorAttachments.size()), // uint32_t                            colorAttachmentCount
+            colorAttachments.data(),                        // const VkAttachmentReference*        pColorAttachments
+            0u,                                             // const VkAttachmentReference*        pResolveAttachments
+            nullptr, // const VkAttachmentReference*        pDepthStencilAttachment
+            0u,      // uint32_t                            preserveAttachmentCount
+            nullptr  // const uint32_t*                    pPreserveAttachments
+        };
+        const std::vector<vk::VkSubpassDescription> subpasses(1u, subpass);
+
+        const vk::VkRenderPassCreateInfo renderPassInfo = {
+            vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                    sType
+            nullptr,                                       // const void*                        pNext
+            0u,                                            // VkRenderPassCreateFlags            flags
+            static_cast<uint32_t>(attachmentDescs.size()), // uint32_t                            attachmentCount
+            attachmentDescs.data(),                        // const VkAttachmentDescription*    pAttachments
+            static_cast<uint32_t>(subpasses.size()),       // uint32_t                            subpassCount
+            subpasses.data(),                              // const VkSubpassDescription*        pSubpasses
+            0u,                                            // uint32_t                            dependencyCount
+            nullptr,                                       // const VkSubpassDependency*        pDependencies
+        };
+        const auto renderPass = vk::createRenderPass(vkd, device, &renderPassInfo);
+
+        // Framebuffer.
+        std::vector<vk::VkImageView> attachments;
+        attachments.push_back(fbView.get());
+        const auto framebuffer = vk::makeFramebuffer(
+            vkd, device, renderPass.get(), static_cast<uint32_t>(attachments.size()), attachments.data(),
+            kFramebufferExtent.width, kFramebufferExtent.height, kFramebufferExtent.depth);
+
+        // Pipeline layout.
+        const auto pipelineLayout = vk::makePipelineLayout(vkd, device, layout.get());
+
+        // Graphics pipeline.
+        const std::vector<vk::VkViewport> viewports(1u, vk::makeViewport(kFramebufferExtent));
+        const std::vector<vk::VkRect2D> scissors(1u, vk::makeRect2D(kFramebufferExtent));
+
+        // Use additive alpha blending to accumulate results from all iterations.
+        const vk::VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+            VK_TRUE,                     // VkBool32                    blendEnable
+            vk::VK_BLEND_FACTOR_ONE,     // VkBlendFactor            srcColorBlendFactor
+            vk::VK_BLEND_FACTOR_ONE,     // VkBlendFactor            dstColorBlendFactor
+            vk::VK_BLEND_OP_ADD,         // VkBlendOp                colorBlendOp
+            vk::VK_BLEND_FACTOR_ONE,     // VkBlendFactor            srcAlphaBlendFactor
+            vk::VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            dstAlphaBlendFactor
+            vk::VK_BLEND_OP_ADD,         // VkBlendOp                alphaBlendOp
+            vk::VK_COLOR_COMPONENT_R_BIT // VkColorComponentFlags    colorWriteMask
+                | vk::VK_COLOR_COMPONENT_G_BIT | vk::VK_COLOR_COMPONENT_B_BIT | vk::VK_COLOR_COMPONENT_A_BIT};
+
+        const vk::VkPipelineColorBlendStateCreateInfo colorBlendState = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                                sType
+            nullptr,                    // const void*                                    pNext
+            0u,                         // VkPipelineColorBlendStateCreateFlags            flags
+            VK_FALSE,                   // VkBool32                                        logicOpEnable
+            vk::VK_LOGIC_OP_CLEAR,      // VkLogicOp                                    logicOp
+            1u,                         // uint32_t                                        attachmentCount
+            &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState*    pAttachments
+            {1.0f, 1.0f, 1.0f, 1.0f}    // float                                        blendConstants[4]
+        };
+
+        const auto pipeline = vk::makeGraphicsPipeline(
+            vkd, device, pipelineLayout.get(), vertexModule.get(), VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+            fragModule.get(), renderPass.get(), viewports, scissors, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, 0u,
+            nullptr, nullptr, nullptr, nullptr, &colorBlendState);
+
+        const vk::VkRect2D renderArea             = vk::makeRect2D(kFramebufferExtent);
+        const vk::VkDeviceSize vertexBufferOffset = 0ull;
+
+        const auto vtxBufferBarrier =
+            vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                                        vertexBuffer.get(), 0ull, vertexBufferSize);
+        const auto fbBarrier = vk::makeImageMemoryBarrier(
+            0u, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, fbImage.get(), colorSubresourceRange);
+
+        vk::VkClearValue clearValue;
+        clearValue.color.float32[0] = 0.0f;
+        clearValue.color.float32[1] = 0.0f;
+        clearValue.color.float32[2] = 0.0f;
+        clearValue.color.float32[3] = 1.0f;
+
+        const vk::VkClearAttachment clearAttachment = {
+            vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
+            0u,                            // uint32_t                colorAttachment
+            clearValue                     // VkClearValue            clearValue
+        };
+
+        const vk::VkClearRect clearRect = {
+            vk::makeRect2D(kFramebufferExtent), // VkRect2D    rect
+            0u,                                 // uint32_t    baseArrayLayer
+            1u                                  // uint32_t    layerCount
+        };
+
+        vk::beginCommandBuffer(vkd, cmdBuffer);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u,
+                               0u, nullptr, 1u, &vtxBufferBarrier, 0u, nullptr);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                               vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                               &fbBarrier);
+        vk::endCommandBuffer(vkd, cmdBuffer);
+        vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+        m_context.resetCommandPoolForVKSC(device, *cmdPool);
+
+        struct DescriptorWrite
         {
-            tcu::Vec4 val0 = uboValue0;
-            tcu::Vec4 val1 = uboValue1;
+            uint32_t bufferId;       // Which buffer to use for the descriptor update.
+            vk::VkDeviceSize offset; // The offset for the descriptor update.
+            vk::VkDeviceSize range;  // The range for the descriptor update.
+        };
 
-            uint32_t numWrites = 1u;
+        // Each iteration operates on a descriptor mutation which decides the source of the descriptor update.
+        struct DescriptorMutation
+        {
+            bool update;                         // Determines if a descriptor update is performed.
+            uint32_t numDraws;                   // The number of consecutive draw calls in a loop.
+            std::vector<DescriptorWrite> writes; // Multiple redundant writes can be performed.
+            // Other ideas to implement:
+            // - Sometimes also update the buffer contents.
+            // - Multiple descriptor sets.
+        };
 
-            // Sometimes do redundant descriptor writes.
-            if (deRandom_getUint32(&m_random) % 10 == 0)
-                numWrites = deRandom_getUint32(&m_random) % 20 + 1;
+        std::vector<DescriptorMutation> descriptorMutations;
 
-            std::vector<DescriptorWrite> writes;
+        // Keep track of the expected result while generating the mutations.
+        tcu::Vec4 uboValue0;
+        tcu::Vec4 uboValue1;
+        tcu::Vec4 expectedColor(0.0f, 0.0f, 0.0f, 1.0f);
+        DescriptorWrite descWrite = {0u, 0u, 32u};
 
-            for (uint32_t w = 0; w < numWrites; w++)
+        for (uint32_t i = 0; i < kNumIterations; i++)
+        {
+            while (true)
             {
-                // The first half: Most of the times change the offset but sometimes the buffer.
-                // The second half: Most of the times change the buffer but sometimes change the offset.
-                bool firstHalf = i < kNumIterations / 2;
-                bool rare      = (deRandom_getUint32(&m_random) % 100u >= (firstHalf ? 98u : 80u));
+                tcu::Vec4 val0 = uboValue0;
+                tcu::Vec4 val1 = uboValue1;
 
-                // firstHalf     rare      change
-                // --------------------------------
-                //     1          0        Offset
-                //     1          1        Buffer
-                //     0          0        Buffer
-                //     0          1        Offset
-                //
-                // This has a XOR pattern
+                uint32_t numWrites = 1u;
 
-                if (firstHalf ^ rare)
-                    descWrite.offset = (deRandom_getUint32(&m_random) % kNumOffsets) * 256u;
+                // Sometimes do redundant descriptor writes.
+                if (deRandom_getUint32(&m_random) % 10 == 0)
+                    numWrites = deRandom_getUint32(&m_random) % 20 + 1;
+
+                std::vector<DescriptorWrite> writes;
+
+                for (uint32_t w = 0; w < numWrites; w++)
+                {
+                    // The first half: Most of the times change the offset but sometimes the buffer.
+                    // The second half: Most of the times change the buffer but sometimes change the offset.
+                    bool firstHalf = i < kNumIterations / 2;
+                    bool rare      = (deRandom_getUint32(&m_random) % 100u >= (firstHalf ? 98u : 80u));
+
+                    // firstHalf     rare      change
+                    // --------------------------------
+                    //     1          0        Offset
+                    //     1          1        Buffer
+                    //     0          0        Buffer
+                    //     0          1        Offset
+                    //
+                    // This has a XOR pattern
+
+                    if (firstHalf ^ rare)
+                        descWrite.offset = (deRandom_getUint32(&m_random) % kNumOffsets) * 256u;
+                    else
+                        descWrite.bufferId = deRandom_getUint32(&m_random) % kNumBuffers;
+
+                    writes.push_back(descWrite);
+                }
+
+                DescriptorMutation mutation = {i == 0 ? true : deRandom_getBool(&m_random),
+                                               deRandom_getUint32(&m_random) % 10u, writes};
+
+                const auto &lastWrite = mutation.writes.back();
+                if (mutation.update)
+                {
+                    for (int c = 0; c < 3; c++)
+                    {
+                        val0[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + c];
+                        val1[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + 4 + c];
+
+                        // Quick check we are reading expected values.
+                        DE_ASSERT(val0[c] >= -counter && val0[c] <= counter);
+                        DE_ASSERT(val1[c] >= -counter && val1[c] <= counter);
+                    }
+                }
+
+                tcu::Vec4 color = expectedColor + (val0 + val1) * tcu::Vec4(static_cast<float>(mutation.numDraws));
+
+                // 16-bit float can precisely present integers from -2048..2048. Continue randomizing the mutation
+                // until we stay in this range.
+                if (color[0] >= -2048.0f && color[0] <= 2048.0f && color[1] >= -2048.0f && color[1] <= 2048.0f &&
+                    color[2] >= -2048.0f && color[2] <= 2048.0f)
+                {
+                    descriptorMutations.push_back(mutation);
+                    uboValue0     = val0;
+                    uboValue1     = val1;
+                    expectedColor = color;
+                    break;
+                }
                 else
+                {
+                    // Randomize both buffer and offset for a better chance to hit a
+                    // mutation that pushes the values back to the desired range.
+                    descWrite.offset   = (deRandom_getUint32(&m_random) % kNumOffsets) * 256u;
                     descWrite.bufferId = deRandom_getUint32(&m_random) % kNumBuffers;
-
-                writes.push_back(descWrite);
+                }
             }
+        }
 
-            DescriptorMutation mutation = {i == 0 ? true : deRandom_getBool(&m_random),
-                                           deRandom_getUint32(&m_random) % 10u, writes};
+        expColor   = expectedColor;
+        bool first = true;
 
-            const auto &lastWrite = mutation.writes.back();
+        for (auto mutation : descriptorMutations)
+        {
             if (mutation.update)
             {
-                for (int c = 0; c < 3; c++)
+                for (const auto &write : mutation.writes)
                 {
-                    val0[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + c];
-                    val1[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + 4 + c];
+                    const vk::VkDescriptorBufferInfo descriptorInfo = {
+                        buffers[write.bufferId]->get(), // VkBuffer        buffer
+                        write.offset,                   // VkDeviceSize    offset
+                        write.range                     // VkDeviceSize    range
+                    };
 
-                    // Quick check we are reading expected values.
-                    DE_ASSERT(val0[c] >= -counter && val0[c] <= counter);
-                    DE_ASSERT(val1[c] >= -counter && val1[c] <= counter);
+                    const vk::VkWriteDescriptorSet descriptorWrite = {
+                        vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureTypes                    Type
+                        nullptr,                                    // const void*                        pNext
+                        *descriptorSet,                             // VkDescriptorSet                    dstSet
+                        0,                                          // uint32_t                            dstBinding
+                        0,                                     // uint32_t                            dstArrayElement
+                        1u,                                    // uint32_t                            descriptorCount
+                        vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType                    descriptorType
+                        nullptr,                               // const VkDescriptorImageInfo*        pImageInfo
+                        &descriptorInfo,                       // const VkDescriptorBufferInfo*    pBufferInfo
+                        nullptr                                // const VkBufferView*                pTexelBufferView
+                    };
+
+                    vkd.updateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
                 }
             }
 
-            tcu::Vec4 color = expectedColor + (val0 + val1) * tcu::Vec4(static_cast<float>(mutation.numDraws));
+            vk::beginCommandBuffer(vkd, cmdBuffer);
 
-            // 16-bit float can precisely present integers from -2048..2048. Continue randomizing the mutation
-            // until we stay in this range.
-            if (color[0] >= -2048.0f && color[0] <= 2048.0f && color[1] >= -2048.0f && color[1] <= 2048.0f &&
-                color[2] >= -2048.0f && color[2] <= 2048.0f)
+            vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea);
+            vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+            // Clear the frame buffer during the first iteration.
+            if (first)
             {
-                descriptorMutations.push_back(mutation);
-                uboValue0     = val0;
-                uboValue1     = val1;
-                expectedColor = color;
-                break;
+                vkd.cmdClearAttachments(cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
+                first = false;
             }
-            else
-            {
-                // Randomize both buffer and offset for a better chance to hit a
-                // mutation that pushes the values back to the desired range.
-                descWrite.offset   = (deRandom_getUint32(&m_random) % kNumOffsets) * 256u;
-                descWrite.bufferId = deRandom_getUint32(&m_random) % kNumBuffers;
-            }
-        }
-    }
+            vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
+                                      &descriptorSet.get(), 0u, nullptr);
+            vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
 
-    bool first = true;
+            for (uint32_t i = 0u; i < mutation.numDraws; i++)
+                vkd.cmdDraw(cmdBuffer, static_cast<uint32_t>(fullScreenQuad.size()), 1u, 0u, 0u);
 
-    for (auto mutation : descriptorMutations)
-    {
-        if (mutation.update)
-        {
-            for (const auto &write : mutation.writes)
-            {
-                const vk::VkDescriptorBufferInfo descriptorInfo = {
-                    buffers[write.bufferId]->get(), // VkBuffer        buffer
-                    write.offset,                   // VkDeviceSize    offset
-                    write.range                     // VkDeviceSize    range
-                };
-
-                const vk::VkWriteDescriptorSet descriptorWrite = {
-                    vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureTypes                    Type
-                    nullptr,                                    // const void*                        pNext
-                    *descriptorSet,                             // VkDescriptorSet                    dstSet
-                    0,                                          // uint32_t                            dstBinding
-                    0,                                          // uint32_t                            dstArrayElement
-                    1u,                                         // uint32_t                            descriptorCount
-                    vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER,      // VkDescriptorType                    descriptorType
-                    nullptr,                                    // const VkDescriptorImageInfo*        pImageInfo
-                    &descriptorInfo,                            // const VkDescriptorBufferInfo*    pBufferInfo
-                    nullptr                                     // const VkBufferView*                pTexelBufferView
-                };
-
-                vkd.updateDescriptorSets(device, 1, &descriptorWrite, 0, nullptr);
-            }
+            vk::endRenderPass(vkd, cmdBuffer);
+            vk::endCommandBuffer(vkd, cmdBuffer);
+            vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+            m_context.resetCommandPoolForVKSC(device, *cmdPool);
         }
 
         vk::beginCommandBuffer(vkd, cmdBuffer);
-
-        vk::beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), renderArea);
-        vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
-        // Clear the frame buffer during the first iteration.
-        if (first)
-        {
-            vkd.cmdClearAttachments(cmdBuffer, 1u, &clearAttachment, 1u, &clearRect);
-            first = false;
-        }
-        vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
-                                  &descriptorSet.get(), 0u, nullptr);
-        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-
-        for (uint32_t i = 0u; i < mutation.numDraws; i++)
-            vkd.cmdDraw(cmdBuffer, static_cast<uint32_t>(fullScreenQuad.size()), 1u, 0u, 0u);
-
-        vk::endRenderPass(vkd, cmdBuffer);
+        const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width),
+                                  static_cast<int>(kFramebufferExtent.height)};
+        vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
         vk::endCommandBuffer(vkd, cmdBuffer);
         vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
         m_context.resetCommandPoolForVKSC(device, *cmdPool);
     }
+    else // Use compute pipeline
+    {
+        // Create temporayr image and view for blending emulation.
+        const vk::VkImageCreateInfo tempImgCreateInfo = {
+            vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
+            nullptr,                                 // const void*                pNext
+            0u,                                      // VkImageCreateFlags        flags
+            vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
+            kImageFormat,                            // VkFormat                    format
+            kFramebufferExtent,                      // VkExtent3D                extent
+            1u,                                      // uint32_t                    mipLevels
+            1u,                                      // uint32_t                    arrayLayers
+            vk::VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples
+            vk::VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling            tiling
+            (vk::VK_IMAGE_USAGE_STORAGE_BIT |        // VkImageUsageFlags        usage
+             vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT),
+            vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
+            1u,                            // uint32_t                    queueFamilyIndexCount
+            &queueIndex,                   // const uint32_t*            pQueueFamilyIndices
+            vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
+        };
 
-    vk::beginCommandBuffer(vkd, cmdBuffer);
-    const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width), static_cast<int>(kFramebufferExtent.height)};
-    vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
-    vk::endCommandBuffer(vkd, cmdBuffer);
-    vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
-    m_context.resetCommandPoolForVKSC(device, *cmdPool);
+        const vk::ImageWithMemory tempImage(vkd, device, allocator, tempImgCreateInfo, vk::MemoryRequirement::Any);
+        const auto tempView = vk::makeImageView(vkd, device, tempImage.get(), vk::VK_IMAGE_VIEW_TYPE_2D, kImageFormat,
+                                                colorSubresourceRange);
+
+        // Shader modules.
+        const auto computeModule = vk::createShaderModule(vkd, device, m_context.getBinaryCollection().get("comp"), 0u);
+
+        // Pipeline layout.
+        const auto pipelineLayout = vk::makePipelineLayout(vkd, device, layout.get());
+
+        // Pipeline.
+        const auto pipeline = vk::makeComputePipeline(vkd, device, pipelineLayout.get(), computeModule.get());
+
+        const auto fbClrBarrier =
+            vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+                                       vk::VK_IMAGE_LAYOUT_GENERAL, fbImage.get(), colorSubresourceRange);
+
+        const auto tempClrBarrier =
+            vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+                                       vk::VK_IMAGE_LAYOUT_GENERAL, tempImage.get(), colorSubresourceRange);
+
+        vk::VkClearValue clearValue;
+        clearValue.color.float32[0] = 0.0f;
+        clearValue.color.float32[1] = 0.0f;
+        clearValue.color.float32[2] = 0.0f;
+        clearValue.color.float32[3] = 1.0f;
+
+        vk::beginCommandBuffer(vkd, cmdBuffer);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                               0u, nullptr, 0u, nullptr, 1u, &fbClrBarrier);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                               0u, nullptr, 0u, nullptr, 1u, &tempClrBarrier);
+        vk::endCommandBuffer(vkd, cmdBuffer);
+        vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+        m_context.resetCommandPoolForVKSC(device, *cmdPool);
+
+        struct DescriptorWrite
+        {
+            uint32_t bufferId;       // Which buffer to use for the descriptor update.
+            vk::VkDeviceSize offset; // The offset for the descriptor update.
+            vk::VkDeviceSize range;  // The range for the descriptor update.
+        };
+
+        // Each iteration operates on a descriptor mutation which decides the source of the descriptor update.
+        struct DescriptorMutation
+        {
+            bool update;                         // Determines if a descriptor update is performed.
+            uint32_t numDraws;                   // The number of consecutive draw calls in a loop.
+            std::vector<DescriptorWrite> writes; // Multiple redundant writes can be performed.
+            // Other ideas to implement:
+            // - Sometimes also update the buffer contents.
+            // - Multiple descriptor sets.
+        };
+
+        std::vector<DescriptorMutation> descriptorMutations;
+
+        // Keep track of the expected result while generating the mutations.
+        tcu::Vec4 uboValue0;
+        tcu::Vec4 uboValue1;
+        tcu::Vec4 expectedColor(0.0f, 0.0f, 0.0f, 1.0f);
+        DescriptorWrite descWrite = {0u, 0u, 32u};
+
+        for (uint32_t i = 0; i < kNumIterations; i++)
+        {
+            while (true)
+            {
+                tcu::Vec4 val0 = uboValue0;
+                tcu::Vec4 val1 = uboValue1;
+
+                uint32_t numWrites = 1u;
+
+                // Sometimes do redundant descriptor writes.
+                if (deRandom_getUint32(&m_random) % 10 == 0)
+                    numWrites = deRandom_getUint32(&m_random) % 20 + 1;
+
+                std::vector<DescriptorWrite> writes;
+
+                for (uint32_t w = 0; w < numWrites; w++)
+                {
+                    // The first half: Most of the times change the offset but sometimes the buffer.
+                    // The second half: Most of the times change the buffer but sometimes change the offset.
+                    bool firstHalf = i < kNumIterations / 2;
+                    bool rare      = (deRandom_getUint32(&m_random) % 100u >= (firstHalf ? 98u : 80u));
+
+                    // firstHalf     rare      change
+                    // --------------------------------
+                    //     1          0        Offset
+                    //     1          1        Buffer
+                    //     0          0        Buffer
+                    //     0          1        Offset
+                    //
+                    // This has a XOR pattern
+
+                    if (firstHalf ^ rare)
+                        descWrite.offset = (deRandom_getUint32(&m_random) % kNumOffsets) * 256u;
+                    else
+                        descWrite.bufferId = deRandom_getUint32(&m_random) % kNumBuffers;
+
+                    writes.push_back(descWrite);
+                }
+
+                DescriptorMutation mutation = {i == 0 ? true : deRandom_getBool(&m_random),
+                                               deRandom_getUint32(&m_random) % 10u, writes};
+
+                const auto &lastWrite = mutation.writes.back();
+                if (mutation.update)
+                {
+                    for (int c = 0; c < 3; c++)
+                    {
+                        val0[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + c];
+                        val1[c] = bufferContents[lastWrite.bufferId][lastWrite.offset / 4 + 4 + c];
+
+                        // Quick check we are reading expected values.
+                        DE_ASSERT(val0[c] >= -counter && val0[c] <= counter);
+                        DE_ASSERT(val1[c] >= -counter && val1[c] <= counter);
+                    }
+                }
+
+                tcu::Vec4 color = expectedColor + (val0 + val1) * tcu::Vec4(static_cast<float>(mutation.numDraws));
+
+                // 16-bit float can precisely present integers from -2048..2048. Continue randomizing the mutation
+                // until we stay in this range.
+                if (color[0] >= -2048.0f && color[0] <= 2048.0f && color[1] >= -2048.0f && color[1] <= 2048.0f &&
+                    color[2] >= -2048.0f && color[2] <= 2048.0f)
+                {
+                    descriptorMutations.push_back(mutation);
+                    uboValue0     = val0;
+                    uboValue1     = val1;
+                    expectedColor = color;
+                    break;
+                }
+                else
+                {
+                    // Randomize both buffer and offset for a better chance to hit a
+                    // mutation that pushes the values back to the desired range.
+                    descWrite.offset   = (deRandom_getUint32(&m_random) % kNumOffsets) * 256u;
+                    descWrite.bufferId = deRandom_getUint32(&m_random) % kNumBuffers;
+                }
+            }
+        }
+
+        expColor   = expectedColor;
+        bool first = true;
+
+        for (auto mutation : descriptorMutations)
+        {
+            if (mutation.update)
+            {
+                for (const auto &write : mutation.writes)
+                {
+                    const vk::VkDescriptorBufferInfo bufferDescriptorInfo = {
+                        buffers[write.bufferId]->get(), // VkBuffer        buffer
+                        write.offset,                   // VkDeviceSize    offset
+                        write.range                     // VkDeviceSize    range
+                    };
+
+                    const vk::VkDescriptorImageInfo mainImageDescriptorInfo = {
+                        VK_NULL_HANDLE,              // VkSampler        sampler
+                        fbView.get(),                // VkImageView      imageView
+                        vk::VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout    imageLayout
+                    };
+
+                    const vk::VkDescriptorImageInfo tempImageDescriptorInfo = {
+                        VK_NULL_HANDLE,              // VkSampler        sampler
+                        tempView.get(),              // VkImageView      imageView
+                        vk::VK_IMAGE_LAYOUT_GENERAL, // VkImageLayout    imageLayout
+                    };
+
+                    const vk::VkWriteDescriptorSet descriptorWrites[] = {
+                        {
+                            vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureTypes                    Type
+                            nullptr,                                    // const void*                        pNext
+                            *descriptorSet,                             // VkDescriptorSet                    dstSet
+                            0,  // uint32_t                            dstBinding
+                            0,  // uint32_t                            dstArrayElement
+                            1u, // uint32_t                            descriptorCount
+                            vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType                    descriptorType
+                            nullptr,                               // const VkDescriptorImageInfo*        pImageInfo
+                            &bufferDescriptorInfo,                 // const VkDescriptorBufferInfo*    pBufferInfo
+                            nullptr // const VkBufferView*                pTexelBufferView
+                        },
+                        {
+                            vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureTypes                    Type
+                            nullptr,                                    // const void*                        pNext
+                            *descriptorSet,                             // VkDescriptorSet                    dstSet
+                            1,                                    // uint32_t                            dstBinding
+                            0,                                    // uint32_t                            dstArrayElement
+                            1u,                                   // uint32_t                            descriptorCount
+                            vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // VkDescriptorType                    descriptorType
+                            &mainImageDescriptorInfo,             // const VkDescriptorImageInfo*        pImageInfo
+                            nullptr,                              // const VkDescriptorBufferInfo*    pBufferInfo
+                            nullptr // const VkBufferView*                pTexelBufferView}
+                        },
+                        {
+                            vk::VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET, // VkStructureTypes                    Type
+                            nullptr,                                    // const void*                        pNext
+                            *descriptorSet,                             // VkDescriptorSet                    dstSet
+                            2,                                    // uint32_t                            dstBinding
+                            0,                                    // uint32_t                            dstArrayElement
+                            1u,                                   // uint32_t                            descriptorCount
+                            vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, // VkDescriptorType                    descriptorType
+                            &tempImageDescriptorInfo,             // const VkDescriptorImageInfo*        pImageInfo
+                            nullptr,                              // const VkDescriptorBufferInfo*    pBufferInfo
+                            nullptr // const VkBufferView*                pTexelBufferView}
+                        }};
+
+                    vkd.updateDescriptorSets(device, 3, descriptorWrites, 0, nullptr);
+                }
+            }
+
+            vk::beginCommandBuffer(vkd, cmdBuffer);
+
+            vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.get());
+            // Clear the frame buffer during the first iteration.
+            if (first)
+            {
+                vkd.cmdClearColorImage(cmdBuffer, fbImage.get(), vk::VK_IMAGE_LAYOUT_GENERAL, &clearValue.color, 1,
+                                       &colorSubresourceRange);
+                vkd.cmdClearColorImage(cmdBuffer, tempImage.get(), vk::VK_IMAGE_LAYOUT_GENERAL, &clearValue.color, 1,
+                                       &colorSubresourceRange);
+                first = false;
+            }
+            vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u,
+                                      &descriptorSet.get(), 0u, nullptr);
+
+            const auto fbPostClrBarrier = vk::makeImageMemoryBarrier(
+                vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
+                vk::VK_IMAGE_LAYOUT_GENERAL, fbImage.get(), colorSubresourceRange);
+
+            const auto tempPostClrBarrier = vk::makeImageMemoryBarrier(
+                vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
+                vk::VK_IMAGE_LAYOUT_GENERAL, tempImage.get(), colorSubresourceRange);
+
+            vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                   &fbPostClrBarrier);
+            vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                   &tempPostClrBarrier);
+
+            for (uint32_t i = 0u; i < mutation.numDraws; i++)
+            {
+
+                vkd.cmdDispatch(cmdBuffer, kFramebufferExtent.width, kFramebufferExtent.height, 1u);
+
+                const auto fbPostDispatchBarrier = vk::makeImageMemoryBarrier(
+                    vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
+                    vk::VK_IMAGE_LAYOUT_GENERAL, fbImage.get(), colorSubresourceRange);
+
+                const auto tempPostDispatchBarrier = vk::makeImageMemoryBarrier(
+                    vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
+                    vk::VK_IMAGE_LAYOUT_GENERAL, tempImage.get(), colorSubresourceRange);
+
+                vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                       vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                       &fbPostDispatchBarrier);
+                vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                       vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                       &tempPostDispatchBarrier);
+
+                // Copy content of main image to temp image to emulate blending
+                vk::VkImageSubresourceLayers imgLayers = {
+                    vk::VK_IMAGE_ASPECT_COLOR_BIT, //  VkImageAspectFlags    aspectMask;
+                    0u,                            //  uint32_t              mipLevel;
+                    0u,                            //  uint32_t              baseArrayLayer;
+                    1u,                            //  uint32_t              layerCount;
+                };
+                vk::VkImageCopy copyRegion = {
+                    imgLayers,                                                // VkImageSubresourceLayers srcSubresource
+                    {0, 0, 0},                                                // VkOffset3D srcOffset
+                    imgLayers,                                                // VkImageSubresourceLayers dstSubresource
+                    {0, 0, 0},                                                // VkOffset3D dstOffset
+                    {kFramebufferExtent.width, kFramebufferExtent.height, 1}, // VkExtent3D extent
+                };
+                vkd.cmdCopyImage(cmdBuffer, fbImage.get(), vk::VK_IMAGE_LAYOUT_GENERAL, tempImage.get(),
+                                 vk::VK_IMAGE_LAYOUT_GENERAL, 1u, &copyRegion);
+
+                const auto fbPreDispatchBarrier = vk::makeImageMemoryBarrier(
+                    vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
+                    vk::VK_IMAGE_LAYOUT_GENERAL, fbImage.get(), colorSubresourceRange);
+
+                const auto tempPreDispatchBarrier = vk::makeImageMemoryBarrier(
+                    vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_SHADER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
+                    vk::VK_IMAGE_LAYOUT_GENERAL, tempImage.get(), colorSubresourceRange);
+
+                vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                       &fbPreDispatchBarrier);
+                vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                       vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                       &tempPreDispatchBarrier);
+            }
+
+            vk::endCommandBuffer(vkd, cmdBuffer);
+            vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+            m_context.resetCommandPoolForVKSC(device, *cmdPool);
+        }
+
+        vk::beginCommandBuffer(vkd, cmdBuffer);
+        const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width),
+                                  static_cast<int>(kFramebufferExtent.height)};
+        vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize,
+                              vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_GENERAL);
+        vk::endCommandBuffer(vkd, cmdBuffer);
+        vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+        m_context.resetCommandPoolForVKSC(device, *cmdPool);
+    }
 
     // Check results.
     const auto &resultsBufferAlloc = resultsBuffer.getAllocation();
@@ -1301,7 +1853,8 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
 
     const auto resultsBufferPtr =
         reinterpret_cast<const char *>(resultsBufferAlloc.getHostPtr()) + resultsBufferAlloc.getOffset();
-    const tcu::ConstPixelBufferAccess resultPixels{tcuFormat, copySize[0], copySize[1], 1, resultsBufferPtr};
+    const tcu::ConstPixelBufferAccess resultPixels{tcuFormat, static_cast<int>(kFramebufferExtent.width),
+                                                   static_cast<int>(kFramebufferExtent.height), 1, resultsBufferPtr};
 
     // The test only operates on integers, so a tolerance of 0.5 should work.
     const float tolerance = 0.5f;
@@ -1313,18 +1866,29 @@ tcu::TestStatus RandomDescriptorUpdateTestInstance::iterate()
             {
                 const auto pixel = resultPixels.getPixel(x, y, z);
                 for (int c = 0; c < 3; c++)
-                    if (fabs(pixel[c] - expectedColor[c]) > tolerance)
+                    if (fabs(pixel[c] - expColor[c]) > tolerance)
                         pass = false;
             }
 
     tcu::TestStatus status = tcu::TestStatus::pass("Pass");
     if (!pass)
     {
-        m_context.getTestContext().getLog() << tcu::TestLog::Image("color", "Rendered image", resultPixels);
         status = tcu::TestStatus::fail("Pixel mismatch; please check the rendered image");
     }
+    m_context.getTestContext().getLog() << tcu::TestLog::Image("color", "Rendered image", resultPixels);
 
     return status;
+}
+
+vk::VkShaderStageFlags RandomDescriptorUpdateTestInstance::getShaderStage()
+{
+    return m_useCompute ? vk::VK_SHADER_STAGE_COMPUTE_BIT : vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+}
+
+vk::VkImageUsageFlags RandomDescriptorUpdateTestInstance::getImageUsage()
+{
+    return m_useCompute ? vk::VK_IMAGE_USAGE_STORAGE_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT :
+                          vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
 }
 
 tcu::TestCaseGroup *createRandomDescriptorUpdateTests(tcu::TestContext &testCtx)
@@ -1332,7 +1896,8 @@ tcu::TestCaseGroup *createRandomDescriptorUpdateTests(tcu::TestContext &testCtx)
     // Update descriptors randomly between draws
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "random"));
 
-    group->addChild(new RandomDescriptorUpdateTestCase(testCtx, "uniform_buffer"));
+    group->addChild(new RandomDescriptorUpdateTestCase(testCtx, "uniform_buffer_graphics", false));
+    group->addChild(new RandomDescriptorUpdateTestCase(testCtx, "uniform_buffer_compute", true));
     return group.release();
 }
 

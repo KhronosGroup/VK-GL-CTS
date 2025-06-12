@@ -1742,16 +1742,19 @@ tcu::TestStatus DataSpillTestInstance::iterate(void)
     de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure;
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
     bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageForGeometry(m_params.callType),
                                                              VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
     topLevelAccelerationStructure->setInstanceCount(1);
     topLevelAccelerationStructure->addInstance(
         de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
-    topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Get some ray tracing properties.
     uint32_t shaderGroupHandleSize    = 0u;
@@ -2584,16 +2587,19 @@ tcu::TestStatus DataSpillPipelineInterfaceTestInstance::iterate(void)
     de::MovePtr<BottomLevelAccelerationStructure> bottomLevelAccelerationStructure;
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure;
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
     bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageForGeometry(m_params.interfaceType),
                                                              VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
     topLevelAccelerationStructure->setInstanceCount(1);
     topLevelAccelerationStructure->addInstance(
         de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
-    topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Get some ray tracing properties.
     uint32_t shaderGroupHandleSize    = 0u;

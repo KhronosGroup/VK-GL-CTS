@@ -33,9 +33,7 @@
 
 #ifndef CTS_USES_VULKANSC
 
-namespace vkt
-{
-namespace QueryPool
+namespace vkt::QueryPool
 {
 
 constexpr uint32_t MIN_TIMESTAMP_VALID_BITS = 36;
@@ -44,9 +42,7 @@ constexpr uint32_t MAX_TIMESTAMP_VALID_BITS = 64;
 class Maintenance7QueryInstance : public vkt::TestInstance
 {
     const bool m_maint7Enabled = false;
-    vk::Move<vk::VkDevice> m_device;
-    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
-    uint64_t m_timestampMask = 0;
+    uint64_t m_timestampMask   = 0;
     vk::Move<vk::VkQueryPool> m_queryPool;
     vk::Move<vk::VkCommandPool> m_cmdPool;
     vk::Move<vk::VkCommandBuffer> m_cmdBuffer;
@@ -56,53 +52,7 @@ public:
         : vkt::TestInstance(context)
         , m_maint7Enabled(maint7Enabled)
     {
-        // Make a copy of the maintenance7 features struct
-        auto maint7Features         = m_context.getMaintenance7Features();
-        maint7Features.maintenance7 = static_cast<vk::VkBool32>(m_maint7Enabled);
-
-        const float queuePriority             = 1.0f;
-        vk::VkDeviceQueueCreateInfo queueInfo = {
-            vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                        // const void* pNext;
-            (vk::VkDeviceQueueCreateFlags)0u,               // VkDeviceQueueCreateFlags flags;
-            m_context.getUniversalQueueFamilyIndex(),       // uint32_t queueFamilyIndex;
-            1u,                                             // uint32_t queueCount;
-            &queuePriority                                  // const float* pQueuePriorities;
-        };
-
-        const auto &extensions                        = m_context.getDeviceCreationExtensions();
-        const vk::VkDeviceCreateInfo deviceCreateInfo = {
-            vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
-            &maint7Features,                          // const void* pNext;
-            (vk::VkDeviceCreateFlags)0u,              // VkDeviceCreateFlags flags;
-            1,                                        // uint32_t queueCreateInfoCount;
-            &queueInfo,                               // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-            0u,                                       // uint32_t enabledLayerCount;
-            nullptr,                                  // const char* const* ppEnabledLayerNames;
-            static_cast<uint32_t>(extensions.size()), // uint32_t enabledExtensionCount;
-            extensions.data(),                        // const char* const* ppEnabledExtensionNames;
-            nullptr,                                  // const VkPhysicalDeviceFeatures* pEnabledFeatures;
-        };
-
-        m_device =
-            vkt::createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),
-                                    m_context.getPlatformInterface(), m_context.getInstance(),
-                                    m_context.getInstanceInterface(), m_context.getPhysicalDevice(), &deviceCreateInfo);
-        m_deviceDriver = de::MovePtr<vk::DeviceDriver>(
-            new vk::DeviceDriver(m_context.getPlatformInterface(), m_context.getInstance(), *m_device,
-                                 m_context.getUsedApiVersion(), m_context.getTestContext().getCommandLine()));
-
         recordComands();
-    }
-
-    auto &getDeviceInterface()
-    {
-        return *m_deviceDriver;
-    }
-
-    auto getDevice()
-    {
-        return *m_device;
     }
 
     // Checks support for timestamps and returns the timestamp mask.
@@ -141,8 +91,8 @@ public:
 
     void recordComands()
     {
-        const vk::DeviceInterface &vk   = getDeviceInterface();
-        const vk::VkDevice vkDevice     = getDevice();
+        const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
+        const vk::VkDevice vkDevice     = m_context.getDevice();
         const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
         // Check support for timestamp queries
@@ -170,15 +120,15 @@ public:
     }
 
 private:
-    tcu::TestStatus iterate(void);
+    tcu::TestStatus iterate(void) override;
 };
 
 tcu::TestStatus Maintenance7QueryInstance::iterate(void)
 {
 
-    const vk::DeviceInterface &vk = getDeviceInterface();
-    const vk::VkDevice vkDevice   = getDevice();
-    const vk::VkQueue queue       = getDeviceQueue(vk, vkDevice, m_context.getUniversalQueueFamilyIndex(), 0);
+    const vk::DeviceInterface &vk = m_context.getDeviceInterface();
+    const vk::VkDevice vkDevice   = m_context.getDevice();
+    const vk::VkQueue queue       = m_context.getDeviceQueueInfo(0).queue;
 
     uint32_t tsGet32Bits;
     uint64_t tsGet64Bits;
@@ -237,7 +187,7 @@ public:
     {
     }
 
-    virtual void checkSupport(Context &ctx) const
+    virtual void checkSupport(Context &ctx) const override
     {
         ctx.requireDeviceFunctionality("VK_KHR_maintenance7");
 
@@ -247,7 +197,22 @@ public:
         }
     }
 
-    virtual TestInstance *createInstance(Context &context) const
+    std::string getRequiredCapabilitiesId() const override
+    {
+        std::string name = typeid(Maintenance7QueryFeatureTestCase).name();
+        return m_maint7Enabled ? (name + "_maint7") : name;
+    }
+
+    void initDeviceCapabilities(DevCaps &caps) override
+    {
+        if (m_maint7Enabled)
+        {
+            caps.addExtension("VK_KHR_maintenance7");
+            caps.addFeature<vk::VkPhysicalDeviceMaintenance7FeaturesKHR>();
+        }
+    }
+
+    virtual TestInstance *createInstance(Context &context) const override
     {
         return new Maintenance7QueryInstance(context, m_maint7Enabled);
     }
@@ -268,7 +233,6 @@ tcu::TestCaseGroup *createQueryMaintenance7Tests(tcu::TestContext &testCtx)
     return maint7Tests.release();
 }
 
-} // namespace QueryPool
-} // namespace vkt
+} // namespace vkt::QueryPool
 
 #endif // CTS_USES_VULKANSC

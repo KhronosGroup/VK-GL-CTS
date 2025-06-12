@@ -26,10 +26,12 @@ VariablePointerFeatures.variablePointers
 [compute shader spirv]
                OpCapability Shader
                OpCapability VariablePointers
+			   OpCapability WorkgroupMemoryExplicitLayoutKHR
                OpExtension "SPV_KHR_storage_buffer_storage_class"
                OpExtension "SPV_KHR_variable_pointers"
+			   OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
                OpMemoryModel Logical GLSL450
-               OpEntryPoint GLCompute %30 "main" %gl_LocalInvocationID
+               OpEntryPoint GLCompute %30 "main" %gl_LocalInvocationID %20 %22 %23 %24
                OpExecutionMode %30 LocalSize 16 1 1
                OpSource OpenCL_C 120
                OpDecorate %_runtimearr_uint ArrayStride 4

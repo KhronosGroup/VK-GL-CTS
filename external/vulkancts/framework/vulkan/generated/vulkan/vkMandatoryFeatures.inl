@@ -29,6 +29,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	coreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	void** nextPtr = &coreFeatures.pNext;
 
+	// VkPhysicalDevice16BitStorageFeatures for [VK_KHR_16bit_storage]
+
 	vk::VkPhysicalDevice16BitStorageFeatures physicalDevice16BitStorageFeatures;
 	deMemset(&physicalDevice16BitStorageFeatures, 0, sizeof(physicalDevice16BitStorageFeatures));
 
@@ -38,6 +40,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDevice16BitStorageFeatures;
 		nextPtr  = &physicalDevice16BitStorageFeatures.pNext;
 	}
+
+	// VkPhysicalDevice4444FormatsFeaturesEXT for [VK_EXT_4444_formats]
 
 	vk::VkPhysicalDevice4444FormatsFeaturesEXT physicalDevice4444FormatsFeaturesEXT;
 	deMemset(&physicalDevice4444FormatsFeaturesEXT, 0, sizeof(physicalDevice4444FormatsFeaturesEXT));
@@ -49,6 +53,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevice4444FormatsFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDevice8BitStorageFeatures for [VK_KHR_8bit_storage]
+
 	vk::VkPhysicalDevice8BitStorageFeatures physicalDevice8BitStorageFeatures;
 	deMemset(&physicalDevice8BitStorageFeatures, 0, sizeof(physicalDevice8BitStorageFeatures));
 
@@ -58,6 +64,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDevice8BitStorageFeatures;
 		nextPtr  = &physicalDevice8BitStorageFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceAccelerationStructureFeaturesKHR for [VK_KHR_acceleration_structure]
 
 	vk::VkPhysicalDeviceAccelerationStructureFeaturesKHR physicalDeviceAccelerationStructureFeaturesKHR;
 	deMemset(&physicalDeviceAccelerationStructureFeaturesKHR, 0, sizeof(physicalDeviceAccelerationStructureFeaturesKHR));
@@ -69,6 +77,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceAccelerationStructureFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceAddressBindingReportFeaturesEXT for [VK_EXT_device_address_binding_report]
+
 	vk::VkPhysicalDeviceAddressBindingReportFeaturesEXT physicalDeviceAddressBindingReportFeaturesEXT;
 	deMemset(&physicalDeviceAddressBindingReportFeaturesEXT, 0, sizeof(physicalDeviceAddressBindingReportFeaturesEXT));
 
@@ -78,6 +88,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceAddressBindingReportFeaturesEXT;
 		nextPtr  = &physicalDeviceAddressBindingReportFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT for [VK_EXT_attachment_feedback_loop_dynamic_state]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT physicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT;
@@ -91,6 +103,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT for [VK_EXT_attachment_feedback_loop_layout]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT;
 	deMemset(&physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT, 0, sizeof(physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT));
@@ -102,6 +116,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT.pNext;
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VkPhysicalDeviceBorderColorSwizzleFeaturesEXT for [VK_EXT_border_color_swizzle]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceBorderColorSwizzleFeaturesEXT physicalDeviceBorderColorSwizzleFeaturesEXT;
@@ -115,6 +131,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceBufferDeviceAddressFeatures for [VK_KHR_buffer_device_address]
+
 	vk::VkPhysicalDeviceBufferDeviceAddressFeatures physicalDeviceBufferDeviceAddressFeatures;
 	deMemset(&physicalDeviceBufferDeviceAddressFeatures, 0, sizeof(physicalDeviceBufferDeviceAddressFeatures));
 
@@ -124,6 +142,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceBufferDeviceAddressFeatures;
 		nextPtr  = &physicalDeviceBufferDeviceAddressFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceColorWriteEnableFeaturesEXT for [VK_EXT_color_write_enable]
 
 	vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT physicalDeviceColorWriteEnableFeaturesEXT;
 	deMemset(&physicalDeviceColorWriteEnableFeaturesEXT, 0, sizeof(physicalDeviceColorWriteEnableFeaturesEXT));
@@ -135,6 +155,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceColorWriteEnableFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR for [VK_KHR_compute_shader_derivatives, VK_NV_compute_shader_derivatives]
+
 	vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR physicalDeviceComputeShaderDerivativesFeaturesKHR;
 	deMemset(&physicalDeviceComputeShaderDerivativesFeaturesKHR, 0, sizeof(physicalDeviceComputeShaderDerivativesFeaturesKHR));
 
@@ -145,6 +167,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceComputeShaderDerivativesFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceConditionalRenderingFeaturesEXT for [VK_EXT_conditional_rendering]
+
 	vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT physicalDeviceConditionalRenderingFeaturesEXT;
 	deMemset(&physicalDeviceConditionalRenderingFeaturesEXT, 0, sizeof(physicalDeviceConditionalRenderingFeaturesEXT));
 
@@ -154,6 +178,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceConditionalRenderingFeaturesEXT;
 		nextPtr  = &physicalDeviceConditionalRenderingFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceCooperativeMatrix2FeaturesNV for [VK_NV_cooperative_matrix2]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV physicalDeviceCooperativeMatrix2FeaturesNV;
@@ -167,6 +193,34 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceCooperativeMatrixFeaturesKHR for [VK_KHR_cooperative_matrix]
+
+	vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR physicalDeviceCooperativeMatrixFeaturesKHR;
+	deMemset(&physicalDeviceCooperativeMatrixFeaturesKHR, 0, sizeof(physicalDeviceCooperativeMatrixFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_cooperative_matrix"))
+	{
+		physicalDeviceCooperativeMatrixFeaturesKHR.sType = getStructureType<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>();
+		*nextPtr = &physicalDeviceCooperativeMatrixFeaturesKHR;
+		nextPtr  = &physicalDeviceCooperativeMatrixFeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDeviceCooperativeVectorFeaturesNV for [VK_NV_cooperative_vector]
+
+#if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceCooperativeVectorFeaturesNV physicalDeviceCooperativeVectorFeaturesNV;
+	deMemset(&physicalDeviceCooperativeVectorFeaturesNV, 0, sizeof(physicalDeviceCooperativeVectorFeaturesNV));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_vector"))
+	{
+		physicalDeviceCooperativeVectorFeaturesNV.sType = getStructureType<VkPhysicalDeviceCooperativeVectorFeaturesNV>();
+		*nextPtr = &physicalDeviceCooperativeVectorFeaturesNV;
+		nextPtr  = &physicalDeviceCooperativeVectorFeaturesNV.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+	// VkPhysicalDeviceCoverageReductionModeFeaturesNV for [VK_NV_coverage_reduction_mode]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV physicalDeviceCoverageReductionModeFeaturesNV;
 	deMemset(&physicalDeviceCoverageReductionModeFeaturesNV, 0, sizeof(physicalDeviceCoverageReductionModeFeaturesNV));
@@ -178,6 +232,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceCoverageReductionModeFeaturesNV.pNext;
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VkPhysicalDeviceCustomBorderColorFeaturesEXT for [VK_EXT_custom_border_color]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT physicalDeviceCustomBorderColorFeaturesEXT;
@@ -191,6 +247,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceDepthBiasControlFeaturesEXT for [VK_EXT_depth_bias_control]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT physicalDeviceDepthBiasControlFeaturesEXT;
 	deMemset(&physicalDeviceDepthBiasControlFeaturesEXT, 0, sizeof(physicalDeviceDepthBiasControlFeaturesEXT));
@@ -203,6 +261,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceDepthClampControlFeaturesEXT for [VK_EXT_depth_clamp_control]
+
 	vk::VkPhysicalDeviceDepthClampControlFeaturesEXT physicalDeviceDepthClampControlFeaturesEXT;
 	deMemset(&physicalDeviceDepthClampControlFeaturesEXT, 0, sizeof(physicalDeviceDepthClampControlFeaturesEXT));
 
@@ -212,6 +272,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceDepthClampControlFeaturesEXT;
 		nextPtr  = &physicalDeviceDepthClampControlFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceDepthClampZeroOneFeaturesKHR for [VK_KHR_depth_clamp_zero_one, VK_EXT_depth_clamp_zero_one]
 
 	vk::VkPhysicalDeviceDepthClampZeroOneFeaturesKHR physicalDeviceDepthClampZeroOneFeaturesKHR;
 	deMemset(&physicalDeviceDepthClampZeroOneFeaturesKHR, 0, sizeof(physicalDeviceDepthClampZeroOneFeaturesKHR));
@@ -223,6 +285,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDepthClampZeroOneFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceDepthClipControlFeaturesEXT for [VK_EXT_depth_clip_control]
+
 	vk::VkPhysicalDeviceDepthClipControlFeaturesEXT physicalDeviceDepthClipControlFeaturesEXT;
 	deMemset(&physicalDeviceDepthClipControlFeaturesEXT, 0, sizeof(physicalDeviceDepthClipControlFeaturesEXT));
 
@@ -232,6 +296,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceDepthClipControlFeaturesEXT;
 		nextPtr  = &physicalDeviceDepthClipControlFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceDepthClipEnableFeaturesEXT for [VK_EXT_depth_clip_enable]
 
 	vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT physicalDeviceDepthClipEnableFeaturesEXT;
 	deMemset(&physicalDeviceDepthClipEnableFeaturesEXT, 0, sizeof(physicalDeviceDepthClipEnableFeaturesEXT));
@@ -243,6 +309,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDepthClipEnableFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceDescriptorBufferFeaturesEXT for [VK_EXT_descriptor_buffer]
+
 	vk::VkPhysicalDeviceDescriptorBufferFeaturesEXT physicalDeviceDescriptorBufferFeaturesEXT;
 	deMemset(&physicalDeviceDescriptorBufferFeaturesEXT, 0, sizeof(physicalDeviceDescriptorBufferFeaturesEXT));
 
@@ -253,6 +321,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorBufferFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures for [VK_EXT_descriptor_indexing]
+
 	vk::VkPhysicalDeviceDescriptorIndexingFeatures physicalDeviceDescriptorIndexingFeatures;
 	deMemset(&physicalDeviceDescriptorIndexingFeatures, 0, sizeof(physicalDeviceDescriptorIndexingFeatures));
 
@@ -262,6 +332,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceDescriptorIndexingFeatures;
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV for [VK_NV_device_generated_commands_compute]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV physicalDeviceDeviceGeneratedCommandsComputeFeaturesNV;
@@ -275,6 +347,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV for [VK_NV_device_generated_commands]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV physicalDeviceDeviceGeneratedCommandsFeaturesNV;
 	deMemset(&physicalDeviceDeviceGeneratedCommandsFeaturesNV, 0, sizeof(physicalDeviceDeviceGeneratedCommandsFeaturesNV));
@@ -287,6 +361,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR for [VK_KHR_dynamic_rendering_local_read]
+
 	vk::VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR physicalDeviceDynamicRenderingLocalReadFeaturesKHR;
 	deMemset(&physicalDeviceDynamicRenderingLocalReadFeaturesKHR, 0, sizeof(physicalDeviceDynamicRenderingLocalReadFeaturesKHR));
 
@@ -296,6 +372,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceDynamicRenderingLocalReadFeaturesKHR;
 		nextPtr  = &physicalDeviceDynamicRenderingLocalReadFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT for [VK_EXT_dynamic_rendering_unused_attachments]
 
 	vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT;
 	deMemset(&physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT, 0, sizeof(physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT));
@@ -307,6 +385,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceExtendedDynamicState2FeaturesEXT for [VK_EXT_extended_dynamic_state2]
+
 	vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT physicalDeviceExtendedDynamicState2FeaturesEXT;
 	deMemset(&physicalDeviceExtendedDynamicState2FeaturesEXT, 0, sizeof(physicalDeviceExtendedDynamicState2FeaturesEXT));
 
@@ -316,6 +396,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceExtendedDynamicState2FeaturesEXT;
 		nextPtr  = &physicalDeviceExtendedDynamicState2FeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceExtendedDynamicState3FeaturesEXT for [VK_EXT_extended_dynamic_state3]
 
 	vk::VkPhysicalDeviceExtendedDynamicState3FeaturesEXT physicalDeviceExtendedDynamicState3FeaturesEXT;
 	deMemset(&physicalDeviceExtendedDynamicState3FeaturesEXT, 0, sizeof(physicalDeviceExtendedDynamicState3FeaturesEXT));
@@ -327,6 +409,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceExtendedDynamicState3FeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceExternalFormatResolveFeaturesANDROID for [VK_ANDROID_external_format_resolve]
+
 	vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID physicalDeviceExternalFormatResolveFeaturesANDROID;
 	deMemset(&physicalDeviceExternalFormatResolveFeaturesANDROID, 0, sizeof(physicalDeviceExternalFormatResolveFeaturesANDROID));
 
@@ -336,6 +420,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceExternalFormatResolveFeaturesANDROID;
 		nextPtr  = &physicalDeviceExternalFormatResolveFeaturesANDROID.pNext;
 	}
+
+	// VkPhysicalDeviceFaultFeaturesEXT for [VK_EXT_device_fault]
 
 	vk::VkPhysicalDeviceFaultFeaturesEXT physicalDeviceFaultFeaturesEXT;
 	deMemset(&physicalDeviceFaultFeaturesEXT, 0, sizeof(physicalDeviceFaultFeaturesEXT));
@@ -347,6 +433,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFaultFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceFragmentDensityMapFeaturesEXT for [VK_EXT_fragment_density_map]
+
 	vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT physicalDeviceFragmentDensityMapFeaturesEXT;
 	deMemset(&physicalDeviceFragmentDensityMapFeaturesEXT, 0, sizeof(physicalDeviceFragmentDensityMapFeaturesEXT));
 
@@ -357,6 +445,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFragmentDensityMapFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT for [VK_EXT_fragment_shader_interlock]
+
 	vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT physicalDeviceFragmentShaderInterlockFeaturesEXT;
 	deMemset(&physicalDeviceFragmentShaderInterlockFeaturesEXT, 0, sizeof(physicalDeviceFragmentShaderInterlockFeaturesEXT));
 
@@ -366,6 +456,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceFragmentShaderInterlockFeaturesEXT;
 		nextPtr  = &physicalDeviceFragmentShaderInterlockFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceFragmentShadingRateFeaturesKHR for [VK_KHR_fragment_shading_rate]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR physicalDeviceFragmentShadingRateFeaturesKHR;
@@ -379,6 +471,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFrameBoundaryFeaturesEXT for [VK_EXT_frame_boundary]
+
 	vk::VkPhysicalDeviceFrameBoundaryFeaturesEXT physicalDeviceFrameBoundaryFeaturesEXT;
 	deMemset(&physicalDeviceFrameBoundaryFeaturesEXT, 0, sizeof(physicalDeviceFrameBoundaryFeaturesEXT));
 
@@ -388,6 +482,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceFrameBoundaryFeaturesEXT;
 		nextPtr  = &physicalDeviceFrameBoundaryFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR for [VK_KHR_global_priority, VK_EXT_global_priority]
 
 	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
 	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
@@ -399,6 +495,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceGlobalPriorityQueryFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceHostQueryResetFeatures for [VK_EXT_host_query_reset]
+
 	vk::VkPhysicalDeviceHostQueryResetFeatures physicalDeviceHostQueryResetFeatures;
 	deMemset(&physicalDeviceHostQueryResetFeatures, 0, sizeof(physicalDeviceHostQueryResetFeatures));
 
@@ -408,6 +506,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceHostQueryResetFeatures;
 		nextPtr  = &physicalDeviceHostQueryResetFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceImage2DViewOf3DFeaturesEXT for [VK_EXT_image_2d_view_of_3d]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT physicalDeviceImage2DViewOf3DFeaturesEXT;
@@ -421,6 +521,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceImageCompressionControlFeaturesEXT for [VK_EXT_image_compression_control]
+
 	vk::VkPhysicalDeviceImageCompressionControlFeaturesEXT physicalDeviceImageCompressionControlFeaturesEXT;
 	deMemset(&physicalDeviceImageCompressionControlFeaturesEXT, 0, sizeof(physicalDeviceImageCompressionControlFeaturesEXT));
 
@@ -431,6 +533,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceImageCompressionControlFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT for [VK_EXT_image_compression_control_swapchain]
+
 	vk::VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT physicalDeviceImageCompressionControlSwapchainFeaturesEXT;
 	deMemset(&physicalDeviceImageCompressionControlSwapchainFeaturesEXT, 0, sizeof(physicalDeviceImageCompressionControlSwapchainFeaturesEXT));
 
@@ -440,6 +544,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceImageCompressionControlSwapchainFeaturesEXT;
 		nextPtr  = &physicalDeviceImageCompressionControlSwapchainFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT for [VK_EXT_image_sliced_view_of_3d]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT physicalDeviceImageSlicedViewOf3DFeaturesEXT;
@@ -453,6 +559,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceImagelessFramebufferFeatures for [VK_KHR_imageless_framebuffer]
+
 	vk::VkPhysicalDeviceImagelessFramebufferFeatures physicalDeviceImagelessFramebufferFeatures;
 	deMemset(&physicalDeviceImagelessFramebufferFeatures, 0, sizeof(physicalDeviceImagelessFramebufferFeatures));
 
@@ -462,6 +570,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceImagelessFramebufferFeatures;
 		nextPtr  = &physicalDeviceImagelessFramebufferFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceIndexTypeUint8FeaturesKHR for [VK_KHR_index_type_uint8, VK_EXT_index_type_uint8]
 
 	vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR physicalDeviceIndexTypeUint8FeaturesKHR;
 	deMemset(&physicalDeviceIndexTypeUint8FeaturesKHR, 0, sizeof(physicalDeviceIndexTypeUint8FeaturesKHR));
@@ -473,6 +583,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceIndexTypeUint8FeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceInlineUniformBlockFeaturesEXT for [VK_EXT_inline_uniform_block]
+
 	vk::VkPhysicalDeviceInlineUniformBlockFeaturesEXT physicalDeviceInlineUniformBlockFeaturesEXT;
 	deMemset(&physicalDeviceInlineUniformBlockFeaturesEXT, 0, sizeof(physicalDeviceInlineUniformBlockFeaturesEXT));
 
@@ -482,6 +594,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceInlineUniformBlockFeaturesEXT;
 		nextPtr  = &physicalDeviceInlineUniformBlockFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceLegacyDitheringFeaturesEXT for [VK_EXT_legacy_dithering]
 
 	vk::VkPhysicalDeviceLegacyDitheringFeaturesEXT physicalDeviceLegacyDitheringFeaturesEXT;
 	deMemset(&physicalDeviceLegacyDitheringFeaturesEXT, 0, sizeof(physicalDeviceLegacyDitheringFeaturesEXT));
@@ -493,6 +607,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceLegacyDitheringFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT for [VK_EXT_legacy_vertex_attributes]
+
 	vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT physicalDeviceLegacyVertexAttributesFeaturesEXT;
 	deMemset(&physicalDeviceLegacyVertexAttributesFeaturesEXT, 0, sizeof(physicalDeviceLegacyVertexAttributesFeaturesEXT));
 
@@ -502,6 +618,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceLegacyVertexAttributesFeaturesEXT;
 		nextPtr  = &physicalDeviceLegacyVertexAttributesFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceLineRasterizationFeaturesKHR for [VK_KHR_line_rasterization, VK_EXT_line_rasterization]
 
 	vk::VkPhysicalDeviceLineRasterizationFeaturesKHR physicalDeviceLineRasterizationFeaturesKHR;
 	deMemset(&physicalDeviceLineRasterizationFeaturesKHR, 0, sizeof(physicalDeviceLineRasterizationFeaturesKHR));
@@ -513,6 +631,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceLineRasterizationFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceMaintenance5FeaturesKHR for [VK_KHR_maintenance5]
+
 	vk::VkPhysicalDeviceMaintenance5FeaturesKHR physicalDeviceMaintenance5FeaturesKHR;
 	deMemset(&physicalDeviceMaintenance5FeaturesKHR, 0, sizeof(physicalDeviceMaintenance5FeaturesKHR));
 
@@ -522,6 +642,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceMaintenance5FeaturesKHR;
 		nextPtr  = &physicalDeviceMaintenance5FeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceMaintenance6FeaturesKHR for [VK_KHR_maintenance6]
 
 	vk::VkPhysicalDeviceMaintenance6FeaturesKHR physicalDeviceMaintenance6FeaturesKHR;
 	deMemset(&physicalDeviceMaintenance6FeaturesKHR, 0, sizeof(physicalDeviceMaintenance6FeaturesKHR));
@@ -533,6 +655,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMaintenance6FeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceMaintenance7FeaturesKHR for [VK_KHR_maintenance7]
+
 	vk::VkPhysicalDeviceMaintenance7FeaturesKHR physicalDeviceMaintenance7FeaturesKHR;
 	deMemset(&physicalDeviceMaintenance7FeaturesKHR, 0, sizeof(physicalDeviceMaintenance7FeaturesKHR));
 
@@ -543,6 +667,20 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMaintenance7FeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceMaintenance8FeaturesKHR for [VK_KHR_maintenance8]
+
+	vk::VkPhysicalDeviceMaintenance8FeaturesKHR physicalDeviceMaintenance8FeaturesKHR;
+	deMemset(&physicalDeviceMaintenance8FeaturesKHR, 0, sizeof(physicalDeviceMaintenance8FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance8"))
+	{
+		physicalDeviceMaintenance8FeaturesKHR.sType = getStructureType<VkPhysicalDeviceMaintenance8FeaturesKHR>();
+		*nextPtr = &physicalDeviceMaintenance8FeaturesKHR;
+		nextPtr  = &physicalDeviceMaintenance8FeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDeviceMemoryPriorityFeaturesEXT for [VK_EXT_memory_priority]
+
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT;
 	deMemset(&physicalDeviceMemoryPriorityFeaturesEXT, 0, sizeof(physicalDeviceMemoryPriorityFeaturesEXT));
 
@@ -552,6 +690,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceMemoryPriorityFeaturesEXT;
 		nextPtr  = &physicalDeviceMemoryPriorityFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceMeshShaderFeaturesEXT for [VK_EXT_mesh_shader]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceMeshShaderFeaturesEXT physicalDeviceMeshShaderFeaturesEXT;
@@ -565,6 +705,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceMultiDrawFeaturesEXT for [VK_EXT_multi_draw]
+
 	vk::VkPhysicalDeviceMultiDrawFeaturesEXT physicalDeviceMultiDrawFeaturesEXT;
 	deMemset(&physicalDeviceMultiDrawFeaturesEXT, 0, sizeof(physicalDeviceMultiDrawFeaturesEXT));
 
@@ -574,6 +716,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceMultiDrawFeaturesEXT;
 		nextPtr  = &physicalDeviceMultiDrawFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT for [VK_EXT_multisampled_render_to_single_sampled]
 
 	vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT;
 	deMemset(&physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT, 0, sizeof(physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT));
@@ -585,6 +729,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMultisampledRenderToSingleSampledFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceMultiviewFeatures for [VK_KHR_multiview]
+
 	vk::VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures;
 	deMemset(&physicalDeviceMultiviewFeatures, 0, sizeof(physicalDeviceMultiviewFeatures));
 
@@ -594,6 +740,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceMultiviewFeatures;
 		nextPtr  = &physicalDeviceMultiviewFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT for [VK_EXT_mutable_descriptor_type, VK_VALVE_mutable_descriptor_type]
 
 	vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT physicalDeviceMutableDescriptorTypeFeaturesEXT;
 	deMemset(&physicalDeviceMutableDescriptorTypeFeaturesEXT, 0, sizeof(physicalDeviceMutableDescriptorTypeFeaturesEXT));
@@ -605,6 +753,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMutableDescriptorTypeFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE for [VK_EXT_mutable_descriptor_type, VK_VALVE_mutable_descriptor_type]
+
 	vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE physicalDeviceMutableDescriptorTypeFeaturesVALVE;
 	deMemset(&physicalDeviceMutableDescriptorTypeFeaturesVALVE, 0, sizeof(physicalDeviceMutableDescriptorTypeFeaturesVALVE));
 
@@ -614,6 +764,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceMutableDescriptorTypeFeaturesVALVE;
 		nextPtr  = &physicalDeviceMutableDescriptorTypeFeaturesVALVE.pNext;
 	}
+
+	// VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT for [VK_EXT_non_seamless_cube_map]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT physicalDeviceNonSeamlessCubeMapFeaturesEXT;
@@ -627,6 +779,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceOpacityMicromapFeaturesEXT for [VK_EXT_opacity_micromap]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceOpacityMicromapFeaturesEXT physicalDeviceOpacityMicromapFeaturesEXT;
 	deMemset(&physicalDeviceOpacityMicromapFeaturesEXT, 0, sizeof(physicalDeviceOpacityMicromapFeaturesEXT));
@@ -638,6 +792,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceOpacityMicromapFeaturesEXT.pNext;
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT for [VK_EXT_pageable_device_local_memory]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT physicalDevicePageableDeviceLocalMemoryFeaturesEXT;
@@ -651,6 +807,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDevicePerformanceQueryFeaturesKHR for [VK_KHR_performance_query]
+
 	vk::VkPhysicalDevicePerformanceQueryFeaturesKHR physicalDevicePerformanceQueryFeaturesKHR;
 	deMemset(&physicalDevicePerformanceQueryFeaturesKHR, 0, sizeof(physicalDevicePerformanceQueryFeaturesKHR));
 
@@ -660,6 +818,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDevicePerformanceQueryFeaturesKHR;
 		nextPtr  = &physicalDevicePerformanceQueryFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR for [VK_KHR_pipeline_executable_properties]
 
 	vk::VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR physicalDevicePipelineExecutablePropertiesFeaturesKHR;
 	deMemset(&physicalDevicePipelineExecutablePropertiesFeaturesKHR, 0, sizeof(physicalDevicePipelineExecutablePropertiesFeaturesKHR));
@@ -671,6 +831,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePipelineExecutablePropertiesFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT for [VK_EXT_pipeline_library_group_handles]
+
 	vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT physicalDevicePipelineLibraryGroupHandlesFeaturesEXT;
 	deMemset(&physicalDevicePipelineLibraryGroupHandlesFeaturesEXT, 0, sizeof(physicalDevicePipelineLibraryGroupHandlesFeaturesEXT));
 
@@ -681,6 +843,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePipelineLibraryGroupHandlesFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDevicePipelineProtectedAccessFeaturesEXT for [VK_EXT_pipeline_protected_access]
+
 	vk::VkPhysicalDevicePipelineProtectedAccessFeaturesEXT physicalDevicePipelineProtectedAccessFeaturesEXT;
 	deMemset(&physicalDevicePipelineProtectedAccessFeaturesEXT, 0, sizeof(physicalDevicePipelineProtectedAccessFeaturesEXT));
 
@@ -690,6 +854,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDevicePipelineProtectedAccessFeaturesEXT;
 		nextPtr  = &physicalDevicePipelineProtectedAccessFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDevicePresentIdFeaturesKHR for [VK_KHR_present_id]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePresentIdFeaturesKHR physicalDevicePresentIdFeaturesKHR;
@@ -703,6 +869,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDevicePresentWaitFeaturesKHR for [VK_KHR_present_wait]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePresentWaitFeaturesKHR physicalDevicePresentWaitFeaturesKHR;
 	deMemset(&physicalDevicePresentWaitFeaturesKHR, 0, sizeof(physicalDevicePresentWaitFeaturesKHR));
@@ -714,6 +882,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePresentWaitFeaturesKHR.pNext;
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT for [VK_EXT_primitive_topology_list_restart]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT physicalDevicePrimitiveTopologyListRestartFeaturesEXT;
@@ -727,6 +897,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceProvokingVertexFeaturesEXT for [VK_EXT_provoking_vertex]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceProvokingVertexFeaturesEXT physicalDeviceProvokingVertexFeaturesEXT;
 	deMemset(&physicalDeviceProvokingVertexFeaturesEXT, 0, sizeof(physicalDeviceProvokingVertexFeaturesEXT));
@@ -739,6 +911,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceRawAccessChainsFeaturesNV for [VK_NV_raw_access_chains]
+
 	vk::VkPhysicalDeviceRawAccessChainsFeaturesNV physicalDeviceRawAccessChainsFeaturesNV;
 	deMemset(&physicalDeviceRawAccessChainsFeaturesNV, 0, sizeof(physicalDeviceRawAccessChainsFeaturesNV));
 
@@ -748,6 +922,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceRawAccessChainsFeaturesNV;
 		nextPtr  = &physicalDeviceRawAccessChainsFeaturesNV.pNext;
 	}
+
+	// VkPhysicalDeviceRayQueryFeaturesKHR for [VK_KHR_ray_query]
 
 	vk::VkPhysicalDeviceRayQueryFeaturesKHR physicalDeviceRayQueryFeaturesKHR;
 	deMemset(&physicalDeviceRayQueryFeaturesKHR, 0, sizeof(physicalDeviceRayQueryFeaturesKHR));
@@ -759,6 +935,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceRayQueryFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR for [VK_KHR_ray_tracing_maintenance1]
+
 	vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR physicalDeviceRayTracingMaintenance1FeaturesKHR;
 	deMemset(&physicalDeviceRayTracingMaintenance1FeaturesKHR, 0, sizeof(physicalDeviceRayTracingMaintenance1FeaturesKHR));
 
@@ -768,6 +946,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceRayTracingMaintenance1FeaturesKHR;
 		nextPtr  = &physicalDeviceRayTracingMaintenance1FeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceRayTracingPipelineFeaturesKHR for [VK_KHR_ray_tracing_pipeline]
 
 	vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR physicalDeviceRayTracingPipelineFeaturesKHR;
 	deMemset(&physicalDeviceRayTracingPipelineFeaturesKHR, 0, sizeof(physicalDeviceRayTracingPipelineFeaturesKHR));
@@ -779,6 +959,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceRayTracingPipelineFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR for [VK_KHR_ray_tracing_position_fetch]
+
 	vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR physicalDeviceRayTracingPositionFetchFeaturesKHR;
 	deMemset(&physicalDeviceRayTracingPositionFetchFeaturesKHR, 0, sizeof(physicalDeviceRayTracingPositionFetchFeaturesKHR));
 
@@ -788,6 +970,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceRayTracingPositionFetchFeaturesKHR;
 		nextPtr  = &physicalDeviceRayTracingPositionFetchFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV for [VK_NV_representative_fragment_test]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV physicalDeviceRepresentativeFragmentTestFeaturesNV;
@@ -801,6 +985,20 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceRobustness2FeaturesKHR for [VK_KHR_robustness2, VK_EXT_robustness2]
+
+	vk::VkPhysicalDeviceRobustness2FeaturesKHR physicalDeviceRobustness2FeaturesKHR;
+	deMemset(&physicalDeviceRobustness2FeaturesKHR, 0, sizeof(physicalDeviceRobustness2FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_robustness2", "VK_EXT_robustness2"))
+	{
+		physicalDeviceRobustness2FeaturesKHR.sType = getStructureType<VkPhysicalDeviceRobustness2FeaturesKHR>();
+		*nextPtr = &physicalDeviceRobustness2FeaturesKHR;
+		nextPtr  = &physicalDeviceRobustness2FeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR for [VK_KHR_sampler_ycbcr_conversion]
+
 	vk::VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR physicalDeviceSamplerYcbcrConversionFeaturesKHR;
 	deMemset(&physicalDeviceSamplerYcbcrConversionFeaturesKHR, 0, sizeof(physicalDeviceSamplerYcbcrConversionFeaturesKHR));
 
@@ -810,6 +1008,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceSamplerYcbcrConversionFeaturesKHR;
 		nextPtr  = &physicalDeviceSamplerYcbcrConversionFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceScalarBlockLayoutFeatures for [VK_EXT_scalar_block_layout]
 
 	vk::VkPhysicalDeviceScalarBlockLayoutFeatures physicalDeviceScalarBlockLayoutFeatures;
 	deMemset(&physicalDeviceScalarBlockLayoutFeatures, 0, sizeof(physicalDeviceScalarBlockLayoutFeatures));
@@ -821,6 +1021,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceScalarBlockLayoutFeatures.pNext;
 	}
 
+	// VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures for [VK_KHR_separate_depth_stencil_layouts]
+
 	vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures physicalDeviceSeparateDepthStencilLayoutsFeatures;
 	deMemset(&physicalDeviceSeparateDepthStencilLayoutsFeatures, 0, sizeof(physicalDeviceSeparateDepthStencilLayoutsFeatures));
 
@@ -831,6 +1033,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSeparateDepthStencilLayoutsFeatures.pNext;
 	}
 
+	// VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV for [VK_NV_shader_atomic_float16_vector]
+
 	vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV physicalDeviceShaderAtomicFloat16VectorFeaturesNV;
 	deMemset(&physicalDeviceShaderAtomicFloat16VectorFeaturesNV, 0, sizeof(physicalDeviceShaderAtomicFloat16VectorFeaturesNV));
 
@@ -840,6 +1044,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderAtomicFloat16VectorFeaturesNV;
 		nextPtr  = &physicalDeviceShaderAtomicFloat16VectorFeaturesNV.pNext;
 	}
+
+	// VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT for [VK_EXT_shader_atomic_float2]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT physicalDeviceShaderAtomicFloat2FeaturesEXT;
@@ -853,6 +1059,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceShaderAtomicFloatFeaturesEXT for [VK_EXT_shader_atomic_float]
+
 	vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT physicalDeviceShaderAtomicFloatFeaturesEXT;
 	deMemset(&physicalDeviceShaderAtomicFloatFeaturesEXT, 0, sizeof(physicalDeviceShaderAtomicFloatFeaturesEXT));
 
@@ -862,6 +1070,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderAtomicFloatFeaturesEXT;
 		nextPtr  = &physicalDeviceShaderAtomicFloatFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceShaderAtomicInt64Features for [VK_KHR_shader_atomic_int64]
 
 	vk::VkPhysicalDeviceShaderAtomicInt64Features physicalDeviceShaderAtomicInt64Features;
 	deMemset(&physicalDeviceShaderAtomicInt64Features, 0, sizeof(physicalDeviceShaderAtomicInt64Features));
@@ -873,6 +1083,20 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderAtomicInt64Features.pNext;
 	}
 
+	// VkPhysicalDeviceShaderBfloat16FeaturesKHR for [VK_KHR_shader_bfloat16]
+
+	vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR physicalDeviceShaderBfloat16FeaturesKHR;
+	deMemset(&physicalDeviceShaderBfloat16FeaturesKHR, 0, sizeof(physicalDeviceShaderBfloat16FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_bfloat16"))
+	{
+		physicalDeviceShaderBfloat16FeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderBfloat16FeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderBfloat16FeaturesKHR;
+		nextPtr  = &physicalDeviceShaderBfloat16FeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDeviceShaderClockFeaturesKHR for [VK_KHR_shader_clock]
+
 	vk::VkPhysicalDeviceShaderClockFeaturesKHR physicalDeviceShaderClockFeaturesKHR;
 	deMemset(&physicalDeviceShaderClockFeaturesKHR, 0, sizeof(physicalDeviceShaderClockFeaturesKHR));
 
@@ -882,6 +1106,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderClockFeaturesKHR;
 		nextPtr  = &physicalDeviceShaderClockFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT for [VK_EXT_shader_demote_to_helper_invocation]
 
 	vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT;
 	deMemset(&physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, 0, sizeof(physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT));
@@ -893,6 +1119,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD for [VK_AMD_shader_early_and_late_fragment_tests]
+
 	vk::VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD;
 	deMemset(&physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD, 0, sizeof(physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD));
 
@@ -902,6 +1130,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD;
 		nextPtr  = &physicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD.pNext;
 	}
+
+	// VkPhysicalDeviceShaderExpectAssumeFeaturesKHR for [VK_KHR_shader_expect_assume]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShaderExpectAssumeFeaturesKHR physicalDeviceShaderExpectAssumeFeaturesKHR;
@@ -915,6 +1145,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceShaderFloat16Int8Features for [VK_KHR_shader_float16_int8]
+
 	vk::VkPhysicalDeviceShaderFloat16Int8Features physicalDeviceShaderFloat16Int8Features;
 	deMemset(&physicalDeviceShaderFloat16Int8Features, 0, sizeof(physicalDeviceShaderFloat16Int8Features));
 
@@ -924,6 +1156,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderFloat16Int8Features;
 		nextPtr  = &physicalDeviceShaderFloat16Int8Features.pNext;
 	}
+
+	// VkPhysicalDeviceShaderFloatControls2FeaturesKHR for [VK_KHR_shader_float_controls2]
 
 	vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR physicalDeviceShaderFloatControls2FeaturesKHR;
 	deMemset(&physicalDeviceShaderFloatControls2FeaturesKHR, 0, sizeof(physicalDeviceShaderFloatControls2FeaturesKHR));
@@ -935,6 +1169,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderFloatControls2FeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT for [VK_EXT_shader_image_atomic_int64]
+
 	vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT physicalDeviceShaderImageAtomicInt64FeaturesEXT;
 	deMemset(&physicalDeviceShaderImageAtomicInt64FeaturesEXT, 0, sizeof(physicalDeviceShaderImageAtomicInt64FeaturesEXT));
 
@@ -944,6 +1180,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderImageAtomicInt64FeaturesEXT;
 		nextPtr  = &physicalDeviceShaderImageAtomicInt64FeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR for [VK_KHR_shader_integer_dot_product]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR physicalDeviceShaderIntegerDotProductFeaturesKHR;
@@ -957,6 +1195,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR for [VK_KHR_shader_maximal_reconvergence]
+
 	vk::VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR physicalDeviceShaderMaximalReconvergenceFeaturesKHR;
 	deMemset(&physicalDeviceShaderMaximalReconvergenceFeaturesKHR, 0, sizeof(physicalDeviceShaderMaximalReconvergenceFeaturesKHR));
 
@@ -966,6 +1206,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderMaximalReconvergenceFeaturesKHR;
 		nextPtr  = &physicalDeviceShaderMaximalReconvergenceFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT for [VK_EXT_shader_module_identifier]
 
 	vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT physicalDeviceShaderModuleIdentifierFeaturesEXT;
 	deMemset(&physicalDeviceShaderModuleIdentifierFeaturesEXT, 0, sizeof(physicalDeviceShaderModuleIdentifierFeaturesEXT));
@@ -977,6 +1219,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderModuleIdentifierFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceShaderObjectFeaturesEXT for [VK_EXT_shader_object]
+
 	vk::VkPhysicalDeviceShaderObjectFeaturesEXT physicalDeviceShaderObjectFeaturesEXT;
 	deMemset(&physicalDeviceShaderObjectFeaturesEXT, 0, sizeof(physicalDeviceShaderObjectFeaturesEXT));
 
@@ -986,6 +1230,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderObjectFeaturesEXT;
 		nextPtr  = &physicalDeviceShaderObjectFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceShaderQuadControlFeaturesKHR for [VK_KHR_shader_quad_control]
 
 	vk::VkPhysicalDeviceShaderQuadControlFeaturesKHR physicalDeviceShaderQuadControlFeaturesKHR;
 	deMemset(&physicalDeviceShaderQuadControlFeaturesKHR, 0, sizeof(physicalDeviceShaderQuadControlFeaturesKHR));
@@ -997,6 +1243,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderQuadControlFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR for [VK_KHR_shader_relaxed_extended_instruction]
+
 	vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR;
 	deMemset(&physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR, 0, sizeof(physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR));
 
@@ -1006,6 +1254,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR;
 		nextPtr  = &physicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT for [VK_EXT_shader_replicated_composites]
 
 	vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT physicalDeviceShaderReplicatedCompositesFeaturesEXT;
 	deMemset(&physicalDeviceShaderReplicatedCompositesFeaturesEXT, 0, sizeof(physicalDeviceShaderReplicatedCompositesFeaturesEXT));
@@ -1017,6 +1267,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderReplicatedCompositesFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures for [VK_KHR_shader_subgroup_extended_types]
+
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
 	deMemset(&physicalDeviceShaderSubgroupExtendedTypesFeatures, 0, sizeof(physicalDeviceShaderSubgroupExtendedTypesFeatures));
 
@@ -1026,6 +1278,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderSubgroupExtendedTypesFeatures;
 		nextPtr  = &physicalDeviceShaderSubgroupExtendedTypesFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR for [VK_KHR_shader_subgroup_rotate]
 
 	vk::VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR physicalDeviceShaderSubgroupRotateFeaturesKHR;
 	deMemset(&physicalDeviceShaderSubgroupRotateFeaturesKHR, 0, sizeof(physicalDeviceShaderSubgroupRotateFeaturesKHR));
@@ -1037,6 +1291,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderSubgroupRotateFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR for [VK_KHR_shader_subgroup_uniform_control_flow]
+
 	vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR;
 	deMemset(&physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR, 0, sizeof(physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR));
 
@@ -1047,6 +1303,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR for [VK_KHR_shader_terminate_invocation]
+
 	vk::VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR physicalDeviceShaderTerminateInvocationFeaturesKHR;
 	deMemset(&physicalDeviceShaderTerminateInvocationFeaturesKHR, 0, sizeof(physicalDeviceShaderTerminateInvocationFeaturesKHR));
 
@@ -1056,6 +1314,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceShaderTerminateInvocationFeaturesKHR;
 		nextPtr  = &physicalDeviceShaderTerminateInvocationFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceShadingRateImageFeaturesNV for [VK_NV_shading_rate_image]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceShadingRateImageFeaturesNV physicalDeviceShadingRateImageFeaturesNV;
@@ -1069,6 +1329,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT for [VK_EXT_subgroup_size_control]
+
 	vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT physicalDeviceSubgroupSizeControlFeaturesEXT;
 	deMemset(&physicalDeviceSubgroupSizeControlFeaturesEXT, 0, sizeof(physicalDeviceSubgroupSizeControlFeaturesEXT));
 
@@ -1078,6 +1340,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceSubgroupSizeControlFeaturesEXT;
 		nextPtr  = &physicalDeviceSubgroupSizeControlFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT for [VK_EXT_subpass_merge_feedback]
 
 	vk::VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT physicalDeviceSubpassMergeFeedbackFeaturesEXT;
 	deMemset(&physicalDeviceSubpassMergeFeedbackFeaturesEXT, 0, sizeof(physicalDeviceSubpassMergeFeedbackFeaturesEXT));
@@ -1089,6 +1353,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSubpassMergeFeedbackFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT for [VK_EXT_swapchain_maintenance1]
+
 	vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT physicalDeviceSwapchainMaintenance1FeaturesEXT;
 	deMemset(&physicalDeviceSwapchainMaintenance1FeaturesEXT, 0, sizeof(physicalDeviceSwapchainMaintenance1FeaturesEXT));
 
@@ -1098,6 +1364,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceSwapchainMaintenance1FeaturesEXT;
 		nextPtr  = &physicalDeviceSwapchainMaintenance1FeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceSynchronization2FeaturesKHR for [VK_KHR_synchronization2]
 
 	vk::VkPhysicalDeviceSynchronization2FeaturesKHR physicalDeviceSynchronization2FeaturesKHR;
 	deMemset(&physicalDeviceSynchronization2FeaturesKHR, 0, sizeof(physicalDeviceSynchronization2FeaturesKHR));
@@ -1109,6 +1377,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSynchronization2FeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT for [VK_EXT_texel_buffer_alignment]
+
 	vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT physicalDeviceTexelBufferAlignmentFeaturesEXT;
 	deMemset(&physicalDeviceTexelBufferAlignmentFeaturesEXT, 0, sizeof(physicalDeviceTexelBufferAlignmentFeaturesEXT));
 
@@ -1119,6 +1389,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceTexelBufferAlignmentFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT for [VK_EXT_texture_compression_astc_hdr]
+
 	vk::VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT physicalDeviceTextureCompressionASTCHDRFeaturesEXT;
 	deMemset(&physicalDeviceTextureCompressionASTCHDRFeaturesEXT, 0, sizeof(physicalDeviceTextureCompressionASTCHDRFeaturesEXT));
 
@@ -1128,6 +1400,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceTextureCompressionASTCHDRFeaturesEXT;
 		nextPtr  = &physicalDeviceTextureCompressionASTCHDRFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceTimelineSemaphoreFeatures for [VK_KHR_timeline_semaphore]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceTimelineSemaphoreFeatures physicalDeviceTimelineSemaphoreFeatures;
@@ -1141,6 +1415,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceTransformFeedbackFeaturesEXT for [VK_EXT_transform_feedback]
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT physicalDeviceTransformFeedbackFeaturesEXT;
 	deMemset(&physicalDeviceTransformFeedbackFeaturesEXT, 0, sizeof(physicalDeviceTransformFeedbackFeaturesEXT));
@@ -1153,6 +1429,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceUniformBufferStandardLayoutFeatures for [VK_KHR_uniform_buffer_standard_layout]
+
 	vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures physicalDeviceUniformBufferStandardLayoutFeatures;
 	deMemset(&physicalDeviceUniformBufferStandardLayoutFeatures, 0, sizeof(physicalDeviceUniformBufferStandardLayoutFeatures));
 
@@ -1162,6 +1440,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceUniformBufferStandardLayoutFeatures;
 		nextPtr  = &physicalDeviceUniformBufferStandardLayoutFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceVariablePointersFeatures for [VK_KHR_variable_pointers]
 
 	vk::VkPhysicalDeviceVariablePointersFeatures physicalDeviceVariablePointersFeatures;
 	deMemset(&physicalDeviceVariablePointersFeatures, 0, sizeof(physicalDeviceVariablePointersFeatures));
@@ -1173,6 +1453,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVariablePointersFeatures.pNext;
 	}
 
+	// VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR for [VK_KHR_vertex_attribute_divisor, VK_EXT_vertex_attribute_divisor]
+
 	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR physicalDeviceVertexAttributeDivisorFeaturesKHR;
 	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesKHR, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesKHR));
 
@@ -1182,6 +1464,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVertexAttributeDivisorFeaturesKHR;
 		nextPtr  = &physicalDeviceVertexAttributeDivisorFeaturesKHR.pNext;
 	}
+
+	// VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT for [VK_EXT_vertex_input_dynamic_state]
 
 	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT physicalDeviceVertexInputDynamicStateFeaturesEXT;
 	deMemset(&physicalDeviceVertexInputDynamicStateFeaturesEXT, 0, sizeof(physicalDeviceVertexInputDynamicStateFeaturesEXT));
@@ -1193,7 +1477,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVertexInputDynamicStateFeaturesEXT.pNext;
 	}
 
-#if defined(CTS_USES_VULKAN)
+	// VkPhysicalDeviceVideoEncodeAV1FeaturesKHR for [VK_KHR_video_encode_av1]
+
 	vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR physicalDeviceVideoEncodeAV1FeaturesKHR;
 	deMemset(&physicalDeviceVideoEncodeAV1FeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeAV1FeaturesKHR));
 
@@ -1203,9 +1488,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVideoEncodeAV1FeaturesKHR;
 		nextPtr  = &physicalDeviceVideoEncodeAV1FeaturesKHR.pNext;
 	}
-#endif // defined(CTS_USES_VULKAN)
 
-#if defined(CTS_USES_VULKAN)
+	// VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR for [VK_KHR_video_encode_quantization_map]
+
 	vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
 	deMemset(&physicalDeviceVideoEncodeQuantizationMapFeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeQuantizationMapFeaturesKHR));
 
@@ -1215,7 +1500,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
 		nextPtr  = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.pNext;
 	}
-#endif // defined(CTS_USES_VULKAN)
+
+	// VkPhysicalDeviceVulkan11Features for []
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features;
@@ -1229,6 +1515,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features for []
+
 	vk::VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features;
 	deMemset(&physicalDeviceVulkan12Features, 0, sizeof(physicalDeviceVulkan12Features));
 
@@ -1238,6 +1526,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVulkan12Features;
 		nextPtr  = &physicalDeviceVulkan12Features.pNext;
 	}
+
+	// VkPhysicalDeviceVulkan13Features for []
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVulkan13Features physicalDeviceVulkan13Features;
@@ -1251,6 +1541,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan14Features for []
+
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVulkan14Features physicalDeviceVulkan14Features;
 	deMemset(&physicalDeviceVulkan14Features, 0, sizeof(physicalDeviceVulkan14Features));
@@ -1263,6 +1555,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkanMemoryModelFeatures for [VK_KHR_vulkan_memory_model]
+
 	vk::VkPhysicalDeviceVulkanMemoryModelFeatures physicalDeviceVulkanMemoryModelFeatures;
 	deMemset(&physicalDeviceVulkanMemoryModelFeatures, 0, sizeof(physicalDeviceVulkanMemoryModelFeatures));
 
@@ -1272,6 +1566,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceVulkanMemoryModelFeatures;
 		nextPtr  = &physicalDeviceVulkanMemoryModelFeatures.pNext;
 	}
+
+	// VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR for [VK_KHR_workgroup_memory_explicit_layout]
 
 	vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR;
 	deMemset(&physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR, 0, sizeof(physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR));
@@ -1283,6 +1579,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT for [VK_EXT_ycbcr_2plane_444_formats]
+
 	vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT physicalDeviceYcbcr2Plane444FormatsFeaturesEXT;
 	deMemset(&physicalDeviceYcbcr2Plane444FormatsFeaturesEXT, 0, sizeof(physicalDeviceYcbcr2Plane444FormatsFeaturesEXT));
 
@@ -1293,6 +1591,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceYcbcr2Plane444FormatsFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceYcbcrImageArraysFeaturesEXT for [VK_EXT_ycbcr_image_arrays]
+
 	vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT physicalDeviceYcbcrImageArraysFeaturesEXT;
 	deMemset(&physicalDeviceYcbcrImageArraysFeaturesEXT, 0, sizeof(physicalDeviceYcbcrImageArraysFeaturesEXT));
 
@@ -1302,6 +1602,20 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		*nextPtr = &physicalDeviceYcbcrImageArraysFeaturesEXT;
 		nextPtr  = &physicalDeviceYcbcrImageArraysFeaturesEXT.pNext;
 	}
+
+	// VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT for [VK_EXT_zero_initialize_device_memory]
+
+	vk::VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT;
+	deMemset(&physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT, 0, sizeof(physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_zero_initialize_device_memory"))
+	{
+		physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.sType = getStructureType<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>();
+		*nextPtr = &physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT;
+		nextPtr  = &physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.pNext;
+	}
+
+	// VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR for [VK_KHR_zero_initialize_workgroup_memory]
 
 	vk::VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR;
 	deMemset(&physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR, 0, sizeof(physicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR));
@@ -2315,6 +2629,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_zero_initialize_device_memory")) )
+	{
+		if ( physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.zeroInitializeDeviceMemory == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature zeroInitializeDeviceMemory not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_16bit_storage")) )
 	{
 		if ( physicalDevice16BitStorageFeatures.storageBuffer16BitAccess == VK_FALSE )
@@ -2374,6 +2697,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceComputeShaderDerivativesFeaturesKHR.computeDerivativeGroupLinear == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature computeDerivativeGroupLinear not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_cooperative_matrix")) )
+	{
+		if ( physicalDeviceCooperativeMatrixFeaturesKHR.cooperativeMatrix == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature cooperativeMatrix not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -2495,6 +2827,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance8")) )
+	{
+		if ( physicalDeviceMaintenance8FeaturesKHR.maintenance8 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature maintenance8 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_multiview")) )
 	{
 		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
@@ -2598,6 +2939,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_robustness2")) )
+	{
+		if ( ( physicalDeviceRobustness2FeaturesKHR.robustBufferAccess2 == VK_FALSE ) && ( physicalDeviceRobustness2FeaturesKHR.robustImageAccess2 == VK_FALSE ) && ( physicalDeviceRobustness2FeaturesKHR.nullDescriptor == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature robustBufferAccess2 or robustImageAccess2 or nullDescriptor not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_sampler_ycbcr_conversion")) )
 	{
 		if ( physicalDeviceSamplerYcbcrConversionFeaturesKHR.samplerYcbcrConversion == VK_FALSE )
@@ -2621,6 +2971,15 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderAtomicInt64Features.shaderBufferInt64Atomics == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderBufferInt64Atomics not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_bfloat16")) )
+	{
+		if ( ( physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16Type == VK_FALSE ) && ( physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16CooperativeMatrix == VK_FALSE || physicalDeviceShaderBfloat16FeaturesKHR.shaderBFloat16DotProduct == VK_FALSE ) )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderBFloat16Type or shaderBFloat16CooperativeMatrix,shaderBFloat16DotProduct not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -2793,7 +3152,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_av1")) )
 	{
 		if ( physicalDeviceVideoEncodeAV1FeaturesKHR.videoEncodeAV1 == VK_FALSE )
@@ -2802,9 +3160,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
-#endif // defined(CTS_USES_VULKAN)
 
-#if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_quantization_map")) )
 	{
 		if ( physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.videoEncodeQuantizationMap == VK_FALSE )
@@ -2813,7 +3169,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 			result = false;
 		}
 	}
-#endif // defined(CTS_USES_VULKAN)
 
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_vulkan_memory_model")) )
 	{
@@ -2848,6 +3203,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixWorkgroupScope == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixFlexibleDimensions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixReductions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixConversions == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixPerElementOperations == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixTensorAddressing == VK_FALSE ) && ( physicalDeviceCooperativeMatrix2FeaturesNV.cooperativeMatrixBlockLoads == VK_FALSE ) )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature cooperativeMatrixWorkgroupScope or cooperativeMatrixFlexibleDimensions or cooperativeMatrixReductions or cooperativeMatrixConversions or cooperativeMatrixPerElementOperations or cooperativeMatrixTensorAddressing or cooperativeMatrixBlockLoads not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_cooperative_vector")) )
+	{
+		if ( physicalDeviceCooperativeVectorFeaturesNV.cooperativeVector == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature cooperativeVector not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -3975,6 +4341,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VK_EXT_conservative_rasterization
+
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ConservativeRasterizationMode )
 	{
@@ -3997,6 +4365,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VK_EXT_sample_locations
+
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3SampleLocationsEnable )
 	{
@@ -4008,6 +4378,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VK_EXT_blend_operation_advanced
+
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ColorBlendAdvanced )
 	{
@@ -4018,6 +4390,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VK_EXT_line_rasterization
 
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3LineRasterizationMode )
@@ -4041,6 +4415,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VK_NV_clip_space_w_scaling
+
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ViewportWScalingEnable )
 	{
@@ -4052,6 +4428,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VK_NV_viewport_swizzle
+
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3ViewportSwizzle )
 	{
@@ -4062,6 +4440,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VK_NV_fragment_coverage_to_color
 
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageToColorEnable )
@@ -4084,6 +4464,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VK_NV_framebuffer_mixed_samples
 
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3CoverageModulationMode )
@@ -4117,6 +4499,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VK_KHR_pipeline_library
 
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceRayTracingPipelineFeaturesKHR.rayTracingPipeline )

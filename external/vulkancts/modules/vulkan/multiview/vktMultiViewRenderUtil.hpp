@@ -46,7 +46,8 @@ template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc,
 vk::Move<vk::VkRenderPass> makeRenderPass(const vk::DeviceInterface &vk, const vk::VkDevice device,
                                           const vk::VkFormat colorFormat, const std::vector<uint32_t> &viewMasks,
                                           const vk::VkSampleCountFlagBits samples,
-                                          const vk::VkAttachmentLoadOp colorLoadOp, const vk::VkFormat dsFormat);
+                                          const vk::VkAttachmentLoadOp colorLoadOp, const vk::VkFormat dsFormat,
+                                          const bool useGeneralLayout);
 
 template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc, typename SubpassDep,
           typename RenderPassCreateInfo>
@@ -58,7 +59,8 @@ template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc,
           typename RenderPassCreateInfo>
 vk::Move<vk::VkRenderPass> makeRenderPassWithDepth(const vk::DeviceInterface &vk, const vk::VkDevice device,
                                                    const vk::VkFormat colorFormat,
-                                                   const std::vector<uint32_t> &viewMasks, const vk::VkFormat dsFormat);
+                                                   const std::vector<uint32_t> &viewMasks, const vk::VkFormat dsFormat,
+                                                   const bool useGeneralLayout);
 
 void beginSecondaryCommandBuffer(const vk::DeviceInterface &vk, const vk::VkCommandBuffer commandBuffer,
                                  const vk::VkRenderPass renderPass, const uint32_t subpass,
@@ -69,6 +71,11 @@ void imageBarrier(const vk::DeviceInterface &vk, const vk::VkCommandBuffer cmdBu
                   const vk::VkAccessFlags dstAccessMask,
                   const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
                   const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+
+void memoryBarrier(const vk::DeviceInterface &vk, const vk::VkCommandBuffer cmdBuffer,
+                   const vk::VkAccessFlags srcAccessMask, const vk::VkAccessFlags dstAccessMask,
+                   const vk::VkPipelineStageFlags srcStageMask = vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
+                   const vk::VkPipelineStageFlags dstStageMask = vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
 
 } // namespace MultiView
 } // namespace vkt

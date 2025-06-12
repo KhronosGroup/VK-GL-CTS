@@ -2947,7 +2947,7 @@ de::MovePtr<VkVideoEncodeH265RateControlLayerInfoKHR> getVideoEncodeH265RateCont
 
     const VkVideoEncodeH265RateControlLayerInfoKHR videoEncodeH265RateControlLayerInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_RATE_CONTROL_LAYER_INFO_KHR, //  VkStructureType sType;
-        DE_NULL,                                                         //  const void* pNext;
+        nullptr,                                                         //  const void* pNext;
         useMinQp,                                                        //  VkBool32 useMinQp;
         videoEncodeH265MinQp,                                            //  VkVideoEncodeH265QpKHR minQp;
         useMaxQp,                                                        //  VkBool32 useMaxQp;

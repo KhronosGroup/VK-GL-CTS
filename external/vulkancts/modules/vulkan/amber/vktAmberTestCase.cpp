@@ -86,6 +86,8 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
 {
     if (feature == "Storage16BitFeatures.storageBuffer16BitAccess")
         return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
+    if (feature == "Storage16BitFeatures.uniformAndStorageBuffer16BitAccess")
+        return ctx.get16BitStorageFeatures().uniformAndStorageBuffer16BitAccess;
     if (feature == "Float16Int8Features.shaderFloat16")
         return ctx.getShaderFloat16Int8Features().shaderFloat16;
     if (feature == "Float16Int8Features.shaderInt8")
@@ -130,6 +132,8 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.get16BitStorageFeatures().storageBuffer16BitAccess;
     if (feature == "Storage8BitFeatures.storageBuffer8BitAccess")
         return ctx.get8BitStorageFeatures().storageBuffer8BitAccess;
+    if (feature == "Storage8BitFeatures.uniformAndStorageBuffer8BitAccess")
+        return ctx.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess;
     if (feature == "IndexTypeUint8Features.indexTypeUint8")
         return ctx.getIndexTypeUint8Features().indexTypeUint8;
     if (feature == "RayTracingPipelineFeaturesKHR.rayTracingPipeline")

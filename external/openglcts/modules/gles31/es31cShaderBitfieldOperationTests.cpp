@@ -59,11 +59,11 @@ struct Data
 {
     Data()
     {
-        memset(this, 0, sizeof *this);
+        memset((void *)this, 0, sizeof *this);
     }
     Data(Data const &init)
     {
-        memcpy(this, &init, sizeof *this);
+        memcpy((void *)this, &init, sizeof *this);
     }
 
     GLuint inUvec4[4];

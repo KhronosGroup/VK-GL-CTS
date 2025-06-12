@@ -106,6 +106,7 @@ struct TestParams
     bool useDynamicRendering;
     bool useImagelessFramebuffer;
     bool useNullShadingRateImage;
+    bool useGeneralLayout;
     OptDSParams dsParams;
 
     bool useDepthStencil(void) const
@@ -240,6 +241,8 @@ private:
 
     bool verifyUsingAtomicChecks(uint32_t tileWidth, uint32_t tileHeight, uint32_t rateWidth, uint32_t rateHeight,
                                  uint32_t *outBufferPtr) const;
+
+    VkImageLayout getFsrLayout() const;
 
     bool runComputeShaderMode(void);
     bool runFragmentShaderMode(void);
@@ -449,11 +452,11 @@ Move<VkRenderPass> AttachmentRateInstance::buildRenderPass(VkDevice device, cons
 
     std::vector<VkAttachmentReference2> fragmentShadingRateAttachments(
         subpassCount, {
-                          VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,                     // VkStructureType sType;
-                          nullptr,                                                      // const void* pNext;
-                          1,                                                            // uint32_t attachment;
-                          VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, // VkImageLayout layout;
-                          0, // VkImageAspectFlags aspectMask;
+                          VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, // VkStructureType sType;
+                          nullptr,                                  // const void* pNext;
+                          1,                                        // uint32_t attachment;
+                          getFsrLayout(),                           // VkImageLayout layout;
+                          0,                                        // VkImageAspectFlags aspectMask;
                       });
 
     std::vector<VkFragmentShadingRateAttachmentInfoKHR> shadingRateAttachmentInfos(
@@ -504,7 +507,7 @@ Move<VkRenderPass> AttachmentRateInstance::buildRenderPass(VkDevice device, cons
         attachmentDescriptions[1].format        = m_params->srFormat;
         attachmentDescriptions[1].loadOp        = VK_ATTACHMENT_LOAD_OP_LOAD;
         attachmentDescriptions[1].storeOp       = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachmentDescriptions[1].initialLayout = VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR;
+        attachmentDescriptions[1].initialLayout = getFsrLayout();
     }
 
     if (useShadingRate1)
@@ -520,7 +523,7 @@ Move<VkRenderPass> AttachmentRateInstance::buildRenderPass(VkDevice device, cons
         attachmentDescriptions[3].format        = m_params->srFormat;
         attachmentDescriptions[3].loadOp        = VK_ATTACHMENT_LOAD_OP_LOAD;
         attachmentDescriptions[3].storeOp       = VK_ATTACHMENT_STORE_OP_DONT_CARE;
-        attachmentDescriptions[3].initialLayout = VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR;
+        attachmentDescriptions[3].initialLayout = getFsrLayout();
     }
 
     std::vector<VkAttachmentReference2> dsAttachmentReferences;
@@ -921,7 +924,7 @@ void AttachmentRateInstance::startRendering(const VkCommandBuffer commandBuffer,
             VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR, // VkStructureType sType;
             nullptr,                                                               // const void* pNext;
             VK_NULL_HANDLE,                                                        // VkImageView imageView;
-            VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,          // VkImageLayout imageLayout;
+            getFsrLayout(),                                                        // VkImageLayout imageLayout;
             {0, 0} // VkExtent2D shadingRateAttachmentTexelSize;
         };
 
@@ -1195,6 +1198,12 @@ bool AttachmentRateInstance::verifyUsingAtomicChecks(uint32_t tileWidth, uint32_
     return true;
 }
 
+VkImageLayout AttachmentRateInstance::getFsrLayout() const
+{
+    return m_params->useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL :
+                                        VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR;
+}
+
 bool AttachmentRateInstance::runComputeShaderMode(void)
 {
     // clear the shading rate attachment, then using a compute shader, set the shading rate attachment
@@ -1300,8 +1309,8 @@ bool AttachmentRateInstance::runComputeShaderMode(void)
                 VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
                 VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, **m_srImage[0],
                 m_defaultImageSubresourceRange);
-            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, nullptr, 1,
-                                  &srImageBarrierShadingRate);
+            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, nullptr,
+                                  m_params->useGeneralLayout ? 0 : 1, &srImageBarrierShadingRate);
 
             // wait till cb image layout is changed
             srcStageMask                        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -1452,14 +1461,18 @@ bool AttachmentRateInstance::runFragmentShaderMode(void)
             finishRendering(*cmdBuffer);
 
             // wait till sr image is ready and change sr images layout
-            srcStageMask                                   = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-            dstStageMask                                   = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+            srcStageMask                             = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+            dstStageMask                             = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+            VkMemoryBarrier memoryBarrierShadingRate = makeMemoryBarrier(
+                useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR);
             VkImageMemoryBarrier srImageBarrierShadingRate = makeImageMemoryBarrier(
                 useMemoryAccess ? VK_ACCESS_MEMORY_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                 useMemoryAccess ? VK_ACCESS_MEMORY_READ_BIT : VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
                 VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, **m_srImage[0],
                 m_defaultImageSubresourceRange);
-            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
+            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, m_params->useGeneralLayout ? 1 : 0,
+                                  &memoryBarrierShadingRate, 0, nullptr, m_params->useGeneralLayout ? 0 : 1,
                                   &srImageBarrierShadingRate);
 
             // wait till cb image layout is changed
@@ -1614,8 +1627,8 @@ bool AttachmentRateInstance::runCopyMode(void)
                 VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR,
                 VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, **m_srImage[0],
                 m_defaultImageSubresourceRange);
-            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, nullptr, 1,
-                                  &srImageBarrierShadingRate);
+            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, nullptr,
+                                  m_params->useGeneralLayout ? 0 : 1, &srImageBarrierShadingRate);
 
             // wait till cb image layout is changed
             srcStageMask                        = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -1914,13 +1927,16 @@ bool AttachmentRateInstance::runCopyModeOnTransferQueue(void)
                                   &srImageBarrierOwnershipTransfer);
 
             // wait till sr image layout is changed
-            srcStageMask                                   = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            dstStageMask                                   = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+            srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+            VkMemoryBarrier srMemoryBarrierShadingRate =
+                makeMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR);
             VkImageMemoryBarrier srImageBarrierShadingRate = makeImageMemoryBarrier(
                 VK_ACCESS_NONE_KHR, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR, VK_IMAGE_LAYOUT_GENERAL,
                 VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, **m_srImage[0],
                 m_defaultImageSubresourceRange);
-            vk.cmdPipelineBarrier(*graphicsCmdBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
+            vk.cmdPipelineBarrier(*graphicsCmdBuffer, srcStageMask, dstStageMask, 0, m_params->useGeneralLayout ? 1 : 0,
+                                  &srMemoryBarrierShadingRate, 0, nullptr, m_params->useGeneralLayout ? 0 : 1,
                                   &srImageBarrierShadingRate);
 
             // wait till cb image layout is changed
@@ -2072,13 +2088,16 @@ bool AttachmentRateInstance::runFillLinearTiledImage(void)
             beginCommandBuffer(vk, *cmdBuffer, 0u);
 
             // wait till sr image layout is changed
-            VkPipelineStageFlags srcStageMask             = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
-            VkPipelineStageFlags dstStageMask             = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+            VkPipelineStageFlags srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+            VkPipelineStageFlags dstStageMask = VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+            VkMemoryBarrier srMemoryBarrierAttachment =
+                makeMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR);
             VkImageMemoryBarrier srImageBarrierAttachment = makeImageMemoryBarrier(
                 VK_ACCESS_NONE_KHR, VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR, VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR, **m_srImage[0],
                 m_defaultImageSubresourceRange);
-            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 0, nullptr, 0, nullptr, 1,
+            vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, m_params->useGeneralLayout ? 1 : 0,
+                                  &srMemoryBarrierAttachment, 0, nullptr, m_params->useGeneralLayout ? 0 : 1,
                                   &srImageBarrierAttachment);
 
             // wait till cb image layout is changed
@@ -2232,8 +2251,8 @@ bool AttachmentRateInstance::runTwoSubpassMode(void)
                                   VK_IMAGE_LAYOUT_GENERAL, VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR,
                                   **m_srImage[0], m_defaultImageSubresourceRange));
     srImageBarrierShadingRate[1].image = **m_srImage[1];
-    vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, nullptr, 2,
-                          srImageBarrierShadingRate.data());
+    vk.cmdPipelineBarrier(*cmdBuffer, srcStageMask, dstStageMask, 0, 1, &memoryBarrier, 0, nullptr,
+                          m_params->useGeneralLayout ? 0 : 2, srImageBarrierShadingRate.data());
 
     // wait till cb image layouts are changed
     srcStageMask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
@@ -2594,6 +2613,7 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                                                    groupParams->useDynamicRendering, // bool useDynamicRendering;
                                                    false,                            // bool useImagelessFramebuffer;
                                                    false,                            // bool useNullShadingRateImage;
+                                                   false,                            // bool useGeneralLayout;
                                                    tcu::Nothing,                     // OptDSParams dsParams;
                                                })));
 
@@ -2609,6 +2629,7 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                                                                          false,        // bool useDynamicRendering;
                                                                          false,        // bool useImagelessFramebuffer;
                                                                          true,         // bool useNullShadingRateImage;
+                                                                         false,        // bool useGeneralLayout;
                                                                          tcu::Nothing, // OptDSParams dsParams;
                                                                      })));
                 }
@@ -2625,8 +2646,24 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                                                                          false,        // bool useDynamicRendering;
                                                                          true,         // bool useImagelessFramebuffer;
                                                                          false,        // bool useNullShadingRateImage;
+                                                                         false,        // bool useGeneralLayout;
                                                                          tcu::Nothing, // OptDSParams dsParams;
                                                                      })));
+
+                    // duplicate all tests using only general layout
+                    std::string generalLayoutName = std::string(srRate.name) + "_general_layout";
+                    formatGroup->addChild(
+                        new AttachmentRateTestCase(testCtx, generalLayoutName.c_str(),
+                                                   de::SharedPtr<TestParams>(new TestParams{
+                                                       testModeParam.mode,               // TestMode mode;
+                                                       srFormat.format,                  // VkFormat srFormat;
+                                                       srRate.count,                     // VkExtent2D srRate;
+                                                       groupParams->useDynamicRendering, // bool useDynamicRendering;
+                                                       false,        // bool useImagelessFramebuffer;
+                                                       false,        // bool useNullShadingRateImage;
+                                                       true,         // bool useGeneralLayout;
+                                                       tcu::Nothing, // OptDSParams dsParams;
+                                                   })));
                 }
             }
 
@@ -2648,6 +2685,7 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                 false,             // bool useDynamicRendering;
                 false,             // bool useImagelessFramebuffer;
                 false,             // bool useNullShadingRateImage;
+                false,             // bool useGeneralLayout;
                 tcu::Nothing,      // OptDSParams dsParams;
             })));
         miscGroup->addChild(new AttachmentRateTestCase(testCtx, "memory_access",
@@ -2658,6 +2696,7 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                                                            false,             // bool useDynamicRendering;
                                                            false,             // bool useImagelessFramebuffer;
                                                            false,             // bool useNullShadingRateImage;
+                                                           false,             // bool useGeneralLayout;
                                                            tcu::Nothing,      // OptDSParams dsParams;
                                                        })));
         {
@@ -2686,6 +2725,7 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                                                    false,             // bool useDynamicRendering;
                                                    false,             // bool useImagelessFramebuffer;
                                                    false,             // bool useNullShadingRateImage;
+                                                   false,             // bool useGeneralLayout;
                                                    DepthStencilParams{dsFormat, layout}, // OptDSParams dsParams;
                                                })));
             }
@@ -2702,6 +2742,7 @@ void createAttachmentRateTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *pa
                                                            true,              // bool useDynamicRendering;
                                                            false,             // bool useImagelessFramebuffer;
                                                            false,             // bool useNullShadingRateImage;
+                                                           false,             // bool useGeneralLayout;
                                                            tcu::Nothing       // OptDSParams dsParams;
                                                        })));
 #endif

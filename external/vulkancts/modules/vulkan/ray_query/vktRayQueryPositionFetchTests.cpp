@@ -84,6 +84,11 @@ struct TestParams
     vk::VkAccelerationStructureBuildTypeKHR buildType; // are we making AS on CPU or GPU
     VkFormat vertexFormat;
     uint32_t testFlagMask;
+
+    uint32_t getRandomSeed() const
+    {
+        return (((buildType & 0xFF) << 24) | ((vertexFormat & 0xFF) << 16) | (testFlagMask & 0xFF));
+    }
 };
 
 static constexpr uint32_t kNumThreadsAtOnce = 128;
@@ -420,6 +425,9 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const std::vector<tcu::Vec3> triangle = {
         tcu::Vec3(0.0f, 0.0f, 0.0f),
         tcu::Vec3(1.0f, 0.0f, 0.0f),
@@ -429,18 +437,49 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     const VkTransformMatrixKHR notQuiteIdentityMatrix3x4 = {
         {{0.98f, 0.0f, 0.0f, 0.0f}, {0.0f, 0.97f, 0.0f, 0.0f}, {0.0f, 0.0f, 0.99f, 0.0f}}};
 
-    de::SharedPtr<RaytracedGeometryBase> geometry =
-        makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_params.vertexFormat, VK_INDEX_TYPE_NONE_KHR);
+    // The origin is at Z=1 and the direction is Z=-1, so the triangle needs to be at Z=0 to create a hit. To make
+    // things more interesting, when the vertex format has a Z component we will use 4 geometries and 4 triangles per
+    // geometry, but only 1 of them will be at Z=0. The rest will be at Z=10+N, where N is calculated based on the
+    // geometry and triangle index. To be able to store those Z values, the vertex format needs to be sfloat.
+    const auto vertexTcuFormat = mapVkFormat(m_params.vertexFormat);
+    const bool multipleTriangles =
+        ((tcu::getNumUsedChannels(vertexTcuFormat.order) >= 3) && isSfloatFormat(m_params.vertexFormat));
+    const uint32_t zOffset = 10u;
 
-    for (auto &v : triangle)
+    const auto seed = m_params.getRandomSeed();
+    de::Random rnd(seed);
+
+    uint32_t geometryCount = (multipleTriangles ? 4u : 1u);
+    uint32_t triangleCount = (multipleTriangles ? 4u : 1u);
+    uint32_t chosenGeom =
+        (multipleTriangles ? static_cast<uint32_t>(rnd.getInt(1, static_cast<int>(geometryCount) - 1)) : 0u);
+    uint32_t chosenTri =
+        (multipleTriangles ? static_cast<uint32_t>(rnd.getInt(1, static_cast<int>(triangleCount) - 1)) : 0u);
+
+    const auto getLargeZ = [&](uint32_t geomIndex, uint32_t triangleIndex) -> float
+    { return static_cast<float>((triangleCount * geomIndex + triangleIndex) + zOffset); };
+
+    for (uint32_t g = 0u; g < geometryCount; ++g)
     {
-        geometry->addVertex(v);
+        de::SharedPtr<RaytracedGeometryBase> geometry =
+            makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_params.vertexFormat, VK_INDEX_TYPE_NONE_KHR);
+
+        for (uint32_t t = 0u; t < triangleCount; ++t)
+        {
+            const auto z = ((g == chosenGeom && t == chosenTri) ? 0.0f : getLargeZ(g, t));
+            for (const auto &v : triangle)
+            {
+                const tcu::Vec3 finalVertex(v.x(), v.y(), z);
+                geometry->addVertex(finalVertex);
+            }
+        }
+
+        bottomLevelAS->addGeometry(geometry);
     }
 
-    bottomLevelAS->addGeometry(geometry);
     bottomLevelAS->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR);
     bottomLevelAS->setBuildType(m_params.buildType);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
 
     topLevelAS->setInstanceCount(1);
@@ -448,7 +487,7 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
     topLevelAS->addInstance(blasSharedPtr, (m_params.testFlagMask & TEST_FLAG_BIT_INSTANCE_TRANSFORM) ?
                                                notQuiteIdentityMatrix3x4 :
                                                identityMatrix3x4);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // One ray for this test
     // XXX Should it be multiple triangles and one ray per triangle for more coverage?

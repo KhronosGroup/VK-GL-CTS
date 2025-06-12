@@ -27,6 +27,7 @@
 #include "vktTestCase.hpp"
 #include "vktPipelineSpecConstantUtil.hpp"
 #include "vktPipelineMakeUtil.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuTexture.hpp"
@@ -2436,6 +2437,260 @@ tcu::TestCaseGroup *createCompositeTests(tcu::TestContext &testCtx, const Pipeli
     return compositeTests.release();
 }
 
+void unalignedSpecConstantCheckSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_shader_float16_int8");
+    const auto &f16i8Features = context.getShaderFloat16Int8Features();
+    if (!f16i8Features.shaderInt8)
+        TCU_THROW(NotSupportedError, "shaderInt8 not supported");
+}
+
+void unalignedSpecConstantInitPrograms(vk::SourceCollections &dst)
+{
+    // We use a SPIR-V shader to change "OpSpecConstantOp %uint UConvert %something" into "OpUConvert %uint %something",
+    // because the former has additional problems, apparently.
+    //
+    // Based on:
+    //
+    //    #version 450
+    //    #extension GL_EXT_shader_explicit_arithmetic_types_int8 : enable
+    //    layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
+    //
+    //    // All spec constants will write zero by default
+    //    layout (constant_id = 0) const uint8_t a = uint8_t(0);
+    //    layout (constant_id = 1) const uint b = 0;
+    //    layout (constant_id = 3) const uint c = 0;
+    //    layout (constant_id = 4) const uint d = 0;
+    //    layout (constant_id = 5) const uint8_t e = uint8_t(0);
+    //
+    //    layout(set = 0, binding = 0) buffer ssbo {
+    //        uint data[5];
+    //    };
+    //
+    //    void main() {
+    //        data[0] = 0; // clear full word
+    //        data[0] = uint(a);
+    //        data[1] = b;
+    //        data[2] = c;
+    //        data[3] = d;
+    //        data[4] = 0; // clear full word
+    //        data[4] = uint(e);
+    //    }
+    //
+    std::ostringstream comp;
+    comp << "; SPIR-V\n"
+         << "; Version: 1.0\n"
+         << "; Generator: Khronos Glslang Reference Front End; 11\n"
+         << "; Bound: 38\n"
+         << "; Schema: 0\n"
+         << "               OpCapability Shader\n"
+         << "               OpCapability Int8\n"
+         << "          %1 = OpExtInstImport \"GLSL.std.450\"\n"
+         << "               OpMemoryModel Logical GLSL450\n"
+         << "               OpEntryPoint GLCompute %main \"main\"\n"
+         << "               OpExecutionMode %main LocalSize 1 1 1\n"
+         << "               OpSource GLSL 450\n"
+         << "               OpSourceExtension \"GL_EXT_shader_explicit_arithmetic_types_int8\"\n"
+         << "               OpName %main \"main\"\n"
+         << "               OpName %ssbo \"ssbo\"\n"
+         << "               OpMemberName %ssbo 0 \"data\"\n"
+         << "               OpName %_ \"\"\n"
+         << "               OpName %a \"a\"\n"
+         << "               OpName %b \"b\"\n"
+         << "               OpName %c \"c\"\n"
+         << "               OpName %d \"d\"\n"
+         << "               OpName %e \"e\"\n"
+         << "               OpDecorate %_arr_uint_uint_5 ArrayStride 4\n"
+         << "               OpDecorate %ssbo BufferBlock\n"
+         << "               OpMemberDecorate %ssbo 0 Offset 0\n"
+         << "               OpDecorate %_ Binding 0\n"
+         << "               OpDecorate %_ DescriptorSet 0\n"
+         << "               OpDecorate %a SpecId 0\n"
+         << "               OpDecorate %b SpecId 1\n"
+         << "               OpDecorate %c SpecId 3\n"
+         << "               OpDecorate %d SpecId 4\n"
+         << "               OpDecorate %e SpecId 5\n"
+         << "               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize\n"
+         << "       %void = OpTypeVoid\n"
+         << "          %3 = OpTypeFunction %void\n"
+         << "       %uint = OpTypeInt 32 0\n"
+         << "     %uint_5 = OpConstant %uint 5\n"
+         << "%_arr_uint_uint_5 = OpTypeArray %uint %uint_5\n"
+         << "       %ssbo = OpTypeStruct %_arr_uint_uint_5\n"
+         << "%_ptr_Uniform_ssbo = OpTypePointer Uniform %ssbo\n"
+         << "          %_ = OpVariable %_ptr_Uniform_ssbo Uniform\n"
+         << "        %int = OpTypeInt 32 1\n"
+         << "      %int_0 = OpConstant %int 0\n"
+         << "     %uint_0 = OpConstant %uint 0\n"
+         << "%_ptr_Uniform_uint = OpTypePointer Uniform %uint\n"
+         << "      %uchar = OpTypeInt 8 0\n"
+         << "          %a = OpSpecConstant %uchar 0\n"
+         << "      %int_1 = OpConstant %int 1\n"
+         << "          %b = OpSpecConstant %uint 0\n"
+         << "      %int_2 = OpConstant %int 2\n"
+         << "          %c = OpSpecConstant %uint 0\n"
+         << "      %int_3 = OpConstant %int 3\n"
+         << "          %d = OpSpecConstant %uint 0\n"
+         << "      %int_4 = OpConstant %int 4\n"
+         << "          %e = OpSpecConstant %uchar 0\n"
+         << "     %v3uint = OpTypeVector %uint 3\n"
+         << "     %uint_1 = OpConstant %uint 1\n"
+         << "%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_1 %uint_1 %uint_1\n"
+         << "       %main = OpFunction %void None %3\n"
+         << "          %5 = OpLabel\n"
+         << "         %19 = OpUConvert %uint %a\n"
+         << "         %33 = OpUConvert %uint %e\n"
+         << "         %16 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %int_0\n"
+         << "               OpStore %16 %uint_0\n"
+         << "         %20 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %int_0\n"
+         << "               OpStore %20 %19\n"
+         << "         %23 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %int_1\n"
+         << "               OpStore %23 %b\n"
+         << "         %26 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %int_2\n"
+         << "               OpStore %26 %c\n"
+         << "         %29 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %int_3\n"
+         << "               OpStore %29 %d\n"
+         << "         %31 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %int_4\n"
+         << "               OpStore %31 %uint_0\n"
+         << "         %34 = OpAccessChain %_ptr_Uniform_uint %_ %int_0 %int_4\n"
+         << "               OpStore %34 %33\n"
+         << "               OpReturn\n"
+         << "               OpFunctionEnd\n";
+
+    dst.spirvAsmSources.add("comp") << comp.str();
+}
+
+tcu::TestStatus unalignedSpecConstantTest(Context &context)
+{
+    const auto ctx         = context.getContextCommonData();
+    const auto descType    = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto shaderStage = VK_SHADER_STAGE_COMPUTE_BIT;
+
+    std::vector<uint32_t> outputData(5u, 0u);
+
+    const auto bufferSize = static_cast<VkDeviceSize>(de::dataSize(outputData));
+    const auto bufferInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory buffer(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = buffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(outputData), de::dataSize(outputData));
+    }
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder layoutBuilder;
+    layoutBuilder.addSingleBinding(descType, shaderStage);
+    const auto setLayout      = layoutBuilder.build(ctx.vkd, ctx.device);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+    const auto descSet        = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+
+    const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto descInfo = makeDescriptorBufferInfo(*buffer, 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*descSet, binding(0u), descType, &descInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto compShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+
+    const std::vector<uint8_t> inputData{1u, 2u, 3u, 4u, 5u, 6u, 7u, 8u};
+
+    const std::vector<VkSpecializationMapEntry> specializationEntries{
+        // constant id, offset, size; see inputData.
+        makeSpecializationMapEntry(0, 1, 1), // Byte values: 2
+        makeSpecializationMapEntry(1, 1, 4), // Byte values: 2,3,4,5
+        makeSpecializationMapEntry(3, 2, 4), // Byte values: 3,4,5,6
+        makeSpecializationMapEntry(4, 3, 4), // Byte values: 4,5,6,7
+        makeSpecializationMapEntry(5, 3, 1), // Byte values: 4
+    };
+
+    const VkSpecializationInfo specializationInfo = {
+        de::sizeU32(specializationEntries),
+        de::dataOrNull(specializationEntries),
+        de::dataSize(inputData),
+        de::dataOrNull(inputData),
+    };
+
+    const VkComputePipelineCreateInfo pipelineCreateInfo = {
+        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+        nullptr,
+        0u,
+        VkPipelineShaderStageCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            nullptr,
+            0u,
+            VK_SHADER_STAGE_COMPUTE_BIT,
+            *compShader,
+            "main",
+            &specializationInfo,
+        },
+        *pipelineLayout,
+        VK_NULL_HANDLE,
+        0u,
+    };
+
+    const auto pipeline = createComputePipeline(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Calculate reference values.
+    std::vector<uint32_t> reference(outputData.size(), 0u);
+
+    for (size_t i = 0u; i < specializationEntries.size(); ++i)
+    {
+        const auto &entry = specializationEntries.at(i);
+        uint32_t value    = 0u;
+        if (entry.size == 1u)
+            value = static_cast<uint32_t>(inputData.at(entry.offset));
+        else if (entry.size == 4u)
+            memcpy(&value, &inputData.at(entry.offset), entry.size);
+        reference.at(i) = value;
+    }
+
+    // Compare with output values.
+    invalidateAlloc(ctx.vkd, ctx.device, buffer.getAllocation());
+    memcpy(de::dataOrNull(outputData), buffer.getAllocation().getHostPtr(), de::dataSize(outputData));
+
+    bool ok   = true;
+    auto &log = context.getTestContext().getLog();
+
+    for (size_t i = 0u; i < outputData.size(); ++i)
+    {
+        const auto &res = outputData.at(i);
+        const auto &ref = reference.at(i);
+
+        if (res != ref)
+        {
+            ok = false;
+            std::ostringstream msg;
+            msg << "Unexpected data at position " << i << std::hex << ": expected 0x" << ref << " but found 0x" << res;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+        }
+    }
+
+    if (!ok)
+        TCU_FAIL("Unexpected results found in output buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createSpecConstantTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineType)
@@ -2479,6 +2734,16 @@ tcu::TestCaseGroup *createSpecConstantTests(tcu::TestContext &testCtx, PipelineC
 
         if (isCompute)
             stageGroup->addChild(createWorkGroupSizeTests(testCtx));
+
+        if (isCompute)
+        {
+            de::MovePtr<tcu::TestCaseGroup> unalignedGrp(new tcu::TestCaseGroup(testCtx, "unaligned_spec_constant"));
+
+            addFunctionCaseWithPrograms(unalignedGrp.get(), "test", unalignedSpecConstantCheckSupport,
+                                        unalignedSpecConstantInitPrograms, unalignedSpecConstantTest);
+
+            stageGroup->addChild(unalignedGrp.release());
+        }
 
         stage.parentGroup->addChild(stageGroup.release());
     }

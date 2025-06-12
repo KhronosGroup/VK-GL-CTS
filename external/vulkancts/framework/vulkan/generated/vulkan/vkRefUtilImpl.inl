@@ -252,6 +252,12 @@ void Deleter<VkShaderEXT>::operator() (VkShaderEXT obj) const
 	m_deviceIface->destroyShaderEXT(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkExternalComputeQueueNV>::operator() (VkExternalComputeQueueNV obj) const
+{
+	m_deviceIface->destroyExternalComputeQueueNV(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -660,17 +666,17 @@ Move<VkOpticalFlowSessionNV> createOpticalFlowSessionNV (const DeviceInterface& 
 	return Move<VkOpticalFlowSessionNV>(check<VkOpticalFlowSessionNV>(object), Deleter<VkOpticalFlowSessionNV>(vk, device, pAllocator));
 }
 
+Move<VkExternalComputeQueueNV> createExternalComputeQueueNV (const DeviceInterface& vk, VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkExternalComputeQueueNV object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, &object));
+	return Move<VkExternalComputeQueueNV>(check<VkExternalComputeQueueNV>(object), Deleter<VkExternalComputeQueueNV>(vk, device, pAllocator));
+}
+
 Move<VkAccelerationStructureKHR> createAccelerationStructure2KHR (const DeviceInterface& vk, VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkAccelerationStructureKHR object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createAccelerationStructure2KHR(device, pCreateInfo, pAllocator, &object));
 	return Move<VkAccelerationStructureKHR>(check<VkAccelerationStructureKHR>(object), Deleter<VkAccelerationStructureKHR>(vk, device, pAllocator));
-}
-
-Move<VkMicromapEXT> createMicromap2EXT (const DeviceInterface& vk, VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkMicromapEXT object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createMicromap2EXT(device, pCreateInfo, pAllocator, &object));
-	return Move<VkMicromapEXT>(check<VkMicromapEXT>(object), Deleter<VkMicromapEXT>(vk, device, pAllocator));
 }
 

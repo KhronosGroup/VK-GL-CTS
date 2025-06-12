@@ -1470,16 +1470,19 @@ void RayTracingConfiguration::fillCommandBuffer(Context &context, TestParams &te
         makeBottomLevelAccelerationStructure();
     de::MovePtr<TopLevelAccelerationStructure> topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     m_bottomLevelAccelerationStructure =
         de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release());
     m_bottomLevelAccelerationStructure->setDefaultGeometryData(testParams.stage);
-    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_bottomLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     m_topLevelAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(topLevelAccelerationStructure.release());
     m_topLevelAccelerationStructure->setInstanceCount(1);
     m_topLevelAccelerationStructure->addInstance(m_bottomLevelAccelerationStructure);
-    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator);
+    m_topLevelAccelerationStructure->createAndBuild(vkd, device, commandBuffer, allocator, bufferProps);
 
     const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = m_topLevelAccelerationStructure.get();
     const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
@@ -1648,6 +1651,9 @@ const VkAccelerationStructureKHR *TestConfigurationNoMiss::initAccelerationStruc
         makeTopLevelAccelerationStructure();
     de::Random rng(testParams.randomSeed);
     std::vector<tcu::Vec3> geometryData;
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     if (testParams.geomType == GEOM_TYPE_AABBS)
     {
@@ -1856,13 +1862,13 @@ const VkAccelerationStructureKHR *TestConfigurationNoMiss::initAccelerationStruc
 
     rayQueryBottomLevelAccelerationStructure->setGeometryCount(1u);
     rayQueryBottomLevelAccelerationStructure->addGeometry(geometryData, testParams.geomType == GEOM_TYPE_TRIANGLES);
-    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    rayQueryBottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
     m_bottomAccelerationStructures.push_back(
         de::SharedPtr<BottomLevelAccelerationStructure>(rayQueryBottomLevelAccelerationStructure.release()));
     m_topAccelerationStructure =
         de::SharedPtr<TopLevelAccelerationStructure>(rayQueryTopLevelAccelerationStructure.release());
     m_topAccelerationStructure->addInstance(m_bottomAccelerationStructures.back());
-    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+    m_topAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return m_topAccelerationStructure.get()->getPtr();
 }

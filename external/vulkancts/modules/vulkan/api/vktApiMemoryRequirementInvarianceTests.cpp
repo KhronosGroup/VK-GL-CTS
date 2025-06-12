@@ -109,7 +109,6 @@ void BufferAllocator::allocate(Context &context)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
     VkDevice vkDevice         = context.getDevice();
-    uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
     Allocator &memAlloc       = context.getDefaultAllocator();
     de::MovePtr<IBufferAllocator> allocator;
     MemoryRequirement requirement = legalMemoryTypes[m_memoryType];
@@ -119,8 +118,7 @@ void BufferAllocator::allocate(Context &context)
     else
         allocator = de::MovePtr<IBufferAllocator>(new BufferSuballocation);
 
-    allocator->createTestBuffer(vk, vkDevice, queueFamilyIndex, m_size, m_usage, context, memAlloc, m_buffer,
-                                requirement, m_bufferAlloc);
+    allocator->createTestBuffer(vk, vkDevice, m_size, m_usage, context, memAlloc, m_buffer, requirement, m_bufferAlloc);
 }
 
 void BufferAllocator::deallocate(Context &context)

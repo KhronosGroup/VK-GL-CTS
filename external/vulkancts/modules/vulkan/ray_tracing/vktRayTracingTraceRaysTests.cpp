@@ -179,9 +179,9 @@ std::tuple<bool, VkQueue, uint32_t> getQueueFamilyIndexAtExact(const DeviceInter
 }
 
 typedef std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> BlasVec;
-auto initTopAccelerationStructure(VkCommandBuffer cmdBuffer, const BlasVec &bottomLevelAccelerationStructures,
-                                  Context &context, const VkExtent3D &imageExtent)
-    -> de::MovePtr<TopLevelAccelerationStructure>
+de::MovePtr<TopLevelAccelerationStructure> initTopAccelerationStructure(
+    VkCommandBuffer cmdBuffer, const BlasVec &bottomLevelAccelerationStructures, Context &context,
+    const VkExtent3D &imageExtent)
 {
     const DeviceInterface &vkd   = context.getDeviceInterface();
     const VkDevice device        = context.getDevice();
@@ -190,6 +190,9 @@ auto initTopAccelerationStructure(VkCommandBuffer cmdBuffer, const BlasVec &bott
 
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
     result->setInstanceCount(instanceCount);
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     uint32_t currentInstanceIndex = 0;
 
@@ -201,7 +204,7 @@ auto initTopAccelerationStructure(VkCommandBuffer cmdBuffer, const BlasVec &bott
                     continue;
                 result->addInstance(bottomLevelAccelerationStructures[currentInstanceIndex++]);
             }
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return result;
 }
@@ -443,6 +446,10 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingTraceRays
     const DeviceInterface &vkd = m_context.getDeviceInterface();
     const VkDevice device      = m_context.getDevice();
     Allocator &allocator       = m_context.getDefaultAllocator();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> result;
 
     tcu::Vec3 v0(0.0, 1.0, 0.0);
@@ -472,7 +479,7 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> RayTracingTraceRays
                 geometryData.push_back(xyz + v3);
 
                 bottomLevelAccelerationStructure->addGeometry(geometryData, true);
-                bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator);
+                bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
                 result.push_back(
                     de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
             }

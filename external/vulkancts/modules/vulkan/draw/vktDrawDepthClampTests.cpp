@@ -652,15 +652,15 @@ DepthClampTestInstance::DepthClampTestInstance(Context &context, const TestParam
         PipelineCreateInfo::VertexInputState(1, &vertexInputBindingDescription, 1, &vertexInputAttributeDescription);
 
     // Depth clamp control
-    const void *viewportNext = DE_NULL;
+    const void *viewportNext = nullptr;
 #ifndef CTS_USES_VULKANSC
     VkDepthClampRangeEXT depthClampRange = {m_params.depthClampControl.minDepthClamp,
                                             m_params.depthClampControl.maxDepthClamp};
     VkPipelineViewportDepthClampControlCreateInfoEXT depthClampControlCreateInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT, DE_NULL,
+        VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT, nullptr,
         m_params.depthClampControl.enabled && !m_dynamic ? VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT :
                                                            VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT,
-        m_params.depthClampControl.enabled && !m_dynamic ? &depthClampRange : DE_NULL};
+        m_params.depthClampControl.enabled && !m_dynamic ? &depthClampRange : nullptr};
     if (m_params.depthClampControl.enabled)
         viewportNext = &depthClampControlCreateInfo;
 #endif // CTS_USES_VULKANSC
@@ -857,7 +857,7 @@ void DepthClampTestInstance::drawCommands(VkCommandBuffer cmdBuffer) const
         vk.cmdSetDepthClampRangeEXT(cmdBuffer,
                                     m_params.depthClampControl.enabled ? VK_DEPTH_CLAMP_MODE_USER_DEFINED_RANGE_EXT :
                                                                          VK_DEPTH_CLAMP_MODE_VIEWPORT_RANGE_EXT,
-                                    m_params.depthClampControl.enabled ? &depthClampRange : DE_NULL);
+                                    m_params.depthClampControl.enabled ? &depthClampRange : nullptr);
     }
 #endif
 

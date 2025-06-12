@@ -1933,7 +1933,7 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2Feat
 }
 
 
-tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (Context& context)
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesKHR (Context& context)
 {
     const PlatformInterface&                vkp = context.getPlatformInterface();
     tcu::TestLog&                            log = context.getTestContext().getLog();
@@ -1958,15 +1958,15 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT (C
     const auto& extensionNames = context.getDeviceCreationExtensions();
     DE_UNREF(extensionNames); // In some cases this is not used.
 
-    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRobustness2FeaturesEXT>()))
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceRobustness2FeaturesKHR>()))
     {
         static const Feature features[] =
         {
-        FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, robustBufferAccess2),
-        FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, robustImageAccess2),
-        FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesEXT, nullDescriptor),
+        FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesKHR, robustBufferAccess2),
+        FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesKHR, robustImageAccess2),
+        FEATURE_ITEM (VkPhysicalDeviceRobustness2FeaturesKHR, nullDescriptor),
         };
-        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRobustness2FeaturesEXT*>(featuresStruct);
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceRobustness2FeaturesKHR*>(featuresStruct);
         checkFeatures(vkp, instance, instanceDriver, physicalDevice, 3, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures, memReservationStatMax, isSubProcess, context.getUsedApiVersion(), commandLine);
     }
 
@@ -2489,7 +2489,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "custom_border_color_features_ext", createDeviceWithUnsupportedFeaturesTestCustomBorderColorFeaturesEXT);
 	addFunctionCase(testGroup, "extended_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestExtendedDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "extended_dynamic_state2_features_ext", createDeviceWithUnsupportedFeaturesTestExtendedDynamicState2FeaturesEXT);
-	addFunctionCase(testGroup, "robustness2_features_ext", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesEXT);
+	addFunctionCase(testGroup, "robustness2_features_khr", createDeviceWithUnsupportedFeaturesTestRobustness2FeaturesKHR);
 	addFunctionCase(testGroup, "image_robustness_features", createDeviceWithUnsupportedFeaturesTestImageRobustnessFeatures);
 	addFunctionCase(testGroup, "4444_formats_features_ext", createDeviceWithUnsupportedFeaturesTest4444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "shader_image_atomic_int64_features_ext", createDeviceWithUnsupportedFeaturesTestShaderImageAtomicInt64FeaturesEXT);

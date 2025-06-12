@@ -1545,6 +1545,16 @@ void DeviceDriver::cmdTraceRaysIndirect2KHR (VkCommandBuffer commandBuffer, VkDe
     m_vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
 }
 
+void DeviceDriver::getClusterAccelerationStructureBuildSizesNV (VkDevice device, const VkClusterAccelerationStructureInputInfoNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+    m_vk.getClusterAccelerationStructureBuildSizesNV(device, pInfo, pSizeInfo);
+}
+
+void DeviceDriver::cmdBuildClusterAccelerationStructureIndirectNV (VkCommandBuffer commandBuffer, const VkClusterAccelerationStructureCommandsInfoNV* pCommandInfos) const
+{
+    m_vk.cmdBuildClusterAccelerationStructureIndirectNV(commandBuffer, pCommandInfos);
+}
+
 void DeviceDriver::getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
 {
     m_vk.getDeviceAccelerationStructureCompatibilityKHR(device, pVersionInfo, pCompatibility);
@@ -2261,6 +2271,16 @@ void DeviceDriver::cmdDecompressMemoryIndirectCountNV (VkCommandBuffer commandBu
     m_vk.cmdDecompressMemoryIndirectCountNV(commandBuffer, indirectCommandsAddress, indirectCommandsCountAddress, stride);
 }
 
+void DeviceDriver::getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+    m_vk.getPartitionedAccelerationStructuresBuildSizesNV(device, pInfo, pSizeInfo);
+}
+
+void DeviceDriver::cmdBuildPartitionedAccelerationStructuresNV (VkCommandBuffer commandBuffer, const VkBuildPartitionedAccelerationStructureInfoNV* pBuildInfo) const
+{
+    m_vk.cmdBuildPartitionedAccelerationStructuresNV(commandBuffer, pBuildInfo);
+}
+
 VkResult DeviceDriver::createCuModuleNVX (VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule) const
 {
     return m_vk.createCuModuleNVX(device, pCreateInfo, pAllocator, pModule);
@@ -2418,6 +2438,12 @@ void DeviceDriver::cmdEndRendering (VkCommandBuffer commandBuffer) const
     m_vk.cmdEndRendering(commandBuffer);
 }
 
+void DeviceDriver::cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdEndRendering2EXT(commandBuffer, pRenderingEndInfo);
+}
+
 void DeviceDriver::getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const
 {
     m_vk.getDescriptorSetLayoutHostMappingInfoVALVE(device, pBindingReference, pHostMapping);
@@ -2521,6 +2547,11 @@ VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipeli
 void DeviceDriver::exportMetalObjectsEXT (VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const
 {
     m_vk.exportMetalObjectsEXT(device, pMetalObjectsInfo);
+}
+
+void DeviceDriver::cmdBindTileMemoryQCOM (VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo) const
+{
+    m_vk.cmdBindTileMemoryQCOM(commandBuffer, pTileMemoryBindInfo);
 }
 
 VkResult DeviceDriver::getFramebufferTilePropertiesQCOM (VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const
@@ -2717,6 +2748,51 @@ void DeviceDriver::cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDe
     m_vk.cmdSetDepthClampRangeEXT(commandBuffer, depthClampMode, pDepthClampRange);
 }
 
+VkResult DeviceDriver::getMemoryMetalHandleEXT (VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, void** pHandle) const
+{
+    return m_vk.getMemoryMetalHandleEXT(device, pGetMetalHandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getMemoryMetalHandlePropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const
+{
+    return m_vk.getMemoryMetalHandlePropertiesEXT(device, handleType, pHandle, pMemoryMetalHandleProperties);
+}
+
+VkResult DeviceDriver::convertCooperativeVectorMatrixNV (VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo) const
+{
+    return m_vk.convertCooperativeVectorMatrixNV(device, pInfo);
+}
+
+void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const
+{
+    m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
+}
+
+void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer) const
+{
+    m_vk.cmdDispatchTileQCOM(commandBuffer);
+}
+
+void DeviceDriver::cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const
+{
+    m_vk.cmdBeginPerTileExecutionQCOM(commandBuffer, pPerTileBeginInfo);
+}
+
+void DeviceDriver::cmdEndPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const
+{
+    m_vk.cmdEndPerTileExecutionQCOM(commandBuffer, pPerTileEndInfo);
+}
+
+VkResult DeviceDriver::createExternalComputeQueueNV (VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const
+{
+    return m_vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, pExternalQueue);
+}
+
+void DeviceDriver::destroyExternalComputeQueueNV (VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyExternalComputeQueueNV(device, externalQueue, pAllocator);
+}
+
 void DeviceDriver::cmdCopyMemoryKHR (VkCommandBuffer commandBuffer, const VkCopyDeviceMemoryInfoKHR* pCopyMemoryInfo) const
 {
     m_vk.cmdCopyMemoryKHR(commandBuffer, pCopyMemoryInfo);
@@ -2837,9 +2913,4 @@ void DeviceDriver::cmdDispatchIndirect2KHR (VkCommandBuffer commandBuffer, VkDev
 VkResult DeviceDriver::createAccelerationStructure2KHR (VkDevice device, const VkAccelerationStructureCreateInfo2KHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
 {
     return m_vk.createAccelerationStructure2KHR(device, pCreateInfo, pAllocator, pAccelerationStructure);
-}
-
-VkResult DeviceDriver::createMicromap2EXT (VkDevice device, const VkMicromapCreateInfo2EXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const
-{
-    return m_vk.createMicromap2EXT(device, pCreateInfo, pAllocator, pMicromap);
 }

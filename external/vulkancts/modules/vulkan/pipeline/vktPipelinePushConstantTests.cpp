@@ -605,7 +605,7 @@ void PushConstantGraphicsTestInstance::init(void)
                                               useTessellation ? m_tessControlShaderModule : ShaderWrapper(),
                                               useTessellation ? m_tessEvaluationShaderModule : ShaderWrapper(),
                                               useGeometry ? m_geometryShaderModule : ShaderWrapper(),
-                                              m_sizeQueriedFromDevice ? &specializationInfo : DE_NULL)
+                                              m_sizeQueriedFromDevice ? &specializationInfo : nullptr)
             .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
             .setupFragmentOutputState(*m_renderPass)
             .buildPipeline();

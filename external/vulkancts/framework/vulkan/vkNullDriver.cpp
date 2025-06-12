@@ -283,8 +283,16 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
-VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(VkDevice, Micromap, EXT)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
 VK_NULL_DEFINE_OBJ_2_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ExternalComputeQueue, NV)
+// <Temporary workaround for outdated xml in spec for VK_KHR_device_address_commands>
+// cts main has tensors but spec for VK_KHR_device_address_commands not yet
+#ifdef VK_KHR_UNIFIED_IMAGE_LAYOUTS_EXTENSION_NAME
+#error xml was updated - remove whole ifdef/else workaround
+#endif
+///VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Tensor, ARM)
+///VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, TensorView, ARM)
 #endif // CTS_USES_VULKANSC
 
 class Instance

@@ -63,7 +63,7 @@ endif()
 PCH(DEQP_VK_VIDEO_SRCS ../pch.cpp)
 
 add_library(deqp-vk-video STATIC ${DEQP_VK_VIDEO_SRCS})
-target_link_libraries(deqp-vk-video ${DEQP_VK_VIDEO_LIBS})
+target_link_libraries(deqp-vk-video deqp-vk-synchronization deqp-vk-image-util deqp-vk-ycbcr-util ${DEQP_VK_VIDEO_LIBS})
 if (DE_OS_IS_UNIX)
 	# TODO: The NVIDIA samples app has hundreds of these warnings.
 	target_compile_options(deqp-vk-video PRIVATE "-Wno-conversion" "-Wno-sign-compare")

@@ -33,7 +33,9 @@
 #include "tcuTestLog.hpp"
 
 #define TRIANGLE_COUNT 100
-constexpr uint32_t kShadingRateCount = 16;
+constexpr uint32_t kShadingRateCount               = 16;
+constexpr glw::GLsizei kFramebufferSamples         = 4;
+constexpr glw::GLenum kAllowedFramebufferFormats[] = {GL_RGBA32F, GL_RGBA16F};
 
 namespace glcts
 {
@@ -70,6 +72,7 @@ FragmentShadingRateCombined::FragmentShadingRateCombined(
     , m_fbo_id(0)
     , m_vbo_id(0)
     , m_simulationCache(kShadingRateCount * kShadingRateCount * kShadingRateCount, 0xFFFFFFFF)
+    , m_framebufferFormat(GL_NONE)
 {
 }
 
@@ -121,6 +124,32 @@ void FragmentShadingRateCombined::init(void)
         {
             throw tcu::NotSupportedError("Non trivial combiner is not supported", "", __FILE__, __LINE__);
         }
+    }
+
+    if (m_tcParam.msaa)
+    {
+        const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+
+        for (glw::GLenum format : kAllowedFramebufferFormats)
+        {
+            glw::GLint maxSamples = 1;
+            gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, format, GL_SAMPLES, 1, &maxSamples);
+
+            if (maxSamples >= kFramebufferSamples)
+            {
+                m_framebufferFormat = format;
+                break;
+            }
+        }
+
+        if (m_framebufferFormat == GL_NONE)
+        {
+            throw tcu::NotSupportedError("MSAA not supported for any allowed format", "", __FILE__, __LINE__);
+        }
+    }
+    else
+    {
+        m_framebufferFormat = kAllowedFramebufferFormats[0];
     }
 }
 
@@ -285,15 +314,15 @@ void FragmentShadingRateCombined::setupTest(void)
         textureTarget = GL_TEXTURE_2D_MULTISAMPLE;
         gl.bindTexture(textureTarget, m_to_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding texture object!");
-        gl.texStorage2DMultisample(textureTarget, 4, GL_RGBA32F, m_tcParam.framebufferSize, m_tcParam.framebufferSize,
-                                   true);
+        gl.texStorage2DMultisample(textureTarget, kFramebufferSamples, m_framebufferFormat, m_tcParam.framebufferSize,
+                                   m_tcParam.framebufferSize, true);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Error allocating texture object!");
     }
     else
     {
         gl.bindTexture(textureTarget, m_to_id);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Error binding texture object!");
-        gl.texStorage2D(textureTarget, 1, GL_RGBA32F, m_tcParam.framebufferSize, m_tcParam.framebufferSize);
+        gl.texStorage2D(textureTarget, 1, m_framebufferFormat, m_tcParam.framebufferSize, m_tcParam.framebufferSize);
         GLU_EXPECT_NO_ERROR(gl.getError(), "Error allocating texture object!");
     }
 

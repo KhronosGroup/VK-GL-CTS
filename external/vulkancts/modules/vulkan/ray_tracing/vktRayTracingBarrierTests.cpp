@@ -952,15 +952,18 @@ void updateDescriptorSet(const DeviceInterface &vkd, VkDevice device, VkCommandB
     // Create top and bottom level acceleration structures if needed.
     if (asNeeded)
     {
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         stageData.bottomLevelAccelerationStructure = makeBottomLevelAccelerationStructure();
         stageData.bottomLevelAccelerationStructure->setDefaultGeometryData(getShaderStageFlagBits(stage));
-        stageData.bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+        stageData.bottomLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
         stageData.topLevelAccelerationStructure = makeTopLevelAccelerationStructure();
         stageData.topLevelAccelerationStructure->setInstanceCount(1);
         stageData.topLevelAccelerationStructure->addInstance(
             de::SharedPtr<BottomLevelAccelerationStructure>(stageData.bottomLevelAccelerationStructure.release()));
-        stageData.topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc);
+        stageData.topLevelAccelerationStructure->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
         writeASInfo.sType                      = VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR;
         writeASInfo.pNext                      = nullptr;

@@ -8,3 +8,4 @@ virtual PFN_vkVoidFunction	getInstanceProcAddr						(VkInstance instance, const 
 virtual VkResult			enumerateInstanceVersion				(uint32_t* pApiVersion) const;
 virtual VkResult			enumerateInstanceLayerProperties		(uint32_t* pPropertyCount, VkLayerProperties* pProperties) const;
 virtual VkResult			enumerateInstanceExtensionProperties	(const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) const;
+virtual void				getExternalComputeQueueDataNV			(VkExternalComputeQueueNV externalQueue, VkExternalComputeQueueDataParamsNV* params, void* pData) const;

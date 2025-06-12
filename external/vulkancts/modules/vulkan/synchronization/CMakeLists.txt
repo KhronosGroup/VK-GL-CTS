@@ -30,7 +30,7 @@ set(DEQP_VK_VKSC_SYNCHRONIZATION_SRCS
 	vktSynchronizationTimelineSemaphoreTests.cpp
 	vktSynchronizationTimelineSemaphoreTests.hpp
 	vktSynchronizationImageLayoutTransitionTests.cpp
-	vktSynchronizationImageLayoutTransitionTests.cpp
+	vktSynchronizationImageLayoutTransitionTests.hpp
 	)
 
 set(DEQP_VK_SYNCHRONIZATION_SRCS

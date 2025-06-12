@@ -4,40 +4,41 @@
  */
 
 // Defines
-#define VK_API_VERSION_1_0							(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 0, 0)))
-#define VK_API_VERSION_1_1							(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 1, 0)))
-#define VK_API_VERSION_1_2							(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 2, 0)))
-#define VK_API_VERSION_1_3							(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 3, 0)))
-#define VK_API_VERSION_1_4							(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 4, 0)))
-#define VKSC_API_VERSION_1_0						(static_cast<uint32_t>			(VK_MAKE_API_VERSION(1, 1, 0, 0)))
-#define VK_MAX_PHYSICAL_DEVICE_NAME_SIZE			(static_cast<size_t>			(256))
-#define VK_UUID_SIZE								(static_cast<size_t>			(16))
-#define VK_LUID_SIZE								(static_cast<size_t>			(8))
-#define VK_MAX_EXTENSION_NAME_SIZE					(static_cast<size_t>			(256))
-#define VK_MAX_DESCRIPTION_SIZE						(static_cast<size_t>			(256))
-#define VK_MAX_MEMORY_TYPES							(static_cast<size_t>			(32))
-#define VK_MAX_MEMORY_HEAPS							(static_cast<size_t>			(16))
-#define VK_LOD_CLAMP_NONE							(static_cast<float>				(1000.0F))
-#define VK_REMAINING_MIP_LEVELS						(static_cast<uint32_t>			((~0U)))
-#define VK_REMAINING_ARRAY_LAYERS					(static_cast<uint32_t>			((~0U)))
-#define VK_REMAINING_3D_SLICES_EXT					(static_cast<uint32_t>			((~0U)))
-#define VK_WHOLE_SIZE								(static_cast<vk::VkDeviceSize>	((~0ULL)))
-#define VK_ATTACHMENT_UNUSED						(static_cast<uint32_t>			((~0U)))
-#define VK_TRUE										(static_cast<vk::VkBool32>		(1))
-#define VK_FALSE									(static_cast<vk::VkBool32>		(0))
-#define VK_QUEUE_FAMILY_IGNORED						(static_cast<uint32_t>			((~0U)))
-#define VK_QUEUE_FAMILY_EXTERNAL					(static_cast<uint32_t>			((~1U)))
-#define VK_QUEUE_FAMILY_FOREIGN_EXT					(static_cast<uint32_t>			((~2U)))
-#define VK_SUBPASS_EXTERNAL							(static_cast<uint32_t>			((~0U)))
-#define VK_MAX_DEVICE_GROUP_SIZE					(static_cast<size_t>			(32))
-#define VK_MAX_DRIVER_NAME_SIZE						(static_cast<size_t>			(256))
-#define VK_MAX_DRIVER_INFO_SIZE						(static_cast<size_t>			(256))
-#define VK_SHADER_UNUSED_KHR						(static_cast<uint32_t>			((~0U)))
-#define VK_MAX_GLOBAL_PRIORITY_SIZE					(static_cast<uint32_t>			(16))
-#define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT	(static_cast<uint32_t>			(32))
-#define VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR			(static_cast<uint32_t>			(32))
-#define VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR	(static_cast<uint32_t>			(7))
-#define VK_SHADER_INDEX_UNUSED_AMDX					(static_cast<uint32_t>			((~0U)))
+#define VK_API_VERSION_1_0												(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 0, 0)))
+#define VK_API_VERSION_1_1												(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 1, 0)))
+#define VK_API_VERSION_1_2												(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 2, 0)))
+#define VK_API_VERSION_1_3												(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 3, 0)))
+#define VK_API_VERSION_1_4												(static_cast<uint32_t>			(VK_MAKE_API_VERSION(0, 1, 4, 0)))
+#define VKSC_API_VERSION_1_0											(static_cast<uint32_t>			(VK_MAKE_API_VERSION(1, 1, 0, 0)))
+#define VK_MAX_PHYSICAL_DEVICE_NAME_SIZE								(static_cast<size_t>			(256))
+#define VK_UUID_SIZE													(static_cast<size_t>			(16))
+#define VK_LUID_SIZE													(static_cast<size_t>			(8))
+#define VK_MAX_EXTENSION_NAME_SIZE										(static_cast<size_t>			(256))
+#define VK_MAX_DESCRIPTION_SIZE											(static_cast<size_t>			(256))
+#define VK_MAX_MEMORY_TYPES												(static_cast<size_t>			(32))
+#define VK_MAX_MEMORY_HEAPS												(static_cast<size_t>			(16))
+#define VK_LOD_CLAMP_NONE												(static_cast<float>				(1000.0F))
+#define VK_REMAINING_MIP_LEVELS											(static_cast<uint32_t>			((~0U)))
+#define VK_REMAINING_ARRAY_LAYERS										(static_cast<uint32_t>			((~0U)))
+#define VK_REMAINING_3D_SLICES_EXT										(static_cast<uint32_t>			((~0U)))
+#define VK_WHOLE_SIZE													(static_cast<vk::VkDeviceSize>	((~0ULL)))
+#define VK_ATTACHMENT_UNUSED											(static_cast<uint32_t>			((~0U)))
+#define VK_TRUE															(static_cast<vk::VkBool32>		(1))
+#define VK_FALSE														(static_cast<vk::VkBool32>		(0))
+#define VK_QUEUE_FAMILY_IGNORED											(static_cast<uint32_t>			((~0U)))
+#define VK_QUEUE_FAMILY_EXTERNAL										(static_cast<uint32_t>			((~1U)))
+#define VK_QUEUE_FAMILY_FOREIGN_EXT										(static_cast<uint32_t>			((~2U)))
+#define VK_SUBPASS_EXTERNAL												(static_cast<uint32_t>			((~0U)))
+#define VK_MAX_DEVICE_GROUP_SIZE										(static_cast<size_t>			(32))
+#define VK_MAX_DRIVER_NAME_SIZE											(static_cast<size_t>			(256))
+#define VK_MAX_DRIVER_INFO_SIZE											(static_cast<size_t>			(256))
+#define VK_SHADER_UNUSED_KHR											(static_cast<uint32_t>			((~0U)))
+#define VK_MAX_GLOBAL_PRIORITY_SIZE										(static_cast<uint32_t>			(16))
+#define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT						(static_cast<uint32_t>			(32))
+#define VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR								(static_cast<uint32_t>			(32))
+#define VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(7))
+#define VK_SHADER_INDEX_UNUSED_AMDX										(static_cast<uint32_t>			((~0U)))
+#define VK_PARTITIONED_ACCELERATION_STRUCTURE_PARTITION_INDEX_GLOBAL_NV	(static_cast<uint32_t>			((~0U)))
 #define VKSC_API_MAX_FRAMEWORK_VERSION	VKSC_API_VERSION_1_0
 
 // Handles
@@ -1578,6 +1579,8 @@ enum VkStructureType
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES_KHR						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_INDEX_TYPE_UINT8_FEATURES,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES_EXT	= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES,
 	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES_EXT				= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES,
+	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR							= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT,
+	VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_KHR						= VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_PROPERTIES_EXT,
 	VK_STRUCTURE_TYPE_MEMORY_BARRIER_2_KHR												= VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,
 	VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR										= VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
 	VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2_KHR										= VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
@@ -2839,6 +2842,12 @@ typedef uint32_t VkGeometryInstanceFlagsKHR;
 
 typedef VkGeometryInstanceFlagsKHR VkGeometryInstanceFlagsNV;
 
+typedef uint32_t VkClusterAccelerationStructureGeometryFlagsNV;
+
+typedef uint32_t VkClusterAccelerationStructureClusterFlagsNV;
+
+typedef uint32_t VkClusterAccelerationStructureAddressResolutionFlagsNV;
+
 typedef uint32_t VkBuildAccelerationStructureFlagsKHR;
 
 typedef VkBuildAccelerationStructureFlagsKHR VkBuildAccelerationStructureFlagsNV;
@@ -2973,6 +2982,8 @@ typedef VkCommandPoolTrimFlags VkCommandPoolTrimFlagsKHR;
 
 typedef uint32_t VkExternalMemoryHandleTypeFlagsNV;
 
+typedef uint32_t VkClusterAccelerationStructureIndexFormatFlagsNV;
+
 typedef uint32_t VkExternalMemoryFeatureFlagsNV;
 
 typedef uint32_t VkExternalMemoryHandleTypeFlags;
@@ -3063,6 +3074,8 @@ typedef uint32_t VkHostImageCopyFlags;
 
 typedef VkHostImageCopyFlags VkHostImageCopyFlagsEXT;
 
+typedef uint32_t VkPartitionedAccelerationStructureInstanceFlagsNV;
+
 typedef uint32_t VkImageConstraintsInfoFlagsFUCHSIA;
 
 typedef uint32_t VkGraphicsPipelineLibraryFlagsEXT;
@@ -3090,6 +3103,8 @@ typedef uint32_t VkPresentScalingFlagsEXT;
 typedef uint32_t VkPresentGravityFlagsEXT;
 
 typedef uint32_t VkShaderCreateFlagsEXT;
+
+typedef uint32_t VkTileShadingRenderPassFlagsQCOM;
 
 typedef uint64_t VkPhysicalDeviceSchedulingControlsFlagsARM;
 

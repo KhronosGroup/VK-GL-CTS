@@ -20,7 +20,7 @@ const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&				getShaderAtomicFloatF
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&			getExtendedDynamicStateFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&	getShaderDemoteToHelperInvocationFeatures	(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&			getTexelBufferAlignmentFeaturesEXT			(void) const;
-const vk::VkPhysicalDeviceRobustness2FeaturesEXT&					getRobustness2FeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceRobustness2FeaturesKHR&					getRobustness2Features						(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&				getCustomBorderColorFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceSynchronization2Features&					getSynchronization2Features					(void) const;
 const vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT&			getYcbcr2Plane444FormatsFeaturesEXT			(void) const;

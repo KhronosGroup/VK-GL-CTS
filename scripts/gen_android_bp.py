@@ -80,6 +80,13 @@ cc_defaults {
 {SRC_FILES}    ],
     local_include_dirs: [
 {INCLUDES}    ],
+    cflags: [
+        // Android/Clang defines: _FORTIFY_SOURCE=3.
+        // This code uses malloc_usable_size(),
+        // and thus can't be built with _FORTIFY_SOURCE=3.
+        "-U_FORTIFY_SOURCE",
+        "-D_FORTIFY_SOURCE=2",
+    ],
 }
 
 """[1:-1]

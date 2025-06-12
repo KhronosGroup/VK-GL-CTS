@@ -1046,7 +1046,7 @@ ApiCaseParams apiTests[] = {
 
              const auto data0 = loadImage(testContext.getTestContext().getArchive(), format.internalFormat, 0);
              const auto data1 = loadImage(testContext.getTestContext().getArchive(), format.internalFormat, 1);
-             steps.push_back({[format, data0](ApiTestContext &context)
+             steps.push_back({[](ApiTestContext &context)
                               { context.bindTexture(GL_TEXTURE_CUBE_MAP, context.texIds[0]); },
                               GL_NO_ERROR});
              for (size_t j = 0; j < DE_LENGTH_OF_ARRAY(cubemapFaces); ++j)

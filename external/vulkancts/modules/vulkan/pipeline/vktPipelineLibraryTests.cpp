@@ -56,9 +56,7 @@
 #include <any>
 #include <limits>
 
-namespace vkt
-{
-namespace pipeline
+namespace vkt::pipeline
 {
 namespace
 {
@@ -1348,6 +1346,7 @@ enum class MiscTestMode
     SHADER_MODULE_CREATE_INFO_RT,
     SHADER_MODULE_CREATE_INFO_RT_LIB,
     NULL_RENDERING_CREATE_INFO,
+    BAD_RENDERING_CREATE_INFO,
     COMMON_FRAG_LIBRARY,
     VIEW_INDEX_FROM_DEVICE_INDEX,
     UNUSUAL_MULTISAMPLE_STATE,
@@ -2966,18 +2965,21 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-class NullRenderingCreateInfoInstance : public vkt::TestInstance
+class UnusualRenderingCreateInfoInstance : public vkt::TestInstance
 {
 public:
-    NullRenderingCreateInfoInstance(Context &context) : vkt::TestInstance(context)
+    UnusualRenderingCreateInfoInstance(Context &context, MiscTestMode mode) : vkt::TestInstance(context), m_mode(mode)
     {
     }
-    virtual ~NullRenderingCreateInfoInstance(void) = default;
+    virtual ~UnusualRenderingCreateInfoInstance(void) = default;
 
     tcu::TestStatus iterate(void) override;
+
+private:
+    MiscTestMode m_mode;
 };
 
-tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
+tcu::TestStatus UnusualRenderingCreateInfoInstance::iterate(void)
 {
     const auto ctx = m_context.getContextCommonData();
     const tcu::IVec3 colorExtent(1, 1, 1);
@@ -3016,9 +3018,18 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
     const auto vertModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
     const auto fragModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
 
-    // We will use a null-filled pipeline rendering info structure for all substates except the fragment output state.
-    VkPipelineRenderingCreateInfo nullRenderingInfo = initVulkanStructure();
-    nullRenderingInfo.colorAttachmentCount          = 0;
+    VkPipelineRenderingCreateInfo unusualRenderingInfo = initVulkanStructure();
+
+    // We will use a null-filled pipeline rendering info structure
+    // for all substates except the fragment output state
+    if (m_mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+        unusualRenderingInfo.colorAttachmentCount = 0;
+    else // MiscTestMode::BAD_RENDERING_CREATE_INFO
+    {
+        // use bad VkPipelineRenderingCreateInfo when it is not required
+        unusualRenderingInfo.colorAttachmentCount    = 2;
+        unusualRenderingInfo.pColorAttachmentFormats = reinterpret_cast<VkFormat *>(0xdeadbeef);
+    }
 
     VkPipelineRenderingCreateInfo finalRenderingInfo = initVulkanStructure();
     finalRenderingInfo.colorAttachmentCount          = 1u;
@@ -3114,7 +3125,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
     // Pre-rasterization shader state library.
     {
         VkGraphicsPipelineLibraryCreateInfoEXT preRasterShaderLibInfo =
-            initVulkanStructure(&nullRenderingInfo); // What we're testing.
+            initVulkanStructure(&unusualRenderingInfo); // What we're testing.
         preRasterShaderLibInfo.flags |= VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
 
         VkGraphicsPipelineCreateInfo preRasterShaderPipelineInfo = initVulkanStructure(&preRasterShaderLibInfo);
@@ -3133,7 +3144,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
     // Fragment shader stage library.
     {
         VkGraphicsPipelineLibraryCreateInfoEXT fragShaderLibInfo =
-            initVulkanStructure(&nullRenderingInfo); // What we're testing.
+            initVulkanStructure(&unusualRenderingInfo); // What we're testing.
         fragShaderLibInfo.flags |= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
 
         VkGraphicsPipelineCreateInfo fragShaderPipelineInfo = initVulkanStructure(&fragShaderLibInfo);
@@ -3943,7 +3954,8 @@ void PipelineLibraryMiscTestCase::checkSupport(Context &context) const
     if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
         context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 
-    if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+    if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
+        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
     if (m_testParams.mode == MiscTestMode::COMMON_FRAG_LIBRARY)
@@ -4168,7 +4180,8 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
              << "}\n";
         programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
     }
-    else if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+    else if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
+             (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
     {
         std::ostringstream vert;
         vert << "#version 460\n"
@@ -4465,8 +4478,9 @@ TestInstance *PipelineLibraryMiscTestCase::createInstance(Context &context) cons
     if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
         return new PipelineLibraryShaderModuleInfoRTInstance(context, true /*withLibrary*/);
 
-    if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
-        return new NullRenderingCreateInfoInstance(context);
+    if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
+        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
+        return new UnusualRenderingCreateInfoInstance(context, m_testParams.mode);
 
     if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX)
         return new CreateViewIndexFromDeviceIndexInstance(context, m_testParams);
@@ -4684,6 +4698,8 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
                                             {MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE}));
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_rendering_create_info",
                                                              {MiscTestMode::NULL_RENDERING_CREATE_INFO}));
+        otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "bad_rendering_create_info",
+                                                             {MiscTestMode::BAD_RENDERING_CREATE_INFO}));
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "common_frag_pipeline_library",
                                                              {MiscTestMode::COMMON_FRAG_LIBRARY}));
 
@@ -4735,6 +4751,4 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
     return group.release();
 }
 
-} // namespace pipeline
-
-} // namespace vkt
+} // namespace vkt::pipeline

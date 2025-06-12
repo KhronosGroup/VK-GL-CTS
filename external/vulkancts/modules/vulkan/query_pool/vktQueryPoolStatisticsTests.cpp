@@ -7921,7 +7921,7 @@ void QueryPoolStatisticsTests::init(void)
                         if (partialFlags[partialFlagsIdx] && strideTypes[strideTypesIdx] == STRIDE_TYPE_ZERO)
                             continue;
 
-                        if (strideTypes[strideTypesIdx] == STRIDE_TYPE_ZERO && copyType[copyTypesIdx] != COPY_TYPE_CMD)
+                        if (strideTypes[strideTypesIdx] == STRIDE_TYPE_ZERO && copyTypes[copyTypesIdx] != COPY_TYPE_CMD)
                             continue;
 
                         VkQueryResultFlags queryFlags = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT |

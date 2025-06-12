@@ -694,13 +694,16 @@ de::MovePtr<BufferWithMemory> TraversalControlTestInstance::runTest()
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         bottomLevelAccelerationStructures =
             m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelAccelerationStructure = m_data.testConfiguration->initTopAccelerationStructure(
             m_context, m_data, bottomLevelAccelerationStructures);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {

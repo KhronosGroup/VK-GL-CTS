@@ -229,6 +229,9 @@ public:
     //! Get Vulkan device ID (--deqp-vk-device-id)
     int getVKDeviceId(void) const;
 
+    //! Get max custom device count (--deqp-vk-max-custom-devices)
+    int getMaxCustomDevices(void) const;
+
     //! Get Vulkan device group ID (--deqp-vk-device-group-id)
     int getVKDeviceGroupId(void) const;
 

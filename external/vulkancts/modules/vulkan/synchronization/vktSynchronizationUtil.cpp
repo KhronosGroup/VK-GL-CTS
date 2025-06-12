@@ -1060,20 +1060,30 @@ VkSemaphoreSubmitInfo makeCommonSemaphoreSubmitInfo(VkSemaphore semaphore, uint6
 
 VkDependencyInfo makeCommonDependencyInfo(const VkMemoryBarrier2 *pMemoryBarrier,
                                           const VkBufferMemoryBarrier2 *pBufferMemoryBarrier,
-                                          const VkImageMemoryBarrier2 *pImageMemoryBarrier, bool eventDependency)
+                                          const VkImageMemoryBarrier2 *pImageMemoryBarrier, bool eventDependency,
+                                          bool useAllStages)
 {
+    VkDependencyFlags dependencyFlags = 0u;
+    if (!eventDependency)
+        dependencyFlags |= VK_DEPENDENCY_BY_REGION_BIT;
+#ifndef CTS_USES_VULKANSC
+    if (useAllStages)
+        dependencyFlags |= VK_DEPENDENCY_QUEUE_FAMILY_OWNERSHIP_TRANSFER_USE_ALL_STAGES_BIT_KHR;
+#else
+    DE_UNREF(useAllStages);
+#endif // CTS_USES_VULKANSC
+
     return {
 #ifndef CTS_USES_VULKANSC
         VK_STRUCTURE_TYPE_DEPENDENCY_INFO, // VkStructureType                    sType
 #else
-        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR,            // VkStructureType                    sType
-#endif           // CTS_USES_VULKANSC
-        nullptr, // const void*                        pNext
-        eventDependency ?
-            (VkDependencyFlags)0u :
-            (VkDependencyFlags)VK_DEPENDENCY_BY_REGION_BIT, // VkDependencyFlags                dependencyFlags
-        !!pMemoryBarrier,                                   // uint32_t                            memoryBarrierCount
-        pMemoryBarrier,                                     // const VkMemoryBarrier2KHR*        pMemoryBarriers
+        VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, // VkStructureType                    sType
+#endif // CTS_USES_VULKANSC
+
+        nullptr,                // const void*                        pNext
+        dependencyFlags,        // VkDependencyFlags                dependencyFlags
+        !!pMemoryBarrier,       // uint32_t                            memoryBarrierCount
+        pMemoryBarrier,         // const VkMemoryBarrier2KHR*        pMemoryBarriers
         !!pBufferMemoryBarrier, // uint32_t                            bufferMemoryBarrierCount
         pBufferMemoryBarrier,   // const VkBufferMemoryBarrier2KHR* pBufferMemoryBarriers
         !!pImageMemoryBarrier,  // uint32_t                            imageMemoryBarrierCount

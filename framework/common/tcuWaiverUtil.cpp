@@ -253,7 +253,8 @@ void WaiverTreeBuilder::readWaivedTestsFromXML()
                 // when we found proper waiver we can copy memorized cases and update waiver info
                 if (vendorFound && deviceFound)
                 {
-                    DE_ASSERT(m_testList.empty() || waiverUrl.empty());
+                    // each waiver must have a url and at least one test
+                    DE_ASSERT(!waiverTestList.empty() && !waiverUrl.empty());
 
                     std::string &urls = m_sessionInfo.m_waiverUrls;
                     m_testList.insert(m_testList.end(), waiverTestList.begin(), waiverTestList.end());

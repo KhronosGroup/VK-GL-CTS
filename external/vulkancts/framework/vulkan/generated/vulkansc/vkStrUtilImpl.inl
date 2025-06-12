@@ -2978,6 +2978,21 @@ tcu::Format::Bitfield<32> getGeometryInstanceFlagsKHRStr (VkGeometryInstanceFlag
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getClusterAccelerationStructureGeometryFlagsNVStr (VkClusterAccelerationStructureGeometryFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getClusterAccelerationStructureClusterFlagsNVStr (VkClusterAccelerationStructureClusterFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getClusterAccelerationStructureAddressResolutionFlagsNVStr (VkClusterAccelerationStructureAddressResolutionFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsKHRStr (VkBuildAccelerationStructureFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3153,6 +3168,11 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsNVStr (VkExternalMemor
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getClusterAccelerationStructureIndexFormatFlagsNVStr (VkClusterAccelerationStructureIndexFormatFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getExternalMemoryFeatureFlagsNVStr (VkExternalMemoryFeatureFlagsNV value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3233,6 +3253,11 @@ tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageForma
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getPartitionedAccelerationStructureInstanceFlagsNVStr (VkPartitionedAccelerationStructureInstanceFlagsNV value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getImageConstraintsInfoFlagsFUCHSIAStr (VkImageConstraintsInfoFlagsFUCHSIA value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3299,6 +3324,11 @@ tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT
 }
 
 tcu::Format::Bitfield<32> getShaderCreateFlagsEXTStr (VkShaderCreateFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRenderPassFlagsQCOM value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -8261,9 +8291,9 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineOfflineCreateInfo& va
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceRobustness2FeaturesEXT = {\n";
+	s << "VkPhysicalDeviceRobustness2FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trobustBufferAccess2 = " << value.robustBufferAccess2 << '\n';
@@ -8273,9 +8303,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2Feat
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRobustness2PropertiesKHR& value)
 {
-	s << "VkPhysicalDeviceRobustness2PropertiesEXT = {\n";
+	s << "VkPhysicalDeviceRobustness2PropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\trobustStorageBufferAccessSizeAlignment = " << value.robustStorageBufferAccessSizeAlignment << '\n';

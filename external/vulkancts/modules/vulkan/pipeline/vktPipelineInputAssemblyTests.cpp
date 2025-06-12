@@ -63,6 +63,8 @@ enum class RestartType
     NORMAL,
     NONE,
     ALL,
+    DIVIDE,
+    SECOND_PASS,
 };
 
 namespace
@@ -78,7 +80,8 @@ public:
 
     InputAssemblyTest(tcu::TestContext &testContext, const std::string &name,
                       const PipelineConstructionType pipelineConstructionType, VkPrimitiveTopology primitiveTopology,
-                      int primitiveCount, bool testPrimitiveRestart, VkIndexType indexType);
+                      int primitiveCount, bool testPrimitiveRestart, bool divideDraw, bool secondPass,
+                      VkIndexType indexType);
     virtual ~InputAssemblyTest(void)
     {
     }
@@ -99,6 +102,8 @@ protected:
 private:
     const PipelineConstructionType m_pipelineConstructionType;
     bool m_testPrimitiveRestart;
+    bool m_testDivideDraw;
+    bool m_testSecondPass;
     VkIndexType m_indexType;
 };
 
@@ -151,8 +156,8 @@ class InputAssemblyInstance : public vkt::TestInstance
 {
 public:
     InputAssemblyInstance(Context &context, const PipelineConstructionType pipelineConstructionType,
-                          const VkPrimitiveTopology primitiveTopology, bool testPrimitiveRestart, VkIndexType indexType,
-                          const std::vector<uint32_t> &indexBufferData,
+                          const VkPrimitiveTopology primitiveTopology, bool testPrimitiveRestart, bool divideDraw,
+                          bool secondPass, VkIndexType indexType, const std::vector<uint32_t> &indexBufferData,
                           const std::vector<Vertex4RGBA> &vertexBufferData);
     virtual ~InputAssemblyInstance(void);
     virtual tcu::TestStatus iterate(void);
@@ -161,9 +166,12 @@ private:
     tcu::TestStatus verifyImage(void);
     void uploadIndexBufferData16(uint16_t *destPtr, const std::vector<uint32_t> &indexBufferData);
     void uploadIndexBufferData8(uint8_t *destPtr, const std::vector<uint32_t> &indexBufferData);
+    uint32_t getVerticesPerPrimitive(VkPrimitiveTopology topology);
 
     VkPrimitiveTopology m_primitiveTopology;
     bool m_primitiveRestartEnable;
+    bool m_divideDrawEnable;
+    bool m_multiPassEnable;
     VkIndexType m_indexType;
 
     Move<VkBuffer> m_vertexBuffer;
@@ -181,7 +189,7 @@ private:
     Move<VkImage> m_colorImage;
     de::MovePtr<Allocation> m_colorImageAlloc;
     Move<VkImageView> m_colorAttachmentView;
-    RenderPassWrapper m_renderPass;
+    std::vector<RenderPassWrapper> m_renderPasses;
     Move<VkFramebuffer> m_framebuffer;
 
     ShaderWrapper m_vertexShaderModule;
@@ -217,12 +225,15 @@ const uint8_t InputAssemblyTest::s_restartIndex8   = ~((uint8_t)0u);
 InputAssemblyTest::InputAssemblyTest(tcu::TestContext &testContext, const std::string &name,
                                      const PipelineConstructionType pipelineConstructionType,
                                      VkPrimitiveTopology primitiveTopology, int primitiveCount,
-                                     bool testPrimitiveRestart, VkIndexType indexType)
+                                     bool testPrimitiveRestart, bool testDivideDraw, bool testSecondPass,
+                                     VkIndexType indexType)
     : vkt::TestCase(testContext, name)
     , m_primitiveTopology(primitiveTopology)
     , m_primitiveCount(primitiveCount)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_testPrimitiveRestart(testPrimitiveRestart)
+    , m_testDivideDraw(testDivideDraw)
+    , m_testSecondPass(testSecondPass)
     , m_indexType(indexType)
 {
 }
@@ -277,7 +288,8 @@ TestInstance *InputAssemblyTest::createInstance(Context &context) const
     createBufferData(m_primitiveTopology, m_primitiveCount, m_indexType, indexBufferData, vertexBufferData);
 
     return new InputAssemblyInstance(context, m_pipelineConstructionType, m_primitiveTopology, m_testPrimitiveRestart,
-                                     m_indexType, indexBufferData, vertexBufferData);
+                                     m_testDivideDraw, m_testSecondPass, m_indexType, indexBufferData,
+                                     vertexBufferData);
 }
 
 void InputAssemblyTest::initPrograms(SourceCollections &sourceCollections) const
@@ -372,7 +384,8 @@ uint32_t InputAssemblyTest::getRestartIndex(VkIndexType indexType)
 PrimitiveTopologyTest::PrimitiveTopologyTest(tcu::TestContext &testContext, const std::string &name,
                                              PipelineConstructionType pipelineConstructionType,
                                              VkPrimitiveTopology primitiveTopology, VkIndexType indexType)
-    : InputAssemblyTest(testContext, name, pipelineConstructionType, primitiveTopology, 10, false, indexType)
+    : InputAssemblyTest(testContext, name, pipelineConstructionType, primitiveTopology, 10, false, false, false,
+                        indexType)
 {
 }
 
@@ -690,7 +703,8 @@ PrimitiveRestartTest::PrimitiveRestartTest(tcu::TestContext &testContext, const 
                                            VkPrimitiveTopology primitiveTopology, VkIndexType indexType,
                                            RestartType restartType)
 
-    : InputAssemblyTest(testContext, name, pipelineConstructionType, primitiveTopology, 10, true, indexType)
+    : InputAssemblyTest(testContext, name, pipelineConstructionType, primitiveTopology, 10, true,
+                        restartType == RestartType::DIVIDE, restartType == RestartType::SECOND_PASS, indexType)
     , m_restartType(restartType)
 {
     uint32_t restartPrimitives[] = {1, 5};
@@ -703,6 +717,11 @@ PrimitiveRestartTest::PrimitiveRestartTest(tcu::TestContext &testContext, const 
     else if (restartType == RestartType::NONE)
     {
         m_restartPrimitives = std::vector<uint32_t>{};
+    }
+    else if (restartType == RestartType::DIVIDE || restartType == RestartType::SECOND_PASS)
+    {
+        // Single restart on the last primitive in the list
+        m_restartPrimitives.push_back(m_primitiveCount - 1);
     }
     else
     {
@@ -1114,12 +1133,15 @@ bool PrimitiveRestartTest::isRestartPrimitive(int primitiveIndex) const
 
 InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstructionType pipelineConstructionType,
                                              VkPrimitiveTopology primitiveTopology, bool testPrimitiveRestart,
-                                             VkIndexType indexType, const std::vector<uint32_t> &indexBufferData,
+                                             bool divideDraw, bool secondPass, VkIndexType indexType,
+                                             const std::vector<uint32_t> &indexBufferData,
                                              const std::vector<Vertex4RGBA> &vertexBufferData)
 
     : vkt::TestInstance(context)
     , m_primitiveTopology(primitiveTopology)
     , m_primitiveRestartEnable(testPrimitiveRestart)
+    , m_divideDrawEnable(divideDraw)
+    , m_multiPassEnable(secondPass)
     , m_indexType(indexType)
     , m_vertices(vertexBufferData)
     , m_indices(indexBufferData)
@@ -1183,16 +1205,35 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
         m_colorAttachmentView = createImageView(vk, vkDevice, &colorAttachmentViewParams);
     }
 
-    // Create render pass
-    m_renderPass = RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat);
+    // Create render passes
+    if (m_multiPassEnable)
+    {
+        m_renderPasses.emplace_back(
+            RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat, VK_FORMAT_UNDEFINED,
+                              VK_ATTACHMENT_LOAD_OP_CLEAR, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+        m_renderPasses.emplace_back(
+            RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat, VK_FORMAT_UNDEFINED,
+                              VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+        m_renderPasses.emplace_back(
+            RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat, VK_FORMAT_UNDEFINED,
+                              VK_ATTACHMENT_LOAD_OP_LOAD, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                              VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+    }
+    else
+    {
+        m_renderPasses.emplace_back(RenderPassWrapper(pipelineConstructionType, vk, vkDevice, m_colorFormat));
+    }
 
     // Create framebuffer
+    for (auto &rp : m_renderPasses)
     {
         const VkFramebufferCreateInfo framebufferParams = {
             VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                                   // const void* pNext;
             0u,                                        // VkFramebufferCreateFlags flags;
-            *m_renderPass,                             // VkRenderPass renderPass;
+            *rp,                                       // VkRenderPass renderPass;
             1u,                                        // uint32_t attachmentCount;
             &m_colorAttachmentView.get(),              // const VkImageView* pAttachments;
             (uint32_t)m_renderSize.x(),                // uint32_t width;
@@ -1200,7 +1241,7 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
             1u                                         // uint32_t layers;
         };
 
-        m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
+        rp.createFramebuffer(vk, vkDevice, &framebufferParams, *m_colorImage);
     }
 
     // Create pipeline layout
@@ -1328,11 +1369,11 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
         m_graphicsPipeline.setDefaultRasterizationState()
             .setDefaultMultisampleState()
             .setupVertexInputState(&vertexInputStateParams, &inputAssemblyStateParams)
-            .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPass, 0u,
+            .setupPreRasterizationShaderState(viewport, scissor, m_pipelineLayout, *m_renderPasses[0], 0u,
                                               m_vertexShaderModule, nullptr, m_tcsShaderModule, m_tesShaderModule)
-            .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule,
+            .setupFragmentShaderState(m_pipelineLayout, *m_renderPasses[0], 0u, m_fragmentShaderModule,
                                       &depthStencilStateParams)
-            .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+            .setupFragmentOutputState(*m_renderPasses[0], 0u, &colorBlendStateParams)
             .setMonolithicPipelineLayout(m_pipelineLayout)
             .buildPipeline();
     }
@@ -1399,22 +1440,40 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
     // Create command pool
     m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
 
-    // Create command buffer
     {
         const VkClearValue attachmentClearValue = defaultClearValue(m_colorFormat);
 
-        const VkImageMemoryBarrier attachmentLayoutBarrier = {
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,      // VkStructureType sType;
-            nullptr,                                     // const void* pNext;
-            0u,                                          // VkAccessFlags srcAccessMask;
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,        // VkAccessFlags dstAccessMask;
-            VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout oldLayout;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout newLayout;
-            VK_QUEUE_FAMILY_IGNORED,                     // uint32_t srcQueueFamilyIndex;
-            VK_QUEUE_FAMILY_IGNORED,                     // uint32_t dstQueueFamilyIndex;
-            *m_colorImage,                               // VkImage image;
-            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}, // VkImageSubresourceRange subresourceRange;
-        };
+        const VkImageMemoryBarrier initialBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                     nullptr,
+                                                     0u,                                       // srcAccessMask
+                                                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // dstAccessMask
+                                                     VK_IMAGE_LAYOUT_UNDEFINED,                // oldLayout
+                                                     VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // newLayout
+                                                     VK_QUEUE_FAMILY_IGNORED,
+                                                     VK_QUEUE_FAMILY_IGNORED,
+                                                     *m_colorImage,
+                                                     {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+
+        // Barrier between passes
+        const VkImageMemoryBarrier passBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                  nullptr,
+                                                  VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // srcAccessMask
+                                                  VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
+                                                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // dstAccessMask
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // oldLayout
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // newLayout
+                                                  VK_QUEUE_FAMILY_IGNORED,
+                                                  VK_QUEUE_FAMILY_IGNORED,
+                                                  *m_colorImage,
+                                                  {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+
+        const VkDeviceSize vertexBufferOffset = 0;
+        const VkRect2D fullScreen             = makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y());
+        const VkRect2D leftHalf               = makeRect2D(0, 0, m_renderSize.x() / 2, m_renderSize.y());
+        const VkRect2D rightHalf = makeRect2D(m_renderSize.x() / 2, 0, m_renderSize.x() / 2, m_renderSize.y());
+
+        const uint32_t totalIndices         = (uint32_t)m_indices.size();
+        const uint32_t verticesPerPrimitive = getVerticesPerPrimitive(m_primitiveTopology);
 
         m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
@@ -1422,19 +1481,74 @@ InputAssemblyInstance::InputAssemblyInstance(Context &context, PipelineConstruct
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                               VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
-                              nullptr, 1u, &attachmentLayoutBarrier);
+                              nullptr, 1u, &initialBarrier);
 
-        m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
-                           attachmentClearValue);
+        if (m_divideDrawEnable)
+        {
+            DE_ASSERT(verticesPerPrimitive > 0);
 
-        const VkDeviceSize vertexBufferOffset = 0;
+            const uint32_t maxPrimitivesFirst = (totalIndices / verticesPerPrimitive) / 2;
+            const uint32_t firstHalfCount     = maxPrimitivesFirst * verticesPerPrimitive;
+            const uint32_t secondHalfCount    = totalIndices - firstHalfCount;
 
-        m_graphicsPipeline.bind(*m_cmdBuffer);
-        vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-        vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indexBuffer, 0, m_indexType);
-        vk.cmdDrawIndexed(*m_cmdBuffer, (uint32_t)m_indices.size(), 1, 0, 0, 0);
+            m_renderPasses[0].begin(vk, *m_cmdBuffer, fullScreen, attachmentClearValue);
 
-        m_renderPass.end(vk, *m_cmdBuffer);
+            m_graphicsPipeline.bind(*m_cmdBuffer);
+            vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+            vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indexBuffer, 0, m_indexType);
+
+            vk.cmdDrawIndexed(*m_cmdBuffer, firstHalfCount, 1, 0, 0, 0);
+            vk.cmdDrawIndexed(*m_cmdBuffer, secondHalfCount, 1, firstHalfCount, 0, 0);
+
+            m_renderPasses[0].end(vk, *m_cmdBuffer);
+        }
+        else if (m_multiPassEnable)
+        {
+            DE_ASSERT(verticesPerPrimitive > 0);
+
+            const uint32_t maxPrimitivesFirst = (totalIndices / verticesPerPrimitive) / 2;
+            const uint32_t firstHalfCount     = maxPrimitivesFirst * verticesPerPrimitive;
+            const uint32_t secondHalfCount    = totalIndices - firstHalfCount;
+
+            // Clear fullScreen
+            m_renderPasses[0].begin(vk, *m_cmdBuffer, fullScreen, attachmentClearValue);
+            m_renderPasses[0].end(vk, *m_cmdBuffer);
+
+            vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                                  &passBarrier);
+
+            m_renderPasses[1].begin(vk, *m_cmdBuffer, leftHalf, attachmentClearValue);
+            m_graphicsPipeline.bind(*m_cmdBuffer);
+            vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+            vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indexBuffer, 0, m_indexType);
+            // Overlap the secont half needed to ensure render continuity
+            vk.cmdDrawIndexed(*m_cmdBuffer, firstHalfCount + verticesPerPrimitive, 1, 0, 0, 0);
+            m_renderPasses[1].end(vk, *m_cmdBuffer);
+
+            vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0, 0, nullptr, 0, nullptr, 1,
+                                  &passBarrier);
+
+            m_renderPasses[2].begin(vk, *m_cmdBuffer, rightHalf, attachmentClearValue);
+            // Overlap the first half needed to ensure render continuity
+            vk.cmdDrawIndexed(*m_cmdBuffer, secondHalfCount + verticesPerPrimitive, 1,
+                              firstHalfCount - verticesPerPrimitive, 0, 0);
+
+            m_renderPasses[2].end(vk, *m_cmdBuffer);
+        }
+        else
+        {
+            m_renderPasses[0].begin(vk, *m_cmdBuffer, fullScreen, attachmentClearValue);
+
+            m_graphicsPipeline.bind(*m_cmdBuffer);
+            vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+            vk.cmdBindIndexBuffer(*m_cmdBuffer, *m_indexBuffer, 0, m_indexType);
+            vk.cmdDrawIndexed(*m_cmdBuffer, (uint32_t)m_indices.size(), 1, 0, 0, 0);
+
+            m_renderPasses[0].end(vk, *m_cmdBuffer);
+        }
+
         endCommandBuffer(vk, *m_cmdBuffer);
     }
 }
@@ -1552,6 +1666,28 @@ void InputAssemblyInstance::uploadIndexBufferData8(uint8_t *destPtr, const std::
     }
 }
 
+uint32_t InputAssemblyInstance::getVerticesPerPrimitive(VkPrimitiveTopology topology)
+{
+    switch (topology)
+    {
+    case VK_PRIMITIVE_TOPOLOGY_POINT_LIST:
+        return 1;
+    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST:
+        return 2;
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
+        return 3;
+    case VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY:
+        return 4;
+    case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
+        return 6;
+    case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
+        return 3;
+    default:
+        // Dynamic vertices per primitive are not supported  (return 0)
+        return 0;
+    }
+}
+
 // Utilities for test names
 
 std::string getPrimitiveTopologyCaseName(VkPrimitiveTopology topology)
@@ -1607,6 +1743,16 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests(tcu::TestContext &te
         VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
         VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST};
 
+    // Topologies types capable to perform clear vertex division (list types with fixed vertices per primitive)
+    const VkPrimitiveTopology mixedPrimitiveRestartTopologies[] = {
+        // Supported with VK_EXT_primitive_topology_list_restart
+        VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+        VK_PRIMITIVE_TOPOLOGY_LINE_LIST,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST,
+        VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
+        VK_PRIMITIVE_TOPOLOGY_PATCH_LIST};
+
     de::MovePtr<tcu::TestCaseGroup> primitiveRestartTests(new tcu::TestCaseGroup(testCtx, "primitive_restart"));
 
     de::MovePtr<tcu::TestCaseGroup> indexUint16Tests(new tcu::TestCaseGroup(testCtx, "index_type_uint16"));
@@ -1626,30 +1772,52 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests(tcu::TestContext &te
             RestartType::NONE,
             "no_restart_",
         },
-        {RestartType::ALL, "restart_all_"},
+        {
+            RestartType::ALL,
+            "restart_all_",
+        },
+        {
+            RestartType::DIVIDE,
+            "divide_draw_",
+        },
+        {
+            RestartType::SECOND_PASS,
+            "second_pass_",
+        },
     };
 
-    for (int topologyNdx = 0; topologyNdx < DE_LENGTH_OF_ARRAY(primitiveRestartTopologies); topologyNdx++)
+    for (int useRestartNdx = 0; useRestartNdx < DE_LENGTH_OF_ARRAY(restartTypes); useRestartNdx++)
     {
-        const VkPrimitiveTopology topology = primitiveRestartTopologies[topologyNdx];
+        const RestartTest &restartType = restartTypes[useRestartNdx];
+        const bool isSplitTest =
+            (restartType.type == RestartType::DIVIDE || restartType.type == RestartType::SECOND_PASS);
 
-        for (int useRestartNdx = 0; useRestartNdx < DE_LENGTH_OF_ARRAY(restartTypes); useRestartNdx++)
+        // Select appropriate topology array based on test type
+        const VkPrimitiveTopology *topologies =
+            isSplitTest ? mixedPrimitiveRestartTopologies : primitiveRestartTopologies;
+        const int topologyCount = isSplitTest ? DE_LENGTH_OF_ARRAY(mixedPrimitiveRestartTopologies) :
+                                                DE_LENGTH_OF_ARRAY(primitiveRestartTopologies);
+
+        for (int topologyNdx = 0; topologyNdx < topologyCount; topologyNdx++)
         {
-            if (topology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST && restartTypes[useRestartNdx].type == RestartType::ALL)
+            const VkPrimitiveTopology topology = topologies[topologyNdx];
+
+            if (topology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST && restartType.type == RestartType::ALL)
             {
                 continue;
             }
-            indexUint16Tests->addChild(new PrimitiveRestartTest(
-                testCtx, restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
-                pipelineConstructionType, topology, VK_INDEX_TYPE_UINT16, restartTypes[useRestartNdx].type));
 
-            indexUint32Tests->addChild(new PrimitiveRestartTest(
-                testCtx, restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
-                pipelineConstructionType, topology, VK_INDEX_TYPE_UINT32, restartTypes[useRestartNdx].type));
+            indexUint16Tests->addChild(
+                new PrimitiveRestartTest(testCtx, restartType.name + getPrimitiveTopologyCaseName(topology),
+                                         pipelineConstructionType, topology, VK_INDEX_TYPE_UINT16, restartType.type));
+
+            indexUint32Tests->addChild(
+                new PrimitiveRestartTest(testCtx, restartType.name + getPrimitiveTopologyCaseName(topology),
+                                         pipelineConstructionType, topology, VK_INDEX_TYPE_UINT32, restartType.type));
 
             indexUint8Tests->addChild(new PrimitiveRestartTest(
-                testCtx, restartTypes[useRestartNdx].name + getPrimitiveTopologyCaseName(topology),
-                pipelineConstructionType, topology, VK_INDEX_TYPE_UINT8_EXT, restartTypes[useRestartNdx].type));
+                testCtx, restartType.name + getPrimitiveTopologyCaseName(topology), pipelineConstructionType, topology,
+                VK_INDEX_TYPE_UINT8_EXT, restartType.type));
         }
     }
 

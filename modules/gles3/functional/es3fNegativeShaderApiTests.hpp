@@ -25,6 +25,7 @@
 
 #include "tcuDefs.hpp"
 #include "tes3TestCase.hpp"
+#include "es3fApiCase.hpp"
 
 namespace deqp
 {
@@ -32,6 +33,30 @@ namespace gles3
 {
 namespace Functional
 {
+
+class ApiCaseRedeclaringGlFragDepth : public ApiCase
+{
+public:
+    ApiCaseRedeclaringGlFragDepth(Context &context, const char *name, const char *description)
+        : ApiCase(context, name, description)
+    {
+    }
+
+protected:
+    void test(void);
+};
+
+class ApiCaseRedeclaringGlFragDepthExtensionNotEnabled : public ApiCase
+{
+public:
+    ApiCaseRedeclaringGlFragDepthExtensionNotEnabled(Context &context, const char *name, const char *description)
+        : ApiCase(context, name, description)
+    {
+    }
+
+protected:
+    void test(void);
+};
 
 class NegativeShaderApiTests : public TestCaseGroup
 {

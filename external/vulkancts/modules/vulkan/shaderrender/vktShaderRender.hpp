@@ -373,6 +373,8 @@ public:
 protected:
     std::string m_vertShaderSource;
     std::string m_fragShaderSource;
+    de::MovePtr<vk::ShaderBuildOptions> m_vertShaderBuildOptions;
+    de::MovePtr<vk::ShaderBuildOptions> m_fragShaderBuildOptions;
 
     const bool m_isVertexCase;
     const de::UniquePtr<const ShaderEvaluator> m_evaluator;

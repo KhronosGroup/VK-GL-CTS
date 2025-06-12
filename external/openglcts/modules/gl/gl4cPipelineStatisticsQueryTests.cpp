@@ -3755,6 +3755,189 @@ void PipelineStatisticsQueryTestFunctional5::deinitObjects()
     }
 }
 
+void PipelineStatisticsQueryTestFunctional5::getExpectedPrimitivesSubmittedQueryResult(
+    PipelineStatisticsQueryUtilities::_primitive_type current_primitive_type, unsigned int *out_results_written,
+    glw::GLuint64 out_results[4])
+{
+    unsigned int n_input_vertices = m_indirect_draw_call_count_argument;
+
+    *out_results_written = 0;
+
+    switch (current_primitive_type)
+    {
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_POINTS:
+    {
+        out_results[(*out_results_written)++] = n_input_vertices;
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINE_LOOP:
+    {
+        if (n_input_vertices > 2)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices;
+        }
+        else if (n_input_vertices > 1)
+        {
+            out_results[(*out_results_written)++] = 1;
+        }
+        else
+        {
+            out_results[(*out_results_written)++] = 0;
+        }
+
+        break;
+    } /* PRIMITIVE_TYPE_LINE_LOOP */
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLE_FAN:
+    {
+        if (n_input_vertices > 2)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices - 2;
+        }
+        else
+        {
+            out_results[(*out_results_written)++] = 0;
+
+            if (n_input_vertices >= 1)
+            {
+                /* If the submitted triangle fan is incomplete, also include the case
+                 * where the incomplete triangle fan's vertices are counted as a primitive.
+                 */
+                out_results[(*out_results_written)++] = 1;
+            }
+        }
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINE_STRIP:
+    {
+        if (n_input_vertices > 1)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices - 1;
+        }
+        else
+        {
+            out_results[(*out_results_written)++] = 0;
+
+            if (n_input_vertices > 0)
+            {
+                /* If the submitted line strip is incomplete, also include the case
+                 * where the incomplete line's vertices are counted as a primitive.
+                 */
+                out_results[(*out_results_written)++] = 1;
+            }
+        }
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLE_STRIP:
+    {
+        if (n_input_vertices > 2)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices - 2;
+        }
+        else
+        {
+            out_results[(*out_results_written)++] = 0;
+
+            if (n_input_vertices >= 1)
+            {
+                /* If the submitted triangle strip is incomplete, also include the case
+                 * where the incomplete triangle's vertices are counted as a primitive.
+                 */
+                out_results[(*out_results_written)++] = 1;
+            }
+        }
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINES:
+    {
+        out_results[(*out_results_written)++] = n_input_vertices / 2;
+
+        /* If the submitted line is incomplete, also include the case where
+         * the incomplete line's vertices are counted as a primitive.
+         */
+        if (n_input_vertices > 0 && (n_input_vertices % 2) != 0)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices / 2 + 1;
+        }
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_LINES_ADJACENCY:
+    {
+        out_results[(*out_results_written)++] = n_input_vertices / 4;
+
+        /* If the submitted line is incomplete, also include the case where
+         * the incomplete line's vertices are counted as a primitive.
+         */
+        if (n_input_vertices > 0 && (n_input_vertices % 4) != 0)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices / 4 + 1;
+        }
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLES:
+    {
+        out_results[(*out_results_written)++] = n_input_vertices / 3;
+
+        /* If the submitted triangle is incomplete, also include the case
+         * when the incomplete triangle's vertices are counted as a primitive.
+         */
+        if (n_input_vertices > 0 && (n_input_vertices % 3) != 0)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices / 3 + 1;
+        }
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_TRIANGLES_ADJACENCY:
+    {
+        out_results[(*out_results_written)++] = n_input_vertices / 6;
+
+        /* If the submitted triangle is incomplete, also include the case
+         * when the incomplete triangle's vertices are counted as a primitive.
+         */
+        if (n_input_vertices > 0 && (n_input_vertices % 6) != 0)
+        {
+            out_results[(*out_results_written)++] = n_input_vertices / 6 + 1;
+        }
+
+        break;
+    }
+
+    case PipelineStatisticsQueryUtilities::PRIMITIVE_TYPE_PATCHES:
+    {
+        out_results[(*out_results_written)++] = n_input_vertices / 3;
+
+        break;
+    }
+
+    default:
+    {
+        TCU_FAIL("Unrecognized primitive type");
+    }
+    } /* switch (current_primitive_type) */
+
+    if (PipelineStatisticsQueryUtilities::isInstancedDrawCall(m_current_draw_call_type))
+    {
+        for (unsigned int i = 0; i < *out_results_written; ++i)
+        {
+            out_results[i] *= m_indirect_draw_call_primcount_argument;
+        }
+    } /* if (instanced draw call type) */
+}
+
 /** Executes a test iteration for user-specified query target.
  *
  *  @param current_query_target Pipeline statistics query target to execute the iteration
@@ -3772,18 +3955,22 @@ bool PipelineStatisticsQueryTestFunctional5::executeTest(glw::GLenum current_que
     /* Quick check: This method should only be called for GL_TESS_CONTROL_SHADER_PATCHES_ARB and
      * GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB queries. */
     DE_ASSERT(current_query_target == GL_TESS_CONTROL_SHADER_PATCHES_ARB ||
-              current_query_target == GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB);
+              current_query_target == GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB ||
+              current_query_target == GL_PRIMITIVES_SUBMITTED_ARB);
 
+    gl.patchParameteri(GL_PATCH_VERTICES, 3);
     /* Set up VBO. */
     const unsigned int n_vertex_components = 2;
-    const float vertex_data[]              = {
-        -0.1f, 0.2f, 0.2f, -0.7f, 0.5f, -0.5f,
+    const float vertex_data[]              = {-0.1f, 0.2f, 0.3f,  0.1f,  0.2f,  -0.7f, 0.5f,  -0.5f,
+                                              0.0f,  0.0f, -0.6f, -0.9f, -0.3f, 0.3f,  -0.5f, -0.5f};
+    const unsigned int index_data[]        = {
+        0, 6, 2, 1, 3, 5, 4,
     };
-    const unsigned int index_data[] = {2, 1, 0};
+    const unsigned int n_indices = sizeof(index_data) / sizeof(index_data[0]);
 
     m_indirect_draw_call_baseinstance_argument = 1;
     m_indirect_draw_call_basevertex_argument   = 1;
-    m_indirect_draw_call_count_argument        = 3; /* default GL_PATCH_VERTICES value */
+    m_indirect_draw_call_count_argument        = n_indices;
     m_indirect_draw_call_first_argument        = 0;
     m_indirect_draw_call_primcount_argument    = 4;
 
@@ -3824,15 +4011,28 @@ bool PipelineStatisticsQueryTestFunctional5::executeTest(glw::GLenum current_que
         }
         else if (!skipped)
         {
-            static const glw::GLuint64 expected_value = 1; /* as per test spec */
+            glw::GLuint64 expected_values[4] = {1, 0, 0, 0};
+            unsigned int n_expected_values   = 1;
 
+            unsigned int n_input_vertices = m_indirect_draw_call_count_argument;
+            PipelineStatisticsQueryUtilities::_verification_type verification_type =
+                PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EQUAL_OR_GREATER;
+
+            if (current_query_target == GL_PRIMITIVES_SUBMITTED_ARB)
+            {
+                expected_values[0]                   = 0;
+                n_expected_values                    = 0;
+                expected_values[n_expected_values++] = n_input_vertices / 3;
+                verification_type                    = PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EXACT_MATCH;
+                getExpectedPrimitivesSubmittedQueryResult(m_current_primitive_type, &n_expected_values,
+                                                          expected_values);
+            }
             /* Compare it against query result values */
             result &= PipelineStatisticsQueryUtilities::verifyResultValues(
-                run_result, 1, &expected_value, m_bo_qo_id != 0, /* should_check_qo_bo_values */
+                run_result, n_expected_values, expected_values, m_bo_qo_id != 0, /* should_check_qo_bo_values */
                 current_query_target, &m_current_draw_call_type, &m_current_primitive_type,
                 false, /* is_primitive_restart_enabled */
-                m_testCtx, PipelineStatisticsQueryUtilities::VERIFICATION_TYPE_EQUAL_OR_GREATER);
-
+                m_testCtx, verification_type);
         } /* if (run results were obtained successfully) */
     }     /* for (all draw call types) */
 
@@ -3870,7 +4070,7 @@ void PipelineStatisticsQueryTestFunctional5::initObjects()
 bool PipelineStatisticsQueryTestFunctional5::shouldExecuteForQueryTarget(glw::GLenum query_target)
 {
     return (query_target == GL_TESS_CONTROL_SHADER_PATCHES_ARB ||
-            query_target == GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB);
+            query_target == GL_TESS_EVALUATION_SHADER_INVOCATIONS_ARB || query_target == GL_PRIMITIVES_SUBMITTED_ARB);
 }
 
 /** Constructor.

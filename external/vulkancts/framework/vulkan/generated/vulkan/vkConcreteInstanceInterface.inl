@@ -93,3 +93,4 @@ virtual VkResult	getDrmDisplayEXT													(VkPhysicalDevice physicalDevice, 
 virtual VkResult	getPhysicalDeviceOpticalFlowImageFormatsNV							(VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties) const;
 virtual VkResult	getPhysicalDeviceCooperativeMatrixPropertiesKHR						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties) const;
 virtual VkResult	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV	(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties) const;
+virtual VkResult	getPhysicalDeviceCooperativeVectorPropertiesNV						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties) const;

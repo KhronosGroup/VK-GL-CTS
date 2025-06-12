@@ -116,6 +116,9 @@ inline vk::VkSampleLocationsInfoEXT makeSampleLocationsInfo(const MultisamplePix
 //! Fill each grid pixel with a distinct samples pattern, rounding locations based on subPixelBits
 void fillSampleLocationsRandom(MultisamplePixelGrid &grid, const uint32_t subPixelBits, const uint32_t seed = 142u);
 
+//! Fill using the standard sample locations.
+void fillSampleLocationsStd(MultisamplePixelGrid &grid);
+
 } // namespace pipeline
 } // namespace vkt
 

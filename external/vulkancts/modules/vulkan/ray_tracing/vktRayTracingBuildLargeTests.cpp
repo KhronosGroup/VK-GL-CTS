@@ -289,12 +289,15 @@ de::SharedPtr<TopLevelAccelerationStructure> RayTracingBuildLargeTestInstance::i
     Allocator &allocator                              = m_context.getDefaultAllocator();
     de::MovePtr<TopLevelAccelerationStructure> result = makeTopLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     result->setInstanceCount(1);
     result->setBuildType(m_data.buildType);
     result->setDeferredOperation(m_data.deferredOperation);
     result->addInstance(bottomLevelAccelerationStructure);
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<TopLevelAccelerationStructure>(result.release());
 }
@@ -307,6 +310,9 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildLargeTestInstance
     Allocator &allocator                                 = m_context.getDefaultAllocator();
     tcu::UVec2 startPos                                  = tcu::UVec2(0u, 0u);
     de::MovePtr<BottomLevelAccelerationStructure> result = makeBottomLevelAccelerationStructure();
+
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
     result->setBuildType(m_data.buildType);
     result->setDeferredOperation(m_data.deferredOperation);
@@ -340,7 +346,7 @@ de::SharedPtr<BottomLevelAccelerationStructure> RayTracingBuildLargeTestInstance
         result->addGeometry(geometryData, true);
     }
 
-    result->createAndBuild(vkd, device, cmdBuffer, allocator);
+    result->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 
     return de::SharedPtr<BottomLevelAccelerationStructure>(result.release());
 }

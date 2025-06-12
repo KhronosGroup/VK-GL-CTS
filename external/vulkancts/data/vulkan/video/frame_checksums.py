@@ -51,7 +51,7 @@ import sys
 import hashlib
 
 if len(sys.argv) != 4:
-    print("Usage: yuv2rgb-cv.py yuvFile width height")
+    print("Usage: frame_checksums.py yuvFile width height")
     sys.exit(1)
 
 yuv_filename = sys.argv[1]

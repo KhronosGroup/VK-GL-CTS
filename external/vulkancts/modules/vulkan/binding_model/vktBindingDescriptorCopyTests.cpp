@@ -34,6 +34,7 @@
 #include "vkObjUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "deDefs.h"
 #include "deMath.h"
@@ -43,6 +44,8 @@
 
 #include "tcuTestCase.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuImageCompare.hpp"
 
 #include <string>
 #include <sstream>
@@ -3240,6 +3243,459 @@ void addMixedDescriptorCopyTests(tcu::TestContext &testCtx, de::MovePtr<tcu::Tes
 #endif
 }
 
+// The goal of these tests is checking if the implementation correctly copies combined-image-sampler bindings that use
+// immutable samplers, since those may be handled in special ways by the driver. To check this, we create a descriptor
+// set layout that contains one or more combined image samplers (with immutable samplers) and a storage buffer, that
+// goes before or after the samplers. Then, we create two descriptor sets, we prepare the first one normally and we
+// prepare the second one by copying the samplers from the first descriptor set. However, before copying the samplers we
+// write the storage buffer descriptor normally.
+//
+// If the driver has a bug, presumably the copies will be too small or too large, and should result in incorrect
+// samplers or the descriptor buffer information being possibly overwritten.
+//
+struct CopyImmutableSamplerParams
+{
+    uint32_t samplerCount;
+    bool bufferFirst;
+
+    uint32_t getBufferBinding() const
+    {
+        return (bufferFirst ? 0u : samplerCount);
+    }
+
+    uint32_t getImgBindingOffset() const
+    {
+        return (bufferFirst ? 1u : 0u);
+    }
+};
+
+class CopyImmutableSamplerTest : public vkt::TestInstance
+{
+public:
+    CopyImmutableSamplerTest(Context &context, const CopyImmutableSamplerParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~CopyImmutableSamplerTest(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const CopyImmutableSamplerParams m_params;
+};
+
+class CopyImmutableSamplerCase : public vkt::TestCase
+{
+public:
+    CopyImmutableSamplerCase(tcu::TestContext &testCtx, const std::string &name,
+                             const CopyImmutableSamplerParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~CopyImmutableSamplerCase(void) = default;
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new CopyImmutableSamplerTest(context, m_params);
+    }
+
+protected:
+    const CopyImmutableSamplerParams m_params;
+};
+
+void CopyImmutableSamplerCase::initPrograms(vk::SourceCollections &progCollection) const
+{
+    DE_ASSERT(m_params.samplerCount == 1u || m_params.samplerCount == 4u);
+
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "layout (location=0) out flat int quadrant;\n"
+         << "void main(void) {\n"
+         << "    gl_Position = inPos;\n";
+
+    if (m_params.samplerCount == 1u)
+        vert << "    quadrant = 0;\n";
+    else
+    {
+        vert << "    if (inPos.x < 0.0) {\n"
+             << "        if (inPos.y < 0.0) {\n"
+             << "            quadrant = 0;\n"
+             << "        } else {\n"
+             << "            quadrant = 1;\n"
+             << "        }\n"
+             << "    } else {\n"
+             << "        if (inPos.y < 0.0) {\n"
+             << "            quadrant = 2;\n"
+             << "        } else {\n"
+             << "            quadrant = 3;\n"
+             << "        }\n"
+             << "    }\n";
+    }
+    vert << "}\n";
+    progCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    const uint32_t bufferBinding    = m_params.getBufferBinding();
+    const uint32_t imgBindingOffset = m_params.getImgBindingOffset();
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in flat int quadrant;\n"
+         << "layout (location=0) out vec4 outColor;\n";
+
+    for (uint32_t i = 0u; i < m_params.samplerCount; ++i)
+        frag << "layout (set=0, binding=" << (i + imgBindingOffset) << ") uniform sampler2D inSampler" << i << ";\n";
+
+    frag << "layout (set=0, binding=" << bufferBinding << ") readonly buffer BufferBlock { float red; } inBuffer;\n"
+         << "void main(void) {\n"
+         << "    vec4 sampledColor = vec4(0.0);\n";
+
+    if (m_params.samplerCount == 1u)
+        frag << "    sampledColor = texture(inSampler0, vec2(0.0));\n";
+    else
+    {
+        frag << "    if (quadrant == 0) {\n"
+             << "        sampledColor = texture(inSampler0, vec2(0.0));\n"
+             << "    } else if (quadrant == 1) {\n"
+             << "        sampledColor = texture(inSampler1, vec2(0.0));\n"
+             << "    } else if (quadrant == 2) {\n"
+             << "        sampledColor = texture(inSampler2, vec2(0.0));\n"
+             << "    } else if (quadrant == 3) {\n"
+             << "        sampledColor = texture(inSampler3, vec2(0.0));\n"
+             << "    }\n";
+    }
+
+    frag << "    sampledColor.r = inBuffer.red;\n"
+         << "    outColor = sampledColor;\n"
+         << "}\n";
+    progCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus CopyImmutableSamplerTest::iterate(void)
+{
+    const auto ctx         = m_context.getContextCommonData();
+    const auto imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imageExtent = makeExtent3D(1u, 1u, 1u);
+    const tcu::IVec3 fbExtentV(2, 2, 1);
+    const auto fbExtent   = makeExtent3D(fbExtentV);
+    const auto imageUsage = (VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto fbUsage    = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto colorSRR   = makeDefaultImageSubresourceRange();
+
+    // We will create kImageCount combined image samplers with an immutable sampler.
+    const VkSamplerCreateInfo samplerCreateInfo = initVulkanStructure();
+    const auto sampler                          = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
+
+    using ImageWithMemoryPtr = std::unique_ptr<ImageWithMemory>;
+    std::vector<ImageWithMemoryPtr> images;
+    images.reserve(m_params.samplerCount);
+
+    const VkImageCreateInfo imageCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_IMAGE_TYPE_2D,
+        imageFormat,
+        imageExtent,
+        1u,
+        1u,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        imageUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    std::vector<Move<VkImageView>> imageViews;
+    imageViews.reserve(m_params.samplerCount);
+
+    for (uint32_t i = 0u; i < m_params.samplerCount; ++i)
+    {
+        images.emplace_back(
+            new ImageWithMemory(ctx.vkd, ctx.device, ctx.allocator, imageCreateInfo, MemoryRequirement::Any));
+        const auto image = images.back()->get();
+        imageViews.push_back(makeImageView(ctx.vkd, ctx.device, image, VK_IMAGE_VIEW_TYPE_2D, imageFormat, colorSRR));
+    }
+
+    // Now a storage buffer that contains different red values.
+    struct BufferData
+    {
+        float redValues[8];
+        BufferData()
+        {
+            redValues[0] = 0.5;
+            redValues[1] = 0.5;
+            redValues[2] = 0.5;
+            redValues[3] = 0.5;
+
+            redValues[4] = 1.0;
+            redValues[5] = 1.0;
+            redValues[6] = 1.0;
+            redValues[7] = 1.0;
+        }
+    };
+
+    BufferData bufferData;
+    const auto redBufferSize     = static_cast<VkDeviceSize>(sizeof(bufferData));
+    const auto redBufferSizeHalf = redBufferSize / 2u;
+    const auto redBufferUsage    = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    const auto redBufferInfo     = makeBufferCreateInfo(redBufferSize, redBufferUsage);
+    BufferWithMemory redBuffer(ctx.vkd, ctx.device, ctx.allocator, redBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = redBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), &bufferData, sizeof(bufferData));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // We also need a framebuffer and a vertex buffer.
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, fbExtent, imageFormat, fbUsage, VK_IMAGE_TYPE_2D);
+
+    const std::vector<tcu::Vec4> vertices{
+        // clang-format off
+        tcu::Vec4(-0.5f, -0.5f, 0.0f, 1.0f),
+        tcu::Vec4(-0.5f,  0.5f, 0.0f, 1.0f),
+        tcu::Vec4( 0.5f, -0.5f, 0.0f, 1.0f),
+        tcu::Vec4( 0.5f,  0.5f, 0.0f, 1.0f),
+        // clang-format on
+    };
+
+    const auto vertBufferSize   = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertBufferUsage  = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    const auto vertBufferOffset = static_cast<VkDeviceSize>(0);
+    const auto vertBufferInfo   = makeBufferCreateInfo(vertBufferSize, vertBufferUsage);
+    BufferWithMemory vertBuffer(ctx.vkd, ctx.device, ctx.allocator, vertBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = vertBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Descriptor pool and descriptor sets.
+    const auto kSetCount = 2u;
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, m_params.samplerCount * kSetCount);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, kSetCount);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, kSetCount);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    if (m_params.bufferFirst)
+        setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    for (uint32_t i = 0u; i < m_params.samplerCount; ++i)
+        setLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                                 VK_SHADER_STAGE_FRAGMENT_BIT, &sampler.get());
+    if (!m_params.bufferFirst)
+        setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    std::vector<Move<VkDescriptorSet>> descriptorSets(kSetCount);
+    for (uint32_t i = 0u; i < kSetCount; ++i)
+        descriptorSets.at(i) = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    // Update the first descriptor set manually.
+    const uint32_t bufferBinding    = m_params.getBufferBinding();
+    const uint32_t imgBindingOffset = m_params.getImgBindingOffset();
+
+    {
+        const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+        const auto descSet = descriptorSets.front().get();
+
+        DescriptorSetUpdateBuilder updateBuilder;
+        for (uint32_t i = 0u; i < m_params.samplerCount; ++i)
+        {
+            const auto descInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, imageViews.at(i).get(),
+                                                          VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+            updateBuilder.writeSingle(descSet, binding(i + imgBindingOffset), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                      &descInfo);
+        }
+        {
+            const auto descInfo = makeDescriptorBufferInfo(*redBuffer, 0u, redBufferSizeHalf);
+            updateBuilder.writeSingle(descSet, binding(bufferBinding), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descInfo);
+        }
+
+        updateBuilder.update(ctx.vkd, ctx.device);
+    }
+    // Copy combined image sampler descriptors to the second set.
+    {
+        // First, write the red buffer descriptor info.
+        const auto descInfo = makeDescriptorBufferInfo(*redBuffer, redBufferSizeHalf, redBufferSizeHalf);
+        const VkWriteDescriptorSet writeDescriptorSet = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSets.back().get(),
+            bufferBinding,
+            0u,
+            1u,
+            VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+            nullptr,
+            &descInfo,
+            nullptr,
+        };
+
+        ctx.vkd.updateDescriptorSets(ctx.device, 1u, &writeDescriptorSet, 0u, nullptr);
+
+        // Then, copy the immutable sampler descriptors.
+        const VkCopyDescriptorSet copyDescriptorSet = {
+            VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET,
+            nullptr,
+            descriptorSets.front().get(),
+            imgBindingOffset,
+            0u,
+            descriptorSets.back().get(),
+            imgBindingOffset,
+            0u,
+            m_params.samplerCount, // Copies all descriptors at the same time.
+        };
+
+        ctx.vkd.updateDescriptorSets(ctx.device, 0u, nullptr, 1u, &copyDescriptorSet);
+    }
+
+    // Create pipeline.
+    const auto renderPass = makeRenderPass(ctx.vkd, ctx.device, imageFormat);
+    const auto framebuffer =
+        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), fbExtent.width, fbExtent.height);
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertShader, VK_NULL_HANDLE,
+                                               VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader, *renderPass, viewports,
+                                               scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+
+    // Colors for each image, plus the clear color.
+    const std::vector<tcu::Vec4> imageColors{
+        tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f),
+        tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f), // Clear color.
+    };
+    DE_ASSERT(de::sizeU32(imageColors) >= m_params.samplerCount + 1u);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    // Prepare images.
+    {
+        std::vector<VkImageMemoryBarrier> preClearBarriers;
+        preClearBarriers.reserve(m_params.samplerCount);
+
+        for (uint32_t i = 0u; i < m_params.samplerCount; ++i)
+        {
+            const auto barrier =
+                makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, images.at(i)->get(), colorSRR);
+            preClearBarriers.push_back(barrier);
+        }
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, preClearBarriers.data(), preClearBarriers.size());
+
+        for (uint32_t i = 0u; i < m_params.samplerCount; ++i)
+        {
+            const auto clearColor = makeClearValueColor(imageColors.at(i));
+            ctx.vkd.cmdClearColorImage(cmdBuffer, images.at(i)->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       &clearColor.color, 1u, &colorSRR);
+        }
+
+        std::vector<VkImageMemoryBarrier> postClearBarriers;
+        postClearBarriers.reserve(m_params.samplerCount);
+
+        for (uint32_t i = 0u; i < m_params.samplerCount; ++i)
+        {
+            const auto barrier = makeImageMemoryBarrier(
+                VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, images.at(i)->get(), colorSRR);
+            postClearBarriers.push_back(barrier);
+        }
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, postClearBarriers.data(),
+                                      postClearBarriers.size());
+    }
+    // Draw half the vertices with the first set and the other half with the other set.
+    {
+        DE_ASSERT(de::sizeU32(vertices) % 2u == 0u);
+        const auto halfVertexCount = de::sizeU32(vertices) / 2u;
+        const auto bindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+        ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertBuffer.get(), &vertBufferOffset);
+
+        beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), imageColors.back());
+        {
+            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSets.front().get(),
+                                          0u, nullptr);
+            ctx.vkd.cmdDraw(cmdBuffer, halfVertexCount, 1u, 0u, 0u);
+        }
+        {
+            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSets.back().get(),
+                                          0u, nullptr);
+            ctx.vkd.cmdDraw(cmdBuffer, halfVertexCount, 1u, halfVertexCount, 0u);
+        }
+        endRenderPass(ctx.vkd, cmdBuffer);
+    }
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtentV.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(imageFormat);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtentV.x(), fbExtentV.y(), fbExtentV.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    {
+        const auto firstColorOffset = tcu::Vec4(bufferData.redValues[0], 0.0f, 0.0f, 0.0f);
+        const auto secondColorOffset =
+            tcu::Vec4(bufferData.redValues[de::arrayLength(bufferData.redValues) / 2u], 0.0f, 0.0f, 0.0f);
+
+        // Reference: each quadrant should have its own color according to the shader.
+        const auto quadrantSize = fbExtentV / tcu::IVec3(2, 2, 1);
+        const auto halfSize     = fbExtentV / tcu::IVec3(2, 1, 1);
+
+        if (m_params.samplerCount == 1u)
+        {
+            const auto left = tcu::getSubregion(reference, 0, 0, halfSize.x(), halfSize.y());
+            tcu::clear(left, imageColors.at(0) + firstColorOffset);
+
+            const auto right = tcu::getSubregion(reference, halfSize.x(), 0, halfSize.x(), halfSize.y());
+            tcu::clear(right, imageColors.at(0) + secondColorOffset);
+        }
+        else
+        {
+            const auto topLeft = tcu::getSubregion(reference, 0, 0, quadrantSize.x(), quadrantSize.y());
+            tcu::clear(topLeft, imageColors.at(0) + firstColorOffset);
+
+            const auto bottomLeft =
+                tcu::getSubregion(reference, 0, quadrantSize.y(), quadrantSize.x(), quadrantSize.y());
+            tcu::clear(bottomLeft, imageColors.at(1) + firstColorOffset);
+
+            const auto topRight = tcu::getSubregion(reference, quadrantSize.x(), 0, quadrantSize.x(), quadrantSize.y());
+            tcu::clear(topRight, imageColors.at(2) + secondColorOffset);
+
+            const auto bottomRight =
+                tcu::getSubregion(reference, quadrantSize.x(), quadrantSize.y(), quadrantSize.x(), quadrantSize.y());
+            tcu::clear(bottomRight, imageColors.at(3) + secondColorOffset);
+        }
+    }
+
+    auto &fbAlloc = colorBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, fbAlloc);
+    tcu::ConstPixelBufferAccess result(tcuFormat, fbExtentV, fbAlloc.getHostPtr());
+
+    auto &log                  = m_context.getTestContext().getLog();
+    const float thresholdValue = 0.005f; // 1/255 < 0.005 < 2/255
+    const tcu::Vec4 threshold(thresholdValue);
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected result in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 void createTestsForAllDescriptorTypes(tcu::TestContext &testCtx, de::MovePtr<tcu::TestCaseGroup> &parentGroup,
@@ -3285,20 +3741,35 @@ void createTestsForAllDescriptorTypes(tcu::TestContext &testCtx, de::MovePtr<tcu
 
 tcu::TestCaseGroup *createDescriptorCopyTests(tcu::TestContext &testCtx)
 {
-    de::MovePtr<tcu::TestCaseGroup> descriptorCopyGroup(new tcu::TestCaseGroup(testCtx, "descriptor_copy"));
+    using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-    de::MovePtr<tcu::TestCaseGroup> computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
-    de::MovePtr<tcu::TestCaseGroup> graphicsGroup(new tcu::TestCaseGroup(testCtx, "graphics"));
+    GroupPtr descriptorCopyGroup(new tcu::TestCaseGroup(testCtx, "descriptor_copy"));
+
+    GroupPtr computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
+    GroupPtr graphicsGroup(new tcu::TestCaseGroup(testCtx, "graphics"));
     // Graphics tests with update after bind
-    de::MovePtr<tcu::TestCaseGroup> graphicsUABGroup(new tcu::TestCaseGroup(testCtx, "graphics_uab"));
+    GroupPtr graphicsUABGroup(new tcu::TestCaseGroup(testCtx, "graphics_uab"));
+    GroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
     createTestsForAllDescriptorTypes(testCtx, computeGroup, PIPELINE_TYPE_COMPUTE);
     createTestsForAllDescriptorTypes(testCtx, graphicsGroup, PIPELINE_TYPE_GRAPHICS);
     createTestsForAllDescriptorTypes(testCtx, graphicsUABGroup, PIPELINE_TYPE_GRAPHICS, true);
 
+    {
+        for (const uint32_t samplerCount : {1u, 4u})
+            for (const bool bufferFirst : {false, true})
+            {
+                const CopyImmutableSamplerParams params{samplerCount, bufferFirst};
+                const auto testName = "copy_immutable_sampler_" + std::to_string(samplerCount) + "_images" +
+                                      (bufferFirst ? "_buffer_first" : "");
+                miscGroup->addChild(new CopyImmutableSamplerCase(testCtx, testName, params));
+            }
+    }
+
     descriptorCopyGroup->addChild(computeGroup.release());
     descriptorCopyGroup->addChild(graphicsGroup.release());
     descriptorCopyGroup->addChild(graphicsUABGroup.release());
+    descriptorCopyGroup->addChild(miscGroup.release());
 
     return descriptorCopyGroup.release();
 }

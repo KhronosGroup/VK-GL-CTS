@@ -138,6 +138,14 @@ NativeHandle::NativeHandle(const NativeHandle &other)
         else
             DE_FATAL("Platform doesn't support Android Hardware Buffer handles");
     }
+    else if (other.m_metalHandle)
+    {
+#if (DE_OS == DE_OS_OSX)
+        m_metalHandle = other.m_metalHandle;
+#else
+        DE_FATAL("Platform doesn't support Metal resources");
+#endif
+    }
     else
         DE_FATAL("Native handle can't be duplicated");
 }
@@ -169,6 +177,17 @@ NativeHandle::NativeHandle(vk::pt::AndroidHardwareBufferPtr buffer)
     , m_win32Handle(nullptr)
     , m_androidHardwareBuffer(buffer)
     , m_hostPtr(nullptr)
+{
+}
+
+NativeHandle::NativeHandle(void *handle)
+    : m_fd(kInvalidFd)
+    , m_zirconHandle(0u)
+    , m_win32HandleType(WIN32HANDLETYPE_LAST)
+    , m_win32Handle(nullptr)
+    , m_androidHardwareBuffer(nullptr)
+    , m_hostPtr(nullptr)
+    , m_metalHandle(handle)
 {
 }
 
@@ -230,12 +249,22 @@ void NativeHandle::reset(void)
         else
             DE_FATAL("Platform doesn't support Android Hardware Buffer handles");
     }
+    if (m_metalHandle)
+    {
+#if (DE_OS == DE_OS_OSX)
+        // TODO Aitor: Release resource
+#else
+        DE_FATAL("Platform doesn't support Metal resources");
+#endif
+    }
+
     m_fd                    = kInvalidFd;
     m_zirconHandle          = vk::pt::zx_handle_t(0u);
     m_win32Handle           = vk::pt::Win32Handle(nullptr);
     m_win32HandleType       = WIN32HANDLETYPE_LAST;
     m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(nullptr);
     m_hostPtr               = nullptr;
+    m_metalHandle           = nullptr;
 }
 
 NativeHandle &NativeHandle::operator=(int fd)
@@ -271,6 +300,13 @@ void NativeHandle::setZirconHandle(vk::pt::zx_handle_t zirconHandle)
     m_zirconHandle = zirconHandle;
 }
 
+void NativeHandle::setMetalHandle(void *metalHandle)
+{
+    reset();
+
+    m_metalHandle = metalHandle;
+}
+
 void NativeHandle::setHostPtr(void *hostPtr)
 {
     reset();
@@ -285,6 +321,7 @@ void NativeHandle::disown(void)
     m_win32Handle           = vk::pt::Win32Handle(nullptr);
     m_androidHardwareBuffer = vk::pt::AndroidHardwareBufferPtr(nullptr);
     m_hostPtr               = nullptr;
+    m_metalHandle           = nullptr;
 }
 
 vk::pt::Win32Handle NativeHandle::getWin32Handle(void) const
@@ -306,6 +343,7 @@ int NativeHandle::getFd(void) const
     DE_ASSERT(!m_win32Handle.internal);
     DE_ASSERT(!m_androidHardwareBuffer.internal);
     DE_ASSERT(m_hostPtr == nullptr);
+    DE_ASSERT(!m_metalHandle);
     return m_fd;
 }
 
@@ -313,6 +351,7 @@ vk::pt::zx_handle_t NativeHandle::getZirconHandle(void) const
 {
     DE_ASSERT(!m_win32Handle.internal);
     DE_ASSERT(!m_androidHardwareBuffer.internal);
+    DE_ASSERT(!m_metalHandle);
 
     return m_zirconHandle;
 }
@@ -322,6 +361,7 @@ vk::pt::AndroidHardwareBufferPtr NativeHandle::getAndroidHardwareBuffer(void) co
     DE_ASSERT(m_fd == kInvalidFd);
     DE_ASSERT(!m_win32Handle.internal);
     DE_ASSERT(m_hostPtr == nullptr);
+    DE_ASSERT(!m_metalHandle);
     return m_androidHardwareBuffer;
 }
 
@@ -329,7 +369,16 @@ void *NativeHandle::getHostPtr(void) const
 {
     DE_ASSERT(m_fd == kInvalidFd);
     DE_ASSERT(!m_win32Handle.internal);
+    DE_ASSERT(!m_metalHandle);
     return m_hostPtr;
+}
+
+void *NativeHandle::getMetalHandle(void) const
+{
+    DE_ASSERT(m_fd == kInvalidFd);
+    DE_ASSERT(!m_win32Handle.internal);
+    DE_ASSERT(m_hostPtr == nullptr);
+    return m_metalHandle;
 }
 
 const char *externalSemaphoreTypeToName(vk::VkExternalSemaphoreHandleTypeFlagBits type)
@@ -418,6 +467,12 @@ const char *externalMemoryTypeToName(vk::VkExternalMemoryHandleTypeFlagBits type
 
     case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_ZIRCON_VMO_BIT_FUCHSIA:
         return "zircon_vmo";
+
+    case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT:
+        return "mtlbuffer";
+
+    case vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT:
+        return "mtltexture";
 
     default:
         DE_FATAL("Unknown external memory type");
@@ -592,6 +647,17 @@ void getMemoryNative(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::Vk
         VK_CHECK(vkd.getMemoryAndroidHardwareBufferANDROID(device, &info, &ahb));
         TCU_CHECK(ahb.internal);
         nativeHandle = ahb;
+    }
+    else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT ||
+             externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT)
+    {
+        const vk::VkMemoryGetMetalHandleInfoEXT info = {vk::VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT, nullptr,
+                                                        memory, externalType};
+
+        void *handle(nullptr);
+        VK_CHECK(vkd.getMemoryMetalHandleEXT(device, &info, &handle));
+        TCU_CHECK(handle);
+        nativeHandle.setMetalHandle(handle);
     }
     else
         DE_FATAL("Unknown external memory handle type");
@@ -1085,6 +1151,25 @@ static vk::Move<vk::VkDeviceMemory> importMemory(const vk::DeviceInterface &vkd,
         const vk::VkMemoryAllocateInfo info = {vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
                                                (isDedicated ? (const void *)&dedicatedInfo : (const void *)&importInfo),
                                                requirements.size, memoryTypeIndex};
+        vk::Move<vk::VkDeviceMemory> memory(vk::allocateMemory(vkd, device, &info));
+
+        return memory;
+    }
+    else if (externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT ||
+             externalType == vk::VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT)
+    {
+        const vk::VkImportMemoryMetalHandleInfoEXT importInfo = {
+            vk::VK_STRUCTURE_TYPE_IMPORT_MEMORY_METAL_HANDLE_INFO_EXT, nullptr, externalType, handle.getMetalHandle()};
+        const vk::VkMemoryDedicatedAllocateInfo dedicatedInfo = {
+            vk::VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO,
+            &importInfo,
+            image,
+            buffer,
+        };
+        const vk::VkMemoryAllocateInfo info = {
+            vk::VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,
+            (isDedicated ? (const void *)&dedicatedInfo : (const void *)&importInfo), requirements.size,
+            (memoryTypeIndex == ~0U) ? chooseMemoryType(requirements.memoryTypeBits) : memoryTypeIndex};
         vk::Move<vk::VkDeviceMemory> memory(vk::allocateMemory(vkd, device, &info));
 
         return memory;

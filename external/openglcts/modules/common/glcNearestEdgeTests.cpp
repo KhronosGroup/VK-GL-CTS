@@ -28,6 +28,7 @@
 #include "gluTextureUtil.hpp"
 #include "gluDrawUtil.hpp"
 #include "gluShaderProgram.hpp"
+#include "gluContextInfo.hpp"
 
 #include "glwDefs.hpp"
 #include "glwFunctions.hpp"
@@ -74,7 +75,8 @@ public:
 
     static std::string getName(OffsetDirection direction);
     static std::string getDesc(OffsetDirection direction);
-    static tcu::TextureFormat toTextureFormat(deqp::Context &context, const tcu::PixelFormat &pixelFmt);
+    static tcu::TextureFormat toTextureFormat(deqp::Context &context, const tcu::PixelFormat &pixelFmt,
+                                              bool *preferredBgra = nullptr);
 
 private:
     static const glw::GLenum kTextureType = GL_TEXTURE_2D;
@@ -96,6 +98,7 @@ private:
     std::string m_fragShaderText;
     glw::GLuint m_texture;
     std::vector<uint8_t> m_texData;
+    bool m_preferredBgra;
 };
 
 std::string NearestEdgeTestCase::getName(OffsetDirection direction)
@@ -132,8 +135,12 @@ std::string NearestEdgeTestCase::getDesc(OffsetDirection direction)
 
 // Translate pixel format in the frame buffer to texture format.
 // Copied from sglrReferenceContext.cpp.
-tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, const tcu::PixelFormat &pixelFmt)
+tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, const tcu::PixelFormat &pixelFmt,
+                                                        bool *preferredBgra)
 {
+    DE_ASSERT(preferredBgra != nullptr);
+    *preferredBgra = false;
+
     static const struct
     {
         tcu::PixelFormat pixelFmt;
@@ -152,26 +159,36 @@ tcu::TextureFormat NearestEdgeTestCase::toTextureFormat(deqp::Context &context, 
         {tcu::PixelFormat(10, 10, 10, 0),
          tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT_1010102_REV)},
         {tcu::PixelFormat(16, 16, 16, 16),
-         tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::HALF_FLOAT)},
-    };
+         tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::HALF_FLOAT)}};
 
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(pixelFormatMap); ndx++)
     {
         if (pixelFormatMap[ndx].pixelFmt == pixelFmt)
         {
+            const auto &gl = context.getRenderContext().getFunctions();
+
+            glw::GLint implFormat = GL_NONE;
+            glw::GLint implType   = GL_NONE;
+            gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
+            gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
             // Some implementations treat GL_RGB8 as GL_RGBA8888,so the test should pass implementation format to ReadPixels.
             if (pixelFmt == tcu::PixelFormat(8, 8, 8, 0))
             {
-                const auto &gl = context.getRenderContext().getFunctions();
-
-                glw::GLint implFormat = GL_NONE;
-                glw::GLint implType   = GL_NONE;
-                gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
-                gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
                 if (implFormat == GL_RGBA && implType == GL_UNSIGNED_BYTE)
                     return tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
             }
-
+            if (pixelFmt == tcu::PixelFormat(5, 5, 5, 1) &&
+                pixelFormatMap[ndx].texFmt.order == tcu::TextureFormat::ChannelOrder::RGBA)
+            {
+                auto readFormatBgraSupported = context.getContextInfo().isExtensionSupported("GL_EXT_read_format_bgra");
+                if (readFormatBgraSupported)
+                {
+                    if (preferredBgra != nullptr && implFormat == GL_BGRA_EXT)
+                    {
+                        *preferredBgra = true;
+                    }
+                }
+            }
             return pixelFormatMap[ndx].texFmt;
         }
     }
@@ -185,7 +202,7 @@ NearestEdgeTestCase::NearestEdgeTestCase(deqp::Context &context, OffsetDirection
     , m_width{context.getRenderTarget().getWidth()}
     , m_height{context.getRenderTarget().getHeight()}
     , m_format{context.getRenderTarget().getPixelFormat()}
-    , m_texFormat{toTextureFormat(context, m_format)}
+    , m_texFormat{toTextureFormat(context, m_format, &m_preferredBgra)}
     , m_texFormatInfo{tcu::getTextureFormatInfo(m_texFormat)}
     , m_transFormat{glu::getTransferFormat(m_texFormat)}
     , m_texture(0)
@@ -361,16 +378,33 @@ void NearestEdgeTestCase::renderQuad()
 
 bool NearestEdgeTestCase::verifyResults()
 {
-    const auto &gl = m_context.getRenderContext().getFunctions();
+    const auto &gl        = m_context.getRenderContext().getFunctions();
+    glw::GLint implFormat = GL_NONE;
+    glw::GLint implType   = GL_NONE;
+    gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_FORMAT, &implFormat);
+    gl.getIntegerv(GL_IMPLEMENTATION_COLOR_READ_TYPE, &implType);
+    if (m_preferredBgra && implFormat == GL_BGRA_EXT && m_transFormat.dataType == GL_UNSIGNED_SHORT_5_5_5_1 &&
+        m_transFormat.format == GL_RGBA)
+    {
+        implType = GL_UNSIGNED_SHORT_1_5_5_5_REV_EXT;
+    }
 
     std::vector<uint8_t> fbData(m_width * m_height * tcu::getPixelSize(m_texFormat));
     if (tcu::getPixelSize(m_texFormat) < 4)
         gl.pixelStorei(GL_PACK_ALIGNMENT, 1);
-    gl.readPixels(0, 0, m_width, m_height, m_transFormat.format, m_transFormat.dataType, fbData.data());
+
+    m_preferredBgra == true ?
+        gl.readPixels(0, 0, m_width, m_height, implFormat, implType, fbData.data()) :
+        gl.readPixels(0, 0, m_width, m_height, m_transFormat.format, m_transFormat.dataType, fbData.data());
     GLU_EXPECT_NO_ERROR(gl.getError(), "glReadPixels");
 
     tcu::ConstPixelBufferAccess texAccess{m_texFormat, m_width, m_height, 1, m_texData.data()};
     tcu::ConstPixelBufferAccess fbAccess{m_texFormat, m_width, m_height, 1, fbData.data()};
+    if (m_preferredBgra)
+    {
+        fbAccess = {tcu::TextureFormat(tcu::TextureFormat::BGRA, tcu::TextureFormat::UNORM_SHORT_1555), m_width,
+                    m_height, 1, fbData.data()};
+    }
 
     // Difference image to ease spotting problems.
     const tcu::TextureFormat diffFormat{tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8};
@@ -386,7 +420,9 @@ bool NearestEdgeTestCase::verifyResults()
         for (int y = 0; y < m_height; ++y)
         {
             const auto texPixel = texAccess.getPixel(x, y);
-            const auto fbPixel  = fbAccess.getPixel(x, y);
+            auto fbPixel        = fbAccess.getPixel(x, y);
+            if (m_preferredBgra)
+                fbPixel = fbPixel.swizzle(1, 0, 3, 2);
 
             // Require perfect pixel match.
             if (texPixel != fbPixel)

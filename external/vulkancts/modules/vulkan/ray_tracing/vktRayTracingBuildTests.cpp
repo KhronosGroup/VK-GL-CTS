@@ -296,7 +296,10 @@ void RayTracingBuildTestInstance::createTopAccelerationStructure(VkCommandBuffer
     const VkDevice device      = m_context.getDevice();
     Allocator &allocator       = m_context.getDefaultAllocator();
 
-    tlas->createAndBuild(vkd, device, cmdBuffer, allocator);
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
+    tlas->createAndBuild(vkd, device, cmdBuffer, allocator, bufferProps);
 }
 
 void RayTracingBuildTestInstance::initBottomAccelerationStructure(BlasPtr blas, bool useGpuBuild,

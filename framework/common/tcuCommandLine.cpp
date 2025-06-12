@@ -105,6 +105,7 @@ DE_DECLARE_COMMAND_LINE_OPT(LogEmptyLoginfo, bool);
 DE_DECLARE_COMMAND_LINE_OPT(TestOOM, bool);
 DE_DECLARE_COMMAND_LINE_OPT(ArchiveDir, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceID, int);
+DE_DECLARE_COMMAND_LINE_OPT(MaxCustomDevices, int);
 DE_DECLARE_COMMAND_LINE_OPT(VKDeviceGroupID, int);
 DE_DECLARE_COMMAND_LINE_OPT(LogFlush, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogCompact, bool);
@@ -230,6 +231,7 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<EGLWindowType>(nullptr, "deqp-egl-window-type", "EGL native window type")
         << Option<EGLPixmapType>(nullptr, "deqp-egl-pixmap-type", "EGL native pixmap type")
         << Option<VKDeviceID>(nullptr, "deqp-vk-device-id", "Vulkan device ID (IDs start from 1)", "1")
+        << Option<MaxCustomDevices>(nullptr, "deqp-max-custom-vk-devices", "Maximum number of custom devices", "5")
         << Option<VKDeviceGroupID>(nullptr, "deqp-vk-device-group-id", "Vulkan device Group ID (IDs start from 1)", "1")
         << Option<LogImages>(nullptr, "deqp-log-images", "Enable or disable logging of result images", s_enableNames,
                              "enable")
@@ -1218,6 +1220,10 @@ const std::vector<int> &CommandLine::getCLDeviceIds(void) const
 int CommandLine::getVKDeviceId(void) const
 {
     return m_cmdLine.getOption<opt::VKDeviceID>();
+}
+int CommandLine::getMaxCustomDevices(void) const
+{
+    return m_cmdLine.getOption<opt::MaxCustomDevices>();
 }
 int CommandLine::getVKDeviceGroupId(void) const
 {

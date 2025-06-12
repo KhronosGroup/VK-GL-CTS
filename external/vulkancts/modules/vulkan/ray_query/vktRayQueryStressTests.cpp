@@ -553,6 +553,7 @@ tcu::TestCaseGroup *createRayQueryStressTests(tcu::TestContext &testCtx)
             RayQueryTestParams rayQueryTestParams{};
             rayQueryTestParams.shaderSourceType = shaderSourceTypes[shaderSourceNdx].shaderSourceType;
             rayQueryTestParams.pipelineType     = shaderSourceTypes[shaderSourceNdx].shaderSourcePipeline;
+            rayQueryTestParams.resourceRes      = ResourceResidency::TRADITIONAL;
             StressTestParams testParams{};
             testParams.raySize = STRESS_NUM_LEVELS * STRESS_NUM_PRIMS_PER_LEVELS;
             if (rayQueryTestParams.pipelineType != RayQueryShaderSourcePipeline::RAYTRACING)

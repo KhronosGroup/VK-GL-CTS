@@ -1438,6 +1438,7 @@ void LoadStoreTest::checkSupport(Context &context) const
 void LoadStoreTest::makePrograms(SourceCollections &programCollection, const DeviceScopeType deviceScopeType,
                                  const bool draw, const uint32_t verticesCount) const
 {
+    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
     const tcu::TextureFormat texFormat = mapVkFormat(m_format);
     const int dimension                = (m_singleLayerBind ? m_texture.layerDimension() : m_texture.dimension());
     const ImageType usedImageType =
@@ -1602,7 +1603,7 @@ void LoadStoreTest::makePrograms(SourceCollections &programCollection, const Dev
         else if (deviceScopeType == DEVICESCOPE_LOAD)
             shaderName += "_load";
 
-        programCollection.glslSources.add(shaderName) << glu::ComputeSource(src.str());
+        programCollection.glslSources.add(shaderName) << glu::ComputeSource(src.str()) << buildOptions;
     }
     else
     {
@@ -1672,7 +1673,7 @@ void LoadStoreTest::makePrograms(SourceCollections &programCollection, const Dev
         }
         srcFrag << "}\n";
 
-        programCollection.glslSources.add("frag") << glu::FragmentSource(srcFrag.str());
+        programCollection.glslSources.add("frag") << glu::FragmentSource(srcFrag.str()) << buildOptions;
     }
 }
 

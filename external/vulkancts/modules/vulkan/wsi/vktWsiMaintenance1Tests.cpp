@@ -116,8 +116,8 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool enableSwapchainMaintenance1Feature,
-                                   bool requireDeviceGroup, bool validationEnabled)
+                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup,
+                                   bool requireFifoLatestReady, bool validationEnabled)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -140,6 +140,10 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
     {
         extensions.push_back("VK_KHR_device_group");
     }
+    if (requireFifoLatestReady)
+    {
+        extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+    }
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_shared_presentable_image")))
     {
         extensions.push_back("VK_KHR_shared_presentable_image");
@@ -147,17 +151,32 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
 
     checkAllSupported(supportedExtensions, extensions);
 
+    void *pNext = nullptr;
     VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT swapchainMaintenance1Features{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT, // VkStructureType sType;
         nullptr,                                                                // void* pNext;
         VK_TRUE,                                                                // VkBool32 swapchainMaintenance1;
     };
+    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT fifoLatestReadyFeatures{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT, // VkStructureType sType;
+        nullptr,                                                                       // void *pNext;
+        VK_TRUE, // VkBool32 presentModeFifoLatestReady;
+    };
 
-    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
+    if (requireSwapchainMaintenance1)
+    {
+        swapchainMaintenance1Features.pNext = pNext;
+        pNext                               = &swapchainMaintenance1Features;
+    }
+
+    if (requireFifoLatestReady)
+    {
+        fifoLatestReadyFeatures.pNext = pNext;
+        pNext                         = &fifoLatestReadyFeatures;
+    }
+
+    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(pNext);
     features2.features                  = features;
-
-    if (enableSwapchainMaintenance1Feature)
-        features2.pNext = &swapchainMaintenance1Features;
 
     VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
@@ -199,14 +218,14 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 bool requireSwapchainMaintenance1, bool enableSwapchainMaintenance1Feature, bool requireDeviceGroup,
+                 bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool requireFifoLatestReady,
                  const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
-                                     pAllocator, requireSwapchainMaintenance1, enableSwapchainMaintenance1Feature,
-                                     requireDeviceGroup,
+                                     pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
+                                     requireFifoLatestReady,
                                      context.getTestContext().getCommandLine().isValidationEnabled()))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
@@ -534,7 +553,6 @@ struct PresentFenceTestConfig
     bool changePresentModes;
     bool verifyFenceOrdering;
     bool nullHandles;
-    bool swapchainMaintenance1;
 };
 
 bool canDoMultiSwapchainPresent(vk::wsi::Type wsiType)
@@ -578,6 +596,7 @@ uint32_t getIterations(std::vector<VkPresentModeKHR> presentModes,
             break;
         case VK_PRESENT_MODE_IMMEDIATE_KHR:
         case VK_PRESENT_MODE_MAILBOX_KHR:
+        case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:
         default:
             hasNoVsync = true;
             break;
@@ -710,7 +729,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     }
 
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surfaces[0], true,
-                                 testParams.swapchainMaintenance1, testParams.bindImageMemory);
+                                 testParams.bindImageMemory, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -1044,6 +1063,7 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
@@ -1059,7 +1079,6 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
         config.nullHandles           = false;
-        config.swapchainMaintenance1 = true;
 
         // Basic present fence test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
@@ -1084,11 +1103,6 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.nullHandles         = true;
             addFunctionCase(&*presentModeGroup, "null_handles", presentFenceTest, config);
         }
-
-        config.modes                 = std::vector<VkPresentModeKHR>(1, presentModes[presentModeNdx].mode);
-        config.nullHandles           = false;
-        config.swapchainMaintenance1 = false;
-        addFunctionCase(&*presentModeGroup, "maintenance1_disabled", presentFenceTest, config);
 
         testGroup->addChild(presentModeGroup.release());
     }
@@ -1275,6 +1289,7 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
@@ -1300,7 +1315,6 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.changePresentModes    = true;
             config.verifyFenceOrdering   = false;
             config.nullHandles           = false;
-            config.swapchainMaintenance1 = true;
 
             // Switch between compatible modes
             addFunctionCase(&*presentModeGroup, "change_modes", presentFenceTest, config);
@@ -1358,7 +1372,6 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
                     config.changePresentModes    = true;
                     config.verifyFenceOrdering   = false;
                     config.nullHandles           = false;
-                    config.swapchainMaintenance1 = true;
 
                     addFunctionCase(&*heterogenousGroup, testName, presentFenceTest, config);
                 }
@@ -1511,7 +1524,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, true, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -1675,7 +1688,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
                 VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
                 nullptr,
                 0,
-                0,
+                VK_ACCESS_TRANSFER_WRITE_BIT,
                 VK_IMAGE_LAYOUT_UNDEFINED,
                 VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                 VK_QUEUE_FAMILY_IGNORED,
@@ -1684,7 +1697,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
                 range,
             };
 
-            vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+            vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                                    VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
 
             const tcu::UVec2 halfSwapchainSize = swapchainSize / 2u;
@@ -1703,6 +1716,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
             barrier.oldLayout     = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
             barrier.newLayout     = VK_IMAGE_LAYOUT_PRESENT_SRC_KHR;
             barrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            barrier.dstAccessMask = 0;
 
             vkd.cmdPipelineBarrier(**commandBuffers[i], VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, 0u, 0, nullptr, 0, nullptr, 1, &barrier);
@@ -1771,6 +1785,7 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
     const struct
@@ -1924,6 +1939,7 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
@@ -1939,7 +1955,6 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
         config.nullHandles           = false;
-        config.swapchainMaintenance1 = true;
 
         // Basic deferred allocation test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
@@ -1990,7 +2005,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, true, false);
+    const bool requireFifoLatestReady = testParams.mode == VK_PRESENT_MODE_FIFO_LATEST_READY_EXT;
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false,
+                                 requireFifoLatestReady);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -2315,6 +2332,12 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     return tcu::TestStatus::pass("Tests ran successfully");
 }
 
+void checkPresentModeSupport(Context &context, ReleaseImagesTestConfig config)
+{
+    if (config.mode == VK_PRESENT_MODE_FIFO_LATEST_READY_EXT)
+        context.requireDeviceFunctionality("VK_EXT_present_mode_fifo_latest_ready");
+}
+
 void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 {
     const struct
@@ -2328,6 +2351,7 @@ void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
     const struct
@@ -2358,25 +2382,27 @@ void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.releaseBeforeRetire  = false;
 
             // Basic release acquired images test
-            addFunctionCase(&*scalingFlagGroup, "basic", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "basic", checkPresentModeSupport, releaseImagesTest, config);
 
             config.releaseBeforePresent = true;
             // Basic release acquired images test where release happens before presenting an image
-            addFunctionCase(&*scalingFlagGroup, "release_before_present", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "release_before_present", checkPresentModeSupport, releaseImagesTest,
+                            config);
 
             config.releaseBeforePresent = false;
             config.resizeWindow         = ResizeWindow::BeforeAcquire;
             // Release acquired images after a window resize before acquire
-            addFunctionCase(&*scalingFlagGroup, "resize_window", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "resize_window", checkPresentModeSupport, releaseImagesTest, config);
 
             config.resizeWindow = ResizeWindow::BeforePresent;
             // Release acquired images after a window resize after acquire
-            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire", releaseImagesTest, config);
+            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire", checkPresentModeSupport,
+                            releaseImagesTest, config);
 
             config.releaseBeforeRetire = true;
             // Release acquired images after a window resize after acquire, but release the images before retiring the swapchain
-            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire_release_before_retire", releaseImagesTest,
-                            config);
+            addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire_release_before_retire",
+                            checkPresentModeSupport, releaseImagesTest, config);
 
             presentModeGroup->addChild(scalingFlagGroup.release());
         }

@@ -384,7 +384,7 @@ vk::VkSemaphoreSubmitInfoKHR makeCommonSemaphoreSubmitInfo(vk::VkSemaphore semap
 vk::VkDependencyInfoKHR makeCommonDependencyInfo(const vk::VkMemoryBarrier2KHR *pMemoryBarrier             = nullptr,
                                                  const vk::VkBufferMemoryBarrier2KHR *pBufferMemoryBarrier = nullptr,
                                                  const vk::VkImageMemoryBarrier2KHR *pImageMemoryBarrier   = nullptr,
-                                                 bool eventDependency                                      = false);
+                                                 bool eventDependency = false, bool useAllStages = false);
 
 vk::VkDevice getSyncDevice(de::MovePtr<VideoDevice> &device, Context &context);
 const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &device, Context &context);

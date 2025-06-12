@@ -42342,6 +42342,8 @@ dEQP-GLES3.functional.negative_api.texture.texstorage2d_invalid_astc_target
 dEQP-GLES3.functional.negative_api.texture.texstorage3d
 dEQP-GLES3.functional.negative_api.texture.texstorage3d_invalid_binding
 dEQP-GLES3.functional.negative_api.texture.texstorage3d_invalid_levels
+dEQP-GLES3.functional.negative_api.shader.redeclaring_gl_frag_depth
+dEQP-GLES3.functional.negative_api.shader.redeclaring_gl_frag_depth_extension_not_enabled
 dEQP-GLES3.functional.negative_api.shader.create_shader
 dEQP-GLES3.functional.negative_api.shader.shader_source
 dEQP-GLES3.functional.negative_api.shader.compile_shader

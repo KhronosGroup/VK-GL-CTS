@@ -1,0 +1,14 @@
+{
+    "mandatory_features": {
+        "VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT": [
+            {
+                "features": [
+                    "zeroInitializeDeviceMemory"
+                ],
+                "requirements": [
+                    "VK_EXT_zero_initialize_device_memory"
+                ]
+            }
+        ]
+    }
+}

@@ -327,6 +327,16 @@ bool DeviceFeatures::isDeviceFeatureInitialized(VkStructureType sType) const
     return false;
 }
 
+uint32_t DeviceFeatures::getBlobFeatureVersion(VkStructureType sType)
+{
+    return getBlobFeaturesVersion(sType);
+}
+
+std::set<VkStructureType> DeviceFeatures::getVersionBlobFeatures(uint32_t version)
+{
+    return getVersionBlobFeatureList(version);
+}
+
 DeviceFeatures::~DeviceFeatures(void)
 {
     for (auto p : m_features)

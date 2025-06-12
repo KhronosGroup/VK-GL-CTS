@@ -232,12 +232,12 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
                     if (pixelSize == 1)
                         testData[p] = uint8_t(v % 256);
                     else if (pixelSize == 2)
-                        ((uint16_t *)testData.data())[i] = uint16_t(v);
+                        ((uint16_t *)testData.data())[p] = uint16_t(v);
                     else
                     {
                         for (uint32_t l = 0; l < pixelSize / 4; ++l)
                         {
-                            ((uint32_t *)testData.data())[i * pixelSize / 4 + l] = v + l;
+                            ((uint32_t *)testData.data())[p * pixelSize / 4 + l] = v + l;
                         }
                     }
                 }
@@ -461,14 +461,24 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     auto &dstBufferAlloc = dstBuffer->getAllocation();
     if (memcmp(srcBufferAlloc.getHostPtr(), dstBufferAlloc.getHostPtr(), bufferSize) != 0)
     {
-        uint8_t *srcPtr = (uint8_t *)srcBufferAlloc.getHostPtr();
-        uint8_t *dstPtr = (uint8_t *)dstBufferAlloc.getHostPtr();
+        uint8_t remainingFails = 10;
+        uint8_t *srcPtr        = (uint8_t *)srcBufferAlloc.getHostPtr();
+        uint8_t *dstPtr        = (uint8_t *)dstBufferAlloc.getHostPtr();
         for (uint32_t i = 0; i < bufferSize; ++i)
         {
             if (srcPtr[i] != dstPtr[i])
             {
-                log << tcu::TestLog::Message << "Mismatch at byte " << i << ". Src value: " << srcPtr[i]
-                    << ", dst value: " << dstPtr[i] << "." << tcu::TestLog::EndMessage;
+                if (remainingFails > 0)
+                {
+                    log << tcu::TestLog::Message << "Mismatch at byte " << i << ". Src value: " << srcPtr[i]
+                        << ", dst value: " << dstPtr[i] << "." << tcu::TestLog::EndMessage;
+                    remainingFails--;
+                }
+                else
+                {
+                    log << tcu::TestLog::Message << ".. more mismatches not shown ..." << tcu::TestLog::EndMessage;
+                    break;
+                }
             }
         }
         return tcu::TestStatus::fail("Fail");

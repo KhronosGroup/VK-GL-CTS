@@ -44,6 +44,8 @@
 
 #include "vkRayTracingUtil.hpp"
 
+#include <cmath>
+
 namespace vkt
 {
 namespace RayTracing
@@ -823,13 +825,16 @@ de::MovePtr<BufferWithMemory> CallableShaderTestInstance::runTest()
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         bottomLevelAccelerationStructures =
             m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelAccelerationStructure = m_data.testConfiguration->initTopAccelerationStructure(
             m_context, m_data, bottomLevelAccelerationStructures);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         const TopLevelAccelerationStructure *topLevelAccelerationStructurePtr = topLevelAccelerationStructure.get();
         VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
@@ -947,7 +952,7 @@ bool compareFloat(float actual, float expected)
     constexpr float eps = 0.01f;
     bool success        = true;
 
-    if (abs(expected - actual) > eps)
+    if (std::fabs(expected - actual) > eps)
     {
         success = false;
     }
@@ -1851,33 +1856,36 @@ tcu::TestStatus InvokeCallableShaderTestInstance::iterate()
 
     beginCommandBuffer(vk, *cmdBuffer);
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     de::SharedPtr<BottomLevelAccelerationStructure> blas0 =
         de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
     blas0->setGeometryCount(2);
     blas0->addGeometry(blas0VertsOpaque, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
     blas0->addGeometry(blas0VertsNoOpaque, true, 0U);
-    blas0->createAndBuild(vk, device, *cmdBuffer, allocator);
+    blas0->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blas1 =
         de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
     blas1->setGeometryCount(2);
     blas1->addGeometry(blas1VertsOpaque, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
     blas1->addGeometry(blas1VertsNoOpaque, true, 0U);
-    blas1->createAndBuild(vk, device, *cmdBuffer, allocator);
+    blas1->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blas2 =
         de::SharedPtr<BottomLevelAccelerationStructure>(makeBottomLevelAccelerationStructure().release());
     blas2->setGeometryCount(2);
     blas2->addGeometry(blas2VertsOpaque, true, VK_GEOMETRY_OPAQUE_BIT_KHR);
     blas2->addGeometry(blas2VertsNoOpaque, true, 0U);
-    blas2->createAndBuild(vk, device, *cmdBuffer, allocator);
+    blas2->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     de::MovePtr<TopLevelAccelerationStructure> tlas = makeTopLevelAccelerationStructure();
     tlas->setInstanceCount(3);
     tlas->addInstance(blas0);
     tlas->addInstance(blas1);
     tlas->addInstance(blas2);
-    tlas->createAndBuild(vk, device, *cmdBuffer, allocator);
+    tlas->createAndBuild(vk, device, *cmdBuffer, allocator, bufferProps);
 
     VkWriteDescriptorSetAccelerationStructureKHR accelerationStructureWriteDescriptorSet = {
         VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR, //  VkStructureType sType;

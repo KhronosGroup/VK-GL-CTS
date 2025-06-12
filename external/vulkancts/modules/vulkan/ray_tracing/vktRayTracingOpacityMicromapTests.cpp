@@ -493,10 +493,13 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         tcu::Vec3(0.0f, 1.0f, 0.0f),
     };
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, &opacityGeometryMicromap);
     if (m_params.testFlagMask & TEST_FLAG_BIT_DISABLE_OPACITY_MICROMAP_INSTANCE)
         bottomLevelAS->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
 
     VkGeometryInstanceFlagsKHR instanceFlags = 0;
@@ -510,7 +513,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
 
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0, 0xFFu, 0u, instanceFlags);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // One ray per subtriangle for this test
     uint32_t numRays = numSubtriangles;

@@ -757,13 +757,13 @@ tcu::TestStatus basicMultiQueueCase(Context &context, TestConfig config)
     de::MovePtr<VideoDevice> videoDevice(
         config.videoCodecOperationFlags != 0 ?
             getVideoDevice(context, usingTimelineSemaphores, usingSync2, config.videoCodecOperationFlags) :
-            DE_NULL);
+            nullptr);
 
     de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
         new DeviceDriver(context.getPlatformInterface(), instance, *logicalDevice, context.getUsedApiVersion(),
                          context.getTestContext().getCommandLine()));
 
-    const DeviceInterface &vk = (videoDevice != DE_NULL) ? getSyncDeviceInterface(videoDevice, context) : *deviceDriver;
+    const DeviceInterface &vk = videoDevice ? getSyncDeviceInterface(videoDevice, context) : *deviceDriver;
 
 #else
     de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =

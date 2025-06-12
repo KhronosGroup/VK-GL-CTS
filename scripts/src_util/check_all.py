@@ -47,6 +47,8 @@ if __name__ == "__main__":
 
     # filter out original Vulkan header sources
     files = [f for f in files if "vulkancts/scripts/src" not in f.replace("\\", "/")]
+    # filter out spirv files
+    files = [f for f in files if not f.endswith(".spv")]
 
     error = not all([
         checkBOMs(files, args.fixBOMs),

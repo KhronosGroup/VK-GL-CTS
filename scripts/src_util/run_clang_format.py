@@ -89,7 +89,7 @@ def runClangFormatOnModifiedFiles(verbose):
     pattern = (r'.*\.(cpp|hpp|c|h|m|mm|hh|inc|js|java|json)')
     files = [file for file in files if re.match('^%s$' % pattern, file, re.IGNORECASE)]
     files = [f for f in files if 'vulkancts/scripts/src' not in f.replace('\\', '/')]
-    files = [f for f in files if not re.match('.*external/openglcts/modules/runner/.*Mustpass.*\.hpp', f.replace('\\', '/'))]
+    files = [f for f in files if not re.match(r'.*external/openglcts/modules/runner/.*Mustpass.*\.hpp', f.replace('\\', '/'))]
 
     thread_count = min(8, multiprocessing.cpu_count())
     runClangFormat(files, thread_count, verbose)

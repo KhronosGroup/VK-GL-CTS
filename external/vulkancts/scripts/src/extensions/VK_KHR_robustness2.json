@@ -1,0 +1,20 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceRobustness2FeaturesKHR": [
+            {
+                "features": [
+                    "robustBufferAccess2",
+                    "robustImageAccess2",
+                    "nullDescriptor"
+                ],
+                "requirements": [
+                    "VK_KHR_robustness2"
+                ]
+            }
+        ]
+    }
+}

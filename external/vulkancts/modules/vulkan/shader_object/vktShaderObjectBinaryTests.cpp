@@ -739,7 +739,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto shaderIntegerDotProductFeatures            = m_context.getShaderIntegerDotProductFeatures();
     auto texelBufferAlignmentFeatures               = m_context.getTexelBufferAlignmentFeaturesEXT();
     auto deviceMemoryReportFeatures                 = m_context.getDeviceMemoryReportFeaturesEXT();
-    auto robustness2Features                        = m_context.getRobustness2FeaturesEXT();
+    auto robustness2Features                        = m_context.getRobustness2Features();
     auto customBorderColorFeatures                  = m_context.getCustomBorderColorFeaturesEXT();
     auto presentBarrierFeatures                     = m_context.getPresentBarrierFeatures();
     auto presentIdFeatures                          = m_context.getPresentIdFeatures();
@@ -794,7 +794,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto descriptorSetHostMappingFeatures           = m_context.getDescriptorSetHostMappingFeaturesVALVE();
     auto depthClampZeroOneFeatures                  = m_context.getDepthClampZeroOneFeatures();
     auto nonSeamlessCubeMapFeatures                 = m_context.getNonSeamlessCubeMapFeaturesEXT();
-    auto fragmentDensityMapOffsetFeatures           = m_context.getFragmentDensityMapOffsetFeaturesQCOM();
+    auto fragmentDensityMapOffsetFeatures           = m_context.getFragmentDensityMapOffsetFeaturesEXT();
     auto copyMemoryIndirectFeatures                 = m_context.getCopyMemoryIndirectFeatures();
     auto memoryDecompressionFeatures                = m_context.getMemoryDecompressionFeatures();
     auto linearColorAttachmentFeatures              = m_context.getLinearColorAttachmentFeatures();

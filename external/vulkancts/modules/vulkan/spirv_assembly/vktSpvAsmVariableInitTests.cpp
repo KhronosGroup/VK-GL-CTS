@@ -139,7 +139,8 @@ void addComputeVariableInitPrivateTest(tcu::TestCaseGroup *group)
                    "${extensions:opt}"
                    "                    %1 = OpExtInstImport \"GLSL.std.450\"\n"
                    "                         OpMemoryModel Logical GLSL450\n"
-                   "                         OpEntryPoint GLCompute %main \"main\" %gl_GlobalInvocationID\n"
+                   "                         OpEntryPoint GLCompute %main \"main\" "
+                   "%gl_GlobalInvocationID${entryPoints:opt}\n"
                    "                         OpExecutionMode %main LocalSize 1 1 1\n"
                    "                         OpSource GLSL 430\n"
                    "                         OpDecorate %gl_GlobalInvocationID BuiltIn GlobalInvocationId\n") +
@@ -209,6 +210,17 @@ void addComputeVariableInitPrivateTest(tcu::TestCaseGroup *group)
         {
             shaderSpec["extraDecorations"] += "                         OpMemberDecorate %Output 0 ColMajor\n"
                                               "                         OpMemberDecorate %Output 0 MatrixStride 16\n";
+        }
+
+        if ((testParams[paramIdx].name == "struct_from_workgroup") ||
+            (testParams[paramIdx].name == "floatarray_from_workgroup"))
+        {
+            shaderSpec["entryPoints"] += std::string(" %dataOutput %f1 %") + type + "_global_1";
+            shaderSpec["extensions"] += "                   OpExtension \"SPV_KHR_workgroup_memory_explicit_layout\"\n";
+            shaderSpec["capabilities"] += "                   OpCapability WorkgroupMemoryExplicitLayoutKHR\n";
+
+            spec.extensions.push_back("VK_KHR_workgroup_memory_explicit_layout");
+            spec.spirvVersion = SPIRV_VERSION_1_4;
         }
 
         spec.assembly      = shaderSourceTemplate.specialize(shaderSpec);

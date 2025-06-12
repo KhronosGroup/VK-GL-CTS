@@ -1050,13 +1050,16 @@ de::MovePtr<BufferWithMemory> ShaderBindingTableIndexingTestInstance::runTest()
         cmdPipelineImageMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                       VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postImageBarrier);
 
+        AccelerationStructBufferProperties bufferProps;
+        bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
         bottomLevelAccelerationStructures =
             m_data.testConfiguration->initBottomAccelerationStructures(m_context, m_data);
         for (auto &blas : bottomLevelAccelerationStructures)
-            blas->createAndBuild(vkd, device, *cmdBuffer, allocator);
+            blas->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
         topLevelAccelerationStructure = m_data.testConfiguration->initTopAccelerationStructure(
             m_context, m_data, bottomLevelAccelerationStructures);
-        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator);
+        topLevelAccelerationStructure->createAndBuild(vkd, device, *cmdBuffer, allocator, bufferProps);
 
         uniformBuffer = m_data.testConfiguration->initUniformBuffer(m_context, m_data);
         VkDescriptorBufferInfo uniformBufferInfo =
@@ -1408,6 +1411,9 @@ tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     // Create the needed amount of geometries (triangles) with the right coordinates.
     const tcu::Vec3 baseLocation(0.5f, 0.5f, triangleZ);
     const float vertexOffset = 0.25f; // From base location, to build a triangle around it.
@@ -1427,13 +1433,13 @@ tcu::TestStatus ShaderGroupHandleAlignmentInstance::iterate(void)
         bottomLevelAS->addGeometry(triangle, true /*triangles*/);
     }
 
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0u, 0xFF, 0u,
                             VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Get some ray tracing properties.
     uint32_t shaderGroupHandleSize    = 0u;

@@ -33,7 +33,9 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktMemoryMappingTests.hpp"
 #include "vktMemoryAddressBindingTests.hpp"
+#include "vktMemoryExternalMemoryAcquireUnmodifiedTests.hpp"
 #include "vktMemoryDeviceMemoryReportTests.hpp"
+#include "vktMemoryZeroInitializeDeviceMemoryTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -53,6 +55,7 @@ void createChildren(tcu::TestCaseGroup *memoryTests)
     // As a consequence - random memory allocation tests start to report ResourceError ( VK_ERROR_OUT_OF_*_MEMORY )
     memoryTests->addChild(createAllocationTests(testCtx));
     memoryTests->addChild(createDeviceGroupAllocationTests(testCtx));
+    memoryTests->addChild(createExternalMemoryAcquireUnmodifiedTests(testCtx));
     memoryTests->addChild(createPageableAllocationTests(testCtx));
     memoryTests->addChild(createMappingTests(testCtx));
     memoryTests->addChild(createPipelineBarrierTests(testCtx));
@@ -64,6 +67,7 @@ void createChildren(tcu::TestCaseGroup *memoryTests)
 #ifndef CTS_USES_VULKANSC
     memoryTests->addChild(createDeviceMemoryReportTests(testCtx));
     memoryTests->addChild(createAddressBindingReportTests(testCtx));
+    memoryTests->addChild(createClearedAllocationControlTests(testCtx));
 #endif
 }
 

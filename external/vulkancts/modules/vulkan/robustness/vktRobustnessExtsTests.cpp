@@ -137,7 +137,8 @@ class SingletonDevice
 
         if (FEATURES & RF_ROBUSTNESS2)
         {
-            DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
+            DE_ASSERT(context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ||
+                      context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
 
             if (!(FEATURES & RF_PIPELINE_ROBUSTNESS))
                 addFeatures(&robustness2Features);
@@ -525,7 +526,9 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
     if (context.isDeviceFunctionalitySupported("VK_EXT_image_robustness"))
         addFeatures(&imageRobustnessFeatures);
 
-    if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+    if (context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ||
+        context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
         addFeatures(&robustness2Features);
 
 #ifndef CTS_USES_VULKANSC
@@ -2011,7 +2014,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     }
 #endif
 
-    if (m_context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+    if (m_context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ||
+        m_context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
     {
         robustness2Properties.pNext = properties.pNext;
         properties.pNext            = &robustness2Properties;
@@ -3505,7 +3509,9 @@ void OutOfBoundsStrideCase::checkSupport(Context &context) const
 
     const auto addFeatures = makeStructChainAdder(&features2);
 
-    if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+    if (context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ||
+        context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
         addFeatures(&robustness2Features);
 
 #ifndef CTS_USES_VULKANSC

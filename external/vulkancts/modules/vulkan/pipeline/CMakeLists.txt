@@ -1,3 +1,7 @@
+set(DEQP_VK_VKSC_PIPELINE_UTIL_SRCS
+	vktPipelineImageUtil.cpp
+	vktPipelineImageUtil.hpp
+	)
 
 set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineBlendTests.cpp
@@ -33,8 +37,7 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineSpecConstantTests.cpp
 	vktPipelineSpecConstantUtil.hpp
 	vktPipelineSpecConstantUtil.cpp
-	vktPipelineImageUtil.cpp
-	vktPipelineImageUtil.hpp
+	${DEQP_VK_VKSC_PIPELINE_UTIL_SRCS}
 	vktPipelineImageViewTests.cpp
 	vktPipelineImageViewTests.hpp
 	vktPipelineMatchedAttachmentsTests.cpp
@@ -162,7 +165,14 @@ set(DEQP_VK_PIPELINE_SRCS
 #vktPipelineCreationFeedbackTests.cpp			- missing VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT
 #vktPipelineExecutablePropertiesTests.cpp		- missing lots of things like VkPipelineExecutableStatisticKHR VK_STRUCTURE_TYPE_PIPELINE_EXECUTABLE_INFO_KHR
 
+PCH(DEQP_VK_PIPELINE_UTIL_SRCS ../pch.cpp)
 PCH(DEQP_VK_PIPELINE_SRCS ../pch.cpp)
+
+add_library(deqp-vk-pipeline-util STATIC ${DEQP_VK_VKSC_PIPELINE_UTIL_SRCS})
+target_link_libraries(deqp-vk-pipeline-util libamber referencerenderer tcutil vkutil)
+
+add_library(deqp-vksc-pipeline-util STATIC ${DEQP_VK_VKSC_PIPELINE_UTIL_SRCS})
+target_link_libraries(deqp-vksc-pipeline-util PUBLIC referencerenderer deqp-vksc-util tcutil vkscutil)
 
 add_library(deqp-vk-pipeline STATIC ${DEQP_VK_VKSC_PIPELINE_SRCS} ${DEQP_VK_PIPELINE_SRCS})
 target_link_libraries(deqp-vk-pipeline libamber referencerenderer tcutil vkutil)

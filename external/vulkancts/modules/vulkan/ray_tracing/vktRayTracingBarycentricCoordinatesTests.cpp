@@ -278,6 +278,9 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
+    AccelerationStructBufferProperties bufferProps;
+    bufferProps.props.residency = ResourceResidency::TRADITIONAL;
+
     const std::vector<tcu::Vec3> triangle = {
         tcu::Vec3(0.0f, -kXYCoordAbs, kZCoord),
         tcu::Vec3(-kXYCoordAbs, kXYCoordAbs, kZCoord),
@@ -285,13 +288,13 @@ tcu::TestStatus BarycentricCoordinatesInstance::iterate(void)
     };
 
     bottomLevelAS->addGeometry(triangle, true /*is triangles*/, VK_GEOMETRY_NO_DUPLICATE_ANY_HIT_INVOCATION_BIT_KHR);
-    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
     de::SharedPtr<BottomLevelAccelerationStructure> blasSharedPtr(bottomLevelAS.release());
 
     topLevelAS->setInstanceCount(1);
     topLevelAS->addInstance(blasSharedPtr, identityMatrix3x4, 0, 0xFFu, 0u,
                             VK_GEOMETRY_INSTANCE_TRIANGLE_FACING_CULL_DISABLE_BIT_KHR);
-    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc);
+    topLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
 
     // Uniform buffer for directions.
     const auto directionsBufferSize = static_cast<VkDeviceSize>(sizeof(tcu::Vec4) * kNumRays);
