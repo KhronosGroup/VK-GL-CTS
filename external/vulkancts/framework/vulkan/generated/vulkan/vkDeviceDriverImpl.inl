@@ -2366,6 +2366,11 @@ void DeviceDriver::setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory m
     m_vk.setDeviceMemoryPriorityEXT(device, memory, priority);
 }
 
+VkResult DeviceDriver::waitForPresent2KHR (VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info) const
+{
+    return m_vk.waitForPresent2KHR(device, swapchain, pPresentWait2Info);
+}
+
 VkResult DeviceDriver::waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const
 {
     return m_vk.waitForPresentKHR(device, swapchain, presentId, timeout);
@@ -2768,9 +2773,9 @@ void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandB
     m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
 }
 
-void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer) const
+void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo) const
 {
-    m_vk.cmdDispatchTileQCOM(commandBuffer);
+    m_vk.cmdDispatchTileQCOM(commandBuffer, pDispatchTileInfo);
 }
 
 void DeviceDriver::cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const
@@ -2791,4 +2796,54 @@ VkResult DeviceDriver::createExternalComputeQueueNV (VkDevice device, const VkEx
 void DeviceDriver::destroyExternalComputeQueueNV (VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const
 {
     m_vk.destroyExternalComputeQueueNV(device, externalQueue, pAllocator);
+}
+
+VkResult DeviceDriver::createTensorARM (VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor) const
+{
+    return m_vk.createTensorARM(device, pCreateInfo, pAllocator, pTensor);
+}
+
+void DeviceDriver::destroyTensorARM (VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyTensorARM(device, tensor, pAllocator);
+}
+
+VkResult DeviceDriver::createTensorViewARM (VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView) const
+{
+    return m_vk.createTensorViewARM(device, pCreateInfo, pAllocator, pView);
+}
+
+void DeviceDriver::destroyTensorViewARM (VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyTensorViewARM(device, tensorView, pAllocator);
+}
+
+void DeviceDriver::getTensorMemoryRequirementsARM (VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getTensorMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::bindTensorMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos) const
+{
+    return m_vk.bindTensorMemoryARM(device, bindInfoCount, pBindInfos);
+}
+
+void DeviceDriver::getDeviceTensorMemoryRequirementsARM (VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getDeviceTensorMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::cmdCopyTensorARM (VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const
+{
+    m_vk.cmdCopyTensorARM(commandBuffer, pCopyTensorInfo);
+}
+
+VkResult DeviceDriver::getTensorOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const
+{
+    return m_vk.getTensorOpaqueCaptureDescriptorDataARM(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getTensorViewOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const
+{
+    return m_vk.getTensorViewOpaqueCaptureDescriptorDataARM(device, pInfo, pData);
 }

@@ -37,6 +37,7 @@
 #define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT						(static_cast<uint32_t>			(32))
 #define VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR								(static_cast<uint32_t>			(32))
 #define VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(7))
+#define VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(3))
 #define VK_SHADER_INDEX_UNUSED_AMDX										(static_cast<uint32_t>			((~0U)))
 #define VK_PARTITIONED_ACCELERATION_STRUCTURE_PARTITION_INDEX_GLOBAL_NV	(static_cast<uint32_t>			((~0U)))
 #define VKSC_API_MAX_FRAMEWORK_VERSION	VKSC_API_VERSION_1_0
@@ -194,6 +195,11 @@ enum VkFramebufferCreateFlagBits
 {
 	VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT			= 0x00000001,
 	VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
+};
+
+enum VkQueryPoolCreateFlagBits
+{
+	VK_QUERY_POOL_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
 };
 
 enum VkRenderPassCreateFlagBits
@@ -2163,7 +2169,8 @@ enum VkPipelineCacheValidationVersion
 
 enum VkHostImageCopyFlagBits
 {
-	VK_HOST_IMAGE_COPY_MEMCPY				= 0x00000001,
+	VK_HOST_IMAGE_COPY_MEMCPY_BIT			= 0x00000001,
+	VK_HOST_IMAGE_COPY_MEMCPY				= VK_HOST_IMAGE_COPY_MEMCPY_BIT,
 	VK_HOST_IMAGE_COPY_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
 };
 typedef VkHostImageCopyFlagBits VkHostImageCopyFlagBitsEXT;
@@ -2922,6 +2929,12 @@ typedef uint64_t VkBufferUsageFlags2;
 
 typedef VkBufferUsageFlags2 VkBufferUsageFlags2KHR;
 
+typedef uint64_t VkTensorCreateFlagsARM;
+
+typedef uint64_t VkTensorUsageFlagsARM;
+
+typedef uint64_t VkTensorViewCreateFlagsARM;
+
 typedef uint32_t VkCompositeAlphaFlagsKHR;
 
 typedef uint32_t VkDisplayPlaneAlphaFlagsKHR;
@@ -3083,6 +3096,10 @@ typedef uint32_t VkImageCompressionFlagsEXT;
 typedef uint32_t VkImageCompressionFixedRateFlagsEXT;
 
 typedef uint32_t VkExportMetalObjectTypeFlagsEXT;
+
+typedef uint32_t VkRenderingAttachmentFlagsKHR;
+
+typedef uint32_t VkResolveImageFlagsKHR;
 
 typedef uint32_t VkDeviceAddressBindingFlagsEXT;
 

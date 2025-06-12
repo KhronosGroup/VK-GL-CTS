@@ -963,9 +963,29 @@ template<> VkStructureType getStructureType<VkPresentIdKHR> (void)
 	return VK_STRUCTURE_TYPE_PRESENT_ID_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentId2FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPresentId2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_ID_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPresentWait2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_WAIT_2_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePresentWaitFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentWait2FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkHdrMetadataEXT> (void)
@@ -1396,6 +1416,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance10Propert
 template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance8FeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_8_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance9FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_9_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance9PropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_9_PROPERTIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyOwnershipTransferPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_OWNERSHIP_TRANSFER_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceMaintenance10FeaturesKHR> (void)
@@ -3078,6 +3113,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceSynchronization2Feat
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_UNIFIED_IMAGE_LAYOUTS_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceHostImageCopyFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_FEATURES;
@@ -3141,6 +3181,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceLegacyDitheringFeatu
 template<> VkStructureType getStructureType<VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSurfaceCapabilitiesPresentId2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_ID_2_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSurfaceCapabilitiesPresentWait2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_WAIT_2_KHR;
 }
 
 template<> VkStructureType getStructureType<VkSubpassResolvePerformanceQueryEXT> (void)
@@ -3346,6 +3396,26 @@ template<> VkStructureType getStructureType<VkVideoDecodeH265PictureInfoKHR> (vo
 template<> VkStructureType getStructureType<VkVideoDecodeH265DpbSlotInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_DPB_SLOT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeVP9ProfileInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeVP9CapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoDecodeVP9PictureInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PICTURE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkVideoDecodeAV1ProfileInfoKHR> (void)
@@ -4333,9 +4403,24 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceAttachmentFeedbackLo
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ATTACHMENT_FEEDBACK_LOOP_LAYOUT_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkAttachmentFeedbackLoopInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceAddressBindingReportFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ADDRESS_BINDING_REPORT_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkRenderingAttachmentFlagsInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_FLAGS_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkResolveImageModeInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_RESOLVE_IMAGE_MODE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDeviceAddressBindingCallbackDataEXT> (void)
@@ -5106,5 +5191,135 @@ template<> VkStructureType getStructureType<VkExternalComputeQueueDataParamsNV> 
 template<> VkStructureType getStructureType<VkPhysicalDeviceExternalComputeQueuePropertiesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFormatPackFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FORMAT_PACK_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorDescriptionARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_DESCRIPTION_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorViewCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_VIEW_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorMemoryRequirementsInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_MEMORY_REQUIREMENTS_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkBindTensorMemoryInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkWriteDescriptorSetTensorARM> (void)
+{
+	return VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_TENSOR_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorFormatPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_FORMAT_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTensorPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TENSOR_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorMemoryBarrierARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_MEMORY_BARRIER_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorDependencyInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_DEPENDENCY_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTensorFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TENSOR_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDeviceTensorMemoryRequirementsARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_TENSOR_MEMORY_REQUIREMENTS_ARM;
+}
+
+template<> VkStructureType getStructureType<VkCopyTensorInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_TENSOR_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorCopyARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_COPY_ARM;
+}
+
+template<> VkStructureType getStructureType<VkMemoryDedicatedAllocateInfoTensorARM> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_TENSOR_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_TENSOR_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferTensorFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_TENSOR_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorCaptureDescriptorDataInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_CAPTURE_DESCRIPTOR_DATA_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTensorViewCaptureDescriptorDataInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_TENSOR_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorGetTensorInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_GET_TENSOR_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkFrameBoundaryTensorsARM> (void)
+{
+	return VK_STRUCTURE_TYPE_FRAME_BOUNDARY_TENSORS_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceExternalTensorInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_TENSOR_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkExternalTensorPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_TENSOR_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkExternalMemoryTensorCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_TENSOR_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderFloat8FeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT;
 }
 

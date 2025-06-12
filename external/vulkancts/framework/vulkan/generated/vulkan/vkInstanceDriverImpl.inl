@@ -513,3 +513,8 @@ VkResult InstanceDriver::getPhysicalDeviceCooperativeVectorPropertiesNV (VkPhysi
 {
     return m_vk.getPhysicalDeviceCooperativeVectorPropertiesNV(physicalDevice, pPropertyCount, pProperties);
 }
+
+void InstanceDriver::getPhysicalDeviceExternalTensorPropertiesARM (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalTensorInfoARM* pExternalTensorInfo, VkExternalTensorPropertiesARM* pExternalTensorProperties) const
+{
+    m_vk.getPhysicalDeviceExternalTensorPropertiesARM(physicalDevice, pExternalTensorInfo, pExternalTensorProperties);
+}

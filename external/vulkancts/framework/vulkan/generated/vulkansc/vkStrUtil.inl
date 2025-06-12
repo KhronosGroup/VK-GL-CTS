@@ -321,6 +321,9 @@ tcu::Format::Bitfield<32>	getIndirectCommandsInputModeFlagsEXTStr						(VkIndire
 tcu::Format::Bitfield<32>	getDirectDriverLoadingFlagsLUNARGStr						(VkDirectDriverLoadingFlagsLUNARG value);
 tcu::Format::Bitfield<64>	getPipelineCreateFlags2Str									(VkPipelineCreateFlags2 value);
 tcu::Format::Bitfield<64>	getBufferUsageFlags2Str										(VkBufferUsageFlags2 value);
+tcu::Format::Bitfield<64>	getTensorCreateFlagsARMStr									(VkTensorCreateFlagsARM value);
+tcu::Format::Bitfield<64>	getTensorUsageFlagsARMStr									(VkTensorUsageFlagsARM value);
+tcu::Format::Bitfield<64>	getTensorViewCreateFlagsARMStr								(VkTensorViewCreateFlagsARM value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr								(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr								(VkSurfaceTransformFlagsKHR value);
@@ -386,6 +389,8 @@ tcu::Format::Bitfield<32>	getGraphicsPipelineLibraryFlagsEXTStr						(VkGraphics
 tcu::Format::Bitfield<32>	getImageCompressionFlagsEXTStr								(VkImageCompressionFlagsEXT value);
 tcu::Format::Bitfield<32>	getImageCompressionFixedRateFlagsEXTStr						(VkImageCompressionFixedRateFlagsEXT value);
 tcu::Format::Bitfield<32>	getExportMetalObjectTypeFlagsEXTStr							(VkExportMetalObjectTypeFlagsEXT value);
+tcu::Format::Bitfield<32>	getRenderingAttachmentFlagsKHRStr							(VkRenderingAttachmentFlagsKHR value);
+tcu::Format::Bitfield<32>	getResolveImageFlagsKHRStr									(VkResolveImageFlagsKHR value);
 tcu::Format::Bitfield<32>	getDeviceAddressBindingFlagsEXTStr							(VkDeviceAddressBindingFlagsEXT value);
 tcu::Format::Bitfield<32>	getOpticalFlowGridSizeFlagsNVStr							(VkOpticalFlowGridSizeFlagsNV value);
 tcu::Format::Bitfield<32>	getOpticalFlowUsageFlagsNVStr								(VkOpticalFlowUsageFlagsNV value);

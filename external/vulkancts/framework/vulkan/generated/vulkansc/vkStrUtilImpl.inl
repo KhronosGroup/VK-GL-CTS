@@ -211,6 +211,15 @@ tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -2268,7 +2277,7 @@ tcu::Format::Bitfield<32> getHostImageCopyFlagsStr (VkHostImageCopyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY,	"VK_HOST_IMAGE_COPY_MEMCPY"),
+		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY_BIT,	"VK_HOST_IMAGE_COPY_MEMCPY_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2883,11 +2892,6 @@ const char* getDriverIdName (VkDriverId value)
 	}
 }
 
-tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
 tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3066,6 +3070,21 @@ tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCom
 tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLoadingFlagsLUNARG value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorCreateFlagsARMStr (VkTensorCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorUsageFlagsARMStr (VkTensorUsageFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorViewCreateFlagsARMStr (VkTensorViewCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
@@ -3274,6 +3293,16 @@ tcu::Format::Bitfield<32> getImageCompressionFixedRateFlagsEXTStr (VkImageCompre
 }
 
 tcu::Format::Bitfield<32> getExportMetalObjectTypeFlagsEXTStr (VkExportMetalObjectTypeFlagsEXT value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getRenderingAttachmentFlagsKHRStr (VkRenderingAttachmentFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getResolveImageFlagsKHRStr (VkResolveImageFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }

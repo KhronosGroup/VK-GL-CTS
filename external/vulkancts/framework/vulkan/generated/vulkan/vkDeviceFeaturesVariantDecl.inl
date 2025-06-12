@@ -161,6 +161,7 @@ typedef std::variant<
     , VkPhysicalDeviceNestedCommandBufferFeaturesEXT
     , VkPhysicalDeviceExtendedDynamicState3FeaturesEXT
     , VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT
+    , VkPhysicalDeviceTensorFeaturesARM
     , VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT
     , VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT
     , VkPhysicalDeviceOpticalFlowFeaturesNV
@@ -169,6 +170,8 @@ typedef std::variant<
     , VkPhysicalDeviceExternalFormatResolveFeaturesANDROID
     , VkPhysicalDeviceMaintenance5Features
     , VkPhysicalDeviceAntiLagFeaturesAMD
+    , VkPhysicalDevicePresentId2FeaturesKHR
+    , VkPhysicalDevicePresentWait2FeaturesKHR
     , VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
     , VkPhysicalDeviceShaderObjectFeaturesEXT
     , VkPhysicalDevicePipelineBinaryFeaturesKHR
@@ -187,6 +190,7 @@ typedef std::variant<
     , VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
     , VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR
     , VkPhysicalDeviceVideoEncodeAV1FeaturesKHR
+    , VkPhysicalDeviceVideoDecodeVP9FeaturesKHR
     , VkPhysicalDeviceVideoMaintenance1FeaturesKHR
     , VkPhysicalDevicePerStageDescriptorSetFeaturesNV
     , VkPhysicalDeviceImageProcessing2FeaturesQCOM
@@ -195,6 +199,7 @@ typedef std::variant<
     , VkPhysicalDeviceCubicClampFeaturesQCOM
     , VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
     , VkPhysicalDeviceVertexAttributeDivisorFeatures
+    , VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR
     , VkPhysicalDeviceShaderFloatControls2Features
     , VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
     , VkPhysicalDeviceIndexTypeUint8Features
@@ -210,6 +215,7 @@ typedef std::variant<
     , VkPhysicalDeviceMaintenance7FeaturesKHR
     , VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
     , VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
+    , VkPhysicalDeviceShaderFloat8FeaturesEXT
     , VkPhysicalDeviceRayTracingValidationFeaturesNV
     , VkPhysicalDeviceClusterAccelerationStructureFeaturesNV
     , VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV
@@ -217,12 +223,13 @@ typedef std::variant<
     , VkPhysicalDeviceMaintenance8FeaturesKHR
     , VkPhysicalDeviceImageAlignmentControlFeaturesMESA
     , VkPhysicalDeviceDepthClampControlFeaturesEXT
+    , VkPhysicalDeviceMaintenance9FeaturesKHR
     , VkPhysicalDeviceVideoMaintenance2FeaturesKHR
     , VkPhysicalDeviceHdrVividFeaturesHUAWEI
     , VkPhysicalDeviceCooperativeMatrix2FeaturesNV
     , VkPhysicalDevicePipelineOpacityMicromapFeaturesARM
     , VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
-    , VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
+    , VkPhysicalDeviceFormatPackFeaturesARM
     , VkPhysicalDeviceRobustness2FeaturesKHR
     , VkPhysicalDevicePresentMeteringFeaturesNV
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
