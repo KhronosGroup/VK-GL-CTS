@@ -299,6 +299,11 @@ string getFmaCode(uint64_t bitDepth, uint32_t vecSz, RoundingMode m, DenormMode 
     return fmaCode;
 }
 
+static bool isValid(deFloat16 a, deFloat16 b)
+{
+    return a == b || (deHalfIsIEEENaN(a) && deHalfIsIEEENaN(b));
+}
+
 static bool isValid(float a, float b)
 {
     return deFloatBitsToUint32(a) == deFloatBitsToUint32(b) || (std::isnan(a) && std::isnan(b));
@@ -310,9 +315,39 @@ static bool isValid(double a, double b)
 }
 
 template <typename T>
+bool isZero(T a)
+{
+    return a == T(0);
+}
+
+template <>
+bool isZero(deFloat16 a)
+{
+    return deHalfIsZero(a);
+}
+
+template <typename T>
 static bool isDenorm(T f)
 {
     return std::fpclassify(f) == FP_SUBNORMAL;
+}
+
+template <>
+bool isDenorm(deFloat16 f)
+{
+    return deHalfIsDenormal(f);
+}
+
+template <typename T>
+T negate(T x)
+{
+    return -x;
+}
+
+template <>
+deFloat16 negate(deFloat16 x)
+{
+    return x ^ 0x8000;
 }
 
 template <typename T>
@@ -325,8 +360,8 @@ static vector<T> getValidFlushedValues(T a, DenormMode d)
 
     if (isDenorm(a) && d != DENORM_PRESERVE)
     {
-        valid.push_back(0.0f);
-        valid.push_back(-0.0f);
+        valid.push_back(T(0));
+        valid.push_back(negate(T(0)));
     }
     return valid;
 }
@@ -359,6 +394,17 @@ T roundedFMA(T a, T b, T c, deRoundingMode m)
 {
     deSetRoundingMode(m);
     return std::fma(a, b, c);
+}
+
+template <>
+deFloat16 roundedFMA(deFloat16 a, deFloat16 b, deFloat16 c, deRoundingMode m)
+{
+    double x = deFloat16To64(a);
+    double y = deFloat16To64(b);
+    double z = deFloat16To64(c);
+    deSetRoundingMode(m);
+    double ref = std::fma(x, y, z);
+    return deFloat64To16Round(ref, m);
 }
 
 template <typename T>
@@ -417,10 +463,10 @@ static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool 
             if (d != DENORM_PRESERVE && underflowBeforeRounding)
             {
                 // Vulkan allows denorms to be flushed to either +/- 0.0f
-                ret.push_back(0.0f);
-                ret.push_back(-0.0f);
+                ret.push_back(T(0));
+                ret.push_back(negate(T(0)));
             }
-            if (r == 0.0f && !signedZero)
+            if (isZero(r) && !signedZero)
                 ret.push_back(-r);
         }
     }
@@ -508,6 +554,18 @@ enum InputMode
 };
 
 template <typename T>
+T getRandomVal(de::Random &rnd)
+{
+    return de::randomScalar<T>(rnd, 0.0001f, 10000.0f);
+}
+
+template <>
+deFloat16 getRandomVal(de::Random &rnd)
+{
+    return de::randomScalar<uint16_t>(rnd, 0x0400, 0x7BFF);
+}
+
+template <typename T>
 void FillInputsRandom(vector<T> &a, vector<T> &b, vector<T> &c)
 {
     de::Random rnd(deStringHash("fma.random_inputs"));
@@ -520,9 +578,9 @@ void FillInputsRandom(vector<T> &a, vector<T> &b, vector<T> &c)
 
     for (int ndx = 0; ndx < numElements; ndx++)
     {
-        a[ndx] = de::randomScalar<T>(rnd, 0.001f, 10000.0f);
-        b[ndx] = de::randomScalar<T>(rnd, 0.001f, 10000.0f);
-        c[ndx] = de::randomScalar<T>(rnd, 0.001f, 10000.0f);
+        a[ndx] = getRandomVal<T>(rnd);
+        b[ndx] = getRandomVal<T>(rnd);
+        c[ndx] = getRandomVal<T>(rnd);
     }
 }
 
@@ -530,6 +588,24 @@ template <typename T>
 bool IsInfNan(T x)
 {
     return (std::isinf(x) || std::isnan(x));
+}
+
+template <>
+bool IsInfNan(deFloat16 x)
+{
+    return (deHalfIsInf(x) || deHalfIsIEEENaN(x));
+}
+
+template <typename T>
+bool Signbit(T x)
+{
+    return std::signbit(x);
+}
+
+template <>
+bool Signbit(deFloat16 x)
+{
+    return deHalfSign(x);
 }
 
 template <typename T>
@@ -544,9 +620,9 @@ void AddDirectedCase(vector<std::array<T, 3>> &cases, T a, T b, T c, RoundingMod
     for (T r : ref)
     {
         usesInfNan = usesInfNan || IsInfNan(r);
-        if (r == 0.0f && std::signbit(r))
+        if (r == 0.0f && Signbit(r))
             usesMinusZero = true;
-        if (r == 0.0f && !std::signbit(r))
+        if (r == 0.0f && !Signbit(r))
             usesPlusZero = true;
     }
 
@@ -563,6 +639,53 @@ void AddDirectedCase(vector<std::array<T, 3>> &cases, T a, T b, T c, RoundingMod
 
 template <typename T>
 vector<T> GetSpecialValues();
+
+template <>
+vector<deFloat16> GetSpecialValues()
+{
+    return {0x7C01, // quiet_NaN
+            0x7C00, // infinity
+            0x7BFF, // max
+            0x5C01, //
+            0x5C00, //
+            0x5BFF, //
+            0x5801, //              [1]
+            0x5800, //
+            0x57FF, //
+            0x4201, // 3.0f + 1ULP
+            0x4200, // 3.0f
+            0x41FF, // 3.0f - 1ULP
+            0x4100, // 2.5f
+            0x4000, // 2.0f
+            0x3f00, // 1.75f
+            0x3E01, // 1.5f + 1ULP
+            0x3E00, // 1.5f
+            0x3DFF, // 1.5f - 1ULP
+            0x3D00, // 1.25f
+            0x3C20, //
+            0x3C30, //
+            0x3C02, // 1.0f + 2ULP
+            0x3C01, // 1.0f + 1ULP
+            0x3C00, // 1.0f
+            0x3BFF, // 1.0f - 1ULP  [1]
+            0x0401, // min + 1ULP   [1]
+            0x0400, // min,
+            0x03FF, // largest denorm
+            0x007F, //
+            0x001F, //
+            0x0007, //
+            0x0006, //
+            0x0005, //
+            0x0004, //
+            0x0003, //
+            0x0002, //
+            0x0001, //
+            0x0000};
+    // [1] As well as being potentially interesting in their own right, these values give incorrect
+    // results when fma is emulated using single precision (using RTNE):
+    //           fma_half(0x5801, 0x3BFF, 0x0401) == 0x5801
+    //     (half)fmaf    (0x5801, 0x3BFF, 0x0401) == 0x5800
+}
 
 template <>
 vector<float> GetSpecialValues()
@@ -656,6 +779,18 @@ vector<double> GetSpecialValues()
 }
 
 template <typename T>
+T getCancellationValue(T a, T b)
+{
+    return -(a * b);
+}
+
+template <>
+deFloat16 getCancellationValue(deFloat16 a, deFloat16 b)
+{
+    return deFloat32To16(-(deFloat16To32(a) * deFloat16To32(b)));
+}
+
+template <typename T>
 void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz, RoundingMode m, DenormMode d,
                         bool useSZInfNan)
 {
@@ -663,7 +798,7 @@ void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz
     for (T f : GetSpecialValues<T>())
     {
         values.push_back(f);
-        values.push_back(-f);
+        values.push_back(negate(f));
     }
 
     vector<std::array<T, 3>> cases;
@@ -679,11 +814,12 @@ void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz
                 AddDirectedCase(cases, inA, inB, inC, m, d, useSZInfNan);
 
     // Add cancellation cases (of the form a * b - (a*b)), which should give non-zero results
-    // with FMA, returning the rounding error in calculating a*b. We add at least a minumum
-    // number (because they're a good test of fma), but we also use this to round up to a valid
-    // work size (ie. a multiple of 65536), which we need in order to be able to launch all the
-    // work in a single 2D dispatch. Because of this rounding up, we add these cases to both
-    // tests regardless of useSZInfNan.
+    // with FMA, returning the rounding error in calculating a*b (on the CPU -- the GPU may
+    // round differently, but that doesn't affect the coverage of the test). We add at least a
+    // minimum number (because they're a good test of fma), but we also use this to round up to
+    // a valid work size (ie. a multiple of 65536), which we need in order to be able to launch
+    // all the work in a single 2D dispatch. Because of this rounding up, we add these cases to
+    // both tests regardless of useSZInfNan.
     size_t minCancellationCases = 100;
     size_t numCancellationCases = minCancellationCases;
     if ((cases.size() + numCancellationCases) % vecSz != 0)
@@ -695,9 +831,9 @@ void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz
     de::Random rnd(deStringHash("fma.directed_inputs_cancellation"));
     for (unsigned i = 0; i < numCancellationCases; i++)
     {
-        T inA = de::randomScalar<T>(rnd, 0.0001f, 1000.0f);
-        T inB = de::randomScalar<T>(rnd, 0.0001f, 1000.0f);
-        cases.push_back({inA, inB, -(inA * inB)});
+        T inA = getRandomVal<T>(rnd);
+        T inB = getRandomVal<T>(rnd);
+        cases.push_back({inA, inB, getCancellationValue(inA, inB)});
     }
 
     a.resize(cases.size());
@@ -790,21 +926,26 @@ size_t addInputOutputBuffers(ComputeShaderSpec &spec, InputMode inputMode, uint3
 ComputeShaderSpec createFmaTestSpec(uint32_t bitDepth, uint32_t vecSz, RoundingMode m, DenormMode d, bool useSZInfNan,
                                     InputMode inputMode)
 {
-    assert(bitDepth == 32 || bitDepth == 64);
+    assert(bitDepth == 16 || bitDepth == 32 || bitDepth == 64);
 
     ComputeShaderSpec spec;
     spec.assembly = getFmaCode(bitDepth, vecSz, m, d, useSZInfNan);
 
+    spec.requestedVulkanFeatures.extFma.shaderFmaFloat16 = (bitDepth == 16);
     spec.requestedVulkanFeatures.extFma.shaderFmaFloat32 = (bitDepth == 32);
     spec.requestedVulkanFeatures.extFma.shaderFmaFloat64 = (bitDepth == 64);
 
+    if (bitDepth == 16)
+        spec.requestedVulkanFeatures.extFloat16Int8.shaderFloat16 = VK_TRUE;
     if (bitDepth == 64)
         spec.requestedVulkanFeatures.coreFeatures.shaderFloat64 = VK_TRUE;
 
     FillFloatControlsProps(&spec.requestedVulkanFeatures.floatControlsProperties, bitDepth, m, d, useSZInfNan);
 
     size_t numElements;
-    if (bitDepth == 32)
+    if (bitDepth == 16)
+        numElements = addInputOutputBuffers<deFloat16>(spec, inputMode, vecSz, m, d, useSZInfNan);
+    else if (bitDepth == 32)
         numElements = addInputOutputBuffers<float>(spec, inputMode, vecSz, m, d, useSZInfNan);
     else
         numElements = addInputOutputBuffers<double>(spec, inputMode, vecSz, m, d, useSZInfNan);
@@ -821,7 +962,64 @@ ComputeShaderSpec createFmaTestSpec(uint32_t bitDepth, uint32_t vecSz, RoundingM
     spec.failResult    = QP_TEST_RESULT_FAIL;
     spec.failMessage   = "Output doesn't match with expected";
 
-    if (bitDepth == 32)
+    if (bitDepth == 16)
+    {
+        switch (m)
+        {
+        case ROUND_UNDEF:
+            switch (d)
+            {
+            case DENORM_PRESERVE:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_UNDEF, DENORM_PRESERVE, true> :
+                                              verify<deFloat16, ROUND_UNDEF, DENORM_PRESERVE, false>;
+                break;
+            case DENORM_FLUSH:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_UNDEF, DENORM_FLUSH, true> :
+                                              verify<deFloat16, ROUND_UNDEF, DENORM_FLUSH, false>;
+                break;
+            case DENORM_UNDEF:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_UNDEF, DENORM_UNDEF, true> :
+                                              verify<deFloat16, ROUND_UNDEF, DENORM_UNDEF, false>;
+                break;
+            }
+            break;
+        case ROUND_RTE:
+            switch (d)
+            {
+            case DENORM_PRESERVE:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_RTE, DENORM_PRESERVE, true> :
+                                              verify<deFloat16, ROUND_RTE, DENORM_PRESERVE, false>;
+                break;
+            case DENORM_FLUSH:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_RTE, DENORM_FLUSH, true> :
+                                              verify<deFloat16, ROUND_RTE, DENORM_FLUSH, false>;
+                break;
+            case DENORM_UNDEF:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_RTE, DENORM_UNDEF, true> :
+                                              verify<deFloat16, ROUND_RTE, DENORM_UNDEF, false>;
+                break;
+            }
+            break;
+        case ROUND_RTZ:
+            switch (d)
+            {
+            case DENORM_PRESERVE:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_RTZ, DENORM_PRESERVE, true> :
+                                              verify<deFloat16, ROUND_RTZ, DENORM_PRESERVE, false>;
+                break;
+            case DENORM_FLUSH:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_RTZ, DENORM_FLUSH, true> :
+                                              verify<deFloat16, ROUND_RTZ, DENORM_FLUSH, false>;
+                break;
+            case DENORM_UNDEF:
+                spec.verifyIO = useSZInfNan ? verify<deFloat16, ROUND_RTZ, DENORM_UNDEF, true> :
+                                              verify<deFloat16, ROUND_RTZ, DENORM_UNDEF, false>;
+                break;
+            }
+            break;
+        }
+    }
+    else if (bitDepth == 32)
     {
         switch (m)
         {
@@ -948,7 +1146,7 @@ tcu::TestCaseGroup *createOpFmaComputeGroup(tcu::TestContext &testCtx)
     std::vector<RoundingMode> roundingTests = {ROUND_RTZ, ROUND_RTE, ROUND_UNDEF};
     std::vector<DenormMode> denormTests     = {DENORM_PRESERVE, DENORM_FLUSH, DENORM_UNDEF};
 
-    for (uint32_t bitDepth : {32, 64})
+    for (uint32_t bitDepth : {16, 32, 64})
     {
         de::MovePtr<tcu::TestCaseGroup> bitsGroup(
             new tcu::TestCaseGroup(testCtx, (std::string("fp") + std::to_string(bitDepth)).c_str()));
