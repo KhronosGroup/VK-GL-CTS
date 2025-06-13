@@ -2548,7 +2548,6 @@ public:
     MultiViewPointSizeTestInstance(Context &context, const TestParameters &parameters);
 
 protected:
-    void validatePointSize(const VkPhysicalDeviceLimits &limits, const uint32_t pointSize);
     void createVertexData(void);
     void draw(const uint32_t subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer,
               vector<PipelineSp> &pipelines);
@@ -2557,30 +2556,6 @@ protected:
 MultiViewPointSizeTestInstance::MultiViewPointSizeTestInstance(Context &context, const TestParameters &parameters)
     : MultiViewRenderTestInstance(context, parameters)
 {
-    const auto &vki                     = m_context.getInstanceInterface();
-    const auto physDevice               = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(vki, physDevice).limits;
-
-    validatePointSize(limits, static_cast<uint32_t>(TEST_POINT_SIZE_WIDE));
-    validatePointSize(limits, static_cast<uint32_t>(TEST_POINT_SIZE_SMALL));
-}
-
-void MultiViewPointSizeTestInstance::validatePointSize(const VkPhysicalDeviceLimits &limits, const uint32_t pointSize)
-{
-    const float testPointSizeFloat = static_cast<float>(pointSize);
-    float granuleCount             = 0.0f;
-
-    if (!de::inRange(testPointSizeFloat, limits.pointSizeRange[0], limits.pointSizeRange[1]))
-        TCU_THROW(NotSupportedError, "Required point size is outside of the the limits range");
-
-    granuleCount = static_cast<float>(
-        deCeilFloatToInt32((testPointSizeFloat - limits.pointSizeRange[0]) / limits.pointSizeGranularity));
-
-    if (limits.pointSizeRange[0] + granuleCount * limits.pointSizeGranularity != testPointSizeFloat)
-        TCU_THROW(NotSupportedError, "Granuliraty does not allow to get required point size");
-
-    DE_ASSERT(pointSize + 1 <= m_parameters.extent.width / 2);
-    DE_ASSERT(pointSize + 1 <= m_parameters.extent.height / 2);
 }
 
 void MultiViewPointSizeTestInstance::createVertexData(void)
@@ -4578,6 +4553,40 @@ private:
             if (multiviewProperties.maxMultiviewViewCount < 6u)
                 TCU_THROW(NotSupportedError, "maxMultiviewViewCount below min value");
 #endif // CTS_USES_VULKANSC
+        }
+
+        if (m_parameters.viewIndex == TEST_TYPE_POINT_SIZE)
+        {
+            context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+
+            std::vector<uint32_t> usedPointSizes;
+            usedPointSizes.reserve(2);
+
+            // The small (still large) point size is always used.
+            // The large point size is only used for views other than the first one.
+            usedPointSizes.push_back(static_cast<uint32_t>(TEST_POINT_SIZE_SMALL));
+            if (m_parameters.extent.depth > 1u)
+                usedPointSizes.push_back(static_cast<uint32_t>(TEST_POINT_SIZE_WIDE));
+
+            const auto &limits = context.getDeviceProperties().limits;
+
+            for (const auto pointSize : usedPointSizes)
+            {
+                const float testPointSizeFloat = static_cast<float>(pointSize);
+                float granuleCount             = 0.0f;
+
+                if (!de::inRange(testPointSizeFloat, limits.pointSizeRange[0], limits.pointSizeRange[1]))
+                    TCU_THROW(NotSupportedError, "Required point size is outside of the the limits range");
+
+                granuleCount = static_cast<float>(
+                    deCeilFloatToInt32((testPointSizeFloat - limits.pointSizeRange[0]) / limits.pointSizeGranularity));
+
+                if (limits.pointSizeRange[0] + granuleCount * limits.pointSizeGranularity != testPointSizeFloat)
+                    TCU_THROW(NotSupportedError, "Granuliraty does not allow to get required point size");
+
+                DE_ASSERT(pointSize + 1 <= m_parameters.extent.width / 2);
+                DE_ASSERT(pointSize + 1 <= m_parameters.extent.height / 2);
+            }
         }
 
 #ifdef CTS_USES_VULKANSC
