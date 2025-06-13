@@ -370,14 +370,6 @@ PACKAGES = [
         "git@github.com:open-source-parsers/jsoncpp.git",
         "9059f5cad030ba11d37818847443a53918c327b1",
         "jsoncpp"),
-    # NOTE: The samples application is not well suited to external
-    # integration, this fork contains the small fixes needed for use
-    # by the CTS.
-    GitRepo(
-        "https://github.com/Igalia/vk_video_samples.git",
-        "git@github.com:Igalia/vk_video_samples.git",
-        "435807a3f875d83aa00f5b4b0702dc156ba3ffa9",
-        "nvidia-video-samples"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",

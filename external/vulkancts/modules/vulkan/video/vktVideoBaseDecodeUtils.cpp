@@ -93,40 +93,47 @@ void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation, std::shared_p
         0,
         nullptr,
         true,
+        framing == ElementaryStreamFraming::AV1_ANNEXB,
     };
+
+    VkExtensionProperties stdExtensionVersion;
 
     switch (codecOperation)
     {
     case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
     {
-        VkSharedBaseObj<VulkanH264Decoder> nvVideoH264DecodeParser(new VulkanH264Decoder(codecOperation));
-        parser = nvVideoH264DecodeParser;
+        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME,
+                               VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION};
         break;
     }
     case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
     {
-        VkSharedBaseObj<VulkanH265Decoder> nvVideoH265DecodeParser(new VulkanH265Decoder(codecOperation));
-        parser = nvVideoH265DecodeParser;
+        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME,
+                               VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION};
         break;
     }
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
     {
-        VkSharedBaseObj<VulkanAV1Decoder> nvVideoAV1DecodeParser(
-            new VulkanAV1Decoder(codecOperation, framing == ElementaryStreamFraming::AV1_ANNEXB));
-        parser = nvVideoAV1DecodeParser;
+        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME,
+                               VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION};
         break;
     }
     case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
     {
-        VkSharedBaseObj<VulkanVP9Decoder> nvVideoVP9DecodeParser(new VulkanVP9Decoder(codecOperation));
-        parser = nvVideoVP9DecodeParser;
+        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME,
+                               VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION};
         break;
     }
     default:
         TCU_FAIL("Unsupported codec type");
     }
+    VkResult res = CreateVulkanVideoDecodeParser(codecOperation, (const VkExtensionProperties *)&stdExtensionVersion,
+                                                 nullptr, 0, &pdParams, parser);
 
-    VK_CHECK(parser->Initialize(&pdParams));
+    if (res != vk::VK_SUCCESS)
+    {
+        TCU_FAIL("Failed to create a parser");
+    }
 }
 
 inline vkPicBuffBase *GetPic(VkPicIf *pPicBuf)
@@ -510,7 +517,7 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
 
     VkVideoCoreProfile videoProfile(detectedVideoCodec, pVideoFormat->chromaSubsampling, pVideoFormat->lumaBitDepth,
                                     pVideoFormat->chromaBitDepth, pVideoFormat->codecProfile,
-                                    pVideoFormat->filmGrainEnabled);
+                                    pVideoFormat->filmGrainUsed);
     m_profile = videoProfile;
     reinitializeFormatsForProfile(&videoProfile);
 
@@ -573,7 +580,7 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
                                            VK_IMAGE_USAGE_TRANSFER_DST_BIT);
         VkImageUsageFlags dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
 
-        if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainEnabled || m_forceDisableFilmGrain))
+        if (dpbAndOutputCoincide() && (!pVideoFormat->filmGrainUsed || m_forceDisableFilmGrain))
         {
             dpbImageUsage = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR |
                             VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
@@ -759,7 +766,7 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
     detectedFormat.minNumDecodeSurfaces                              = pnvsi->nMinNumDecodeSurfaces;
     detectedFormat.maxNumDpbSlots                                    = configDpbSlots;
     detectedFormat.codecProfile                                      = pnvsi->codecProfile;
-    detectedFormat.filmGrainEnabled                                  = pnvsi->filmGrainEnabled;
+    detectedFormat.filmGrainUsed                                     = pnvsi->hasFilmGrain;
 
     // NVIDIA sample app legacy
     StartVideoSequence(&detectedFormat);
@@ -788,25 +795,11 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
     return MAX_NUM_DECODE_SURFACES;
 }
 
-bool VideoBaseDecoder::AllocPictureBuffer(VkPicIf **ppNvidiaVulkanPicture, uint32_t codedWidth, uint32_t codedHeight)
+bool VideoBaseDecoder::AllocPictureBuffer(VkPicIf **ppPicBuf)
 {
-    bool result = false;
+    *ppPicBuf = m_videoFrameBuffer->ReservePictureBuffer();
 
-    *ppNvidiaVulkanPicture = m_videoFrameBuffer->ReservePictureBuffer();
-
-    if (*ppNvidiaVulkanPicture)
-    {
-        result                                  = true;
-        (*ppNvidiaVulkanPicture)->upscaledWidth = codedWidth;
-        (*ppNvidiaVulkanPicture)->frameHeight   = codedHeight;
-    }
-
-    if (!result)
-    {
-        *ppNvidiaVulkanPicture = nullptr;
-    }
-
-    return result;
+    return *ppPicBuf != nullptr;
 }
 
 bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd)
@@ -861,7 +854,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd)
     return DecodePicture(pd, pVkPicBuff, &decodePictureInfo);
 }
 
-bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*pVkPicBuff*/,
+bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVkPicBuff,
                                      VkParserDecodePictureInfo *pDecodePictureInfo)
 {
     if (!pd->pCurrPic)
@@ -1018,6 +1011,9 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
 
         pDecodePictureInfo->displayWidth  = m_nvsi.nDisplayWidth;
         pDecodePictureInfo->displayHeight = m_nvsi.nDisplayHeight;
+
+        pVkPicBuff->decodeSuperResWidth = pVkPicBuff->decodeWidth = m_nvsi.nDisplayWidth;
+        pVkPicBuff->decodeHeight                                  = m_nvsi.nDisplayHeight;
     }
     else if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
     {
@@ -1150,6 +1146,9 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
 
         pDecodePictureInfo->displayWidth  = m_nvsi.nDisplayWidth;
         pDecodePictureInfo->displayHeight = m_nvsi.nDisplayHeight;
+
+        pVkPicBuff->decodeSuperResWidth = pVkPicBuff->decodeWidth = m_nvsi.nDisplayWidth;
+        pVkPicBuff->decodeHeight                                  = m_nvsi.nDisplayHeight;
     }
     else if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
     {
@@ -1181,20 +1180,18 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
 
         if (pStd->flags.UsesLr)
         {
-            // Historical note: some drivers were performing the
-            // logMinus5 mapping internally, and others might not have
-            // been but are happy with the values. The CTS was
-            // mirroring that during initial development of the AV1
-            // decode spec. This differs from the AV1 derived values
-            // for LoopRestorationSize coming from the bitstream.
-            std::unordered_set<int> allowableRestorationSizeValues = {32, 64, 128, 256};
-            DE_UNREF(allowableRestorationSizeValues);
+            // Shift values for calculating loop restoration unit sizes (1 << (5 + shift)).
+            // So: 0 -> 32, 1 -> 64, 2 -> 128, 3 -> 256.
+            std::unordered_set<int> allowableRestorationShiftValues = {0, 1, 2, 3};
+            DE_UNREF(allowableRestorationShiftValues);
+
+#if defined(DE_DEBUG)
             auto &lrs = p->loopRestoration.LoopRestorationSize;
             for (int i = 0; i < STD_VIDEO_AV1_MAX_NUM_PLANES; i++)
             {
-                DE_ASSERT(allowableRestorationSizeValues.find(lrs[i]) != allowableRestorationSizeValues.end());
-                lrs[i] = deLog2Floor32(lrs[i]) - 5;
+                DE_ASSERT(allowableRestorationShiftValues.find(lrs[i]) != allowableRestorationShiftValues.end());
             }
+#endif
             pStd->pLoopRestoration = &p->loopRestoration;
         }
         else
@@ -1204,12 +1201,6 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
 
         pStd->pGlobalMotion = &p->globalMotion;
         pStd->pFilmGrain    = &p->filmGrain;
-
-        // TODO: Hack around a ref-counting issue in the frame
-        // buffer. A better approach would be to modify the frame
-        // buffer not to drop displayed frames in cached decoding
-        // mode.
-        pCurrFrameDecParams->isAV1 = true;
 
         if (videoLoggingEnabled())
         {
@@ -1250,10 +1241,9 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
             printf("\n");
         }
 
-        pCurrFrameDecParams->pStdPps    = nullptr;
-        pCurrFrameDecParams->pStdSps    = nullptr;
-        pCurrFrameDecParams->pStdVps    = nullptr;
-        pCurrFrameDecParams->pStdAv1Sps = p->pStdSps;
+        pCurrFrameDecParams->pStdSps = p->pStdSps;
+        pCurrFrameDecParams->pStdPps = nullptr;
+        pCurrFrameDecParams->pStdVps = nullptr;
 
         pCurrFrameDecParams->decodeFrameInfo.pNext = pKhr;
         p->setupSlot.pStdReferenceInfo             = &p->setupSlotInfo;
@@ -1461,17 +1451,19 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
             pStd->flags.apply_grain = 0;
         }
 
-        cachedParameters->pictureParams.filmGrainEnabled = pStd->flags.apply_grain;
-
         pDecodePictureInfo->displayWidth  = p->upscaled_width;
         pDecodePictureInfo->displayHeight = p->frame_height;
+
+        pVkPicBuff->decodeWidth         = p->frame_width;
+        pVkPicBuff->decodeHeight        = p->frame_height;
+        pVkPicBuff->decodeSuperResWidth = p->upscaled_width;
     }
     else if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
     {
         // Keep a reference for out-of-order decoding
         memcpy(&cachedParameters->vp9PicParams, &pd->CodecSpecific.vp9, sizeof(VkParserVp9PictureData));
         VkParserVp9PictureData *const p      = &cachedParameters->vp9PicParams;
-        VkVideoDecodeVP9PictureInfoKHR *pKhr = &p->khr_info;
+        VkVideoDecodeVP9PictureInfoKHR *pKhr = &cachedParameters->vp9VkPicInfo;
         StdVideoDecodeVP9PictureInfo *pStd   = &p->stdPictureInfo;
 
         // Chain up KHR structures
@@ -1682,6 +1674,8 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase * /*
 
         pDecodePictureInfo->displayWidth  = p->FrameWidth;
         pDecodePictureInfo->displayHeight = p->FrameHeight;
+        pVkPicBuff->decodeSuperResWidth = pVkPicBuff->decodeWidth = p->FrameWidth;
+        pVkPicBuff->decodeHeight                                  = p->FrameHeight;
     }
 
     bRet = DecodePictureWithParameters(cachedParameters) >= 0;
@@ -1697,7 +1691,16 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 {
     TCU_CHECK_MSG(m_videoSession, "Video session has not been initialized!");
 
-    auto *pPicParams = &cachedParameters->pictureParams;
+    auto *pPicParams    = &cachedParameters->pictureParams;
+    bool applyFilmGrain = false;
+
+    if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
+    {
+        VkParserAv1PictureData *const p    = &cachedParameters->av1PicParams;
+        StdVideoDecodeAV1PictureInfo *pStd = &p->std_info;
+
+        applyFilmGrain = pStd->flags.apply_grain;
+    }
 
     DE_ASSERT((uint32_t)pPicParams->currPicIdx < MAX_NUM_DECODE_SURFACES);
 
@@ -1763,7 +1766,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
     }
     else
     {
-        if (!pPicParams->filmGrainEnabled && !m_intraOnlyDecodingNoSetupRef)
+        if (!applyFilmGrain && !m_intraOnlyDecodingNoSetupRef)
         {
             pOutputPictureResource = &cachedParameters->currentOutputPictureResource;
         }
@@ -1798,7 +1801,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
                                                (uint32_t)cachedParameters->decodedPictureInfo.displayHeight};
     }
 
-    if (dpbAndOutputCoincide() && !pPicParams->filmGrainEnabled)
+    if (dpbAndOutputCoincide() && !applyFilmGrain)
     {
         // For the Output Coincide, the DPB and destination output resources are the same.
         pPicParams->decodeFrameInfo.dstPictureResource = pPicParams->dpbSetupPictureResource;
@@ -1905,8 +1908,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         cachedParameters->frameSynchronizationInfo.hasFrameCompleteSignalSemaphore = false;
 
     VulkanVideoFrameBuffer::ReferencedObjectsInfo referencedObjectsInfo(pPicParams->bitstreamData, pPicParams->pStdPps,
-                                                                        pPicParams->pStdSps, pPicParams->pStdVps,
-                                                                        pPicParams->pStdAv1Sps);
+                                                                        pPicParams->pStdSps, pPicParams->pStdVps);
     int currPicIdx =
         m_videoFrameBuffer->QueuePictureForDecode(pPicParams->currPicIdx, &cachedParameters->decodedPictureInfo,
                                                   &referencedObjectsInfo, &cachedParameters->frameSynchronizationInfo);
@@ -1915,7 +1917,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 
     if (m_outOfOrderDecoding)
     {
-        if (cachedParameters->pictureParams.isAV1)
+        if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
             // We do not want the displayed frames to be evicted until we are ready to submit them
             // So keep a reference in the cached object
             cachedParameters->pd.pCurrPic->AddRef();
@@ -1966,7 +1968,7 @@ void VideoBaseDecoder::ApplyPictureParameters(de::MovePtr<CachedDecodeParameters
     }
     else if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
     {
-        bool valid = pPicParams->pStdAv1Sps->GetClientObject(currentVkPictureParameters);
+        bool valid = pPicParams->pStdSps->GetClientObject(currentVkPictureParameters);
         TCU_CHECK(currentVkPictureParameters && valid);
         pOwnerPictureParameters =
             VkParserVideoPictureParameters::VideoPictureParametersFromBase(currentVkPictureParameters);
@@ -3298,9 +3300,7 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
                    VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_SESSION_PARAMETERS_CREATE_INFO_KHR);
             av1SessionParametersCreateInfo.pStdSequenceHeader =
                 const_cast<StdVideoAV1SequenceHeader *>(pStdVideoPictureParametersSet->GetStdAV1Sps());
-            bool isAv1Sps = false;
-            currentId     = pStdVideoPictureParametersSet->GetAv1SpsId(isAv1Sps);
-            DE_ASSERT(isAv1Sps);
+            currentId = 0;
 
             currentStdPictureParameters.av1SequenceHeader = av1SessionParametersCreateInfo.pStdSequenceHeader;
         }
