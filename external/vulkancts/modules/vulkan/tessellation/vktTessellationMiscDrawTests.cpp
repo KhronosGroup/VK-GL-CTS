@@ -1321,7 +1321,7 @@ void TessInstancedDrawTestCase::initPrograms(vk::SourceCollections &programColle
     if (m_params.primitiveType == TESSPRIMITIVETYPE_TRIANGLES)
     {
         tessEvel << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * gl_in[1].gl_Position "
-                 << "+ u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
+                 << "+ u * (1 - v) * gl_in[2].gl_Position;\n";
     }
     else // m_params.primitiveType == TESSPRIMITIVETYPE_QUADS
     {
