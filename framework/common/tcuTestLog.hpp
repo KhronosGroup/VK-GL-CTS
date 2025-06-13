@@ -182,7 +182,7 @@ public:
     void writeEglConfig(const qpEglConfigInfo *config);
     void endEglConfigSet(void);
 
-    void startCase(const char *testCasePath, qpTestCaseType testCaseType);
+    void startCase(const char *testCasePath, qpTestCaseType testCaseType, const char *testCaseSource = nullptr);
     void endCase(qpTestResult result, const char *description);
     void terminateCase(qpTestResult result);
 

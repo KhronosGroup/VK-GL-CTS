@@ -46,7 +46,13 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	# Avoids incorrect addition of argument -std=gnu++XX that may result in build failure to usage of features in
 	# greater standard version than the one specified
 	set(CMAKE_C_STANDARD 99)
-	set(CMAKE_CXX_STANDARD 17)
+	if (DEQP_LOG_NODE_SOURCE)
+		if (not DE_COMPILER_IS_MSC)
+			set(CMAKE_CXX_STANDARD 23)
+		endif ()
+	else ()
+		set(CMAKE_CXX_STANDARD 17)
+	endif ()
 	set(CMAKE_C_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_C_FLAGS} -pedantic ")
 	set(CMAKE_CXX_FLAGS			"${TARGET_FLAGS} ${WARNING_FLAGS} ${CMAKE_CXX_FLAGS}")
 

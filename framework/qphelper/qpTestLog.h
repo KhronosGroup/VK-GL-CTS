@@ -210,7 +210,8 @@ bool qpTestLog_beginSession(qpTestLog *log, const char *additionalSessionInfo);
 void qpTestLog_destroy(qpTestLog *log);
 bool qpTestLog_isCompact(qpTestLog *log);
 
-bool qpTestLog_startCase(qpTestLog *log, const char *testCasePath, qpTestCaseType testCaseType);
+bool qpTestLog_startCase(qpTestLog *log, const char *testCasePath, qpTestCaseType testCaseType,
+                         const char *testCaseSource);
 bool qpTestLog_endCase(qpTestLog *log, qpTestResult result, const char *description);
 
 bool qpTestLog_startTestsCasesTime(qpTestLog *log);
