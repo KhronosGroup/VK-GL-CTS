@@ -636,7 +636,7 @@ public:
 
             beginCommandBuffer(vk, writeCmdBuffer);
             writeOp->recordCommands(writeCmdBuffer);
-            VkPipelineStageFlags2 writeStageMask = VK_PIPELINE_STAGE_2_NONE_KHR;
+            VkPipelineStageFlags2 writeStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
             bool perform_qfot = queueFamilyOwnershipTransferRequired(*resource, queuePairs[pairNdx].familyIndexWrite,
                                                                      queuePairs[pairNdx].familyIndexRead);
             if (perform_qfot)
@@ -655,7 +655,7 @@ public:
             endCommandBuffer(vk, writeCmdBuffer);
 
             beginCommandBuffer(vk, readCmdBuffer);
-            VkPipelineStageFlags2 readStageMask = VK_PIPELINE_STAGE_2_NONE_KHR;
+            VkPipelineStageFlags2 readStageMask = VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT_KHR;
             if (perform_qfot)
             {
                 readStageMask =
@@ -667,21 +667,16 @@ public:
             endCommandBuffer(vk, readCmdBuffer);
 
             const Unique<VkSemaphore> semaphore(createSemaphore(vk, device));
-            if (writeStageMask != VK_PIPELINE_STAGE_2_NONE_KHR)
-            {
-                VkSemaphoreSubmitInfoKHR signalSemaphoreSubmitInfo =
-                    makeCommonSemaphoreSubmitInfo(*semaphore, 0u, writeStageMask);
-                synchronizationWrapper[QUEUETYPE_WRITE]->addSubmitInfo(
-                    0u, nullptr, 1u, &cmdBufferInfos[QUEUETYPE_WRITE], 1u, &signalSemaphoreSubmitInfo);
-            }
 
-            if (readStageMask != VK_PIPELINE_STAGE_2_NONE_KHR)
-            {
-                VkSemaphoreSubmitInfoKHR waitSemaphoreSubmitInfo =
-                    makeCommonSemaphoreSubmitInfo(*semaphore, 0u, readStageMask);
-                synchronizationWrapper[QUEUETYPE_READ]->addSubmitInfo(1u, &waitSemaphoreSubmitInfo, 1u,
-                                                                      &cmdBufferInfos[QUEUETYPE_READ], 0u, nullptr);
-            }
+            VkSemaphoreSubmitInfoKHR signalSemaphoreSubmitInfo =
+                makeCommonSemaphoreSubmitInfo(*semaphore, 0u, writeStageMask);
+            synchronizationWrapper[QUEUETYPE_WRITE]->addSubmitInfo(0u, nullptr, 1u, &cmdBufferInfos[QUEUETYPE_WRITE],
+                                                                   1u, &signalSemaphoreSubmitInfo);
+
+            VkSemaphoreSubmitInfoKHR waitSemaphoreSubmitInfo =
+                makeCommonSemaphoreSubmitInfo(*semaphore, 0u, readStageMask);
+            synchronizationWrapper[QUEUETYPE_READ]->addSubmitInfo(1u, &waitSemaphoreSubmitInfo, 1u,
+                                                                  &cmdBufferInfos[QUEUETYPE_READ], 0u, nullptr);
 
             VK_CHECK(
                 synchronizationWrapper[QUEUETYPE_WRITE]->queueSubmit(queuePairs[pairNdx].queueWrite, VK_NULL_HANDLE));
@@ -1515,10 +1510,13 @@ void createTests(tcu::TestCaseGroup *group, TestData data)
                                     sharingMode, false, *data.pipelineCacheData, useAllStages));
 
 #ifndef CTS_USES_VULKANSC
-                                name += "_maintenance9";
-                                opGroup->addChild(new BaseTestCase(
-                                    testCtx, name, data.type, groups[groupNdx].syncPrimitive, resource, writeOp, readOp,
-                                    sharingMode, true, *data.pipelineCacheData, useAllStages));
+                                if (sharingMode == VK_SHARING_MODE_CONCURRENT)
+                                {
+                                    name += "_maintenance9";
+                                    opGroup->addChild(new BaseTestCase(
+                                        testCtx, name, data.type, groups[groupNdx].syncPrimitive, resource, writeOp,
+                                        readOp, sharingMode, true, *data.pipelineCacheData, useAllStages));
+                                }
 #endif
                                 empty = false;
                             }
