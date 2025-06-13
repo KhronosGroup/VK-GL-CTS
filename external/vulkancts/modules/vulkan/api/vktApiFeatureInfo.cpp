@@ -1130,6 +1130,8 @@ tcu::TestStatus validateLimits14(Context &context)
         {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
         {PN(checkAlways), PN(limits.maxViewportDimensions[0]), LIM_MIN_UINT32(7680)},
         {PN(checkAlways), PN(limits.maxViewportDimensions[1]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[0]), LIM_MAX_FLOAT(-15360.0f)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[1]), LIM_MIN_FLOAT(15359.0f)},
         {PN(checkAlways), PN(limits.maxFramebufferWidth), LIM_MIN_UINT32(7680)},
         {PN(checkAlways), PN(limits.maxFramebufferHeight), LIM_MIN_UINT32(7680)},
         {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(8)},
