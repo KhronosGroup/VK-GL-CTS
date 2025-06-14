@@ -10823,6 +10823,27 @@ struct VkDispatchTileInfoQCOM
 	const void*		pNext;
 };
 
+struct VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxFragmentDensityMapLayers;
+};
+
+struct VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		fragmentDensityMapLayered;
+};
+
+struct VkPipelineFragmentDensityMapLayeredCreateInfoVALVE
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		maxFragmentDensityMapLayers;
+};
+
 struct VkSetPresentConfigNV
 {
 	VkStructureType	sType;
@@ -11027,7 +11048,7 @@ struct VkMemoryDedicatedAllocateInfoTensorARM
 struct VkPhysicalDeviceDescriptorBufferTensorPropertiesARM
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	size_t			tensorCaptureReplayDescriptorDataSize;
 	size_t			tensorViewCaptureReplayDescriptorDataSize;
 	size_t			tensorDescriptorSize;
@@ -11098,6 +11119,14 @@ struct VkPhysicalDeviceShaderFloat8FeaturesEXT
 	void*			pNext;
 	VkBool32		shaderFloat8;
 	VkBool32		shaderFloat8CooperativeMatrix;
+};
+
+struct VkOHSurfaceCreateInfoOHOS
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkSurfaceCreateFlagsOHOS	flags;
+	pt::OHNativeWindow*			window;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -13129,4 +13158,6 @@ typedef VkPhysicalDeviceDynamicRenderingLocalReadFeatures VkPhysicalDeviceDynami
 typedef VkRenderingAttachmentLocationInfo VkRenderingAttachmentLocationInfoKHR;
 
 typedef VkRenderingInputAttachmentIndexInfo VkRenderingInputAttachmentIndexInfoKHR;
+
+typedef VkOHSurfaceCreateInfoOHOS VkSurfaceCreateInfoOHOS;
 

@@ -75,6 +75,7 @@ std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, OHNativeWindow				v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
@@ -3350,6 +3351,11 @@ tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRen
 tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhysicalDeviceSchedulingControlsFlagsARM value)
 {
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getSurfaceCreateFlagsOHOSStr (VkSurfaceCreateFlagsOHOS value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperationFlagsKHR value)

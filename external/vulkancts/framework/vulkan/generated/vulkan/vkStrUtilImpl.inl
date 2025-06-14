@@ -98,6 +98,7 @@ std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, OHNativeWindow				v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
@@ -247,7 +248,8 @@ tcu::Format::Bitfield<32> getRenderPassCreateFlagsStr (VkRenderPassCreateFlags v
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM,	"VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM,						"VK_RENDER_PASS_CREATE_TRANSFORM_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_RENDER_PASS_CREATE_PER_LAYER_FRAGMENT_DENSITY_BIT_VALVE,	"VK_RENDER_PASS_CREATE_PER_LAYER_FRAGMENT_DENSITY_BIT_VALVE"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2596,6 +2598,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR:				return "VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR:					return "VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR";
+		case VK_STRUCTURE_TYPE_OH_SURFACE_CREATE_INFO_OHOS:											return "VK_STRUCTURE_TYPE_OH_SURFACE_CREATE_INFO_OHOS";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HDR_VIVID_FEATURES_HUAWEI:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HDR_VIVID_FEATURES_HUAWEI";
 		case VK_STRUCTURE_TYPE_HDR_VIVID_DYNAMIC_METADATA_HUAWEI:									return "VK_STRUCTURE_TYPE_HDR_VIVID_DYNAMIC_METADATA_HUAWEI";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV";
@@ -2607,6 +2610,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT:									return "VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FORMAT_PACK_FEATURES_ARM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FORMAT_PACK_FEATURES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE";
+		case VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_DENSITY_MAP_LAYERED_CREATE_INFO_VALVE:				return "VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_DENSITY_MAP_LAYERED_CREATE_INFO_VALVE";
 		case VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV:												return "VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT:												return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT";
@@ -3778,6 +3784,7 @@ tcu::Format::Bitfield<32> getRenderingFlagsStr (VkRenderingFlags value)
 		tcu::Format::BitDesc(VK_RENDERING_RESUMING_BIT,								"VK_RENDERING_RESUMING_BIT"),
 		tcu::Format::BitDesc(VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT,			"VK_RENDERING_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_RENDERING_CONTENTS_INLINE_BIT_KHR,					"VK_RENDERING_CONTENTS_INLINE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_RENDERING_PER_LAYER_FRAGMENT_DENSITY_BIT_VALVE,		"VK_RENDERING_PER_LAYER_FRAGMENT_DENSITY_BIT_VALVE"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4096,6 +4103,7 @@ tcu::Format::Bitfield<64> getPipelineCreateFlags2Str (VkPipelineCreateFlags2 val
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT,								"VK_PIPELINE_CREATE_2_ENABLE_LEGACY_DITHERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_DISALLOW_OPACITY_MICROMAP_BIT_ARM,							"VK_PIPELINE_CREATE_2_DISALLOW_OPACITY_MICROMAP_BIT_ARM"),
 		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT,									"VK_PIPELINE_CREATE_2_INDIRECT_BINDABLE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PIPELINE_CREATE_2_PER_LAYER_FRAGMENT_DENSITY_BIT_VALVE,							"VK_PIPELINE_CREATE_2_PER_LAYER_FRAGMENT_DENSITY_BIT_VALVE"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4248,8 +4256,6 @@ const char* getComponentTypeKHRName (VkComponentTypeKHR value)
 		case VK_COMPONENT_TYPE_BFLOAT16_KHR:	return "VK_COMPONENT_TYPE_BFLOAT16_KHR";
 		case VK_COMPONENT_TYPE_SINT8_PACKED_NV:	return "VK_COMPONENT_TYPE_SINT8_PACKED_NV";
 		case VK_COMPONENT_TYPE_UINT8_PACKED_NV:	return "VK_COMPONENT_TYPE_UINT8_PACKED_NV";
-		case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:	return "VK_COMPONENT_TYPE_FLOAT_E4M3_NV";
-		case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:	return "VK_COMPONENT_TYPE_FLOAT_E5M2_NV";
 		case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:	return "VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT";
 		case VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT:	return "VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT";
 		default:								return nullptr;
@@ -6556,6 +6562,11 @@ tcu::Format::Bitfield<32> getSwapchainImageUsageFlagsANDROIDStr (VkSwapchainImag
 }
 
 tcu::Format::Bitfield<32> getImageFormatConstraintsFlagsFUCHSIAStr (VkImageFormatConstraintsFlagsFUCHSIA value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getSurfaceCreateFlagsOHOSStr (VkSurfaceCreateFlagsOHOS value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -21259,6 +21270,36 @@ std::ostream& operator<< (std::ostream& s, const VkDispatchTileInfoQCOM& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxFragmentDensityMapLayers = " << value.maxFragmentDensityMapLayers << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE& value)
+{
+	s << "VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tfragmentDensityMapLayered = " << value.fragmentDensityMapLayered << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineFragmentDensityMapLayeredCreateInfoVALVE& value)
+{
+	s << "VkPipelineFragmentDensityMapLayeredCreateInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxFragmentDensityMapLayers = " << value.maxFragmentDensityMapLayers << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkSetPresentConfigNV& value)
 {
 	s << "VkSetPresentConfigNV = {\n";
@@ -21628,6 +21669,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderFloat8Fea
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderFloat8 = " << value.shaderFloat8 << '\n';
 	s << "\tshaderFloat8CooperativeMatrix = " << value.shaderFloat8CooperativeMatrix << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkOHSurfaceCreateInfoOHOS& value)
+{
+	s << "VkOHSurfaceCreateInfoOHOS = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getSurfaceCreateFlagsOHOSStr(value.flags) << '\n';
+	s << "\twindow = " << value.window << '\n';
 	s << '}';
 	return s;
 }

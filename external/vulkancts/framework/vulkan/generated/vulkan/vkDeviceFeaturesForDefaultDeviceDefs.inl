@@ -216,6 +216,7 @@ const VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatrix2Fe
 const VkPhysicalDevicePipelineOpacityMicromapFeaturesARM&				getPipelineOpacityMicromapFeaturesARM				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePipelineOpacityMicromapFeaturesARM>();			}
 const VkPhysicalDeviceDepthClampZeroOneFeaturesKHR&						getDepthClampZeroOneFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR>();					}
 const VkPhysicalDeviceFormatPackFeaturesARM&							getFormatPackFeaturesARM							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFormatPackFeaturesARM>();							}
+const VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE&			getFragmentDensityMapLayeredFeaturesVALVE			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE>();		}
 const VkPhysicalDeviceRobustness2FeaturesKHR&							getRobustness2Features								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRobustness2FeaturesKHR>();						}
 const VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentMeteringFeaturesNV>();						}
 const VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>();			}

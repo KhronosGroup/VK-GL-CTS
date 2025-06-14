@@ -3119,6 +3119,8 @@ typedef uint32_t VkTileShadingRenderPassFlagsQCOM;
 
 typedef uint64_t VkPhysicalDeviceSchedulingControlsFlagsARM;
 
+typedef uint32_t VkSurfaceCreateFlagsOHOS;
+
 typedef uint32_t VkVideoCodecOperationFlagsKHR;
 
 typedef uint32_t VkVideoCapabilityFlagsKHR;
@@ -3222,6 +3224,7 @@ VK_DEFINE_PLATFORM_TYPE(NvSciSyncObj,				int)
 VK_DEFINE_PLATFORM_TYPE(NvSciSyncFence,				int)
 VK_DEFINE_PLATFORM_TYPE(NvSciBufAttrList,			int)
 VK_DEFINE_PLATFORM_TYPE(NvSciSyncAttrList,			int)
+VK_DEFINE_PLATFORM_TYPE(OHNativeWindow,				void*)
 
 // Extensions
 #define VK_KHR_SURFACE_SPEC_VERSION 25

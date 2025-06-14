@@ -718,6 +718,7 @@ tcu::Format::Bitfield<32>	getPresentGravityFlagsEXTStr								(VkPresentGravityF
 tcu::Format::Bitfield<32>	getShaderCreateFlagsEXTStr									(VkShaderCreateFlagsEXT value);
 tcu::Format::Bitfield<32>	getTileShadingRenderPassFlagsQCOMStr						(VkTileShadingRenderPassFlagsQCOM value);
 tcu::Format::Bitfield<64>	getPhysicalDeviceSchedulingControlsFlagsARMStr				(VkPhysicalDeviceSchedulingControlsFlagsARM value);
+tcu::Format::Bitfield<32>	getSurfaceCreateFlagsOHOSStr								(VkSurfaceCreateFlagsOHOS value);
 tcu::Format::Bitfield<32>	getVideoCodecOperationFlagsKHRStr							(VkVideoCodecOperationFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoCapabilityFlagsKHRStr								(VkVideoCapabilityFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);
@@ -1953,6 +1954,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkRenderPassTileShadingCreateIn
 std::ostream&	operator<<	(std::ostream& s, const VkPerTileBeginInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerTileEndInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDispatchTileInfoQCOM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineFragmentDensityMapLayeredCreateInfoVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkSetPresentConfigNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePresentMeteringFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueDeviceCreateInfoNV& value);
@@ -1985,6 +1989,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalTensorI
 std::ostream&	operator<<	(std::ostream& s, const VkExternalTensorPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryTensorCreateInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloat8FeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkOHSurfaceCreateInfoOHOS& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SpsVuiFlags& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264HrdParameters& value);
 std::ostream&	operator<<	(std::ostream& s, const StdVideoH264SequenceParameterSetVui& value);

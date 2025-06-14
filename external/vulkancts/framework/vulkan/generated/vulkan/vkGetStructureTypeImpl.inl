@@ -5143,6 +5143,21 @@ template<> VkStructureType getStructureType<VkDispatchTileInfoQCOM> (void)
 	return VK_STRUCTURE_TYPE_DISPATCH_TILE_INFO_QCOM;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE;
+}
+
+template<> VkStructureType getStructureType<VkPipelineFragmentDensityMapLayeredCreateInfoVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_PIPELINE_FRAGMENT_DENSITY_MAP_LAYERED_CREATE_INFO_VALVE;
+}
+
 template<> VkStructureType getStructureType<VkSetPresentConfigNV> (void)
 {
 	return VK_STRUCTURE_TYPE_SET_PRESENT_CONFIG_NV;
@@ -5301,5 +5316,10 @@ template<> VkStructureType getStructureType<VkExternalMemoryTensorCreateInfoARM>
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderFloat8FeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkOHSurfaceCreateInfoOHOS> (void)
+{
+	return VK_STRUCTURE_TYPE_OH_SURFACE_CREATE_INFO_OHOS;
 }
 

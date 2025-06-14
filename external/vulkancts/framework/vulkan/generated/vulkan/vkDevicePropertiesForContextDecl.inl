@@ -98,6 +98,7 @@ const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			getDeviceGener
 const vk::VkPhysicalDeviceImageAlignmentControlPropertiesMESA&			getImageAlignmentControlPropertiesMESA			(void) const;
 const vk::VkPhysicalDeviceMaintenance9PropertiesKHR&					getMaintenance9Properties						(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				getCooperativeMatrix2PropertiesNV				(void) const;
+const vk::VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&		getFragmentDensityMapLayeredPropertiesVALVE		(void) const;
 const vk::VkPhysicalDeviceRobustness2PropertiesKHR&						getRobustness2Properties						(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&		getFragmentDensityMapOffsetPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceSubgroupProperties&							getSubgroupProperties							(void) const;

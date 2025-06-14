@@ -364,6 +364,18 @@ bool check_VK_NV_display_stereo(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 	return (isSupported(vIEP, "VK_KHR_display") && isSupported(vIEP, "VK_KHR_get_display_properties2"));
 }
 
+bool check_VK_OHOS_surface(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vDEP);
+
+	if (!isSupported(vIEP, "VK_OHOS_surface"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_surface
+	return isSupported(vIEP, "VK_KHR_surface");
+}
+
 static const DependencyCheckVect instanceExtensionDependencies
 {
 	std::make_pair("VK_KHR_display",							&check_VK_KHR_display),
@@ -394,6 +406,7 @@ static const DependencyCheckVect instanceExtensionDependencies
 	std::make_pair("VK_QNX_screen_surface",						&check_VK_QNX_screen_surface),
 	std::make_pair("VK_GOOGLE_surfaceless_query",				&check_VK_GOOGLE_surfaceless_query),
 	std::make_pair("VK_NV_display_stereo",						&check_VK_NV_display_stereo),
+	std::make_pair("VK_OHOS_surface",							&check_VK_OHOS_surface),
 };
 
 bool check_VK_KHR_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3916,6 +3929,18 @@ bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtProp
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_VALVE_fragment_density_map_layered(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_VALVE_fragment_density_map_layered"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_maintenance5,VK_VERSION_1_4)+VK_EXT_fragment_density_map
+	return ((isSupported(vDEP, "VK_KHR_maintenance5") || isCompatible(1, 4, v)) && isSupported(vDEP, "VK_EXT_fragment_density_map"));
+}
+
 bool check_VK_KHR_robustness2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4237,6 +4262,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_external_memory_metal",							&check_VK_EXT_external_memory_metal),
 	std::make_pair("VK_KHR_depth_clamp_zero_one",							&check_VK_KHR_depth_clamp_zero_one),
 	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
+	std::make_pair("VK_VALVE_fragment_density_map_layered",					&check_VK_VALVE_fragment_density_map_layered),
 	std::make_pair("VK_KHR_robustness2",									&check_VK_KHR_robustness2),
 	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
 	std::make_pair("VK_EXT_zero_initialize_device_memory",					&check_VK_EXT_zero_initialize_device_memory),
@@ -4653,6 +4679,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_control"),
 	std::make_tuple(1, 0, "VK_KHR_maintenance9"),
 	std::make_tuple(1, 0, "VK_KHR_video_maintenance2"),
+	std::make_tuple(1, 0, "VK_OHOS_surface"),
 	std::make_tuple(1, 0, "VK_HUAWEI_hdr_vivid"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_matrix2"),
 	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),
@@ -4660,6 +4687,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_depth_clamp_zero_one"),
 	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_robustness"),
 	std::make_tuple(1, 0, "VK_ARM_format_pack"),
+	std::make_tuple(1, 0, "VK_VALVE_fragment_density_map_layered"),
 	std::make_tuple(1, 0, "VK_KHR_robustness2"),
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),

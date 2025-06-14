@@ -141,6 +141,9 @@ PLATFORM_TYPES = [
     (["NvSciSyncFence"], ["NvSciSyncFence"], "int"),
     (["NvSciBufAttrList"], ["NvSciBufAttrList"], "int"),
     (["NvSciSyncAttrList"], ["NvSciSyncAttrList"], "int"),
+
+    # VK_OHOS_surface
+    (["OHNativeWindow"], ["OHNativeWindow"], "void*"),
 ]
 
 PLATFORM_TYPE_NAMESPACE = "pt"

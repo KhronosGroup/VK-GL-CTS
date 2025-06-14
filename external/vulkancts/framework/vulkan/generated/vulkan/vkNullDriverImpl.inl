@@ -133,6 +133,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, con
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createSurfaceOHOS (VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createDisplayPlaneSurfaceKHR (VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -4572,6 +4578,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,								enumerateDeviceExtensionProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,						getPhysicalDeviceSparseImageFormatProperties),
 	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,											createAndroidSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateSurfaceOHOS,													createSurfaceOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,								getPhysicalDeviceDisplayPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,						getPhysicalDeviceDisplayPlanePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,								getDisplayPlaneSupportedDisplaysKHR),

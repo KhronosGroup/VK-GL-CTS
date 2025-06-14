@@ -69,6 +69,11 @@ VkResult InstanceDriver::createAndroidSurfaceKHR (VkInstance instance, const VkA
     return m_vk.createAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
 }
 
+VkResult InstanceDriver::createSurfaceOHOS (VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const
+{
+    return m_vk.createSurfaceOHOS(instance, pCreateInfo, pAllocator, pSurface);
+}
+
 VkResult InstanceDriver::getPhysicalDeviceDisplayPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPropertiesKHR* pProperties) const
 {
     return m_vk.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, pPropertyCount, pProperties);

@@ -619,6 +619,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkUpdateIndirectExecutionSetPipelineEXT",
 		"vkUpdateIndirectExecutionSetShaderEXT",
 		"vkCmdSetDepthClampRangeEXT",
+		"vkCreateSurfaceOHOS",
 		"vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV",
 		"vkGetMemoryMetalHandleEXT",
 		"vkGetMemoryMetalHandlePropertiesEXT",

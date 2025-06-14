@@ -1720,6 +1720,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_OHOS_surface")
+	{
+		functions.push_back("vkCreateSurfaceOHOS");
+		return;
+	}
 	if (extName == "VK_HUAWEI_hdr_vivid")
 	{
 		return;
@@ -1746,6 +1751,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_fragment_density_map_layered")
 	{
 		return;
 	}
@@ -4048,6 +4057,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_OHOS_surface")
+	{
+		return;
+	}
 	if (extName == "VK_HUAWEI_hdr_vivid")
 	{
 		return;
@@ -4075,6 +4088,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_fragment_density_map_layered")
 	{
 		return;
 	}
@@ -4187,6 +4204,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_LUNARG_direct_driver_loading",
 	"VK_EXT_layer_settings",
 	"VK_NV_display_stereo",
+	"VK_OHOS_surface",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -4560,6 +4578,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
 	"VK_ARM_format_pack",
+	"VK_VALVE_fragment_density_map_layered",
 	"VK_KHR_robustness2",
 	"VK_NV_present_metering",
 	"VK_EXT_fragment_density_map_offset",

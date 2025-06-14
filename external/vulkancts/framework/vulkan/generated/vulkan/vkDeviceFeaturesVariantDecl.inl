@@ -230,6 +230,7 @@ typedef std::variant<
     , VkPhysicalDevicePipelineOpacityMicromapFeaturesARM
     , VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
     , VkPhysicalDeviceFormatPackFeaturesARM
+    , VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE
     , VkPhysicalDeviceRobustness2FeaturesKHR
     , VkPhysicalDevicePresentMeteringFeaturesNV
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT

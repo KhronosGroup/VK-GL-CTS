@@ -16,6 +16,7 @@ m_vk.enumerateDeviceLayerProperties = (EnumerateDeviceLayerPropertiesFunc) GET_P
 m_vk.enumerateDeviceExtensionProperties = (EnumerateDeviceExtensionPropertiesFunc) GET_PROC_ADDR("vkEnumerateDeviceExtensionProperties");
 m_vk.getPhysicalDeviceSparseImageFormatProperties = (GetPhysicalDeviceSparseImageFormatPropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceSparseImageFormatProperties");
 m_vk.createAndroidSurfaceKHR = (CreateAndroidSurfaceKHRFunc) GET_PROC_ADDR("vkCreateAndroidSurfaceKHR");
+m_vk.createSurfaceOHOS = (CreateSurfaceOHOSFunc) GET_PROC_ADDR("vkCreateSurfaceOHOS");
 m_vk.getPhysicalDeviceDisplayPropertiesKHR = (GetPhysicalDeviceDisplayPropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPropertiesKHR");
 m_vk.getPhysicalDeviceDisplayPlanePropertiesKHR = (GetPhysicalDeviceDisplayPlanePropertiesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceDisplayPlanePropertiesKHR");
 m_vk.getDisplayPlaneSupportedDisplaysKHR = (GetDisplayPlaneSupportedDisplaysKHRFunc) GET_PROC_ADDR("vkGetDisplayPlaneSupportedDisplaysKHR");

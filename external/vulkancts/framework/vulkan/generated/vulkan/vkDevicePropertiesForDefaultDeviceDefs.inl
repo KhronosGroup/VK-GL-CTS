@@ -98,6 +98,7 @@ const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			getDeviceGenerated
 const VkPhysicalDeviceImageAlignmentControlPropertiesMESA&			getImageAlignmentControlPropertiesMESA			(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceImageAlignmentControlPropertiesMESA>();			}
 const VkPhysicalDeviceMaintenance9PropertiesKHR&					getMaintenance9Properties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceMaintenance9PropertiesKHR>();						}
 const VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				getCooperativeMatrix2PropertiesNV				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrix2PropertiesNV>();					}
+const VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&		getFragmentDensityMapLayeredPropertiesVALVE		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE>();		}
 const VkPhysicalDeviceRobustness2PropertiesKHR&						getRobustness2Properties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceRobustness2PropertiesKHR>();						}
 const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&		getFragmentDensityMapOffsetPropertiesEXT		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT>();			}
 const VkPhysicalDeviceSubgroupProperties&							getSubgroupProperties							(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceSubgroupProperties>();								}

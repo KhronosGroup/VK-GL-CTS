@@ -163,6 +163,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdNextSubpassFunc)													(VkComm
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndRenderPassFunc)													(VkCommandBuffer commandBuffer);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdExecuteCommandsFunc)												(VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateAndroidSurfaceKHRFunc)											(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* CreateSurfaceOHOSFunc)													(VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceDisplayPropertiesKHRFunc)								(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPropertiesKHR* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetPhysicalDeviceDisplayPlanePropertiesKHRFunc)						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPlanePropertiesKHR* pProperties);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDisplayPlaneSupportedDisplaysKHRFunc)								(VkPhysicalDevice physicalDevice, uint32_t planeIndex, uint32_t* pDisplayCount, VkDisplayKHR* pDisplays);
