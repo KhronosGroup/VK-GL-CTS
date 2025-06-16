@@ -1568,6 +1568,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineStencilTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp",
+        "external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputSRGBTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp",
         "external/vulkancts/modules/vulkan/postmortem/vktPostmortemDeviceFaultTests.cpp",

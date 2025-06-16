@@ -26,6 +26,7 @@
 
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineLegacyAttrTests.hpp"
+#include "vktPipelineVertexInputSRGBTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
@@ -2833,6 +2834,9 @@ void createVertexInputTests(tcu::TestCaseGroup *vertexInputTests, PipelineConstr
         addTestGroup(vertexInputTests, "legacy_vertex_attributes", createLegacyVertexAttributesTests,
                      pipelineConstructionType);
     }
+
+    auto &testCtx = vertexInputTests->getTestContext();
+    vertexInputTests->addChild(createVertexInputSRGBTests(testCtx, pipelineConstructionType));
 }
 
 } // namespace pipeline
