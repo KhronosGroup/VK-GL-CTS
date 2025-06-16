@@ -661,7 +661,7 @@ TextureCubeMipmapCase::IterateResult TextureCubeMipmapCase::iterate(void)
         // Comparison parameters
         lookupPrec.colorMask      = getCompareMask(m_renderCtx.getRenderTarget().getPixelFormat());
         lookupPrec.colorThreshold = tcu::computeFixedPointThreshold(
-            max(getBitsVec(m_renderCtx.getRenderTarget().getPixelFormat()) - 2, IVec4(0)));
+            max(getBitsVec(m_renderCtx.getRenderTarget().getPixelFormat()) - (isProjected ? 3 : 2), IVec4(0)));
         lookupPrec.coordBits = isProjected ? tcu::IVec3(8) : tcu::IVec3(10);
         lookupPrec.uvwBits   = tcu::IVec3(5, 5, 0);
         lodPrec.derivateBits = 10;
