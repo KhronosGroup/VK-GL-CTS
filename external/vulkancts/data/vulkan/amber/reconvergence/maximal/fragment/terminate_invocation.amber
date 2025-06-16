@@ -31,7 +31,7 @@ void main()
 
 	if (terminateSubgroup && (gl_SubgroupInvocationID == terminateInvocationID))
 	{
-		discard;
+		terminateInvocation;
 	}
 
 	const uvec4	resultBallot	= subgroupBallot(true);
