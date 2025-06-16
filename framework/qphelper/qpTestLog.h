@@ -143,7 +143,8 @@ typedef enum qpTestLogFlag_e
     QP_TEST_LOG_EXCLUDE_EMPTY_LOGINFO  = (1 << 3), //!< Do not log empty shader compile or link loginfo.
     QP_TEST_LOG_NO_INITIAL_OUTPUT      = (1 << 4), //!< Do not push data to cout when initializing log.
     QP_TEST_LOG_COMPACT                = (1 << 5), //!< Only write test case status.
-    QP_TEST_LOG_SPLIT_SLICES           = (1 << 6)  //!< Log each image slice separately.
+    QP_TEST_LOG_SPLIT_SLICES           = (1 << 6), //!< Log each image slice separately.
+    QP_TEST_LOG_ALL_IMAGES             = (1 << 7)  //!< Log all images
 } qpTestLogFlag;
 
 /* Shader type. */

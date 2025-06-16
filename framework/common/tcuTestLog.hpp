@@ -209,6 +209,7 @@ public:
 
     void separateSlices(bool value = true);
     bool isSeparateSlices(void) const;
+    bool logAllImages(void);
 
 private:
     TestLog(const TestLog &other);            // Not allowed!
@@ -588,6 +589,14 @@ inline TestLog &operator<<(TestLog &log, const std::exception &e)
 {
     // \todo [2012-10-18 pyry] Print type info?
     return log << TestLog::Message << e.what() << TestLog::EndMessage;
+}
+
+inline bool TestLog::logAllImages(void)
+{
+    if ((qpTestLog_getLogFlags(m_log) & QP_TEST_LOG_ALL_IMAGES) != 0)
+        return true;
+
+    return false;
 }
 
 // Utility class inline implementations.

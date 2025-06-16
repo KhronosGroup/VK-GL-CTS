@@ -868,8 +868,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     default: '1'
 
   --deqp-log-images=[enable|disable]
-    Enable or disable logging of result images
+    When disabled, prevent any image from being logged into the test results file
     default: 'enable'
+
+  --deqp-log-all-images=[enable|disable]
+    When enabled, log all images from image comparison routines as if COMPARE_LOG_EVERYTHING was used in the code
+    default: 'disable'
 
   --deqp-log-shader-sources=[enable|disable]
     Enable or disable logging of shader sources
