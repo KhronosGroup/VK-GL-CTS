@@ -3524,6 +3524,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     inputA     = tcu::Float16(temp).asDouble();
                     break;
                 }
+#ifndef CTS_USES_VULKANSC
+                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                {
+                    float temp = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
+                    inputA     = BFloat16(temp).asDouble();
+                    break;
+                }
+#endif //CTS_USES_VULKANSC
                 default:
                     TCU_THROW(InternalError, "Unexpected type");
                 }
@@ -3557,6 +3565,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     output     = tcu::Float16(temp).asDouble();
                     break;
                 }
+#ifndef CTS_USES_VULKANSC
+                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                {
+                    float temp = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                    output     = BFloat16(temp).asDouble();
+                    break;
+                }
+#endif //CTS_USES_VULKANSC
                 default:
                     TCU_THROW(InternalError, "Unexpected type");
                 }
@@ -5304,9 +5320,12 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 
     // Types tested for conversions. Excludes 64b types.
     VkComponentTypeKHR allTypes[] = {
-        VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-        VK_COMPONENT_TYPE_SINT16_KHR,  VK_COMPONENT_TYPE_SINT32_KHR,  VK_COMPONENT_TYPE_UINT8_KHR,
-        VK_COMPONENT_TYPE_UINT16_KHR,  VK_COMPONENT_TYPE_UINT32_KHR,
+        VK_COMPONENT_TYPE_FLOAT16_KHR,  VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+        VK_COMPONENT_TYPE_SINT16_KHR,   VK_COMPONENT_TYPE_SINT32_KHR,  VK_COMPONENT_TYPE_UINT8_KHR,
+        VK_COMPONENT_TYPE_UINT16_KHR,   VK_COMPONENT_TYPE_UINT32_KHR,
+#ifndef CTS_USES_VULKANSC
+        VK_COMPONENT_TYPE_BFLOAT16_KHR,
+#endif //CTS_USES_VULKANSC
     };
 
     // Types tested for load/store from/into multicomponent types
