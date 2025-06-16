@@ -625,7 +625,10 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
     css << "const uint inputVectorPaddedElements = (K + " << elementsPer16B - 1 << ") & ~" << elementsPer16B - 1
         << ";\n";
 
-    elementsPer16B = 16 * 8 / getComponentTypeInfo(m_data.outputType).bits;
+    if (m_data.testType != TT_OUTERPRODUCT)
+    {
+        elementsPer16B = 16 * 8 / getComponentTypeInfo(m_data.outputType).bits;
+    }
     css << "const uint outputVectorPaddedElements = (N + " << elementsPer16B - 1 << ") & ~" << elementsPer16B - 1
         << " ;\n";
 
@@ -1842,7 +1845,9 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             VK_CHECK(vk.convertCooperativeVectorMatrixNV(device, &info));
 
-            totalElements[1] = outputVectorPaddedElements;
+            elementsPer16B             = 16 * 8 / getComponentTypeInfo(m_data.inputType).bits;
+            outputVectorPaddedElements = ((N + (elementsPer16B - 1)) & ~(elementsPer16B - 1));
+            totalElements[1]           = outputVectorPaddedElements;
             totalElements[3] = deDivRoundUp32((uint32_t)outerProductSize, getComponentTypeInfo(dataTypes[3]).bits / 8);
         }
         // Holds atomic flag bit for each invocation
@@ -4573,7 +4578,13 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
                                     testCtx, colCases[colNdx].name, colCases[colNdx].description));
                                 for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
                                 {
-                                    VkComponentTypeKHR inputType = (VkComponentTypeKHR)dtCases[dtNdx].value;
+                                    VkComponentTypeKHR inputType  = (VkComponentTypeKHR)dtCases[dtNdx].value;
+                                    VkComponentTypeKHR outputType = (VkComponentTypeKHR)dtCases[dtNdx].value;
+
+                                    if (testType == TT_OUTERPRODUCT)
+                                    {
+                                        inputType = VK_COMPONENT_TYPE_FLOAT16_NV;
+                                    }
 
                                     uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
                                     uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
@@ -4589,8 +4600,8 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
                                         workgroupsY,                          // uint32_t workgroupsY;
                                         (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR inputType;
                                         (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR inputInterpretation;
-                                        (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR matrixType;
-                                        (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR outputType;
+                                        (VkComponentTypeKHR)outputType,       // VkComponentTypeKHR matrixType;
+                                        (VkComponentTypeKHR)outputType,       // VkComponentTypeKHR outputType;
                                         false,                                // bool inputPacked;
                                         {
                                             (VkCooperativeVectorMatrixLayoutNV)colCases[colNdx].value,

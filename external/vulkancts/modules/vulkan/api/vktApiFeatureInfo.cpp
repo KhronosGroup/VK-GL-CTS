@@ -1128,6 +1128,10 @@ tcu::TestStatus validateLimits14(Context &context)
         {PN(checkAlways), PN(limits.subTexelPrecisionBits), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
         {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[0]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[1]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxFramebufferWidth), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxFramebufferHeight), LIM_MIN_UINT32(7680)},
         {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.timestampComputeAndGraphics), LIM_MIN_UINT32(1)},
         {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
@@ -1579,20 +1583,20 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     const VkBool32 checkAlways            = VK_TRUE;
     const InstanceInterface &vk           = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorPropertiesKHR =
+    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertexAttributeDivisorPropertiesEXT =
         vk::initVulkanStructure();
-    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesKHR);
+    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
 
     vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
     FeatureLimitTableItem featureLimitTable[] = {
-        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesKHR.maxVertexAttribDivisor),
+        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),
          LIM_MIN_UINT32((1 << 16) - 1)},
     };
 
-    log << TestLog::Message << vertexAttributeDivisorPropertiesKHR << TestLog::EndMessage;
+    log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
         limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
