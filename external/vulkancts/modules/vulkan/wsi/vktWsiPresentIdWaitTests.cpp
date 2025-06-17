@@ -534,23 +534,22 @@ tcu::TestStatus PresentIdWaitSimpleInstance::run(const vk::DeviceInterface &vkd,
                                      frameStreamObjects.frameNumber(), m_context.getTestContext().getLog());
 
             // Present rendered frame.
-            const vk::VkPresentIdKHR presentId = {
-                vk::VK_STRUCTURE_TYPE_PRESENT_ID_KHR,                         // VkStructureType sType;
-                nullptr,                                                      // const void* pNext;
-                (presentOp.presentId ? 1u : 0u),                              // uint32_t swapchainCount;
-                (presentOp.presentId ? &presentOp.presentId.get() : nullptr), // const uint64_t* pPresentIds;
-            };
+            vk::VkPresentInfoKHR presentInfo = vk::initVulkanStructure();
+            const auto addPresent            = vk::makeStructChainAdder(&presentInfo);
 
-            const vk::VkPresentInfoKHR presentInfo = {
-                vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                (presentOp.presentId ? &presentId : nullptr),
-                1u,
-                &frameObjects.renderCompleteSemaphore,
-                1u,
-                &swapchain,
-                &imageNdx,
-                nullptr,
-            };
+            presentInfo.waitSemaphoreCount = 1u;
+            presentInfo.pWaitSemaphores    = &frameObjects.renderCompleteSemaphore;
+            presentInfo.swapchainCount     = 1u;
+            presentInfo.pSwapchains        = &swapchain;
+            presentInfo.pImageIndices      = &imageNdx;
+
+            vk::VkPresentIdKHR presentId = vk::initVulkanStructure();
+            if (presentOp.presentId)
+            {
+                presentId.swapchainCount = 1u;
+                presentId.pPresentIds    = &presentOp.presentId.get();
+                addPresent(&presentId);
+            }
 
             vk::VkResult result = vkd.queuePresentKHR(queue, &presentInfo);
 
@@ -1035,28 +1034,23 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
                                      devHelper.queue, frameStreamObjects2.frameNumber(), testLog);
 
             // Present both images at the same time with their corresponding ids.
-            const uint64_t presentIdsArr[]     = {step.idWait1.presentId, step.idWait2.presentId};
-            const vk::VkPresentIdKHR presentId = {
-                vk::VK_STRUCTURE_TYPE_PRESENT_ID_KHR,                     // VkStructureType sType;
-                nullptr,                                                  // const void* pNext;
-                static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(presentIdsArr)), // uint32_t swapchainCount;
-                presentIdsArr,                                            // const uint64_t* pPresentIds;
-            };
-
+            vk::VkPresentInfoKHR presentInfo        = vk::initVulkanStructure();
+            const auto addPresent                   = vk::makeStructChainAdder(&presentInfo);
             const vk::VkSemaphore semaphoreArr[]    = {frameObjects1.renderCompleteSemaphore,
                                                        frameObjects2.renderCompleteSemaphore};
+            presentInfo.waitSemaphoreCount          = static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(semaphoreArr));
+            presentInfo.pWaitSemaphores             = semaphoreArr;
             const vk::VkSwapchainKHR swapchainArr[] = {swapchain1.get(), swapchain2.get()};
+            presentInfo.swapchainCount              = static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(swapchainArr));
+            presentInfo.pSwapchains                 = swapchainArr;
             const uint32_t imgIndexArr[]            = {imageNdx1, imageNdx2};
-            const vk::VkPresentInfoKHR presentInfo  = {
-                vk::VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                &presentId,
-                static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(semaphoreArr)),
-                semaphoreArr,
-                static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(swapchainArr)),
-                swapchainArr,
-                imgIndexArr,
-                nullptr,
-            };
+            presentInfo.pImageIndices               = imgIndexArr;
+
+            const uint64_t presentIdsArr[] = {step.idWait1.presentId, step.idWait2.presentId};
+            vk::VkPresentIdKHR presentId   = vk::initVulkanStructure();
+            presentId.swapchainCount       = static_cast<uint32_t>(DE_LENGTH_OF_ARRAY(presentIdsArr));
+            presentId.pPresentIds          = presentIdsArr;
+            addPresent(&presentId);
 
             VK_CHECK(vkd.queuePresentKHR(devHelper.queue, &presentInfo));
 
