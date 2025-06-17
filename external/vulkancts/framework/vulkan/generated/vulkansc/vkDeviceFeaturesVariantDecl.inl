@@ -17,19 +17,32 @@ template <class X> struct variant_index<X, std::variant<>> : std::integral_const
 template <typename X, typename Variant>
     constexpr std::size_t variant_index_v = variant_index<X, Variant>::value;
 typedef std::variant<
-    VkPhysicalDeviceTextureCompressionASTCHDRFeatures
+    VkPhysicalDeviceMultiviewFeatures
+    , VkPhysicalDeviceTextureCompressionASTCHDRFeatures
     , VkPhysicalDeviceASTCDecodeFeaturesEXT
+    , VkPhysicalDeviceShaderFloat16Int8Features
+    , VkPhysicalDevice16BitStorageFeatures
     , VkPhysicalDeviceDepthClipEnableFeaturesEXT
+    , VkPhysicalDeviceImagelessFramebufferFeatures
     , VkPhysicalDevicePerformanceQueryFeaturesKHR
+    , VkPhysicalDeviceVariablePointersFeatures
     , VkPhysicalDeviceBlendOperationAdvancedFeaturesEXT
+    , VkPhysicalDeviceSamplerYcbcrConversionFeatures
+    , VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
+    , VkPhysicalDevice8BitStorageFeatures
+    , VkPhysicalDeviceShaderAtomicInt64Features
     , VkPhysicalDeviceShaderClockFeaturesKHR
     , VkPhysicalDeviceGlobalPriorityQueryFeatures
+    , VkPhysicalDeviceTimelineSemaphoreFeatures
+    , VkPhysicalDeviceVulkanMemoryModelFeatures
     , VkPhysicalDeviceShaderTerminateInvocationFeatures
     , VkPhysicalDeviceSubgroupSizeControlFeatures
     , VkPhysicalDeviceFragmentShadingRateFeaturesKHR
     , VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT
+    , VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
     , VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT
     , VkPhysicalDeviceYcbcrImageArraysFeaturesEXT
+    , VkPhysicalDeviceUniformBufferStandardLayoutFeatures
     , VkPhysicalDeviceShaderAtomicFloatFeaturesEXT
     , VkPhysicalDeviceExtendedDynamicStateFeaturesEXT
     , VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures
@@ -50,25 +63,12 @@ typedef std::variant<
     , VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX
     , VkPhysicalDeviceIndexTypeUint8Features
     , VkPhysicalDeviceLineRasterizationFeatures
-    , VkPhysicalDeviceVariablePointersFeatures
-    , VkPhysicalDeviceMultiviewFeatures
-    , VkPhysicalDevice16BitStorageFeatures
-    , VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
-    , VkPhysicalDeviceSamplerYcbcrConversionFeatures
     , VkPhysicalDeviceProtectedMemoryFeatures
     , VkPhysicalDeviceShaderDrawParametersFeatures
-    , VkPhysicalDeviceShaderFloat16Int8Features
     , VkPhysicalDeviceHostQueryResetFeatures
     , VkPhysicalDeviceDescriptorIndexingFeatures
-    , VkPhysicalDeviceTimelineSemaphoreFeatures
-    , VkPhysicalDevice8BitStorageFeatures
-    , VkPhysicalDeviceVulkanMemoryModelFeatures
-    , VkPhysicalDeviceShaderAtomicInt64Features
     , VkPhysicalDeviceScalarBlockLayoutFeatures
-    , VkPhysicalDeviceUniformBufferStandardLayoutFeatures
     , VkPhysicalDeviceBufferDeviceAddressFeatures
-    , VkPhysicalDeviceImagelessFramebufferFeatures
-    , VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
 > ImplementedFeaturesVariant;
 typedef typename extend_variant<ImplementedFeaturesVariant,
     VkPhysicalDeviceFeatures

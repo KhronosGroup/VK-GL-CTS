@@ -64,7 +64,38 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_sampler_mirror_clamp_to_edge")
+	{
+		return;
+	}
 	if (extName == "VK_NV_private_vendor_info")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_multiview")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_get_physical_device_properties2")
+	{
+		functions.push_back("vkGetPhysicalDeviceFeatures2KHR");
+		functions.push_back("vkGetPhysicalDeviceProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceFormatProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceImageFormatProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyProperties2KHR");
+		functions.push_back("vkGetPhysicalDeviceMemoryProperties2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_device_group")
+	{
+		// Dependencies: VK_KHR_surface
+		if (extensionIsSupported(vIEP, "VK_KHR_surface")) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		}
+		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkGetPhysicalDevicePresentRectanglesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_shader_draw_parameters")
 	{
 		return;
 	}
@@ -76,7 +107,34 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_device_group_creation")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceGroupsKHR");
+		return;
+	}
+	if (extName == "VK_KHR_external_memory_capabilities")
+	{
+		functions.push_back("vkGetPhysicalDeviceExternalBufferPropertiesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_external_memory")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_external_memory_fd")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_external_semaphore_capabilities")
+	{
+		functions.push_back("vkGetPhysicalDeviceExternalSemaphorePropertiesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_external_semaphore")
 	{
 		return;
 	}
@@ -84,7 +142,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_float16_int8")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_16bit_storage")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_incremental_present")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_descriptor_update_template")
 	{
 		return;
 	}
@@ -122,7 +192,24 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_imageless_framebuffer")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_create_renderpass2")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shared_presentable_image")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_external_fence_capabilities")
+	{
+		functions.push_back("vkGetPhysicalDeviceExternalFencePropertiesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_external_fence")
 	{
 		return;
 	}
@@ -136,10 +223,18 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR");
 		return;
 	}
+	if (extName == "VK_KHR_maintenance2")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_get_surface_capabilities2")
 	{
 		functions.push_back("vkGetPhysicalDeviceSurfaceCapabilities2KHR");
 		functions.push_back("vkGetPhysicalDeviceSurfaceFormats2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_variable_pointers")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_get_display_properties2")
@@ -158,11 +253,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_dedicated_allocation")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_debug_utils")
 	{
 		functions.push_back("vkCreateDebugUtilsMessengerEXT");
 		functions.push_back("vkDestroyDebugUtilsMessengerEXT");
 		functions.push_back("vkSubmitDebugUtilsMessageEXT");
+		return;
+	}
+	if (extName == "VK_KHR_storage_buffer_storage_class")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_shader_stencil_export")
@@ -174,6 +277,18 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceMultisamplePropertiesEXT");
 		return;
 	}
+	if (extName == "VK_KHR_relaxed_block_layout")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_get_memory_requirements2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_image_format_list")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_blend_operation_advanced")
 	{
 		return;
@@ -182,7 +297,23 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_sampler_ycbcr_conversion")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_bind_memory2")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_image_drm_format_modifier")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance3")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_draw_indirect_count")
 	{
 		return;
 	}
@@ -190,7 +321,19 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_subgroup_extended_types")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_8bit_storage")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_external_memory_host")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_atomic_int64")
 	{
 		return;
 	}
@@ -202,7 +345,27 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_driver_properties")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_float_controls")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_depth_stencil_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_swapchain_mutable_format")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_timeline_semaphore")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_vulkan_memory_model")
 	{
 		return;
 	}
@@ -227,7 +390,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_spirv_1_4")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_memory_budget")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_separate_depth_stencil_layouts")
 	{
 		return;
 	}
@@ -240,6 +411,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_ycbcr_image_arrays")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_uniform_buffer_standard_layout")
 	{
 		return;
 	}
@@ -427,7 +602,42 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_sampler_mirror_clamp_to_edge")
+	{
+		return;
+	}
 	if (extName == "VK_NV_private_vendor_info")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_multiview")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_get_physical_device_properties2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_device_group")
+	{
+		functions.push_back("vkGetDeviceGroupPeerMemoryFeaturesKHR");
+		functions.push_back("vkCmdSetDeviceMaskKHR");
+		functions.push_back("vkCmdDispatchBaseKHR");
+		// Dependencies: VK_KHR_surface
+		if (extensionIsSupported(vIEP, "VK_KHR_surface")) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
+		}
+		// Dependencies: VK_KHR_swapchain
+		if (extensionIsSupported(vDEP, "VK_KHR_swapchain")) {
+			if(apiVersion >= VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		}
+		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupPresentCapabilitiesKHR");
+		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkGetDeviceGroupSurfacePresentModesKHR");
+		if(apiVersion < VK_API_VERSION_1_1) functions.push_back("vkAcquireNextImage2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_shader_draw_parameters")
 	{
 		return;
 	}
@@ -439,10 +649,34 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_device_group_creation")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_external_memory_capabilities")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_external_memory")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_external_memory_fd")
 	{
 		functions.push_back("vkGetMemoryFdKHR");
 		functions.push_back("vkGetMemoryFdPropertiesKHR");
+		return;
+	}
+	if (extName == "VK_KHR_external_semaphore_capabilities")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_external_semaphore")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_external_semaphore_fd")
@@ -451,7 +685,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetSemaphoreFdKHR");
 		return;
 	}
+	if (extName == "VK_KHR_shader_float16_int8")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_16bit_storage")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_incremental_present")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_descriptor_update_template")
 	{
 		return;
 	}
@@ -495,9 +741,29 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkSetHdrMetadataEXT");
 		return;
 	}
+	if (extName == "VK_KHR_imageless_framebuffer")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_create_renderpass2")
+	{
+		functions.push_back("vkCreateRenderPass2KHR");
+		functions.push_back("vkCmdBeginRenderPass2KHR");
+		functions.push_back("vkCmdNextSubpass2KHR");
+		functions.push_back("vkCmdEndRenderPass2KHR");
+		return;
+	}
 	if (extName == "VK_KHR_shared_presentable_image")
 	{
 		functions.push_back("vkGetSwapchainStatusKHR");
+		return;
+	}
+	if (extName == "VK_KHR_external_fence_capabilities")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_external_fence")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_external_fence_fd")
@@ -512,7 +778,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkReleaseProfilingLockKHR");
 		return;
 	}
+	if (extName == "VK_KHR_maintenance2")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_get_surface_capabilities2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_variable_pointers")
 	{
 		return;
 	}
@@ -528,6 +802,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_dedicated_allocation")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_debug_utils")
 	{
 		functions.push_back("vkSetDebugUtilsObjectNameEXT");
@@ -540,6 +818,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdInsertDebugUtilsLabelEXT");
 		return;
 	}
+	if (extName == "VK_KHR_storage_buffer_storage_class")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_stencil_export")
 	{
 		return;
@@ -547,6 +829,20 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_EXT_sample_locations")
 	{
 		functions.push_back("vkCmdSetSampleLocationsEXT");
+		return;
+	}
+	if (extName == "VK_KHR_relaxed_block_layout")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_get_memory_requirements2")
+	{
+		functions.push_back("vkGetImageMemoryRequirements2KHR");
+		functions.push_back("vkGetBufferMemoryRequirements2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_image_format_list")
+	{
 		return;
 	}
 	if (extName == "VK_EXT_blend_operation_advanced")
@@ -557,18 +853,53 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_sampler_ycbcr_conversion")
+	{
+		functions.push_back("vkCreateSamplerYcbcrConversionKHR");
+		functions.push_back("vkDestroySamplerYcbcrConversionKHR");
+		return;
+	}
+	if (extName == "VK_KHR_bind_memory2")
+	{
+		functions.push_back("vkBindBufferMemory2KHR");
+		functions.push_back("vkBindImageMemory2KHR");
+		return;
+	}
 	if (extName == "VK_EXT_image_drm_format_modifier")
 	{
 		functions.push_back("vkGetImageDrmFormatModifierPropertiesEXT");
+		return;
+	}
+	if (extName == "VK_KHR_maintenance3")
+	{
+		functions.push_back("vkGetDescriptorSetLayoutSupportKHR");
+		return;
+	}
+	if (extName == "VK_KHR_draw_indirect_count")
+	{
+		functions.push_back("vkCmdDrawIndirectCountKHR");
+		functions.push_back("vkCmdDrawIndexedIndirectCountKHR");
 		return;
 	}
 	if (extName == "VK_EXT_filter_cubic")
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_subgroup_extended_types")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_8bit_storage")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_external_memory_host")
 	{
 		functions.push_back("vkGetMemoryHostPointerPropertiesEXT");
+		return;
+	}
+	if (extName == "VK_KHR_shader_atomic_int64")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_shader_clock")
@@ -579,7 +910,30 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_driver_properties")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_float_controls")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_depth_stencil_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_swapchain_mutable_format")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_timeline_semaphore")
+	{
+		functions.push_back("vkGetSemaphoreCounterValueKHR");
+		functions.push_back("vkWaitSemaphoresKHR");
+		functions.push_back("vkSignalSemaphoreKHR");
+		return;
+	}
+	if (extName == "VK_KHR_vulkan_memory_model")
 	{
 		return;
 	}
@@ -604,7 +958,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_spirv_1_4")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_memory_budget")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_separate_depth_stencil_layouts")
 	{
 		return;
 	}
@@ -617,6 +979,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_ycbcr_image_arrays")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_uniform_buffer_standard_layout")
 	{
 		return;
 	}
@@ -818,9 +1184,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 {
 	"VK_KHR_surface",
 	"VK_KHR_display",
+	"VK_KHR_get_physical_device_properties2",
+	"VK_KHR_device_group_creation",
+	"VK_KHR_external_memory_capabilities",
+	"VK_KHR_external_semaphore_capabilities",
 	"VK_EXT_direct_mode_display",
 	"VK_EXT_display_surface_counter",
 	"VK_EXT_swapchain_colorspace",
+	"VK_KHR_external_fence_capabilities",
 	"VK_KHR_get_surface_capabilities2",
 	"VK_KHR_get_display_properties2",
 	"VK_EXT_debug_utils",
@@ -835,40 +1206,75 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_swapchain",
 	"VK_KHR_display_swapchain",
 	"VK_EXT_depth_range_unrestricted",
+	"VK_KHR_sampler_mirror_clamp_to_edge",
 	"VK_NV_private_vendor_info",
+	"VK_KHR_multiview",
+	"VK_KHR_device_group",
+	"VK_KHR_shader_draw_parameters",
 	"VK_EXT_texture_compression_astc_hdr",
 	"VK_EXT_astc_decode_mode",
+	"VK_KHR_maintenance1",
+	"VK_KHR_external_memory",
 	"VK_KHR_external_memory_fd",
+	"VK_KHR_external_semaphore",
 	"VK_KHR_external_semaphore_fd",
+	"VK_KHR_shader_float16_int8",
+	"VK_KHR_16bit_storage",
 	"VK_KHR_incremental_present",
+	"VK_KHR_descriptor_update_template",
 	"VK_EXT_display_control",
 	"VK_EXT_discard_rectangles",
 	"VK_EXT_conservative_rasterization",
 	"VK_EXT_depth_clip_enable",
 	"VK_EXT_hdr_metadata",
+	"VK_KHR_imageless_framebuffer",
+	"VK_KHR_create_renderpass2",
 	"VK_KHR_shared_presentable_image",
+	"VK_KHR_external_fence",
 	"VK_KHR_external_fence_fd",
 	"VK_KHR_performance_query",
+	"VK_KHR_maintenance2",
+	"VK_KHR_variable_pointers",
 	"VK_EXT_external_memory_dma_buf",
 	"VK_EXT_queue_family_foreign",
+	"VK_KHR_dedicated_allocation",
+	"VK_KHR_storage_buffer_storage_class",
 	"VK_EXT_shader_stencil_export",
 	"VK_EXT_sample_locations",
+	"VK_KHR_relaxed_block_layout",
+	"VK_KHR_get_memory_requirements2",
+	"VK_KHR_image_format_list",
 	"VK_EXT_blend_operation_advanced",
 	"VK_EXT_post_depth_coverage",
+	"VK_KHR_sampler_ycbcr_conversion",
+	"VK_KHR_bind_memory2",
 	"VK_EXT_image_drm_format_modifier",
+	"VK_KHR_maintenance3",
+	"VK_KHR_draw_indirect_count",
 	"VK_EXT_filter_cubic",
+	"VK_KHR_shader_subgroup_extended_types",
+	"VK_KHR_8bit_storage",
 	"VK_EXT_external_memory_host",
+	"VK_KHR_shader_atomic_int64",
 	"VK_KHR_shader_clock",
 	"VK_KHR_global_priority",
+	"VK_KHR_driver_properties",
+	"VK_KHR_shader_float_controls",
+	"VK_KHR_depth_stencil_resolve",
 	"VK_KHR_swapchain_mutable_format",
+	"VK_KHR_timeline_semaphore",
+	"VK_KHR_vulkan_memory_model",
 	"VK_EXT_pci_bus_info",
 	"VK_KHR_shader_terminate_invocation",
 	"VK_EXT_subgroup_size_control",
 	"VK_KHR_fragment_shading_rate",
 	"VK_EXT_shader_image_atomic_int64",
+	"VK_KHR_spirv_1_4",
 	"VK_EXT_memory_budget",
+	"VK_KHR_separate_depth_stencil_layouts",
 	"VK_EXT_fragment_shader_interlock",
 	"VK_EXT_ycbcr_image_arrays",
+	"VK_KHR_uniform_buffer_standard_layout",
 	"VK_EXT_line_rasterization",
 	"VK_EXT_shader_atomic_float",
 	"VK_EXT_index_type_uint8",

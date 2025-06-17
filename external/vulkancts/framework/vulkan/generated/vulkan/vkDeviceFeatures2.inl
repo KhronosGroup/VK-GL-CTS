@@ -6322,7 +6322,7 @@ tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR (
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR devicePresentModeFifoLatestReadyFeaturesKHR[count];
-    const bool                                            isPresentModeFifoLatestReadyFeaturesKHR = checkExtension(properties, "VK_KHR_present_mode_fifo_latest_ready");
+    const bool                                            isPresentModeFifoLatestReadyFeaturesKHR = checkExtension(properties, "VK_KHR_present_mode_fifo_latest_ready") || checkExtension(properties, "VK_EXT_present_mode_fifo_latest_ready");
 
     if (!isPresentModeFifoLatestReadyFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
@@ -6400,7 +6400,7 @@ tcu::TestStatus testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR (Context& 
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceDepthClampZeroOneFeaturesKHR deviceDepthClampZeroOneFeaturesKHR[count];
-    const bool                                   isDepthClampZeroOneFeaturesKHR = checkExtension(properties, "VK_KHR_depth_clamp_zero_one");
+    const bool                                   isDepthClampZeroOneFeaturesKHR = checkExtension(properties, "VK_KHR_depth_clamp_zero_one") || checkExtension(properties, "VK_EXT_depth_clamp_zero_one");
 
     if (!isDepthClampZeroOneFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
