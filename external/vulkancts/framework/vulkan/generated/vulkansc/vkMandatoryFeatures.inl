@@ -29,7 +29,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	coreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
 	void** nextPtr = &coreFeatures.pNext;
 
-	// VkPhysicalDevice16BitStorageFeatures for []
+	// VkPhysicalDevice16BitStorageFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDevice16BitStorageFeatures physicalDevice16BitStorageFeatures;
 	deMemset(&physicalDevice16BitStorageFeatures, 0, sizeof(physicalDevice16BitStorageFeatures));
@@ -40,7 +40,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevice16BitStorageFeatures.pNext;
 	}
 
-	// VkPhysicalDevice4444FormatsFeaturesEXT for [VK_EXT_4444_formats]
+	// VkPhysicalDevice4444FormatsFeaturesEXT for ext [VK_EXT_4444_formats] in APIs []
 
 	vk::VkPhysicalDevice4444FormatsFeaturesEXT physicalDevice4444FormatsFeaturesEXT;
 	deMemset(&physicalDevice4444FormatsFeaturesEXT, 0, sizeof(physicalDevice4444FormatsFeaturesEXT));
@@ -52,7 +52,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevice4444FormatsFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDevice8BitStorageFeatures for []
+	// VkPhysicalDevice8BitStorageFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDevice8BitStorageFeatures physicalDevice8BitStorageFeatures;
 	deMemset(&physicalDevice8BitStorageFeatures, 0, sizeof(physicalDevice8BitStorageFeatures));
@@ -63,7 +63,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevice8BitStorageFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceBufferDeviceAddressFeatures for []
+	// VkPhysicalDeviceBufferDeviceAddressFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceBufferDeviceAddressFeatures physicalDeviceBufferDeviceAddressFeatures;
 	deMemset(&physicalDeviceBufferDeviceAddressFeatures, 0, sizeof(physicalDeviceBufferDeviceAddressFeatures));
@@ -74,7 +74,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceBufferDeviceAddressFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceColorWriteEnableFeaturesEXT for [VK_EXT_color_write_enable]
+	// VkPhysicalDeviceColorWriteEnableFeaturesEXT for ext [VK_EXT_color_write_enable] in APIs []
 
 	vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT physicalDeviceColorWriteEnableFeaturesEXT;
 	deMemset(&physicalDeviceColorWriteEnableFeaturesEXT, 0, sizeof(physicalDeviceColorWriteEnableFeaturesEXT));
@@ -86,7 +86,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceColorWriteEnableFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceCustomBorderColorFeaturesEXT for [VK_EXT_custom_border_color]
+	// VkPhysicalDeviceCustomBorderColorFeaturesEXT for ext [VK_EXT_custom_border_color] in APIs [vulkan]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT physicalDeviceCustomBorderColorFeaturesEXT;
@@ -100,7 +100,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
-	// VkPhysicalDeviceDepthClipEnableFeaturesEXT for [VK_EXT_depth_clip_enable]
+	// VkPhysicalDeviceDepthClipEnableFeaturesEXT for ext [VK_EXT_depth_clip_enable] in APIs []
 
 	vk::VkPhysicalDeviceDepthClipEnableFeaturesEXT physicalDeviceDepthClipEnableFeaturesEXT;
 	deMemset(&physicalDeviceDepthClipEnableFeaturesEXT, 0, sizeof(physicalDeviceDepthClipEnableFeaturesEXT));
@@ -112,7 +112,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDepthClipEnableFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceDescriptorIndexingFeatures for []
+	// VkPhysicalDeviceDescriptorIndexingFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceDescriptorIndexingFeatures physicalDeviceDescriptorIndexingFeatures;
 	deMemset(&physicalDeviceDescriptorIndexingFeatures, 0, sizeof(physicalDeviceDescriptorIndexingFeatures));
@@ -123,7 +123,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDescriptorIndexingFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceExtendedDynamicState2FeaturesEXT for [VK_EXT_extended_dynamic_state2]
+	// VkPhysicalDeviceExtendedDynamicState2FeaturesEXT for ext [VK_EXT_extended_dynamic_state2] in APIs []
 
 	vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT physicalDeviceExtendedDynamicState2FeaturesEXT;
 	deMemset(&physicalDeviceExtendedDynamicState2FeaturesEXT, 0, sizeof(physicalDeviceExtendedDynamicState2FeaturesEXT));
@@ -135,7 +135,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceExtendedDynamicState2FeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT for [VK_EXT_fragment_shader_interlock]
+	// VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT for ext [VK_EXT_fragment_shader_interlock] in APIs []
 
 	vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT physicalDeviceFragmentShaderInterlockFeaturesEXT;
 	deMemset(&physicalDeviceFragmentShaderInterlockFeaturesEXT, 0, sizeof(physicalDeviceFragmentShaderInterlockFeaturesEXT));
@@ -147,7 +147,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFragmentShaderInterlockFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceFragmentShadingRateFeaturesKHR for [VK_KHR_fragment_shading_rate]
+	// VkPhysicalDeviceFragmentShadingRateFeaturesKHR for ext [VK_KHR_fragment_shading_rate] in APIs [vulkan]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR physicalDeviceFragmentShadingRateFeaturesKHR;
@@ -161,7 +161,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
-	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR for [VK_KHR_global_priority, VK_EXT_global_priority]
+	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR for ext [VK_KHR_global_priority, VK_EXT_global_priority] in APIs []
 
 	vk::VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR physicalDeviceGlobalPriorityQueryFeaturesKHR;
 	deMemset(&physicalDeviceGlobalPriorityQueryFeaturesKHR, 0, sizeof(physicalDeviceGlobalPriorityQueryFeaturesKHR));
@@ -173,7 +173,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceGlobalPriorityQueryFeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceHostQueryResetFeatures for []
+	// VkPhysicalDeviceHostQueryResetFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceHostQueryResetFeatures physicalDeviceHostQueryResetFeatures;
 	deMemset(&physicalDeviceHostQueryResetFeatures, 0, sizeof(physicalDeviceHostQueryResetFeatures));
@@ -184,7 +184,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceHostQueryResetFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceImagelessFramebufferFeatures for []
+	// VkPhysicalDeviceImagelessFramebufferFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceImagelessFramebufferFeatures physicalDeviceImagelessFramebufferFeatures;
 	deMemset(&physicalDeviceImagelessFramebufferFeatures, 0, sizeof(physicalDeviceImagelessFramebufferFeatures));
@@ -195,7 +195,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceImagelessFramebufferFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceIndexTypeUint8FeaturesKHR for [VK_KHR_index_type_uint8, VK_EXT_index_type_uint8]
+	// VkPhysicalDeviceIndexTypeUint8FeaturesKHR for ext [VK_KHR_index_type_uint8, VK_EXT_index_type_uint8] in APIs []
 
 	vk::VkPhysicalDeviceIndexTypeUint8FeaturesKHR physicalDeviceIndexTypeUint8FeaturesKHR;
 	deMemset(&physicalDeviceIndexTypeUint8FeaturesKHR, 0, sizeof(physicalDeviceIndexTypeUint8FeaturesKHR));
@@ -207,7 +207,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceIndexTypeUint8FeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceLineRasterizationFeaturesKHR for [VK_KHR_line_rasterization, VK_EXT_line_rasterization]
+	// VkPhysicalDeviceLineRasterizationFeaturesKHR for ext [VK_KHR_line_rasterization, VK_EXT_line_rasterization] in APIs []
 
 	vk::VkPhysicalDeviceLineRasterizationFeaturesKHR physicalDeviceLineRasterizationFeaturesKHR;
 	deMemset(&physicalDeviceLineRasterizationFeaturesKHR, 0, sizeof(physicalDeviceLineRasterizationFeaturesKHR));
@@ -219,7 +219,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceLineRasterizationFeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceMultiviewFeatures for []
+	// VkPhysicalDeviceMultiviewFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceMultiviewFeatures physicalDeviceMultiviewFeatures;
 	deMemset(&physicalDeviceMultiviewFeatures, 0, sizeof(physicalDeviceMultiviewFeatures));
@@ -230,7 +230,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceMultiviewFeatures.pNext;
 	}
 
-	// VkPhysicalDevicePerformanceQueryFeaturesKHR for [VK_KHR_performance_query]
+	// VkPhysicalDevicePerformanceQueryFeaturesKHR for ext [VK_KHR_performance_query] in APIs []
 
 	vk::VkPhysicalDevicePerformanceQueryFeaturesKHR physicalDevicePerformanceQueryFeaturesKHR;
 	deMemset(&physicalDevicePerformanceQueryFeaturesKHR, 0, sizeof(physicalDevicePerformanceQueryFeaturesKHR));
@@ -242,7 +242,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePerformanceQueryFeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceRobustness2FeaturesKHR for [VK_EXT_robustness2]
+	// VkPhysicalDeviceRobustness2FeaturesKHR for ext [VK_EXT_robustness2] in APIs []
 
 	vk::VkPhysicalDeviceRobustness2FeaturesKHR physicalDeviceRobustness2FeaturesKHR;
 	deMemset(&physicalDeviceRobustness2FeaturesKHR, 0, sizeof(physicalDeviceRobustness2FeaturesKHR));
@@ -254,7 +254,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceRobustness2FeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR for []
+	// VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR for ext [] in APIs []
 
 	vk::VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR physicalDeviceSamplerYcbcrConversionFeaturesKHR;
 	deMemset(&physicalDeviceSamplerYcbcrConversionFeaturesKHR, 0, sizeof(physicalDeviceSamplerYcbcrConversionFeaturesKHR));
@@ -265,7 +265,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSamplerYcbcrConversionFeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceScalarBlockLayoutFeatures for []
+	// VkPhysicalDeviceScalarBlockLayoutFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceScalarBlockLayoutFeatures physicalDeviceScalarBlockLayoutFeatures;
 	deMemset(&physicalDeviceScalarBlockLayoutFeatures, 0, sizeof(physicalDeviceScalarBlockLayoutFeatures));
@@ -276,7 +276,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceScalarBlockLayoutFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures for []
+	// VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures physicalDeviceSeparateDepthStencilLayoutsFeatures;
 	deMemset(&physicalDeviceSeparateDepthStencilLayoutsFeatures, 0, sizeof(physicalDeviceSeparateDepthStencilLayoutsFeatures));
@@ -287,7 +287,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSeparateDepthStencilLayoutsFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceShaderAtomicFloatFeaturesEXT for [VK_EXT_shader_atomic_float]
+	// VkPhysicalDeviceShaderAtomicFloatFeaturesEXT for ext [VK_EXT_shader_atomic_float] in APIs []
 
 	vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT physicalDeviceShaderAtomicFloatFeaturesEXT;
 	deMemset(&physicalDeviceShaderAtomicFloatFeaturesEXT, 0, sizeof(physicalDeviceShaderAtomicFloatFeaturesEXT));
@@ -299,7 +299,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderAtomicFloatFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceShaderAtomicInt64Features for []
+	// VkPhysicalDeviceShaderAtomicInt64Features for ext [] in APIs []
 
 	vk::VkPhysicalDeviceShaderAtomicInt64Features physicalDeviceShaderAtomicInt64Features;
 	deMemset(&physicalDeviceShaderAtomicInt64Features, 0, sizeof(physicalDeviceShaderAtomicInt64Features));
@@ -310,7 +310,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderAtomicInt64Features.pNext;
 	}
 
-	// VkPhysicalDeviceShaderClockFeaturesKHR for [VK_KHR_shader_clock]
+	// VkPhysicalDeviceShaderClockFeaturesKHR for ext [VK_KHR_shader_clock] in APIs []
 
 	vk::VkPhysicalDeviceShaderClockFeaturesKHR physicalDeviceShaderClockFeaturesKHR;
 	deMemset(&physicalDeviceShaderClockFeaturesKHR, 0, sizeof(physicalDeviceShaderClockFeaturesKHR));
@@ -322,7 +322,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderClockFeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT for [VK_EXT_shader_demote_to_helper_invocation]
+	// VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT for ext [VK_EXT_shader_demote_to_helper_invocation] in APIs []
 
 	vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT;
 	deMemset(&physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT, 0, sizeof(physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT));
@@ -334,7 +334,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceShaderFloat16Int8Features for []
+	// VkPhysicalDeviceShaderFloat16Int8Features for ext [] in APIs []
 
 	vk::VkPhysicalDeviceShaderFloat16Int8Features physicalDeviceShaderFloat16Int8Features;
 	deMemset(&physicalDeviceShaderFloat16Int8Features, 0, sizeof(physicalDeviceShaderFloat16Int8Features));
@@ -345,7 +345,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderFloat16Int8Features.pNext;
 	}
 
-	// VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT for [VK_EXT_shader_image_atomic_int64]
+	// VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT for ext [VK_EXT_shader_image_atomic_int64] in APIs []
 
 	vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT physicalDeviceShaderImageAtomicInt64FeaturesEXT;
 	deMemset(&physicalDeviceShaderImageAtomicInt64FeaturesEXT, 0, sizeof(physicalDeviceShaderImageAtomicInt64FeaturesEXT));
@@ -357,7 +357,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderImageAtomicInt64FeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures for []
+	// VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures physicalDeviceShaderSubgroupExtendedTypesFeatures;
 	deMemset(&physicalDeviceShaderSubgroupExtendedTypesFeatures, 0, sizeof(physicalDeviceShaderSubgroupExtendedTypesFeatures));
@@ -368,7 +368,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderSubgroupExtendedTypesFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR for [VK_KHR_shader_terminate_invocation]
+	// VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR for ext [VK_KHR_shader_terminate_invocation] in APIs []
 
 	vk::VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR physicalDeviceShaderTerminateInvocationFeaturesKHR;
 	deMemset(&physicalDeviceShaderTerminateInvocationFeaturesKHR, 0, sizeof(physicalDeviceShaderTerminateInvocationFeaturesKHR));
@@ -380,7 +380,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderTerminateInvocationFeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT for [VK_EXT_subgroup_size_control]
+	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT for ext [VK_EXT_subgroup_size_control] in APIs []
 
 	vk::VkPhysicalDeviceSubgroupSizeControlFeaturesEXT physicalDeviceSubgroupSizeControlFeaturesEXT;
 	deMemset(&physicalDeviceSubgroupSizeControlFeaturesEXT, 0, sizeof(physicalDeviceSubgroupSizeControlFeaturesEXT));
@@ -392,7 +392,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSubgroupSizeControlFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceSynchronization2FeaturesKHR for [VK_KHR_synchronization2]
+	// VkPhysicalDeviceSynchronization2FeaturesKHR for ext [VK_KHR_synchronization2] in APIs []
 
 	vk::VkPhysicalDeviceSynchronization2FeaturesKHR physicalDeviceSynchronization2FeaturesKHR;
 	deMemset(&physicalDeviceSynchronization2FeaturesKHR, 0, sizeof(physicalDeviceSynchronization2FeaturesKHR));
@@ -404,7 +404,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceSynchronization2FeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT for [VK_EXT_texel_buffer_alignment]
+	// VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT for ext [VK_EXT_texel_buffer_alignment] in APIs []
 
 	vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT physicalDeviceTexelBufferAlignmentFeaturesEXT;
 	deMemset(&physicalDeviceTexelBufferAlignmentFeaturesEXT, 0, sizeof(physicalDeviceTexelBufferAlignmentFeaturesEXT));
@@ -416,7 +416,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceTexelBufferAlignmentFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT for [VK_EXT_texture_compression_astc_hdr]
+	// VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT for ext [VK_EXT_texture_compression_astc_hdr] in APIs []
 
 	vk::VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT physicalDeviceTextureCompressionASTCHDRFeaturesEXT;
 	deMemset(&physicalDeviceTextureCompressionASTCHDRFeaturesEXT, 0, sizeof(physicalDeviceTextureCompressionASTCHDRFeaturesEXT));
@@ -428,7 +428,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceTextureCompressionASTCHDRFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceTimelineSemaphoreFeatures for []
+	// VkPhysicalDeviceTimelineSemaphoreFeatures for ext [] in APIs [vulkan]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceTimelineSemaphoreFeatures physicalDeviceTimelineSemaphoreFeatures;
@@ -441,7 +441,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
-	// VkPhysicalDeviceUniformBufferStandardLayoutFeatures for []
+	// VkPhysicalDeviceUniformBufferStandardLayoutFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures physicalDeviceUniformBufferStandardLayoutFeatures;
 	deMemset(&physicalDeviceUniformBufferStandardLayoutFeatures, 0, sizeof(physicalDeviceUniformBufferStandardLayoutFeatures));
@@ -452,7 +452,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceUniformBufferStandardLayoutFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceVariablePointersFeatures for []
+	// VkPhysicalDeviceVariablePointersFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceVariablePointersFeatures physicalDeviceVariablePointersFeatures;
 	deMemset(&physicalDeviceVariablePointersFeatures, 0, sizeof(physicalDeviceVariablePointersFeatures));
@@ -463,7 +463,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVariablePointersFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR for [VK_KHR_vertex_attribute_divisor, VK_EXT_vertex_attribute_divisor]
+	// VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR for ext [VK_KHR_vertex_attribute_divisor, VK_EXT_vertex_attribute_divisor] in APIs []
 
 	vk::VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR physicalDeviceVertexAttributeDivisorFeaturesKHR;
 	deMemset(&physicalDeviceVertexAttributeDivisorFeaturesKHR, 0, sizeof(physicalDeviceVertexAttributeDivisorFeaturesKHR));
@@ -475,7 +475,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVertexAttributeDivisorFeaturesKHR.pNext;
 	}
 
-	// VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT for [VK_EXT_vertex_input_dynamic_state]
+	// VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT for ext [VK_EXT_vertex_input_dynamic_state] in APIs []
 
 	vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT physicalDeviceVertexInputDynamicStateFeaturesEXT;
 	deMemset(&physicalDeviceVertexInputDynamicStateFeaturesEXT, 0, sizeof(physicalDeviceVertexInputDynamicStateFeaturesEXT));
@@ -487,7 +487,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVertexInputDynamicStateFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceVulkan11Features for []
+	// VkPhysicalDeviceVulkan11Features for ext [] in APIs [vulkan]
 
 #if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features;
@@ -500,7 +500,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
-	// VkPhysicalDeviceVulkan12Features for []
+	// VkPhysicalDeviceVulkan12Features for ext [] in APIs []
 
 	vk::VkPhysicalDeviceVulkan12Features physicalDeviceVulkan12Features;
 	deMemset(&physicalDeviceVulkan12Features, 0, sizeof(physicalDeviceVulkan12Features));
@@ -511,7 +511,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVulkan12Features.pNext;
 	}
 
-	// VkPhysicalDeviceVulkanMemoryModelFeatures for []
+	// VkPhysicalDeviceVulkanMemoryModelFeatures for ext [] in APIs []
 
 	vk::VkPhysicalDeviceVulkanMemoryModelFeatures physicalDeviceVulkanMemoryModelFeatures;
 	deMemset(&physicalDeviceVulkanMemoryModelFeatures, 0, sizeof(physicalDeviceVulkanMemoryModelFeatures));
@@ -522,7 +522,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVulkanMemoryModelFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT for [VK_EXT_ycbcr_2plane_444_formats]
+	// VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT for ext [VK_EXT_ycbcr_2plane_444_formats] in APIs []
 
 	vk::VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT physicalDeviceYcbcr2Plane444FormatsFeaturesEXT;
 	deMemset(&physicalDeviceYcbcr2Plane444FormatsFeaturesEXT, 0, sizeof(physicalDeviceYcbcr2Plane444FormatsFeaturesEXT));
@@ -534,7 +534,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceYcbcr2Plane444FormatsFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceYcbcrImageArraysFeaturesEXT for [VK_EXT_ycbcr_image_arrays]
+	// VkPhysicalDeviceYcbcrImageArraysFeaturesEXT for ext [VK_EXT_ycbcr_image_arrays] in APIs []
 
 	vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT physicalDeviceYcbcrImageArraysFeaturesEXT;
 	deMemset(&physicalDeviceYcbcrImageArraysFeaturesEXT, 0, sizeof(physicalDeviceYcbcrImageArraysFeaturesEXT));
@@ -549,6 +549,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);
 	bool result = true;
 
+	// VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD in APIs []
+	// VkPhysicalDeviceExternalFormatResolveFeaturesANDROID in APIs []
+	// VkPhysicalDevice4444FormatsFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_4444_formats")) )
 	{
 		if ( physicalDevice4444FormatsFeaturesEXT.formatA4R4G4B4 == VK_FALSE )
@@ -558,6 +561,10 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceBorderColorSwizzleFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceColorWriteEnableFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_color_write_enable")) )
 	{
 		if ( physicalDeviceColorWriteEnableFeaturesEXT.colorWriteEnable == VK_FALSE )
@@ -567,6 +574,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceConditionalRenderingFeaturesEXT in APIs []
+	// VkPhysicalDeviceCustomBorderColorFeaturesEXT in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_custom_border_color")) )
 	{
@@ -578,6 +587,11 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceDepthBiasControlFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceDepthClampControlFeaturesEXT in APIs []
+	// VkPhysicalDeviceDepthClampZeroOneFeaturesEXT in APIs []
+	// VkPhysicalDeviceDepthClipControlFeaturesEXT in APIs []
+	// VkPhysicalDeviceDepthClipEnableFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_depth_clip_enable")) )
 	{
 		if ( physicalDeviceDepthClipEnableFeaturesEXT.depthClipEnable == VK_FALSE )
@@ -587,6 +601,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorBufferFeaturesEXT in APIs []
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -596,6 +612,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -605,6 +622,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing == VK_FALSE )
@@ -614,6 +632,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing == VK_FALSE )
@@ -623,6 +642,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing == VK_FALSE )
@@ -632,6 +652,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE )
@@ -641,6 +662,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind == VK_FALSE )
@@ -650,6 +672,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind == VK_FALSE )
@@ -659,6 +682,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind == VK_FALSE )
@@ -668,6 +692,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind == VK_FALSE )
@@ -677,6 +702,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending == VK_FALSE )
@@ -686,6 +712,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingPartiallyBound == VK_FALSE )
@@ -695,6 +722,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.runtimeDescriptorArray == VK_FALSE )
@@ -704,6 +732,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderUniformTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -713,6 +742,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderStorageTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -722,6 +752,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderSampledImageArrayNonUniformIndexing == VK_FALSE )
@@ -731,6 +762,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderStorageBufferArrayNonUniformIndexing == VK_FALSE )
@@ -740,6 +772,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.shaderUniformTexelBufferArrayNonUniformIndexing == VK_FALSE )
@@ -749,6 +782,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE )
@@ -758,6 +792,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingStorageImageUpdateAfterBind == VK_FALSE )
@@ -767,6 +802,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingStorageBufferUpdateAfterBind == VK_FALSE )
@@ -776,6 +812,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingUniformTexelBufferUpdateAfterBind == VK_FALSE )
@@ -785,6 +822,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingStorageTexelBufferUpdateAfterBind == VK_FALSE )
@@ -794,6 +832,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingUpdateUnusedWhilePending == VK_FALSE )
@@ -803,6 +842,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.descriptorBindingPartiallyBound == VK_FALSE )
@@ -812,6 +852,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceDescriptorIndexingFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceDescriptorIndexingFeatures.runtimeDescriptorArray == VK_FALSE )
@@ -821,6 +862,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
@@ -830,6 +872,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_descriptor_indexing")) )
 	{
 		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
@@ -839,6 +882,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
@@ -848,6 +892,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
@@ -857,6 +902,10 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceAddressBindingReportFeaturesEXT in APIs []
+	// VkPhysicalDeviceFaultFeaturesEXT in APIs []
+	// VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT in APIs []
+	// VkPhysicalDeviceExtendedDynamicState2FeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_extended_dynamic_state2")) )
 	{
 		if ( physicalDeviceExtendedDynamicState2FeaturesEXT.extendedDynamicState2 == VK_FALSE )
@@ -866,6 +915,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceCoverageReductionModeFeaturesNV in APIs [vulkan]
+	// VkPhysicalDeviceDepthClipControlFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3TessellationDomainOrigin )
 	{
@@ -877,6 +929,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3DepthClampEnable )
 	{
@@ -888,6 +941,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3PolygonMode )
 	{
@@ -899,6 +953,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3AlphaToOneEnable )
 	{
@@ -910,6 +965,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceExtendedDynamicState3FeaturesEXT.extendedDynamicState3LogicOpEnable )
 	{
@@ -921,6 +977,12 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceProvokingVertexFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV in APIs [vulkan]
+	// VkPhysicalDeviceShadingRateImageFeaturesNV in APIs [vulkan]
+	// VkPhysicalDeviceTransformFeedbackFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceFragmentDensityMapFeaturesEXT in APIs []
+	// VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_shader_interlock")) )
 	{
 		if ( ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderSampleInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderPixelInterlock == VK_FALSE ) && ( physicalDeviceFragmentShaderInterlockFeaturesEXT.fragmentShaderShadingRateInterlock == VK_FALSE ) )
@@ -930,6 +992,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFrameBoundaryFeaturesEXT in APIs []
+	// VkPhysicalDeviceHostQueryResetFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_host_query_reset")) )
 	{
 		if ( physicalDeviceHostQueryResetFeatures.hostQueryReset == VK_FALSE )
@@ -939,6 +1003,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceImage2DViewOf3DFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceImageCompressionControlFeaturesEXT in APIs []
+	// VkPhysicalDeviceImageCompressionControlSwapchainFeaturesEXT in APIs []
+	// VkPhysicalDeviceImageSlicedViewOf3DFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceInlineUniformBlockFeaturesEXT in APIs []
+	// VkPhysicalDeviceInlineUniformBlockFeaturesEXT in APIs []
+	// VkPhysicalDeviceLegacyDitheringFeaturesEXT in APIs []
+	// VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT in APIs []
+	// VkPhysicalDeviceMemoryPriorityFeaturesEXT in APIs []
+	// VkPhysicalDeviceFragmentShadingRateFeaturesKHR in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader )
 	{
@@ -950,6 +1024,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceMeshShaderFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceMeshShaderFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceMultiDrawFeaturesEXT in APIs []
+	// VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT in APIs []
+	// VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT in APIs []
+	// VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceOpacityMicromapFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT in APIs []
+	// VkPhysicalDevicePipelineProtectedAccessFeaturesEXT in APIs []
+	// VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceScalarBlockLayoutFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_scalar_block_layout")) )
 	{
 		if ( physicalDeviceScalarBlockLayoutFeatures.scalarBlockLayout == VK_FALSE )
@@ -959,6 +1045,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderAtomicFloatFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float")) && physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32Atomics )
 	{
 		if ( physicalDeviceShaderAtomicFloatFeaturesEXT.shaderImageFloat32Atomics == VK_FALSE )
@@ -968,6 +1055,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderAtomicFloatFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_atomic_float")) && physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32AtomicAdd )
 	{
 		if ( physicalDeviceShaderAtomicFloatFeaturesEXT.shaderImageFloat32AtomicAdd == VK_FALSE )
@@ -977,6 +1065,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT in APIs [vulkan]
+	// VkPhysicalDeviceShaderDemoteToHelperInvocationFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_demote_to_helper_invocation")) )
 	{
 		if ( physicalDeviceShaderDemoteToHelperInvocationFeaturesEXT.shaderDemoteToHelperInvocation == VK_FALSE )
@@ -986,6 +1076,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) )
 	{
 		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
@@ -995,6 +1086,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) )
 	{
 		if ( physicalDeviceShaderImageAtomicInt64FeaturesEXT.shaderImageInt64Atomics == VK_FALSE )
@@ -1004,6 +1096,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_image_atomic_int64")) && physicalDeviceShaderImageAtomicInt64FeaturesEXT.sparseImageInt64Atomics )
 	{
 		if ( physicalDeviceShaderImageAtomicInt64FeaturesEXT.shaderImageInt64Atomics == VK_FALSE )
@@ -1013,6 +1106,10 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT in APIs []
+	// VkPhysicalDeviceShaderObjectFeaturesEXT in APIs []
+	// VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT in APIs []
+	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeaturesEXT.subgroupSizeControl == VK_FALSE )
@@ -1022,6 +1119,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceSubgroupSizeControlFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_subgroup_size_control")) )
 	{
 		if ( physicalDeviceSubgroupSizeControlFeaturesEXT.computeFullSubgroups == VK_FALSE )
@@ -1031,6 +1129,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT in APIs []
+	// VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT in APIs []
+	// VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_texel_buffer_alignment")) )
 	{
 		if ( physicalDeviceTexelBufferAlignmentFeaturesEXT.texelBufferAlignment == VK_FALSE )
@@ -1040,6 +1141,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_texture_compression_astc_hdr")) )
 	{
 		if ( physicalDeviceTextureCompressionASTCHDRFeaturesEXT.textureCompressionASTC_HDR == VK_FALSE )
@@ -1049,6 +1151,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceTransformFeedbackFeaturesEXT in APIs []
+	// VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_input_dynamic_state")) )
 	{
 		if ( physicalDeviceVertexInputDynamicStateFeaturesEXT.vertexInputDynamicState == VK_FALSE )
@@ -1058,6 +1162,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_ycbcr_2plane_444_formats")) )
 	{
 		if ( physicalDeviceYcbcr2Plane444FormatsFeaturesEXT.ycbcr2plane444Formats == VK_FALSE )
@@ -1067,6 +1172,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceYcbcrImageArraysFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_ycbcr_image_arrays")) )
 	{
 		if ( physicalDeviceYcbcrImageArraysFeaturesEXT.ycbcrImageArrays == VK_FALSE )
@@ -1076,6 +1182,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT in APIs []
+	// VkPhysicalDevice16BitStorageFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_16bit_storage")) )
 	{
 		if ( physicalDevice16BitStorageFeatures.storageBuffer16BitAccess == VK_FALSE )
@@ -1085,6 +1193,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDevice8BitStorageFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_8bit_storage")) )
 	{
 		if ( physicalDevice8BitStorageFeatures.storageBuffer8BitAccess == VK_FALSE )
@@ -1094,6 +1203,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceAccelerationStructureFeaturesKHR in APIs []
+	// VkPhysicalDeviceAccelerationStructureFeaturesKHR in APIs []
+	// VkPhysicalDeviceBufferDeviceAddressFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_buffer_device_address")) )
 	{
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
@@ -1103,6 +1215,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceBufferDeviceAddressFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
@@ -1112,6 +1225,11 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR in APIs []
+	// VkPhysicalDeviceDepthClampZeroOneFeaturesKHR in APIs []
+	// VkPhysicalDeviceDepthClampZeroOneFeaturesKHR in APIs []
+	// VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR in APIs []
+	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
 	{
 		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
@@ -1121,6 +1239,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
 	{
 		if ( physicalDeviceGlobalPriorityQueryFeaturesKHR.globalPriorityQuery == VK_FALSE )
@@ -1130,6 +1249,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceImagelessFramebufferFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_imageless_framebuffer")) )
 	{
 		if ( physicalDeviceImagelessFramebufferFeatures.imagelessFramebuffer == VK_FALSE )
@@ -1139,6 +1259,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceIndexTypeUint8FeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_index_type_uint8")) )
 	{
 		if ( physicalDeviceIndexTypeUint8FeaturesKHR.indexTypeUint8 == VK_FALSE )
@@ -1148,6 +1269,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceIndexTypeUint8FeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_index_type_uint8")) )
 	{
 		if ( physicalDeviceIndexTypeUint8FeaturesKHR.indexTypeUint8 == VK_FALSE )
@@ -1157,6 +1279,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceLineRasterizationFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_line_rasterization")) )
 	{
 		if ( ( physicalDeviceLineRasterizationFeaturesKHR.rectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.bresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.smoothLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledSmoothLines == VK_FALSE ) )
@@ -1166,6 +1289,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceLineRasterizationFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_line_rasterization")) )
 	{
 		if ( ( physicalDeviceLineRasterizationFeaturesKHR.rectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.bresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.smoothLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledRectangularLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledBresenhamLines == VK_FALSE ) && ( physicalDeviceLineRasterizationFeaturesKHR.stippledSmoothLines == VK_FALSE ) )
@@ -1175,6 +1299,11 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceMaintenance5FeaturesKHR in APIs []
+	// VkPhysicalDeviceMaintenance6FeaturesKHR in APIs []
+	// VkPhysicalDeviceMaintenance7FeaturesKHR in APIs []
+	// VkPhysicalDeviceMaintenance8FeaturesKHR in APIs []
+	// VkPhysicalDeviceMultiviewFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_multiview")) )
 	{
 		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
@@ -1184,6 +1313,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDevicePerformanceQueryFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_performance_query")) )
 	{
 		if ( physicalDevicePerformanceQueryFeaturesKHR.performanceCounterQueryPools == VK_FALSE )
@@ -1193,6 +1323,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR in APIs []
+	// VkPhysicalDevicePresentIdFeaturesKHR in APIs [vulkan]
+	// VkPhysicalDevicePresentWaitFeaturesKHR in APIs [vulkan]
+	// VkPhysicalDeviceRayQueryFeaturesKHR in APIs []
+	// VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR in APIs []
+	// VkPhysicalDeviceRayTracingPipelineFeaturesKHR in APIs []
+	// VkPhysicalDeviceRayTracingPipelineFeaturesKHR in APIs []
+	// VkPhysicalDeviceRayTracingPipelineFeaturesKHR in APIs []
+	// VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR in APIs []
+	// VkPhysicalDeviceRobustness2FeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_robustness2")) )
 	{
 		if ( ( physicalDeviceRobustness2FeaturesKHR.robustBufferAccess2 == VK_FALSE ) && ( physicalDeviceRobustness2FeaturesKHR.robustImageAccess2 == VK_FALSE ) && ( physicalDeviceRobustness2FeaturesKHR.nullDescriptor == VK_FALSE ) )
@@ -1202,6 +1342,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceSamplerYcbcrConversionFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_sampler_ycbcr_conversion")) )
 	{
 		if ( physicalDeviceSamplerYcbcrConversionFeaturesKHR.samplerYcbcrConversion == VK_FALSE )
@@ -1211,6 +1352,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_separate_depth_stencil_layouts")) )
 	{
 		if ( physicalDeviceSeparateDepthStencilLayoutsFeatures.separateDepthStencilLayouts == VK_FALSE )
@@ -1220,6 +1362,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderAtomicInt64Features in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_atomic_int64")) )
 	{
 		if ( physicalDeviceShaderAtomicInt64Features.shaderBufferInt64Atomics == VK_FALSE )
@@ -1229,6 +1372,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderClockFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_clock")) )
 	{
 		if ( physicalDeviceShaderClockFeaturesKHR.shaderSubgroupClock == VK_FALSE )
@@ -1238,6 +1382,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderExpectAssumeFeaturesKHR in APIs [vulkan]
+	// VkPhysicalDeviceShaderFloat16Int8Features in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_float16_int8")) )
 	{
 		if ( ( physicalDeviceShaderFloat16Int8Features.shaderFloat16 == VK_FALSE ) && ( physicalDeviceShaderFloat16Int8Features.shaderInt8 == VK_FALSE ) )
@@ -1247,6 +1393,12 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderFloatControls2FeaturesKHR in APIs []
+	// VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR in APIs [vulkan]
+	// VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR in APIs []
+	// VkPhysicalDeviceShaderQuadControlFeaturesKHR in APIs []
+	// VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR in APIs []
+	// VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_subgroup_extended_types")) )
 	{
 		if ( physicalDeviceShaderSubgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes == VK_FALSE )
@@ -1256,6 +1408,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR in APIs []
+	// VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR in APIs []
+	// VkPhysicalDeviceShaderTerminateInvocationFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_terminate_invocation")) )
 	{
 		if ( physicalDeviceShaderTerminateInvocationFeaturesKHR.shaderTerminateInvocation == VK_FALSE )
@@ -1265,6 +1420,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceSynchronization2FeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_synchronization2")) )
 	{
 		if ( physicalDeviceSynchronization2FeaturesKHR.synchronization2 == VK_FALSE )
@@ -1274,6 +1430,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceTimelineSemaphoreFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_timeline_semaphore")) )
 	{
@@ -1285,6 +1442,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceUniformBufferStandardLayoutFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_uniform_buffer_standard_layout")) )
 	{
 		if ( physicalDeviceUniformBufferStandardLayoutFeatures.uniformBufferStandardLayout == VK_FALSE )
@@ -1294,6 +1452,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVariablePointersFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_variable_pointers")) )
 	{
 		if ( physicalDeviceVariablePointersFeatures.variablePointersStorageBuffer == VK_FALSE )
@@ -1303,6 +1462,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_vertex_attribute_divisor")) )
 	{
 		if ( physicalDeviceVertexAttributeDivisorFeaturesKHR.vertexAttributeInstanceRateDivisor == VK_FALSE )
@@ -1312,6 +1472,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_vertex_attribute_divisor")) )
 	{
 		if ( physicalDeviceVertexAttributeDivisorFeaturesKHR.vertexAttributeInstanceRateDivisor == VK_FALSE )
@@ -1321,6 +1482,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkanMemoryModelFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_vulkan_memory_model")) )
 	{
 		if ( physicalDeviceVulkanMemoryModelFeatures.vulkanMemoryModel == VK_FALSE )
@@ -1330,6 +1492,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR in APIs []
+	// VkPhysicalDeviceZeroInitializeWorkgroupMemoryFeaturesKHR in APIs []
+	// VkPhysicalDeviceCooperativeMatrix2FeaturesNV in APIs [vulkan]
+	// VkPhysicalDeviceCooperativeVectorFeaturesNV in APIs [vulkan]
+	// VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV in APIs [vulkan]
+	// VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV in APIs [vulkan]
+	// VkPhysicalDeviceRawAccessChainsFeaturesNV in APIs []
+	// VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV in APIs []
+	// VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE in APIs []
+	// VkPhysicalDeviceFeatures in APIs []
 	{
 		if ( coreFeatures.features.robustBufferAccess == VK_FALSE )
 		{
@@ -1338,6 +1510,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( physicalDeviceShaderAtomicInt64Features.shaderBufferInt64Atomics )
 	{
 		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
@@ -1347,6 +1520,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( physicalDeviceVulkan12Features.shaderBufferInt64Atomics )
 	{
 		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
@@ -1356,6 +1530,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( physicalDeviceShaderAtomicInt64Features.shaderSharedInt64Atomics )
 	{
 		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
@@ -1365,6 +1540,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( physicalDeviceVulkan12Features.shaderSharedInt64Atomics )
 	{
 		if ( coreFeatures.features.shaderInt64 == VK_FALSE )
@@ -1374,6 +1550,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceMultiviewFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) )
 	{
@@ -1385,6 +1562,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( coreFeatures.features.shaderSampledImageArrayDynamicIndexing == VK_FALSE )
@@ -1394,6 +1572,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceFeatures in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( coreFeatures.features.shaderStorageBufferArrayDynamicIndexing == VK_FALSE )
@@ -1403,6 +1582,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.subgroupBroadcastDynamicId == VK_FALSE )
@@ -1412,6 +1592,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderSubgroupExtendedTypes == VK_FALSE )
@@ -1421,6 +1602,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.imagelessFramebuffer == VK_FALSE )
@@ -1430,6 +1612,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.uniformBufferStandardLayout == VK_FALSE )
@@ -1439,6 +1622,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.separateDepthStencilLayouts == VK_FALSE )
@@ -1448,6 +1632,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
 		if ( physicalDeviceVulkan12Features.hostQueryReset == VK_FALSE )
@@ -1457,6 +1642,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
 	{
@@ -1468,6 +1654,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.shaderUniformTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -1477,6 +1664,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.shaderStorageTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -1486,6 +1674,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing == VK_FALSE )
@@ -1495,6 +1684,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.shaderStorageBufferArrayNonUniformIndexing == VK_FALSE )
@@ -1504,6 +1694,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.shaderUniformTexelBufferArrayNonUniformIndexing == VK_FALSE )
@@ -1513,6 +1704,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE )
@@ -1522,6 +1714,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingStorageImageUpdateAfterBind == VK_FALSE )
@@ -1531,6 +1724,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingStorageBufferUpdateAfterBind == VK_FALSE )
@@ -1540,6 +1734,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingUniformTexelBufferUpdateAfterBind == VK_FALSE )
@@ -1549,6 +1744,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingStorageTexelBufferUpdateAfterBind == VK_FALSE )
@@ -1558,6 +1754,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingUpdateUnusedWhilePending == VK_FALSE )
@@ -1567,6 +1764,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingPartiallyBound == VK_FALSE )
@@ -1576,6 +1774,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceVulkan12Features.descriptorIndexing )
 	{
 		if ( physicalDeviceVulkan12Features.runtimeDescriptorArray == VK_FALSE )
@@ -1585,6 +1784,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && physicalDeviceShaderAtomicInt64Features.shaderBufferInt64Atomics )
 	{
 		if ( physicalDeviceVulkan12Features.shaderBufferInt64Atomics == VK_FALSE )
@@ -1594,6 +1794,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_draw_indirect_count")) )
 	{
 		if ( physicalDeviceVulkan12Features.drawIndirectCount == VK_FALSE )
@@ -1603,6 +1804,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_sampler_mirror_clamp_to_edge")) )
 	{
 		if ( physicalDeviceVulkan12Features.samplerMirrorClampToEdge == VK_FALSE )
@@ -1612,6 +1814,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_sampler_filter_minmax")) )
 	{
 		if ( physicalDeviceVulkan12Features.samplerFilterMinmax == VK_FALSE )
@@ -1621,6 +1824,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_viewport_index_layer")) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderOutputViewportIndex == VK_FALSE )
@@ -1630,6 +1834,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_viewport_index_layer")) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderOutputLayer == VK_FALSE )
@@ -1639,6 +1844,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderUniformTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -1648,6 +1854,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderStorageTexelBufferArrayDynamicIndexing == VK_FALSE )
@@ -1657,6 +1864,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderSampledImageArrayNonUniformIndexing == VK_FALSE )
@@ -1666,6 +1874,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderStorageBufferArrayNonUniformIndexing == VK_FALSE )
@@ -1675,6 +1884,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.shaderUniformTexelBufferArrayNonUniformIndexing == VK_FALSE )
@@ -1684,6 +1894,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingSampledImageUpdateAfterBind == VK_FALSE )
@@ -1693,6 +1904,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingStorageImageUpdateAfterBind == VK_FALSE )
@@ -1702,6 +1914,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingStorageBufferUpdateAfterBind == VK_FALSE )
@@ -1711,6 +1924,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingUniformTexelBufferUpdateAfterBind == VK_FALSE )
@@ -1720,6 +1934,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingStorageTexelBufferUpdateAfterBind == VK_FALSE )
@@ -1729,6 +1944,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingUpdateUnusedWhilePending == VK_FALSE )
@@ -1738,6 +1954,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.descriptorBindingPartiallyBound == VK_FALSE )
@@ -1747,6 +1964,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.runtimeDescriptorArray == VK_FALSE )
@@ -1756,6 +1974,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs []
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceVulkan12Features.bufferDeviceAddress == VK_FALSE )
@@ -1765,6 +1984,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 3, 0)) )
 	{
@@ -1776,6 +1996,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkansc]
 #if defined(CTS_USES_VULKANSC)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 3, 0)) )
 	{
@@ -1787,6 +2008,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKANSC)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 3, 0)) )
 	{
@@ -1798,6 +2020,21 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan13Features in APIs [vulkan]
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1809,6 +2046,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1820,6 +2058,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1831,6 +2070,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1842,6 +2082,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1853,6 +2094,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1864,6 +2106,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1875,6 +2118,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1886,6 +2130,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1897,6 +2142,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1908,6 +2154,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1919,6 +2166,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1930,6 +2178,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1941,6 +2190,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1952,6 +2202,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1963,6 +2214,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1974,6 +2226,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceFeatures in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1985,6 +2238,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan11Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -1996,6 +2250,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan11Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2007,6 +2262,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan11Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2018,6 +2274,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan11Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2029,6 +2286,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2040,6 +2298,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2051,6 +2310,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2062,6 +2322,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2073,6 +2334,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2084,6 +2346,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan12Features in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
 	{
@@ -2095,6 +2358,20 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
+	// VkPhysicalDeviceVulkan14Features in APIs [vulkan]
 	// VK_EXT_conservative_rasterization
 
 #if defined(CTS_USES_VULKAN)

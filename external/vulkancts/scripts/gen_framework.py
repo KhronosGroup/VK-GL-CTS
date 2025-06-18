@@ -2639,7 +2639,7 @@ def writeSupportedExtensions(api, filename):
         for version in map:
             result.append("    if (coreVersion >= " + str(version) + ")")
             result.append("    {")
-            for extension in map[version]:
+            for extension in sorted(map[version], key=lambda e: e.name):
                 result.append('        dst.push_back("' + extension.name + '");')
             result.append("    }")
 
@@ -3947,13 +3947,15 @@ def writeMandatoryFeatures(api, filename):
     varVariants = {} # Some variables are going to be declared only for specific variants.
 
     for structName, extensions in apiStructs:
-        stream.append('\t// ' + structName + ' for [' + ', '.join(extensions) + ']\n')
+        mandatoryVariantList = []
+        if structName in dictStructs:
+            mandatoryVariantList = dictStructs[structName][1]
+        stream.append('\t// ' + structName + ' for ext [' + ', '.join(extensions) + '] in APIs [' + ', '.join(mandatoryVariantList) + ']\n')
         # The variable name will be the structure name without the Vk prefix and starting in lowercase.
         newVar = structName[2].lower() + structName[3:]
 
         metaCondition = ''
         if structName in dictStructs:
-            mandatoryVariantList = dictStructs[structName][1]
             if len(mandatoryVariantList) > 0:
                 mandatoryVariant = mandatoryVariantList[0]
                 metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
@@ -3998,6 +4000,7 @@ def writeMandatoryFeatures(api, filename):
                    ''])
 
     for v in dictData:
+        stream.append('\t// ' + v[0] + ' in APIs [' + ', '.join(v[3]) + ']')
         if not structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
             continue
         structType = v[0]
