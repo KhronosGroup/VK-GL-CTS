@@ -4,416 +4,29 @@
  */
 
 
-PFN_vkVoidFunction DeviceDriver::getDeviceProcAddr (VkDevice device, const char* pName) const
+VkResult DeviceDriver::acquireFullScreenExclusiveModeEXT (VkDevice device, VkSwapchainKHR swapchain) const
 {
-    return m_vk.getDeviceProcAddr(device, pName);
+    return m_vk.acquireFullScreenExclusiveModeEXT(device, swapchain);
 }
 
-void DeviceDriver::destroyDevice (VkDevice device, const VkAllocationCallbacks* pAllocator) const
+VkResult DeviceDriver::acquireNextImage2KHR (VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex) const
 {
-    m_vk.destroyDevice(device, pAllocator);
+    return m_vk.acquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
 }
 
-void DeviceDriver::getDeviceQueue (VkDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, VkQueue* pQueue) const
+VkResult DeviceDriver::acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const
 {
-    m_vk.getDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);
+    return m_vk.acquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
 }
 
-VkResult DeviceDriver::queueSubmit (VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) const
+VkResult DeviceDriver::acquirePerformanceConfigurationINTEL (VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration) const
 {
-    return m_vk.queueSubmit(queue, submitCount, pSubmits, fence);
+    return m_vk.acquirePerformanceConfigurationINTEL(device, pAcquireInfo, pConfiguration);
 }
 
-VkResult DeviceDriver::queueWaitIdle (VkQueue queue) const
+VkResult DeviceDriver::acquireProfilingLockKHR (VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const
 {
-    return m_vk.queueWaitIdle(queue);
-}
-
-VkResult DeviceDriver::deviceWaitIdle (VkDevice device) const
-{
-    return m_vk.deviceWaitIdle(device);
-}
-
-VkResult DeviceDriver::allocateMemory (VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory) const
-{
-    return m_vk.allocateMemory(device, pAllocateInfo, pAllocator, pMemory);
-}
-
-void DeviceDriver::freeMemory (VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.freeMemory(device, memory, pAllocator);
-}
-
-VkResult DeviceDriver::mapMemory (VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) const
-{
-    return m_vk.mapMemory(device, memory, offset, size, flags, ppData);
-}
-
-void DeviceDriver::unmapMemory (VkDevice device, VkDeviceMemory memory) const
-{
-    m_vk.unmapMemory(device, memory);
-}
-
-VkResult DeviceDriver::flushMappedMemoryRanges (VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges) const
-{
-    return m_vk.flushMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
-}
-
-VkResult DeviceDriver::invalidateMappedMemoryRanges (VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges) const
-{
-    return m_vk.invalidateMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
-}
-
-void DeviceDriver::getDeviceMemoryCommitment (VkDevice device, VkDeviceMemory memory, VkDeviceSize* pCommittedMemoryInBytes) const
-{
-    m_vk.getDeviceMemoryCommitment(device, memory, pCommittedMemoryInBytes);
-}
-
-void DeviceDriver::getBufferMemoryRequirements (VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements) const
-{
-    m_vk.getBufferMemoryRequirements(device, buffer, pMemoryRequirements);
-}
-
-VkResult DeviceDriver::bindBufferMemory (VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) const
-{
-    return m_vk.bindBufferMemory(device, buffer, memory, memoryOffset);
-}
-
-void DeviceDriver::getImageMemoryRequirements (VkDevice device, VkImage image, VkMemoryRequirements* pMemoryRequirements) const
-{
-    m_vk.getImageMemoryRequirements(device, image, pMemoryRequirements);
-}
-
-VkResult DeviceDriver::bindImageMemory (VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) const
-{
-    return m_vk.bindImageMemory(device, image, memory, memoryOffset);
-}
-
-void DeviceDriver::getImageSparseMemoryRequirements (VkDevice device, VkImage image, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements) const
-{
-    m_vk.getImageSparseMemoryRequirements(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
-}
-
-VkResult DeviceDriver::queueBindSparse (VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence) const
-{
-    return m_vk.queueBindSparse(queue, bindInfoCount, pBindInfo, fence);
-}
-
-VkResult DeviceDriver::createFence (VkDevice device, const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const
-{
-    return m_vk.createFence(device, pCreateInfo, pAllocator, pFence);
-}
-
-void DeviceDriver::destroyFence (VkDevice device, VkFence fence, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyFence(device, fence, pAllocator);
-}
-
-VkResult DeviceDriver::resetFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences) const
-{
-    return m_vk.resetFences(device, fenceCount, pFences);
-}
-
-VkResult DeviceDriver::getFenceStatus (VkDevice device, VkFence fence) const
-{
-    return m_vk.getFenceStatus(device, fence);
-}
-
-VkResult DeviceDriver::waitForFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout) const
-{
-    return m_vk.waitForFences(device, fenceCount, pFences, waitAll, timeout);
-}
-
-VkResult DeviceDriver::createSemaphore (VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore) const
-{
-    return m_vk.createSemaphore(device, pCreateInfo, pAllocator, pSemaphore);
-}
-
-void DeviceDriver::destroySemaphore (VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroySemaphore(device, semaphore, pAllocator);
-}
-
-VkResult DeviceDriver::createEvent (VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent) const
-{
-    return m_vk.createEvent(device, pCreateInfo, pAllocator, pEvent);
-}
-
-void DeviceDriver::destroyEvent (VkDevice device, VkEvent event, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyEvent(device, event, pAllocator);
-}
-
-VkResult DeviceDriver::getEventStatus (VkDevice device, VkEvent event) const
-{
-    return m_vk.getEventStatus(device, event);
-}
-
-VkResult DeviceDriver::setEvent (VkDevice device, VkEvent event) const
-{
-    return m_vk.setEvent(device, event);
-}
-
-VkResult DeviceDriver::resetEvent (VkDevice device, VkEvent event) const
-{
-    return m_vk.resetEvent(device, event);
-}
-
-VkResult DeviceDriver::createQueryPool (VkDevice device, const VkQueryPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkQueryPool* pQueryPool) const
-{
-    return m_vk.createQueryPool(device, pCreateInfo, pAllocator, pQueryPool);
-}
-
-void DeviceDriver::destroyQueryPool (VkDevice device, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyQueryPool(device, queryPool, pAllocator);
-}
-
-VkResult DeviceDriver::getQueryPoolResults (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) const
-{
-    return m_vk.getQueryPoolResults(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags);
-}
-
-void DeviceDriver::resetQueryPool (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const
-{
-    m_vk.resetQueryPool(device, queryPool, firstQuery, queryCount);
-}
-
-VkResult DeviceDriver::createBuffer (VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) const
-{
-	if( m_computeOnlyMode )
-	{
-		if ((pCreateInfo->usage & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT )) !=0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-	}
-    return m_vk.createBuffer(device, pCreateInfo, pAllocator, pBuffer);
-}
-
-void DeviceDriver::destroyBuffer (VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyBuffer(device, buffer, pAllocator);
-}
-
-VkResult DeviceDriver::createBufferView (VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView) const
-{
-    return m_vk.createBufferView(device, pCreateInfo, pAllocator, pView);
-}
-
-void DeviceDriver::destroyBufferView (VkDevice device, VkBufferView bufferView, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyBufferView(device, bufferView, pAllocator);
-}
-
-VkResult DeviceDriver::createImage (VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) const
-{
-    return m_vk.createImage(device, pCreateInfo, pAllocator, pImage);
-}
-
-void DeviceDriver::destroyImage (VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyImage(device, image, pAllocator);
-}
-
-void DeviceDriver::getImageSubresourceLayout (VkDevice device, VkImage image, const VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout) const
-{
-    m_vk.getImageSubresourceLayout(device, image, pSubresource, pLayout);
-}
-
-VkResult DeviceDriver::createImageView (VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView) const
-{
-    return m_vk.createImageView(device, pCreateInfo, pAllocator, pView);
-}
-
-void DeviceDriver::destroyImageView (VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyImageView(device, imageView, pAllocator);
-}
-
-VkResult DeviceDriver::createShaderModule (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule) const
-{
-    return m_vk.createShaderModule(device, pCreateInfo, pAllocator, pShaderModule);
-}
-
-void DeviceDriver::destroyShaderModule (VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyShaderModule(device, shaderModule, pAllocator);
-}
-
-VkResult DeviceDriver::createPipelineCache (VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineCache* pPipelineCache) const
-{
-    return m_vk.createPipelineCache(device, pCreateInfo, pAllocator, pPipelineCache);
-}
-
-void DeviceDriver::destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyPipelineCache(device, pipelineCache, pAllocator);
-}
-
-VkResult DeviceDriver::getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData) const
-{
-    return m_vk.getPipelineCacheData(device, pipelineCache, pDataSize, pData);
-}
-
-VkResult DeviceDriver::mergePipelineCaches (VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches) const
-{
-    return m_vk.mergePipelineCaches(device, dstCache, srcCacheCount, pSrcCaches);
-}
-
-VkResult DeviceDriver::createPipelineBinariesKHR (VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries) const
-{
-    return m_vk.createPipelineBinariesKHR(device, pCreateInfo, pAllocator, pBinaries);
-}
-
-void DeviceDriver::destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyPipelineBinaryKHR(device, pipelineBinary, pAllocator);
-}
-
-VkResult DeviceDriver::getPipelineKeyKHR (VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey) const
-{
-    return m_vk.getPipelineKeyKHR(device, pPipelineCreateInfo, pPipelineKey);
-}
-
-VkResult DeviceDriver::getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const
-{
-    return m_vk.getPipelineBinaryDataKHR(device, pInfo, pPipelineBinaryKey, pPipelineBinaryDataSize, pPipelineBinaryData);
-}
-
-VkResult DeviceDriver::releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const
-{
-    return m_vk.releaseCapturedPipelineDataKHR(device, pInfo, pAllocator);
-}
-
-VkResult DeviceDriver::createGraphicsPipelines (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    return m_vk.createGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
-}
-
-VkResult DeviceDriver::createComputePipelines (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
-{
-	if( m_computeOnlyMode )
-	{
-		for (uint32_t i=0; i<createInfoCount; ++i)
-			if ((pCreateInfos[i].stage.stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-	}
-    return m_vk.createComputePipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
-}
-
-VkResult DeviceDriver::getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI (VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const
-{
-    return m_vk.getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(device, renderpass, pMaxWorkgroupSize);
-}
-
-void DeviceDriver::destroyPipeline (VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyPipeline(device, pipeline, pAllocator);
-}
-
-VkResult DeviceDriver::createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout) const
-{
-    return m_vk.createPipelineLayout(device, pCreateInfo, pAllocator, pPipelineLayout);
-}
-
-void DeviceDriver::destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyPipelineLayout(device, pipelineLayout, pAllocator);
-}
-
-VkResult DeviceDriver::createSampler (VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler) const
-{
-    return m_vk.createSampler(device, pCreateInfo, pAllocator, pSampler);
-}
-
-void DeviceDriver::destroySampler (VkDevice device, VkSampler sampler, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroySampler(device, sampler, pAllocator);
-}
-
-VkResult DeviceDriver::createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
-{
-    return m_vk.createDescriptorSetLayout(device, pCreateInfo, pAllocator, pSetLayout);
-}
-
-void DeviceDriver::destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
-}
-
-VkResult DeviceDriver::createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool) const
-{
-    return m_vk.createDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
-}
-
-void DeviceDriver::destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyDescriptorPool(device, descriptorPool, pAllocator);
-}
-
-VkResult DeviceDriver::resetDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags) const
-{
-    return m_vk.resetDescriptorPool(device, descriptorPool, flags);
-}
-
-VkResult DeviceDriver::allocateDescriptorSets (VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) const
-{
-    return m_vk.allocateDescriptorSets(device, pAllocateInfo, pDescriptorSets);
-}
-
-VkResult DeviceDriver::freeDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets) const
-{
-    return m_vk.freeDescriptorSets(device, descriptorPool, descriptorSetCount, pDescriptorSets);
-}
-
-void DeviceDriver::updateDescriptorSets (VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) const
-{
-    m_vk.updateDescriptorSets(device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
-}
-
-VkResult DeviceDriver::createFramebuffer (VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer) const
-{
-    return m_vk.createFramebuffer(device, pCreateInfo, pAllocator, pFramebuffer);
-}
-
-void DeviceDriver::destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyFramebuffer(device, framebuffer, pAllocator);
-}
-
-VkResult DeviceDriver::createRenderPass (VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    return m_vk.createRenderPass(device, pCreateInfo, pAllocator, pRenderPass);
-}
-
-void DeviceDriver::destroyRenderPass (VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.destroyRenderPass(device, renderPass, pAllocator);
-}
-
-void DeviceDriver::getRenderAreaGranularity (VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity) const
-{
-    m_vk.getRenderAreaGranularity(device, renderPass, pGranularity);
-}
-
-void DeviceDriver::getRenderingAreaGranularity (VkDevice device, const VkRenderingAreaInfo* pRenderingAreaInfo, VkExtent2D* pGranularity) const
-{
-    m_vk.getRenderingAreaGranularity(device, pRenderingAreaInfo, pGranularity);
-}
-
-VkResult DeviceDriver::createCommandPool (VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool) const
-{
-    return m_vk.createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
-}
-
-void DeviceDriver::destroyCommandPool (VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyCommandPool(device, commandPool, pAllocator);
-}
-
-VkResult DeviceDriver::resetCommandPool (VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags) const
-{
-    return m_vk.resetCommandPool(device, commandPool, flags);
+    return m_vk.acquireProfilingLockKHR(device, pInfo);
 }
 
 VkResult DeviceDriver::allocateCommandBuffers (VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers) const
@@ -421,9 +34,19 @@ VkResult DeviceDriver::allocateCommandBuffers (VkDevice device, const VkCommandB
     return m_vk.allocateCommandBuffers(device, pAllocateInfo, pCommandBuffers);
 }
 
-void DeviceDriver::freeCommandBuffers (VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) const
+VkResult DeviceDriver::allocateDescriptorSets (VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets) const
 {
-    m_vk.freeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
+    return m_vk.allocateDescriptorSets(device, pAllocateInfo, pDescriptorSets);
+}
+
+VkResult DeviceDriver::allocateMemory (VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory) const
+{
+    return m_vk.allocateMemory(device, pAllocateInfo, pAllocator, pMemory);
+}
+
+void DeviceDriver::antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData) const
+{
+    m_vk.antiLagUpdateAMD(device, pData);
 }
 
 VkResult DeviceDriver::beginCommandBuffer (VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo) const
@@ -431,84 +54,138 @@ VkResult DeviceDriver::beginCommandBuffer (VkCommandBuffer commandBuffer, const 
     return m_vk.beginCommandBuffer(commandBuffer, pBeginInfo);
 }
 
-VkResult DeviceDriver::endCommandBuffer (VkCommandBuffer commandBuffer) const
+VkResult DeviceDriver::bindAccelerationStructureMemoryNV (VkDevice device, uint32_t bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos) const
 {
-    return m_vk.endCommandBuffer(commandBuffer);
+    return m_vk.bindAccelerationStructureMemoryNV(device, bindInfoCount, pBindInfos);
 }
 
-VkResult DeviceDriver::resetCommandBuffer (VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags) const
+VkResult DeviceDriver::bindBufferMemory (VkDevice device, VkBuffer buffer, VkDeviceMemory memory, VkDeviceSize memoryOffset) const
 {
-    return m_vk.resetCommandBuffer(commandBuffer, flags);
+    return m_vk.bindBufferMemory(device, buffer, memory, memoryOffset);
 }
 
-void DeviceDriver::cmdBindPipeline (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const
+VkResult DeviceDriver::bindBufferMemory2 (VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfo* pBindInfos) const
 {
-    m_vk.cmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
+    return m_vk.bindBufferMemory2(device, bindInfoCount, pBindInfos);
 }
 
-void DeviceDriver::cmdSetAttachmentFeedbackLoopEnableEXT (VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask) const
+VkResult DeviceDriver::bindDataGraphPipelineSessionMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindDataGraphPipelineSessionMemoryInfoARM* pBindInfos) const
+{
+    return m_vk.bindDataGraphPipelineSessionMemoryARM(device, bindInfoCount, pBindInfos);
+}
+
+VkResult DeviceDriver::bindImageMemory (VkDevice device, VkImage image, VkDeviceMemory memory, VkDeviceSize memoryOffset) const
+{
+    return m_vk.bindImageMemory(device, image, memory, memoryOffset);
+}
+
+VkResult DeviceDriver::bindImageMemory2 (VkDevice device, uint32_t bindInfoCount, const VkBindImageMemoryInfo* pBindInfos) const
+{
+    return m_vk.bindImageMemory2(device, bindInfoCount, pBindInfos);
+}
+
+VkResult DeviceDriver::bindOpticalFlowSessionImageNV (VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout) const
+{
+    return m_vk.bindOpticalFlowSessionImageNV(device, session, bindingPoint, view, layout);
+}
+
+VkResult DeviceDriver::bindTensorMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos) const
+{
+    return m_vk.bindTensorMemoryARM(device, bindInfoCount, pBindInfos);
+}
+
+VkResult DeviceDriver::bindVideoSessionMemoryKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const VkBindVideoSessionMemoryInfoKHR* pBindSessionMemoryInfos) const
+{
+    return m_vk.bindVideoSessionMemoryKHR(device, videoSession, bindSessionMemoryInfoCount, pBindSessionMemoryInfos);
+}
+
+VkResult DeviceDriver::buildAccelerationStructuresKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const
+{
+    return m_vk.buildAccelerationStructuresKHR(device, deferredOperation, infoCount, pInfos, ppBuildRangeInfos);
+}
+
+VkResult DeviceDriver::buildMicromapsEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
+{
+    return m_vk.buildMicromapsEXT(device, deferredOperation, infoCount, pInfos);
+}
+
+void DeviceDriver::cmdBeginConditionalRenderingEXT (VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const
+{
+    m_vk.cmdBeginConditionalRenderingEXT(commandBuffer, pConditionalRenderingBegin);
+}
+
+void DeviceDriver::cmdBeginDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) const
+{
+    m_vk.cmdBeginDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
+}
+
+void DeviceDriver::cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const
+{
+    m_vk.cmdBeginPerTileExecutionQCOM(commandBuffer, pPerTileBeginInfo);
+}
+
+void DeviceDriver::cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags) const
+{
+    m_vk.cmdBeginQuery(commandBuffer, queryPool, query, flags);
+}
+
+void DeviceDriver::cmdBeginQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index) const
+{
+    m_vk.cmdBeginQueryIndexedEXT(commandBuffer, queryPool, query, flags, index);
+}
+
+void DeviceDriver::cmdBeginRenderPass (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetAttachmentFeedbackLoopEnableEXT(commandBuffer, aspectMask);
+    m_vk.cmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
 }
 
-void DeviceDriver::cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const
+void DeviceDriver::cmdBeginRenderPass2 (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
+    m_vk.cmdBeginRenderPass2(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
 }
 
-void DeviceDriver::cmdSetScissor (VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const
+void DeviceDriver::cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
+    m_vk.cmdBeginRendering(commandBuffer, pRenderingInfo);
 }
 
-void DeviceDriver::cmdSetLineWidth (VkCommandBuffer commandBuffer, float lineWidth) const
+void DeviceDriver::cmdBeginTransformFeedbackEXT (VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetLineWidth(commandBuffer, lineWidth);
+    m_vk.cmdBeginTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets);
 }
 
-void DeviceDriver::cmdSetDepthBias (VkCommandBuffer commandBuffer, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) const
+void DeviceDriver::cmdBeginVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthBias(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
+    m_vk.cmdBeginVideoCodingKHR(commandBuffer, pBeginInfo);
 }
 
-void DeviceDriver::cmdSetBlendConstants (VkCommandBuffer commandBuffer, const float blendConstants[4]) const
+void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplers2EXT (VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetBlendConstants(commandBuffer, blendConstants);
+    m_vk.cmdBindDescriptorBufferEmbeddedSamplers2EXT(commandBuffer, pBindDescriptorBufferEmbeddedSamplersInfo);
 }
 
-void DeviceDriver::cmdSetDepthBounds (VkCommandBuffer commandBuffer, float minDepthBounds, float maxDepthBounds) const
+void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthBounds(commandBuffer, minDepthBounds, maxDepthBounds);
+    m_vk.cmdBindDescriptorBufferEmbeddedSamplersEXT(commandBuffer, pipelineBindPoint, layout, set);
 }
 
-void DeviceDriver::cmdSetStencilCompareMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t compareMask) const
+void DeviceDriver::cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetStencilCompareMask(commandBuffer, faceMask, compareMask);
-}
-
-void DeviceDriver::cmdSetStencilWriteMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t writeMask) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetStencilWriteMask(commandBuffer, faceMask, writeMask);
-}
-
-void DeviceDriver::cmdSetStencilReference (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t reference) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetStencilReference(commandBuffer, faceMask, reference);
+    m_vk.cmdBindDescriptorBuffersEXT(commandBuffer, bufferCount, pBindingInfos);
 }
 
 void DeviceDriver::cmdBindDescriptorSets (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets, uint32_t dynamicOffsetCount, const uint32_t* pDynamicOffsets) const
 {
     m_vk.cmdBindDescriptorSets(commandBuffer, pipelineBindPoint, layout, firstSet, descriptorSetCount, pDescriptorSets, dynamicOffsetCount, pDynamicOffsets);
+}
+
+void DeviceDriver::cmdBindDescriptorSets2 (VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfo* pBindDescriptorSetsInfo) const
+{
+    m_vk.cmdBindDescriptorSets2(commandBuffer, pBindDescriptorSetsInfo);
 }
 
 void DeviceDriver::cmdBindIndexBuffer (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const
@@ -517,89 +194,59 @@ void DeviceDriver::cmdBindIndexBuffer (VkCommandBuffer commandBuffer, VkBuffer b
     m_vk.cmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
 }
 
+void DeviceDriver::cmdBindIndexBuffer2 (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBindIndexBuffer2(commandBuffer, buffer, offset, size, indexType);
+}
+
+void DeviceDriver::cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const
+{
+    m_vk.cmdBindInvocationMaskHUAWEI(commandBuffer, imageView, imageLayout);
+}
+
+void DeviceDriver::cmdBindPipeline (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const
+{
+    m_vk.cmdBindPipeline(commandBuffer, pipelineBindPoint, pipeline);
+}
+
+void DeviceDriver::cmdBindPipelineShaderGroupNV (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex) const
+{
+    m_vk.cmdBindPipelineShaderGroupNV(commandBuffer, pipelineBindPoint, pipeline, groupIndex);
+}
+
+void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
+{
+    m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
+}
+
+void DeviceDriver::cmdBindShadingRateImageNV (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBindShadingRateImageNV(commandBuffer, imageView, imageLayout);
+}
+
+void DeviceDriver::cmdBindTileMemoryQCOM (VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo) const
+{
+    m_vk.cmdBindTileMemoryQCOM(commandBuffer, pTileMemoryBindInfo);
+}
+
+void DeviceDriver::cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBindTransformFeedbackBuffersEXT(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes);
+}
+
 void DeviceDriver::cmdBindVertexBuffers (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
 }
 
-void DeviceDriver::cmdDraw (VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
+void DeviceDriver::cmdBindVertexBuffers2 (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
-}
-
-void DeviceDriver::cmdDrawIndexed (VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
-}
-
-void DeviceDriver::cmdDrawMultiEXT (VkCommandBuffer commandBuffer, uint32_t drawCount, const VkMultiDrawInfoEXT* pVertexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawMultiEXT(commandBuffer, drawCount, pVertexInfo, instanceCount, firstInstance, stride);
-}
-
-void DeviceDriver::cmdDrawMultiIndexedEXT (VkCommandBuffer commandBuffer, uint32_t drawCount, const VkMultiDrawIndexedInfoEXT* pIndexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride, const int32_t* pVertexOffset) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawMultiIndexedEXT(commandBuffer, drawCount, pIndexInfo, instanceCount, firstInstance, stride, pVertexOffset);
-}
-
-void DeviceDriver::cmdDrawIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
-}
-
-void DeviceDriver::cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
-}
-
-void DeviceDriver::cmdDispatch (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
-{
-    m_vk.cmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
-}
-
-void DeviceDriver::cmdDispatchIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const
-{
-    m_vk.cmdDispatchIndirect(commandBuffer, buffer, offset);
-}
-
-void DeviceDriver::cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffer) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSubpassShadingHUAWEI(commandBuffer);
-}
-
-void DeviceDriver::cmdDrawClusterHUAWEI (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawClusterHUAWEI(commandBuffer, groupCountX, groupCountY, groupCountZ);
-}
-
-void DeviceDriver::cmdDrawClusterIndirectHUAWEI (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawClusterIndirectHUAWEI(commandBuffer, buffer, offset);
-}
-
-void DeviceDriver::cmdUpdatePipelineIndirectBufferNV (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const
-{
-    m_vk.cmdUpdatePipelineIndirectBufferNV(commandBuffer, pipelineBindPoint, pipeline);
-}
-
-void DeviceDriver::cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const
-{
-    m_vk.cmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
-}
-
-void DeviceDriver::cmdCopyImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions) const
-{
-    m_vk.cmdCopyImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
+    m_vk.cmdBindVertexBuffers2(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes, pStrides);
 }
 
 void DeviceDriver::cmdBlitImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) const
@@ -608,34 +255,46 @@ void DeviceDriver::cmdBlitImage (VkCommandBuffer commandBuffer, VkImage srcImage
     m_vk.cmdBlitImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter);
 }
 
-void DeviceDriver::cmdCopyBufferToImage (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const
+void DeviceDriver::cmdBlitImage2 (VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo) const
 {
-    m_vk.cmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBlitImage2(commandBuffer, pBlitImageInfo);
 }
 
-void DeviceDriver::cmdCopyImageToBuffer (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions) const
+void DeviceDriver::cmdBuildAccelerationStructureNV (VkCommandBuffer commandBuffer, const VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset) const
 {
-    m_vk.cmdCopyImageToBuffer(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions);
+    m_vk.cmdBuildAccelerationStructureNV(commandBuffer, pInfo, instanceData, instanceOffset, update, dst, src, scratch, scratchOffset);
 }
 
-void DeviceDriver::cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride) const
+void DeviceDriver::cmdBuildAccelerationStructuresIndirectKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const uint32_t* pIndirectStrides, const uint32_t* const* ppMaxPrimitiveCounts) const
 {
-    m_vk.cmdCopyMemoryIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride);
+    m_vk.cmdBuildAccelerationStructuresIndirectKHR(commandBuffer, infoCount, pInfos, pIndirectDeviceAddresses, pIndirectStrides, ppMaxPrimitiveCounts);
 }
 
-void DeviceDriver::cmdCopyMemoryToImageIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const
+void DeviceDriver::cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const
 {
-    m_vk.cmdCopyMemoryToImageIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride, dstImage, dstImageLayout, pImageSubresources);
+    m_vk.cmdBuildAccelerationStructuresKHR(commandBuffer, infoCount, pInfos, ppBuildRangeInfos);
 }
 
-void DeviceDriver::cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData) const
+void DeviceDriver::cmdBuildClusterAccelerationStructureIndirectNV (VkCommandBuffer commandBuffer, const VkClusterAccelerationStructureCommandsInfoNV* pCommandInfos) const
 {
-    m_vk.cmdUpdateBuffer(commandBuffer, dstBuffer, dstOffset, dataSize, pData);
+    m_vk.cmdBuildClusterAccelerationStructureIndirectNV(commandBuffer, pCommandInfos);
 }
 
-void DeviceDriver::cmdFillBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data) const
+void DeviceDriver::cmdBuildMicromapsEXT (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
 {
-    m_vk.cmdFillBuffer(commandBuffer, dstBuffer, dstOffset, size, data);
+    m_vk.cmdBuildMicromapsEXT(commandBuffer, infoCount, pInfos);
+}
+
+void DeviceDriver::cmdBuildPartitionedAccelerationStructuresNV (VkCommandBuffer commandBuffer, const VkBuildPartitionedAccelerationStructureInfoNV* pBuildInfo) const
+{
+    m_vk.cmdBuildPartitionedAccelerationStructuresNV(commandBuffer, pBuildInfo);
+}
+
+void DeviceDriver::cmdClearAttachments (VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount, const VkClearRect* pRects) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdClearAttachments(commandBuffer, attachmentCount, pAttachments, rectCount, pRects);
 }
 
 void DeviceDriver::cmdClearColorImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, uint32_t rangeCount, const VkImageSubresourceRange* pRanges) const
@@ -649,66 +308,99 @@ void DeviceDriver::cmdClearDepthStencilImage (VkCommandBuffer commandBuffer, VkI
     m_vk.cmdClearDepthStencilImage(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
 }
 
-void DeviceDriver::cmdClearAttachments (VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount, const VkClearRect* pRects) const
+void DeviceDriver::cmdControlVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoCodingControlInfoKHR* pCodingControlInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdClearAttachments(commandBuffer, attachmentCount, pAttachments, rectCount, pRects);
+    m_vk.cmdControlVideoCodingKHR(commandBuffer, pCodingControlInfo);
 }
 
-void DeviceDriver::cmdResolveImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageResolve* pRegions) const
+void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdResolveImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
+    m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
 }
 
-void DeviceDriver::cmdSetEvent (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask) const
+void DeviceDriver::cmdCopyAccelerationStructureKHR (VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureInfoKHR* pInfo) const
 {
-    m_vk.cmdSetEvent(commandBuffer, event, stageMask);
+    m_vk.cmdCopyAccelerationStructureKHR(commandBuffer, pInfo);
 }
 
-void DeviceDriver::cmdResetEvent (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask) const
+void DeviceDriver::cmdCopyAccelerationStructureNV (VkCommandBuffer commandBuffer, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeKHR mode) const
 {
-    m_vk.cmdResetEvent(commandBuffer, event, stageMask);
+    m_vk.cmdCopyAccelerationStructureNV(commandBuffer, dst, src, mode);
 }
 
-void DeviceDriver::cmdWaitEvents (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) const
+void DeviceDriver::cmdCopyAccelerationStructureToMemoryKHR (VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const
 {
-    m_vk.cmdWaitEvents(commandBuffer, eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
+    m_vk.cmdCopyAccelerationStructureToMemoryKHR(commandBuffer, pInfo);
 }
 
-void DeviceDriver::cmdPipelineBarrier (VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) const
+void DeviceDriver::cmdCopyBuffer (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferCopy* pRegions) const
 {
-    m_vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
+    m_vk.cmdCopyBuffer(commandBuffer, srcBuffer, dstBuffer, regionCount, pRegions);
 }
 
-void DeviceDriver::cmdBeginQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags) const
+void DeviceDriver::cmdCopyBuffer2 (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2* pCopyBufferInfo) const
 {
-    m_vk.cmdBeginQuery(commandBuffer, queryPool, query, flags);
+    m_vk.cmdCopyBuffer2(commandBuffer, pCopyBufferInfo);
 }
 
-void DeviceDriver::cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query) const
+void DeviceDriver::cmdCopyBufferToImage (VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const
 {
-    m_vk.cmdEndQuery(commandBuffer, queryPool, query);
+    m_vk.cmdCopyBufferToImage(commandBuffer, srcBuffer, dstImage, dstImageLayout, regionCount, pRegions);
 }
 
-void DeviceDriver::cmdBeginConditionalRenderingEXT (VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const
+void DeviceDriver::cmdCopyBufferToImage2 (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2* pCopyBufferToImageInfo) const
 {
-    m_vk.cmdBeginConditionalRenderingEXT(commandBuffer, pConditionalRenderingBegin);
+    m_vk.cmdCopyBufferToImage2(commandBuffer, pCopyBufferToImageInfo);
 }
 
-void DeviceDriver::cmdEndConditionalRenderingEXT (VkCommandBuffer commandBuffer) const
+void DeviceDriver::cmdCopyImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageCopy* pRegions) const
 {
-    m_vk.cmdEndConditionalRenderingEXT(commandBuffer);
+    m_vk.cmdCopyImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 }
 
-void DeviceDriver::cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const
+void DeviceDriver::cmdCopyImage2 (VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo) const
 {
-    m_vk.cmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);
+    m_vk.cmdCopyImage2(commandBuffer, pCopyImageInfo);
 }
 
-void DeviceDriver::cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query) const
+void DeviceDriver::cmdCopyImageToBuffer (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions) const
 {
-    m_vk.cmdWriteTimestamp(commandBuffer, pipelineStage, queryPool, query);
+    m_vk.cmdCopyImageToBuffer(commandBuffer, srcImage, srcImageLayout, dstBuffer, regionCount, pRegions);
+}
+
+void DeviceDriver::cmdCopyImageToBuffer2 (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo) const
+{
+    m_vk.cmdCopyImageToBuffer2(commandBuffer, pCopyImageToBufferInfo);
+}
+
+void DeviceDriver::cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride) const
+{
+    m_vk.cmdCopyMemoryIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride);
+}
+
+void DeviceDriver::cmdCopyMemoryToAccelerationStructureKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const
+{
+    m_vk.cmdCopyMemoryToAccelerationStructureKHR(commandBuffer, pInfo);
+}
+
+void DeviceDriver::cmdCopyMemoryToImageIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const
+{
+    m_vk.cmdCopyMemoryToImageIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride, dstImage, dstImageLayout, pImageSubresources);
+}
+
+void DeviceDriver::cmdCopyMemoryToMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
+{
+    m_vk.cmdCopyMemoryToMicromapEXT(commandBuffer, pInfo);
+}
+
+void DeviceDriver::cmdCopyMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo) const
+{
+    m_vk.cmdCopyMicromapEXT(commandBuffer, pInfo);
+}
+
+void DeviceDriver::cmdCopyMicromapToMemoryEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
+{
+    m_vk.cmdCopyMicromapToMemoryEXT(commandBuffer, pInfo);
 }
 
 void DeviceDriver::cmdCopyQueryPoolResults (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags) const
@@ -716,72 +408,19 @@ void DeviceDriver::cmdCopyQueryPoolResults (VkCommandBuffer commandBuffer, VkQue
     m_vk.cmdCopyQueryPoolResults(commandBuffer, queryPool, firstQuery, queryCount, dstBuffer, dstOffset, stride, flags);
 }
 
-void DeviceDriver::cmdPushConstants (VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues) const
+void DeviceDriver::cmdCopyTensorARM (VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const
 {
-    m_vk.cmdPushConstants(commandBuffer, layout, stageFlags, offset, size, pValues);
+    m_vk.cmdCopyTensorARM(commandBuffer, pCopyTensorInfo);
 }
 
-void DeviceDriver::cmdBeginRenderPass (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) const
+void DeviceDriver::cmdCuLaunchKernelNVX (VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
+    m_vk.cmdCuLaunchKernelNVX(commandBuffer, pLaunchInfo);
 }
 
-void DeviceDriver::cmdNextSubpass (VkCommandBuffer commandBuffer, VkSubpassContents contents) const
+void DeviceDriver::cmdCudaLaunchKernelNV (VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdNextSubpass(commandBuffer, contents);
-}
-
-void DeviceDriver::cmdEndRenderPass (VkCommandBuffer commandBuffer) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdEndRenderPass(commandBuffer);
-}
-
-void DeviceDriver::cmdExecuteCommands (VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) const
-{
-    m_vk.cmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
-}
-
-VkResult DeviceDriver::createSharedSwapchainsKHR (VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const
-{
-    return m_vk.createSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
-}
-
-VkResult DeviceDriver::createSwapchainKHR (VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const
-{
-    return m_vk.createSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
-}
-
-void DeviceDriver::destroySwapchainKHR (VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroySwapchainKHR(device, swapchain, pAllocator);
-}
-
-VkResult DeviceDriver::getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages) const
-{
-    return m_vk.getSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
-}
-
-VkResult DeviceDriver::acquireNextImageKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const
-{
-    return m_vk.acquireNextImageKHR(device, swapchain, timeout, semaphore, fence, pImageIndex);
-}
-
-VkResult DeviceDriver::queuePresentKHR (VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const
-{
-    return m_vk.queuePresentKHR(queue, pPresentInfo);
-}
-
-VkResult DeviceDriver::debugMarkerSetObjectNameEXT (VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const
-{
-    return m_vk.debugMarkerSetObjectNameEXT(device, pNameInfo);
-}
-
-VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
-{
-    return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
+    m_vk.cmdCudaLaunchKernelNV(commandBuffer, pLaunchInfo);
 }
 
 void DeviceDriver::cmdDebugMarkerBeginEXT (VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const
@@ -799,234 +438,24 @@ void DeviceDriver::cmdDebugMarkerInsertEXT (VkCommandBuffer commandBuffer, const
     m_vk.cmdDebugMarkerInsertEXT(commandBuffer, pMarkerInfo);
 }
 
-VkResult DeviceDriver::getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const
+void DeviceDriver::cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo) const
 {
-    return m_vk.getMemoryWin32HandleNV(device, memory, handleType, pHandle);
+    m_vk.cmdDecodeVideoKHR(commandBuffer, pDecodeInfo);
 }
 
-void DeviceDriver::cmdExecuteGeneratedCommandsNV (VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo) const
+void DeviceDriver::cmdDecompressMemoryIndirectCountNV (VkCommandBuffer commandBuffer, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride) const
 {
-    m_vk.cmdExecuteGeneratedCommandsNV(commandBuffer, isPreprocessed, pGeneratedCommandsInfo);
+    m_vk.cmdDecompressMemoryIndirectCountNV(commandBuffer, indirectCommandsAddress, indirectCommandsCountAddress, stride);
 }
 
-void DeviceDriver::cmdPreprocessGeneratedCommandsNV (VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo) const
+void DeviceDriver::cmdDecompressMemoryNV (VkCommandBuffer commandBuffer, uint32_t decompressRegionCount, const VkDecompressMemoryRegionNV* pDecompressMemoryRegions) const
 {
-    m_vk.cmdPreprocessGeneratedCommandsNV(commandBuffer, pGeneratedCommandsInfo);
+    m_vk.cmdDecompressMemoryNV(commandBuffer, decompressRegionCount, pDecompressMemoryRegions);
 }
 
-void DeviceDriver::cmdBindPipelineShaderGroupNV (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline, uint32_t groupIndex) const
+void DeviceDriver::cmdDispatch (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
 {
-    m_vk.cmdBindPipelineShaderGroupNV(commandBuffer, pipelineBindPoint, pipeline, groupIndex);
-}
-
-void DeviceDriver::getGeneratedCommandsMemoryRequirementsNV (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
-{
-    m_vk.getGeneratedCommandsMemoryRequirementsNV(device, pInfo, pMemoryRequirements);
-}
-
-VkResult DeviceDriver::createIndirectCommandsLayoutNV (VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const
-{
-    return m_vk.createIndirectCommandsLayoutNV(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
-}
-
-void DeviceDriver::destroyIndirectCommandsLayoutNV (VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyIndirectCommandsLayoutNV(device, indirectCommandsLayout, pAllocator);
-}
-
-void DeviceDriver::cmdExecuteGeneratedCommandsEXT (VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo) const
-{
-    m_vk.cmdExecuteGeneratedCommandsEXT(commandBuffer, isPreprocessed, pGeneratedCommandsInfo);
-}
-
-void DeviceDriver::cmdPreprocessGeneratedCommandsEXT (VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer) const
-{
-    m_vk.cmdPreprocessGeneratedCommandsEXT(commandBuffer, pGeneratedCommandsInfo, stateCommandBuffer);
-}
-
-void DeviceDriver::getGeneratedCommandsMemoryRequirementsEXT (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
-{
-    m_vk.getGeneratedCommandsMemoryRequirementsEXT(device, pInfo, pMemoryRequirements);
-}
-
-VkResult DeviceDriver::createIndirectCommandsLayoutEXT (VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout) const
-{
-    return m_vk.createIndirectCommandsLayoutEXT(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
-}
-
-void DeviceDriver::destroyIndirectCommandsLayoutEXT (VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyIndirectCommandsLayoutEXT(device, indirectCommandsLayout, pAllocator);
-}
-
-VkResult DeviceDriver::createIndirectExecutionSetEXT (VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet) const
-{
-    return m_vk.createIndirectExecutionSetEXT(device, pCreateInfo, pAllocator, pIndirectExecutionSet);
-}
-
-void DeviceDriver::destroyIndirectExecutionSetEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyIndirectExecutionSetEXT(device, indirectExecutionSet, pAllocator);
-}
-
-void DeviceDriver::updateIndirectExecutionSetPipelineEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites) const
-{
-    m_vk.updateIndirectExecutionSetPipelineEXT(device, indirectExecutionSet, executionSetWriteCount, pExecutionSetWrites);
-}
-
-void DeviceDriver::updateIndirectExecutionSetShaderEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites) const
-{
-    m_vk.updateIndirectExecutionSetShaderEXT(device, indirectExecutionSet, executionSetWriteCount, pExecutionSetWrites);
-}
-
-void DeviceDriver::cmdPushDescriptorSet (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const
-{
-    m_vk.cmdPushDescriptorSet(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites);
-}
-
-void DeviceDriver::trimCommandPool (VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags) const
-{
-    m_vk.trimCommandPool(device, commandPool, flags);
-}
-
-VkResult DeviceDriver::getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
-{
-    return m_vk.getMemoryWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
-}
-
-VkResult DeviceDriver::getMemoryWin32HandlePropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties) const
-{
-    return m_vk.getMemoryWin32HandlePropertiesKHR(device, handleType, handle, pMemoryWin32HandleProperties);
-}
-
-VkResult DeviceDriver::getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const
-{
-    return m_vk.getMemoryFdKHR(device, pGetFdInfo, pFd);
-}
-
-VkResult DeviceDriver::getMemoryFdPropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties) const
-{
-    return m_vk.getMemoryFdPropertiesKHR(device, handleType, fd, pMemoryFdProperties);
-}
-
-VkResult DeviceDriver::getMemoryZirconHandleFUCHSIA (VkDevice device, const VkMemoryGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const
-{
-    return m_vk.getMemoryZirconHandleFUCHSIA(device, pGetZirconHandleInfo, pZirconHandle);
-}
-
-VkResult DeviceDriver::getMemoryZirconHandlePropertiesFUCHSIA (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::zx_handle_t zirconHandle, VkMemoryZirconHandlePropertiesFUCHSIA* pMemoryZirconHandleProperties) const
-{
-    return m_vk.getMemoryZirconHandlePropertiesFUCHSIA(device, handleType, zirconHandle, pMemoryZirconHandleProperties);
-}
-
-VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
-{
-    return m_vk.getMemoryRemoteAddressNV(device, pMemoryGetRemoteAddressInfo, pAddress);
-}
-
-VkResult DeviceDriver::getSemaphoreWin32HandleKHR (VkDevice device, const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
-{
-    return m_vk.getSemaphoreWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
-}
-
-VkResult DeviceDriver::importSemaphoreWin32HandleKHR (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo) const
-{
-    return m_vk.importSemaphoreWin32HandleKHR(device, pImportSemaphoreWin32HandleInfo);
-}
-
-VkResult DeviceDriver::getSemaphoreFdKHR (VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd) const
-{
-    return m_vk.getSemaphoreFdKHR(device, pGetFdInfo, pFd);
-}
-
-VkResult DeviceDriver::importSemaphoreFdKHR (VkDevice device, const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo) const
-{
-    return m_vk.importSemaphoreFdKHR(device, pImportSemaphoreFdInfo);
-}
-
-VkResult DeviceDriver::getSemaphoreZirconHandleFUCHSIA (VkDevice device, const VkSemaphoreGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const
-{
-    return m_vk.getSemaphoreZirconHandleFUCHSIA(device, pGetZirconHandleInfo, pZirconHandle);
-}
-
-VkResult DeviceDriver::importSemaphoreZirconHandleFUCHSIA (VkDevice device, const VkImportSemaphoreZirconHandleInfoFUCHSIA* pImportSemaphoreZirconHandleInfo) const
-{
-    return m_vk.importSemaphoreZirconHandleFUCHSIA(device, pImportSemaphoreZirconHandleInfo);
-}
-
-VkResult DeviceDriver::getFenceWin32HandleKHR (VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
-{
-    return m_vk.getFenceWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
-}
-
-VkResult DeviceDriver::importFenceWin32HandleKHR (VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo) const
-{
-    return m_vk.importFenceWin32HandleKHR(device, pImportFenceWin32HandleInfo);
-}
-
-VkResult DeviceDriver::getFenceFdKHR (VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const
-{
-    return m_vk.getFenceFdKHR(device, pGetFdInfo, pFd);
-}
-
-VkResult DeviceDriver::importFenceFdKHR (VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo) const
-{
-    return m_vk.importFenceFdKHR(device, pImportFenceFdInfo);
-}
-
-VkResult DeviceDriver::displayPowerControlEXT (VkDevice device, VkDisplayKHR display, const VkDisplayPowerInfoEXT* pDisplayPowerInfo) const
-{
-    return m_vk.displayPowerControlEXT(device, display, pDisplayPowerInfo);
-}
-
-VkResult DeviceDriver::registerDeviceEventEXT (VkDevice device, const VkDeviceEventInfoEXT* pDeviceEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const
-{
-    return m_vk.registerDeviceEventEXT(device, pDeviceEventInfo, pAllocator, pFence);
-}
-
-VkResult DeviceDriver::registerDisplayEventEXT (VkDevice device, VkDisplayKHR display, const VkDisplayEventInfoEXT* pDisplayEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const
-{
-    return m_vk.registerDisplayEventEXT(device, display, pDisplayEventInfo, pAllocator, pFence);
-}
-
-VkResult DeviceDriver::getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue) const
-{
-    return m_vk.getSwapchainCounterEXT(device, swapchain, counter, pCounterValue);
-}
-
-void DeviceDriver::getDeviceGroupPeerMemoryFeatures (VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures) const
-{
-    m_vk.getDeviceGroupPeerMemoryFeatures(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures);
-}
-
-VkResult DeviceDriver::bindBufferMemory2 (VkDevice device, uint32_t bindInfoCount, const VkBindBufferMemoryInfo* pBindInfos) const
-{
-    return m_vk.bindBufferMemory2(device, bindInfoCount, pBindInfos);
-}
-
-VkResult DeviceDriver::bindImageMemory2 (VkDevice device, uint32_t bindInfoCount, const VkBindImageMemoryInfo* pBindInfos) const
-{
-    return m_vk.bindImageMemory2(device, bindInfoCount, pBindInfos);
-}
-
-void DeviceDriver::cmdSetDeviceMask (VkCommandBuffer commandBuffer, uint32_t deviceMask) const
-{
-    m_vk.cmdSetDeviceMask(commandBuffer, deviceMask);
-}
-
-VkResult DeviceDriver::getDeviceGroupPresentCapabilitiesKHR (VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const
-{
-    return m_vk.getDeviceGroupPresentCapabilitiesKHR(device, pDeviceGroupPresentCapabilities);
-}
-
-VkResult DeviceDriver::getDeviceGroupSurfacePresentModesKHR (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const
-{
-    return m_vk.getDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
-}
-
-VkResult DeviceDriver::acquireNextImage2KHR (VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex) const
-{
-    return m_vk.acquireNextImage2KHR(device, pAcquireInfo, pImageIndex);
+    m_vk.cmdDispatch(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
 void DeviceDriver::cmdDispatchBase (VkCommandBuffer commandBuffer, uint32_t baseGroupX, uint32_t baseGroupY, uint32_t baseGroupZ, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
@@ -1034,264 +463,64 @@ void DeviceDriver::cmdDispatchBase (VkCommandBuffer commandBuffer, uint32_t base
     m_vk.cmdDispatchBase(commandBuffer, baseGroupX, baseGroupY, baseGroupZ, groupCountX, groupCountY, groupCountZ);
 }
 
-VkResult DeviceDriver::createDescriptorUpdateTemplate (VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate) const
+void DeviceDriver::cmdDispatchDataGraphARM (VkCommandBuffer commandBuffer, VkDataGraphPipelineSessionARM session, const VkDataGraphPipelineDispatchInfoARM* pInfo) const
 {
-    return m_vk.createDescriptorUpdateTemplate(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
+    m_vk.cmdDispatchDataGraphARM(commandBuffer, session, pInfo);
 }
 
-void DeviceDriver::destroyDescriptorUpdateTemplate (VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator) const
+void DeviceDriver::cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
 {
-    m_vk.destroyDescriptorUpdateTemplate(device, descriptorUpdateTemplate, pAllocator);
+    m_vk.cmdDispatchGraphAMDX(commandBuffer, scratch, scratchSize, pCountInfo);
 }
 
-void DeviceDriver::updateDescriptorSetWithTemplate (VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void* pData) const
+void DeviceDriver::cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
 {
-    m_vk.updateDescriptorSetWithTemplate(device, descriptorSet, descriptorUpdateTemplate, pData);
+    m_vk.cmdDispatchGraphIndirectAMDX(commandBuffer, scratch, scratchSize, pCountInfo);
 }
 
-void DeviceDriver::cmdPushDescriptorSetWithTemplate (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const void* pData) const
+void DeviceDriver::cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo) const
 {
-    m_vk.cmdPushDescriptorSetWithTemplate(commandBuffer, descriptorUpdateTemplate, layout, set, pData);
+    m_vk.cmdDispatchGraphIndirectCountAMDX(commandBuffer, scratch, scratchSize, countInfo);
 }
 
-void DeviceDriver::setHdrMetadataEXT (VkDevice device, uint32_t swapchainCount, const VkSwapchainKHR* pSwapchains, const VkHdrMetadataEXT* pMetadata) const
+void DeviceDriver::cmdDispatchIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const
 {
-    m_vk.setHdrMetadataEXT(device, swapchainCount, pSwapchains, pMetadata);
+    m_vk.cmdDispatchIndirect(commandBuffer, buffer, offset);
 }
 
-VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain) const
+void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo) const
 {
-    return m_vk.getSwapchainStatusKHR(device, swapchain);
+    m_vk.cmdDispatchTileQCOM(commandBuffer, pDispatchTileInfo);
 }
 
-VkResult DeviceDriver::getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const
-{
-    return m_vk.getRefreshCycleDurationGOOGLE(device, swapchain, pDisplayTimingProperties);
-}
-
-VkResult DeviceDriver::getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const
-{
-    return m_vk.getPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
-}
-
-void DeviceDriver::cmdSetViewportWScalingNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportWScalingNV* pViewportWScalings) const
+void DeviceDriver::cmdDraw (VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetViewportWScalingNV(commandBuffer, firstViewport, viewportCount, pViewportWScalings);
+    m_vk.cmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
-void DeviceDriver::cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles) const
+void DeviceDriver::cmdDrawClusterHUAWEI (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDiscardRectangleEXT(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles);
+    m_vk.cmdDrawClusterHUAWEI(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
-void DeviceDriver::cmdSetDiscardRectangleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable) const
+void DeviceDriver::cmdDrawClusterIndirectHUAWEI (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDiscardRectangleEnableEXT(commandBuffer, discardRectangleEnable);
+    m_vk.cmdDrawClusterIndirectHUAWEI(commandBuffer, buffer, offset);
 }
 
-void DeviceDriver::cmdSetDiscardRectangleModeEXT (VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode) const
+void DeviceDriver::cmdDrawIndexed (VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDiscardRectangleModeEXT(commandBuffer, discardRectangleMode);
+    m_vk.cmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
-void DeviceDriver::cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo) const
+void DeviceDriver::cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetSampleLocationsEXT(commandBuffer, pSampleLocationsInfo);
-}
-
-void DeviceDriver::getBufferMemoryRequirements2 (VkDevice device, const VkBufferMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
-{
-    m_vk.getBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
-}
-
-void DeviceDriver::getImageMemoryRequirements2 (VkDevice device, const VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
-{
-    m_vk.getImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
-}
-
-void DeviceDriver::getImageSparseMemoryRequirements2 (VkDevice device, const VkImageSparseMemoryRequirementsInfo2* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
-{
-    m_vk.getImageSparseMemoryRequirements2(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
-}
-
-void DeviceDriver::getDeviceBufferMemoryRequirements (VkDevice device, const VkDeviceBufferMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
-{
-    m_vk.getDeviceBufferMemoryRequirements(device, pInfo, pMemoryRequirements);
-}
-
-void DeviceDriver::getDeviceImageMemoryRequirements (VkDevice device, const VkDeviceImageMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
-{
-    m_vk.getDeviceImageMemoryRequirements(device, pInfo, pMemoryRequirements);
-}
-
-void DeviceDriver::getDeviceImageSparseMemoryRequirements (VkDevice device, const VkDeviceImageMemoryRequirements* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
-{
-    m_vk.getDeviceImageSparseMemoryRequirements(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
-}
-
-VkResult DeviceDriver::createSamplerYcbcrConversion (VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversion* pYcbcrConversion) const
-{
-    return m_vk.createSamplerYcbcrConversion(device, pCreateInfo, pAllocator, pYcbcrConversion);
-}
-
-void DeviceDriver::destroySamplerYcbcrConversion (VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
-}
-
-void DeviceDriver::getDeviceQueue2 (VkDevice device, const VkDeviceQueueInfo2* pQueueInfo, VkQueue* pQueue) const
-{
-    m_vk.getDeviceQueue2(device, pQueueInfo, pQueue);
-}
-
-VkResult DeviceDriver::createValidationCacheEXT (VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkValidationCacheEXT* pValidationCache) const
-{
-    return m_vk.createValidationCacheEXT(device, pCreateInfo, pAllocator, pValidationCache);
-}
-
-void DeviceDriver::destroyValidationCacheEXT (VkDevice device, VkValidationCacheEXT validationCache, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyValidationCacheEXT(device, validationCache, pAllocator);
-}
-
-VkResult DeviceDriver::getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData) const
-{
-    return m_vk.getValidationCacheDataEXT(device, validationCache, pDataSize, pData);
-}
-
-VkResult DeviceDriver::mergeValidationCachesEXT (VkDevice device, VkValidationCacheEXT dstCache, uint32_t srcCacheCount, const VkValidationCacheEXT* pSrcCaches) const
-{
-    return m_vk.mergeValidationCachesEXT(device, dstCache, srcCacheCount, pSrcCaches);
-}
-
-void DeviceDriver::getDescriptorSetLayoutSupport (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const
-{
-    m_vk.getDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
-}
-
-VkResult DeviceDriver::getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo) const
-{
-    return m_vk.getShaderInfoAMD(device, pipeline, shaderStage, infoType, pInfoSize, pInfo);
-}
-
-void DeviceDriver::setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const
-{
-    m_vk.setLocalDimmingAMD(device, swapChain, localDimmingEnable);
-}
-
-VkResult DeviceDriver::getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
-{
-    return m_vk.getCalibratedTimestampsKHR(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
-}
-
-VkResult DeviceDriver::setDebugUtilsObjectNameEXT (VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const
-{
-    return m_vk.setDebugUtilsObjectNameEXT(device, pNameInfo);
-}
-
-VkResult DeviceDriver::setDebugUtilsObjectTagEXT (VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo) const
-{
-    return m_vk.setDebugUtilsObjectTagEXT(device, pTagInfo);
-}
-
-void DeviceDriver::queueBeginDebugUtilsLabelEXT (VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const
-{
-    m_vk.queueBeginDebugUtilsLabelEXT(queue, pLabelInfo);
-}
-
-void DeviceDriver::queueEndDebugUtilsLabelEXT (VkQueue queue) const
-{
-    m_vk.queueEndDebugUtilsLabelEXT(queue);
-}
-
-void DeviceDriver::queueInsertDebugUtilsLabelEXT (VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const
-{
-    m_vk.queueInsertDebugUtilsLabelEXT(queue, pLabelInfo);
-}
-
-void DeviceDriver::cmdBeginDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) const
-{
-    m_vk.cmdBeginDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
-}
-
-void DeviceDriver::cmdEndDebugUtilsLabelEXT (VkCommandBuffer commandBuffer) const
-{
-    m_vk.cmdEndDebugUtilsLabelEXT(commandBuffer);
-}
-
-void DeviceDriver::cmdInsertDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) const
-{
-    m_vk.cmdInsertDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
-}
-
-VkResult DeviceDriver::getMemoryHostPointerPropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const
-{
-    return m_vk.getMemoryHostPointerPropertiesEXT(device, handleType, pHostPointer, pMemoryHostPointerProperties);
-}
-
-void DeviceDriver::cmdWriteBufferMarkerAMD (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const
-{
-    m_vk.cmdWriteBufferMarkerAMD(commandBuffer, pipelineStage, dstBuffer, dstOffset, marker);
-}
-
-VkResult DeviceDriver::createRenderPass2 (VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    return m_vk.createRenderPass2(device, pCreateInfo, pAllocator, pRenderPass);
-}
-
-void DeviceDriver::cmdBeginRenderPass2 (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBeginRenderPass2(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
-}
-
-void DeviceDriver::cmdNextSubpass2 (VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdNextSubpass2(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
-}
-
-void DeviceDriver::cmdEndRenderPass2 (VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdEndRenderPass2(commandBuffer, pSubpassEndInfo);
-}
-
-VkResult DeviceDriver::getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, uint64_t* pValue) const
-{
-    return m_vk.getSemaphoreCounterValue(device, semaphore, pValue);
-}
-
-VkResult DeviceDriver::waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout) const
-{
-    return m_vk.waitSemaphores(device, pWaitInfo, timeout);
-}
-
-VkResult DeviceDriver::signalSemaphore (VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) const
-{
-    return m_vk.signalSemaphore(device, pSignalInfo);
-}
-
-VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const
-{
-    return m_vk.getAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);
-}
-
-VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const
-{
-    return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
-}
-
-void DeviceDriver::cmdDrawIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawIndirectCount(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+    m_vk.cmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 
 void DeviceDriver::cmdDrawIndexedIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
@@ -1300,42 +529,10 @@ void DeviceDriver::cmdDrawIndexedIndirectCount (VkCommandBuffer commandBuffer, V
     m_vk.cmdDrawIndexedIndirectCount(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 
-void DeviceDriver::cmdSetCheckpointNV (VkCommandBuffer commandBuffer, const void* pCheckpointMarker) const
-{
-    m_vk.cmdSetCheckpointNV(commandBuffer, pCheckpointMarker);
-}
-
-void DeviceDriver::getQueueCheckpointDataNV (VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData) const
-{
-    m_vk.getQueueCheckpointDataNV(queue, pCheckpointDataCount, pCheckpointData);
-}
-
-void DeviceDriver::cmdBindTransformFeedbackBuffersEXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes) const
+void DeviceDriver::cmdDrawIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBindTransformFeedbackBuffersEXT(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes);
-}
-
-void DeviceDriver::cmdBeginTransformFeedbackEXT (VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBeginTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets);
-}
-
-void DeviceDriver::cmdEndTransformFeedbackEXT (VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdEndTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets);
-}
-
-void DeviceDriver::cmdBeginQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags, uint32_t index) const
-{
-    m_vk.cmdBeginQueryIndexedEXT(commandBuffer, queryPool, query, flags, index);
-}
-
-void DeviceDriver::cmdEndQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index) const
-{
-    m_vk.cmdEndQueryIndexedEXT(commandBuffer, queryPool, query, index);
+    m_vk.cmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 
 void DeviceDriver::cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, uint32_t instanceCount, uint32_t firstInstance, VkBuffer counterBuffer, VkDeviceSize counterBufferOffset, uint32_t counterOffset, uint32_t vertexStride) const
@@ -1344,52 +541,10 @@ void DeviceDriver::cmdDrawIndirectByteCountEXT (VkCommandBuffer commandBuffer, u
     m_vk.cmdDrawIndirectByteCountEXT(commandBuffer, instanceCount, firstInstance, counterBuffer, counterBufferOffset, counterOffset, vertexStride);
 }
 
-void DeviceDriver::cmdSetExclusiveScissorNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkRect2D* pExclusiveScissors) const
+void DeviceDriver::cmdDrawIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetExclusiveScissorNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissors);
-}
-
-void DeviceDriver::cmdSetExclusiveScissorEnableNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkBool32* pExclusiveScissorEnables) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetExclusiveScissorEnableNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissorEnables);
-}
-
-void DeviceDriver::cmdBindShadingRateImageNV (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBindShadingRateImageNV(commandBuffer, imageView, imageLayout);
-}
-
-void DeviceDriver::cmdSetViewportShadingRatePaletteNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetViewportShadingRatePaletteNV(commandBuffer, firstViewport, viewportCount, pShadingRatePalettes);
-}
-
-void DeviceDriver::cmdSetCoarseSampleOrderNV (VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32_t customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetCoarseSampleOrderNV(commandBuffer, sampleOrderType, customSampleOrderCount, pCustomSampleOrders);
-}
-
-void DeviceDriver::cmdDrawMeshTasksNV (VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawMeshTasksNV(commandBuffer, taskCount, firstTask);
-}
-
-void DeviceDriver::cmdDrawMeshTasksIndirectNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawMeshTasksIndirectNV(commandBuffer, buffer, offset, drawCount, stride);
-}
-
-void DeviceDriver::cmdDrawMeshTasksIndirectCountNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawMeshTasksIndirectCountNV(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
+    m_vk.cmdDrawIndirectCount(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 
 void DeviceDriver::cmdDrawMeshTasksEXT (VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const
@@ -1398,505 +553,235 @@ void DeviceDriver::cmdDrawMeshTasksEXT (VkCommandBuffer commandBuffer, uint32_t 
     m_vk.cmdDrawMeshTasksEXT(commandBuffer, groupCountX, groupCountY, groupCountZ);
 }
 
-void DeviceDriver::cmdDrawMeshTasksIndirectEXT (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdDrawMeshTasksIndirectEXT(commandBuffer, buffer, offset, drawCount, stride);
-}
-
 void DeviceDriver::cmdDrawMeshTasksIndirectCountEXT (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdDrawMeshTasksIndirectCountEXT(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 
-VkResult DeviceDriver::compileDeferredNV (VkDevice device, VkPipeline pipeline, uint32_t shader) const
-{
-    return m_vk.compileDeferredNV(device, pipeline, shader);
-}
-
-VkResult DeviceDriver::createAccelerationStructureNV (VkDevice device, const VkAccelerationStructureCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureNV* pAccelerationStructure) const
-{
-    return m_vk.createAccelerationStructureNV(device, pCreateInfo, pAllocator, pAccelerationStructure);
-}
-
-void DeviceDriver::cmdBindInvocationMaskHUAWEI (VkCommandBuffer commandBuffer, VkImageView imageView, VkImageLayout imageLayout) const
-{
-    m_vk.cmdBindInvocationMaskHUAWEI(commandBuffer, imageView, imageLayout);
-}
-
-void DeviceDriver::destroyAccelerationStructureKHR (VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyAccelerationStructureKHR(device, accelerationStructure, pAllocator);
-}
-
-void DeviceDriver::destroyAccelerationStructureNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyAccelerationStructureNV(device, accelerationStructure, pAllocator);
-}
-
-void DeviceDriver::getAccelerationStructureMemoryRequirementsNV (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const
-{
-    m_vk.getAccelerationStructureMemoryRequirementsNV(device, pInfo, pMemoryRequirements);
-}
-
-VkResult DeviceDriver::bindAccelerationStructureMemoryNV (VkDevice device, uint32_t bindInfoCount, const VkBindAccelerationStructureMemoryInfoNV* pBindInfos) const
-{
-    return m_vk.bindAccelerationStructureMemoryNV(device, bindInfoCount, pBindInfos);
-}
-
-void DeviceDriver::cmdCopyAccelerationStructureNV (VkCommandBuffer commandBuffer, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkCopyAccelerationStructureModeKHR mode) const
-{
-    m_vk.cmdCopyAccelerationStructureNV(commandBuffer, dst, src, mode);
-}
-
-void DeviceDriver::cmdCopyAccelerationStructureKHR (VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureInfoKHR* pInfo) const
-{
-    m_vk.cmdCopyAccelerationStructureKHR(commandBuffer, pInfo);
-}
-
-VkResult DeviceDriver::copyAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureInfoKHR* pInfo) const
-{
-    return m_vk.copyAccelerationStructureKHR(device, deferredOperation, pInfo);
-}
-
-void DeviceDriver::cmdCopyAccelerationStructureToMemoryKHR (VkCommandBuffer commandBuffer, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const
-{
-    m_vk.cmdCopyAccelerationStructureToMemoryKHR(commandBuffer, pInfo);
-}
-
-VkResult DeviceDriver::copyAccelerationStructureToMemoryKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const
-{
-    return m_vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, pInfo);
-}
-
-void DeviceDriver::cmdCopyMemoryToAccelerationStructureKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const
-{
-    m_vk.cmdCopyMemoryToAccelerationStructureKHR(commandBuffer, pInfo);
-}
-
-VkResult DeviceDriver::copyMemoryToAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const
-{
-    return m_vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, pInfo);
-}
-
-void DeviceDriver::cmdWriteAccelerationStructuresPropertiesKHR (VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
-{
-    m_vk.cmdWriteAccelerationStructuresPropertiesKHR(commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery);
-}
-
-void DeviceDriver::cmdWriteAccelerationStructuresPropertiesNV (VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount, const VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
-{
-    m_vk.cmdWriteAccelerationStructuresPropertiesNV(commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery);
-}
-
-void DeviceDriver::cmdBuildAccelerationStructureNV (VkCommandBuffer commandBuffer, const VkAccelerationStructureInfoNV* pInfo, VkBuffer instanceData, VkDeviceSize instanceOffset, VkBool32 update, VkAccelerationStructureNV dst, VkAccelerationStructureNV src, VkBuffer scratch, VkDeviceSize scratchOffset) const
-{
-    m_vk.cmdBuildAccelerationStructureNV(commandBuffer, pInfo, instanceData, instanceOffset, update, dst, src, scratch, scratchOffset);
-}
-
-VkResult DeviceDriver::writeAccelerationStructuresPropertiesKHR (VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const
-{
-    return m_vk.writeAccelerationStructuresPropertiesKHR(device, accelerationStructureCount, pAccelerationStructures, queryType, dataSize, pData, stride);
-}
-
-void DeviceDriver::cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth) const
-{
-    m_vk.cmdTraceRaysKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, width, height, depth);
-}
-
-void DeviceDriver::cmdTraceRaysNV (VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, uint32_t width, uint32_t height, uint32_t depth) const
-{
-    m_vk.cmdTraceRaysNV(commandBuffer, raygenShaderBindingTableBuffer, raygenShaderBindingOffset, missShaderBindingTableBuffer, missShaderBindingOffset, missShaderBindingStride, hitShaderBindingTableBuffer, hitShaderBindingOffset, hitShaderBindingStride, callableShaderBindingTableBuffer, callableShaderBindingOffset, callableShaderBindingStride, width, height, depth);
-}
-
-VkResult DeviceDriver::getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const
-{
-    return m_vk.getRayTracingShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
-}
-
-VkResult DeviceDriver::getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const
-{
-    return m_vk.getRayTracingCaptureReplayShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
-}
-
-VkResult DeviceDriver::getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData) const
-{
-    return m_vk.getAccelerationStructureHandleNV(device, accelerationStructure, dataSize, pData);
-}
-
-VkResult DeviceDriver::createRayTracingPipelinesNV (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoNV* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
-{
-    return m_vk.createRayTracingPipelinesNV(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
-}
-
-VkResult DeviceDriver::createRayTracingPipelinesKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
-{
-    return m_vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
-}
-
-void DeviceDriver::cmdTraceRaysIndirectKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress) const
-{
-    m_vk.cmdTraceRaysIndirectKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, indirectDeviceAddress);
-}
-
-void DeviceDriver::cmdTraceRaysIndirect2KHR (VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress) const
-{
-    m_vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
-}
-
-void DeviceDriver::getClusterAccelerationStructureBuildSizesNV (VkDevice device, const VkClusterAccelerationStructureInputInfoNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
-{
-    m_vk.getClusterAccelerationStructureBuildSizesNV(device, pInfo, pSizeInfo);
-}
-
-void DeviceDriver::cmdBuildClusterAccelerationStructureIndirectNV (VkCommandBuffer commandBuffer, const VkClusterAccelerationStructureCommandsInfoNV* pCommandInfos) const
-{
-    m_vk.cmdBuildClusterAccelerationStructureIndirectNV(commandBuffer, pCommandInfos);
-}
-
-void DeviceDriver::getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
-{
-    m_vk.getDeviceAccelerationStructureCompatibilityKHR(device, pVersionInfo, pCompatibility);
-}
-
-VkDeviceSize DeviceDriver::getRayTracingShaderGroupStackSizeKHR (VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader) const
-{
-    return m_vk.getRayTracingShaderGroupStackSizeKHR(device, pipeline, group, groupShader);
-}
-
-void DeviceDriver::cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer commandBuffer, uint32_t pipelineStackSize) const
-{
-    m_vk.cmdSetRayTracingPipelineStackSizeKHR(commandBuffer, pipelineStackSize);
-}
-
-uint32_t DeviceDriver::getImageViewHandleNVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const
-{
-    return m_vk.getImageViewHandleNVX(device, pInfo);
-}
-
-uint64_t DeviceDriver::getImageViewHandle64NVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const
-{
-    return m_vk.getImageViewHandle64NVX(device, pInfo);
-}
-
-VkResult DeviceDriver::getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const
-{
-    return m_vk.getImageViewAddressNVX(device, imageView, pProperties);
-}
-
-VkResult DeviceDriver::getDeviceGroupSurfacePresentModes2EXT (VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes) const
-{
-    return m_vk.getDeviceGroupSurfacePresentModes2EXT(device, pSurfaceInfo, pModes);
-}
-
-VkResult DeviceDriver::acquireFullScreenExclusiveModeEXT (VkDevice device, VkSwapchainKHR swapchain) const
-{
-    return m_vk.acquireFullScreenExclusiveModeEXT(device, swapchain);
-}
-
-VkResult DeviceDriver::releaseFullScreenExclusiveModeEXT (VkDevice device, VkSwapchainKHR swapchain) const
-{
-    return m_vk.releaseFullScreenExclusiveModeEXT(device, swapchain);
-}
-
-VkResult DeviceDriver::acquireProfilingLockKHR (VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo) const
-{
-    return m_vk.acquireProfilingLockKHR(device, pInfo);
-}
-
-void DeviceDriver::releaseProfilingLockKHR (VkDevice device) const
-{
-    m_vk.releaseProfilingLockKHR(device);
-}
-
-VkResult DeviceDriver::getImageDrmFormatModifierPropertiesEXT (VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties) const
-{
-    return m_vk.getImageDrmFormatModifierPropertiesEXT(device, image, pProperties);
-}
-
-uint64_t DeviceDriver::getBufferOpaqueCaptureAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const
-{
-    return m_vk.getBufferOpaqueCaptureAddress(device, pInfo);
-}
-
-VkDeviceAddress DeviceDriver::getBufferDeviceAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const
-{
-    return m_vk.getBufferDeviceAddress(device, pInfo);
-}
-
-VkResult DeviceDriver::initializePerformanceApiINTEL (VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo) const
-{
-    return m_vk.initializePerformanceApiINTEL(device, pInitializeInfo);
-}
-
-void DeviceDriver::uninitializePerformanceApiINTEL (VkDevice device) const
-{
-    m_vk.uninitializePerformanceApiINTEL(device);
-}
-
-VkResult DeviceDriver::cmdSetPerformanceMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo) const
-{
-    return m_vk.cmdSetPerformanceMarkerINTEL(commandBuffer, pMarkerInfo);
-}
-
-VkResult DeviceDriver::cmdSetPerformanceStreamMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo) const
-{
-    return m_vk.cmdSetPerformanceStreamMarkerINTEL(commandBuffer, pMarkerInfo);
-}
-
-VkResult DeviceDriver::cmdSetPerformanceOverrideINTEL (VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo) const
-{
-    return m_vk.cmdSetPerformanceOverrideINTEL(commandBuffer, pOverrideInfo);
-}
-
-VkResult DeviceDriver::acquirePerformanceConfigurationINTEL (VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration) const
-{
-    return m_vk.acquirePerformanceConfigurationINTEL(device, pAcquireInfo, pConfiguration);
-}
-
-VkResult DeviceDriver::releasePerformanceConfigurationINTEL (VkDevice device, VkPerformanceConfigurationINTEL configuration) const
-{
-    return m_vk.releasePerformanceConfigurationINTEL(device, configuration);
-}
-
-VkResult DeviceDriver::queueSetPerformanceConfigurationINTEL (VkQueue queue, VkPerformanceConfigurationINTEL configuration) const
-{
-    return m_vk.queueSetPerformanceConfigurationINTEL(queue, configuration);
-}
-
-VkResult DeviceDriver::getPerformanceParameterINTEL (VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const
-{
-    return m_vk.getPerformanceParameterINTEL(device, parameter, pValue);
-}
-
-uint64_t DeviceDriver::getDeviceMemoryOpaqueCaptureAddress (VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) const
-{
-    return m_vk.getDeviceMemoryOpaqueCaptureAddress(device, pInfo);
-}
-
-VkResult DeviceDriver::getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const
-{
-    return m_vk.getPipelineExecutablePropertiesKHR(device, pPipelineInfo, pExecutableCount, pProperties);
-}
-
-VkResult DeviceDriver::getPipelineExecutableStatisticsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const
-{
-    return m_vk.getPipelineExecutableStatisticsKHR(device, pExecutableInfo, pStatisticCount, pStatistics);
-}
-
-VkResult DeviceDriver::getPipelineExecutableInternalRepresentationsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const
-{
-    return m_vk.getPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
-}
-
-void DeviceDriver::cmdSetLineStipple (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
+void DeviceDriver::cmdDrawMeshTasksIndirectCountNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetLineStipple(commandBuffer, lineStippleFactor, lineStipplePattern);
+    m_vk.cmdDrawMeshTasksIndirectCountNV(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 
-VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
-{
-    return m_vk.createAccelerationStructureKHR(device, pCreateInfo, pAllocator, pAccelerationStructure);
-}
-
-void DeviceDriver::cmdBuildAccelerationStructuresKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const
-{
-    m_vk.cmdBuildAccelerationStructuresKHR(commandBuffer, infoCount, pInfos, ppBuildRangeInfos);
-}
-
-void DeviceDriver::cmdBuildAccelerationStructuresIndirectKHR (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkDeviceAddress* pIndirectDeviceAddresses, const uint32_t* pIndirectStrides, const uint32_t* const* ppMaxPrimitiveCounts) const
-{
-    m_vk.cmdBuildAccelerationStructuresIndirectKHR(commandBuffer, infoCount, pInfos, pIndirectDeviceAddresses, pIndirectStrides, ppMaxPrimitiveCounts);
-}
-
-VkResult DeviceDriver::buildAccelerationStructuresKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const
-{
-    return m_vk.buildAccelerationStructuresKHR(device, deferredOperation, infoCount, pInfos, ppBuildRangeInfos);
-}
-
-VkDeviceAddress DeviceDriver::getAccelerationStructureDeviceAddressKHR (VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo) const
-{
-    return m_vk.getAccelerationStructureDeviceAddressKHR(device, pInfo);
-}
-
-VkResult DeviceDriver::createDeferredOperationKHR (VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const
-{
-    return m_vk.createDeferredOperationKHR(device, pAllocator, pDeferredOperation);
-}
-
-void DeviceDriver::destroyDeferredOperationKHR (VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyDeferredOperationKHR(device, operation, pAllocator);
-}
-
-uint32_t DeviceDriver::getDeferredOperationMaxConcurrencyKHR (VkDevice device, VkDeferredOperationKHR operation) const
-{
-    return m_vk.getDeferredOperationMaxConcurrencyKHR(device, operation);
-}
-
-VkResult DeviceDriver::getDeferredOperationResultKHR (VkDevice device, VkDeferredOperationKHR operation) const
-{
-    return m_vk.getDeferredOperationResultKHR(device, operation);
-}
-
-VkResult DeviceDriver::deferredOperationJoinKHR (VkDevice device, VkDeferredOperationKHR operation) const
-{
-    return m_vk.deferredOperationJoinKHR(device, operation);
-}
-
-void DeviceDriver::getPipelineIndirectMemoryRequirementsNV (VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const
-{
-    m_vk.getPipelineIndirectMemoryRequirementsNV(device, pCreateInfo, pMemoryRequirements);
-}
-
-VkDeviceAddress DeviceDriver::getPipelineIndirectDeviceAddressNV (VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const
-{
-    return m_vk.getPipelineIndirectDeviceAddressNV(device, pInfo);
-}
-
-void DeviceDriver::antiLagUpdateAMD (VkDevice device, const VkAntiLagDataAMD* pData) const
-{
-    m_vk.antiLagUpdateAMD(device, pData);
-}
-
-void DeviceDriver::cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const
+void DeviceDriver::cmdDrawMeshTasksIndirectEXT (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetCullMode(commandBuffer, cullMode);
+    m_vk.cmdDrawMeshTasksIndirectEXT(commandBuffer, buffer, offset, drawCount, stride);
 }
 
-void DeviceDriver::cmdSetFrontFace (VkCommandBuffer commandBuffer, VkFrontFace frontFace) const
+void DeviceDriver::cmdDrawMeshTasksIndirectNV (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetFrontFace(commandBuffer, frontFace);
+    m_vk.cmdDrawMeshTasksIndirectNV(commandBuffer, buffer, offset, drawCount, stride);
 }
 
-void DeviceDriver::cmdSetPrimitiveTopology (VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const
+void DeviceDriver::cmdDrawMeshTasksNV (VkCommandBuffer commandBuffer, uint32_t taskCount, uint32_t firstTask) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetPrimitiveTopology(commandBuffer, primitiveTopology);
+    m_vk.cmdDrawMeshTasksNV(commandBuffer, taskCount, firstTask);
 }
 
-void DeviceDriver::cmdSetViewportWithCount (VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports) const
+void DeviceDriver::cmdDrawMultiEXT (VkCommandBuffer commandBuffer, uint32_t drawCount, const VkMultiDrawInfoEXT* pVertexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetViewportWithCount(commandBuffer, viewportCount, pViewports);
+    m_vk.cmdDrawMultiEXT(commandBuffer, drawCount, pVertexInfo, instanceCount, firstInstance, stride);
 }
 
-void DeviceDriver::cmdSetScissorWithCount (VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors) const
+void DeviceDriver::cmdDrawMultiIndexedEXT (VkCommandBuffer commandBuffer, uint32_t drawCount, const VkMultiDrawIndexedInfoEXT* pIndexInfo, uint32_t instanceCount, uint32_t firstInstance, uint32_t stride, const int32_t* pVertexOffset) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetScissorWithCount(commandBuffer, scissorCount, pScissors);
+    m_vk.cmdDrawMultiIndexedEXT(commandBuffer, drawCount, pIndexInfo, instanceCount, firstInstance, stride, pVertexOffset);
 }
 
-void DeviceDriver::cmdBindIndexBuffer2 (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkDeviceSize size, VkIndexType indexType) const
+void DeviceDriver::cmdEncodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoEncodeInfoKHR* pEncodeInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBindIndexBuffer2(commandBuffer, buffer, offset, size, indexType);
+    m_vk.cmdEncodeVideoKHR(commandBuffer, pEncodeInfo);
 }
 
-void DeviceDriver::cmdBindVertexBuffers2 (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) const
+void DeviceDriver::cmdEndConditionalRenderingEXT (VkCommandBuffer commandBuffer) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBindVertexBuffers2(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes, pStrides);
+    m_vk.cmdEndConditionalRenderingEXT(commandBuffer);
 }
 
-void DeviceDriver::cmdSetDepthTestEnable (VkCommandBuffer commandBuffer, VkBool32 depthTestEnable) const
+void DeviceDriver::cmdEndDebugUtilsLabelEXT (VkCommandBuffer commandBuffer) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthTestEnable(commandBuffer, depthTestEnable);
+    m_vk.cmdEndDebugUtilsLabelEXT(commandBuffer);
 }
 
-void DeviceDriver::cmdSetDepthWriteEnable (VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable) const
+void DeviceDriver::cmdEndPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthWriteEnable(commandBuffer, depthWriteEnable);
+    m_vk.cmdEndPerTileExecutionQCOM(commandBuffer, pPerTileEndInfo);
 }
 
-void DeviceDriver::cmdSetDepthCompareOp (VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp) const
+void DeviceDriver::cmdEndQuery (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthCompareOp(commandBuffer, depthCompareOp);
+    m_vk.cmdEndQuery(commandBuffer, queryPool, query);
 }
 
-void DeviceDriver::cmdSetDepthBoundsTestEnable (VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable) const
+void DeviceDriver::cmdEndQueryIndexedEXT (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, uint32_t index) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthBoundsTestEnable(commandBuffer, depthBoundsTestEnable);
+    m_vk.cmdEndQueryIndexedEXT(commandBuffer, queryPool, query, index);
 }
 
-void DeviceDriver::cmdSetStencilTestEnable (VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable) const
+void DeviceDriver::cmdEndRenderPass (VkCommandBuffer commandBuffer) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetStencilTestEnable(commandBuffer, stencilTestEnable);
+    m_vk.cmdEndRenderPass(commandBuffer);
 }
 
-void DeviceDriver::cmdSetStencilOp (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp) const
+void DeviceDriver::cmdEndRenderPass2 (VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetStencilOp(commandBuffer, faceMask, failOp, passOp, depthFailOp, compareOp);
+    m_vk.cmdEndRenderPass2(commandBuffer, pSubpassEndInfo);
 }
 
-void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const
+void DeviceDriver::cmdEndRendering (VkCommandBuffer commandBuffer) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetPatchControlPointsEXT(commandBuffer, patchControlPoints);
+    m_vk.cmdEndRendering(commandBuffer);
 }
 
-void DeviceDriver::cmdSetRasterizerDiscardEnable (VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) const
+void DeviceDriver::cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetRasterizerDiscardEnable(commandBuffer, rasterizerDiscardEnable);
+    m_vk.cmdEndRendering2EXT(commandBuffer, pRenderingEndInfo);
 }
 
-void DeviceDriver::cmdSetDepthBiasEnable (VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) const
+void DeviceDriver::cmdEndTransformFeedbackEXT (VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthBiasEnable(commandBuffer, depthBiasEnable);
+    m_vk.cmdEndTransformFeedbackEXT(commandBuffer, firstCounterBuffer, counterBufferCount, pCounterBuffers, pCounterBufferOffsets);
 }
 
-void DeviceDriver::cmdSetLogicOpEXT (VkCommandBuffer commandBuffer, VkLogicOp logicOp) const
+void DeviceDriver::cmdEndVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoEndCodingInfoKHR* pEndCodingInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetLogicOpEXT(commandBuffer, logicOp);
+    m_vk.cmdEndVideoCodingKHR(commandBuffer, pEndCodingInfo);
 }
 
-void DeviceDriver::cmdSetPrimitiveRestartEnable (VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const
+void DeviceDriver::cmdExecuteCommands (VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetPrimitiveRestartEnable(commandBuffer, primitiveRestartEnable);
+    m_vk.cmdExecuteCommands(commandBuffer, commandBufferCount, pCommandBuffers);
 }
 
-void DeviceDriver::cmdSetTessellationDomainOriginEXT (VkCommandBuffer commandBuffer, VkTessellationDomainOrigin domainOrigin) const
+void DeviceDriver::cmdExecuteGeneratedCommandsEXT (VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetTessellationDomainOriginEXT(commandBuffer, domainOrigin);
+    m_vk.cmdExecuteGeneratedCommandsEXT(commandBuffer, isPreprocessed, pGeneratedCommandsInfo);
 }
 
-void DeviceDriver::cmdSetDepthClampEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClampEnable) const
+void DeviceDriver::cmdExecuteGeneratedCommandsNV (VkCommandBuffer commandBuffer, VkBool32 isPreprocessed, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthClampEnableEXT(commandBuffer, depthClampEnable);
+    m_vk.cmdExecuteGeneratedCommandsNV(commandBuffer, isPreprocessed, pGeneratedCommandsInfo);
 }
 
-void DeviceDriver::cmdSetPolygonModeEXT (VkCommandBuffer commandBuffer, VkPolygonMode polygonMode) const
+void DeviceDriver::cmdFillBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetPolygonModeEXT(commandBuffer, polygonMode);
+    m_vk.cmdFillBuffer(commandBuffer, dstBuffer, dstOffset, size, data);
 }
 
-void DeviceDriver::cmdSetRasterizationSamplesEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits rasterizationSamples) const
+void DeviceDriver::cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetRasterizationSamplesEXT(commandBuffer, rasterizationSamples);
+    m_vk.cmdInitializeGraphScratchMemoryAMDX(commandBuffer, executionGraph, scratch, scratchSize);
 }
 
-void DeviceDriver::cmdSetSampleMaskEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits samples, const VkSampleMask* pSampleMask) const
+void DeviceDriver::cmdInsertDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) const
+{
+    m_vk.cmdInsertDebugUtilsLabelEXT(commandBuffer, pLabelInfo);
+}
+
+void DeviceDriver::cmdNextSubpass (VkCommandBuffer commandBuffer, VkSubpassContents contents) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetSampleMaskEXT(commandBuffer, samples, pSampleMask);
+    m_vk.cmdNextSubpass(commandBuffer, contents);
+}
+
+void DeviceDriver::cmdNextSubpass2 (VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdNextSubpass2(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
+}
+
+void DeviceDriver::cmdOpticalFlowExecuteNV (VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const
+{
+    m_vk.cmdOpticalFlowExecuteNV(commandBuffer, session, pExecuteInfo);
+}
+
+void DeviceDriver::cmdPipelineBarrier (VkCommandBuffer commandBuffer, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, VkDependencyFlags dependencyFlags, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) const
+{
+    m_vk.cmdPipelineBarrier(commandBuffer, srcStageMask, dstStageMask, dependencyFlags, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
+}
+
+void DeviceDriver::cmdPipelineBarrier2 (VkCommandBuffer commandBuffer, const VkDependencyInfo* pDependencyInfo) const
+{
+    m_vk.cmdPipelineBarrier2(commandBuffer, pDependencyInfo);
+}
+
+void DeviceDriver::cmdPreprocessGeneratedCommandsEXT (VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoEXT* pGeneratedCommandsInfo, VkCommandBuffer stateCommandBuffer) const
+{
+    m_vk.cmdPreprocessGeneratedCommandsEXT(commandBuffer, pGeneratedCommandsInfo, stateCommandBuffer);
+}
+
+void DeviceDriver::cmdPreprocessGeneratedCommandsNV (VkCommandBuffer commandBuffer, const VkGeneratedCommandsInfoNV* pGeneratedCommandsInfo) const
+{
+    m_vk.cmdPreprocessGeneratedCommandsNV(commandBuffer, pGeneratedCommandsInfo);
+}
+
+void DeviceDriver::cmdPushConstants (VkCommandBuffer commandBuffer, VkPipelineLayout layout, VkShaderStageFlags stageFlags, uint32_t offset, uint32_t size, const void* pValues) const
+{
+    m_vk.cmdPushConstants(commandBuffer, layout, stageFlags, offset, size, pValues);
+}
+
+void DeviceDriver::cmdPushConstants2 (VkCommandBuffer commandBuffer, const VkPushConstantsInfo* pPushConstantsInfo) const
+{
+    m_vk.cmdPushConstants2(commandBuffer, pPushConstantsInfo);
+}
+
+void DeviceDriver::cmdPushDescriptorSet (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites) const
+{
+    m_vk.cmdPushDescriptorSet(commandBuffer, pipelineBindPoint, layout, set, descriptorWriteCount, pDescriptorWrites);
+}
+
+void DeviceDriver::cmdPushDescriptorSet2 (VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfo* pPushDescriptorSetInfo) const
+{
+    m_vk.cmdPushDescriptorSet2(commandBuffer, pPushDescriptorSetInfo);
+}
+
+void DeviceDriver::cmdPushDescriptorSetWithTemplate (VkCommandBuffer commandBuffer, VkDescriptorUpdateTemplate descriptorUpdateTemplate, VkPipelineLayout layout, uint32_t set, const void* pData) const
+{
+    m_vk.cmdPushDescriptorSetWithTemplate(commandBuffer, descriptorUpdateTemplate, layout, set, pData);
+}
+
+void DeviceDriver::cmdPushDescriptorSetWithTemplate2 (VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfo* pPushDescriptorSetWithTemplateInfo) const
+{
+    m_vk.cmdPushDescriptorSetWithTemplate2(commandBuffer, pPushDescriptorSetWithTemplateInfo);
+}
+
+void DeviceDriver::cmdResetEvent (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask) const
+{
+    m_vk.cmdResetEvent(commandBuffer, event, stageMask);
+}
+
+void DeviceDriver::cmdResetEvent2 (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2 stageMask) const
+{
+    m_vk.cmdResetEvent2(commandBuffer, event, stageMask);
+}
+
+void DeviceDriver::cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const
+{
+    m_vk.cmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);
+}
+
+void DeviceDriver::cmdResolveImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageResolve* pRegions) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdResolveImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
+}
+
+void DeviceDriver::cmdResolveImage2 (VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdResolveImage2(commandBuffer, pResolveImageInfo);
 }
 
 void DeviceDriver::cmdSetAlphaToCoverageEnableEXT (VkCommandBuffer commandBuffer, VkBool32 alphaToCoverageEnable) const
@@ -1911,10 +796,33 @@ void DeviceDriver::cmdSetAlphaToOneEnableEXT (VkCommandBuffer commandBuffer, VkB
     m_vk.cmdSetAlphaToOneEnableEXT(commandBuffer, alphaToOneEnable);
 }
 
-void DeviceDriver::cmdSetLogicOpEnableEXT (VkCommandBuffer commandBuffer, VkBool32 logicOpEnable) const
+void DeviceDriver::cmdSetAttachmentFeedbackLoopEnableEXT (VkCommandBuffer commandBuffer, VkImageAspectFlags aspectMask) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetLogicOpEnableEXT(commandBuffer, logicOpEnable);
+    m_vk.cmdSetAttachmentFeedbackLoopEnableEXT(commandBuffer, aspectMask);
+}
+
+void DeviceDriver::cmdSetBlendConstants (VkCommandBuffer commandBuffer, const float blendConstants[4]) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetBlendConstants(commandBuffer, blendConstants);
+}
+
+void DeviceDriver::cmdSetCheckpointNV (VkCommandBuffer commandBuffer, const void* pCheckpointMarker) const
+{
+    m_vk.cmdSetCheckpointNV(commandBuffer, pCheckpointMarker);
+}
+
+void DeviceDriver::cmdSetCoarseSampleOrderNV (VkCommandBuffer commandBuffer, VkCoarseSampleOrderTypeNV sampleOrderType, uint32_t customSampleOrderCount, const VkCoarseSampleOrderCustomNV* pCustomSampleOrders) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetCoarseSampleOrderNV(commandBuffer, sampleOrderType, customSampleOrderCount, pCustomSampleOrders);
+}
+
+void DeviceDriver::cmdSetColorBlendAdvancedEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorBlendAdvancedEXT* pColorBlendAdvanced) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetColorBlendAdvancedEXT(commandBuffer, firstAttachment, attachmentCount, pColorBlendAdvanced);
 }
 
 void DeviceDriver::cmdSetColorBlendEnableEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkBool32* pColorBlendEnables) const
@@ -1929,94 +837,22 @@ void DeviceDriver::cmdSetColorBlendEquationEXT (VkCommandBuffer commandBuffer, u
     m_vk.cmdSetColorBlendEquationEXT(commandBuffer, firstAttachment, attachmentCount, pColorBlendEquations);
 }
 
+void DeviceDriver::cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetColorWriteEnableEXT(commandBuffer, attachmentCount, pColorWriteEnables);
+}
+
 void DeviceDriver::cmdSetColorWriteMaskEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorComponentFlags* pColorWriteMasks) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetColorWriteMaskEXT(commandBuffer, firstAttachment, attachmentCount, pColorWriteMasks);
 }
 
-void DeviceDriver::cmdSetRasterizationStreamEXT (VkCommandBuffer commandBuffer, uint32_t rasterizationStream) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetRasterizationStreamEXT(commandBuffer, rasterizationStream);
-}
-
 void DeviceDriver::cmdSetConservativeRasterizationModeEXT (VkCommandBuffer commandBuffer, VkConservativeRasterizationModeEXT conservativeRasterizationMode) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetConservativeRasterizationModeEXT(commandBuffer, conservativeRasterizationMode);
-}
-
-void DeviceDriver::cmdSetExtraPrimitiveOverestimationSizeEXT (VkCommandBuffer commandBuffer, float extraPrimitiveOverestimationSize) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetExtraPrimitiveOverestimationSizeEXT(commandBuffer, extraPrimitiveOverestimationSize);
-}
-
-void DeviceDriver::cmdSetDepthClipEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClipEnable) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthClipEnableEXT(commandBuffer, depthClipEnable);
-}
-
-void DeviceDriver::cmdSetSampleLocationsEnableEXT (VkCommandBuffer commandBuffer, VkBool32 sampleLocationsEnable) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetSampleLocationsEnableEXT(commandBuffer, sampleLocationsEnable);
-}
-
-void DeviceDriver::cmdSetColorBlendAdvancedEXT (VkCommandBuffer commandBuffer, uint32_t firstAttachment, uint32_t attachmentCount, const VkColorBlendAdvancedEXT* pColorBlendAdvanced) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetColorBlendAdvancedEXT(commandBuffer, firstAttachment, attachmentCount, pColorBlendAdvanced);
-}
-
-void DeviceDriver::cmdSetProvokingVertexModeEXT (VkCommandBuffer commandBuffer, VkProvokingVertexModeEXT provokingVertexMode) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetProvokingVertexModeEXT(commandBuffer, provokingVertexMode);
-}
-
-void DeviceDriver::cmdSetLineRasterizationModeEXT (VkCommandBuffer commandBuffer, VkLineRasterizationModeEXT lineRasterizationMode) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetLineRasterizationModeEXT(commandBuffer, lineRasterizationMode);
-}
-
-void DeviceDriver::cmdSetLineStippleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 stippledLineEnable) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetLineStippleEnableEXT(commandBuffer, stippledLineEnable);
-}
-
-void DeviceDriver::cmdSetDepthClipNegativeOneToOneEXT (VkCommandBuffer commandBuffer, VkBool32 negativeOneToOne) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthClipNegativeOneToOneEXT(commandBuffer, negativeOneToOne);
-}
-
-void DeviceDriver::cmdSetViewportWScalingEnableNV (VkCommandBuffer commandBuffer, VkBool32 viewportWScalingEnable) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetViewportWScalingEnableNV(commandBuffer, viewportWScalingEnable);
-}
-
-void DeviceDriver::cmdSetViewportSwizzleNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportSwizzleNV* pViewportSwizzles) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetViewportSwizzleNV(commandBuffer, firstViewport, viewportCount, pViewportSwizzles);
-}
-
-void DeviceDriver::cmdSetCoverageToColorEnableNV (VkCommandBuffer commandBuffer, VkBool32 coverageToColorEnable) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetCoverageToColorEnableNV(commandBuffer, coverageToColorEnable);
-}
-
-void DeviceDriver::cmdSetCoverageToColorLocationNV (VkCommandBuffer commandBuffer, uint32_t coverageToColorLocation) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetCoverageToColorLocationNV(commandBuffer, coverageToColorLocation);
 }
 
 void DeviceDriver::cmdSetCoverageModulationModeNV (VkCommandBuffer commandBuffer, VkCoverageModulationModeNV coverageModulationMode) const
@@ -2037,561 +873,34 @@ void DeviceDriver::cmdSetCoverageModulationTableNV (VkCommandBuffer commandBuffe
     m_vk.cmdSetCoverageModulationTableNV(commandBuffer, coverageModulationTableCount, pCoverageModulationTable);
 }
 
-void DeviceDriver::cmdSetShadingRateImageEnableNV (VkCommandBuffer commandBuffer, VkBool32 shadingRateImageEnable) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetShadingRateImageEnableNV(commandBuffer, shadingRateImageEnable);
-}
-
 void DeviceDriver::cmdSetCoverageReductionModeNV (VkCommandBuffer commandBuffer, VkCoverageReductionModeNV coverageReductionMode) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetCoverageReductionModeNV(commandBuffer, coverageReductionMode);
 }
 
-void DeviceDriver::cmdSetRepresentativeFragmentTestEnableNV (VkCommandBuffer commandBuffer, VkBool32 representativeFragmentTestEnable) const
+void DeviceDriver::cmdSetCoverageToColorEnableNV (VkCommandBuffer commandBuffer, VkBool32 coverageToColorEnable) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetRepresentativeFragmentTestEnableNV(commandBuffer, representativeFragmentTestEnable);
+    m_vk.cmdSetCoverageToColorEnableNV(commandBuffer, coverageToColorEnable);
 }
 
-VkResult DeviceDriver::createPrivateDataSlot (VkDevice device, const VkPrivateDataSlotCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlot* pPrivateDataSlot) const
-{
-    return m_vk.createPrivateDataSlot(device, pCreateInfo, pAllocator, pPrivateDataSlot);
-}
-
-void DeviceDriver::destroyPrivateDataSlot (VkDevice device, VkPrivateDataSlot privateDataSlot, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyPrivateDataSlot(device, privateDataSlot, pAllocator);
-}
-
-VkResult DeviceDriver::setPrivateData (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data) const
-{
-    return m_vk.setPrivateData(device, objectType, objectHandle, privateDataSlot, data);
-}
-
-void DeviceDriver::getPrivateData (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t* pData) const
-{
-    m_vk.getPrivateData(device, objectType, objectHandle, privateDataSlot, pData);
-}
-
-void DeviceDriver::cmdCopyBuffer2 (VkCommandBuffer commandBuffer, const VkCopyBufferInfo2* pCopyBufferInfo) const
-{
-    m_vk.cmdCopyBuffer2(commandBuffer, pCopyBufferInfo);
-}
-
-void DeviceDriver::cmdCopyImage2 (VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo) const
-{
-    m_vk.cmdCopyImage2(commandBuffer, pCopyImageInfo);
-}
-
-void DeviceDriver::cmdBlitImage2 (VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo) const
+void DeviceDriver::cmdSetCoverageToColorLocationNV (VkCommandBuffer commandBuffer, uint32_t coverageToColorLocation) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBlitImage2(commandBuffer, pBlitImageInfo);
+    m_vk.cmdSetCoverageToColorLocationNV(commandBuffer, coverageToColorLocation);
 }
 
-void DeviceDriver::cmdCopyBufferToImage2 (VkCommandBuffer commandBuffer, const VkCopyBufferToImageInfo2* pCopyBufferToImageInfo) const
-{
-    m_vk.cmdCopyBufferToImage2(commandBuffer, pCopyBufferToImageInfo);
-}
-
-void DeviceDriver::cmdCopyImageToBuffer2 (VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo) const
-{
-    m_vk.cmdCopyImageToBuffer2(commandBuffer, pCopyImageToBufferInfo);
-}
-
-void DeviceDriver::cmdResolveImage2 (VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo) const
+void DeviceDriver::cmdSetCullMode (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdResolveImage2(commandBuffer, pResolveImageInfo);
+    m_vk.cmdSetCullMode(commandBuffer, cullMode);
 }
 
-void DeviceDriver::cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
+void DeviceDriver::cmdSetDepthBias (VkCommandBuffer commandBuffer, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetFragmentShadingRateKHR(commandBuffer, pFragmentSize, combinerOps);
-}
-
-void DeviceDriver::cmdSetFragmentShadingRateEnumNV (VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetFragmentShadingRateEnumNV(commandBuffer, shadingRate, combinerOps);
-}
-
-void DeviceDriver::getAccelerationStructureBuildSizesKHR (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const uint32_t* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
-{
-    m_vk.getAccelerationStructureBuildSizesKHR(device, buildType, pBuildInfo, pMaxPrimitiveCounts, pSizeInfo);
-}
-
-void DeviceDriver::cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetVertexInputEXT(commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions);
-}
-
-void DeviceDriver::cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetColorWriteEnableEXT(commandBuffer, attachmentCount, pColorWriteEnables);
-}
-
-void DeviceDriver::cmdSetEvent2 (VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfo* pDependencyInfo) const
-{
-    m_vk.cmdSetEvent2(commandBuffer, event, pDependencyInfo);
-}
-
-void DeviceDriver::cmdResetEvent2 (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags2 stageMask) const
-{
-    m_vk.cmdResetEvent2(commandBuffer, event, stageMask);
-}
-
-void DeviceDriver::cmdWaitEvents2 (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfos) const
-{
-    m_vk.cmdWaitEvents2(commandBuffer, eventCount, pEvents, pDependencyInfos);
-}
-
-void DeviceDriver::cmdPipelineBarrier2 (VkCommandBuffer commandBuffer, const VkDependencyInfo* pDependencyInfo) const
-{
-    m_vk.cmdPipelineBarrier2(commandBuffer, pDependencyInfo);
-}
-
-VkResult DeviceDriver::queueSubmit2 (VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence) const
-{
-    return m_vk.queueSubmit2(queue, submitCount, pSubmits, fence);
-}
-
-void DeviceDriver::cmdWriteTimestamp2 (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query) const
-{
-    m_vk.cmdWriteTimestamp2(commandBuffer, stage, queryPool, query);
-}
-
-void DeviceDriver::cmdWriteBufferMarker2AMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const
-{
-    m_vk.cmdWriteBufferMarker2AMD(commandBuffer, stage, dstBuffer, dstOffset, marker);
-}
-
-void DeviceDriver::getQueueCheckpointData2NV (VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const
-{
-    m_vk.getQueueCheckpointData2NV(queue, pCheckpointDataCount, pCheckpointData);
-}
-
-VkResult DeviceDriver::copyMemoryToImage (VkDevice device, const VkCopyMemoryToImageInfo* pCopyMemoryToImageInfo) const
-{
-    return m_vk.copyMemoryToImage(device, pCopyMemoryToImageInfo);
-}
-
-VkResult DeviceDriver::copyImageToMemory (VkDevice device, const VkCopyImageToMemoryInfo* pCopyImageToMemoryInfo) const
-{
-    return m_vk.copyImageToMemory(device, pCopyImageToMemoryInfo);
-}
-
-VkResult DeviceDriver::copyImageToImage (VkDevice device, const VkCopyImageToImageInfo* pCopyImageToImageInfo) const
-{
-    return m_vk.copyImageToImage(device, pCopyImageToImageInfo);
-}
-
-VkResult DeviceDriver::transitionImageLayout (VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfo* pTransitions) const
-{
-    return m_vk.transitionImageLayout(device, transitionCount, pTransitions);
-}
-
-VkResult DeviceDriver::createVideoSessionKHR (VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const
-{
-    return m_vk.createVideoSessionKHR(device, pCreateInfo, pAllocator, pVideoSession);
-}
-
-void DeviceDriver::destroyVideoSessionKHR (VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyVideoSessionKHR(device, videoSession, pAllocator);
-}
-
-VkResult DeviceDriver::createVideoSessionParametersKHR (VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const
-{
-    return m_vk.createVideoSessionParametersKHR(device, pCreateInfo, pAllocator, pVideoSessionParameters);
-}
-
-VkResult DeviceDriver::updateVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo) const
-{
-    return m_vk.updateVideoSessionParametersKHR(device, videoSessionParameters, pUpdateInfo);
-}
-
-VkResult DeviceDriver::getEncodedVideoSessionParametersKHR (VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData) const
-{
-    return m_vk.getEncodedVideoSessionParametersKHR(device, pVideoSessionParametersInfo, pFeedbackInfo, pDataSize, pData);
-}
-
-void DeviceDriver::destroyVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyVideoSessionParametersKHR(device, videoSessionParameters, pAllocator);
-}
-
-VkResult DeviceDriver::getVideoSessionMemoryRequirementsKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements) const
-{
-    return m_vk.getVideoSessionMemoryRequirementsKHR(device, videoSession, pMemoryRequirementsCount, pMemoryRequirements);
-}
-
-VkResult DeviceDriver::bindVideoSessionMemoryKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t bindSessionMemoryInfoCount, const VkBindVideoSessionMemoryInfoKHR* pBindSessionMemoryInfos) const
-{
-    return m_vk.bindVideoSessionMemoryKHR(device, videoSession, bindSessionMemoryInfoCount, pBindSessionMemoryInfos);
-}
-
-void DeviceDriver::cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo) const
-{
-    m_vk.cmdDecodeVideoKHR(commandBuffer, pDecodeInfo);
-}
-
-void DeviceDriver::cmdBeginVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoBeginCodingInfoKHR* pBeginInfo) const
-{
-    m_vk.cmdBeginVideoCodingKHR(commandBuffer, pBeginInfo);
-}
-
-void DeviceDriver::cmdControlVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoCodingControlInfoKHR* pCodingControlInfo) const
-{
-    m_vk.cmdControlVideoCodingKHR(commandBuffer, pCodingControlInfo);
-}
-
-void DeviceDriver::cmdEndVideoCodingKHR (VkCommandBuffer commandBuffer, const VkVideoEndCodingInfoKHR* pEndCodingInfo) const
-{
-    m_vk.cmdEndVideoCodingKHR(commandBuffer, pEndCodingInfo);
-}
-
-void DeviceDriver::cmdEncodeVideoKHR (VkCommandBuffer commandBuffer, const VkVideoEncodeInfoKHR* pEncodeInfo) const
-{
-    m_vk.cmdEncodeVideoKHR(commandBuffer, pEncodeInfo);
-}
-
-void DeviceDriver::cmdDecompressMemoryNV (VkCommandBuffer commandBuffer, uint32_t decompressRegionCount, const VkDecompressMemoryRegionNV* pDecompressMemoryRegions) const
-{
-    m_vk.cmdDecompressMemoryNV(commandBuffer, decompressRegionCount, pDecompressMemoryRegions);
-}
-
-void DeviceDriver::cmdDecompressMemoryIndirectCountNV (VkCommandBuffer commandBuffer, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride) const
-{
-    m_vk.cmdDecompressMemoryIndirectCountNV(commandBuffer, indirectCommandsAddress, indirectCommandsCountAddress, stride);
-}
-
-void DeviceDriver::getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
-{
-    m_vk.getPartitionedAccelerationStructuresBuildSizesNV(device, pInfo, pSizeInfo);
-}
-
-void DeviceDriver::cmdBuildPartitionedAccelerationStructuresNV (VkCommandBuffer commandBuffer, const VkBuildPartitionedAccelerationStructureInfoNV* pBuildInfo) const
-{
-    m_vk.cmdBuildPartitionedAccelerationStructuresNV(commandBuffer, pBuildInfo);
-}
-
-VkResult DeviceDriver::createCuModuleNVX (VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule) const
-{
-    return m_vk.createCuModuleNVX(device, pCreateInfo, pAllocator, pModule);
-}
-
-VkResult DeviceDriver::createCuFunctionNVX (VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuFunctionNVX* pFunction) const
-{
-    return m_vk.createCuFunctionNVX(device, pCreateInfo, pAllocator, pFunction);
-}
-
-void DeviceDriver::destroyCuModuleNVX (VkDevice device, VkCuModuleNVX module, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyCuModuleNVX(device, module, pAllocator);
-}
-
-void DeviceDriver::destroyCuFunctionNVX (VkDevice device, VkCuFunctionNVX function, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyCuFunctionNVX(device, function, pAllocator);
-}
-
-void DeviceDriver::cmdCuLaunchKernelNVX (VkCommandBuffer commandBuffer, const VkCuLaunchInfoNVX* pLaunchInfo) const
-{
-    m_vk.cmdCuLaunchKernelNVX(commandBuffer, pLaunchInfo);
-}
-
-void DeviceDriver::getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const
-{
-    m_vk.getDescriptorSetLayoutSizeEXT(device, layout, pLayoutSizeInBytes);
-}
-
-void DeviceDriver::getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const
-{
-    m_vk.getDescriptorSetLayoutBindingOffsetEXT(device, layout, binding, pOffset);
-}
-
-void DeviceDriver::getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, size_t dataSize, void* pDescriptor) const
-{
-    m_vk.getDescriptorEXT(device, pDescriptorInfo, dataSize, pDescriptor);
-}
-
-void DeviceDriver::cmdBindDescriptorBuffersEXT (VkCommandBuffer commandBuffer, uint32_t bufferCount, const VkDescriptorBufferBindingInfoEXT* pBindingInfos) const
-{
-    m_vk.cmdBindDescriptorBuffersEXT(commandBuffer, bufferCount, pBindingInfos);
-}
-
-void DeviceDriver::cmdSetDescriptorBufferOffsetsEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const
-{
-    m_vk.cmdSetDescriptorBufferOffsetsEXT(commandBuffer, pipelineBindPoint, layout, firstSet, setCount, pBufferIndices, pOffsets);
-}
-
-void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplersEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t set) const
-{
-    m_vk.cmdBindDescriptorBufferEmbeddedSamplersEXT(commandBuffer, pipelineBindPoint, layout, set);
-}
-
-VkResult DeviceDriver::getBufferOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-    return m_vk.getBufferOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getImageOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-    return m_vk.getImageOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getImageViewOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageViewCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-    return m_vk.getImageViewOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getSamplerOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkSamplerCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-    return m_vk.getSamplerOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-VkResult DeviceDriver::getAccelerationStructureOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
-{
-    return m_vk.getAccelerationStructureOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
-}
-
-void DeviceDriver::setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory memory, float priority) const
-{
-    m_vk.setDeviceMemoryPriorityEXT(device, memory, priority);
-}
-
-VkResult DeviceDriver::waitForPresent2KHR (VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info) const
-{
-    return m_vk.waitForPresent2KHR(device, swapchain, pPresentWait2Info);
-}
-
-VkResult DeviceDriver::waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const
-{
-    return m_vk.waitForPresentKHR(device, swapchain, presentId, timeout);
-}
-
-VkResult DeviceDriver::createBufferCollectionFUCHSIA (VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferCollectionFUCHSIA* pCollection) const
-{
-    return m_vk.createBufferCollectionFUCHSIA(device, pCreateInfo, pAllocator, pCollection);
-}
-
-VkResult DeviceDriver::setBufferCollectionBufferConstraintsFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) const
-{
-    return m_vk.setBufferCollectionBufferConstraintsFUCHSIA(device, collection, pBufferConstraintsInfo);
-}
-
-VkResult DeviceDriver::setBufferCollectionImageConstraintsFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) const
-{
-    return m_vk.setBufferCollectionImageConstraintsFUCHSIA(device, collection, pImageConstraintsInfo);
-}
-
-void DeviceDriver::destroyBufferCollectionFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyBufferCollectionFUCHSIA(device, collection, pAllocator);
-}
-
-VkResult DeviceDriver::getBufferCollectionPropertiesFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties) const
-{
-    return m_vk.getBufferCollectionPropertiesFUCHSIA(device, collection, pProperties);
-}
-
-VkResult DeviceDriver::createCudaModuleNV (VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule) const
-{
-    return m_vk.createCudaModuleNV(device, pCreateInfo, pAllocator, pModule);
-}
-
-VkResult DeviceDriver::getCudaModuleCacheNV (VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData) const
-{
-    return m_vk.getCudaModuleCacheNV(device, module, pCacheSize, pCacheData);
-}
-
-VkResult DeviceDriver::createCudaFunctionNV (VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction) const
-{
-    return m_vk.createCudaFunctionNV(device, pCreateInfo, pAllocator, pFunction);
-}
-
-void DeviceDriver::destroyCudaModuleNV (VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyCudaModuleNV(device, module, pAllocator);
-}
-
-void DeviceDriver::destroyCudaFunctionNV (VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyCudaFunctionNV(device, function, pAllocator);
-}
-
-void DeviceDriver::cmdCudaLaunchKernelNV (VkCommandBuffer commandBuffer, const VkCudaLaunchInfoNV* pLaunchInfo) const
-{
-    m_vk.cmdCudaLaunchKernelNV(commandBuffer, pLaunchInfo);
-}
-
-void DeviceDriver::cmdBeginRendering (VkCommandBuffer commandBuffer, const VkRenderingInfo* pRenderingInfo) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdBeginRendering(commandBuffer, pRenderingInfo);
-}
-
-void DeviceDriver::cmdEndRendering (VkCommandBuffer commandBuffer) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdEndRendering(commandBuffer);
-}
-
-void DeviceDriver::cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const
-{
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdEndRendering2EXT(commandBuffer, pRenderingEndInfo);
-}
-
-void DeviceDriver::getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const
-{
-    m_vk.getDescriptorSetLayoutHostMappingInfoVALVE(device, pBindingReference, pHostMapping);
-}
-
-void DeviceDriver::getDescriptorSetHostMappingVALVE (VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const
-{
-    m_vk.getDescriptorSetHostMappingVALVE(device, descriptorSet, ppData);
-}
-
-VkResult DeviceDriver::createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const
-{
-    return m_vk.createMicromapEXT(device, pCreateInfo, pAllocator, pMicromap);
-}
-
-void DeviceDriver::cmdBuildMicromapsEXT (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
-{
-    m_vk.cmdBuildMicromapsEXT(commandBuffer, infoCount, pInfos);
-}
-
-VkResult DeviceDriver::buildMicromapsEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const
-{
-    return m_vk.buildMicromapsEXT(device, deferredOperation, infoCount, pInfos);
-}
-
-void DeviceDriver::destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyMicromapEXT(device, micromap, pAllocator);
-}
-
-void DeviceDriver::cmdCopyMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo) const
-{
-    m_vk.cmdCopyMicromapEXT(commandBuffer, pInfo);
-}
-
-VkResult DeviceDriver::copyMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapInfoEXT* pInfo) const
-{
-    return m_vk.copyMicromapEXT(device, deferredOperation, pInfo);
-}
-
-void DeviceDriver::cmdCopyMicromapToMemoryEXT (VkCommandBuffer commandBuffer, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
-{
-    m_vk.cmdCopyMicromapToMemoryEXT(commandBuffer, pInfo);
-}
-
-VkResult DeviceDriver::copyMicromapToMemoryEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
-{
-    return m_vk.copyMicromapToMemoryEXT(device, deferredOperation, pInfo);
-}
-
-void DeviceDriver::cmdCopyMemoryToMicromapEXT (VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
-{
-    m_vk.cmdCopyMemoryToMicromapEXT(commandBuffer, pInfo);
-}
-
-VkResult DeviceDriver::copyMemoryToMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
-{
-    return m_vk.copyMemoryToMicromapEXT(device, deferredOperation, pInfo);
-}
-
-void DeviceDriver::cmdWriteMicromapsPropertiesEXT (VkCommandBuffer commandBuffer, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
-{
-    m_vk.cmdWriteMicromapsPropertiesEXT(commandBuffer, micromapCount, pMicromaps, queryType, queryPool, firstQuery);
-}
-
-VkResult DeviceDriver::writeMicromapsPropertiesEXT (VkDevice device, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const
-{
-    return m_vk.writeMicromapsPropertiesEXT(device, micromapCount, pMicromaps, queryType, dataSize, pData, stride);
-}
-
-void DeviceDriver::getDeviceMicromapCompatibilityEXT (VkDevice device, const VkMicromapVersionInfoEXT* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
-{
-    m_vk.getDeviceMicromapCompatibilityEXT(device, pVersionInfo, pCompatibility);
-}
-
-void DeviceDriver::getMicromapBuildSizesEXT (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const
-{
-    m_vk.getMicromapBuildSizesEXT(device, buildType, pBuildInfo, pSizeInfo);
-}
-
-void DeviceDriver::getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const
-{
-    m_vk.getShaderModuleIdentifierEXT(device, shaderModule, pIdentifier);
-}
-
-void DeviceDriver::getShaderModuleCreateInfoIdentifierEXT (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const
-{
-    m_vk.getShaderModuleCreateInfoIdentifierEXT(device, pCreateInfo, pIdentifier);
-}
-
-void DeviceDriver::getImageSubresourceLayout2 (VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout) const
-{
-    m_vk.getImageSubresourceLayout2(device, image, pSubresource, pLayout);
-}
-
-VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const
-{
-    return m_vk.getPipelinePropertiesEXT(device, pPipelineInfo, pPipelineProperties);
-}
-
-void DeviceDriver::exportMetalObjectsEXT (VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const
-{
-    m_vk.exportMetalObjectsEXT(device, pMetalObjectsInfo);
-}
-
-void DeviceDriver::cmdBindTileMemoryQCOM (VkCommandBuffer commandBuffer, const VkTileMemoryBindInfoQCOM* pTileMemoryBindInfo) const
-{
-    m_vk.cmdBindTileMemoryQCOM(commandBuffer, pTileMemoryBindInfo);
-}
-
-VkResult DeviceDriver::getFramebufferTilePropertiesQCOM (VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const
-{
-    return m_vk.getFramebufferTilePropertiesQCOM(device, framebuffer, pPropertiesCount, pProperties);
-}
-
-VkResult DeviceDriver::getDynamicRenderingTilePropertiesQCOM (VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const
-{
-    return m_vk.getDynamicRenderingTilePropertiesQCOM(device, pRenderingInfo, pProperties);
-}
-
-VkResult DeviceDriver::createOpticalFlowSessionNV (VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkOpticalFlowSessionNV* pSession) const
-{
-    return m_vk.createOpticalFlowSessionNV(device, pCreateInfo, pAllocator, pSession);
-}
-
-void DeviceDriver::destroyOpticalFlowSessionNV (VkDevice device, VkOpticalFlowSessionNV session, const VkAllocationCallbacks* pAllocator) const
-{
-    m_vk.destroyOpticalFlowSessionNV(device, session, pAllocator);
-}
-
-VkResult DeviceDriver::bindOpticalFlowSessionImageNV (VkDevice device, VkOpticalFlowSessionNV session, VkOpticalFlowSessionBindingPointNV bindingPoint, VkImageView view, VkImageLayout layout) const
-{
-    return m_vk.bindOpticalFlowSessionImageNV(device, session, bindingPoint, view, layout);
-}
-
-void DeviceDriver::cmdOpticalFlowExecuteNV (VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const
-{
-    m_vk.cmdOpticalFlowExecuteNV(commandBuffer, session, pExecuteInfo);
-}
-
-VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const
-{
-    return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
+    m_vk.cmdSetDepthBias(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 }
 
 void DeviceDriver::cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const
@@ -2600,104 +909,64 @@ void DeviceDriver::cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkD
     m_vk.cmdSetDepthBias2EXT(commandBuffer, pDepthBiasInfo);
 }
 
-VkResult DeviceDriver::releaseSwapchainImagesKHR (VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo) const
+void DeviceDriver::cmdSetDepthBiasEnable (VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) const
 {
-    return m_vk.releaseSwapchainImagesKHR(device, pReleaseInfo);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthBiasEnable(commandBuffer, depthBiasEnable);
 }
 
-void DeviceDriver::getDeviceImageSubresourceLayout (VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout) const
+void DeviceDriver::cmdSetDepthBounds (VkCommandBuffer commandBuffer, float minDepthBounds, float maxDepthBounds) const
 {
-    m_vk.getDeviceImageSubresourceLayout(device, pInfo, pLayout);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthBounds(commandBuffer, minDepthBounds, maxDepthBounds);
 }
 
-VkResult DeviceDriver::mapMemory2 (VkDevice device, const VkMemoryMapInfo* pMemoryMapInfo, void** ppData) const
+void DeviceDriver::cmdSetDepthBoundsTestEnable (VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable) const
 {
-    return m_vk.mapMemory2(device, pMemoryMapInfo, ppData);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthBoundsTestEnable(commandBuffer, depthBoundsTestEnable);
 }
 
-VkResult DeviceDriver::unmapMemory2 (VkDevice device, const VkMemoryUnmapInfo* pMemoryUnmapInfo) const
+void DeviceDriver::cmdSetDepthClampEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClampEnable) const
 {
-    return m_vk.unmapMemory2(device, pMemoryUnmapInfo);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthClampEnableEXT(commandBuffer, depthClampEnable);
 }
 
-VkResult DeviceDriver::createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const
+void DeviceDriver::cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange) const
 {
-    return m_vk.createShadersEXT(device, createInfoCount, pCreateInfos, pAllocator, pShaders);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthClampRangeEXT(commandBuffer, depthClampMode, pDepthClampRange);
 }
 
-void DeviceDriver::destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const
+void DeviceDriver::cmdSetDepthClipEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthClipEnable) const
 {
-    m_vk.destroyShaderEXT(device, shader, pAllocator);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthClipEnableEXT(commandBuffer, depthClipEnable);
 }
 
-VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const
+void DeviceDriver::cmdSetDepthClipNegativeOneToOneEXT (VkCommandBuffer commandBuffer, VkBool32 negativeOneToOne) const
 {
-    return m_vk.getShaderBinaryDataEXT(device, shader, pDataSize, pData);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthClipNegativeOneToOneEXT(commandBuffer, negativeOneToOne);
 }
 
-void DeviceDriver::cmdBindShadersEXT (VkCommandBuffer commandBuffer, uint32_t stageCount, const VkShaderStageFlagBits* pStages, const VkShaderEXT* pShaders) const
+void DeviceDriver::cmdSetDepthCompareOp (VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp) const
 {
-    m_vk.cmdBindShadersEXT(commandBuffer, stageCount, pStages, pShaders);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthCompareOp(commandBuffer, depthCompareOp);
 }
 
-VkResult DeviceDriver::getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const
+void DeviceDriver::cmdSetDepthTestEnable (VkCommandBuffer commandBuffer, VkBool32 depthTestEnable) const
 {
-    return m_vk.getScreenBufferPropertiesQNX(device, buffer, pProperties);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthTestEnable(commandBuffer, depthTestEnable);
 }
 
-VkResult DeviceDriver::getExecutionGraphPipelineScratchSizeAMDX (VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo) const
+void DeviceDriver::cmdSetDepthWriteEnable (VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable) const
 {
-    return m_vk.getExecutionGraphPipelineScratchSizeAMDX(device, executionGraph, pSizeInfo);
-}
-
-VkResult DeviceDriver::getExecutionGraphPipelineNodeIndexAMDX (VkDevice device, VkPipeline executionGraph, const VkPipelineShaderStageNodeCreateInfoAMDX* pNodeInfo, uint32_t* pNodeIndex) const
-{
-    return m_vk.getExecutionGraphPipelineNodeIndexAMDX(device, executionGraph, pNodeInfo, pNodeIndex);
-}
-
-VkResult DeviceDriver::createExecutionGraphPipelinesAMDX (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
-{
-    return m_vk.createExecutionGraphPipelinesAMDX(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
-}
-
-void DeviceDriver::cmdInitializeGraphScratchMemoryAMDX (VkCommandBuffer commandBuffer, VkPipeline executionGraph, VkDeviceAddress scratch, VkDeviceSize scratchSize) const
-{
-    m_vk.cmdInitializeGraphScratchMemoryAMDX(commandBuffer, executionGraph, scratch, scratchSize);
-}
-
-void DeviceDriver::cmdDispatchGraphAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
-{
-    m_vk.cmdDispatchGraphAMDX(commandBuffer, scratch, scratchSize, pCountInfo);
-}
-
-void DeviceDriver::cmdDispatchGraphIndirectAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, const VkDispatchGraphCountInfoAMDX* pCountInfo) const
-{
-    m_vk.cmdDispatchGraphIndirectAMDX(commandBuffer, scratch, scratchSize, pCountInfo);
-}
-
-void DeviceDriver::cmdDispatchGraphIndirectCountAMDX (VkCommandBuffer commandBuffer, VkDeviceAddress scratch, VkDeviceSize scratchSize, VkDeviceAddress countInfo) const
-{
-    m_vk.cmdDispatchGraphIndirectCountAMDX(commandBuffer, scratch, scratchSize, countInfo);
-}
-
-void DeviceDriver::cmdBindDescriptorSets2 (VkCommandBuffer commandBuffer, const VkBindDescriptorSetsInfo* pBindDescriptorSetsInfo) const
-{
-    m_vk.cmdBindDescriptorSets2(commandBuffer, pBindDescriptorSetsInfo);
-}
-
-void DeviceDriver::cmdPushConstants2 (VkCommandBuffer commandBuffer, const VkPushConstantsInfo* pPushConstantsInfo) const
-{
-    m_vk.cmdPushConstants2(commandBuffer, pPushConstantsInfo);
-}
-
-void DeviceDriver::cmdPushDescriptorSet2 (VkCommandBuffer commandBuffer, const VkPushDescriptorSetInfo* pPushDescriptorSetInfo) const
-{
-    m_vk.cmdPushDescriptorSet2(commandBuffer, pPushDescriptorSetInfo);
-}
-
-void DeviceDriver::cmdPushDescriptorSetWithTemplate2 (VkCommandBuffer commandBuffer, const VkPushDescriptorSetWithTemplateInfo* pPushDescriptorSetWithTemplateInfo) const
-{
-    m_vk.cmdPushDescriptorSetWithTemplate2(commandBuffer, pPushDescriptorSetWithTemplateInfo);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDepthWriteEnable(commandBuffer, depthWriteEnable);
 }
 
 void DeviceDriver::cmdSetDescriptorBufferOffsets2EXT (VkCommandBuffer commandBuffer, const VkSetDescriptorBufferOffsetsInfoEXT* pSetDescriptorBufferOffsetsInfo) const
@@ -2705,34 +974,182 @@ void DeviceDriver::cmdSetDescriptorBufferOffsets2EXT (VkCommandBuffer commandBuf
     m_vk.cmdSetDescriptorBufferOffsets2EXT(commandBuffer, pSetDescriptorBufferOffsetsInfo);
 }
 
-void DeviceDriver::cmdBindDescriptorBufferEmbeddedSamplers2EXT (VkCommandBuffer commandBuffer, const VkBindDescriptorBufferEmbeddedSamplersInfoEXT* pBindDescriptorBufferEmbeddedSamplersInfo) const
+void DeviceDriver::cmdSetDescriptorBufferOffsetsEXT (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipelineLayout layout, uint32_t firstSet, uint32_t setCount, const uint32_t* pBufferIndices, const VkDeviceSize* pOffsets) const
 {
-    m_vk.cmdBindDescriptorBufferEmbeddedSamplers2EXT(commandBuffer, pBindDescriptorBufferEmbeddedSamplersInfo);
+    m_vk.cmdSetDescriptorBufferOffsetsEXT(commandBuffer, pipelineBindPoint, layout, firstSet, setCount, pBufferIndices, pOffsets);
 }
 
-VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const
+void DeviceDriver::cmdSetDeviceMask (VkCommandBuffer commandBuffer, uint32_t deviceMask) const
 {
-    return m_vk.setLatencySleepModeNV(device, swapchain, pSleepModeInfo);
+    m_vk.cmdSetDeviceMask(commandBuffer, deviceMask);
 }
 
-VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const
+void DeviceDriver::cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles) const
 {
-    return m_vk.latencySleepNV(device, swapchain, pSleepInfo);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDiscardRectangleEXT(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles);
 }
 
-void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+void DeviceDriver::cmdSetDiscardRectangleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable) const
 {
-    m_vk.setLatencyMarkerNV(device, swapchain, pLatencyMarkerInfo);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDiscardRectangleEnableEXT(commandBuffer, discardRectangleEnable);
 }
 
-void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+void DeviceDriver::cmdSetDiscardRectangleModeEXT (VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode) const
 {
-    m_vk.getLatencyTimingsNV(device, swapchain, pLatencyMarkerInfo);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetDiscardRectangleModeEXT(commandBuffer, discardRectangleMode);
 }
 
-void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const
+void DeviceDriver::cmdSetEvent (VkCommandBuffer commandBuffer, VkEvent event, VkPipelineStageFlags stageMask) const
 {
-    m_vk.queueNotifyOutOfBandNV(queue, pQueueTypeInfo);
+    m_vk.cmdSetEvent(commandBuffer, event, stageMask);
+}
+
+void DeviceDriver::cmdSetEvent2 (VkCommandBuffer commandBuffer, VkEvent event, const VkDependencyInfo* pDependencyInfo) const
+{
+    m_vk.cmdSetEvent2(commandBuffer, event, pDependencyInfo);
+}
+
+void DeviceDriver::cmdSetExclusiveScissorEnableNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkBool32* pExclusiveScissorEnables) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetExclusiveScissorEnableNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissorEnables);
+}
+
+void DeviceDriver::cmdSetExclusiveScissorNV (VkCommandBuffer commandBuffer, uint32_t firstExclusiveScissor, uint32_t exclusiveScissorCount, const VkRect2D* pExclusiveScissors) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetExclusiveScissorNV(commandBuffer, firstExclusiveScissor, exclusiveScissorCount, pExclusiveScissors);
+}
+
+void DeviceDriver::cmdSetExtraPrimitiveOverestimationSizeEXT (VkCommandBuffer commandBuffer, float extraPrimitiveOverestimationSize) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetExtraPrimitiveOverestimationSizeEXT(commandBuffer, extraPrimitiveOverestimationSize);
+}
+
+void DeviceDriver::cmdSetFragmentShadingRateEnumNV (VkCommandBuffer commandBuffer, VkFragmentShadingRateNV shadingRate, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetFragmentShadingRateEnumNV(commandBuffer, shadingRate, combinerOps);
+}
+
+void DeviceDriver::cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetFragmentShadingRateKHR(commandBuffer, pFragmentSize, combinerOps);
+}
+
+void DeviceDriver::cmdSetFrontFace (VkCommandBuffer commandBuffer, VkFrontFace frontFace) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetFrontFace(commandBuffer, frontFace);
+}
+
+void DeviceDriver::cmdSetLineRasterizationModeEXT (VkCommandBuffer commandBuffer, VkLineRasterizationModeEXT lineRasterizationMode) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetLineRasterizationModeEXT(commandBuffer, lineRasterizationMode);
+}
+
+void DeviceDriver::cmdSetLineStipple (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetLineStipple(commandBuffer, lineStippleFactor, lineStipplePattern);
+}
+
+void DeviceDriver::cmdSetLineStippleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 stippledLineEnable) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetLineStippleEnableEXT(commandBuffer, stippledLineEnable);
+}
+
+void DeviceDriver::cmdSetLineWidth (VkCommandBuffer commandBuffer, float lineWidth) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetLineWidth(commandBuffer, lineWidth);
+}
+
+void DeviceDriver::cmdSetLogicOpEXT (VkCommandBuffer commandBuffer, VkLogicOp logicOp) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetLogicOpEXT(commandBuffer, logicOp);
+}
+
+void DeviceDriver::cmdSetLogicOpEnableEXT (VkCommandBuffer commandBuffer, VkBool32 logicOpEnable) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetLogicOpEnableEXT(commandBuffer, logicOpEnable);
+}
+
+void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetPatchControlPointsEXT(commandBuffer, patchControlPoints);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceMarkerInfoINTEL* pMarkerInfo) const
+{
+    return m_vk.cmdSetPerformanceMarkerINTEL(commandBuffer, pMarkerInfo);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceOverrideINTEL (VkCommandBuffer commandBuffer, const VkPerformanceOverrideInfoINTEL* pOverrideInfo) const
+{
+    return m_vk.cmdSetPerformanceOverrideINTEL(commandBuffer, pOverrideInfo);
+}
+
+VkResult DeviceDriver::cmdSetPerformanceStreamMarkerINTEL (VkCommandBuffer commandBuffer, const VkPerformanceStreamMarkerInfoINTEL* pMarkerInfo) const
+{
+    return m_vk.cmdSetPerformanceStreamMarkerINTEL(commandBuffer, pMarkerInfo);
+}
+
+void DeviceDriver::cmdSetPolygonModeEXT (VkCommandBuffer commandBuffer, VkPolygonMode polygonMode) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetPolygonModeEXT(commandBuffer, polygonMode);
+}
+
+void DeviceDriver::cmdSetPrimitiveRestartEnable (VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetPrimitiveRestartEnable(commandBuffer, primitiveRestartEnable);
+}
+
+void DeviceDriver::cmdSetPrimitiveTopology (VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetPrimitiveTopology(commandBuffer, primitiveTopology);
+}
+
+void DeviceDriver::cmdSetProvokingVertexModeEXT (VkCommandBuffer commandBuffer, VkProvokingVertexModeEXT provokingVertexMode) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetProvokingVertexModeEXT(commandBuffer, provokingVertexMode);
+}
+
+void DeviceDriver::cmdSetRasterizationSamplesEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits rasterizationSamples) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetRasterizationSamplesEXT(commandBuffer, rasterizationSamples);
+}
+
+void DeviceDriver::cmdSetRasterizationStreamEXT (VkCommandBuffer commandBuffer, uint32_t rasterizationStream) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetRasterizationStreamEXT(commandBuffer, rasterizationStream);
+}
+
+void DeviceDriver::cmdSetRasterizerDiscardEnable (VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetRasterizerDiscardEnable(commandBuffer, rasterizerDiscardEnable);
+}
+
+void DeviceDriver::cmdSetRayTracingPipelineStackSizeKHR (VkCommandBuffer commandBuffer, uint32_t pipelineStackSize) const
+{
+    m_vk.cmdSetRayTracingPipelineStackSizeKHR(commandBuffer, pipelineStackSize);
 }
 
 void DeviceDriver::cmdSetRenderingAttachmentLocations (VkCommandBuffer commandBuffer, const VkRenderingAttachmentLocationInfo* pLocationInfo) const
@@ -2747,20 +1164,210 @@ void DeviceDriver::cmdSetRenderingInputAttachmentIndices (VkCommandBuffer comman
     m_vk.cmdSetRenderingInputAttachmentIndices(commandBuffer, pInputAttachmentIndexInfo);
 }
 
-void DeviceDriver::cmdSetDepthClampRangeEXT (VkCommandBuffer commandBuffer, VkDepthClampModeEXT depthClampMode, const VkDepthClampRangeEXT* pDepthClampRange) const
+void DeviceDriver::cmdSetRepresentativeFragmentTestEnableNV (VkCommandBuffer commandBuffer, VkBool32 representativeFragmentTestEnable) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
-    m_vk.cmdSetDepthClampRangeEXT(commandBuffer, depthClampMode, pDepthClampRange);
+    m_vk.cmdSetRepresentativeFragmentTestEnableNV(commandBuffer, representativeFragmentTestEnable);
 }
 
-VkResult DeviceDriver::getMemoryMetalHandleEXT (VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, void** pHandle) const
+void DeviceDriver::cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo) const
 {
-    return m_vk.getMemoryMetalHandleEXT(device, pGetMetalHandleInfo, pHandle);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetSampleLocationsEXT(commandBuffer, pSampleLocationsInfo);
 }
 
-VkResult DeviceDriver::getMemoryMetalHandlePropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const
+void DeviceDriver::cmdSetSampleLocationsEnableEXT (VkCommandBuffer commandBuffer, VkBool32 sampleLocationsEnable) const
 {
-    return m_vk.getMemoryMetalHandlePropertiesEXT(device, handleType, pHandle, pMemoryMetalHandleProperties);
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetSampleLocationsEnableEXT(commandBuffer, sampleLocationsEnable);
+}
+
+void DeviceDriver::cmdSetSampleMaskEXT (VkCommandBuffer commandBuffer, VkSampleCountFlagBits samples, const VkSampleMask* pSampleMask) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetSampleMaskEXT(commandBuffer, samples, pSampleMask);
+}
+
+void DeviceDriver::cmdSetScissor (VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
+}
+
+void DeviceDriver::cmdSetScissorWithCount (VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetScissorWithCount(commandBuffer, scissorCount, pScissors);
+}
+
+void DeviceDriver::cmdSetShadingRateImageEnableNV (VkCommandBuffer commandBuffer, VkBool32 shadingRateImageEnable) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetShadingRateImageEnableNV(commandBuffer, shadingRateImageEnable);
+}
+
+void DeviceDriver::cmdSetStencilCompareMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t compareMask) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetStencilCompareMask(commandBuffer, faceMask, compareMask);
+}
+
+void DeviceDriver::cmdSetStencilOp (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetStencilOp(commandBuffer, faceMask, failOp, passOp, depthFailOp, compareOp);
+}
+
+void DeviceDriver::cmdSetStencilReference (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t reference) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetStencilReference(commandBuffer, faceMask, reference);
+}
+
+void DeviceDriver::cmdSetStencilTestEnable (VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetStencilTestEnable(commandBuffer, stencilTestEnable);
+}
+
+void DeviceDriver::cmdSetStencilWriteMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t writeMask) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetStencilWriteMask(commandBuffer, faceMask, writeMask);
+}
+
+void DeviceDriver::cmdSetTessellationDomainOriginEXT (VkCommandBuffer commandBuffer, VkTessellationDomainOrigin domainOrigin) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetTessellationDomainOriginEXT(commandBuffer, domainOrigin);
+}
+
+void DeviceDriver::cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetVertexInputEXT(commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions);
+}
+
+void DeviceDriver::cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
+}
+
+void DeviceDriver::cmdSetViewportShadingRatePaletteNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkShadingRatePaletteNV* pShadingRatePalettes) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetViewportShadingRatePaletteNV(commandBuffer, firstViewport, viewportCount, pShadingRatePalettes);
+}
+
+void DeviceDriver::cmdSetViewportSwizzleNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportSwizzleNV* pViewportSwizzles) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetViewportSwizzleNV(commandBuffer, firstViewport, viewportCount, pViewportSwizzles);
+}
+
+void DeviceDriver::cmdSetViewportWScalingEnableNV (VkCommandBuffer commandBuffer, VkBool32 viewportWScalingEnable) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetViewportWScalingEnableNV(commandBuffer, viewportWScalingEnable);
+}
+
+void DeviceDriver::cmdSetViewportWScalingNV (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewportWScalingNV* pViewportWScalings) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetViewportWScalingNV(commandBuffer, firstViewport, viewportCount, pViewportWScalings);
+}
+
+void DeviceDriver::cmdSetViewportWithCount (VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSetViewportWithCount(commandBuffer, viewportCount, pViewports);
+}
+
+void DeviceDriver::cmdSubpassShadingHUAWEI (VkCommandBuffer commandBuffer) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdSubpassShadingHUAWEI(commandBuffer);
+}
+
+void DeviceDriver::cmdTraceRaysIndirect2KHR (VkCommandBuffer commandBuffer, VkDeviceAddress indirectDeviceAddress) const
+{
+    m_vk.cmdTraceRaysIndirect2KHR(commandBuffer, indirectDeviceAddress);
+}
+
+void DeviceDriver::cmdTraceRaysIndirectKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, VkDeviceAddress indirectDeviceAddress) const
+{
+    m_vk.cmdTraceRaysIndirectKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, indirectDeviceAddress);
+}
+
+void DeviceDriver::cmdTraceRaysKHR (VkCommandBuffer commandBuffer, const VkStridedDeviceAddressRegionKHR* pRaygenShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pMissShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pHitShaderBindingTable, const VkStridedDeviceAddressRegionKHR* pCallableShaderBindingTable, uint32_t width, uint32_t height, uint32_t depth) const
+{
+    m_vk.cmdTraceRaysKHR(commandBuffer, pRaygenShaderBindingTable, pMissShaderBindingTable, pHitShaderBindingTable, pCallableShaderBindingTable, width, height, depth);
+}
+
+void DeviceDriver::cmdTraceRaysNV (VkCommandBuffer commandBuffer, VkBuffer raygenShaderBindingTableBuffer, VkDeviceSize raygenShaderBindingOffset, VkBuffer missShaderBindingTableBuffer, VkDeviceSize missShaderBindingOffset, VkDeviceSize missShaderBindingStride, VkBuffer hitShaderBindingTableBuffer, VkDeviceSize hitShaderBindingOffset, VkDeviceSize hitShaderBindingStride, VkBuffer callableShaderBindingTableBuffer, VkDeviceSize callableShaderBindingOffset, VkDeviceSize callableShaderBindingStride, uint32_t width, uint32_t height, uint32_t depth) const
+{
+    m_vk.cmdTraceRaysNV(commandBuffer, raygenShaderBindingTableBuffer, raygenShaderBindingOffset, missShaderBindingTableBuffer, missShaderBindingOffset, missShaderBindingStride, hitShaderBindingTableBuffer, hitShaderBindingOffset, hitShaderBindingStride, callableShaderBindingTableBuffer, callableShaderBindingOffset, callableShaderBindingStride, width, height, depth);
+}
+
+void DeviceDriver::cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData) const
+{
+    m_vk.cmdUpdateBuffer(commandBuffer, dstBuffer, dstOffset, dataSize, pData);
+}
+
+void DeviceDriver::cmdUpdatePipelineIndirectBufferNV (VkCommandBuffer commandBuffer, VkPipelineBindPoint pipelineBindPoint, VkPipeline pipeline) const
+{
+    m_vk.cmdUpdatePipelineIndirectBufferNV(commandBuffer, pipelineBindPoint, pipeline);
+}
+
+void DeviceDriver::cmdWaitEvents (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, VkPipelineStageFlags srcStageMask, VkPipelineStageFlags dstStageMask, uint32_t memoryBarrierCount, const VkMemoryBarrier* pMemoryBarriers, uint32_t bufferMemoryBarrierCount, const VkBufferMemoryBarrier* pBufferMemoryBarriers, uint32_t imageMemoryBarrierCount, const VkImageMemoryBarrier* pImageMemoryBarriers) const
+{
+    m_vk.cmdWaitEvents(commandBuffer, eventCount, pEvents, srcStageMask, dstStageMask, memoryBarrierCount, pMemoryBarriers, bufferMemoryBarrierCount, pBufferMemoryBarriers, imageMemoryBarrierCount, pImageMemoryBarriers);
+}
+
+void DeviceDriver::cmdWaitEvents2 (VkCommandBuffer commandBuffer, uint32_t eventCount, const VkEvent* pEvents, const VkDependencyInfo* pDependencyInfos) const
+{
+    m_vk.cmdWaitEvents2(commandBuffer, eventCount, pEvents, pDependencyInfos);
+}
+
+void DeviceDriver::cmdWriteAccelerationStructuresPropertiesKHR (VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
+{
+    m_vk.cmdWriteAccelerationStructuresPropertiesKHR(commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery);
+}
+
+void DeviceDriver::cmdWriteAccelerationStructuresPropertiesNV (VkCommandBuffer commandBuffer, uint32_t accelerationStructureCount, const VkAccelerationStructureNV* pAccelerationStructures, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
+{
+    m_vk.cmdWriteAccelerationStructuresPropertiesNV(commandBuffer, accelerationStructureCount, pAccelerationStructures, queryType, queryPool, firstQuery);
+}
+
+void DeviceDriver::cmdWriteBufferMarker2AMD (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const
+{
+    m_vk.cmdWriteBufferMarker2AMD(commandBuffer, stage, dstBuffer, dstOffset, marker);
+}
+
+void DeviceDriver::cmdWriteBufferMarkerAMD (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkBuffer dstBuffer, VkDeviceSize dstOffset, uint32_t marker) const
+{
+    m_vk.cmdWriteBufferMarkerAMD(commandBuffer, pipelineStage, dstBuffer, dstOffset, marker);
+}
+
+void DeviceDriver::cmdWriteMicromapsPropertiesEXT (VkCommandBuffer commandBuffer, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, VkQueryPool queryPool, uint32_t firstQuery) const
+{
+    m_vk.cmdWriteMicromapsPropertiesEXT(commandBuffer, micromapCount, pMicromaps, queryType, queryPool, firstQuery);
+}
+
+void DeviceDriver::cmdWriteTimestamp (VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query) const
+{
+    m_vk.cmdWriteTimestamp(commandBuffer, pipelineStage, queryPool, query);
+}
+
+void DeviceDriver::cmdWriteTimestamp2 (VkCommandBuffer commandBuffer, VkPipelineStageFlags2 stage, VkQueryPool queryPool, uint32_t query) const
+{
+    m_vk.cmdWriteTimestamp2(commandBuffer, stage, queryPool, query);
+}
+
+VkResult DeviceDriver::compileDeferredNV (VkDevice device, VkPipeline pipeline, uint32_t shader) const
+{
+    return m_vk.compileDeferredNV(device, pipeline, shader);
 }
 
 VkResult DeviceDriver::convertCooperativeVectorMatrixNV (VkDevice device, const VkConvertCooperativeVectorMatrixInfoNV* pInfo) const
@@ -2768,84 +1375,118 @@ VkResult DeviceDriver::convertCooperativeVectorMatrixNV (VkDevice device, const 
     return m_vk.convertCooperativeVectorMatrixNV(device, pInfo);
 }
 
-void DeviceDriver::cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer commandBuffer, uint32_t infoCount, const VkConvertCooperativeVectorMatrixInfoNV* pInfos) const
+VkResult DeviceDriver::copyAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureInfoKHR* pInfo) const
 {
-    m_vk.cmdConvertCooperativeVectorMatrixNV(commandBuffer, infoCount, pInfos);
+    return m_vk.copyAccelerationStructureKHR(device, deferredOperation, pInfo);
 }
 
-void DeviceDriver::cmdDispatchTileQCOM (VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo) const
+VkResult DeviceDriver::copyAccelerationStructureToMemoryKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyAccelerationStructureToMemoryInfoKHR* pInfo) const
 {
-    m_vk.cmdDispatchTileQCOM(commandBuffer, pDispatchTileInfo);
+    return m_vk.copyAccelerationStructureToMemoryKHR(device, deferredOperation, pInfo);
 }
 
-void DeviceDriver::cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const
+VkResult DeviceDriver::copyImageToImage (VkDevice device, const VkCopyImageToImageInfo* pCopyImageToImageInfo) const
 {
-    m_vk.cmdBeginPerTileExecutionQCOM(commandBuffer, pPerTileBeginInfo);
+    return m_vk.copyImageToImage(device, pCopyImageToImageInfo);
 }
 
-void DeviceDriver::cmdEndPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileEndInfoQCOM* pPerTileEndInfo) const
+VkResult DeviceDriver::copyImageToMemory (VkDevice device, const VkCopyImageToMemoryInfo* pCopyImageToMemoryInfo) const
 {
-    m_vk.cmdEndPerTileExecutionQCOM(commandBuffer, pPerTileEndInfo);
+    return m_vk.copyImageToMemory(device, pCopyImageToMemoryInfo);
 }
 
-VkResult DeviceDriver::createExternalComputeQueueNV (VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const
+VkResult DeviceDriver::copyMemoryToAccelerationStructureKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const
 {
-    return m_vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, pExternalQueue);
+    return m_vk.copyMemoryToAccelerationStructureKHR(device, deferredOperation, pInfo);
 }
 
-void DeviceDriver::destroyExternalComputeQueueNV (VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const
+VkResult DeviceDriver::copyMemoryToImage (VkDevice device, const VkCopyMemoryToImageInfo* pCopyMemoryToImageInfo) const
 {
-    m_vk.destroyExternalComputeQueueNV(device, externalQueue, pAllocator);
+    return m_vk.copyMemoryToImage(device, pCopyMemoryToImageInfo);
 }
 
-VkResult DeviceDriver::createTensorARM (VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor) const
+VkResult DeviceDriver::copyMemoryToMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMemoryToMicromapInfoEXT* pInfo) const
 {
-    return m_vk.createTensorARM(device, pCreateInfo, pAllocator, pTensor);
+    return m_vk.copyMemoryToMicromapEXT(device, deferredOperation, pInfo);
 }
 
-void DeviceDriver::destroyTensorARM (VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator) const
+VkResult DeviceDriver::copyMicromapEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapInfoEXT* pInfo) const
 {
-    m_vk.destroyTensorARM(device, tensor, pAllocator);
+    return m_vk.copyMicromapEXT(device, deferredOperation, pInfo);
 }
 
-VkResult DeviceDriver::createTensorViewARM (VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView) const
+VkResult DeviceDriver::copyMicromapToMemoryEXT (VkDevice device, VkDeferredOperationKHR deferredOperation, const VkCopyMicromapToMemoryInfoEXT* pInfo) const
 {
-    return m_vk.createTensorViewARM(device, pCreateInfo, pAllocator, pView);
+    return m_vk.copyMicromapToMemoryEXT(device, deferredOperation, pInfo);
 }
 
-void DeviceDriver::destroyTensorViewARM (VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator) const
+VkResult DeviceDriver::createAccelerationStructureKHR (VkDevice device, const VkAccelerationStructureCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureKHR* pAccelerationStructure) const
 {
-    m_vk.destroyTensorViewARM(device, tensorView, pAllocator);
+    return m_vk.createAccelerationStructureKHR(device, pCreateInfo, pAllocator, pAccelerationStructure);
 }
 
-void DeviceDriver::getTensorMemoryRequirementsARM (VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+VkResult DeviceDriver::createAccelerationStructureNV (VkDevice device, const VkAccelerationStructureCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkAccelerationStructureNV* pAccelerationStructure) const
 {
-    m_vk.getTensorMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
+    return m_vk.createAccelerationStructureNV(device, pCreateInfo, pAllocator, pAccelerationStructure);
 }
 
-VkResult DeviceDriver::bindTensorMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos) const
+VkResult DeviceDriver::createBuffer (VkDevice device, const VkBufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBuffer* pBuffer) const
 {
-    return m_vk.bindTensorMemoryARM(device, bindInfoCount, pBindInfos);
+	if( m_computeOnlyMode )
+	{
+		if ((pCreateInfo->usage & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT )) !=0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+	}
+    return m_vk.createBuffer(device, pCreateInfo, pAllocator, pBuffer);
 }
 
-void DeviceDriver::getDeviceTensorMemoryRequirementsARM (VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+VkResult DeviceDriver::createBufferCollectionFUCHSIA (VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferCollectionFUCHSIA* pCollection) const
 {
-    m_vk.getDeviceTensorMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
+    return m_vk.createBufferCollectionFUCHSIA(device, pCreateInfo, pAllocator, pCollection);
 }
 
-void DeviceDriver::cmdCopyTensorARM (VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const
+VkResult DeviceDriver::createBufferView (VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkBufferView* pView) const
 {
-    m_vk.cmdCopyTensorARM(commandBuffer, pCopyTensorInfo);
+    return m_vk.createBufferView(device, pCreateInfo, pAllocator, pView);
 }
 
-VkResult DeviceDriver::getTensorOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const
+VkResult DeviceDriver::createCommandPool (VkDevice device, const VkCommandPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCommandPool* pCommandPool) const
 {
-    return m_vk.getTensorOpaqueCaptureDescriptorDataARM(device, pInfo, pData);
+    return m_vk.createCommandPool(device, pCreateInfo, pAllocator, pCommandPool);
 }
 
-VkResult DeviceDriver::getTensorViewOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const
+VkResult DeviceDriver::createComputePipelines (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkComputePipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
 {
-    return m_vk.getTensorViewOpaqueCaptureDescriptorDataARM(device, pInfo, pData);
+	if( m_computeOnlyMode )
+	{
+		for (uint32_t i=0; i<createInfoCount; ++i)
+			if ((pCreateInfos[i].stage.stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+	}
+    return m_vk.createComputePipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+}
+
+VkResult DeviceDriver::createCuFunctionNVX (VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuFunctionNVX* pFunction) const
+{
+    return m_vk.createCuFunctionNVX(device, pCreateInfo, pAllocator, pFunction);
+}
+
+VkResult DeviceDriver::createCuModuleNVX (VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCuModuleNVX* pModule) const
+{
+    return m_vk.createCuModuleNVX(device, pCreateInfo, pAllocator, pModule);
+}
+
+VkResult DeviceDriver::createCudaFunctionNV (VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaFunctionNV* pFunction) const
+{
+    return m_vk.createCudaFunctionNV(device, pCreateInfo, pAllocator, pFunction);
+}
+
+VkResult DeviceDriver::createCudaModuleNV (VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkCudaModuleNV* pModule) const
+{
+    return m_vk.createCudaModuleNV(device, pCreateInfo, pAllocator, pModule);
+}
+
+VkResult DeviceDriver::createDataGraphPipelineSessionARM (VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDataGraphPipelineSessionARM* pSession) const
+{
+    return m_vk.createDataGraphPipelineSessionARM(device, pCreateInfo, pAllocator, pSession);
 }
 
 VkResult DeviceDriver::createDataGraphPipelinesARM (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
@@ -2853,9 +1494,563 @@ VkResult DeviceDriver::createDataGraphPipelinesARM (VkDevice device, VkDeferredO
     return m_vk.createDataGraphPipelinesARM(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
 }
 
-VkResult DeviceDriver::createDataGraphPipelineSessionARM (VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDataGraphPipelineSessionARM* pSession) const
+VkResult DeviceDriver::createDeferredOperationKHR (VkDevice device, const VkAllocationCallbacks* pAllocator, VkDeferredOperationKHR* pDeferredOperation) const
 {
-    return m_vk.createDataGraphPipelineSessionARM(device, pCreateInfo, pAllocator, pSession);
+    return m_vk.createDeferredOperationKHR(device, pAllocator, pDeferredOperation);
+}
+
+VkResult DeviceDriver::createDescriptorPool (VkDevice device, const VkDescriptorPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorPool* pDescriptorPool) const
+{
+    return m_vk.createDescriptorPool(device, pCreateInfo, pAllocator, pDescriptorPool);
+}
+
+VkResult DeviceDriver::createDescriptorSetLayout (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorSetLayout* pSetLayout) const
+{
+    return m_vk.createDescriptorSetLayout(device, pCreateInfo, pAllocator, pSetLayout);
+}
+
+VkResult DeviceDriver::createDescriptorUpdateTemplate (VkDevice device, const VkDescriptorUpdateTemplateCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDescriptorUpdateTemplate* pDescriptorUpdateTemplate) const
+{
+    return m_vk.createDescriptorUpdateTemplate(device, pCreateInfo, pAllocator, pDescriptorUpdateTemplate);
+}
+
+VkResult DeviceDriver::createEvent (VkDevice device, const VkEventCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkEvent* pEvent) const
+{
+    return m_vk.createEvent(device, pCreateInfo, pAllocator, pEvent);
+}
+
+VkResult DeviceDriver::createExecutionGraphPipelinesAMDX (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkExecutionGraphPipelineCreateInfoAMDX* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
+{
+    return m_vk.createExecutionGraphPipelinesAMDX(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+}
+
+VkResult DeviceDriver::createExternalComputeQueueNV (VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkExternalComputeQueueNV* pExternalQueue) const
+{
+    return m_vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, pExternalQueue);
+}
+
+VkResult DeviceDriver::createFence (VkDevice device, const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const
+{
+    return m_vk.createFence(device, pCreateInfo, pAllocator, pFence);
+}
+
+VkResult DeviceDriver::createFramebuffer (VkDevice device, const VkFramebufferCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkFramebuffer* pFramebuffer) const
+{
+    return m_vk.createFramebuffer(device, pCreateInfo, pAllocator, pFramebuffer);
+}
+
+VkResult DeviceDriver::createGraphicsPipelines (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkGraphicsPipelineCreateInfo* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    return m_vk.createGraphicsPipelines(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+}
+
+VkResult DeviceDriver::createImage (VkDevice device, const VkImageCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImage* pImage) const
+{
+    return m_vk.createImage(device, pCreateInfo, pAllocator, pImage);
+}
+
+VkResult DeviceDriver::createImageView (VkDevice device, const VkImageViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkImageView* pView) const
+{
+    return m_vk.createImageView(device, pCreateInfo, pAllocator, pView);
+}
+
+VkResult DeviceDriver::createIndirectCommandsLayoutEXT (VkDevice device, const VkIndirectCommandsLayoutCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutEXT* pIndirectCommandsLayout) const
+{
+    return m_vk.createIndirectCommandsLayoutEXT(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
+}
+
+VkResult DeviceDriver::createIndirectCommandsLayoutNV (VkDevice device, const VkIndirectCommandsLayoutCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectCommandsLayoutNV* pIndirectCommandsLayout) const
+{
+    return m_vk.createIndirectCommandsLayoutNV(device, pCreateInfo, pAllocator, pIndirectCommandsLayout);
+}
+
+VkResult DeviceDriver::createIndirectExecutionSetEXT (VkDevice device, const VkIndirectExecutionSetCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkIndirectExecutionSetEXT* pIndirectExecutionSet) const
+{
+    return m_vk.createIndirectExecutionSetEXT(device, pCreateInfo, pAllocator, pIndirectExecutionSet);
+}
+
+VkResult DeviceDriver::createMicromapEXT (VkDevice device, const VkMicromapCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkMicromapEXT* pMicromap) const
+{
+    return m_vk.createMicromapEXT(device, pCreateInfo, pAllocator, pMicromap);
+}
+
+VkResult DeviceDriver::createOpticalFlowSessionNV (VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkOpticalFlowSessionNV* pSession) const
+{
+    return m_vk.createOpticalFlowSessionNV(device, pCreateInfo, pAllocator, pSession);
+}
+
+VkResult DeviceDriver::createPipelineBinariesKHR (VkDevice device, const VkPipelineBinaryCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineBinaryHandlesInfoKHR* pBinaries) const
+{
+    return m_vk.createPipelineBinariesKHR(device, pCreateInfo, pAllocator, pBinaries);
+}
+
+VkResult DeviceDriver::createPipelineCache (VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineCache* pPipelineCache) const
+{
+    return m_vk.createPipelineCache(device, pCreateInfo, pAllocator, pPipelineCache);
+}
+
+VkResult DeviceDriver::createPipelineLayout (VkDevice device, const VkPipelineLayoutCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPipelineLayout* pPipelineLayout) const
+{
+    return m_vk.createPipelineLayout(device, pCreateInfo, pAllocator, pPipelineLayout);
+}
+
+VkResult DeviceDriver::createPrivateDataSlot (VkDevice device, const VkPrivateDataSlotCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkPrivateDataSlot* pPrivateDataSlot) const
+{
+    return m_vk.createPrivateDataSlot(device, pCreateInfo, pAllocator, pPrivateDataSlot);
+}
+
+VkResult DeviceDriver::createQueryPool (VkDevice device, const VkQueryPoolCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkQueryPool* pQueryPool) const
+{
+    return m_vk.createQueryPool(device, pCreateInfo, pAllocator, pQueryPool);
+}
+
+VkResult DeviceDriver::createRayTracingPipelinesKHR (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
+{
+    return m_vk.createRayTracingPipelinesKHR(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+}
+
+VkResult DeviceDriver::createRayTracingPipelinesNV (VkDevice device, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkRayTracingPipelineCreateInfoNV* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
+{
+    return m_vk.createRayTracingPipelinesNV(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+}
+
+VkResult DeviceDriver::createRenderPass (VkDevice device, const VkRenderPassCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    return m_vk.createRenderPass(device, pCreateInfo, pAllocator, pRenderPass);
+}
+
+VkResult DeviceDriver::createRenderPass2 (VkDevice device, const VkRenderPassCreateInfo2* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkRenderPass* pRenderPass) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    return m_vk.createRenderPass2(device, pCreateInfo, pAllocator, pRenderPass);
+}
+
+VkResult DeviceDriver::createSampler (VkDevice device, const VkSamplerCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSampler* pSampler) const
+{
+    return m_vk.createSampler(device, pCreateInfo, pAllocator, pSampler);
+}
+
+VkResult DeviceDriver::createSamplerYcbcrConversion (VkDevice device, const VkSamplerYcbcrConversionCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSamplerYcbcrConversion* pYcbcrConversion) const
+{
+    return m_vk.createSamplerYcbcrConversion(device, pCreateInfo, pAllocator, pYcbcrConversion);
+}
+
+VkResult DeviceDriver::createSemaphore (VkDevice device, const VkSemaphoreCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSemaphore* pSemaphore) const
+{
+    return m_vk.createSemaphore(device, pCreateInfo, pAllocator, pSemaphore);
+}
+
+VkResult DeviceDriver::createShaderModule (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkShaderModule* pShaderModule) const
+{
+    return m_vk.createShaderModule(device, pCreateInfo, pAllocator, pShaderModule);
+}
+
+VkResult DeviceDriver::createShadersEXT (VkDevice device, uint32_t createInfoCount, const VkShaderCreateInfoEXT* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkShaderEXT* pShaders) const
+{
+    return m_vk.createShadersEXT(device, createInfoCount, pCreateInfos, pAllocator, pShaders);
+}
+
+VkResult DeviceDriver::createSharedSwapchainsKHR (VkDevice device, uint32_t swapchainCount, const VkSwapchainCreateInfoKHR* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchains) const
+{
+    return m_vk.createSharedSwapchainsKHR(device, swapchainCount, pCreateInfos, pAllocator, pSwapchains);
+}
+
+VkResult DeviceDriver::createSwapchainKHR (VkDevice device, const VkSwapchainCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSwapchainKHR* pSwapchain) const
+{
+    return m_vk.createSwapchainKHR(device, pCreateInfo, pAllocator, pSwapchain);
+}
+
+VkResult DeviceDriver::createTensorARM (VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor) const
+{
+    return m_vk.createTensorARM(device, pCreateInfo, pAllocator, pTensor);
+}
+
+VkResult DeviceDriver::createTensorViewARM (VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView) const
+{
+    return m_vk.createTensorViewARM(device, pCreateInfo, pAllocator, pView);
+}
+
+VkResult DeviceDriver::createValidationCacheEXT (VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkValidationCacheEXT* pValidationCache) const
+{
+    return m_vk.createValidationCacheEXT(device, pCreateInfo, pAllocator, pValidationCache);
+}
+
+VkResult DeviceDriver::createVideoSessionKHR (VkDevice device, const VkVideoSessionCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionKHR* pVideoSession) const
+{
+    return m_vk.createVideoSessionKHR(device, pCreateInfo, pAllocator, pVideoSession);
+}
+
+VkResult DeviceDriver::createVideoSessionParametersKHR (VkDevice device, const VkVideoSessionParametersCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkVideoSessionParametersKHR* pVideoSessionParameters) const
+{
+    return m_vk.createVideoSessionParametersKHR(device, pCreateInfo, pAllocator, pVideoSessionParameters);
+}
+
+VkResult DeviceDriver::debugMarkerSetObjectNameEXT (VkDevice device, const VkDebugMarkerObjectNameInfoEXT* pNameInfo) const
+{
+    return m_vk.debugMarkerSetObjectNameEXT(device, pNameInfo);
+}
+
+VkResult DeviceDriver::debugMarkerSetObjectTagEXT (VkDevice device, const VkDebugMarkerObjectTagInfoEXT* pTagInfo) const
+{
+    return m_vk.debugMarkerSetObjectTagEXT(device, pTagInfo);
+}
+
+VkResult DeviceDriver::deferredOperationJoinKHR (VkDevice device, VkDeferredOperationKHR operation) const
+{
+    return m_vk.deferredOperationJoinKHR(device, operation);
+}
+
+void DeviceDriver::destroyAccelerationStructureKHR (VkDevice device, VkAccelerationStructureKHR accelerationStructure, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyAccelerationStructureKHR(device, accelerationStructure, pAllocator);
+}
+
+void DeviceDriver::destroyAccelerationStructureNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyAccelerationStructureNV(device, accelerationStructure, pAllocator);
+}
+
+void DeviceDriver::destroyBuffer (VkDevice device, VkBuffer buffer, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyBuffer(device, buffer, pAllocator);
+}
+
+void DeviceDriver::destroyBufferCollectionFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyBufferCollectionFUCHSIA(device, collection, pAllocator);
+}
+
+void DeviceDriver::destroyBufferView (VkDevice device, VkBufferView bufferView, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyBufferView(device, bufferView, pAllocator);
+}
+
+void DeviceDriver::destroyCommandPool (VkDevice device, VkCommandPool commandPool, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyCommandPool(device, commandPool, pAllocator);
+}
+
+void DeviceDriver::destroyCuFunctionNVX (VkDevice device, VkCuFunctionNVX function, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyCuFunctionNVX(device, function, pAllocator);
+}
+
+void DeviceDriver::destroyCuModuleNVX (VkDevice device, VkCuModuleNVX module, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyCuModuleNVX(device, module, pAllocator);
+}
+
+void DeviceDriver::destroyCudaFunctionNV (VkDevice device, VkCudaFunctionNV function, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyCudaFunctionNV(device, function, pAllocator);
+}
+
+void DeviceDriver::destroyCudaModuleNV (VkDevice device, VkCudaModuleNV module, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyCudaModuleNV(device, module, pAllocator);
+}
+
+void DeviceDriver::destroyDataGraphPipelineSessionARM (VkDevice device, VkDataGraphPipelineSessionARM session, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyDataGraphPipelineSessionARM(device, session, pAllocator);
+}
+
+void DeviceDriver::destroyDeferredOperationKHR (VkDevice device, VkDeferredOperationKHR operation, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyDeferredOperationKHR(device, operation, pAllocator);
+}
+
+void DeviceDriver::destroyDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyDescriptorPool(device, descriptorPool, pAllocator);
+}
+
+void DeviceDriver::destroyDescriptorSetLayout (VkDevice device, VkDescriptorSetLayout descriptorSetLayout, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyDescriptorSetLayout(device, descriptorSetLayout, pAllocator);
+}
+
+void DeviceDriver::destroyDescriptorUpdateTemplate (VkDevice device, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyDescriptorUpdateTemplate(device, descriptorUpdateTemplate, pAllocator);
+}
+
+void DeviceDriver::destroyDevice (VkDevice device, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyDevice(device, pAllocator);
+}
+
+void DeviceDriver::destroyEvent (VkDevice device, VkEvent event, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyEvent(device, event, pAllocator);
+}
+
+void DeviceDriver::destroyExternalComputeQueueNV (VkDevice device, VkExternalComputeQueueNV externalQueue, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyExternalComputeQueueNV(device, externalQueue, pAllocator);
+}
+
+void DeviceDriver::destroyFence (VkDevice device, VkFence fence, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyFence(device, fence, pAllocator);
+}
+
+void DeviceDriver::destroyFramebuffer (VkDevice device, VkFramebuffer framebuffer, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyFramebuffer(device, framebuffer, pAllocator);
+}
+
+void DeviceDriver::destroyImage (VkDevice device, VkImage image, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyImage(device, image, pAllocator);
+}
+
+void DeviceDriver::destroyImageView (VkDevice device, VkImageView imageView, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyImageView(device, imageView, pAllocator);
+}
+
+void DeviceDriver::destroyIndirectCommandsLayoutEXT (VkDevice device, VkIndirectCommandsLayoutEXT indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyIndirectCommandsLayoutEXT(device, indirectCommandsLayout, pAllocator);
+}
+
+void DeviceDriver::destroyIndirectCommandsLayoutNV (VkDevice device, VkIndirectCommandsLayoutNV indirectCommandsLayout, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyIndirectCommandsLayoutNV(device, indirectCommandsLayout, pAllocator);
+}
+
+void DeviceDriver::destroyIndirectExecutionSetEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyIndirectExecutionSetEXT(device, indirectExecutionSet, pAllocator);
+}
+
+void DeviceDriver::destroyMicromapEXT (VkDevice device, VkMicromapEXT micromap, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyMicromapEXT(device, micromap, pAllocator);
+}
+
+void DeviceDriver::destroyOpticalFlowSessionNV (VkDevice device, VkOpticalFlowSessionNV session, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyOpticalFlowSessionNV(device, session, pAllocator);
+}
+
+void DeviceDriver::destroyPipeline (VkDevice device, VkPipeline pipeline, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyPipeline(device, pipeline, pAllocator);
+}
+
+void DeviceDriver::destroyPipelineBinaryKHR (VkDevice device, VkPipelineBinaryKHR pipelineBinary, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyPipelineBinaryKHR(device, pipelineBinary, pAllocator);
+}
+
+void DeviceDriver::destroyPipelineCache (VkDevice device, VkPipelineCache pipelineCache, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyPipelineCache(device, pipelineCache, pAllocator);
+}
+
+void DeviceDriver::destroyPipelineLayout (VkDevice device, VkPipelineLayout pipelineLayout, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyPipelineLayout(device, pipelineLayout, pAllocator);
+}
+
+void DeviceDriver::destroyPrivateDataSlot (VkDevice device, VkPrivateDataSlot privateDataSlot, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyPrivateDataSlot(device, privateDataSlot, pAllocator);
+}
+
+void DeviceDriver::destroyQueryPool (VkDevice device, VkQueryPool queryPool, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyQueryPool(device, queryPool, pAllocator);
+}
+
+void DeviceDriver::destroyRenderPass (VkDevice device, VkRenderPass renderPass, const VkAllocationCallbacks* pAllocator) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.destroyRenderPass(device, renderPass, pAllocator);
+}
+
+void DeviceDriver::destroySampler (VkDevice device, VkSampler sampler, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroySampler(device, sampler, pAllocator);
+}
+
+void DeviceDriver::destroySamplerYcbcrConversion (VkDevice device, VkSamplerYcbcrConversion ycbcrConversion, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroySamplerYcbcrConversion(device, ycbcrConversion, pAllocator);
+}
+
+void DeviceDriver::destroySemaphore (VkDevice device, VkSemaphore semaphore, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroySemaphore(device, semaphore, pAllocator);
+}
+
+void DeviceDriver::destroyShaderEXT (VkDevice device, VkShaderEXT shader, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyShaderEXT(device, shader, pAllocator);
+}
+
+void DeviceDriver::destroyShaderModule (VkDevice device, VkShaderModule shaderModule, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyShaderModule(device, shaderModule, pAllocator);
+}
+
+void DeviceDriver::destroySwapchainKHR (VkDevice device, VkSwapchainKHR swapchain, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroySwapchainKHR(device, swapchain, pAllocator);
+}
+
+void DeviceDriver::destroyTensorARM (VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyTensorARM(device, tensor, pAllocator);
+}
+
+void DeviceDriver::destroyTensorViewARM (VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyTensorViewARM(device, tensorView, pAllocator);
+}
+
+void DeviceDriver::destroyValidationCacheEXT (VkDevice device, VkValidationCacheEXT validationCache, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyValidationCacheEXT(device, validationCache, pAllocator);
+}
+
+void DeviceDriver::destroyVideoSessionKHR (VkDevice device, VkVideoSessionKHR videoSession, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyVideoSessionKHR(device, videoSession, pAllocator);
+}
+
+void DeviceDriver::destroyVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyVideoSessionParametersKHR(device, videoSessionParameters, pAllocator);
+}
+
+VkResult DeviceDriver::deviceWaitIdle (VkDevice device) const
+{
+    return m_vk.deviceWaitIdle(device);
+}
+
+VkResult DeviceDriver::displayPowerControlEXT (VkDevice device, VkDisplayKHR display, const VkDisplayPowerInfoEXT* pDisplayPowerInfo) const
+{
+    return m_vk.displayPowerControlEXT(device, display, pDisplayPowerInfo);
+}
+
+VkResult DeviceDriver::endCommandBuffer (VkCommandBuffer commandBuffer) const
+{
+    return m_vk.endCommandBuffer(commandBuffer);
+}
+
+void DeviceDriver::exportMetalObjectsEXT (VkDevice device, VkExportMetalObjectsInfoEXT* pMetalObjectsInfo) const
+{
+    m_vk.exportMetalObjectsEXT(device, pMetalObjectsInfo);
+}
+
+VkResult DeviceDriver::flushMappedMemoryRanges (VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges) const
+{
+    return m_vk.flushMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
+}
+
+void DeviceDriver::freeCommandBuffers (VkDevice device, VkCommandPool commandPool, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) const
+{
+    m_vk.freeCommandBuffers(device, commandPool, commandBufferCount, pCommandBuffers);
+}
+
+VkResult DeviceDriver::freeDescriptorSets (VkDevice device, VkDescriptorPool descriptorPool, uint32_t descriptorSetCount, const VkDescriptorSet* pDescriptorSets) const
+{
+    return m_vk.freeDescriptorSets(device, descriptorPool, descriptorSetCount, pDescriptorSets);
+}
+
+void DeviceDriver::freeMemory (VkDevice device, VkDeviceMemory memory, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.freeMemory(device, memory, pAllocator);
+}
+
+void DeviceDriver::getAccelerationStructureBuildSizesKHR (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkAccelerationStructureBuildGeometryInfoKHR* pBuildInfo, const uint32_t* pMaxPrimitiveCounts, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+    m_vk.getAccelerationStructureBuildSizesKHR(device, buildType, pBuildInfo, pMaxPrimitiveCounts, pSizeInfo);
+}
+
+VkDeviceAddress DeviceDriver::getAccelerationStructureDeviceAddressKHR (VkDevice device, const VkAccelerationStructureDeviceAddressInfoKHR* pInfo) const
+{
+    return m_vk.getAccelerationStructureDeviceAddressKHR(device, pInfo);
+}
+
+VkResult DeviceDriver::getAccelerationStructureHandleNV (VkDevice device, VkAccelerationStructureNV accelerationStructure, size_t dataSize, void* pData) const
+{
+    return m_vk.getAccelerationStructureHandleNV(device, accelerationStructure, dataSize, pData);
+}
+
+void DeviceDriver::getAccelerationStructureMemoryRequirementsNV (VkDevice device, const VkAccelerationStructureMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2KHR* pMemoryRequirements) const
+{
+    m_vk.getAccelerationStructureMemoryRequirementsNV(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::getAccelerationStructureOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkAccelerationStructureCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+    return m_vk.getAccelerationStructureOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getAndroidHardwareBufferPropertiesANDROID (VkDevice device, const struct pt::AndroidHardwareBufferPtr buffer, VkAndroidHardwareBufferPropertiesANDROID* pProperties) const
+{
+    return m_vk.getAndroidHardwareBufferPropertiesANDROID(device, buffer, pProperties);
+}
+
+VkResult DeviceDriver::getBufferCollectionPropertiesFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, VkBufferCollectionPropertiesFUCHSIA* pProperties) const
+{
+    return m_vk.getBufferCollectionPropertiesFUCHSIA(device, collection, pProperties);
+}
+
+VkDeviceAddress DeviceDriver::getBufferDeviceAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const
+{
+    return m_vk.getBufferDeviceAddress(device, pInfo);
+}
+
+void DeviceDriver::getBufferMemoryRequirements (VkDevice device, VkBuffer buffer, VkMemoryRequirements* pMemoryRequirements) const
+{
+    m_vk.getBufferMemoryRequirements(device, buffer, pMemoryRequirements);
+}
+
+void DeviceDriver::getBufferMemoryRequirements2 (VkDevice device, const VkBufferMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getBufferMemoryRequirements2(device, pInfo, pMemoryRequirements);
+}
+
+uint64_t DeviceDriver::getBufferOpaqueCaptureAddress (VkDevice device, const VkBufferDeviceAddressInfo* pInfo) const
+{
+    return m_vk.getBufferOpaqueCaptureAddress(device, pInfo);
+}
+
+VkResult DeviceDriver::getBufferOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkBufferCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+    return m_vk.getBufferOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getCalibratedTimestampsKHR (VkDevice device, uint32_t timestampCount, const VkCalibratedTimestampInfoKHR* pTimestampInfos, uint64_t* pTimestamps, uint64_t* pMaxDeviation) const
+{
+    return m_vk.getCalibratedTimestampsKHR(device, timestampCount, pTimestampInfos, pTimestamps, pMaxDeviation);
+}
+
+void DeviceDriver::getClusterAccelerationStructureBuildSizesNV (VkDevice device, const VkClusterAccelerationStructureInputInfoNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+    m_vk.getClusterAccelerationStructureBuildSizesNV(device, pInfo, pSizeInfo);
+}
+
+VkResult DeviceDriver::getCudaModuleCacheNV (VkDevice device, VkCudaModuleNV module, size_t* pCacheSize, void* pCacheData) const
+{
+    return m_vk.getCudaModuleCacheNV(device, module, pCacheSize, pCacheData);
+}
+
+VkResult DeviceDriver::getDataGraphPipelineAvailablePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t* pPropertiesCount, VkDataGraphPipelinePropertyARM* pProperties) const
+{
+    return m_vk.getDataGraphPipelineAvailablePropertiesARM(device, pPipelineInfo, pPropertiesCount, pProperties);
+}
+
+VkResult DeviceDriver::getDataGraphPipelinePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t propertiesCount, VkDataGraphPipelinePropertyQueryResultARM* pProperties) const
+{
+    return m_vk.getDataGraphPipelinePropertiesARM(device, pPipelineInfo, propertiesCount, pProperties);
 }
 
 VkResult DeviceDriver::getDataGraphPipelineSessionBindPointRequirementsARM (VkDevice device, const VkDataGraphPipelineSessionBindPointRequirementsInfoARM* pInfo, uint32_t* pBindPointRequirementCount, VkDataGraphPipelineSessionBindPointRequirementARM* pBindPointRequirements) const
@@ -2868,27 +2063,832 @@ void DeviceDriver::getDataGraphPipelineSessionMemoryRequirementsARM (VkDevice de
     m_vk.getDataGraphPipelineSessionMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
 }
 
-VkResult DeviceDriver::bindDataGraphPipelineSessionMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindDataGraphPipelineSessionMemoryInfoARM* pBindInfos) const
+uint32_t DeviceDriver::getDeferredOperationMaxConcurrencyKHR (VkDevice device, VkDeferredOperationKHR operation) const
 {
-    return m_vk.bindDataGraphPipelineSessionMemoryARM(device, bindInfoCount, pBindInfos);
+    return m_vk.getDeferredOperationMaxConcurrencyKHR(device, operation);
 }
 
-void DeviceDriver::destroyDataGraphPipelineSessionARM (VkDevice device, VkDataGraphPipelineSessionARM session, const VkAllocationCallbacks* pAllocator) const
+VkResult DeviceDriver::getDeferredOperationResultKHR (VkDevice device, VkDeferredOperationKHR operation) const
 {
-    m_vk.destroyDataGraphPipelineSessionARM(device, session, pAllocator);
+    return m_vk.getDeferredOperationResultKHR(device, operation);
 }
 
-void DeviceDriver::cmdDispatchDataGraphARM (VkCommandBuffer commandBuffer, VkDataGraphPipelineSessionARM session, const VkDataGraphPipelineDispatchInfoARM* pInfo) const
+void DeviceDriver::getDescriptorEXT (VkDevice device, const VkDescriptorGetInfoEXT* pDescriptorInfo, size_t dataSize, void* pDescriptor) const
 {
-    m_vk.cmdDispatchDataGraphARM(commandBuffer, session, pInfo);
+    m_vk.getDescriptorEXT(device, pDescriptorInfo, dataSize, pDescriptor);
 }
 
-VkResult DeviceDriver::getDataGraphPipelineAvailablePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t* pPropertiesCount, VkDataGraphPipelinePropertyARM* pProperties) const
+void DeviceDriver::getDescriptorSetHostMappingVALVE (VkDevice device, VkDescriptorSet descriptorSet, void** ppData) const
 {
-    return m_vk.getDataGraphPipelineAvailablePropertiesARM(device, pPipelineInfo, pPropertiesCount, pProperties);
+    m_vk.getDescriptorSetHostMappingVALVE(device, descriptorSet, ppData);
 }
 
-VkResult DeviceDriver::getDataGraphPipelinePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t propertiesCount, VkDataGraphPipelinePropertyQueryResultARM* pProperties) const
+void DeviceDriver::getDescriptorSetLayoutBindingOffsetEXT (VkDevice device, VkDescriptorSetLayout layout, uint32_t binding, VkDeviceSize* pOffset) const
 {
-    return m_vk.getDataGraphPipelinePropertiesARM(device, pPipelineInfo, propertiesCount, pProperties);
+    m_vk.getDescriptorSetLayoutBindingOffsetEXT(device, layout, binding, pOffset);
+}
+
+void DeviceDriver::getDescriptorSetLayoutHostMappingInfoVALVE (VkDevice device, const VkDescriptorSetBindingReferenceVALVE* pBindingReference, VkDescriptorSetLayoutHostMappingInfoVALVE* pHostMapping) const
+{
+    m_vk.getDescriptorSetLayoutHostMappingInfoVALVE(device, pBindingReference, pHostMapping);
+}
+
+void DeviceDriver::getDescriptorSetLayoutSizeEXT (VkDevice device, VkDescriptorSetLayout layout, VkDeviceSize* pLayoutSizeInBytes) const
+{
+    m_vk.getDescriptorSetLayoutSizeEXT(device, layout, pLayoutSizeInBytes);
+}
+
+void DeviceDriver::getDescriptorSetLayoutSupport (VkDevice device, const VkDescriptorSetLayoutCreateInfo* pCreateInfo, VkDescriptorSetLayoutSupport* pSupport) const
+{
+    m_vk.getDescriptorSetLayoutSupport(device, pCreateInfo, pSupport);
+}
+
+void DeviceDriver::getDeviceAccelerationStructureCompatibilityKHR (VkDevice device, const VkAccelerationStructureVersionInfoKHR* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
+{
+    m_vk.getDeviceAccelerationStructureCompatibilityKHR(device, pVersionInfo, pCompatibility);
+}
+
+void DeviceDriver::getDeviceBufferMemoryRequirements (VkDevice device, const VkDeviceBufferMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getDeviceBufferMemoryRequirements(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const
+{
+    return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
+}
+
+void DeviceDriver::getDeviceGroupPeerMemoryFeatures (VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures) const
+{
+    m_vk.getDeviceGroupPeerMemoryFeatures(device, heapIndex, localDeviceIndex, remoteDeviceIndex, pPeerMemoryFeatures);
+}
+
+VkResult DeviceDriver::getDeviceGroupPresentCapabilitiesKHR (VkDevice device, VkDeviceGroupPresentCapabilitiesKHR* pDeviceGroupPresentCapabilities) const
+{
+    return m_vk.getDeviceGroupPresentCapabilitiesKHR(device, pDeviceGroupPresentCapabilities);
+}
+
+VkResult DeviceDriver::getDeviceGroupSurfacePresentModes2EXT (VkDevice device, const VkPhysicalDeviceSurfaceInfo2KHR* pSurfaceInfo, VkDeviceGroupPresentModeFlagsKHR* pModes) const
+{
+    return m_vk.getDeviceGroupSurfacePresentModes2EXT(device, pSurfaceInfo, pModes);
+}
+
+VkResult DeviceDriver::getDeviceGroupSurfacePresentModesKHR (VkDevice device, VkSurfaceKHR surface, VkDeviceGroupPresentModeFlagsKHR* pModes) const
+{
+    return m_vk.getDeviceGroupSurfacePresentModesKHR(device, surface, pModes);
+}
+
+void DeviceDriver::getDeviceImageMemoryRequirements (VkDevice device, const VkDeviceImageMemoryRequirements* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getDeviceImageMemoryRequirements(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getDeviceImageSparseMemoryRequirements (VkDevice device, const VkDeviceImageMemoryRequirements* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
+{
+    m_vk.getDeviceImageSparseMemoryRequirements(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+}
+
+void DeviceDriver::getDeviceImageSubresourceLayout (VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout) const
+{
+    m_vk.getDeviceImageSubresourceLayout(device, pInfo, pLayout);
+}
+
+void DeviceDriver::getDeviceMemoryCommitment (VkDevice device, VkDeviceMemory memory, VkDeviceSize* pCommittedMemoryInBytes) const
+{
+    m_vk.getDeviceMemoryCommitment(device, memory, pCommittedMemoryInBytes);
+}
+
+uint64_t DeviceDriver::getDeviceMemoryOpaqueCaptureAddress (VkDevice device, const VkDeviceMemoryOpaqueCaptureAddressInfo* pInfo) const
+{
+    return m_vk.getDeviceMemoryOpaqueCaptureAddress(device, pInfo);
+}
+
+void DeviceDriver::getDeviceMicromapCompatibilityEXT (VkDevice device, const VkMicromapVersionInfoEXT* pVersionInfo, VkAccelerationStructureCompatibilityKHR* pCompatibility) const
+{
+    m_vk.getDeviceMicromapCompatibilityEXT(device, pVersionInfo, pCompatibility);
+}
+
+PFN_vkVoidFunction DeviceDriver::getDeviceProcAddr (VkDevice device, const char* pName) const
+{
+    return m_vk.getDeviceProcAddr(device, pName);
+}
+
+void DeviceDriver::getDeviceQueue (VkDevice device, uint32_t queueFamilyIndex, uint32_t queueIndex, VkQueue* pQueue) const
+{
+    m_vk.getDeviceQueue(device, queueFamilyIndex, queueIndex, pQueue);
+}
+
+void DeviceDriver::getDeviceQueue2 (VkDevice device, const VkDeviceQueueInfo2* pQueueInfo, VkQueue* pQueue) const
+{
+    m_vk.getDeviceQueue2(device, pQueueInfo, pQueue);
+}
+
+VkResult DeviceDriver::getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI (VkDevice device, VkRenderPass renderpass, VkExtent2D* pMaxWorkgroupSize) const
+{
+    return m_vk.getDeviceSubpassShadingMaxWorkgroupSizeHUAWEI(device, renderpass, pMaxWorkgroupSize);
+}
+
+void DeviceDriver::getDeviceTensorMemoryRequirementsARM (VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getDeviceTensorMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::getDynamicRenderingTilePropertiesQCOM (VkDevice device, const VkRenderingInfo* pRenderingInfo, VkTilePropertiesQCOM* pProperties) const
+{
+    return m_vk.getDynamicRenderingTilePropertiesQCOM(device, pRenderingInfo, pProperties);
+}
+
+VkResult DeviceDriver::getEncodedVideoSessionParametersKHR (VkDevice device, const VkVideoEncodeSessionParametersGetInfoKHR* pVideoSessionParametersInfo, VkVideoEncodeSessionParametersFeedbackInfoKHR* pFeedbackInfo, size_t* pDataSize, void* pData) const
+{
+    return m_vk.getEncodedVideoSessionParametersKHR(device, pVideoSessionParametersInfo, pFeedbackInfo, pDataSize, pData);
+}
+
+VkResult DeviceDriver::getEventStatus (VkDevice device, VkEvent event) const
+{
+    return m_vk.getEventStatus(device, event);
+}
+
+VkResult DeviceDriver::getExecutionGraphPipelineNodeIndexAMDX (VkDevice device, VkPipeline executionGraph, const VkPipelineShaderStageNodeCreateInfoAMDX* pNodeInfo, uint32_t* pNodeIndex) const
+{
+    return m_vk.getExecutionGraphPipelineNodeIndexAMDX(device, executionGraph, pNodeInfo, pNodeIndex);
+}
+
+VkResult DeviceDriver::getExecutionGraphPipelineScratchSizeAMDX (VkDevice device, VkPipeline executionGraph, VkExecutionGraphPipelineScratchSizeAMDX* pSizeInfo) const
+{
+    return m_vk.getExecutionGraphPipelineScratchSizeAMDX(device, executionGraph, pSizeInfo);
+}
+
+VkResult DeviceDriver::getFenceFdKHR (VkDevice device, const VkFenceGetFdInfoKHR* pGetFdInfo, int* pFd) const
+{
+    return m_vk.getFenceFdKHR(device, pGetFdInfo, pFd);
+}
+
+VkResult DeviceDriver::getFenceStatus (VkDevice device, VkFence fence) const
+{
+    return m_vk.getFenceStatus(device, fence);
+}
+
+VkResult DeviceDriver::getFenceWin32HandleKHR (VkDevice device, const VkFenceGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
+{
+    return m_vk.getFenceWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getFramebufferTilePropertiesQCOM (VkDevice device, VkFramebuffer framebuffer, uint32_t* pPropertiesCount, VkTilePropertiesQCOM* pProperties) const
+{
+    return m_vk.getFramebufferTilePropertiesQCOM(device, framebuffer, pPropertiesCount, pProperties);
+}
+
+void DeviceDriver::getGeneratedCommandsMemoryRequirementsEXT (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoEXT* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getGeneratedCommandsMemoryRequirementsEXT(device, pInfo, pMemoryRequirements);
+}
+
+void DeviceDriver::getGeneratedCommandsMemoryRequirementsNV (VkDevice device, const VkGeneratedCommandsMemoryRequirementsInfoNV* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getGeneratedCommandsMemoryRequirementsNV(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::getImageDrmFormatModifierPropertiesEXT (VkDevice device, VkImage image, VkImageDrmFormatModifierPropertiesEXT* pProperties) const
+{
+    return m_vk.getImageDrmFormatModifierPropertiesEXT(device, image, pProperties);
+}
+
+void DeviceDriver::getImageMemoryRequirements (VkDevice device, VkImage image, VkMemoryRequirements* pMemoryRequirements) const
+{
+    m_vk.getImageMemoryRequirements(device, image, pMemoryRequirements);
+}
+
+void DeviceDriver::getImageMemoryRequirements2 (VkDevice device, const VkImageMemoryRequirementsInfo2* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getImageMemoryRequirements2(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::getImageOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+    return m_vk.getImageOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+void DeviceDriver::getImageSparseMemoryRequirements (VkDevice device, VkImage image, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements* pSparseMemoryRequirements) const
+{
+    m_vk.getImageSparseMemoryRequirements(device, image, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+}
+
+void DeviceDriver::getImageSparseMemoryRequirements2 (VkDevice device, const VkImageSparseMemoryRequirementsInfo2* pInfo, uint32_t* pSparseMemoryRequirementCount, VkSparseImageMemoryRequirements2* pSparseMemoryRequirements) const
+{
+    m_vk.getImageSparseMemoryRequirements2(device, pInfo, pSparseMemoryRequirementCount, pSparseMemoryRequirements);
+}
+
+void DeviceDriver::getImageSubresourceLayout (VkDevice device, VkImage image, const VkImageSubresource* pSubresource, VkSubresourceLayout* pLayout) const
+{
+    m_vk.getImageSubresourceLayout(device, image, pSubresource, pLayout);
+}
+
+void DeviceDriver::getImageSubresourceLayout2 (VkDevice device, VkImage image, const VkImageSubresource2* pSubresource, VkSubresourceLayout2* pLayout) const
+{
+    m_vk.getImageSubresourceLayout2(device, image, pSubresource, pLayout);
+}
+
+VkResult DeviceDriver::getImageViewAddressNVX (VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties) const
+{
+    return m_vk.getImageViewAddressNVX(device, imageView, pProperties);
+}
+
+uint64_t DeviceDriver::getImageViewHandle64NVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const
+{
+    return m_vk.getImageViewHandle64NVX(device, pInfo);
+}
+
+uint32_t DeviceDriver::getImageViewHandleNVX (VkDevice device, const VkImageViewHandleInfoNVX* pInfo) const
+{
+    return m_vk.getImageViewHandleNVX(device, pInfo);
+}
+
+VkResult DeviceDriver::getImageViewOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkImageViewCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+    return m_vk.getImageViewOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+void DeviceDriver::getLatencyTimingsNV (VkDevice device, VkSwapchainKHR swapchain, VkGetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+{
+    m_vk.getLatencyTimingsNV(device, swapchain, pLatencyMarkerInfo);
+}
+
+VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, const VkMemoryGetAndroidHardwareBufferInfoANDROID* pInfo, struct pt::AndroidHardwareBufferPtr* pBuffer) const
+{
+    return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
+}
+
+VkResult DeviceDriver::getMemoryFdKHR (VkDevice device, const VkMemoryGetFdInfoKHR* pGetFdInfo, int* pFd) const
+{
+    return m_vk.getMemoryFdKHR(device, pGetFdInfo, pFd);
+}
+
+VkResult DeviceDriver::getMemoryFdPropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, int fd, VkMemoryFdPropertiesKHR* pMemoryFdProperties) const
+{
+    return m_vk.getMemoryFdPropertiesKHR(device, handleType, fd, pMemoryFdProperties);
+}
+
+VkResult DeviceDriver::getMemoryHostPointerPropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const
+{
+    return m_vk.getMemoryHostPointerPropertiesEXT(device, handleType, pHostPointer, pMemoryHostPointerProperties);
+}
+
+VkResult DeviceDriver::getMemoryMetalHandleEXT (VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, void** pHandle) const
+{
+    return m_vk.getMemoryMetalHandleEXT(device, pGetMetalHandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getMemoryMetalHandlePropertiesEXT (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const
+{
+    return m_vk.getMemoryMetalHandlePropertiesEXT(device, handleType, pHandle, pMemoryMetalHandleProperties);
+}
+
+VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
+{
+    return m_vk.getMemoryRemoteAddressNV(device, pMemoryGetRemoteAddressInfo, pAddress);
+}
+
+VkResult DeviceDriver::getMemoryWin32HandleKHR (VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
+{
+    return m_vk.getMemoryWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getMemoryWin32HandleNV (VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const
+{
+    return m_vk.getMemoryWin32HandleNV(device, memory, handleType, pHandle);
+}
+
+VkResult DeviceDriver::getMemoryWin32HandlePropertiesKHR (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::Win32Handle handle, VkMemoryWin32HandlePropertiesKHR* pMemoryWin32HandleProperties) const
+{
+    return m_vk.getMemoryWin32HandlePropertiesKHR(device, handleType, handle, pMemoryWin32HandleProperties);
+}
+
+VkResult DeviceDriver::getMemoryZirconHandleFUCHSIA (VkDevice device, const VkMemoryGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const
+{
+    return m_vk.getMemoryZirconHandleFUCHSIA(device, pGetZirconHandleInfo, pZirconHandle);
+}
+
+VkResult DeviceDriver::getMemoryZirconHandlePropertiesFUCHSIA (VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::zx_handle_t zirconHandle, VkMemoryZirconHandlePropertiesFUCHSIA* pMemoryZirconHandleProperties) const
+{
+    return m_vk.getMemoryZirconHandlePropertiesFUCHSIA(device, handleType, zirconHandle, pMemoryZirconHandleProperties);
+}
+
+void DeviceDriver::getMicromapBuildSizesEXT (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const
+{
+    m_vk.getMicromapBuildSizesEXT(device, buildType, pBuildInfo, pSizeInfo);
+}
+
+void DeviceDriver::getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const
+{
+    m_vk.getPartitionedAccelerationStructuresBuildSizesNV(device, pInfo, pSizeInfo);
+}
+
+VkResult DeviceDriver::getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const
+{
+    return m_vk.getPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
+}
+
+VkResult DeviceDriver::getPerformanceParameterINTEL (VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const
+{
+    return m_vk.getPerformanceParameterINTEL(device, parameter, pValue);
+}
+
+VkResult DeviceDriver::getPipelineBinaryDataKHR (VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const
+{
+    return m_vk.getPipelineBinaryDataKHR(device, pInfo, pPipelineBinaryKey, pPipelineBinaryDataSize, pPipelineBinaryData);
+}
+
+VkResult DeviceDriver::getPipelineCacheData (VkDevice device, VkPipelineCache pipelineCache, size_t* pDataSize, void* pData) const
+{
+    return m_vk.getPipelineCacheData(device, pipelineCache, pDataSize, pData);
+}
+
+VkResult DeviceDriver::getPipelineExecutableInternalRepresentationsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pInternalRepresentationCount, VkPipelineExecutableInternalRepresentationKHR* pInternalRepresentations) const
+{
+    return m_vk.getPipelineExecutableInternalRepresentationsKHR(device, pExecutableInfo, pInternalRepresentationCount, pInternalRepresentations);
+}
+
+VkResult DeviceDriver::getPipelineExecutablePropertiesKHR (VkDevice device, const VkPipelineInfoKHR* pPipelineInfo, uint32_t* pExecutableCount, VkPipelineExecutablePropertiesKHR* pProperties) const
+{
+    return m_vk.getPipelineExecutablePropertiesKHR(device, pPipelineInfo, pExecutableCount, pProperties);
+}
+
+VkResult DeviceDriver::getPipelineExecutableStatisticsKHR (VkDevice device, const VkPipelineExecutableInfoKHR* pExecutableInfo, uint32_t* pStatisticCount, VkPipelineExecutableStatisticKHR* pStatistics) const
+{
+    return m_vk.getPipelineExecutableStatisticsKHR(device, pExecutableInfo, pStatisticCount, pStatistics);
+}
+
+VkDeviceAddress DeviceDriver::getPipelineIndirectDeviceAddressNV (VkDevice device, const VkPipelineIndirectDeviceAddressInfoNV* pInfo) const
+{
+    return m_vk.getPipelineIndirectDeviceAddressNV(device, pInfo);
+}
+
+void DeviceDriver::getPipelineIndirectMemoryRequirementsNV (VkDevice device, const VkComputePipelineCreateInfo* pCreateInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getPipelineIndirectMemoryRequirementsNV(device, pCreateInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::getPipelineKeyKHR (VkDevice device, const VkPipelineCreateInfoKHR* pPipelineCreateInfo, VkPipelineBinaryKeyKHR* pPipelineKey) const
+{
+    return m_vk.getPipelineKeyKHR(device, pPipelineCreateInfo, pPipelineKey);
+}
+
+VkResult DeviceDriver::getPipelinePropertiesEXT (VkDevice device, const VkPipelineInfoEXT* pPipelineInfo, VkBaseOutStructure* pPipelineProperties) const
+{
+    return m_vk.getPipelinePropertiesEXT(device, pPipelineInfo, pPipelineProperties);
+}
+
+void DeviceDriver::getPrivateData (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t* pData) const
+{
+    m_vk.getPrivateData(device, objectType, objectHandle, privateDataSlot, pData);
+}
+
+VkResult DeviceDriver::getQueryPoolResults (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, size_t dataSize, void* pData, VkDeviceSize stride, VkQueryResultFlags flags) const
+{
+    return m_vk.getQueryPoolResults(device, queryPool, firstQuery, queryCount, dataSize, pData, stride, flags);
+}
+
+void DeviceDriver::getQueueCheckpointData2NV (VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointData2NV* pCheckpointData) const
+{
+    m_vk.getQueueCheckpointData2NV(queue, pCheckpointDataCount, pCheckpointData);
+}
+
+void DeviceDriver::getQueueCheckpointDataNV (VkQueue queue, uint32_t* pCheckpointDataCount, VkCheckpointDataNV* pCheckpointData) const
+{
+    m_vk.getQueueCheckpointDataNV(queue, pCheckpointDataCount, pCheckpointData);
+}
+
+VkResult DeviceDriver::getRayTracingCaptureReplayShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const
+{
+    return m_vk.getRayTracingCaptureReplayShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
+}
+
+VkResult DeviceDriver::getRayTracingShaderGroupHandlesKHR (VkDevice device, VkPipeline pipeline, uint32_t firstGroup, uint32_t groupCount, size_t dataSize, void* pData) const
+{
+    return m_vk.getRayTracingShaderGroupHandlesKHR(device, pipeline, firstGroup, groupCount, dataSize, pData);
+}
+
+VkDeviceSize DeviceDriver::getRayTracingShaderGroupStackSizeKHR (VkDevice device, VkPipeline pipeline, uint32_t group, VkShaderGroupShaderKHR groupShader) const
+{
+    return m_vk.getRayTracingShaderGroupStackSizeKHR(device, pipeline, group, groupShader);
+}
+
+VkResult DeviceDriver::getRefreshCycleDurationGOOGLE (VkDevice device, VkSwapchainKHR swapchain, VkRefreshCycleDurationGOOGLE* pDisplayTimingProperties) const
+{
+    return m_vk.getRefreshCycleDurationGOOGLE(device, swapchain, pDisplayTimingProperties);
+}
+
+void DeviceDriver::getRenderAreaGranularity (VkDevice device, VkRenderPass renderPass, VkExtent2D* pGranularity) const
+{
+    m_vk.getRenderAreaGranularity(device, renderPass, pGranularity);
+}
+
+void DeviceDriver::getRenderingAreaGranularity (VkDevice device, const VkRenderingAreaInfo* pRenderingAreaInfo, VkExtent2D* pGranularity) const
+{
+    m_vk.getRenderingAreaGranularity(device, pRenderingAreaInfo, pGranularity);
+}
+
+VkResult DeviceDriver::getSamplerOpaqueCaptureDescriptorDataEXT (VkDevice device, const VkSamplerCaptureDescriptorDataInfoEXT* pInfo, void* pData) const
+{
+    return m_vk.getSamplerOpaqueCaptureDescriptorDataEXT(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getScreenBufferPropertiesQNX (VkDevice device, const struct _screen_buffer* buffer, VkScreenBufferPropertiesQNX* pProperties) const
+{
+    return m_vk.getScreenBufferPropertiesQNX(device, buffer, pProperties);
+}
+
+VkResult DeviceDriver::getSemaphoreCounterValue (VkDevice device, VkSemaphore semaphore, uint64_t* pValue) const
+{
+    return m_vk.getSemaphoreCounterValue(device, semaphore, pValue);
+}
+
+VkResult DeviceDriver::getSemaphoreFdKHR (VkDevice device, const VkSemaphoreGetFdInfoKHR* pGetFdInfo, int* pFd) const
+{
+    return m_vk.getSemaphoreFdKHR(device, pGetFdInfo, pFd);
+}
+
+VkResult DeviceDriver::getSemaphoreWin32HandleKHR (VkDevice device, const VkSemaphoreGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const
+{
+    return m_vk.getSemaphoreWin32HandleKHR(device, pGetWin32HandleInfo, pHandle);
+}
+
+VkResult DeviceDriver::getSemaphoreZirconHandleFUCHSIA (VkDevice device, const VkSemaphoreGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const
+{
+    return m_vk.getSemaphoreZirconHandleFUCHSIA(device, pGetZirconHandleInfo, pZirconHandle);
+}
+
+VkResult DeviceDriver::getShaderBinaryDataEXT (VkDevice device, VkShaderEXT shader, size_t* pDataSize, void* pData) const
+{
+    return m_vk.getShaderBinaryDataEXT(device, shader, pDataSize, pData);
+}
+
+VkResult DeviceDriver::getShaderInfoAMD (VkDevice device, VkPipeline pipeline, VkShaderStageFlagBits shaderStage, VkShaderInfoTypeAMD infoType, size_t* pInfoSize, void* pInfo) const
+{
+    return m_vk.getShaderInfoAMD(device, pipeline, shaderStage, infoType, pInfoSize, pInfo);
+}
+
+void DeviceDriver::getShaderModuleCreateInfoIdentifierEXT (VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const
+{
+    m_vk.getShaderModuleCreateInfoIdentifierEXT(device, pCreateInfo, pIdentifier);
+}
+
+void DeviceDriver::getShaderModuleIdentifierEXT (VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const
+{
+    m_vk.getShaderModuleIdentifierEXT(device, shaderModule, pIdentifier);
+}
+
+VkResult DeviceDriver::getSwapchainCounterEXT (VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue) const
+{
+    return m_vk.getSwapchainCounterEXT(device, swapchain, counter, pCounterValue);
+}
+
+VkResult DeviceDriver::getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages) const
+{
+    return m_vk.getSwapchainImagesKHR(device, swapchain, pSwapchainImageCount, pSwapchainImages);
+}
+
+VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain) const
+{
+    return m_vk.getSwapchainStatusKHR(device, swapchain);
+}
+
+void DeviceDriver::getTensorMemoryRequirementsARM (VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getTensorMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::getTensorOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const
+{
+    return m_vk.getTensorOpaqueCaptureDescriptorDataARM(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getTensorViewOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const
+{
+    return m_vk.getTensorViewOpaqueCaptureDescriptorDataARM(device, pInfo, pData);
+}
+
+VkResult DeviceDriver::getValidationCacheDataEXT (VkDevice device, VkValidationCacheEXT validationCache, size_t* pDataSize, void* pData) const
+{
+    return m_vk.getValidationCacheDataEXT(device, validationCache, pDataSize, pData);
+}
+
+VkResult DeviceDriver::getVideoSessionMemoryRequirementsKHR (VkDevice device, VkVideoSessionKHR videoSession, uint32_t* pMemoryRequirementsCount, VkVideoSessionMemoryRequirementsKHR* pMemoryRequirements) const
+{
+    return m_vk.getVideoSessionMemoryRequirementsKHR(device, videoSession, pMemoryRequirementsCount, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::importFenceFdKHR (VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo) const
+{
+    return m_vk.importFenceFdKHR(device, pImportFenceFdInfo);
+}
+
+VkResult DeviceDriver::importFenceWin32HandleKHR (VkDevice device, const VkImportFenceWin32HandleInfoKHR* pImportFenceWin32HandleInfo) const
+{
+    return m_vk.importFenceWin32HandleKHR(device, pImportFenceWin32HandleInfo);
+}
+
+VkResult DeviceDriver::importSemaphoreFdKHR (VkDevice device, const VkImportSemaphoreFdInfoKHR* pImportSemaphoreFdInfo) const
+{
+    return m_vk.importSemaphoreFdKHR(device, pImportSemaphoreFdInfo);
+}
+
+VkResult DeviceDriver::importSemaphoreWin32HandleKHR (VkDevice device, const VkImportSemaphoreWin32HandleInfoKHR* pImportSemaphoreWin32HandleInfo) const
+{
+    return m_vk.importSemaphoreWin32HandleKHR(device, pImportSemaphoreWin32HandleInfo);
+}
+
+VkResult DeviceDriver::importSemaphoreZirconHandleFUCHSIA (VkDevice device, const VkImportSemaphoreZirconHandleInfoFUCHSIA* pImportSemaphoreZirconHandleInfo) const
+{
+    return m_vk.importSemaphoreZirconHandleFUCHSIA(device, pImportSemaphoreZirconHandleInfo);
+}
+
+VkResult DeviceDriver::initializePerformanceApiINTEL (VkDevice device, const VkInitializePerformanceApiInfoINTEL* pInitializeInfo) const
+{
+    return m_vk.initializePerformanceApiINTEL(device, pInitializeInfo);
+}
+
+VkResult DeviceDriver::invalidateMappedMemoryRanges (VkDevice device, uint32_t memoryRangeCount, const VkMappedMemoryRange* pMemoryRanges) const
+{
+    return m_vk.invalidateMappedMemoryRanges(device, memoryRangeCount, pMemoryRanges);
+}
+
+VkResult DeviceDriver::latencySleepNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepInfoNV* pSleepInfo) const
+{
+    return m_vk.latencySleepNV(device, swapchain, pSleepInfo);
+}
+
+VkResult DeviceDriver::mapMemory (VkDevice device, VkDeviceMemory memory, VkDeviceSize offset, VkDeviceSize size, VkMemoryMapFlags flags, void** ppData) const
+{
+    return m_vk.mapMemory(device, memory, offset, size, flags, ppData);
+}
+
+VkResult DeviceDriver::mapMemory2 (VkDevice device, const VkMemoryMapInfo* pMemoryMapInfo, void** ppData) const
+{
+    return m_vk.mapMemory2(device, pMemoryMapInfo, ppData);
+}
+
+VkResult DeviceDriver::mergePipelineCaches (VkDevice device, VkPipelineCache dstCache, uint32_t srcCacheCount, const VkPipelineCache* pSrcCaches) const
+{
+    return m_vk.mergePipelineCaches(device, dstCache, srcCacheCount, pSrcCaches);
+}
+
+VkResult DeviceDriver::mergeValidationCachesEXT (VkDevice device, VkValidationCacheEXT dstCache, uint32_t srcCacheCount, const VkValidationCacheEXT* pSrcCaches) const
+{
+    return m_vk.mergeValidationCachesEXT(device, dstCache, srcCacheCount, pSrcCaches);
+}
+
+void DeviceDriver::queueBeginDebugUtilsLabelEXT (VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const
+{
+    m_vk.queueBeginDebugUtilsLabelEXT(queue, pLabelInfo);
+}
+
+VkResult DeviceDriver::queueBindSparse (VkQueue queue, uint32_t bindInfoCount, const VkBindSparseInfo* pBindInfo, VkFence fence) const
+{
+    return m_vk.queueBindSparse(queue, bindInfoCount, pBindInfo, fence);
+}
+
+void DeviceDriver::queueEndDebugUtilsLabelEXT (VkQueue queue) const
+{
+    m_vk.queueEndDebugUtilsLabelEXT(queue);
+}
+
+void DeviceDriver::queueInsertDebugUtilsLabelEXT (VkQueue queue, const VkDebugUtilsLabelEXT* pLabelInfo) const
+{
+    m_vk.queueInsertDebugUtilsLabelEXT(queue, pLabelInfo);
+}
+
+void DeviceDriver::queueNotifyOutOfBandNV (VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const
+{
+    m_vk.queueNotifyOutOfBandNV(queue, pQueueTypeInfo);
+}
+
+VkResult DeviceDriver::queuePresentKHR (VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const
+{
+    return m_vk.queuePresentKHR(queue, pPresentInfo);
+}
+
+VkResult DeviceDriver::queueSetPerformanceConfigurationINTEL (VkQueue queue, VkPerformanceConfigurationINTEL configuration) const
+{
+    return m_vk.queueSetPerformanceConfigurationINTEL(queue, configuration);
+}
+
+VkResult DeviceDriver::queueSubmit (VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) const
+{
+    return m_vk.queueSubmit(queue, submitCount, pSubmits, fence);
+}
+
+VkResult DeviceDriver::queueSubmit2 (VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence) const
+{
+    return m_vk.queueSubmit2(queue, submitCount, pSubmits, fence);
+}
+
+VkResult DeviceDriver::queueWaitIdle (VkQueue queue) const
+{
+    return m_vk.queueWaitIdle(queue);
+}
+
+VkResult DeviceDriver::registerDeviceEventEXT (VkDevice device, const VkDeviceEventInfoEXT* pDeviceEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const
+{
+    return m_vk.registerDeviceEventEXT(device, pDeviceEventInfo, pAllocator, pFence);
+}
+
+VkResult DeviceDriver::registerDisplayEventEXT (VkDevice device, VkDisplayKHR display, const VkDisplayEventInfoEXT* pDisplayEventInfo, const VkAllocationCallbacks* pAllocator, VkFence* pFence) const
+{
+    return m_vk.registerDisplayEventEXT(device, display, pDisplayEventInfo, pAllocator, pFence);
+}
+
+VkResult DeviceDriver::releaseCapturedPipelineDataKHR (VkDevice device, const VkReleaseCapturedPipelineDataInfoKHR* pInfo, const VkAllocationCallbacks* pAllocator) const
+{
+    return m_vk.releaseCapturedPipelineDataKHR(device, pInfo, pAllocator);
+}
+
+VkResult DeviceDriver::releaseFullScreenExclusiveModeEXT (VkDevice device, VkSwapchainKHR swapchain) const
+{
+    return m_vk.releaseFullScreenExclusiveModeEXT(device, swapchain);
+}
+
+VkResult DeviceDriver::releasePerformanceConfigurationINTEL (VkDevice device, VkPerformanceConfigurationINTEL configuration) const
+{
+    return m_vk.releasePerformanceConfigurationINTEL(device, configuration);
+}
+
+void DeviceDriver::releaseProfilingLockKHR (VkDevice device) const
+{
+    m_vk.releaseProfilingLockKHR(device);
+}
+
+VkResult DeviceDriver::releaseSwapchainImagesKHR (VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo) const
+{
+    return m_vk.releaseSwapchainImagesKHR(device, pReleaseInfo);
+}
+
+VkResult DeviceDriver::resetCommandBuffer (VkCommandBuffer commandBuffer, VkCommandBufferResetFlags flags) const
+{
+    return m_vk.resetCommandBuffer(commandBuffer, flags);
+}
+
+VkResult DeviceDriver::resetCommandPool (VkDevice device, VkCommandPool commandPool, VkCommandPoolResetFlags flags) const
+{
+    return m_vk.resetCommandPool(device, commandPool, flags);
+}
+
+VkResult DeviceDriver::resetDescriptorPool (VkDevice device, VkDescriptorPool descriptorPool, VkDescriptorPoolResetFlags flags) const
+{
+    return m_vk.resetDescriptorPool(device, descriptorPool, flags);
+}
+
+VkResult DeviceDriver::resetEvent (VkDevice device, VkEvent event) const
+{
+    return m_vk.resetEvent(device, event);
+}
+
+VkResult DeviceDriver::resetFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences) const
+{
+    return m_vk.resetFences(device, fenceCount, pFences);
+}
+
+void DeviceDriver::resetQueryPool (VkDevice device, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const
+{
+    m_vk.resetQueryPool(device, queryPool, firstQuery, queryCount);
+}
+
+VkResult DeviceDriver::setBufferCollectionBufferConstraintsFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, const VkBufferConstraintsInfoFUCHSIA* pBufferConstraintsInfo) const
+{
+    return m_vk.setBufferCollectionBufferConstraintsFUCHSIA(device, collection, pBufferConstraintsInfo);
+}
+
+VkResult DeviceDriver::setBufferCollectionImageConstraintsFUCHSIA (VkDevice device, VkBufferCollectionFUCHSIA collection, const VkImageConstraintsInfoFUCHSIA* pImageConstraintsInfo) const
+{
+    return m_vk.setBufferCollectionImageConstraintsFUCHSIA(device, collection, pImageConstraintsInfo);
+}
+
+VkResult DeviceDriver::setDebugUtilsObjectNameEXT (VkDevice device, const VkDebugUtilsObjectNameInfoEXT* pNameInfo) const
+{
+    return m_vk.setDebugUtilsObjectNameEXT(device, pNameInfo);
+}
+
+VkResult DeviceDriver::setDebugUtilsObjectTagEXT (VkDevice device, const VkDebugUtilsObjectTagInfoEXT* pTagInfo) const
+{
+    return m_vk.setDebugUtilsObjectTagEXT(device, pTagInfo);
+}
+
+void DeviceDriver::setDeviceMemoryPriorityEXT (VkDevice device, VkDeviceMemory memory, float priority) const
+{
+    m_vk.setDeviceMemoryPriorityEXT(device, memory, priority);
+}
+
+VkResult DeviceDriver::setEvent (VkDevice device, VkEvent event) const
+{
+    return m_vk.setEvent(device, event);
+}
+
+void DeviceDriver::setHdrMetadataEXT (VkDevice device, uint32_t swapchainCount, const VkSwapchainKHR* pSwapchains, const VkHdrMetadataEXT* pMetadata) const
+{
+    m_vk.setHdrMetadataEXT(device, swapchainCount, pSwapchains, pMetadata);
+}
+
+void DeviceDriver::setLatencyMarkerNV (VkDevice device, VkSwapchainKHR swapchain, const VkSetLatencyMarkerInfoNV* pLatencyMarkerInfo) const
+{
+    m_vk.setLatencyMarkerNV(device, swapchain, pLatencyMarkerInfo);
+}
+
+VkResult DeviceDriver::setLatencySleepModeNV (VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const
+{
+    return m_vk.setLatencySleepModeNV(device, swapchain, pSleepModeInfo);
+}
+
+void DeviceDriver::setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const
+{
+    m_vk.setLocalDimmingAMD(device, swapChain, localDimmingEnable);
+}
+
+VkResult DeviceDriver::setPrivateData (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data) const
+{
+    return m_vk.setPrivateData(device, objectType, objectHandle, privateDataSlot, data);
+}
+
+VkResult DeviceDriver::signalSemaphore (VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) const
+{
+    return m_vk.signalSemaphore(device, pSignalInfo);
+}
+
+VkResult DeviceDriver::transitionImageLayout (VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfo* pTransitions) const
+{
+    return m_vk.transitionImageLayout(device, transitionCount, pTransitions);
+}
+
+void DeviceDriver::trimCommandPool (VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags) const
+{
+    m_vk.trimCommandPool(device, commandPool, flags);
+}
+
+void DeviceDriver::uninitializePerformanceApiINTEL (VkDevice device) const
+{
+    m_vk.uninitializePerformanceApiINTEL(device);
+}
+
+void DeviceDriver::unmapMemory (VkDevice device, VkDeviceMemory memory) const
+{
+    m_vk.unmapMemory(device, memory);
+}
+
+VkResult DeviceDriver::unmapMemory2 (VkDevice device, const VkMemoryUnmapInfo* pMemoryUnmapInfo) const
+{
+    return m_vk.unmapMemory2(device, pMemoryUnmapInfo);
+}
+
+void DeviceDriver::updateDescriptorSetWithTemplate (VkDevice device, VkDescriptorSet descriptorSet, VkDescriptorUpdateTemplate descriptorUpdateTemplate, const void* pData) const
+{
+    m_vk.updateDescriptorSetWithTemplate(device, descriptorSet, descriptorUpdateTemplate, pData);
+}
+
+void DeviceDriver::updateDescriptorSets (VkDevice device, uint32_t descriptorWriteCount, const VkWriteDescriptorSet* pDescriptorWrites, uint32_t descriptorCopyCount, const VkCopyDescriptorSet* pDescriptorCopies) const
+{
+    m_vk.updateDescriptorSets(device, descriptorWriteCount, pDescriptorWrites, descriptorCopyCount, pDescriptorCopies);
+}
+
+void DeviceDriver::updateIndirectExecutionSetPipelineEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetPipelineEXT* pExecutionSetWrites) const
+{
+    m_vk.updateIndirectExecutionSetPipelineEXT(device, indirectExecutionSet, executionSetWriteCount, pExecutionSetWrites);
+}
+
+void DeviceDriver::updateIndirectExecutionSetShaderEXT (VkDevice device, VkIndirectExecutionSetEXT indirectExecutionSet, uint32_t executionSetWriteCount, const VkWriteIndirectExecutionSetShaderEXT* pExecutionSetWrites) const
+{
+    m_vk.updateIndirectExecutionSetShaderEXT(device, indirectExecutionSet, executionSetWriteCount, pExecutionSetWrites);
+}
+
+VkResult DeviceDriver::updateVideoSessionParametersKHR (VkDevice device, VkVideoSessionParametersKHR videoSessionParameters, const VkVideoSessionParametersUpdateInfoKHR* pUpdateInfo) const
+{
+    return m_vk.updateVideoSessionParametersKHR(device, videoSessionParameters, pUpdateInfo);
+}
+
+VkResult DeviceDriver::waitForFences (VkDevice device, uint32_t fenceCount, const VkFence* pFences, VkBool32 waitAll, uint64_t timeout) const
+{
+    return m_vk.waitForFences(device, fenceCount, pFences, waitAll, timeout);
+}
+
+VkResult DeviceDriver::waitForPresent2KHR (VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info) const
+{
+    return m_vk.waitForPresent2KHR(device, swapchain, pPresentWait2Info);
+}
+
+VkResult DeviceDriver::waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout) const
+{
+    return m_vk.waitForPresentKHR(device, swapchain, presentId, timeout);
+}
+
+VkResult DeviceDriver::waitSemaphores (VkDevice device, const VkSemaphoreWaitInfo* pWaitInfo, uint64_t timeout) const
+{
+    return m_vk.waitSemaphores(device, pWaitInfo, timeout);
+}
+
+VkResult DeviceDriver::writeAccelerationStructuresPropertiesKHR (VkDevice device, uint32_t accelerationStructureCount, const VkAccelerationStructureKHR* pAccelerationStructures, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const
+{
+    return m_vk.writeAccelerationStructuresPropertiesKHR(device, accelerationStructureCount, pAccelerationStructures, queryType, dataSize, pData, stride);
+}
+
+VkResult DeviceDriver::writeMicromapsPropertiesEXT (VkDevice device, uint32_t micromapCount, const VkMicromapEXT* pMicromaps, VkQueryType queryType, size_t dataSize, void* pData, size_t stride) const
+{
+    return m_vk.writeMicromapsPropertiesEXT(device, micromapCount, pMicromaps, queryType, dataSize, pData, stride);
 }

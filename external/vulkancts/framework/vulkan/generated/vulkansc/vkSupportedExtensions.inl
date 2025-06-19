@@ -6,6 +6,27 @@
 
 void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)
 {
+    if (coreVersion >= VK_API_VERSION_1_1)
+    {
+        dst.push_back("VK_KHR_16bit_storage");
+        dst.push_back("VK_KHR_bind_memory2");
+        dst.push_back("VK_KHR_dedicated_allocation");
+        dst.push_back("VK_KHR_descriptor_update_template");
+        dst.push_back("VK_KHR_device_group");
+        dst.push_back("VK_KHR_external_fence");
+        dst.push_back("VK_KHR_external_memory");
+        dst.push_back("VK_KHR_external_semaphore");
+        dst.push_back("VK_KHR_get_memory_requirements2");
+        dst.push_back("VK_KHR_maintenance1");
+        dst.push_back("VK_KHR_maintenance2");
+        dst.push_back("VK_KHR_maintenance3");
+        dst.push_back("VK_KHR_multiview");
+        dst.push_back("VK_KHR_relaxed_block_layout");
+        dst.push_back("VK_KHR_sampler_ycbcr_conversion");
+        dst.push_back("VK_KHR_shader_draw_parameters");
+        dst.push_back("VK_KHR_storage_buffer_storage_class");
+        dst.push_back("VK_KHR_variable_pointers");
+    }
     if (coreVersion >= VK_API_VERSION_1_2)
     {
         dst.push_back("VK_EXT_descriptor_indexing");
@@ -32,27 +53,6 @@ void getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char
         dst.push_back("VK_KHR_timeline_semaphore");
         dst.push_back("VK_KHR_uniform_buffer_standard_layout");
         dst.push_back("VK_KHR_vulkan_memory_model");
-    }
-    if (coreVersion >= VK_API_VERSION_1_1)
-    {
-        dst.push_back("VK_KHR_16bit_storage");
-        dst.push_back("VK_KHR_bind_memory2");
-        dst.push_back("VK_KHR_dedicated_allocation");
-        dst.push_back("VK_KHR_descriptor_update_template");
-        dst.push_back("VK_KHR_device_group");
-        dst.push_back("VK_KHR_external_fence");
-        dst.push_back("VK_KHR_external_memory");
-        dst.push_back("VK_KHR_external_semaphore");
-        dst.push_back("VK_KHR_get_memory_requirements2");
-        dst.push_back("VK_KHR_maintenance1");
-        dst.push_back("VK_KHR_maintenance2");
-        dst.push_back("VK_KHR_maintenance3");
-        dst.push_back("VK_KHR_multiview");
-        dst.push_back("VK_KHR_relaxed_block_layout");
-        dst.push_back("VK_KHR_sampler_ycbcr_conversion");
-        dst.push_back("VK_KHR_shader_draw_parameters");
-        dst.push_back("VK_KHR_storage_buffer_storage_class");
-        dst.push_back("VK_KHR_variable_pointers");
     }
 }
 

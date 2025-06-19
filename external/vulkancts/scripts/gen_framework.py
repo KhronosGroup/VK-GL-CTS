@@ -461,6 +461,45 @@ def substituteType(object): # both CompositeMember and FunctionArgument can be p
             if "*" in platformType:
                 object.pointer = "*" if object.pointer == "**" else None
 
+def sortEnums(enum_list):
+    """
+    Sort an iterable of items with a .value attribute:
+      * Items where .value can be parsed as int(...) (handles "0x..") come first, sorted by that int.
+      * Items where .value is non-numeric come afterward, in the same order they appeared.
+    """
+    def key_fn(idx_item):
+        idx, item = idx_item
+        v = item.value
+        try:
+            # base=0 lets int() handle "0x10" as hex
+            num = int(v, 0)
+            return 0, num
+        except ValueError:
+            # not a number, preserve original index
+            return 1, idx
+
+    # enumerate to capture original positions
+    sorted_pairs = sorted(enumerate(enum_list), key=key_fn)
+    # drop the indices, returning just the items
+    return [item for idx, item in sorted_pairs]
+
+def sortFlags(flags):
+    def key_fn(idx_item):
+        idx, item = idx_item
+        v = item[1]
+        try:
+            # base=0 lets int() handle "0x10" as hex
+            num = int(v, 0)
+            return 0, num
+        except ValueError:
+            # not a number, preserve original index
+            return 1, idx
+
+        # enumerate to capture original positions
+    sorted_pairs = sorted(enumerate(flags), key=key_fn)
+    # drop the indices, returning just the items
+    return [item for idx, item in sorted_pairs]
+
 class Define:
     def __init__ (self, name, aType, alias, value):
         self.name = name
@@ -689,6 +728,9 @@ class API:
         self.additionalExtensionData = sorted(additionalExtensionData.items(), key=lambda e: e[0])
 
     def addEnumerator(self, targetEnum, name, value, offset, extnumber, bitpos, dir = None):
+        for e in targetEnum.enumeratorList:
+            if e.name == name:
+                return
         # calculate enumerator value if offset attribute is present
         if value is None and offset is not None:
             value = 1000000000 + (int(extnumber) - 1) * 1000 + int(offset)
@@ -1229,7 +1271,6 @@ class API:
                         for r in f.requirementsList:
                             for enumerator in r.enumList:
                                 if enumerator.name == searchedName:
-                                    assert enumerator.extnumber is not None
                                     self.addEnumerator(
                                         enum,
                                         name,
@@ -1646,6 +1687,7 @@ class API:
                 logging.debug("File written to " + jsonFilePath)
             api.additionalExtensionData.append((apiFeature.name, data))
 
+        api.extensions = sorted(api.extensions, key=lambda i: i.name)
         self.additionalExtensionData = sorted(self.additionalExtensionData, key=lambda e: e[0])
 
         for ext in self.extensions:
@@ -1687,13 +1729,14 @@ def writeHandleType (api, filename):
         return prefixName("HANDLE_TYPE_", name)
 
     def genHandles ():
-        yield "\t%s\t= 0," % getHandleName(api.handles[0].name)
-        for h in api.handles[1:]:
+        sorted_handles = sorted(api.handles, key=lambda item: item.name)
+        yield "\t%s\t= 0," % getHandleName(sorted_handles[0].name)
+        for h in sorted_handles[1:]:
             yield "\t%s," % getHandleName(h.name)
-        for h in api.handles:
+        for h in sorted_handles:
             if h.alias is not None:
                 yield "\t%s\t= %s," % (getHandleName(h.alias), getHandleName(h.name))
-        yield "\tHANDLE_TYPE_LAST\t= %s + 1" % (getHandleName(api.handles[-1].name))
+        yield "\tHANDLE_TYPE_LAST\t= %s + 1" % (getHandleName(sorted_handles[-1].name))
 
     def genHandlesBlock ():
         yield "enum HandleType"
@@ -1729,10 +1772,11 @@ def genEnumSrc (enum):
     yield "enum %s" % enum.name
     yield "{"
     lines = []
-    for ed in enum.enumeratorList:
+    fields = sortEnums(enum.enumeratorList)
+    for ed in fields:
         if ed.value is not None:
             lines.append(f"\t{ed.name}\t= {ed.value},")
-    for ed in enum.enumeratorList:
+    for ed in fields:
         for alias in ed.aliasList:
             lines.append(f"\t{alias}\t= {ed.name},")
 
@@ -1751,13 +1795,17 @@ def genEnumSrc (enum):
 
 def genBitfieldSrc (bitfield):
     lines = []
+    flags = []
     for ev in bitfield.enumeratorList:
         # bitfields may use mix of bitpos and values
         if ev.bitpos is not None:
             value = pow(2, int(ev.bitpos))
-            lines.append(f"\t{ev.name}\t= {value:#010x},")
+            flags.append((ev.name, f"{value:#010x}"))
         if ev.value is not None:
-            lines.append(f"\t{ev.name}\t= {ev.value},")
+            flags.append((ev.name, ev.value))
+    flags = sortFlags(flags)
+    for ev in flags:
+        lines.append(f"\t{ev[0]}\t= {ev[1]},")
     for ev in bitfield.enumeratorList:
         for alias in ev.aliasList:
             lines.append(f"\t{alias}\t= {ev.name},")
@@ -1794,7 +1842,8 @@ def genBitfield64Src (bitfield64):
 
 def genDefinesSrc (apiName, defines):
     def genLines (defines):
-        for d in defines:
+        sorted_defines = sorted(defines, key=lambda i: i.name)
+        for d in sorted_defines:
             if d.alias is not None:
                 continue
             defineType = DEFINITIONS.get(d.name, d.type)
@@ -1815,7 +1864,8 @@ def genDefinesSrc (apiName, defines):
 
 def genHandlesSrc (handles):
     def genLines (handles):
-        for h in handles:
+        sorted_handles = sorted(handles, key=lambda i: i.name)
+        for h in sorted_handles:
             handleType = h.type
             handleObjtype = h.objtypeenum
             if h.alias is not None:
@@ -1831,7 +1881,8 @@ def genHandlesSrc (handles):
 
 def genHandlesSrc (handles):
     def genLines (handles):
-        for h in handles:
+        sorted_handles = sorted(handles, key=lambda i: i.name)
+        for h in sorted_handles:
             handleType    = h.type
             handleObjtype = h.objtypeenum
             line = f"{handleType}\t({{}},\tHANDLE{handleObjtype[9:]});"
@@ -1856,7 +1907,19 @@ def writeBasicTypes (api, filename):
         yield ""
 
         yield "// Enums"
-        for enum in api.enums:
+        sorted_enums = sorted(api.enums, key=lambda i: i.name)
+        for enum in sorted_enums:
+            # skip empty enums only for vulkan
+            # vulkan_json_data.hpp and vulkan_json_parser.hpp in SC need many empty enums
+            if len(enum.enumeratorList) == 0 and api.apiName == "vulkan":
+                continue
+            if enum.type == "enum":
+                for line in genEnumSrc(enum):
+                    yield line
+
+        yield "// Bitmasks"
+        sorted_enums = sorted(api.enums, key=lambda i: i.name)
+        for enum in sorted_enums:
             # skip empty enums only for vulkan
             # vulkan_json_data.hpp and vulkan_json_parser.hpp in SC need many empty enums
             if len(enum.enumeratorList) == 0 and api.apiName == "vulkan":
@@ -1868,19 +1931,24 @@ def writeBasicTypes (api, filename):
                 else:
                     for line in genBitfield64Src(enum):
                         yield line
-            else:
-                for line in genEnumSrc(enum):
-                    yield line
             if enum.alias is not None:
                 yield f"typedef {enum.name} {enum.alias};"
-            yield ""
 
-        yield "// Bitmasks"
-        for bitmask in api.bitmasks:
+        sorted_bitmasks = sorted(api.bitmasks, key=lambda i: i.name)
+        for bitmask in sorted_bitmasks:
             plainType = api.basetypes[bitmask.type]
             yield f"typedef {plainType} {bitmask.name};\n"
             if bitmask.alias:
                 yield f"typedef {bitmask.name} {bitmask.alias};\n"
+
+        yield "// Enum aliases"
+        for enum in sorted_enums:
+            # skip empty enums only for vulkan
+            # vulkan_json_data.hpp and vulkan_json_parser.hpp in SC need many empty enums
+            if len(enum.enumeratorList) == 0 and api.apiName == "vulkan":
+                continue
+            if enum.alias is not None:
+                yield f"typedef {enum.name} {enum.alias};"
 
         yield ""
         for line in indentLines(["VK_DEFINE_PLATFORM_TYPE(%s,\t%s)" % (s[0], c) for n, s, c in PLATFORM_TYPES]):
@@ -1909,7 +1977,7 @@ def writeCompositeTypes (api, filename):
         for size in member.arraySizeList:
             result += f"[{size}]"
         if member.fieldWidth:
-            result += f":{member.fieldWidth}"
+            result += f" : {member.fieldWidth}"
         return result
 
     # function that prints single structure definition
@@ -1945,7 +2013,8 @@ def writeCompositeTypes (api, filename):
 
         # iterate over all composite types
         lastDelayedComposite = None
-        for ct in api.compositeTypes:
+        sorted_structs = sorted(api.compositeTypes, key=lambda s: s.name)
+        for ct in sorted_structs:
             # check if one of delayed structures can be saved
             delayedButSaved = []
             for dct in delayedStructureObjectsList:
@@ -1974,8 +2043,9 @@ def writeCompositeTypes (api, filename):
                     delayedStructureObjectsList.remove(dct)
                     break
         # write all alias typedefs
-        for ct in api.compositeTypes:
-            for alias in ct.aliasList:
+        for ct in sorted_structs:
+            sorted_aliases = sorted(ct.aliasList)
+            for alias in sorted_aliases:
                 yield "typedef %s %s;" % (ct.name, alias)
                 yield ""
 
@@ -2005,7 +2075,8 @@ def argListToStr (args):
 def writeInterfaceDecl (api, filename, functionTypes, concrete):
     def genProtos ():
         postfix = "" if concrete else " = 0"
-        for function in api.functions:
+        sorted_functions = sorted(api.functions, key=lambda f: f.name)
+        for function in sorted_functions:
             if not function.getType() in functionTypes:
                 continue
             yield "virtual %s\t%s\t(%s) const%s;" % (function.returnType, getInterfaceName(function.name), argListToStr(function.arguments), postfix)
@@ -2015,7 +2086,8 @@ def writeInterfaceDecl (api, filename, functionTypes, concrete):
 def writeFunctionPtrTypes (api, filename):
     def genTypes ():
         pattern = "typedef VKAPI_ATTR {}\t(VKAPI_CALL* {})\t({});"
-        for function in api.functions:
+        sorted_functions = sorted(api.functions, key=lambda f: f.name)
+        for function in sorted_functions:
             argList = argListToStr(function.arguments)
             yield pattern.format(function.returnType, getFunctionTypeName(function.name), argList)
             for alias in function.aliasList:
@@ -2025,7 +2097,8 @@ def writeFunctionPtrTypes (api, filename):
 
 def writeFunctionPointers (api, filename, functionTypes):
     def FunctionsYielder ():
-        for function in api.functions:
+        sorted_functions = sorted(api.functions, key=lambda f: f.name)
+        for function in sorted_functions:
             if function.getType() in functionTypes:
                 interfaceName = getInterfaceName(function.name)
                 functionTypeName = getFunctionTypeName(function.name)
@@ -2068,7 +2141,8 @@ def getPromotedFunctions (api):
 def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
     promotedFunctions = getPromotedFunctions(api) if Function.TYPE_DEVICE in functionTypes else None
     def makeInitFunctionPointers ():
-        for function in api.functions:
+        sorted_functions = sorted(api.functions, key=lambda f: f.name)
+        for function in sorted_functions:
             if function.getType() in functionTypes and (cond == None or cond(function)):
                 condition = ''
                 if function.getType() == Function.TYPE_DEVICE:
@@ -2077,6 +2151,8 @@ def writeInitFunctionPointers (api, filename, functionTypes, cond = None):
                         for versionTuple in promotedFunctions[function.name]:
                             if len(versionCheck) > 0:
                                 versionCheck += ' || '
+                            if versionTuple[1] == 1 and versionTuple[2] == 0:
+                                continue
                             versionCheck = 'usedApiVersion >= VK_MAKE_API_VERSION(%s, %s, %s, 0)' % versionTuple
                     if len(versionCheck) > 0:
                         condition = f"if ({versionCheck})\n    "
@@ -2122,7 +2198,8 @@ def writeFuncPtrInterfaceImpl (api, filename, functionTypes, className):
                 computeOnlyForbiddenCommands.append(alias_name_without_vk)
 
     def makeFuncPtrInterfaceImpl ():
-        for function in api.functions:
+        sorted_functions = sorted(api.functions, key=lambda f: f.name)
+        for function in sorted_functions:
             functionInterfaceName = getInterfaceName(function.name)
             if function.getType() in functionTypes:
                 yield ""
@@ -2294,26 +2371,30 @@ def writeFuncPtrInterfaceSCImpl (api, filename, functionTypes, className):
 
 def writeStrUtilProto (api, filename):
     def makeStrUtilProto ():
-        for line in indentLines(["const char*\tget%sName\t(%s value);" % (enum.name[2:], enum.name) for enum in api.enums if enum.type == "enum"]):
+        sorted_enums = sorted(api.enums, key=lambda en: en.name)
+        sorted_bitmasks = sorted(api.bitmasks, key=lambda en: en.name)
+        sorted_structs = sorted(api.compositeTypes, key=lambda en: en.name)
+        for line in indentLines(["const char*\tget%sName\t(%s value);" % (enum.name[2:], enum.name) for enum in sorted_enums if enum.type == "enum"]):
             yield line
         yield ""
-        for line in indentLines(["inline tcu::Format::Enum<%s>\tget%sStr\t(%s value)\t{ return tcu::Format::Enum<%s>(get%sName, value);\t}" % (e.name, e.name[2:], e.name, e.name, e.name[2:]) for e in api.enums if e.type == "enum"]):
+        for line in indentLines(["inline tcu::Format::Enum<%s>\tget%sStr\t(%s value)\t{ return tcu::Format::Enum<%s>(get%sName, value);\t}" % (e.name, e.name[2:], e.name, e.name, e.name[2:]) for e in sorted_enums if e.type == "enum"]):
             yield line
         yield ""
-        for line in indentLines(["inline std::ostream&\toperator<<\t(std::ostream& s, %s value)\t{ return s << get%sStr(value);\t}" % (e.name, e.name[2:]) for e in api.enums if e.type == "enum"]):
+        for line in indentLines(["inline std::ostream&\toperator<<\t(std::ostream& s, %s value)\t{ return s << get%sStr(value);\t}" % (e.name, e.name[2:]) for e in sorted_enums if e.type == "enum"]):
             yield line
         yield ""
-        for line in indentLines(["tcu::Format::Bitfield<%s>\tget%sStr\t(%s value);" % (("64" if b.type == "VkFlags64" else "32"), b.name[2:], b.name) for b in api.bitmasks]):
+        for line in indentLines(["tcu::Format::Bitfield<%s>\tget%sStr\t(%s value);" % (("64" if b.type == "VkFlags64" else "32"), b.name[2:], b.name) for b in sorted_bitmasks]):
             yield line
         yield ""
-        for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in api.compositeTypes]):
+        for line in indentLines(["std::ostream&\toperator<<\t(std::ostream& s, const %s& value);" % (s.name) for s in sorted_structs]):
             yield line
 
     writeInlFile(filename, INL_HEADER, makeStrUtilProto())
 
 def writeStrUtilImpl (api, filename):
     def makeStrUtilImpl ():
-        for line in indentLines(["template<> const char*\tgetTypeName<%s>\t(void) { return \"%s\";\t}" % (handle.name, handle.name) for handle in api.handles]):
+        sorted_handles = sorted(api.handles, key=lambda item: item.name)
+        for line in indentLines(["template<> const char*\tgetTypeName<%s>\t(void) { return \"%s\";\t}" % (handle.name, handle.name) for handle in sorted_handles]):
             yield line
 
         yield ""
@@ -2326,7 +2407,8 @@ def writeStrUtilImpl (api, filename):
         yield "}"
 
         savedBitmasks = []
-        for enum in api.enums:
+        sorted_enums = sorted(api.enums, key=lambda en: en.name)
+        for enum in sorted_enums:
             if enum.type == "enum":
                 yield ""
                 yield "const char* get%sName (%s value)" % (enum.name[2:], enum.name)
@@ -2335,14 +2417,17 @@ def writeStrUtilImpl (api, filename):
                 yield "\t{"
                 enumValues = []
                 lastValue = 0x7FFFFFFF
-                for e in enum.enumeratorList:
+                sorted_fields = sorted(enum.enumeratorList, key=lambda en: en.name)
+                for e in sorted_fields:
                     enumValues.append(f"\t\tcase {e.name}:\treturn \"{e.name}\";")
                 enumValues.append("\t\tdefault:\treturn nullptr;")
                 for line in indentLines(enumValues):
                     yield line
                 yield "\t}"
                 yield "}"
-            elif enum.type == "bitmask":
+
+        for enum in sorted_enums:
+            if enum.type == "bitmask":
                 # find bitfield that uses those bitmasks
                 foundBitmask = None
                 for bitmask in api.bitmasks:
@@ -2362,13 +2447,15 @@ def writeStrUtilImpl (api, filename):
                     # some bitfields in SC have no items
                     yield f"\t\ttcu::Format::BitDesc(0, \"0\")"
                 else:
-                    for line in indentLines([f"\t\ttcu::Format::BitDesc({e.name},\t\"{e.name}\")," for e in enum.enumeratorList]):
+                    sorted_flags = sorted(enum.enumeratorList, key=lambda en: en.name)
+                    for line in indentLines([f"\t\ttcu::Format::BitDesc({e.name},\t\"{e.name}\")," for e in sorted_flags]):
                         yield line
                 yield "\t};"
                 yield f"\treturn tcu::Format::Bitfield<{bitSize}>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));"
                 yield "}"
 
-        for bitmask in api.bitmasks:
+        sorted_bitmasks = sorted(api.bitmasks, key=lambda item: item.name)
+        for bitmask in sorted_bitmasks:
             if bitmask.name not in savedBitmasks:
                 bitSize = "64" if bitmask.type == "VkFlags64" else "32"
                 yield ""
@@ -2377,9 +2464,10 @@ def writeStrUtilImpl (api, filename):
                 yield f"\treturn tcu::Format::Bitfield<{bitSize}>(value, nullptr, nullptr);"
                 yield "}"
 
-        bitfieldTypeNames = set([bitmask.name for bitmask in api.bitmasks])
+        bitfieldTypeNames = set([bitmask.name for bitmask in sorted_bitmasks])
 
-        for type in api.compositeTypes:
+        sorted_structs = sorted(api.compositeTypes, key=lambda item: item.name)
+        for type in sorted_structs:
             yield ""
             yield "std::ostream& operator<< (std::ostream& s, const %s& value)" % type.name
             yield "{"
@@ -2487,6 +2575,7 @@ def addVersionDefines(versionSpectrum):
 
 def writeRefUtilProto (api, filename):
     functions = getConstructorFunctions(api)
+    functions = sorted(functions, key=lambda f: f.name)
 
     def makeRefUtilProto ():
         unindented = []
@@ -2503,7 +2592,8 @@ def writeRefUtilImpl (api, filename):
         yield "{"
         yield ""
 
-        for function in api.functions:
+        sorted_functions = sorted(api.functions, key=lambda f: f.name)
+        for function in sorted_functions:
             if function.getType() == Function.TYPE_DEVICE \
             and (function.name[:9] == "vkDestroy" or function.name == "vkFreeMemory") \
             and not function.name == "vkDestroyDevice":
@@ -2524,7 +2614,8 @@ def writeRefUtilImpl (api, filename):
             Function.TYPE_DEVICE: "device"
         }
 
-        for function in functions:
+        sorted_functions = sorted(functions, key=lambda f: f.name)
+        for function in sorted_functions:
             deleterArgsString = ''
             if function.name == "createDevice":
                 # createDevice requires two additional parameters to setup VkDevice deleter
@@ -2544,7 +2635,8 @@ def writeRefUtilImpl (api, filename):
 
 def writeStructTraitsImpl (api, filename):
     def gen ():
-        for cType in api.compositeTypes:
+        sorted_structs = sorted(api.compositeTypes, key=lambda s: s.name)
+        for cType in sorted_structs:
             if cType.category == "struct" and cType.members[0].name == "sType" and cType.name != "VkBaseOutStructure" and cType.name != "VkBaseInStructure":
                 yield "template<> VkStructureType getStructureType<%s> (void)" % cType.name
                 yield "{"
@@ -2606,7 +2698,7 @@ def writeNullDriverImpl (api, filename):
                     return handle
             raise Exception("No such handle: %s" % name)
 
-        for function in createFuncs:
+        for function in sorted(createFuncs, key=lambda f: f.name):
             objectType = function.arguments[-1].type
             argsStr = ", ".join([a.name for a in function.arguments[:-1]])
 
@@ -2630,7 +2722,7 @@ def writeNullDriverImpl (api, filename):
             yield "}"
             yield ""
 
-        for function in destroyFuncs:
+        for function in sorted(destroyFuncs, key=lambda f: f.name):
             objectArg = function.arguments[-2]
 
             yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function.name), argListToStr(function.arguments))
@@ -2646,7 +2738,7 @@ def writeNullDriverImpl (api, filename):
             yield "}"
             yield ""
 
-        for function in dummyFuncs:
+        for function in sorted(dummyFuncs, key=lambda f: f.name):
             yield "VKAPI_ATTR %s VKAPI_CALL %s (%s)" % (function.returnType, getInterfaceName(function.name), argListToStr(function.arguments))
             yield "{"
             for arg in function.arguments:
@@ -2660,7 +2752,8 @@ def writeNullDriverImpl (api, filename):
 
             entries = []
             pattern = "\tVK_NULL_FUNC_ENTRY(%s,\t%s),"
-            for f in api.functions:
+            sorted_functions = sorted(api.functions, key=lambda item: item.name)
+            for f in sorted_functions:
                 if f.getType() != type:
                     continue
                 entries.append(pattern % (f.name, getInterfaceName(f.name)))
@@ -2759,7 +2852,8 @@ def writeTypeUtil (api, filename):
         not hasBitField(type)
 
     def gen ():
-        for type in api.compositeTypes:
+        sorted_structs = sorted(api.compositeTypes, key=lambda s: s.name)
+        for type in sorted_structs:
             if not isSimpleStruct(type):
                 continue
 
@@ -3105,6 +3199,7 @@ def writeDeviceFeatures2(api, filename):
             testedStructures.append(s)
 
     existingStructures = list(filter(structInAPI, testedStructures)) # remove features not found in API ( important for Vulkan SC )
+    existingStructures = sorted(existingStructures, key=lambda d: d.name)
     testedStructureDetail = [StructureDetail(struct) for struct in existingStructures]
     # list of partially promoted extensions that are not marked in vk.xml as partially promoted in extension definition
     # note: for VK_EXT_host_image_copy there is a comment in require section for vk1.4
@@ -3141,7 +3236,8 @@ def writeDeviceFeatures2(api, filename):
         for feature in api.features:
             for requirement in feature.requirementsList:
                 if structureName in requirement.typeList:
-                    if api.apiName == "vulkansc" and int(feature.number[-1]) > 2:
+                    # note VertexAttributeDivisor was promoted to vulkan 1.4 but it is valid extension for sc
+                    if api.apiName == "vulkansc" and int(feature.number[-1]) > 2 and structureName != 'VkPhysicalDeviceVertexAttributeDivisorFeatures':
                         structureDetailToRemove.append(structureDetail)
                     else:
                         versionSplit = feature.name.split('_')
@@ -3292,6 +3388,7 @@ def writeDeviceFeatures2(api, filename):
 """)
                 lastFeature = ''
                 usedFeatures = []
+                promotedFeatures = sorted(promotedFeatures)
                 for feature in promotedFeatures:
                     for struct in testedStructureDetail:
                         if (struct.instanceName in usedFeatures):
@@ -3443,7 +3540,8 @@ def generateDeviceFeaturesOrPropertiesDefs(api, FeaturesOrProperties):
 def constructPromotionCheckerFunString(defs, FeatureOrProperty):
     # construct function that will return previous extension that provided same feature struct
     assert(FeatureOrProperty in ['Feature', 'Property'])
-    l = ',\n'.join([f"\t\t{{ \"{d.extensionName}\", \"{d.previousExtensionName}\" }}" for d in defs if d.previousExtensionName != None])
+    sorted_defs = sorted(defs, key=lambda d: d.extensionName or "")
+    l = ',\n'.join([f"\t\t{{ \"{d.extensionName}\", \"{d.previousExtensionName}\" }}" for d in sorted_defs if d.previousExtensionName != None])
     return (f"const std::string getPrevious{FeatureOrProperty}ExtName (const std::string &name)\n{{\n"
              "\tconst std::map<std::string, std::string> previousExtensionsMap {\n"
             f"{l}"
@@ -3470,7 +3568,8 @@ def writeDeviceFeatures(api, dfDefs, filename):
     # iterate over all feature structures
     allFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*")
     nonExtFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*$")
-    for structureType in api.compositeTypes:
+    sorted_structures = sorted(api.compositeTypes, key=lambda s: s.name)
+    for structureType in sorted_structures:
         # skip structures that are not feature structures
         if not allFeaturesPattern.match(structureType.name):
             continue
@@ -3492,9 +3591,9 @@ def writeDeviceFeatures(api, dfDefs, filename):
                 # add specialization for this feature structure
                 memberCopying = ""
                 for member in structureMembers:
-                    memberCopying += "\tfeatureType.{0} = allFeaturesBlobs.vk{1}.{0};\n".format(member.name, blobName)
+                    memberCopying += "\tfeaturesType.{0} = allBlobs.vk{1}.{0};\n".format(member.name, blobName)
                 wholeFunction = \
-                    "template<> void initFeatureFromBlob<{0}>({0}& featureType, const AllFeaturesBlobs& allFeaturesBlobs)\n" \
+                    "template<> void initFeatureFromBlob<{0}>({0}& featuresType, const AllFeaturesBlobs& allBlobs)\n" \
                     "{{\n" \
                     "{1}" \
                     "}}".format(structureType.name, memberCopying)
@@ -3510,7 +3609,8 @@ def writeDeviceFeatures(api, dfDefs, filename):
     extensionDefines = []
     makeFeatureDescDefinitions = []
     featureStructWrappers = []
-    for idx, (sType, sVerSuffix, sExtSuffix, extStruct, _, extNameDef, specVersionDef) in enumerate(dfDefs):
+    sorted_defs = sorted(dfDefs, key=lambda d: d.structureTypeName)
+    for idx, (sType, sVerSuffix, sExtSuffix, extStruct, _, extNameDef, specVersionDef) in enumerate(sorted_defs):
         extensionNameDefinition = extNameDef
         if not extensionNameDefinition:
             extensionNameDefinition = 'DECL{0}_{1}_EXTENSION_NAME'.format((sExtSuffix if sExtSuffix else ''), sType)
@@ -3598,7 +3698,8 @@ def writeDeviceFeatureTest(api, filename):
     testFunctions = []
     # iterate over all feature structures
     allFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*")
-    for structureType in api.compositeTypes:
+    sorted_structs = sorted(api.compositeTypes, key=lambda i: i.name)
+    for structureType in sorted_structs:
         # skip structures that are not feature structures
         if not allFeaturesPattern.match(structureType.name):
             continue
@@ -3687,7 +3788,8 @@ def writeDeviceProperties(api, dpDefs, filename):
     # iterate over all property structures
     allPropertiesPattern = re.compile(r"^VkPhysicalDevice\w+Properties[1-9]*")
     nonExtPropertiesPattern = re.compile(r"^VkPhysicalDevice\w+Properties[1-9]*$")
-    for structureType in api.compositeTypes:
+    sorted_structs = sorted(api.compositeTypes, key=lambda s: s.name)
+    for structureType in sorted_structs:
         # skip structures that are not property structures
         if not allPropertiesPattern.match(structureType.name):
             continue
@@ -3713,14 +3815,14 @@ def writeDeviceProperties(api, dpDefs, filename):
                         # handle special case
                         if structureType.name == "VkPhysicalDeviceSubgroupProperties" and "subgroup" not in member.name :
                             blobMemberName = "subgroup" + member.name[0].capitalize() + member.name[1:]
-                            memberCopying += "\tpropertyType.{0} = allPropertiesBlobs.vk{1}.{2};\n".format(member.name, blobName, blobMemberName)
+                            memberCopying += "\tpropertiesType.{0} = allBlobs.vk{1}.{2};\n".format(member.name, blobName, blobMemberName)
                         # end handling special case
                         else:
-                            memberCopying += "\tpropertyType.{0} = allPropertiesBlobs.vk{1}.{0};\n".format(member.name, blobName)
+                            memberCopying += "\tpropertiesType.{0} = allBlobs.vk{1}.{0};\n".format(member.name, blobName)
                     else:
-                        memberCopying += "\tmemcpy(propertyType.{0}, allPropertiesBlobs.vk{1}.{0}, sizeof({2}) * {3});\n".format(member.name, blobName, member.type, member.arraySizeList[0])
+                        memberCopying += "\tmemcpy(propertiesType.{0}, allBlobs.vk{1}.{0}, sizeof({2}) * {3});\n".format(member.name, blobName, member.type, member.arraySizeList[0])
                 wholeFunction = \
-                    "template<> void initPropertyFromBlob<{0}>({0}& propertyType, const AllPropertiesBlobs& allPropertiesBlobs)\n" \
+                    "template<> void initPropertyFromBlob<{0}>({0}& propertiesType, const AllPropertiesBlobs& allBlobs)\n" \
                     "{{\n" \
                     "{1}" \
                     "}}".format(structureType.name, memberCopying)
@@ -3736,6 +3838,7 @@ def writeDeviceProperties(api, dpDefs, filename):
     extensionDefines = []
     makePropertyDescDefinitions = []
     propertyStructWrappers = []
+    dpDefs = sorted(dpDefs, key=lambda d: d.structureTypeName)
     for idx, (sType, sVerSuffix, sExtSuffix, extStruct, _, extNameDef, specVersionDef) in enumerate(dpDefs):
         extensionNameDefinition = extNameDef
         if not extensionNameDefinition:
@@ -3829,7 +3932,8 @@ def genericDeviceFeaturesOrPropertiesWriter(dfDefs, pattern, filename):
         "RayTracingInvocationReorder",
         "DisplacementMicromap"]
     stream = []
-    for fop in dfDefs:
+    sorted_defs = sorted(dfDefs, key=lambda item: item.structureTypeName)
+    for fop in sorted_defs:
         # remove VkPhysicalDevice prefix from structure name
         nameSubStr = fop.structureTypeName[16:]
         # remove extension type in some cases

@@ -9,9 +9,14 @@ VkResult PlatformDriver::createInstance (const VkInstanceCreateInfo* pCreateInfo
     return m_vk.createInstance(pCreateInfo, pAllocator, pInstance);
 }
 
-PFN_vkVoidFunction PlatformDriver::getInstanceProcAddr (VkInstance instance, const char* pName) const
+VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) const
 {
-    return m_vk.getInstanceProcAddr(instance, pName);
+    return m_vk.enumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
+}
+
+VkResult PlatformDriver::enumerateInstanceLayerProperties (uint32_t* pPropertyCount, VkLayerProperties* pProperties) const
+{
+    return m_vk.enumerateInstanceLayerProperties(pPropertyCount, pProperties);
 }
 
 VkResult PlatformDriver::enumerateInstanceVersion (uint32_t* pApiVersion) const
@@ -23,12 +28,7 @@ VkResult PlatformDriver::enumerateInstanceVersion (uint32_t* pApiVersion) const
     return VK_SUCCESS;
 }
 
-VkResult PlatformDriver::enumerateInstanceLayerProperties (uint32_t* pPropertyCount, VkLayerProperties* pProperties) const
+PFN_vkVoidFunction PlatformDriver::getInstanceProcAddr (VkInstance instance, const char* pName) const
 {
-    return m_vk.enumerateInstanceLayerProperties(pPropertyCount, pProperties);
-}
-
-VkResult PlatformDriver::enumerateInstanceExtensionProperties (const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) const
-{
-    return m_vk.enumerateInstanceExtensionProperties(pLayerName, pPropertyCount, pProperties);
+    return m_vk.getInstanceProcAddr(instance, pName);
 }
