@@ -1400,7 +1400,7 @@ bool MultiViewRenderTestInstance::checkImage(tcu::ConstPixelBufferAccess &render
     const MovePtr<tcu::Texture2DArray> referenceFrame = imageData();
     const bool result = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result",
                                                    "Image comparison result", referenceFrame->getLevel(0),
-                                                   renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                                   renderedFrame, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
 
     if (!result)
         for (uint32_t layerNdx = 0u; layerNdx < m_parameters.extent.depth; layerNdx++)
@@ -1411,7 +1411,7 @@ bool MultiViewRenderTestInstance::checkImage(tcu::ConstPixelBufferAccess &render
             tcu::ConstPixelBufferAccess dst(mapVkFormat(m_parameters.colorFormat), m_parameters.extent.width,
                                             m_parameters.extent.height, 1u, renderedFrame.getPixelPtr(0, 0, layerNdx));
             tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", ref,
-                                       dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                       dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
         }
 
     return result;
