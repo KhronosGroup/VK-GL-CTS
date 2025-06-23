@@ -54,6 +54,7 @@
 #include <algorithm>
 #include <functional>
 #include <climits>
+#include <cmath>
 
 namespace vkt
 {
