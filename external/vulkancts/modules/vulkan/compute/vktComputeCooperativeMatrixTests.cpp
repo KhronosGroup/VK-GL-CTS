@@ -1084,6 +1084,20 @@ bool isSIntType(VkComponentTypeKHR t)
     }
 }
 
+bool isUIntType(VkComponentTypeKHR t)
+{
+    switch (t)
+    {
+    default:
+        return false;
+    case VK_COMPONENT_TYPE_UINT8_KHR:
+    case VK_COMPONENT_TYPE_UINT16_KHR:
+    case VK_COMPONENT_TYPE_UINT32_KHR:
+    case VK_COMPONENT_TYPE_UINT64_KHR:
+        return true;
+    }
+}
+
 void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programCollection) const
 {
     const char *suffix = (isKhr(m_data.useType) ? "" : "NV");
@@ -3441,6 +3455,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                          ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
                         }
                     }
+                    else if ((m_data.testType == TT_CONVERT || m_data.testType == TT_CONVERT_SAT) &&
+                             isUIntType(m_data.outputType))
+                        setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0xff)) / 4.0f);
                     else if (!isMatrixMulAddOp(m_data.testType) && !isReduceSum(m_data.testType))
                         setDataFloat(ptrs[i], dataTypes[i], j,
                                      ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
