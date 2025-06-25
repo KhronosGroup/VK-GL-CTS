@@ -440,20 +440,6 @@ public:
     DGCComputeShaderExt &operator=(const DGCComputeShaderExt &) = delete;
 };
 
-// The original method from the context returns a vector of const char*. This transforms it into the preferred format.
-std::vector<std::string> getDeviceCreationExtensions(Context &context);
-
-// Helper function for tests using shader objects.
-void bindShaderObjectState(const vk::DeviceInterface &vkd, const std::vector<std::string> &extensions,
-                           const vk::VkCommandBuffer cmdBuffer, const std::vector<vk::VkViewport> &viewports,
-                           const std::vector<vk::VkRect2D> &scissors, const vk::VkPrimitiveTopology topology,
-                           const uint32_t patchControlPoints,
-                           const vk::VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo,
-                           const vk::VkPipelineRasterizationStateCreateInfo *rasterizationStateCreateInfo,
-                           const vk::VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo,
-                           const vk::VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo,
-                           const vk::VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo);
-
 // Helper struct for D3D12 compatibility, needed to test VK_INDIRECT_COMMANDS_INPUT_MODE_DXGI_INDEX_BUFFER_EXT.
 struct IndexBufferViewD3D12
 {

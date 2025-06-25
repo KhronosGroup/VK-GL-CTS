@@ -1427,6 +1427,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_tensors")
+	{
+		functions.push_back("vkGetPhysicalDeviceExternalTensorPropertiesARM");
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
@@ -1457,6 +1462,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_AMD_anti_lag")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_id2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_wait2")
 	{
 		return;
 	}
@@ -1546,6 +1559,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_decode_vp9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -1579,6 +1596,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_unified_image_layouts")
 	{
 		return;
 	}
@@ -1659,6 +1680,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_float8")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
 	{
 		return;
@@ -1691,8 +1716,17 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_maintenance9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance2")
 	{
+		return;
+	}
+	if (extName == "VK_OHOS_surface")
+	{
+		functions.push_back("vkCreateSurfaceOHOS");
 		return;
 	}
 	if (extName == "VK_HUAWEI_hdr_vivid")
@@ -1717,6 +1751,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_fragment_density_map_layered")
 	{
 		return;
 	}
@@ -1761,6 +1803,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std_decode")
 	{
 		return;
 	}
@@ -2119,7 +2169,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdPushDescriptorSetKHR");
 		// Dependencies: VK_VERSION_1_1,VK_KHR_descriptor_update_template
-		if (checkVersion(1, 1, apiVersion) || (checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
+		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_descriptor_update_template"))) {
 			functions.push_back("vkCmdPushDescriptorSetWithTemplateKHR");
 		}
 		return;
@@ -2555,7 +2605,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdWriteBufferMarkerAMD");
 		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
-		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+		if ((checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
 			functions.push_back("vkCmdWriteBufferMarker2AMD");
 		}
 		return;
@@ -2634,7 +2684,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdDrawMeshTasksNV");
 		functions.push_back("vkCmdDrawMeshTasksIndirectNV");
 		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountNV");
 		}
 		return;
@@ -2658,7 +2708,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetCheckpointNV");
 		functions.push_back("vkGetQueueCheckpointDataNV");
 		// Dependencies: VK_VERSION_1_3,VK_KHR_synchronization2
-		if (checkVersion(1, 3, apiVersion) || (checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
+		if ((checkVersion(1, 3, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_synchronization2"))) {
 			functions.push_back("vkGetQueueCheckpointData2NV");
 		}
 		return;
@@ -2834,7 +2884,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkAcquireFullScreenExclusiveModeEXT");
 		functions.push_back("vkReleaseFullScreenExclusiveModeEXT");
 		// Dependencies: VK_KHR_device_group,VK_VERSION_1_1
-		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_device_group"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_device_group") || checkVersion(1, 1, apiVersion))) {
 			functions.push_back("vkGetDeviceGroupSurfacePresentModes2EXT");
 		}
 		return;
@@ -3078,7 +3128,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetImageViewOpaqueCaptureDescriptorDataEXT");
 		functions.push_back("vkGetSamplerOpaqueCaptureDescriptorDataEXT");
 		// Dependencies: VK_KHR_acceleration_structure,VK_NV_ray_tracing
-		if (extensionIsSupported(vDEP, "VK_KHR_acceleration_structure") || extensionIsSupported(vDEP, "VK_NV_ray_tracing")) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_acceleration_structure") || extensionIsSupported(vDEP, "VK_NV_ray_tracing"))) {
 			functions.push_back("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
 		}
 		return;
@@ -3117,7 +3167,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdDrawMeshTasksEXT");
 		functions.push_back("vkCmdDrawMeshTasksIndirectEXT");
 		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
 		}
 		return;
@@ -3471,7 +3521,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetColorBlendEquationEXT");
 		functions.push_back("vkCmdSetColorWriteMaskEXT");
 		// Dependencies: VK_KHR_maintenance2,VK_VERSION_1_1
-		if ((checkVersion(1, 1, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_maintenance2"))) {
+		if ((extensionIsSupported(vDEP, "VK_KHR_maintenance2") || checkVersion(1, 1, apiVersion))) {
 			functions.push_back("vkCmdSetTessellationDomainOriginEXT");
 		}
 		// Dependencies: VK_EXT_transform_feedback
@@ -3549,6 +3599,23 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_ARM_tensors")
+	{
+		functions.push_back("vkCreateTensorARM");
+		functions.push_back("vkDestroyTensorARM");
+		functions.push_back("vkCreateTensorViewARM");
+		functions.push_back("vkDestroyTensorViewARM");
+		functions.push_back("vkGetTensorMemoryRequirementsARM");
+		functions.push_back("vkBindTensorMemoryARM");
+		functions.push_back("vkGetDeviceTensorMemoryRequirementsARM");
+		functions.push_back("vkCmdCopyTensorARM");
+		// Dependencies: VK_EXT_descriptor_buffer
+		if (extensionIsSupported(vDEP, "VK_EXT_descriptor_buffer")) {
+			functions.push_back("vkGetTensorOpaqueCaptureDescriptorDataARM");
+			functions.push_back("vkGetTensorViewOpaqueCaptureDescriptorDataARM");
+		}
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		functions.push_back("vkGetShaderModuleIdentifierEXT");
@@ -3590,6 +3657,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_AMD_anti_lag")
 	{
 		functions.push_back("vkAntiLagUpdateAMD");
+		return;
+	}
+	if (extName == "VK_KHR_present_id2")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_wait2")
+	{
+		functions.push_back("vkWaitForPresent2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_ray_tracing_position_fetch")
@@ -3792,6 +3868,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_decode_vp9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance1")
 	{
 		return;
@@ -3826,6 +3906,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_KHR_load_store_op_none")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_unified_image_layouts")
 	{
 		return;
 	}
@@ -3923,6 +4007,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_float8")
+	{
+		return;
+	}
 	if (extName == "VK_NV_ray_tracing_validation")
 	{
 		return;
@@ -3969,7 +4057,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetDepthClampRangeEXT");
 		return;
 	}
+	if (extName == "VK_KHR_maintenance9")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_maintenance2")
+	{
+		return;
+	}
+	if (extName == "VK_OHOS_surface")
 	{
 		return;
 	}
@@ -3996,6 +4092,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_vertex_attribute_robustness")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_fragment_density_map_layered")
 	{
 		return;
 	}
@@ -4041,6 +4145,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "vulkan_video_codec_h265std_encode")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std")
+	{
+		return;
+	}
+	if (extName == "vulkan_video_codec_vp9std_decode")
 	{
 		return;
 	}
@@ -4100,6 +4212,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_LUNARG_direct_driver_loading",
 	"VK_EXT_layer_settings",
 	"VK_NV_display_stereo",
+	"VK_OHOS_surface",
 };
 
 ::std::string deviceExtensionNames[] =
@@ -4396,6 +4509,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
+	"VK_ARM_tensors",
 	"VK_EXT_shader_module_identifier",
 	"VK_EXT_rasterization_order_attachment_access",
 	"VK_NV_optical_flow",
@@ -4404,6 +4518,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_AMD_anti_lag",
+	"VK_KHR_present_id2",
+	"VK_KHR_present_wait2",
 	"VK_KHR_ray_tracing_position_fetch",
 	"VK_EXT_shader_object",
 	"VK_KHR_pipeline_binary",
@@ -4424,6 +4540,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_video_decode_av1",
 	"VK_KHR_video_encode_av1",
+	"VK_KHR_video_decode_vp9",
 	"VK_KHR_video_maintenance1",
 	"VK_NV_per_stage_descriptor_set",
 	"VK_QCOM_image_processing2",
@@ -4433,6 +4550,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_attachment_feedback_loop_dynamic_state",
 	"VK_KHR_vertex_attribute_divisor",
 	"VK_KHR_load_store_op_none",
+	"VK_KHR_unified_image_layouts",
 	"VK_KHR_shader_float_controls2",
 	"VK_QNX_external_memory_screen_buffer",
 	"VK_MSFT_layered_driver",
@@ -4451,6 +4569,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance7",
 	"VK_NV_shader_atomic_float16_vector",
 	"VK_EXT_shader_replicated_composites",
+	"VK_EXT_shader_float8",
 	"VK_NV_ray_tracing_validation",
 	"VK_NV_cluster_acceleration_structure",
 	"VK_NV_partitioned_acceleration_structure",
@@ -4459,6 +4578,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_MESA_image_alignment_control",
 	"VK_KHR_shader_fma",
 	"VK_EXT_depth_clamp_control",
+	"VK_KHR_maintenance9",
 	"VK_KHR_video_maintenance2",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
@@ -4466,6 +4586,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_external_memory_metal",
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_EXT_vertex_attribute_robustness",
+	"VK_ARM_format_pack",
+	"VK_VALVE_fragment_density_map_layered",
 	"VK_KHR_robustness2",
 	"VK_NV_present_metering",
 	"VK_EXT_fragment_density_map_offset",

@@ -155,7 +155,9 @@ class SourcePackage (Source):
         tmpPath = os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
         dstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 
-        if self.filename.endswith(".zip"):
+        isZipFile = self.filename.endswith(".zip")
+
+        if isZipFile:
             archive = zipfile.ZipFile(srcPath)
         else:
             archive = tarfile.open(srcPath)
@@ -165,7 +167,10 @@ class SourcePackage (Source):
 
         os.mkdir(tmpPath)
 
-        archive.extractall(tmpPath)
+        if (not isZipFile) and sys.version_info >= (3, 13):
+            archive.extractall(tmpPath, filter='data') # Safe extraction of tar file data.
+        else:
+            archive.extractall(tmpPath)
         archive.close()
 
         extractedEntries = os.listdir(tmpPath)
@@ -324,28 +329,28 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "f06e0f3d2e5acfe4b14e714e4103dd1ccdb237e5",
+        "e0bad2825dacf274578ec6d3c0e64e406d5e4fd7",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "963588074b26326ff0426c8953c1235213309bdb",
+        "05cfcc1613c28c1274036f53616d66324f7cd383",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
         "git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-        "6d86614756cd019c05eeead4a99e691ef8067e61",
+        "8885f8b577a08a7def5c6334187a2c8efcc35e56",
         "spirv-headers"),
     GitRepo(
         "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "d479a69e5c02c29c4ad8811d57609ef4f9f31855",
+        "4e3f2725ad2b1eda5ea674dbe493f46f38e88986",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "6ae58a2b17b2bcebdc5377995007391b85ffa10f",
+        "2f8ff8694f97a9a7f4ae65a917b7f059874c8d44",
         "vulkan-validationlayers"),
     GitRepo(
         "https://github.com/google/amber.git",
@@ -363,14 +368,12 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/vk_video_samples.git",
         "git@github.com:Igalia/vk_video_samples.git",
-        "45fe88b456c683120138f052ea81f0a958ff3ec4",
+        "435807a3f875d83aa00f5b4b0702dc156ba3ffa9",
         "nvidia-video-samples"),
-    # NOTE: Temporary vk_video_samples repo and branch where AV1
-    # encoder library is being developed by NVidia.
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "a22e0084e6f38a16dc0dcebb4c19a14651a6665b",
+        "c29c26e8a25749855aea5905500e6c2b29fadae5",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(

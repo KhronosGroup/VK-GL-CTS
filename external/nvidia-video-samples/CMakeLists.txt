@@ -25,6 +25,7 @@ if (EXISTS "${NV_VIDEO_SAMPLES_ABS_PATH}/vk_video_decoder/libs/NvVideoParser/CMa
 		${NV_VIDEO_PARSER_SOURCE}/src/VulkanH265Parser.cpp
 		${NV_VIDEO_PARSER_SOURCE}/src/VulkanVideoDecoder.cpp
 		${NV_VIDEO_PARSER_SOURCE}/src/VulkanAV1Decoder.cpp
+		${NV_VIDEO_PARSER_SOURCE}/src/VulkanVP9Decoder.cpp
 		${NV_VIDEO_PARSER_SOURCE}/src/VulkanAV1GlobalMotionDec.cpp
 	)
 

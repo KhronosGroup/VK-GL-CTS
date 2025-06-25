@@ -16,6 +16,7 @@ EnumerateDeviceLayerPropertiesFunc										enumerateDeviceLayerProperties;
 EnumerateDeviceExtensionPropertiesFunc									enumerateDeviceExtensionProperties;
 GetPhysicalDeviceSparseImageFormatPropertiesFunc						getPhysicalDeviceSparseImageFormatProperties;
 CreateAndroidSurfaceKHRFunc												createAndroidSurfaceKHR;
+CreateSurfaceOHOSFunc													createSurfaceOHOS;
 GetPhysicalDeviceDisplayPropertiesKHRFunc								getPhysicalDeviceDisplayPropertiesKHR;
 GetPhysicalDeviceDisplayPlanePropertiesKHRFunc							getPhysicalDeviceDisplayPlanePropertiesKHR;
 GetDisplayPlaneSupportedDisplaysKHRFunc									getDisplayPlaneSupportedDisplaysKHR;
@@ -107,3 +108,4 @@ GetPhysicalDeviceOpticalFlowImageFormatsNVFunc							getPhysicalDeviceOpticalFlo
 GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc						getPhysicalDeviceCooperativeMatrixPropertiesKHR;
 GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV;
 GetPhysicalDeviceCooperativeVectorPropertiesNVFunc						getPhysicalDeviceCooperativeVectorPropertiesNV;
+GetPhysicalDeviceExternalTensorPropertiesARMFunc						getPhysicalDeviceExternalTensorPropertiesARM;

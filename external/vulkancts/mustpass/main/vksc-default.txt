@@ -11,6 +11,7 @@ vksc-default/fragment-shader-interlock.txt
 vksc-default/fragment-shading-rate.txt
 vksc-default/geometry.txt
 vksc-default/glsl.txt
+vksc-default/image/2d-array-compatible.txt
 vksc-default/image/astc-decode-mode.txt
 vksc-default/image/atomic-operations.txt
 vksc-default/image/concurrent-copy.txt

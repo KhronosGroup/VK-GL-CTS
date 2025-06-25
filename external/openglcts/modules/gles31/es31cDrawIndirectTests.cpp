@@ -24,11 +24,9 @@
 #include "es31cDrawIndirectTests.hpp"
 #include "gluContextInfo.hpp"
 #include "glwEnums.hpp"
-#include "tcuMatrix.hpp"
 #include "tcuRenderTarget.hpp"
-#include "tcuVectorUtil.hpp"
 
-#include <map>
+#include <cmath>
 
 namespace glcts
 {
@@ -524,7 +522,7 @@ protected:
     {
         for (int i = 0; i < 3; ++i)
         {
-            if (fabsf(colorExpected[i] - color[i]) > epsilon[i])
+            if (std::fabs(colorExpected[i] - color[i]) > epsilon[i])
                 return false;
         }
         return true;
@@ -1980,7 +1978,7 @@ public:
     }
 
     template <typename api>
-    long Run()
+    long TemplatedRun()
     {
         CColorArray coords;
         PrimitiveGen(_primitiveType, _drawSizeX, _drawSizeY, coords);
@@ -2133,7 +2131,7 @@ public:
     }
 
     template <typename api>
-    long Run()
+    long TemplatedRun()
     {
         CColorArray coords;
         PrimitiveGen(GL_TRIANGLES, _drawSizeX, _drawSizeY, coords);
@@ -2376,7 +2374,7 @@ public:
     }
     virtual long Run()
     {
-        return CBasicVertexDef::Run<api>();
+        return CBasicVertexDef::TemplatedRun<api>();
     }
 };
 
@@ -2410,7 +2408,7 @@ public:
     }
     virtual long Run()
     {
-        return CBasicVertexDef::Run<api>();
+        return CBasicVertexDef::TemplatedRun<api>();
     }
 };
 
@@ -2444,7 +2442,7 @@ public:
     }
     virtual long Run()
     {
-        return CBasicVertexInstancingDef::Run<api>();
+        return CBasicVertexInstancingDef::TemplatedRun<api>();
     }
 };
 
@@ -2458,7 +2456,7 @@ public:
     }
 
     template <typename api>
-    long Run()
+    long TemplatedRun()
     {
         CColorArray coords;
         PrimitiveGen(GL_TRIANGLES, _drawSizeX, _drawSizeY, coords);
@@ -2666,7 +2664,7 @@ public:
     }
     virtual long Run()
     {
-        return CBasicXFBPausedDef::Run<api>();
+        return CBasicXFBPausedDef::TemplatedRun<api>();
     }
 };
 
@@ -2700,7 +2698,7 @@ public:
     }
     virtual long Run()
     {
-        return CBasicVertexDef::Run<api>();
+        return CBasicVertexDef::TemplatedRun<api>();
     }
 };
 
@@ -2735,7 +2733,7 @@ public:
 
     virtual long Run()
     {
-        return CBasicVertexDef::Run<api>();
+        return CBasicVertexDef::TemplatedRun<api>();
     }
 };
 
@@ -2769,7 +2767,7 @@ public:
     }
     virtual long Run()
     {
-        return CBasicVertexInstancingDef::Run<api>();
+        return CBasicVertexInstancingDef::TemplatedRun<api>();
     }
 };
 
@@ -2803,7 +2801,7 @@ public:
     }
     virtual long Run()
     {
-        return CBasicXFBPausedDef::Run<api>();
+        return CBasicXFBPausedDef::TemplatedRun<api>();
     }
 };
 
@@ -3531,7 +3529,7 @@ public:
     }
 
     template <typename api>
-    long Run()
+    long TemplatedRun()
     {
         CColorArray coords;
         PrimitiveGen(GL_TRIANGLES, _drawSizeX, _drawSizeY, coords);
@@ -3790,7 +3788,7 @@ public:
 
     virtual long Run()
     {
-        return CBasicVertexIDsDef::Run<api>();
+        return CBasicVertexIDsDef::TemplatedRun<api>();
     }
 
     CBufferIndirectDrawArraysVertexIds() : CBasicVertexIDsDef(DRAW_ARRAYS)
@@ -3825,7 +3823,7 @@ public:
 
     virtual long Run()
     {
-        return CBasicVertexIDsDef::Run<api>();
+        return CBasicVertexIDsDef::TemplatedRun<api>();
     }
 
     CBufferIndirectDrawElementsVertexIds() : CBasicVertexIDsDef(DRAW_ELEMENTS)
@@ -4118,7 +4116,7 @@ public:
     }
 
     template <typename api>
-    long Run(bool pointMode = false)
+    long TemplatedRun(bool pointMode = false)
     {
 
         glClear(GL_COLOR_BUFFER_BIT);
@@ -4317,7 +4315,7 @@ public:
 
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>(true);
+        return CPrimitiveMode::TemplatedRun<api>(true);
     }
 };
 
@@ -4352,7 +4350,7 @@ public:
 
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4386,7 +4384,7 @@ public:
     }
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4421,7 +4419,7 @@ public:
 
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4456,7 +4454,7 @@ public:
 
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4491,7 +4489,7 @@ public:
 
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4528,7 +4526,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4565,7 +4563,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4602,7 +4600,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4638,7 +4636,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4673,7 +4671,7 @@ public:
 
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>(true);
+        return CPrimitiveMode::TemplatedRun<api>(true);
     }
 };
 
@@ -4707,7 +4705,7 @@ public:
     }
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4741,7 +4739,7 @@ public:
     }
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4775,7 +4773,7 @@ public:
     }
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4809,7 +4807,7 @@ public:
     }
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4843,7 +4841,7 @@ public:
     }
     virtual long Run()
     {
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4879,7 +4877,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4915,7 +4913,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4951,7 +4949,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -4987,7 +4985,7 @@ public:
     {
         if (!IsGeometryShaderSupported<api>())
             return NOT_SUPPORTED;
-        return CPrimitiveMode::Run<api>();
+        return CPrimitiveMode::TemplatedRun<api>();
     }
 };
 
@@ -5001,7 +4999,7 @@ public:
     }
 
     template <typename api>
-    long Run()
+    long TemplatedRun()
     {
         CColorArray coords;
         PrimitiveGen(GL_TRIANGLE_STRIP, 8, 8, coords);
@@ -5202,7 +5200,7 @@ struct CTransformFeedbackArray : public CTransformFeedback
 
     virtual long Run()
     {
-        return CTransformFeedback::Run<api>();
+        return CTransformFeedback::TemplatedRun<api>();
     }
 };
 
@@ -5235,7 +5233,7 @@ struct CTransformFeedbackElements : public CTransformFeedback
 
     virtual long Run()
     {
-        return CTransformFeedback::Run<api>();
+        return CTransformFeedback::TemplatedRun<api>();
     }
 };
 
@@ -5249,7 +5247,7 @@ public:
     }
 
     template <typename api>
-    long Run()
+    long TemplatedRun()
     {
 
         int width, height;
@@ -5514,7 +5512,7 @@ struct CComputeShaderArray : public CComputeBase
 
     virtual long Run()
     {
-        return CComputeBase::Run<api>();
+        return CComputeBase::TemplatedRun<api>();
     }
 };
 
@@ -5548,7 +5546,7 @@ struct CComputeShaderElements : public CComputeBase
 
     virtual long Run()
     {
-        return CComputeBase::Run<api>();
+        return CComputeBase::TemplatedRun<api>();
     }
 };
 

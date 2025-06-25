@@ -94,6 +94,8 @@
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
 #include "vktSpvAsmRawAccessChainTests.hpp"
+#include "vktSpvAsmLdexpTests.hpp"
+#include "vktSpvAsmMaint9VectorizationTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -21369,6 +21371,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
 
         computeTests->addChild(maintenance8ComputeTests.release());
     }
+    computeTests->addChild(createLdexpGroup(testCtx));
 #endif // CTS_USES_VULKANSC
 
     graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
@@ -21464,6 +21467,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     instructionTests->addChild(createQueryGroup(testCtx));
     instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));
     instructionTests->addChild(createTerminateInvocationGroup(testCtx));
+    instructionTests->addChild(createMaint9VectorizationTests(testCtx));
 
     return instructionTests.release();
 }

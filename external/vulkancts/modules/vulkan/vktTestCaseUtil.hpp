@@ -277,17 +277,19 @@ private:
 
 // createFunctionCase
 
+template <typename InstanceFactoryClass = InstanceFactory1<FunctionInstance0, FunctionInstance0::Function>>
 inline TestCase *createFunctionCase(tcu::TestContext &testCtx, const std::string &name,
                                     FunctionInstance0::Function testFunction)
 {
-    return new InstanceFactory1<FunctionInstance0, FunctionInstance0::Function>(testCtx, name, testFunction);
+    return new InstanceFactoryClass(testCtx, name, testFunction);
 }
 
+template <typename InstanceFactoryClass =
+              InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0>>
 inline TestCase *createFunctionCase(tcu::TestContext &testCtx, const std::string &name,
                                     FunctionSupport0::Function checkSupport, FunctionInstance0::Function testFunction)
 {
-    return new InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0>(
-        testCtx, name, testFunction, checkSupport);
+    return new InstanceFactoryClass(testCtx, name, testFunction, checkSupport);
 }
 
 inline TestCase *createFunctionCaseWithPrograms(tcu::TestContext &testCtx, const std::string &name,
@@ -308,12 +310,12 @@ inline TestCase *createFunctionCaseWithPrograms(tcu::TestContext &testCtx, const
                                                               testFunction, checkSupport);
 }
 
-template <typename Arg0>
+template <typename Arg0, typename InstanceFactoryClass =
+                             InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args>>
 TestCase *createFunctionCase(tcu::TestContext &testCtx, const std::string &name,
                              typename FunctionInstance1<Arg0>::Function testFunction, Arg0 arg0)
 {
-    return new InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args>(
-        testCtx, name, typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
+    return new InstanceFactoryClass(testCtx, name, typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
 }
 
 template <typename Arg0>
@@ -352,15 +354,18 @@ TestCase *createFunctionCaseWithPrograms(tcu::TestContext &testCtx, const std::s
 
 // addFunctionCase
 
+template <typename InstanceFactoryClass = InstanceFactory1<FunctionInstance0, FunctionInstance0::Function>>
 inline void addFunctionCase(tcu::TestCaseGroup *group, const std::string &name, FunctionInstance0::Function testFunc)
 {
-    group->addChild(createFunctionCase(group->getTestContext(), name, testFunc));
+    group->addChild(createFunctionCase<InstanceFactoryClass>(group->getTestContext(), name, testFunc));
 }
 
+template <typename InstanceFactoryClass =
+              InstanceFactory1WithSupport<FunctionInstance0, FunctionInstance0::Function, FunctionSupport0>>
 inline void addFunctionCase(tcu::TestCaseGroup *group, const std::string &name, FunctionSupport0::Function checkSupport,
                             FunctionInstance0::Function testFunc)
 {
-    group->addChild(createFunctionCase(group->getTestContext(), name, checkSupport, testFunc));
+    group->addChild(createFunctionCase<InstanceFactoryClass>(group->getTestContext(), name, checkSupport, testFunc));
 }
 
 inline void addFunctionCaseWithPrograms(tcu::TestCaseGroup *group, const std::string &name,
@@ -377,11 +382,12 @@ inline void addFunctionCaseWithPrograms(tcu::TestCaseGroup *group, const std::st
         createFunctionCaseWithPrograms(group->getTestContext(), name, checkSupport, initPrograms, testFunc));
 }
 
-template <typename Arg0>
+template <typename Arg0, typename InstanceFactoryClass =
+                             InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args>>
 void addFunctionCase(tcu::TestCaseGroup *group, const std::string &name,
                      typename FunctionInstance1<Arg0>::Function testFunc, Arg0 arg0)
 {
-    group->addChild(createFunctionCase<Arg0>(group->getTestContext(), name, testFunc, arg0));
+    group->addChild(createFunctionCase<Arg0, InstanceFactoryClass>(group->getTestContext(), name, testFunc, arg0));
 }
 
 template <typename Arg0>

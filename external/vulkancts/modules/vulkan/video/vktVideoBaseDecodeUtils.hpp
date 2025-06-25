@@ -796,6 +796,7 @@ public:
         nvVideoH264PicParameters h264PicParams;
         nvVideoH265PicParameters h265PicParams;
         VkParserAv1PictureData av1PicParams;
+        VkParserVp9PictureData vp9PicParams;
 
         NvVkDecodeFrameDataSlot frameDataSlot;
         VkVideoBeginCodingInfoKHR decodeBeginInfo{};

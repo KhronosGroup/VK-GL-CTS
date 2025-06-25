@@ -11,9 +11,6 @@
                 ],
                 "requirements": [
                     "VK_KHR_cooperative_matrix"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
                 ]
             }
         ]

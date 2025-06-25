@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include <map>
+#include <set>
 #include <string>
 #include <utility>
 #include <vector>
@@ -137,6 +138,9 @@ public:
     bool contains(const std::string &feature, bool throwIfNotExists = false) const;
 
     bool isDeviceFeatureInitialized(VkStructureType sType) const;
+
+    static uint32_t getBlobFeatureVersion(VkStructureType sType);
+    static std::set<VkStructureType> getVersionBlobFeatures(uint32_t version);
 
 private:
     static bool verifyFeatureAddCriteria(const FeatureStructCreationData &item,

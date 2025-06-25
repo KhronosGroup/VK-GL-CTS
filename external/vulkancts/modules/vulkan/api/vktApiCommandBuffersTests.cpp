@@ -5757,6 +5757,252 @@ tcu::TestStatus IndirectDispatchAlignmentInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+// Several Mesa drivers implement secondary command buffers with a "capture/replay" scheme, where the commands are
+// recorded to a buffer on the host and then replayed at ExecuteCommands time. This requires care when handling Vulkan
+// commands that have pointers in them, as 1. manual code is sometimes required, and 2. the lifetime of the object
+// pointed to might be shorter than the secondary command buffer for some structures, leading to a use-after-free.
+
+#ifndef CTS_USES_VULKANSC
+enum class SecCmdExtraCase
+{
+    PUSH_CONSTANTS_2 = 0,
+    PUSH_DESCRIPTOR_SET_2,
+    PUSH_DESCRIPTOR_SET_WITH_TEMPLATE,
+};
+
+void secCmdExtraCaseSupportCheck(Context &context, SecCmdExtraCase extraCase)
+{
+    if (extraCase == SecCmdExtraCase::PUSH_CONSTANTS_2 || extraCase == SecCmdExtraCase::PUSH_DESCRIPTOR_SET_2)
+        context.requireDeviceFunctionality("VK_KHR_maintenance6");
+
+    if (extraCase == SecCmdExtraCase::PUSH_DESCRIPTOR_SET_2 ||
+        extraCase == SecCmdExtraCase::PUSH_DESCRIPTOR_SET_WITH_TEMPLATE)
+        context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+
+    if (extraCase == SecCmdExtraCase::PUSH_DESCRIPTOR_SET_WITH_TEMPLATE)
+        context.requireDeviceFunctionality("VK_KHR_descriptor_update_template");
+}
+
+void secCmdExtraCaseInitPrograms(vk::SourceCollections &dst, SecCmdExtraCase extraCase)
+{
+    const bool isPC = (extraCase == SecCmdExtraCase::PUSH_CONSTANTS_2);
+
+    std::ostringstream comp;
+    comp << "#version 460\n"
+         << "layout (local_size_x=1, local_size_y=1, local_size_z=1) in;\n"
+         << (isPC ? "layout (push_constant, std430) uniform PCBlock { vec4 value; } pc;\n" :
+                    "layout (set=0, binding=1, std430) readonly buffer InBlock { vec4 value; } inBuffer;\n")
+         << "layout (set=0, binding=0, std430) buffer OutBlock { vec4 value; } outBuffer;\n"
+         << "void main(void) {\n"
+         << "    outBuffer.value = " << (isPC ? "pc" : "inBuffer") << ".value;\n"
+         << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+tcu::TestStatus secCmdExtraCaseTest(Context &context, SecCmdExtraCase extraCase)
+{
+    const auto ctx          = context.getContextCommonData();
+    const auto descType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto shaderStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto bindPoint    = VK_PIPELINE_BIND_POINT_COMPUTE;
+    const bool isPC         = (extraCase == SecCmdExtraCase::PUSH_CONSTANTS_2);
+    const bool isPD         = (extraCase == SecCmdExtraCase::PUSH_DESCRIPTOR_SET_2);
+    const bool isTpl        = (extraCase == SecCmdExtraCase::PUSH_DESCRIPTOR_SET_WITH_TEMPLATE);
+    const tcu::Vec4 refData(777.0f, 888.0f, 999.0f, 1111.0f);
+    const auto descCount = (isPC ? 1u : 2u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, shaderStages);
+    if (!isPC)
+        setLayoutBuilder.addSingleBinding(descType, shaderStages);
+    VkDescriptorSetLayoutCreateFlags setLayoutFlags = 0u;
+    if (isPD || isTpl)
+        setLayoutFlags |= VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT;
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device, setLayoutFlags);
+
+    const auto pcSize  = DE_SIZEOF32(refData);
+    const auto pcRange = makePushConstantRange(shaderStages, 0u, pcSize);
+
+    const auto pcRangePtr     = (isPC ? &pcRange : nullptr);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, pcRangePtr);
+
+    // Descriptor pool, set and writes.
+    const auto ssboSize       = static_cast<VkDeviceSize>(pcSize);
+    const auto ssboUsage      = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto ssboCreateInfo = makeBufferCreateInfo(ssboSize, ssboUsage);
+    BufferWithMemory outBuffer(ctx.vkd, ctx.device, ctx.allocator, ssboCreateInfo, MemoryRequirement::HostVisible);
+
+    using BufferWithMemoryPtr = std::unique_ptr<BufferWithMemory>;
+    BufferWithMemoryPtr inBuffer;
+    if (!isPC)
+    {
+        inBuffer.reset(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, ssboCreateInfo, MemoryRequirement::HostVisible));
+        auto &bufferAlloc = inBuffer->getAllocation();
+        void *bufferData  = bufferAlloc.getHostPtr();
+        memcpy(bufferData, &refData, sizeof(refData));
+        flushAlloc(ctx.vkd, ctx.device, bufferAlloc);
+    }
+
+    Move<VkDescriptorPool> descPool;
+    Move<VkDescriptorSet> descSet;
+    Move<VkDescriptorUpdateTemplate> descUpdateTpl;
+
+    if (!(isPD || isTpl))
+    {
+        DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(descType, descCount);
+        descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        descSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+    }
+
+    if (isTpl)
+    {
+        const std::vector<VkDescriptorUpdateTemplateEntry> templateEntries{
+            // The update will work on both descriptors at the same time.
+            makeDescriptorUpdateTemplateEntry(0u, 0u, descCount, descType, 0u, sizeof(VkDescriptorBufferInfo)),
+        };
+
+        const VkDescriptorUpdateTemplateCreateInfo tplCreateInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_UPDATE_TEMPLATE_CREATE_INFO,
+            nullptr,
+            0u,
+            de::sizeU32(templateEntries),
+            de::dataOrNull(templateEntries),
+            VK_DESCRIPTOR_UPDATE_TEMPLATE_TYPE_PUSH_DESCRIPTORS,
+            *setLayout,
+            bindPoint,
+            *pipelineLayout,
+            0u,
+        };
+
+        descUpdateTpl = createDescriptorUpdateTemplate(ctx.vkd, ctx.device, &tplCreateInfo);
+    }
+
+    const auto outDescInfo = makeDescriptorBufferInfo(*outBuffer, 0u, VK_WHOLE_SIZE);
+    const auto inDescInfo  = makeDescriptorBufferInfo((inBuffer ? inBuffer->get() : VK_NULL_HANDLE), 0u, VK_WHOLE_SIZE);
+
+    if (isPC)
+    {
+        DescriptorSetUpdateBuilder dsUpdateBuilder;
+        dsUpdateBuilder.writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                                    &outDescInfo);
+        dsUpdateBuilder.update(ctx.vkd, ctx.device);
+    }
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto compShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+
+    const auto pipeline = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compShader);
+
+    const auto cmdPool = makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto secondaryCmdBuffer =
+        allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+    beginSecondaryCommandBuffer(ctx.vkd, *secondaryCmdBuffer);
+    {
+        // We record the secondary command buffer in a sub-scope to make sure every structure is destroyed before the command buffer is used.
+        if (isPD)
+        {
+            DE_ASSERT(inBuffer);
+
+            const std::vector<VkDescriptorBufferInfo> descBufferInfos = {
+                outDescInfo,
+                inDescInfo,
+            };
+
+            const VkWriteDescriptorSet descriptorWrite = {
+                VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET,
+                nullptr,
+                *descSet,
+                0u,
+                0u,
+                de::sizeU32(descBufferInfos),
+                descType,
+                nullptr,
+                de::dataOrNull(descBufferInfos),
+                nullptr,
+            };
+
+            const VkPushDescriptorSetInfo pdsInfo = {
+                VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO,
+                nullptr,
+                shaderStages,
+                *pipelineLayout,
+                0u,
+                1u,
+                &descriptorWrite,
+            };
+
+            ctx.vkd.cmdPushDescriptorSet2(*secondaryCmdBuffer, &pdsInfo);
+        }
+        else if (isTpl)
+        {
+            const std::vector<VkDescriptorBufferInfo> descBufferInfos = {
+                outDescInfo,
+                inDescInfo,
+            };
+
+            ctx.vkd.cmdPushDescriptorSetWithTemplate(*secondaryCmdBuffer, *descUpdateTpl, *pipelineLayout, 0u,
+                                                     de::dataOrNull(descBufferInfos));
+        }
+        else if (isPC)
+        {
+            ctx.vkd.cmdBindDescriptorSets(*secondaryCmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u,
+                                          nullptr);
+        }
+        else
+            DE_ASSERT(false);
+
+        ctx.vkd.cmdBindPipeline(*secondaryCmdBuffer, bindPoint, *pipeline);
+
+        if (isPC)
+        {
+            const tcu::Vec4 pcDataCopy                  = refData;
+            const VkPushConstantsInfo pushConstantsInfo = {
+                VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO, nullptr, *pipelineLayout, shaderStages, 0u, pcSize, &pcDataCopy,
+            };
+            ctx.vkd.cmdPushConstants2(*secondaryCmdBuffer, &pushConstantsInfo);
+        }
+
+        ctx.vkd.cmdDispatch(*secondaryCmdBuffer, 1u, 1u, 1u);
+    }
+    endCommandBuffer(ctx.vkd, *secondaryCmdBuffer);
+
+    // When using the push with template code path, we must be sure we destroy the template before recording the primary
+    // command buffer.
+    descUpdateTpl = Move<VkDescriptorUpdateTemplate>();
+
+    const auto primaryCmdBuffer = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    beginCommandBuffer(ctx.vkd, *primaryCmdBuffer);
+    ctx.vkd.cmdExecuteCommands(*primaryCmdBuffer, 1u, &secondaryCmdBuffer.get());
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, *primaryCmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+    }
+    endCommandBuffer(ctx.vkd, *primaryCmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, *primaryCmdBuffer);
+
+    // Verify output buffer.
+    {
+        auto &alloc = outBuffer.getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+
+        tcu::Vec4 result;
+        memcpy((void *)(&result), alloc.getHostPtr(), sizeof(result));
+
+        if (result != refData)
+        {
+            std::ostringstream msg;
+            msg << "Unexpected result in output buffer: expected " << refData << " but found " << result;
+            TCU_FAIL(msg.str());
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+#endif // CTS_USES_VULKANSC
+
 } // namespace
 
 tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
@@ -5923,6 +6169,26 @@ tcu::TestCaseGroup *createCommandBuffersTests(tcu::TestContext &testCtx)
                 testGroup->addChild(new IndirectDispatchAlignmentCase(testCtx, testName, params));
             }
     }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        const struct
+        {
+            SecCmdExtraCase extraCase;
+            const char *name;
+        } extraCmdCases[] = {
+            {SecCmdExtraCase::PUSH_CONSTANTS_2, "secondary_push_constants_2"},
+            {SecCmdExtraCase::PUSH_DESCRIPTOR_SET_2, "secondary_push_descriptor_set_2"},
+            {SecCmdExtraCase::PUSH_DESCRIPTOR_SET_WITH_TEMPLATE, "secondary_push_descriptor_set_with_template"},
+        };
+
+        for (const auto &extraCmdCase : extraCmdCases)
+        {
+            addFunctionCaseWithPrograms(commandBuffersTests.get(), extraCmdCase.name, secCmdExtraCaseSupportCheck,
+                                        secCmdExtraCaseInitPrograms, secCmdExtraCaseTest, extraCmdCase.extraCase);
+        }
+    }
+#endif // CTS_USES_VULKANSC
 
     return commandBuffersTests.release();
 }

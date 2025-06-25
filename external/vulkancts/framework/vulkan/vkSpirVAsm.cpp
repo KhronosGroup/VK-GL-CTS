@@ -221,6 +221,9 @@ bool validateSpirV(size_t binarySizeInWords, const uint32_t *binary, std::ostrea
         if (val_options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_NON_CONST_OFFSETS)
             spvValidatorOptionsSetAllowOffsetTextureOperand(options, true);
 
+        if (val_options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_NON_32_BIT_BITWISE)
+            spvValidatorOptionsSetAllowVulkan32BitBitwise(options, true);
+
         const spv_result_t valid = spvValidateWithOptions(context, options, &cbinary, &diagnostic);
         const bool passed        = (valid == SPV_SUCCESS);
 

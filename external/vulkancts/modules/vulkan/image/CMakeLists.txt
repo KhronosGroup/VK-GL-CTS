@@ -60,6 +60,8 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageNonUniformOffsetSampleTests.hpp
 	vktImageConcurrentCopyTests.cpp
 	vktImageConcurrentCopyTests.hpp
+	vktImage2dArrayCompatibleTests.cpp
+	vktImage2dArrayCompatibleTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_SRCS

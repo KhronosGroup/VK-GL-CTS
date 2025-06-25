@@ -104,7 +104,6 @@ public:
     Vector(T x_, T y_);
     Vector(T x_, T y_, T z_);
     Vector(T x_, T y_, T z_, T w_);
-    Vector(const Vector<T, Size> &v);
     Vector(const T (&v)[Size]);
 
     const T *getPtr(void) const
@@ -273,7 +272,6 @@ public:
     // Operators.
     Vector<T, Size> &operator+=(const Vector<T, Size> &v);
     Vector<T, Size> &operator-=(const Vector<T, Size> &v);
-    Vector<T, Size> &operator=(const Vector<T, Size> &v);
 
     const T &operator[](int ndx) const
     {
@@ -348,21 +346,6 @@ inline Vector<T, Size>::Vector(T x_, T y_, T z_, T w_)
     m_data[1] = y_;
     m_data[2] = z_;
     m_data[3] = w_;
-}
-
-template <typename T, int Size>
-inline Vector<T, Size>::Vector(const Vector<T, Size> &v)
-{
-    for (int i = 0; i < Size; i++)
-        m_data[i] = v.m_data[i];
-}
-
-template <typename T, int Size>
-inline Vector<T, Size> &Vector<T, Size>::operator=(const Vector<T, Size> &v)
-{
-    for (int i = 0; i < Size; i++)
-        m_data[i] = v.m_data[i];
-    return *this;
 }
 
 template <typename T, int Size>

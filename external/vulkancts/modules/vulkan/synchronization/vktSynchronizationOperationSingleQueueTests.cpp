@@ -81,11 +81,14 @@ protected:
 
 class EventTestInstance : public BaseTestInstance
 {
+    bool m_maintenance9;
+
 public:
     EventTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                       const OperationSupport &writeOp, const OperationSupport &readOp,
-                      PipelineCacheData &pipelineCacheData)
+                      PipelineCacheData &pipelineCacheData, bool maintenance9)
         : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData)
+        , m_maintenance9(maintenance9)
     {
     }
 
@@ -139,7 +142,21 @@ public:
                 );
             VkDependencyInfoKHR dependencyInfo =
                 makeCommonDependencyInfo(nullptr, &bufferMemoryBarrier2, nullptr, true);
-            synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
+            if (m_maintenance9)
+            {
+                const VkMemoryBarrier2 memoryBarrier = makeMemoryBarrier2(writeSync.stageMask, VK_ACCESS_2_NONE,
+                                                                          VK_PIPELINE_STAGE_2_NONE, VK_ACCESS_2_NONE);
+                VkDependencyInfoKHR setDependencyInfo =
+                    makeCommonDependencyInfo(&memoryBarrier, nullptr, nullptr, true);
+#ifndef CTS_USES_VULKANSC
+                setDependencyInfo.dependencyFlags |= VK_DEPENDENCY_ASYMMETRIC_EVENT_BIT_KHR;
+#endif
+                synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &setDependencyInfo);
+            }
+            else
+            {
+                synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &dependencyInfo);
+            }
             synchronizationWrapper->cmdWaitEvents(*cmdBuffer, 1u, &event.get(), &dependencyInfo);
         }
 
@@ -806,7 +823,8 @@ class SyncTestCase : public TestCase
 public:
     SyncTestCase(tcu::TestContext &testCtx, const std::string &name, SynchronizationType type,
                  const SyncPrimitive syncPrimitive, const ResourceDescription resourceDesc, const OperationName writeOp,
-                 const OperationName readOp, const bool specializedAccess, PipelineCacheData &pipelineCacheData)
+                 const OperationName readOp, const bool specializedAccess, PipelineCacheData &pipelineCacheData,
+                 bool maintenance9)
         : TestCase(testCtx, name)
         , m_type(type)
         , m_resourceDesc(resourceDesc)
@@ -814,6 +832,7 @@ public:
         , m_readOp(makeOperationSupport(readOp, resourceDesc, specializedAccess).release())
         , m_syncPrimitive(syncPrimitive)
         , m_pipelineCacheData(pipelineCacheData)
+        , m_maintenance9(maintenance9)
     {
     }
 
@@ -866,6 +885,9 @@ public:
             if ((imageFormatProperties.sampleCounts & m_resourceDesc.imageSamples) != m_resourceDesc.imageSamples)
                 TCU_THROW(NotSupportedError, "Requested sample count is not supported");
         }
+
+        if (m_maintenance9)
+            context.requireDeviceFunctionality("VK_KHR_maintenance9");
     }
 
     TestInstance *createInstance(Context &context) const
@@ -883,7 +905,8 @@ public:
         case SYNC_PRIMITIVE_BARRIER:
             return new BarrierTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
         case SYNC_PRIMITIVE_EVENT:
-            return new EventTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
+            return new EventTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData,
+                                         m_maintenance9);
         }
 
         DE_ASSERT(0);
@@ -897,6 +920,7 @@ private:
     const de::SharedPtr<OperationSupport> m_readOp;
     const SyncPrimitive m_syncPrimitive;
     PipelineCacheData &m_pipelineCacheData;
+    const bool m_maintenance9;
 };
 
 class SyncEventsTestCase : public TestCase
@@ -1207,12 +1231,22 @@ void createTests(tcu::TestCaseGroup *group, TestData data)
                                 const std::string nameSp = name + "_specialized_access_flag";
                                 opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
                                                                    groups[groupNdx].syncPrimitive, resource, writeOp,
-                                                                   readOp, true, *data.pipelineCacheData));
+                                                                   readOp, true, *data.pipelineCacheData, false));
                             }
+#ifndef CTS_USES_VULKANSC
+                            if (groups[groupNdx].syncPrimitive == SYNC_PRIMITIVE_EVENT)
+                            {
+                                const std::string nameSp = name + "_maintenance9";
+                                opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
+                                                                   groups[groupNdx].syncPrimitive, resource, writeOp,
+                                                                   readOp, false, *data.pipelineCacheData, true));
+                            }
+#endif
                         }
 
                         opGroup->addChild(new SyncTestCase(testCtx, name, data.type, groups[groupNdx].syncPrimitive,
-                                                           resource, writeOp, readOp, false, *data.pipelineCacheData));
+                                                           resource, writeOp, readOp, false, *data.pipelineCacheData,
+                                                           false));
 
                         empty = false;
                     }

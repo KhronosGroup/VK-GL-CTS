@@ -156,286 +156,6 @@ std::string outputTypeToGLString(const VkPrimitiveTopology &outputType)
     }
 }
 
-uint32_t findNonGraphicsQueueFamilyIndex(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
-{
-    const VkQueueFlags mandatoryFlags = VK_QUEUE_COMPUTE_BIT;
-    const VkQueueFlags forbiddenFlags = VK_QUEUE_GRAPHICS_BIT;
-
-    uint32_t qfIndex = findQueueFamilyIndexWithCaps(vki, physicalDevice, mandatoryFlags, forbiddenFlags);
-    return qfIndex;
-}
-
-void checkSupportForNonGraphicsQueueFamily(const InstanceInterface &vki, const VkPhysicalDevice physicalDevice)
-{
-    findNonGraphicsQueueFamilyIndex(vki, physicalDevice);
-}
-
-// Device helper: this is needed in some tests when we create custom devices.
-class DeviceHelper
-{
-public:
-    virtual ~DeviceHelper()
-    {
-    }
-    virtual const DeviceInterface &getDeviceInterface(void) const           = 0;
-    virtual VkDevice getDevice(void) const                                  = 0;
-    virtual uint32_t getQueueFamilyIndex(void) const                        = 0;
-    virtual VkQueue getQueue(void) const                                    = 0;
-    virtual Allocator &getAllocator(void) const                             = 0;
-    virtual const std::vector<std::string> &getDeviceExtensions(void) const = 0;
-};
-
-// This one just reuses the default device from the context.
-class ContextDeviceHelper : public DeviceHelper
-{
-public:
-    ContextDeviceHelper(Context &context)
-        : m_deviceInterface(context.getDeviceInterface())
-        , m_device(context.getDevice())
-        , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
-        , m_queue(context.getUniversalQueue())
-        , m_allocator(context.getDefaultAllocator())
-        , m_extensions(context.getDeviceExtensions())
-    {
-    }
-
-    virtual ~ContextDeviceHelper()
-    {
-    }
-
-    const DeviceInterface &getDeviceInterface(void) const override
-    {
-        return m_deviceInterface;
-    }
-    VkDevice getDevice(void) const override
-    {
-        return m_device;
-    }
-    uint32_t getQueueFamilyIndex(void) const override
-    {
-        return m_queueFamilyIndex;
-    }
-    VkQueue getQueue(void) const override
-    {
-        return m_queue;
-    }
-    Allocator &getAllocator(void) const override
-    {
-        return m_allocator;
-    }
-    const std::vector<std::string> &getDeviceExtensions(void) const override
-    {
-        return m_extensions;
-    }
-
-protected:
-    const DeviceInterface &m_deviceInterface;
-    const VkDevice m_device;
-    const uint32_t m_queueFamilyIndex;
-    const VkQueue m_queue;
-    Allocator &m_allocator;
-    std::vector<std::string> m_extensions;
-};
-
-// This one creates a new device with a single compute-only queue.
-class ComputeQueueDeviceHelper : public DeviceHelper
-{
-public:
-    ComputeQueueDeviceHelper(Context &context)
-    {
-#ifdef CTS_USES_VULKANSC
-        m_customInstance          = createCustomInstanceFromContext(context);
-        VkInstance instance       = m_customInstance;
-        const auto &vki           = m_customInstance.getDriver();
-        const auto physicalDevice = chooseDevice(vki, instance, context.getTestContext().getCommandLine());
-#else
-        VkInstance instance       = context.getInstance();
-        const auto &vki           = context.getInstanceInterface();
-        const auto physicalDevice = context.getPhysicalDevice();
-#endif
-        const auto &vkp          = context.getPlatformInterface();
-        const auto queuePriority = 1.0f;
-
-        // Queue index. Support for this type of queue needs to be checked first.
-        m_queueFamilyIndex = findNonGraphicsQueueFamilyIndex(vki, physicalDevice);
-
-        // Create a universal queue that supports graphics and compute.
-        const VkDeviceQueueCreateInfo queueParams = {
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                    // const void* pNext;
-            0u,                                         // VkDeviceQueueCreateFlags flags;
-            m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
-            1u,                                         // uint32_t queueCount;
-            &queuePriority                              // const float* pQueuePriorities;
-        };
-
-        // Enable all available base features except for robust buffer access.
-        // Enable host query reset if available.
-        // Enable portability features if available.
-        // Enable the same extensions as the context device.
-        const bool hostQueryResetSupport = (context.isDeviceFunctionalitySupported("VK_EXT_host_query_reset"));
-        const bool portabilitySupport    = (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"));
-#ifdef CTS_USES_VULKANSC
-        const bool inVulkanSC = true;
-#else
-        const bool inVulkanSC     = false;
-#endif // CTS_USES_VULKANSC
-        const bool useFeatures2 = (hostQueryResetSupport || portabilitySupport || inVulkanSC);
-        VkPhysicalDeviceFeatures baseFeatures;
-        VkPhysicalDeviceFeatures2 features2                           = initVulkanStructure();
-        VkPhysicalDeviceHostQueryResetFeatures hostQueryResetFeatures = initVulkanStructure();
-#ifndef CTS_USES_VULKANSC
-        VkPhysicalDevicePortabilitySubsetFeaturesKHR portabilityFeatures = initVulkanStructure();
-#endif // CTS_USES_VULKANSC
-        const auto addFeatures = makeStructChainAdder(&features2);
-
-        if (useFeatures2)
-        {
-            if (hostQueryResetSupport)
-                addFeatures(&hostQueryResetFeatures);
-
-#ifndef CTS_USES_VULKANSC
-            if (portabilitySupport)
-                addFeatures(&portabilityFeatures);
-#endif // CTS_USES_VULKANSC
-
-            vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-            features2.features.robustBufferAccess = VK_FALSE;
-        }
-        else
-        {
-            vki.getPhysicalDeviceFeatures(physicalDevice, &baseFeatures);
-            baseFeatures.robustBufferAccess = VK_FALSE;
-        }
-
-        const auto creationExtensions = context.getDeviceCreationExtensions();
-
-#ifdef CTS_USES_VULKANSC
-        const auto &cmdLine                                    = context.getTestContext().getCommandLine();
-        VkDeviceObjectReservationCreateInfo memReservationInfo = cmdLine.isSubProcess() ?
-                                                                     context.getResourceInterface()->getStatMax() :
-                                                                     resetDeviceObjectReservationCreateInfo();
-
-        addFeatures(&memReservationInfo);
-
-        VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-        addFeatures(&sc10Features);
-
-        VkPipelineCacheCreateInfo pcCI;
-        std::vector<VkPipelinePoolSize> poolSizes;
-
-        if (cmdLine.isSubProcess())
-        {
-            if (context.getResourceInterface()->getCacheDataSize() > 0)
-            {
-                pcCI = {
-                    VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
-                    nullptr,                                      // const void* pNext;
-                    VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
-                        VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
-                    context.getResourceInterface()->getCacheDataSize(),       // uintptr_t initialDataSize;
-                    context.getResourceInterface()->getCacheData()            // const void* pInitialData;
-                };
-                memReservationInfo.pipelineCacheCreateInfoCount = 1;
-                memReservationInfo.pPipelineCacheCreateInfos    = &pcCI;
-            }
-
-            poolSizes = context.getResourceInterface()->getPipelinePoolSizes();
-            if (!poolSizes.empty())
-            {
-                memReservationInfo.pipelinePoolSizeCount = de::sizeU32(poolSizes);
-                memReservationInfo.pPipelinePoolSizes    = de::dataOrNull(poolSizes);
-            }
-        }
-#endif // CTS_USES_VULKANSC
-
-        const VkDeviceCreateInfo deviceCreateInfo = {
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,     //sType;
-            (useFeatures2 ? &features2 : nullptr),    //pNext;
-            0u,                                       //flags
-            1u,                                       //queueRecordCount;
-            &queueParams,                             //pRequestedQueues;
-            0u,                                       //layerCount;
-            nullptr,                                  //ppEnabledLayerNames;
-            de::sizeU32(creationExtensions),          // uint32_t enabledExtensionCount;
-            de::dataOrNull(creationExtensions),       // const char* const* ppEnabledExtensionNames;
-            (useFeatures2 ? nullptr : &baseFeatures), //pEnabledFeatures;
-        };
-
-        m_device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance,
-                                      vki, physicalDevice, &deviceCreateInfo);
-        m_vkd.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(),
-                                     context.getTestContext().getCommandLine()));
-        m_queue = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
-        m_allocator.reset(
-            new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
-    }
-
-    virtual ~ComputeQueueDeviceHelper()
-    {
-    }
-
-    const DeviceInterface &getDeviceInterface(void) const override
-    {
-        return *m_vkd;
-    }
-    VkDevice getDevice(void) const override
-    {
-        return m_device.get();
-    }
-    uint32_t getQueueFamilyIndex(void) const override
-    {
-        return m_queueFamilyIndex;
-    }
-    VkQueue getQueue(void) const override
-    {
-        return m_queue;
-    }
-    Allocator &getAllocator(void) const override
-    {
-        return *m_allocator;
-    }
-    const std::vector<std::string> &getDeviceExtensions(void) const override
-    {
-        return m_extensions;
-    }
-
-protected:
-#ifdef CTS_USES_VULKANSC
-    CustomInstance m_customInstance;
-#endif
-    Move<VkDevice> m_device;
-    std::unique_ptr<DeviceDriver> m_vkd;
-    uint32_t m_queueFamilyIndex;
-    VkQueue m_queue;
-    std::unique_ptr<SimpleAllocator> m_allocator;
-    std::vector<std::string> m_extensions;
-};
-
-std::unique_ptr<DeviceHelper> g_computeQueueDeviceHelper;
-std::unique_ptr<DeviceHelper> g_contextDeviceHelper;
-
-DeviceHelper &getDeviceHelper(Context &context, bool computeQueue)
-{
-    if (computeQueue)
-    {
-        if (!g_computeQueueDeviceHelper)
-            g_computeQueueDeviceHelper.reset(new ComputeQueueDeviceHelper(context));
-        return *g_computeQueueDeviceHelper;
-    }
-
-    if (!g_contextDeviceHelper)
-        g_contextDeviceHelper.reset(new ContextDeviceHelper(context));
-    return *g_contextDeviceHelper;
-}
-
-void destroyDeviceHelpers()
-{
-    // Destroy singleton objects
-    g_computeQueueDeviceHelper.reset(nullptr);
-    g_contextDeviceHelper.reset(nullptr);
-}
-
 using Pair32                        = pair<uint32_t, uint32_t>;
 using Pair64                        = pair<uint64_t, uint64_t>;
 using ResultsVector                 = vector<uint64_t>;
@@ -772,21 +492,17 @@ protected:
 
 BufferPtr StatisticQueryTestInstance::createResetBuffer(void) const
 {
-    const auto &deviceHelper = getDeviceHelper(m_context, m_useComputeQueue);
-
-    return Buffer::createAndAlloc(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(),
+    return Buffer::createAndAlloc(m_context.getDeviceInterface(), m_context.getDevice(),
                                   BufferCreateInfo(m_resetBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-                                  deviceHelper.getAllocator(), vk::MemoryRequirement::HostVisible);
+                                  m_context.getDefaultAllocator(), vk::MemoryRequirement::HostVisible);
 }
 
 void StatisticQueryTestInstance::fillResetBuffer(const BufferPtr &buffer) const
 {
-    const auto &deviceHelper = getDeviceHelper(m_context, m_useComputeQueue);
-
     const vk::Allocation &allocation = buffer->getBoundMemory();
     void *allocationData             = allocation.getHostPtr();
     deMemset(allocationData, 0xff, static_cast<size_t>(m_resetBufferSize));
-    flushAlloc(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(), allocation);
+    flushAlloc(m_context.getDeviceInterface(), m_context.getDevice(), allocation);
 }
 
 StatisticQueryTestInstance::StatisticQueryTestInstance(Context &context, uint32_t queryCount, bool dstOffset_,
@@ -818,14 +534,13 @@ void StatisticQueryTestInstance::checkExtensions(bool hostResetQueryEnabled)
 
 tcu::TestStatus StatisticQueryTestInstance::verifyUnavailable()
 {
-    const auto &deviceHelper         = getDeviceHelper(m_context, m_useComputeQueue);
     const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
     const void *allocationData       = allocation.getHostPtr();
     uint32_t size                    = dstOffset ? 2 : 1;
     std::vector<ValueAndAvailability> va;
     va.resize(size);
 
-    vk::invalidateAlloc(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(), allocation);
+    vk::invalidateAlloc(m_context.getDeviceInterface(), m_context.getDevice(), allocation);
     deMemcpy(va.data(), allocationData, size * sizeof(ValueAndAvailability));
 
     bool failed = false;
@@ -895,10 +610,10 @@ tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
 
     checkExtensions(hostQueryReset);
 
-    const auto &deviceHelper  = getDeviceHelper(m_context, m_useComputeQueue);
-    const DeviceInterface &vk = deviceHelper.getDeviceInterface();
-    const VkDevice device     = deviceHelper.getDevice();
-    uint32_t maxSize          = 0u;
+    const uint32_t queueFamilyIndex = m_context.getDeviceQueueInfo(0u).familyIndex;
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    uint32_t maxSize                = 0u;
 
     for (size_t parametersNdx = 0; parametersNdx < m_parameters.size(); ++parametersNdx)
         maxSize = deMaxu32(maxSize, getComputeExecution(m_parameters[parametersNdx]));
@@ -908,7 +623,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
                     static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
     BufferPtr buffer =
         Buffer::createAndAlloc(vk, device, BufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
-                               deviceHelper.getAllocator(), MemoryRequirement::HostVisible);
+                               m_context.getDefaultAllocator(), MemoryRequirement::HostVisible);
 
     const Unique<VkDescriptorSetLayout> descriptorSetLayout(
         DescriptorSetLayoutBuilder()
@@ -942,7 +657,7 @@ tcu::TestStatus ComputeInvocationsTestInstance::iterate(void)
                      VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &descriptorInfo)
         .update(vk, device);
 
-    const CmdPoolCreateInfo cmdPoolCreateInfo(deviceHelper.getQueueFamilyIndex());
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
     const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolCreateInfo));
 
     return executeTest(*cmdPool, *pipelineLayout, *descriptorSet, buffer, bufferSizeBytes);
@@ -953,10 +668,9 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
                                                             const VkDescriptorSet &descriptorSet,
                                                             const BufferPtr buffer, const VkDeviceSize bufferSizeBytes)
 {
-    const auto &deviceHelper                         = getDeviceHelper(m_context, m_useComputeQueue);
-    const DeviceInterface &vk                        = deviceHelper.getDeviceInterface();
-    const VkDevice device                            = deviceHelper.getDevice();
-    const VkQueue queue                              = deviceHelper.getQueue();
+    const DeviceInterface &vk                        = m_context.getDeviceInterface();
+    const VkDevice device                            = m_context.getDevice();
+    const VkQueue queue                              = m_context.getDeviceQueueInfo(0u).queue;
     const VkBufferMemoryBarrier computeFinishBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
         nullptr,                                                // const void* pNext;
@@ -969,188 +683,217 @@ tcu::TestStatus ComputeInvocationsTestInstance::executeTest(const VkCommandPool 
         bufferSizeBytes,                                        // VkDeviceSize size;
     };
 
-    for (size_t parametersNdx = 0u; parametersNdx < m_parameters.size(); ++parametersNdx)
+    std::vector<tcu::TestStatus> statuses(m_parameters.size(), tcu::TestStatus(QP_TEST_RESULT_PASS, std::string()));
+    auto updateStatus = [&](size_t index, const tcu::TestStatus &status) -> void
     {
-        clearBuffer(vk, device, buffer, bufferSizeBytes);
-        const Unique<VkShaderModule> shaderModule(
-            createShaderModule(vk, device, m_context.getBinaryCollection().get(m_parameters[parametersNdx].shaderName),
-                               (VkShaderModuleCreateFlags)0u));
+#ifdef CTS_USES_VULKANSC
+        if (statuses[index].getCode() == QP_TEST_RESULT_PASS)
+            statuses[index] = status;
+#else
+        DE_UNREF(index);
+        throw status;
+#endif
+    };
 
-        const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
-            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                             // const void* pNext;
-            (VkPipelineShaderStageCreateFlags)0u,                // VkPipelineShaderStageCreateFlags flags;
-            VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
-            *shaderModule,                                       // VkShaderModule module;
-            "main",                                              // const char* pName;
-            nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
-        };
-
-        const VkComputePipelineCreateInfo pipelineCreateInfo = {
-            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                        // const void* pNext;
-            (VkPipelineCreateFlags)0u,                      // VkPipelineCreateFlags flags;
-            pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
-            pipelineLayout,                                 // VkPipelineLayout layout;
-            VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
-            0,                                              // int32_t basePipelineIndex;
-        };
-        const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
-
-        const Unique<VkCommandBuffer> cmdBuffer(
-            allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-        const Unique<VkQueryPool> queryPool(
-            makeQueryPool(vk, device, 1u, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT));
-
-        beginCommandBuffer(vk, *cmdBuffer);
-        if (m_parameters[0].resetType != RESET_TYPE_HOST)
-            vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
-
-        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet, 0u,
-                                 nullptr);
-
-        vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
-        vk.cmdDispatch(*cmdBuffer, m_parameters[parametersNdx].groupSize.x(), m_parameters[parametersNdx].groupSize.y(),
-                       m_parameters[parametersNdx].groupSize.z());
-        vk.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
-
-        if (m_parameters[0].resetType == RESET_TYPE_BEFORE_COPY || m_parameters[0].resetType == RESET_TYPE_AFTER_COPY ||
-            m_parameters[0].copyType == COPY_TYPE_CMD)
+    for (size_t parametersNdx = 0u; parametersNdx < m_parameters.size(); ++parametersNdx)
+        try
         {
-            VkDeviceSize stride          = m_parameters[0].querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
-            vk::VkQueryResultFlags flags = m_parameters[0].querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+            clearBuffer(vk, device, buffer, bufferSizeBytes);
+            const Unique<VkShaderModule> shaderModule(createShaderModule(
+                vk, device, m_context.getBinaryCollection().get(m_parameters[parametersNdx].shaderName),
+                (VkShaderModuleCreateFlags)0u));
+
+            const VkPipelineShaderStageCreateInfo pipelineShaderStageParams = {
+                VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                             // const void* pNext;
+                (VkPipelineShaderStageCreateFlags)0u,                // VkPipelineShaderStageCreateFlags flags;
+                VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
+                *shaderModule,                                       // VkShaderModule module;
+                "main",                                              // const char* pName;
+                nullptr,                                             // const VkSpecializationInfo* pSpecializationInfo;
+            };
+
+            const VkComputePipelineCreateInfo pipelineCreateInfo = {
+                VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                        // const void* pNext;
+                (VkPipelineCreateFlags)0u,                      // VkPipelineCreateFlags flags;
+                pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
+                pipelineLayout,                                 // VkPipelineLayout layout;
+                VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
+                0,                                              // int32_t basePipelineIndex;
+            };
+            const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
+
+            const Unique<VkCommandBuffer> cmdBuffer(
+                allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+            const Unique<VkQueryPool> queryPool(
+                makeQueryPool(vk, device, 1u, VK_QUERY_PIPELINE_STATISTIC_COMPUTE_SHADER_INVOCATIONS_BIT));
+
+            beginCommandBuffer(vk, *cmdBuffer);
+            if (m_parameters[0].resetType != RESET_TYPE_HOST)
+                vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+            vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout, 0u, 1u, &descriptorSet,
+                                     0u, nullptr);
+
+            vk.cmdBeginQuery(*cmdBuffer, *queryPool, 0u, (VkQueryControlFlags)0u);
+            vk.cmdDispatch(*cmdBuffer, m_parameters[parametersNdx].groupSize.x(),
+                           m_parameters[parametersNdx].groupSize.y(), m_parameters[parametersNdx].groupSize.z());
+            vk.cmdEndQuery(*cmdBuffer, *queryPool, 0u);
+
+            if (m_parameters[0].resetType == RESET_TYPE_BEFORE_COPY ||
+                m_parameters[0].resetType == RESET_TYPE_AFTER_COPY || m_parameters[0].copyType == COPY_TYPE_CMD)
+            {
+                VkDeviceSize stride          = m_parameters[0].querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
+                vk::VkQueryResultFlags flags = m_parameters[0].querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+
+                if (m_parameters[0].resetType == RESET_TYPE_HOST)
+                {
+                    flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                    stride *= 2u;
+                }
+
+                if (m_parameters[0].resetType == RESET_TYPE_BEFORE_COPY)
+                {
+                    vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+                    flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                    stride = sizeof(ValueAndAvailability);
+                }
+
+                VkDeviceSize dstOffsetQuery = (m_parameters[0].dstOffset) ? stride : 0;
+                VkDeviceSize copyStride     = stride;
+
+                if (m_parameters[0].strideType == STRIDE_TYPE_ZERO)
+                    copyStride = 0u;
+
+                vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery,
+                                           copyStride, flags);
+
+                if (m_parameters[0].resetType == RESET_TYPE_AFTER_COPY)
+                    vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
+
+                const VkBufferMemoryBarrier barrier = {
+                    VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
+                    nullptr,                                 //  const void* pNext;
+                    VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
+                    VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
+                    VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
+                    VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
+                    m_resetBuffer->object(),                 //  VkBuffer buffer;
+                    0u,                                      //  VkDeviceSize offset;
+                    1u * stride + dstOffsetQuery,            //  VkDeviceSize size;
+                };
+                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                      (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
+            }
+
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0u, 0u, nullptr, 1u, &computeFinishBarrier, 0u, nullptr);
+
+            endCommandBuffer(vk, *cmdBuffer);
+
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message
+                << "Compute shader invocations: " << getComputeExecution(m_parameters[parametersNdx])
+                << tcu::TestLog::EndMessage;
 
             if (m_parameters[0].resetType == RESET_TYPE_HOST)
+                vk.resetQueryPool(device, *queryPool, 0u, 1u);
+
+            // Wait for completion
+            submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+            // Validate the results
+            const Allocation &bufferAllocation = buffer->getBoundMemory();
+            invalidateAlloc(vk, device, bufferAllocation);
+
+            if (m_parameters[0].resetType == RESET_TYPE_NORMAL || m_parameters[0].resetType == RESET_TYPE_AFTER_COPY)
             {
-                flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
-                stride *= 2u;
+                ResultsVector data;
+
+                if (m_parameters[0].copyType == COPY_TYPE_CMD)
+                {
+                    const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+                    cmdCopyQueryPoolResultsVector(data, vk, device, allocation, 1u,
+                                                  (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags()),
+                                                  m_parameters[0].dstOffset);
+                }
+                else
+                {
+                    VK_CHECK(GetQueryPoolResultsVector(data, vk, device, *queryPool, 0u, 1u,
+                                                       (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags())));
+                }
+
+                if (getComputeExecution(m_parameters[parametersNdx]) != data[0])
+                    updateStatus(parametersNdx, tcu::TestStatus::fail("QueryPoolResults incorrect"));
             }
-
-            if (m_parameters[0].resetType == RESET_TYPE_BEFORE_COPY)
+            else if (m_parameters[0].resetType == RESET_TYPE_HOST)
             {
-                vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
-                flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
-                stride = sizeof(ValueAndAvailability);
-            }
+                ResultsVectorWithAvailability data;
 
-            VkDeviceSize dstOffsetQuery = (m_parameters[0].dstOffset) ? stride : 0;
-            VkDeviceSize copyStride     = stride;
+                if (m_parameters[0].copyType == COPY_TYPE_CMD)
+                {
+                    const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+                    cmdCopyQueryPoolResultsVector(data, vk, device, allocation, 1u,
+                                                  (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags() |
+                                                   VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
+                                                  m_parameters[0].dstOffset);
+                }
+                else
+                {
+                    VK_CHECK(GetQueryPoolResultsVector(data, vk, device, *queryPool, 0u, 1u,
+                                                       (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags() |
+                                                        VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
+                }
 
-            if (m_parameters[0].strideType == STRIDE_TYPE_ZERO)
-                copyStride = 0u;
+                if (getComputeExecution(m_parameters[parametersNdx]) != data[0].first || data[0].second == 0)
+                    updateStatus(parametersNdx, tcu::TestStatus::fail("QueryPoolResults incorrect"));
 
-            vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, 1u, m_resetBuffer->object(), dstOffsetQuery,
-                                       copyStride, flags);
+                uint64_t temp = data[0].first;
 
-            if (m_parameters[0].resetType == RESET_TYPE_AFTER_COPY)
-                vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, 1u);
-
-            const VkBufferMemoryBarrier barrier = {
-                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
-                nullptr,                                 //  const void* pNext;
-                VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
-                VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
-                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
-                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
-                m_resetBuffer->object(),                 //  VkBuffer buffer;
-                0u,                                      //  VkDeviceSize offset;
-                1u * stride + dstOffsetQuery,            //  VkDeviceSize size;
-            };
-            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
-        }
-
-        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0u, 0u, nullptr, 1u, &computeFinishBarrier, 0u, nullptr);
-
-        endCommandBuffer(vk, *cmdBuffer);
-
-        m_context.getTestContext().getLog()
-            << tcu::TestLog::Message
-            << "Compute shader invocations: " << getComputeExecution(m_parameters[parametersNdx])
-            << tcu::TestLog::EndMessage;
-
-        if (m_parameters[0].resetType == RESET_TYPE_HOST)
-            vk.resetQueryPool(device, *queryPool, 0u, 1u);
-
-        // Wait for completion
-        submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-        // Validate the results
-        const Allocation &bufferAllocation = buffer->getBoundMemory();
-        invalidateAlloc(vk, device, bufferAllocation);
-
-        if (m_parameters[0].resetType == RESET_TYPE_NORMAL || m_parameters[0].resetType == RESET_TYPE_AFTER_COPY)
-        {
-            ResultsVector data;
-
-            if (m_parameters[0].copyType == COPY_TYPE_CMD)
-            {
-                const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
-                cmdCopyQueryPoolResultsVector(data, vk, device, allocation, 1u,
-                                              (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags()),
-                                              m_parameters[0].dstOffset);
+                vk.resetQueryPool(device, *queryPool, 0, 1u);
+                vk::VkResult res = GetQueryPoolResultsVector(
+                    data, vk, device, *queryPool, 0u, 1u,
+                    (m_parameters[0].querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+                /* From Vulkan spec:
+                 *
+                 * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+                 * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+                 * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+                 */
+                if (res != vk::VK_NOT_READY || data[0].first != temp || data[0].second != 0u)
+                    updateStatus(parametersNdx, tcu::TestStatus::fail("QueryPoolResults incorrect reset"));
             }
             else
             {
-                VK_CHECK(GetQueryPoolResultsVector(data, vk, device, *queryPool, 0u, 1u,
-                                                   (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags())));
+                // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
+                updateStatus(parametersNdx, verifyUnavailable());
             }
 
-            if (getComputeExecution(m_parameters[parametersNdx]) != data[0])
-                return tcu::TestStatus::fail("QueryPoolResults incorrect");
-        }
-        else if (m_parameters[0].resetType == RESET_TYPE_HOST)
-        {
-            ResultsVectorWithAvailability data;
-
-            if (m_parameters[0].copyType == COPY_TYPE_CMD)
+            const uint32_t *bufferPtr = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
+            for (uint32_t ndx = 0u; ndx < getComputeExecution(m_parameters[parametersNdx]); ++ndx)
             {
-                const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
-                cmdCopyQueryPoolResultsVector(data, vk, device, allocation, 1u,
-                                              (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags() |
-                                               VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
-                                              m_parameters[0].dstOffset);
+                if (bufferPtr[ndx] != ndx)
+                    updateStatus(parametersNdx,
+                                 tcu::TestStatus::fail("Compute shader didn't write data to the buffer"));
             }
-            else
-            {
-                VK_CHECK(GetQueryPoolResultsVector(data, vk, device, *queryPool, 0u, 1u,
-                                                   (VK_QUERY_RESULT_WAIT_BIT | m_parameters[0].querySizeFlags() |
-                                                    VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
-            }
-
-            if (getComputeExecution(m_parameters[parametersNdx]) != data[0].first || data[0].second == 0)
-                return tcu::TestStatus::fail("QueryPoolResults incorrect");
-
-            uint64_t temp = data[0].first;
-
-            vk.resetQueryPool(device, *queryPool, 0, 1u);
-            vk::VkResult res =
-                GetQueryPoolResultsVector(data, vk, device, *queryPool, 0u, 1u,
-                                          (m_parameters[0].querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
-            /* From Vulkan spec:
-             *
-             * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
-             * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
-             * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
-             */
-            if (res != vk::VK_NOT_READY || data[0].first != temp || data[0].second != 0u)
-                return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
         }
-        else
+        catch (const tcu::TestStatus &catchStatus)
         {
-            // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
-            return verifyUnavailable();
+            return catchStatus;
+        }
+        catch (...)
+        {
+            throw;
         }
 
-        const uint32_t *bufferPtr = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
-        for (uint32_t ndx = 0u; ndx < getComputeExecution(m_parameters[parametersNdx]); ++ndx)
-        {
-            if (bufferPtr[ndx] != ndx)
-                return tcu::TestStatus::fail("Compute shader didn't write data to the buffer");
-        }
+    for (const tcu::TestStatus &catchStatus : statuses)
+    {
+        if (catchStatus.getCode() != QP_TEST_RESULT_PASS)
+            return catchStatus;
     }
+
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -1181,10 +924,9 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
     typedef de::SharedPtr<Unique<VkShaderModule>> VkShaderModuleSp;
     typedef de::SharedPtr<Unique<VkPipeline>> VkPipelineSp;
 
-    const auto &deviceHelper  = getDeviceHelper(m_context, m_useComputeQueue);
-    const DeviceInterface &vk = deviceHelper.getDeviceInterface();
-    const VkDevice device     = deviceHelper.getDevice();
-    const VkQueue queue       = deviceHelper.getQueue();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    const VkQueue queue       = m_context.getDeviceQueueInfo(0u).queue;
 
     const VkBufferMemoryBarrier computeShaderWriteBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
@@ -1334,9 +1076,8 @@ tcu::TestStatus ComputeInvocationsSecondaryTestInstance::executeTest(const VkCom
 tcu::TestStatus ComputeInvocationsSecondaryTestInstance::checkResult(const BufferPtr buffer,
                                                                      const VkQueryPool queryPool)
 {
-    const auto &deviceHelper  = getDeviceHelper(m_context, m_useComputeQueue);
-    const DeviceInterface &vk = deviceHelper.getDeviceInterface();
-    const VkDevice device     = deviceHelper.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
     {
         uint64_t expected = 0u;
         for (size_t parametersNdx = 0; parametersNdx < m_parameters.size(); ++parametersNdx)
@@ -1458,10 +1199,9 @@ tcu::TestStatus ComputeInvocationsSecondaryInheritedTestInstance::executeTest(co
     typedef de::SharedPtr<Unique<VkShaderModule>> VkShaderModuleSp;
     typedef de::SharedPtr<Unique<VkPipeline>> VkPipelineSp;
 
-    const auto &deviceHelper  = getDeviceHelper(m_context, m_useComputeQueue);
-    const DeviceInterface &vk = deviceHelper.getDeviceInterface();
-    const VkDevice device     = deviceHelper.getDevice();
-    const VkQueue queue       = deviceHelper.getQueue();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    const VkQueue queue       = m_context.getDeviceQueueInfo(0u).queue;
 
     const VkBufferMemoryBarrier computeShaderWriteBarrier = {
         VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,                // VkStructureType sType;
@@ -1723,7 +1463,6 @@ BufferPtr GraphicBasicTestInstance::creatAndFillVertexBuffer(void)
     const VkDeviceSize dataSize = static_cast<VkDeviceSize>(
         deAlignSize(static_cast<size_t>(m_data.size() * sizeof(VertexData)),
                     static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
-
     BufferPtr vertexBuffer =
         Buffer::createAndAlloc(vk, device, BufferCreateInfo(dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
                                m_context.getDefaultAllocator(), MemoryRequirement::HostVisible);
@@ -1896,14 +1635,37 @@ void GraphicBasicTestInstance::creatColorAttachmentAndRenderPass(void)
 
 bool GraphicBasicTestInstance::checkImage(void)
 {
-    if (m_parametersGraphic.vertexOnlyPipe || !m_colorAttachmentImage.get())
-        return true;
-
     const VkQueue queue         = m_context.getUniversalQueue();
     const VkOffset3D zeroOffset = {0, 0, 0};
+
+    auto createCheckedImage = [this]() -> de::SharedPtr<Image>
+    {
+        const DeviceInterface &vk = m_context.getDeviceInterface();
+        const VkDevice device     = m_context.getDevice();
+
+        VkExtent3D imageExtent = {
+            m_width,  // width;
+            m_height, // height;
+            1u        // depth;
+        };
+
+        const ImageCreateInfo colorImageCreateInfo(
+            VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT,
+            VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+        return Image::createAndAlloc(vk, device, colorImageCreateInfo, m_context.getDefaultAllocator(),
+                                     m_context.getUniversalQueueFamilyIndex());
+    };
+
+    de::SharedPtr<Image> swapImage    = createCheckedImage();
+    de::SharedPtr<Image> checkedImage = m_colorAttachmentImage.get() ? m_colorAttachmentImage : swapImage;
+
     const tcu::ConstPixelBufferAccess renderedFrame =
-        m_colorAttachmentImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_GENERAL, zeroOffset,
-                                            m_width, m_height, VK_IMAGE_ASPECT_COLOR_BIT);
+        checkedImage->readSurface(queue, m_context.getDefaultAllocator(), VK_IMAGE_LAYOUT_GENERAL, zeroOffset, m_width,
+                                  m_height, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    if (m_parametersGraphic.vertexOnlyPipe || !m_colorAttachmentImage.get())
+        return true;
 
     tcu::Texture2D referenceFrame(mapVkFormat(m_colorAttachmentFormat), m_width, m_height);
     referenceFrame.allocLevel(0);
@@ -2335,9 +2097,11 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
     }
 
     // Don't need to check the result image when clearing operations are executed.
+    // Anyway, the result image must be known for Vulkan SC to correct resources allocation.
+    const bool checkImageResult = checkImage();
     if (m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP &&
         m_parametersGraphic.clearOp == CLEAR_NOOP && !m_parametersGraphic.noColorAttachments && errorMsg.empty() &&
-        !checkImage())
+        !checkImageResult)
     {
         errorMsg = "Result image doesn't match expected image";
     }
@@ -2958,89 +2722,111 @@ tcu::TestStatus GeometryShaderTestInstance::checkResult(VkQueryPool queryPool)
         break;
     }
 
-    const uint32_t queryCount = static_cast<uint32_t>(m_drawRepeats.size());
+    const uint32_t queryCount   = static_cast<uint32_t>(m_drawRepeats.size());
+    const bool checkImageResult = checkImage();
 
-    if (m_parametersGraphic.resetType == RESET_TYPE_NORMAL || m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+    bool failStatus        = false;
+    tcu::TestStatus status = tcu::TestStatus::pass("Pass");
+
+    try
     {
-        ResultsVector results(queryCount, 0u);
-
-        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        if (m_parametersGraphic.resetType == RESET_TYPE_NORMAL ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
         {
-            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
-            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
-                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags()),
-                                          m_parametersGraphic.dstOffset);
+            ResultsVector results(queryCount, 0u);
+
+            if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+            {
+                const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+                cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                              (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags()),
+                                              m_parametersGraphic.dstOffset);
+            }
+            else
+            {
+                VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                                   (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
+            }
+
+            if (results[0] < expectedMin)
+                throw tcu::TestStatus::fail("QueryPoolResults incorrect");
+            if (queryCount > 1)
+            {
+                double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+                if (fabs(pearson) < 0.8)
+                    throw tcu::TestStatus::fail("QueryPoolResults are nonlinear");
+            }
+        }
+        else if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        {
+            ResultsVectorWithAvailability results(queryCount, pair<uint64_t, uint64_t>(0u, 0u));
+            if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+            {
+                const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+                cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                              (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                               VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
+                                              m_parametersGraphic.dstOffset);
+            }
+            else
+            {
+                VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                                   (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                                    VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
+            }
+
+            if (results[0].first < expectedMin || results[0].second == 0u)
+                throw tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+            if (queryCount > 1)
+            {
+                double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+                if (fabs(pearson) < 0.8)
+                    throw tcu::TestStatus::fail("QueryPoolResults are nonlinear");
+            }
+
+            uint64_t temp = results[0].first;
+
+            vk.resetQueryPool(device, queryPool, 0, queryCount);
+            vk::VkResult res = GetQueryPoolResultsVector(
+                results, vk, device, queryPool, 0u, queryCount,
+                (m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+            /* From Vulkan spec:
+             *
+             * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+             * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+             * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+             */
+            if (res != vk::VK_NOT_READY || results[0].first != temp || results[0].second != 0u)
+                throw tcu::TestStatus::fail("QueryPoolResults incorrect reset");
         }
         else
         {
-            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
-                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
-        }
-
-        if (results[0] < expectedMin)
-            return tcu::TestStatus::fail("QueryPoolResults incorrect");
-        if (queryCount > 1)
-        {
-            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
-            if (fabs(pearson) < 0.8)
-                return tcu::TestStatus::fail("QueryPoolResults are nonlinear");
+            // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
+            throw verifyUnavailable();
         }
     }
-    else if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+    catch (const tcu::TestStatus &ts)
     {
-        ResultsVectorWithAvailability results(queryCount, pair<uint64_t, uint64_t>(0u, 0u));
-        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
-        {
-            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
-            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
-                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
-                                           VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
-                                          m_parametersGraphic.dstOffset);
-        }
-        else
-        {
-            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
-                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
-                                                VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
-        }
-
-        if (results[0].first < expectedMin || results[0].second == 0u)
-            return tcu::TestStatus::fail("QueryPoolResults incorrect");
-
-        if (queryCount > 1)
-        {
-            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
-            if (fabs(pearson) < 0.8)
-                return tcu::TestStatus::fail("QueryPoolResults are nonlinear");
-        }
-
-        uint64_t temp = results[0].first;
-
-        vk.resetQueryPool(device, queryPool, 0, queryCount);
-        vk::VkResult res =
-            GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
-                                      (m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
-        /* From Vulkan spec:
-         *
-         * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
-         * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
-         * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
-         */
-        if (res != vk::VK_NOT_READY || results[0].first != temp || results[0].second != 0u)
-            return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+        failStatus = true;
+        status     = ts;
     }
-    else
+    catch (...)
     {
-        // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
-        return verifyUnavailable();
+        throw;
+    }
+
+    if (failStatus)
+    {
+        return status;
     }
 
     if ((m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST ||
          m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP) &&
-        !checkImage())
+        !checkImageResult)
         return tcu::TestStatus::fail("Result image doesn't match expected image.");
 
-    return tcu::TestStatus::pass("Pass");
+    return status;
 }
 
 void GeometryShaderTestInstance::draw(VkCommandBuffer cmdBuffer)
@@ -3581,83 +3367,100 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult(VkQueryPool queryPoo
 
     const uint32_t queryCount = static_cast<uint32_t>(m_drawRepeats.size());
 
-    if (m_parametersGraphic.resetType == RESET_TYPE_NORMAL || m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+    tcu::TestStatus status = tcu::TestStatus::pass("Pass");
+
+    try
     {
-        ResultsVector results(queryCount, 0u);
-        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        if (m_parametersGraphic.resetType == RESET_TYPE_NORMAL ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
         {
-            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
-            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
-                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags()),
-                                          m_parametersGraphic.dstOffset);
+            const bool checkImageResult = checkImage();
+
+            ResultsVector results(queryCount, 0u);
+            if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+            {
+                const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+                cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                              (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags()),
+                                              m_parametersGraphic.dstOffset);
+            }
+            else
+            {
+                VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                                   (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
+            }
+
+            if (results[0] < expectedMin)
+                throw tcu::TestStatus::fail("QueryPoolResults incorrect");
+            if (queryCount > 1)
+            {
+                double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+                if (fabs(pearson) < 0.8)
+                    throw tcu::TestStatus::fail("QueryPoolResults are nonlinear");
+            }
+
+            if (!m_parametersGraphic.noColorAttachments && !checkImageResult)
+                throw tcu::TestStatus::fail("Result image doesn't match expected image.");
+        }
+        else if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        {
+            ResultsVectorWithAvailability results(queryCount, pair<uint64_t, uint64_t>(0u, 0u));
+            if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+            {
+                const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+                cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                              (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                               VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
+                                              m_parametersGraphic.dstOffset);
+            }
+            else
+            {
+                VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                                   (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                                    VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
+            }
+
+            if (results[0].first < expectedMin || results[0].second == 0u)
+                return tcu::TestStatus::fail("QueryPoolResults incorrect");
+
+            if (queryCount > 1)
+            {
+                double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+                if (fabs(pearson) < 0.8)
+                    return tcu::TestStatus::fail("QueryPoolResults are nonlinear");
+            }
+
+            uint64_t temp = results[0].first;
+
+            vk.resetQueryPool(device, queryPool, 0, queryCount);
+            vk::VkResult res = GetQueryPoolResultsVector(
+                results, vk, device, queryPool, 0u, queryCount,
+                (m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+            /* From Vulkan spec:
+             *
+             * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+             * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+             * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+             */
+            if (res != vk::VK_NOT_READY || results[0].first != temp || results[0].second != 0u)
+                return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
         }
         else
         {
-            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
-                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
+            // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
+            return verifyUnavailable();
         }
-
-        if (results[0] < expectedMin)
-            return tcu::TestStatus::fail("QueryPoolResults incorrect");
-        if (queryCount > 1)
-        {
-            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
-            if (fabs(pearson) < 0.8)
-                return tcu::TestStatus::fail("QueryPoolResults are nonlinear");
-        }
-
-        if (!m_parametersGraphic.noColorAttachments && !checkImage())
-            return tcu::TestStatus::fail("Result image doesn't match expected image.");
     }
-    else if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+    catch (const tcu::TestStatus &ts)
     {
-        ResultsVectorWithAvailability results(queryCount, pair<uint64_t, uint64_t>(0u, 0u));
-        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
-        {
-            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
-            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
-                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
-                                           VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
-                                          m_parametersGraphic.dstOffset);
-        }
-        else
-        {
-            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
-                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
-                                                VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
-        }
-
-        if (results[0].first < expectedMin || results[0].second == 0u)
-            return tcu::TestStatus::fail("QueryPoolResults incorrect");
-
-        if (queryCount > 1)
-        {
-            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
-            if (fabs(pearson) < 0.8)
-                return tcu::TestStatus::fail("QueryPoolResults are nonlinear");
-        }
-
-        uint64_t temp = results[0].first;
-
-        vk.resetQueryPool(device, queryPool, 0, queryCount);
-        vk::VkResult res =
-            GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
-                                      (m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
-        /* From Vulkan spec:
-         *
-         * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
-         * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
-         * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
-         */
-        if (res != vk::VK_NOT_READY || results[0].first != temp || results[0].second != 0u)
-            return tcu::TestStatus::fail("QueryPoolResults incorrect reset");
+        status = ts;
     }
-    else
+    catch (...)
     {
-        // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
-        return verifyUnavailable();
+        throw;
     }
-    return tcu::TestStatus::pass("Pass");
+
+    return status;
 }
 
 void TessellationShaderTestInstance::draw(VkCommandBuffer cmdBuffer)
@@ -3964,6 +3767,7 @@ public:
                               bool dstOffset = false, const StrideType strideType = STRIDE_TYPE_VALID)
         : TestCase(context, name.c_str())
         , m_useComputeQueue(useComputeQueue)
+        , m_cqInfo({VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT, 1u, 1.0f})
     {
         const tcu::UVec3 localSize[] = {
             tcu::UVec3(2u, 2u, 2u),
@@ -3995,6 +3799,11 @@ public:
         return new Instance(context, m_parameters);
     }
 
+    bool inSubprocess() const
+    {
+        return getContextManager()->getCommandLine().isSubProcess();
+    }
+
     void checkSupport(Context &context) const override
     {
         if (m_useComputeQueue)
@@ -4002,7 +3811,7 @@ public:
             const auto &vki           = context.getInstanceInterface();
             const auto physicalDevice = context.getPhysicalDevice();
 
-            checkSupportForNonGraphicsQueueFamily(vki, physicalDevice);
+            findQueueFamilyIndexWithCaps(vki, physicalDevice, m_cqInfo.required, m_cqInfo.excluded);
         }
     }
 
@@ -4033,9 +3842,36 @@ public:
         }
     }
 
+    std::string getRequiredCapabilitiesId() const override
+    {
+        if (m_useComputeQueue)
+        {
+            return std::type_index(typeid(ComputeInvocationsTestInstance::ParametersCompute)).name();
+        }
+        return TestCase::getRequiredCapabilitiesId();
+    }
+
+    void initDeviceCapabilities(DevCaps &caps) override
+    {
+        DevCaps::QueueCreateInfo queueInfos[]{m_cqInfo};
+        caps.resetQueues(queueInfos);
+
+        caps.addExtension("VK_EXT_host_query_reset");
+        caps.addExtension("VK_KHR_portability_subset");
+
+        caps.addFeature<VkPhysicalDeviceHostQueryResetFeatures>();
+        caps.addFeature(&VkPhysicalDeviceFeatures::inheritedQueries);
+        caps.addFeature(&VkPhysicalDeviceFeatures::pipelineStatisticsQuery);
+
+#ifndef CTS_USES_VULKANSC
+        caps.addFeature<VkPhysicalDevicePortabilitySubsetFeaturesKHR>();
+#endif
+    }
+
 private:
     std::vector<ComputeInvocationsTestInstance::ParametersCompute> m_parameters;
     const bool m_useComputeQueue;
+    const DevCaps::QueueCreateInfo m_cqInfo;
 };
 
 template <class Instance>
@@ -4537,7 +4373,6 @@ BufferPtr GraphicBasicMultipleQueryTestInstance::creatAndFillVertexBuffer(void)
     const VkDeviceSize dataSize = static_cast<VkDeviceSize>(
         deAlignSize(static_cast<size_t>(m_data.size() * sizeof(VertexData)),
                     static_cast<size_t>(m_context.getDeviceProperties().limits.nonCoherentAtomSize)));
-
     BufferPtr vertexBuffer =
         Buffer::createAndAlloc(vk, device, BufferCreateInfo(dataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
                                m_context.getDefaultAllocator(), MemoryRequirement::HostVisible);
@@ -8036,11 +7871,6 @@ void QueryPoolStatisticsTests::init(void)
 
     addChild(vertexShaderMultipleQueries.release());
     addChild(multipleGeomStats.release());
-}
-
-void QueryPoolStatisticsTests::deinit(void)
-{
-    destroyDeviceHelpers();
 }
 
 } // namespace QueryPool

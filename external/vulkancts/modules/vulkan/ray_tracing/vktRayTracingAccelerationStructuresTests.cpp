@@ -170,6 +170,7 @@ struct TestParams
     vk::VkAccelerationStructureBuildTypeKHR buildType; // are we making AS on CPU or GPU
     VkFormat vertexFormat;
     bool padVertices;
+    bool minAlign;
     VkIndexType indexType;
     BottomTestType bottomTestType; // what kind of geometry is stored in bottom AS
     InstanceCullFlags cullFlags;   // Flags for instances, if needed.
@@ -262,6 +263,44 @@ VkGeometryInstanceFlagsKHR getCullFlags(InstanceCullFlags flags)
     return cullFlags;
 }
 
+static uint32_t getMisalignBytes(VkFormat vertexFormat)
+{
+    uint32_t minAlign = ~0U;
+
+    switch (vertexFormat)
+    {
+    case VK_FORMAT_R8G8_SNORM:
+    case VK_FORMAT_R8G8B8_SNORM:
+    case VK_FORMAT_R8G8B8A8_SNORM:
+        minAlign = 1U;
+        break;
+    case VK_FORMAT_R16G16_SFLOAT:
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+    case VK_FORMAT_R16G16_SNORM:
+    case VK_FORMAT_R16G16B16A16_SNORM:
+        minAlign = 2U;
+        break;
+    case VK_FORMAT_R32G32_SFLOAT:
+    case VK_FORMAT_R32G32B32_SFLOAT:
+    case VK_FORMAT_R16G16B16_SNORM:
+    case VK_FORMAT_R16G16B16_SFLOAT:
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+    case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+        minAlign = 4U;
+        break;
+    case VK_FORMAT_R64G64_SFLOAT:
+    case VK_FORMAT_R64G64B64_SFLOAT:
+    case VK_FORMAT_R64G64B64A64_SFLOAT:
+        minAlign = 8U;
+        break;
+    default:
+        DE_ASSERT(false); // Unhandled format
+        break;
+    }
+
+    return minAlign;
+}
+
 class CheckerboardConfiguration : public TestConfiguration
 {
 public:
@@ -313,8 +352,15 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardConfigu
         de::SharedPtr<RaytracedGeometryBase> geometry;
         if (testParams.bottomTestType == BottomTestType::TRIANGLES)
         {
+            uint32_t minAlign = 0;
+
+            if (testParams.minAlign)
+            {
+                minAlign = getMisalignBytes(testParams.vertexFormat);
+            }
+
             geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat,
-                                             testParams.indexType, testParams.padVertices);
+                                             testParams.indexType, testParams.padVertices, minAlign);
             if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
             {
                 if (instanceFlags == 0u)
@@ -775,8 +821,16 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> SingleTriangleConfi
     {
         bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
 
+        uint32_t minAlign = 0;
+
+        if (testParams.minAlign)
+        {
+            minAlign = getMisalignBytes(testParams.vertexFormat);
+        }
+
         de::SharedPtr<RaytracedGeometryBase> geometry;
-        geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+        geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType,
+                                         testParams.padVertices, minAlign);
 
         for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
             geometry->addVertex(*it);
@@ -884,6 +938,19 @@ bool SingleTriangleConfiguration::verifyImage(BufferWithMemory *resultBuffer, Co
         v0.z() = 0.0f;
         v1.z() = 0.0f;
         v2.z() = 0.0f;
+    }
+    // XXX Hack
+    if (testParams.vertexFormat == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+    {
+        v0.x() = std::max(v0.x(), 0.0f);
+        v0.y() = std::max(v0.y(), 0.0f);
+        v0.z() = std::max(v0.z(), 0.0f);
+        v1.x() = std::max(v1.x(), 0.0f);
+        v1.y() = std::max(v1.y(), 0.0f);
+        v1.z() = std::max(v1.z(), 0.0f);
+        v2.x() = std::max(v2.x(), 0.0f);
+        v2.y() = std::max(v2.y(), 0.0f);
+        v2.z() = std::max(v2.z(), 0.0f);
     }
     tcu::Vec3 abc = tcu::cross((v2 - v0), (v1 - v0));
 
@@ -5400,6 +5467,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup *group)
                                                 buildTypes[buildTypeNdx].buildType,
                                                 VK_FORMAT_R32G32B32_SFLOAT,
                                                 paddingType[paddingTypeIdx].padVertices,
+                                                false,
                                                 VK_INDEX_TYPE_NONE_KHR,
                                                 bottomTestTypes[bottomNdx].testType,
                                                 InstanceCullFlags::NONE,
@@ -5485,6 +5553,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
         VK_FORMAT_R64G64_SFLOAT,
         VK_FORMAT_R64G64B64_SFLOAT,
         VK_FORMAT_R64G64B64A64_SFLOAT,
+        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
     };
 
     struct
@@ -5500,11 +5569,9 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
     struct
     {
         bool padVertices;
+        bool minAlign;
         const char *name;
-    } paddingType[] = {
-        {false, "nopadding"},
-        {true, "padded"},
-    };
+    } paddingType[] = {{false, false, "nopadding"}, {true, false, "padded"}, {false, true, "minalign"}};
 
     for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
          ++structResidencyNdx)
@@ -5540,6 +5607,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
                             buildTypes[buildTypeNdx].buildType,
                             format,
                             paddingType[paddingIdx].padVertices,
+                            paddingType[paddingIdx].minAlign,
                             indexFormats[indexFormatNdx].indexType,
                             BottomTestType::TRIANGLES,
                             InstanceCullFlags::NONE,
@@ -5671,6 +5739,7 @@ void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThrea
                             buildTypes[buildTypeNdx].buildType,
                             VK_FORMAT_R32G32B32_SFLOAT,
                             false,
+                            false,
                             VK_INDEX_TYPE_NONE_KHR,
                             bottomTestTypes[testTypeNdx].testType,
                             InstanceCullFlags::NONE,
@@ -5767,6 +5836,7 @@ void addFuncArgTests(tcu::TestCaseGroup *group)
             TestParams testParams{
                 buildTypes[buildTypeNdx].buildType,
                 VK_FORMAT_R32G32B32_SFLOAT,
+                false,
                 false,
                 VK_INDEX_TYPE_NONE_KHR,
                 BottomTestType::TRIANGLES,
@@ -5881,6 +5951,7 @@ void addInstanceTriangleCullingTests(tcu::TestCaseGroup *group)
                         TestParams testParams{
                             buildTypes[buildTypeIdx].buildType,
                             VK_FORMAT_R32G32B32_SFLOAT,
+                            false,
                             false,
                             indexFormats[indexFormatIdx].indexType,
                             BottomTestType::TRIANGLES,
@@ -6013,6 +6084,7 @@ void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
                         buildTypes[buildTypeIdx].buildType,
                         VK_FORMAT_R32G32B32_SFLOAT,
                         false,
+                        false,
                         indexFormats[indexFormatIdx].indexType,
                         BottomTestType::TRIANGLES,
                         InstanceCullFlags::NONE,
@@ -6108,6 +6180,7 @@ void addInstanceIndexTests(tcu::TestCaseGroup *group)
                     buildTypes[buildTypeIdx].buildType,
                     VK_FORMAT_R32G32B32_SFLOAT,
                     false,
+                    false,
                     VK_INDEX_TYPE_NONE_KHR,
                     bottomGeometryType,
                     InstanceCullFlags::NONE,
@@ -6193,6 +6266,7 @@ void addInstanceUpdateTests(tcu::TestCaseGroup *group)
                 TestParams testParams{
                     buildTypes[buildTypeIdx].buildType,
                     VK_FORMAT_R32G32B32_SFLOAT,
+                    false,
                     false,
                     VK_INDEX_TYPE_NONE_KHR,
                     BottomTestType::TRIANGLES,
@@ -6302,6 +6376,7 @@ void addInstanceRayCullMaskTests(tcu::TestCaseGroup *group)
                         buildTypes[buildTypeIdx].buildType,
                         VK_FORMAT_R32G32B32_SFLOAT,
                         false,
+                        false,
                         VK_INDEX_TYPE_NONE_KHR,
                         bottomGeometryType,
                         InstanceCullFlags::NONE,
@@ -6389,6 +6464,7 @@ void addGetDeviceAccelerationStructureCompabilityTests(tcu::TestCaseGroup *group
                     buildTypes[buildTypeIdx].buildType, // buildType        - are we making AS on CPU or GPU
                     VK_FORMAT_R32G32B32_SFLOAT,         // vertexFormat
                     false,                              // padVertices
+                    false,                              // minAlign
                     VK_INDEX_TYPE_NONE_KHR,             // indexType
                     BottomTestType::TRIANGLES, // bottomTestType    - what kind of geometry is stored in bottom AS
                     InstanceCullFlags::NONE,   // cullFlags        - Flags for instances, if needed.
@@ -6476,6 +6552,7 @@ void addUpdateHeaderBottomAddressTests(tcu::TestCaseGroup *group)
                     buildTypes[buildTypeIdx].buildType,              // buildType
                     VK_FORMAT_R32G32B32_SFLOAT,                      // vertexFormat
                     false,                                           // padVertices
+                    false,                                           // minAlign
                     VK_INDEX_TYPE_NONE_KHR,                          // indexType
                     BottomTestType::TRIANGLES,                       // bottomTestType
                     InstanceCullFlags::NONE,                         // cullFlags
@@ -6659,6 +6736,15 @@ void addUpdateTests(TestCaseGroup *group)
         {UpdateCase::TRANSFORM, "transform"},
     };
 
+    struct
+    {
+        OperationType operationType;
+        const char *name;
+    } operationTypes[] = {
+        {OP_NONE, "normal"},
+        {OP_COMPACT, "compact"},
+    };
+
     auto &ctx = group->getTestContext();
 
     for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
@@ -6672,41 +6758,57 @@ void addUpdateTests(TestCaseGroup *group)
             de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
                 new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
 
-            for (int updateTypesIdx = 0; updateTypesIdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateTypesIdx)
+            for (int operationTypeIdx = 0; operationTypeIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeIdx)
             {
-                if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
-                    (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
-                    continue;
+                de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(
+                    new tcu::TestCaseGroup(ctx, operationTypes[operationTypeIdx].name));
 
-                TestParams testParams{
-                    buildTypes[buildTypeIdx].buildType,
-                    VK_FORMAT_R32G32B32_SFLOAT,
-                    false,
-                    VK_INDEX_TYPE_UINT16,
-                    BottomTestType::TRIANGLES,
-                    InstanceCullFlags::NONE,
-                    false,
-                    false,
-                    false,
-                    TopTestType::IDENTICAL_INSTANCES,
-                    false,
-                    false,
-                    false,
-                    VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
-                    OT_TOP_ACCELERATION,
-                    OP_NONE,
-                    RTAS_DEFAULT_SIZE,
-                    RTAS_DEFAULT_SIZE,
-                    de::SharedPtr<TestConfiguration>(new UpdateableASConfiguration()),
-                    0u,
-                    EmptyAccelerationStructureCase::NOT_EMPTY,
-                    InstanceCustomIndexCase::NONE,
-                    false,
-                    0xFFu,
-                    updateTypes[updateTypesIdx].updateType,
-                    accStructBufferResTypes[structResidencyNdx].res,
-                };
-                buildTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, testParams));
+                for (int updateTypesIdx = 0; updateTypesIdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateTypesIdx)
+                {
+                    if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                        (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                        continue;
+
+                    // Base build flags for update
+                    VkBuildAccelerationStructureFlagsKHR buildFlags =
+                        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+
+                    // Add compaction flag if needed
+                    if (operationTypes[operationTypeIdx].operationType == OP_COMPACT)
+                        buildFlags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+
+                    TestParams testParams{
+                        buildTypes[buildTypeIdx].buildType,
+                        VK_FORMAT_R32G32B32_SFLOAT,
+                        false,
+                        false,
+                        VK_INDEX_TYPE_UINT16,
+                        BottomTestType::TRIANGLES,
+                        InstanceCullFlags::NONE,
+                        false,
+                        false,
+                        false,
+                        TopTestType::IDENTICAL_INSTANCES,
+                        false,
+                        false,
+                        false,
+                        buildFlags,
+                        OT_TOP_ACCELERATION,
+                        operationTypes[operationTypeIdx].operationType,
+                        RTAS_DEFAULT_SIZE,
+                        RTAS_DEFAULT_SIZE,
+                        de::SharedPtr<TestConfiguration>(new UpdateableASConfiguration()),
+                        0u,
+                        EmptyAccelerationStructureCase::NOT_EMPTY,
+                        InstanceCustomIndexCase::NONE,
+                        false,
+                        0xFFu,
+                        updateTypes[updateTypesIdx].updateType,
+                        accStructBufferResTypes[structResidencyNdx].res,
+                    };
+                    operationTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, testParams));
+                }
+                buildTypeGroup->addChild(operationTypeGroup.release());
             }
             structResidencyGroup->addChild(buildTypeGroup.release());
         }

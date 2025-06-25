@@ -8,7 +8,7 @@ using ExtPropVect = std::vector<vk::VkExtensionProperties>;
 using IsSupportedFun = bool (*)(const tcu::UVec2&, const ExtPropVect&, const ExtPropVect&);
 using DependencyCheckVect = std::vector<std::pair<const char*, IsSupportedFun> >;
 
-bool isCompatibile(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)
+bool isCompatible(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)
 {
 	// return true when tested api version is greater
 	// or equal to version represented by two uints
@@ -120,7 +120,7 @@ bool check_VK_NN_vi_surface(const tcu::UVec2& v, const ExtPropVect& vIEP, const 
 
 bool check_VK_KHR_external_memory_capabilities(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vDEP);
@@ -129,12 +129,12 @@ bool check_VK_KHR_external_memory_capabilities(const tcu::UVec2& v, const ExtPro
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_external_semaphore_capabilities(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vDEP);
@@ -143,7 +143,7 @@ bool check_VK_KHR_external_semaphore_capabilities(const tcu::UVec2& v, const Ext
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_direct_mode_display(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -196,7 +196,7 @@ bool check_VK_EXT_swapchain_colorspace(const tcu::UVec2& v, const ExtPropVect& v
 
 bool check_VK_KHR_external_fence_capabilities(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vDEP);
@@ -205,7 +205,7 @@ bool check_VK_KHR_external_fence_capabilities(const tcu::UVec2& v, const ExtProp
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_get_surface_capabilities2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -289,7 +289,7 @@ bool check_VK_KHR_surface_protected_capabilities(const tcu::UVec2& v, const ExtP
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1+VK_KHR_get_surface_capabilities2
-	return isCompatibile(1, 1, v) && isSupported(vIEP, "VK_KHR_get_surface_capabilities2");
+	return (isCompatible(1, 1, v) && isSupported(vIEP, "VK_KHR_get_surface_capabilities2"));
 }
 
 bool check_VK_EXT_headless_surface(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -313,7 +313,7 @@ bool check_VK_EXT_surface_maintenance1(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_surface+VK_KHR_get_surface_capabilities2
-	return isSupported(vIEP, "VK_KHR_surface") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2");
+	return (isSupported(vIEP, "VK_KHR_surface") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2"));
 }
 
 bool check_VK_EXT_acquire_drm_display(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -361,7 +361,19 @@ bool check_VK_NV_display_stereo(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 		return true;
 
 	// depends attribute in xml: VK_KHR_display+VK_KHR_get_display_properties2
-	return isSupported(vIEP, "VK_KHR_display") && isSupported(vIEP, "VK_KHR_get_display_properties2");
+	return (isSupported(vIEP, "VK_KHR_display") && isSupported(vIEP, "VK_KHR_get_display_properties2"));
+}
+
+bool check_VK_OHOS_surface(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vDEP);
+
+	if (!isSupported(vIEP, "VK_OHOS_surface"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_surface
+	return isSupported(vIEP, "VK_KHR_surface");
 }
 
 static const DependencyCheckVect instanceExtensionDependencies
@@ -394,6 +406,7 @@ static const DependencyCheckVect instanceExtensionDependencies
 	std::make_pair("VK_QNX_screen_surface",						&check_VK_QNX_screen_surface),
 	std::make_pair("VK_GOOGLE_surfaceless_query",				&check_VK_GOOGLE_surfaceless_query),
 	std::make_pair("VK_NV_display_stereo",						&check_VK_NV_display_stereo),
+	std::make_pair("VK_OHOS_surface",							&check_VK_OHOS_surface),
 };
 
 bool check_VK_KHR_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -417,7 +430,7 @@ bool check_VK_KHR_display_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_display
-	return isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_display");
+	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_display"));
 }
 
 bool check_VK_EXT_debug_marker(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -441,7 +454,7 @@ bool check_VK_KHR_video_queue(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 		return true;
 
 	// depends attribute in xml: (VK_VERSION_1_1+VK_KHR_synchronization2),VK_VERSION_1_3
-	return (isCompatibile(1, 1, v) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return ((isCompatible(1, 1, v) && isSupported(vDEP, "VK_KHR_synchronization2")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_KHR_video_decode_queue(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -453,7 +466,7 @@ bool check_VK_KHR_video_decode_queue(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_video_queue+(VK_KHR_synchronization2,VK_VERSION_1_3)
-	return isSupported(vDEP, "VK_KHR_video_queue") && ((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (isSupported(vDEP, "VK_KHR_video_queue") && (isSupported(vDEP, "VK_KHR_synchronization2") || isCompatible(1, 3, v)));
 }
 
 bool check_VK_EXT_transform_feedback(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -465,7 +478,7 @@ bool check_VK_EXT_transform_feedback(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_video_encode_h264(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -513,12 +526,12 @@ bool check_VK_AMD_texture_gather_bias_lod(const tcu::UVec2& v, const ExtPropVect
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_dynamic_rendering(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -527,7 +540,7 @@ bool check_VK_KHR_dynamic_rendering(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_depth_stencil_resolve),VK_VERSION_1_2
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_depth_stencil_resolve")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_depth_stencil_resolve")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_NV_corner_sampled_image(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -539,12 +552,12 @@ bool check_VK_NV_corner_sampled_image(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_multiview(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -553,7 +566,7 @@ bool check_VK_KHR_multiview(const tcu::UVec2& v, const ExtPropVect& vIEP, const 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -594,7 +607,7 @@ bool check_VK_NV_win32_keyed_mutex(const tcu::UVec2& v, const ExtPropVect& vIEP,
 
 bool check_VK_KHR_device_group(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -603,12 +616,12 @@ bool check_VK_KHR_device_group(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_device_group_creation
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_device_group_creation"));
+	return (isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_device_group_creation"));
 }
 
 bool check_VK_EXT_texture_compression_astc_hdr(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -617,7 +630,7 @@ bool check_VK_EXT_texture_compression_astc_hdr(const tcu::UVec2& v, const ExtPro
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_astc_decode_mode(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -629,12 +642,12 @@ bool check_VK_EXT_astc_decode_mode(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_pipeline_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -643,12 +656,12 @@ bool check_VK_EXT_pipeline_robustness(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -657,7 +670,7 @@ bool check_VK_KHR_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory_capabilities,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_external_memory_capabilities"));
+	return (isSupported(vIEP, "VK_KHR_external_memory_capabilities") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_external_memory_win32(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -669,7 +682,7 @@ bool check_VK_KHR_external_memory_win32(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_external_memory_fd(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -681,7 +694,7 @@ bool check_VK_KHR_external_memory_fd(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_win32_keyed_mutex(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -698,7 +711,7 @@ bool check_VK_KHR_win32_keyed_mutex(const tcu::UVec2& v, const ExtPropVect& vIEP
 
 bool check_VK_KHR_external_semaphore(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -707,7 +720,7 @@ bool check_VK_KHR_external_semaphore(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_semaphore_capabilities
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_external_semaphore_capabilities"));
+	return (isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_external_semaphore_capabilities"));
 }
 
 bool check_VK_KHR_external_semaphore_win32(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -719,7 +732,7 @@ bool check_VK_KHR_external_semaphore_win32(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_semaphore
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_semaphore"));
+	return (isCompatible(1, 1, v) || isSupported(vDEP, "VK_KHR_external_semaphore"));
 }
 
 bool check_VK_KHR_external_semaphore_fd(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -731,12 +744,12 @@ bool check_VK_KHR_external_semaphore_fd(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_semaphore,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_semaphore"));
+	return (isSupported(vDEP, "VK_KHR_external_semaphore") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_push_descriptor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -745,7 +758,7 @@ bool check_VK_KHR_push_descriptor(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_conditional_rendering(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -757,12 +770,12 @@ bool check_VK_EXT_conditional_rendering(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_float16_int8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -771,12 +784,12 @@ bool check_VK_KHR_shader_float16_int8(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_16bit_storage(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -785,7 +798,7 @@ bool check_VK_KHR_16bit_storage(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_storage_buffer_storage_class),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_storage_buffer_storage_class")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_storage_buffer_storage_class")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_incremental_present(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -809,7 +822,7 @@ bool check_VK_EXT_display_control(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_EXT_display_surface_counter+VK_KHR_swapchain
-	return isSupported(vIEP, "VK_EXT_display_surface_counter") && isSupported(vDEP, "VK_KHR_swapchain");
+	return (isSupported(vIEP, "VK_EXT_display_surface_counter") && isSupported(vDEP, "VK_KHR_swapchain"));
 }
 
 bool check_VK_GOOGLE_display_timing(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -833,7 +846,7 @@ bool check_VK_NVX_multiview_per_view_attributes(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: VK_KHR_multiview,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_multiview"));
+	return (isSupported(vDEP, "VK_KHR_multiview") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_discard_rectangles(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -845,7 +858,7 @@ bool check_VK_EXT_discard_rectangles(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_conservative_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -857,7 +870,7 @@ bool check_VK_EXT_conservative_rasterization(const tcu::UVec2& v, const ExtPropV
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_depth_clip_enable(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -869,7 +882,7 @@ bool check_VK_EXT_depth_clip_enable(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_hdr_metadata(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -886,7 +899,7 @@ bool check_VK_EXT_hdr_metadata(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 
 bool check_VK_KHR_imageless_framebuffer(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -895,12 +908,12 @@ bool check_VK_KHR_imageless_framebuffer(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: (((VK_KHR_get_physical_device_properties2+VK_KHR_maintenance2),VK_VERSION_1_1)+VK_KHR_image_format_list),VK_VERSION_1_2
-	return ((((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance2")))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_image_format_list")));
+	return ((((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_maintenance2")) || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_image_format_list")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_KHR_create_renderpass2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -909,7 +922,7 @@ bool check_VK_KHR_create_renderpass2(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: (VK_KHR_multiview+VK_KHR_maintenance2),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_multiview")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance2")));
+	return ((isSupported(vDEP, "VK_KHR_multiview") && isSupported(vDEP, "VK_KHR_maintenance2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_IMG_relaxed_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -921,7 +934,7 @@ bool check_VK_IMG_relaxed_line_rasterization(const tcu::UVec2& v, const ExtPropV
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shared_presentable_image(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -933,12 +946,12 @@ bool check_VK_KHR_shared_presentable_image(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_get_surface_capabilities2+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_KHR_external_fence(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -947,7 +960,7 @@ bool check_VK_KHR_external_fence(const tcu::UVec2& v, const ExtPropVect& vIEP, c
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_fence_capabilities
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_external_fence_capabilities"));
+	return (isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_external_fence_capabilities"));
 }
 
 bool check_VK_KHR_external_fence_win32(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -959,7 +972,7 @@ bool check_VK_KHR_external_fence_win32(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_fence
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_fence"));
+	return (isCompatible(1, 1, v) || isSupported(vDEP, "VK_KHR_external_fence"));
 }
 
 bool check_VK_KHR_external_fence_fd(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -971,7 +984,7 @@ bool check_VK_KHR_external_fence_fd(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_fence,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_fence"));
+	return (isSupported(vDEP, "VK_KHR_external_fence") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_performance_query(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -983,12 +996,12 @@ bool check_VK_KHR_performance_query(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_variable_pointers(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -997,7 +1010,7 @@ bool check_VK_KHR_variable_pointers(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_storage_buffer_storage_class),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_storage_buffer_storage_class")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_storage_buffer_storage_class")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_external_memory_dma_buf(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1021,12 +1034,12 @@ bool check_VK_EXT_queue_family_foreign(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_dedicated_allocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1035,7 +1048,7 @@ bool check_VK_KHR_dedicated_allocation(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_memory_requirements2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_get_memory_requirements2"));
+	return (isSupported(vDEP, "VK_KHR_get_memory_requirements2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_ANDROID_external_memory_android_hardware_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1047,12 +1060,12 @@ bool check_VK_ANDROID_external_memory_android_hardware_buffer(const tcu::UVec2& 
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_sampler_ycbcr_conversion+VK_KHR_external_memory+VK_KHR_dedicated_allocation),VK_VERSION_1_1)+VK_EXT_queue_family_foreign
-	return (((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_dedicated_allocation")))) && isSupported(vDEP, "VK_EXT_queue_family_foreign");
+	return (((isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") && isSupported(vDEP, "VK_KHR_external_memory") && isSupported(vDEP, "VK_KHR_dedicated_allocation")) || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_queue_family_foreign"));
 }
 
 bool check_VK_EXT_sampler_filter_minmax(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1061,7 +1074,7 @@ bool check_VK_EXT_sampler_filter_minmax(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_AMDX_shader_enqueue(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1073,12 +1086,12 @@ bool check_VK_AMDX_shader_enqueue(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_synchronization2+VK_KHR_spirv_1_4+VK_EXT_extended_dynamic_state),VK_VERSION_1_3)+VK_KHR_maintenance5+VK_KHR_pipeline_library
-	return (((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_EXT_extended_dynamic_state")))) && (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")) && isSupported(vDEP, "VK_KHR_pipeline_library");
+	return (((isSupported(vDEP, "VK_KHR_synchronization2") && (isCompatible(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4")) && isSupported(vDEP, "VK_EXT_extended_dynamic_state")) || isCompatible(1, 3, v)) && (isCompatible(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")) && isSupported(vDEP, "VK_KHR_pipeline_library"));
 }
 
 bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1087,7 +1100,7 @@ bool check_VK_EXT_inline_uniform_block(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_maintenance1),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance1")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_maintenance1")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_bfloat16(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1099,7 +1112,7 @@ bool check_VK_KHR_shader_bfloat16(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_sample_locations(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1111,7 +1124,7 @@ bool check_VK_EXT_sample_locations(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_blend_operation_advanced(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1123,7 +1136,7 @@ bool check_VK_EXT_blend_operation_advanced(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_acceleration_structure(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1135,7 +1148,7 @@ bool check_VK_KHR_acceleration_structure(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: ((VK_VERSION_1_1+VK_EXT_descriptor_indexing+VK_KHR_buffer_device_address),VK_VERSION_1_2)+VK_KHR_deferred_host_operations
-	return ((isCompatibile(1, 1, v) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_EXT_descriptor_indexing")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")))) && isSupported(vDEP, "VK_KHR_deferred_host_operations");
+	return (((isCompatible(1, 1, v) && isSupported(vDEP, "VK_EXT_descriptor_indexing") && isSupported(vDEP, "VK_KHR_buffer_device_address")) || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_deferred_host_operations"));
 }
 
 bool check_VK_KHR_ray_tracing_pipeline(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1147,7 +1160,7 @@ bool check_VK_KHR_ray_tracing_pipeline(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: (VK_KHR_spirv_1_4,VK_VERSION_1_2)+VK_KHR_acceleration_structure
-	return ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"))) && isSupported(vDEP, "VK_KHR_acceleration_structure");
+	return ((isSupported(vDEP, "VK_KHR_spirv_1_4") || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_acceleration_structure"));
 }
 
 bool check_VK_KHR_ray_query(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1159,7 +1172,7 @@ bool check_VK_KHR_ray_query(const tcu::UVec2& v, const ExtPropVect& vIEP, const 
 		return true;
 
 	// depends attribute in xml: (VK_KHR_spirv_1_4,VK_VERSION_1_2)+VK_KHR_acceleration_structure
-	return ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"))) && isSupported(vDEP, "VK_KHR_acceleration_structure");
+	return ((isSupported(vDEP, "VK_KHR_spirv_1_4") || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_acceleration_structure"));
 }
 
 bool check_VK_NV_shader_sm_builtins(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1171,12 +1184,12 @@ bool check_VK_NV_shader_sm_builtins(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_KHR_sampler_ycbcr_conversion(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1185,7 +1198,7 @@ bool check_VK_KHR_sampler_ycbcr_conversion(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: (VK_KHR_maintenance1+VK_KHR_bind_memory2+VK_KHR_get_memory_requirements2+VK_KHR_get_physical_device_properties2),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance1")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_bind_memory2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_get_memory_requirements2")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return ((isSupported(vDEP, "VK_KHR_maintenance1") && isSupported(vDEP, "VK_KHR_bind_memory2") && isSupported(vDEP, "VK_KHR_get_memory_requirements2") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_image_drm_format_modifier(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1197,12 +1210,12 @@ bool check_VK_EXT_image_drm_format_modifier(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: (((VK_KHR_bind_memory2+VK_KHR_get_physical_device_properties2+VK_KHR_sampler_ycbcr_conversion),VK_VERSION_1_1)+VK_KHR_image_format_list),VK_VERSION_1_2
-	return ((((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_bind_memory2")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion")))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_image_format_list")));
+	return ((((isSupported(vDEP, "VK_KHR_bind_memory2") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion")) || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_image_format_list")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_EXT_descriptor_indexing(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1211,7 +1224,7 @@ bool check_VK_EXT_descriptor_indexing(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_maintenance3),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_maintenance3")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_portability_subset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1223,7 +1236,7 @@ bool check_VK_KHR_portability_subset(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_shading_rate_image(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1235,7 +1248,7 @@ bool check_VK_NV_shading_rate_image(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_ray_tracing(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1247,7 +1260,7 @@ bool check_VK_NV_ray_tracing(const tcu::UVec2& v, const ExtPropVect& vIEP, const
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_get_memory_requirements2),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_get_memory_requirements2")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_get_memory_requirements2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_representative_fragment_test(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1259,12 +1272,12 @@ bool check_VK_NV_representative_fragment_test(const tcu::UVec2& v, const ExtProp
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_maintenance3(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 1, v))
+	if (isCompatible(1, 1, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1273,12 +1286,12 @@ bool check_VK_KHR_maintenance3(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_subgroup_extended_types(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1287,12 +1300,12 @@ bool check_VK_KHR_shader_subgroup_extended_types(const tcu::UVec2& v, const ExtP
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_KHR_8bit_storage(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1301,7 +1314,7 @@ bool check_VK_KHR_8bit_storage(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_storage_buffer_storage_class),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_storage_buffer_storage_class")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_storage_buffer_storage_class")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_external_memory_host(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1313,12 +1326,12 @@ bool check_VK_EXT_external_memory_host(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_atomic_int64(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1327,7 +1340,7 @@ bool check_VK_KHR_shader_atomic_int64(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_clock(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1339,7 +1352,7 @@ bool check_VK_KHR_shader_clock(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1351,7 +1364,7 @@ bool check_VK_EXT_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_AMD_shader_core_properties(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1363,7 +1376,7 @@ bool check_VK_AMD_shader_core_properties(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_video_decode_h265(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1380,7 +1393,7 @@ bool check_VK_KHR_video_decode_h265(const tcu::UVec2& v, const ExtPropVect& vIEP
 
 bool check_VK_KHR_global_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1389,7 +1402,7 @@ bool check_VK_KHR_global_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1401,7 +1414,7 @@ bool check_VK_EXT_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_GGP_frame_token(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1413,12 +1426,12 @@ bool check_VK_GGP_frame_token(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_GGP_stream_descriptor_surface
-	return isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_GGP_stream_descriptor_surface");
+	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_GGP_stream_descriptor_surface"));
 }
 
 bool check_VK_KHR_driver_properties(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1427,12 +1440,12 @@ bool check_VK_KHR_driver_properties(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_float_controls(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1441,7 +1454,7 @@ bool check_VK_KHR_shader_float_controls(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_shader_subgroup_partitioned(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1453,12 +1466,12 @@ bool check_VK_NV_shader_subgroup_partitioned(const tcu::UVec2& v, const ExtPropV
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_KHR_depth_stencil_resolve(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1467,7 +1480,7 @@ bool check_VK_KHR_depth_stencil_resolve(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_create_renderpass2,VK_VERSION_1_2
-	return (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2"));
+	return (isSupported(vDEP, "VK_KHR_create_renderpass2") || isCompatible(1, 2, v));
 }
 
 bool check_VK_KHR_swapchain_mutable_format(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1479,7 +1492,7 @@ bool check_VK_KHR_swapchain_mutable_format(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+(VK_KHR_maintenance2,VK_VERSION_1_1)+(VK_KHR_image_format_list,VK_VERSION_1_2)
-	return isSupported(vDEP, "VK_KHR_swapchain") && ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance2"))) && ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_image_format_list")));
+	return (isSupported(vDEP, "VK_KHR_swapchain") && (isSupported(vDEP, "VK_KHR_maintenance2") || isCompatible(1, 1, v)) && (isSupported(vDEP, "VK_KHR_image_format_list") || isCompatible(1, 2, v)));
 }
 
 bool check_VK_NV_compute_shader_derivatives(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1491,7 +1504,7 @@ bool check_VK_NV_compute_shader_derivatives(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_mesh_shader(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1503,7 +1516,7 @@ bool check_VK_NV_mesh_shader(const tcu::UVec2& v, const ExtPropVect& vIEP, const
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_fragment_shader_barycentric(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1515,7 +1528,7 @@ bool check_VK_NV_fragment_shader_barycentric(const tcu::UVec2& v, const ExtPropV
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_shader_image_footprint(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1527,7 +1540,7 @@ bool check_VK_NV_shader_image_footprint(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_scissor_exclusive(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1539,7 +1552,7 @@ bool check_VK_NV_scissor_exclusive(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_device_diagnostic_checkpoints(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1551,12 +1564,12 @@ bool check_VK_NV_device_diagnostic_checkpoints(const tcu::UVec2& v, const ExtPro
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_timeline_semaphore(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1565,7 +1578,7 @@ bool check_VK_KHR_timeline_semaphore(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_INTEL_shader_integer_functions2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1577,12 +1590,12 @@ bool check_VK_INTEL_shader_integer_functions2(const tcu::UVec2& v, const ExtProp
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_vulkan_memory_model(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1591,7 +1604,7 @@ bool check_VK_KHR_vulkan_memory_model(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_pci_bus_info(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1603,7 +1616,7 @@ bool check_VK_EXT_pci_bus_info(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_AMD_display_native_hdr(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1615,12 +1628,12 @@ bool check_VK_AMD_display_native_hdr(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_get_surface_capabilities2+VK_KHR_swapchain
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_swapchain");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_swapchain"));
 }
 
 bool check_VK_KHR_shader_terminate_invocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1629,7 +1642,7 @@ bool check_VK_KHR_shader_terminate_invocation(const tcu::UVec2& v, const ExtProp
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_fragment_density_map(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1641,12 +1654,12 @@ bool check_VK_EXT_fragment_density_map(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_scalar_block_layout(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1655,12 +1668,12 @@ bool check_VK_EXT_scalar_block_layout(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_subgroup_size_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1669,7 +1682,7 @@ bool check_VK_EXT_subgroup_size_control(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_KHR_fragment_shading_rate(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1681,7 +1694,7 @@ bool check_VK_KHR_fragment_shading_rate(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_create_renderpass2),VK_VERSION_1_2
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_create_renderpass2")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_AMD_shader_core_properties2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1705,12 +1718,12 @@ bool check_VK_AMD_device_coherent_memory(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_dynamic_rendering_local_read(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1719,7 +1732,7 @@ bool check_VK_KHR_dynamic_rendering_local_read(const tcu::UVec2& v, const ExtPro
 		return true;
 
 	// depends attribute in xml: VK_KHR_dynamic_rendering,VK_VERSION_1_3
-	return (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering"));
+	return (isSupported(vDEP, "VK_KHR_dynamic_rendering") || isCompatible(1, 3, v));
 }
 
 bool check_VK_EXT_shader_image_atomic_int64(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1731,7 +1744,7 @@ bool check_VK_EXT_shader_image_atomic_int64(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_quad_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1743,12 +1756,12 @@ bool check_VK_KHR_shader_quad_control(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: ((VK_VERSION_1_1+VK_KHR_vulkan_memory_model),VK_VERSION_1_2)+VK_KHR_shader_maximal_reconvergence
-	return ((isCompatibile(1, 1, v) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_vulkan_memory_model")))) && isSupported(vDEP, "VK_KHR_shader_maximal_reconvergence");
+	return (((isCompatible(1, 1, v) && isSupported(vDEP, "VK_KHR_vulkan_memory_model")) || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_shader_maximal_reconvergence"));
 }
 
 bool check_VK_KHR_spirv_1_4(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1757,7 +1770,7 @@ bool check_VK_KHR_spirv_1_4(const tcu::UVec2& v, const ExtPropVect& vIEP, const 
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1+VK_KHR_shader_float_controls
-	return isCompatibile(1, 1, v) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_shader_float_controls"));
+	return (isCompatible(1, 1, v) && (isCompatible(1, 2, v) || isSupported(vDEP, "VK_KHR_shader_float_controls")));
 }
 
 bool check_VK_EXT_memory_budget(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1769,7 +1782,7 @@ bool check_VK_EXT_memory_budget(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_memory_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1781,7 +1794,7 @@ bool check_VK_EXT_memory_priority(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_dedicated_allocation_image_aliasing(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1793,12 +1806,12 @@ bool check_VK_NV_dedicated_allocation_image_aliasing(const tcu::UVec2& v, const 
 		return true;
 
 	// depends attribute in xml: (VK_KHR_dedicated_allocation+VK_KHR_get_physical_device_properties2),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_dedicated_allocation")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return ((isSupported(vDEP, "VK_KHR_dedicated_allocation") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_separate_depth_stencil_layouts(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1807,7 +1820,7 @@ bool check_VK_KHR_separate_depth_stencil_layouts(const tcu::UVec2& v, const ExtP
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_create_renderpass2),VK_VERSION_1_2
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_create_renderpass2")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_EXT_buffer_device_address(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1819,7 +1832,7 @@ bool check_VK_EXT_buffer_device_address(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_present_wait(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1831,7 +1844,7 @@ bool check_VK_KHR_present_wait(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_present_id
-	return isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_KHR_present_id");
+	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_KHR_present_id"));
 }
 
 bool check_VK_NV_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1843,7 +1856,7 @@ bool check_VK_NV_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_coverage_reduction_mode(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1855,7 +1868,7 @@ bool check_VK_NV_coverage_reduction_mode(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_NV_framebuffer_mixed_samples+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return isSupported(vDEP, "VK_NV_framebuffer_mixed_samples") && ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return (isSupported(vDEP, "VK_NV_framebuffer_mixed_samples") && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_EXT_fragment_shader_interlock(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1867,7 +1880,7 @@ bool check_VK_EXT_fragment_shader_interlock(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_ycbcr_image_arrays(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1879,12 +1892,12 @@ bool check_VK_EXT_ycbcr_image_arrays(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_sampler_ycbcr_conversion,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion"));
+	return (isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_uniform_buffer_standard_layout(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1893,7 +1906,7 @@ bool check_VK_KHR_uniform_buffer_standard_layout(const tcu::UVec2& v, const ExtP
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_provoking_vertex(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1905,7 +1918,7 @@ bool check_VK_EXT_provoking_vertex(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_full_screen_exclusive(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1917,12 +1930,12 @@ bool check_VK_EXT_full_screen_exclusive(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_surface+VK_KHR_get_surface_capabilities2+VK_KHR_swapchain
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vIEP, "VK_KHR_surface") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_swapchain");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vIEP, "VK_KHR_surface") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_swapchain"));
 }
 
 bool check_VK_KHR_buffer_device_address(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1931,7 +1944,7 @@ bool check_VK_KHR_buffer_device_address(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_device_group),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_device_group")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_device_group")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1943,7 +1956,7 @@ bool check_VK_EXT_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_shader_atomic_float(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1955,12 +1968,12 @@ bool check_VK_EXT_shader_atomic_float(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_host_query_reset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 2, v))
+	if (isCompatible(1, 2, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1969,7 +1982,7 @@ bool check_VK_EXT_host_query_reset(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -1981,12 +1994,12 @@ bool check_VK_EXT_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_extended_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -1995,7 +2008,7 @@ bool check_VK_EXT_extended_dynamic_state(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_pipeline_executable_properties(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2007,12 +2020,12 @@ bool check_VK_KHR_pipeline_executable_properties(const tcu::UVec2& v, const ExtP
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_host_image_copy(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2021,7 +2034,7 @@ bool check_VK_EXT_host_image_copy(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_copy_commands2+VK_KHR_format_feature_flags2),VK_VERSION_1_3
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_copy_commands2")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_format_feature_flags2")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_copy_commands2") && isSupported(vDEP, "VK_KHR_format_feature_flags2")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_EXT_map_memory_placed(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2033,7 +2046,7 @@ bool check_VK_EXT_map_memory_placed(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_map_memory2,VK_VERSION_1_4
-	return (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_map_memory2"));
+	return (isSupported(vDEP, "VK_KHR_map_memory2") || isCompatible(1, 4, v));
 }
 
 bool check_VK_EXT_shader_atomic_float2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2057,12 +2070,12 @@ bool check_VK_EXT_swapchain_maintenance1(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_EXT_surface_maintenance1+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_EXT_surface_maintenance1") && ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_EXT_surface_maintenance1") && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_EXT_shader_demote_to_helper_invocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2071,7 +2084,7 @@ bool check_VK_EXT_shader_demote_to_helper_invocation(const tcu::UVec2& v, const 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_device_generated_commands(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2083,7 +2096,7 @@ bool check_VK_NV_device_generated_commands(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: (VK_VERSION_1_1+VK_KHR_buffer_device_address),VK_VERSION_1_2
-	return (isCompatibile(1, 1, v) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")));
+	return ((isCompatible(1, 1, v) && isSupported(vDEP, "VK_KHR_buffer_device_address")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_NV_inherited_viewport_scissor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2095,12 +2108,12 @@ bool check_VK_NV_inherited_viewport_scissor(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_integer_dot_product(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2109,12 +2122,12 @@ bool check_VK_KHR_shader_integer_dot_product(const tcu::UVec2& v, const ExtPropV
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_texel_buffer_alignment(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2123,7 +2136,7 @@ bool check_VK_EXT_texel_buffer_alignment(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_depth_bias_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2135,7 +2148,7 @@ bool check_VK_EXT_depth_bias_control(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_device_memory_report(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2147,7 +2160,7 @@ bool check_VK_EXT_device_memory_report(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_robustness2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2159,7 +2172,7 @@ bool check_VK_EXT_robustness2(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_custom_border_color(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2171,7 +2184,7 @@ bool check_VK_EXT_custom_border_color(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_present_barrier(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2183,7 +2196,7 @@ bool check_VK_NV_present_barrier(const tcu::UVec2& v, const ExtPropVect& vIEP, c
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_surface+VK_KHR_get_surface_capabilities2+VK_KHR_swapchain
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vIEP, "VK_KHR_surface") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_swapchain");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vIEP, "VK_KHR_surface") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_swapchain"));
 }
 
 bool check_VK_KHR_present_id(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2195,12 +2208,12 @@ bool check_VK_KHR_present_id(const tcu::UVec2& v, const ExtPropVect& vIEP, const
 		return true;
 
 	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return isSupported(vDEP, "VK_KHR_swapchain") && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return ((isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_private_data(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2209,12 +2222,12 @@ bool check_VK_EXT_private_data(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_pipeline_creation_cache_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2223,7 +2236,7 @@ bool check_VK_EXT_pipeline_creation_cache_control(const tcu::UVec2& v, const Ext
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_video_encode_queue(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2235,7 +2248,7 @@ bool check_VK_KHR_video_encode_queue(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_video_queue+(VK_KHR_synchronization2,VK_VERSION_1_3)
-	return isSupported(vDEP, "VK_KHR_video_queue") && ((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (isSupported(vDEP, "VK_KHR_video_queue") && (isSupported(vDEP, "VK_KHR_synchronization2") || isCompatible(1, 3, v)));
 }
 
 bool check_VK_NV_device_diagnostics_config(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2247,7 +2260,7 @@ bool check_VK_NV_device_diagnostics_config(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_QCOM_tile_shading(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2259,12 +2272,12 @@ bool check_VK_QCOM_tile_shading(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 		return true;
 
 	// depends attribute in xml: VK_QCOM_tile_properties,VK_KHR_get_physical_device_properties2
-	return isSupported(vDEP, "VK_QCOM_tile_properties") || (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vDEP, "VK_QCOM_tile_properties") || (isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
 }
 
 bool check_VK_KHR_synchronization2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2273,7 +2286,7 @@ bool check_VK_KHR_synchronization2(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_descriptor_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2285,7 +2298,7 @@ bool check_VK_EXT_descriptor_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: ((((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_buffer_device_address+VK_EXT_descriptor_indexing),VK_VERSION_1_2)+VK_KHR_synchronization2),VK_VERSION_1_3
-	return (((((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_EXT_descriptor_indexing")))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (((((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_buffer_device_address") && isSupported(vDEP, "VK_EXT_descriptor_indexing")) || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_synchronization2")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_EXT_graphics_pipeline_library(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2297,7 +2310,7 @@ bool check_VK_EXT_graphics_pipeline_library(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_pipeline_library
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_KHR_pipeline_library");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_pipeline_library"));
 }
 
 bool check_VK_AMD_shader_early_and_late_fragment_tests(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2309,7 +2322,7 @@ bool check_VK_AMD_shader_early_and_late_fragment_tests(const tcu::UVec2& v, cons
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_fragment_shader_barycentric(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2321,7 +2334,7 @@ bool check_VK_KHR_fragment_shader_barycentric(const tcu::UVec2& v, const ExtProp
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_subgroup_uniform_control_flow(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2333,12 +2346,12 @@ bool check_VK_KHR_shader_subgroup_uniform_control_flow(const tcu::UVec2& v, cons
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_KHR_zero_initialize_workgroup_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2347,7 +2360,7 @@ bool check_VK_KHR_zero_initialize_workgroup_memory(const tcu::UVec2& v, const Ex
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_fragment_shading_rate_enums(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2383,12 +2396,12 @@ bool check_VK_EXT_mesh_shader(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 		return true;
 
 	// depends attribute in xml: VK_KHR_spirv_1_4,VK_VERSION_1_2
-	return (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_spirv_1_4"));
+	return (isSupported(vDEP, "VK_KHR_spirv_1_4") || isCompatible(1, 2, v));
 }
 
 bool check_VK_EXT_ycbcr_2plane_444_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2397,7 +2410,7 @@ bool check_VK_EXT_ycbcr_2plane_444_formats(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_sampler_ycbcr_conversion,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion"));
+	return (isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_fragment_density_map2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2421,12 +2434,12 @@ bool check_VK_QCOM_rotated_copy_commands(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_copy_commands2,VK_VERSION_1_3
-	return (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_copy_commands2"));
+	return (isSupported(vDEP, "VK_KHR_copy_commands2") || isCompatible(1, 3, v));
 }
 
 bool check_VK_EXT_image_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2435,7 +2448,7 @@ bool check_VK_EXT_image_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_workgroup_memory_explicit_layout(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2447,12 +2460,12 @@ bool check_VK_KHR_workgroup_memory_explicit_layout(const tcu::UVec2& v, const Ex
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_copy_commands2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2461,7 +2474,7 @@ bool check_VK_KHR_copy_commands2(const tcu::UVec2& v, const ExtPropVect& vIEP, c
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_image_compression_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2473,7 +2486,7 @@ bool check_VK_EXT_image_compression_control(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_attachment_feedback_loop_layout(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2485,12 +2498,12 @@ bool check_VK_EXT_attachment_feedback_loop_layout(const tcu::UVec2& v, const Ext
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_4444_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2499,7 +2512,7 @@ bool check_VK_EXT_4444_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_device_fault(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2511,7 +2524,7 @@ bool check_VK_EXT_device_fault(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_ARM_rasterization_order_attachment_access(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2523,7 +2536,7 @@ bool check_VK_ARM_rasterization_order_attachment_access(const tcu::UVec2& v, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_rgba10x6_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2535,7 +2548,7 @@ bool check_VK_EXT_rgba10x6_formats(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_sampler_ycbcr_conversion,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion"));
+	return (isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_acquire_winrt_display(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2559,7 +2572,7 @@ bool check_VK_VALVE_mutable_descriptor_type(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_maintenance3
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
+	return (isCompatible(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
 }
 
 bool check_VK_EXT_vertex_input_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2571,7 +2584,7 @@ bool check_VK_EXT_vertex_input_dynamic_state(const tcu::UVec2& v, const ExtPropV
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_physical_device_drm(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2583,7 +2596,7 @@ bool check_VK_EXT_physical_device_drm(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_device_address_binding_report(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2595,7 +2608,7 @@ bool check_VK_EXT_device_address_binding_report(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_EXT_debug_utils
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vIEP, "VK_EXT_debug_utils");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vIEP, "VK_EXT_debug_utils"));
 }
 
 bool check_VK_EXT_depth_clip_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2607,7 +2620,7 @@ bool check_VK_EXT_depth_clip_control(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_primitive_topology_list_restart(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2619,12 +2632,12 @@ bool check_VK_EXT_primitive_topology_list_restart(const tcu::UVec2& v, const Ext
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2633,7 +2646,7 @@ bool check_VK_KHR_format_feature_flags2(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_present_mode_fifo_latest_ready(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2657,7 +2670,7 @@ bool check_VK_FUCHSIA_external_memory(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: (VK_KHR_external_memory_capabilities+VK_KHR_external_memory),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_external_memory_capabilities")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory")));
+	return ((isSupported(vIEP, "VK_KHR_external_memory_capabilities") && isSupported(vDEP, "VK_KHR_external_memory")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_FUCHSIA_external_semaphore(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2669,7 +2682,7 @@ bool check_VK_FUCHSIA_external_semaphore(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_semaphore_capabilities+VK_KHR_external_semaphore
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_external_semaphore_capabilities")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_semaphore"));
+	return ((isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_external_semaphore_capabilities")) && (isCompatible(1, 1, v) || isSupported(vDEP, "VK_KHR_external_semaphore")));
 }
 
 bool check_VK_FUCHSIA_buffer_collection(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2681,7 +2694,7 @@ bool check_VK_FUCHSIA_buffer_collection(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_FUCHSIA_external_memory+(VK_KHR_sampler_ycbcr_conversion,VK_VERSION_1_1)
-	return isSupported(vDEP, "VK_FUCHSIA_external_memory") && ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion")));
+	return (isSupported(vDEP, "VK_FUCHSIA_external_memory") && (isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_HUAWEI_subpass_shading(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2693,7 +2706,7 @@ bool check_VK_HUAWEI_subpass_shading(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_create_renderpass2,VK_VERSION_1_2)+VK_KHR_synchronization2),VK_VERSION_1_3
-	return (((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (((isSupported(vDEP, "VK_KHR_create_renderpass2") || isCompatible(1, 2, v)) && isSupported(vDEP, "VK_KHR_synchronization2")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_HUAWEI_invocation_mask(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2705,7 +2718,7 @@ bool check_VK_HUAWEI_invocation_mask(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_ray_tracing_pipeline+(VK_KHR_synchronization2,VK_VERSION_1_3)
-	return isSupported(vDEP, "VK_KHR_ray_tracing_pipeline") && ((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (isSupported(vDEP, "VK_KHR_ray_tracing_pipeline") && (isSupported(vDEP, "VK_KHR_synchronization2") || isCompatible(1, 3, v)));
 }
 
 bool check_VK_NV_external_memory_rdma(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2717,7 +2730,7 @@ bool check_VK_NV_external_memory_rdma(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_pipeline_properties(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2729,7 +2742,7 @@ bool check_VK_EXT_pipeline_properties(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_multisampled_render_to_single_sampled(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2741,12 +2754,12 @@ bool check_VK_EXT_multisampled_render_to_single_sampled(const tcu::UVec2& v, con
 		return true;
 
 	// depends attribute in xml: (VK_KHR_create_renderpass2+VK_KHR_depth_stencil_resolve),VK_VERSION_1_2
-	return ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2")) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_depth_stencil_resolve")));
+	return ((isSupported(vDEP, "VK_KHR_create_renderpass2") && isSupported(vDEP, "VK_KHR_depth_stencil_resolve")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_EXT_extended_dynamic_state2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2755,7 +2768,7 @@ bool check_VK_EXT_extended_dynamic_state2(const tcu::UVec2& v, const ExtPropVect
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_color_write_enable(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2767,7 +2780,7 @@ bool check_VK_EXT_color_write_enable(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_primitives_generated_query(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2803,7 +2816,7 @@ bool check_VK_EXT_global_priority_query(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_EXT_global_priority+(VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)
-	return (isSupported(vDEP, "VK_EXT_global_priority") || isSupported(vDEP, "VK_EXT_global_priority")) && ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return ((isSupported(vDEP, "VK_EXT_global_priority") || isSupported(vDEP, "VK_EXT_global_priority")) && (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)));
 }
 
 bool check_VK_EXT_image_view_min_lod(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2815,7 +2828,7 @@ bool check_VK_EXT_image_view_min_lod(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_multi_draw(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2827,7 +2840,7 @@ bool check_VK_EXT_multi_draw(const tcu::UVec2& v, const ExtPropVect& vIEP, const
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_image_2d_view_of_3d(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2839,7 +2852,7 @@ bool check_VK_EXT_image_2d_view_of_3d(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: (VK_KHR_maintenance1+VK_KHR_get_physical_device_properties2),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance1")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return ((isSupported(vDEP, "VK_KHR_maintenance1") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_shader_tile_image(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2851,7 +2864,7 @@ bool check_VK_EXT_shader_tile_image(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_3
-	return isCompatibile(1, 3, v);
+	return isCompatible(1, 3, v);
 }
 
 bool check_VK_EXT_opacity_micromap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2863,7 +2876,7 @@ bool check_VK_EXT_opacity_micromap(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_acceleration_structure+(VK_KHR_synchronization2,VK_VERSION_1_3)
-	return isSupported(vDEP, "VK_KHR_acceleration_structure") && ((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (isSupported(vDEP, "VK_KHR_acceleration_structure") && (isSupported(vDEP, "VK_KHR_synchronization2") || isCompatible(1, 3, v)));
 }
 
 bool check_VK_NV_displacement_micromap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2887,7 +2900,7 @@ bool check_VK_HUAWEI_cluster_culling_shader(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_border_color_swizzle(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2916,7 +2929,7 @@ bool check_VK_EXT_pageable_device_local_memory(const tcu::UVec2& v, const ExtPro
 
 bool check_VK_KHR_maintenance4(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 3, v))
+	if (isCompatible(1, 3, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -2925,7 +2938,7 @@ bool check_VK_KHR_maintenance4(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_ARM_shader_core_properties(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2937,7 +2950,7 @@ bool check_VK_ARM_shader_core_properties(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_ARM_scheduling_controls(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2961,7 +2974,7 @@ bool check_VK_EXT_image_sliced_view_of_3d(const tcu::UVec2& v, const ExtPropVect
 		return true;
 
 	// depends attribute in xml: (VK_KHR_maintenance1+VK_KHR_get_physical_device_properties2),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance1")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return ((isSupported(vDEP, "VK_KHR_maintenance1") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_VALVE_descriptor_set_host_mapping(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2973,7 +2986,7 @@ bool check_VK_VALVE_descriptor_set_host_mapping(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_depth_clamp_zero_one(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2985,7 +2998,7 @@ bool check_VK_EXT_depth_clamp_zero_one(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_non_seamless_cube_map(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -2997,7 +3010,7 @@ bool check_VK_EXT_non_seamless_cube_map(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_ARM_render_pass_striped(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3009,7 +3022,7 @@ bool check_VK_ARM_render_pass_striped(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_synchronization2),VK_VERSION_1_3
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_synchronization2")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_QCOM_fragment_density_map_offset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3021,7 +3034,7 @@ bool check_VK_QCOM_fragment_density_map_offset(const tcu::UVec2& v, const ExtPro
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_EXT_fragment_density_map
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_EXT_fragment_density_map");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_fragment_density_map"));
 }
 
 bool check_VK_NV_copy_memory_indirect(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3033,7 +3046,7 @@ bool check_VK_NV_copy_memory_indirect(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_buffer_device_address),VK_VERSION_1_2
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_buffer_device_address")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_NV_memory_decompression(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3045,7 +3058,7 @@ bool check_VK_NV_memory_decompression(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_buffer_device_address),VK_VERSION_1_2
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_buffer_device_address")) || isCompatible(1, 2, v));
 }
 
 bool check_VK_NV_device_generated_commands_compute(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3081,7 +3094,7 @@ bool check_VK_NV_linear_color_attachment(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_maximal_reconvergence(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3093,7 +3106,7 @@ bool check_VK_KHR_shader_maximal_reconvergence(const tcu::UVec2& v, const ExtPro
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_EXT_image_compression_control_swapchain(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3117,7 +3130,7 @@ bool check_VK_QCOM_image_processing(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: VK_KHR_format_feature_flags2,VK_VERSION_1_3
-	return (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_format_feature_flags2"));
+	return (isSupported(vDEP, "VK_KHR_format_feature_flags2") || isCompatible(1, 3, v));
 }
 
 bool check_VK_EXT_nested_command_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3129,7 +3142,7 @@ bool check_VK_EXT_nested_command_buffer(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_external_memory_acquire_unmodified(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3141,7 +3154,7 @@ bool check_VK_EXT_external_memory_acquire_unmodified(const tcu::UVec2& v, const 
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_extended_dynamic_state3(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3153,7 +3166,7 @@ bool check_VK_EXT_extended_dynamic_state3(const tcu::UVec2& v, const ExtPropVect
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_subpass_merge_feedback(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3165,7 +3178,19 @@ bool check_VK_EXT_subpass_merge_feedback(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_ARM_tensors(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_tensors"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_3
+	return isCompatible(1, 3, v);
 }
 
 bool check_VK_EXT_shader_module_identifier(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3177,7 +3202,7 @@ bool check_VK_EXT_shader_module_identifier(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_EXT_pipeline_creation_cache_control),VK_VERSION_1_3
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_EXT_pipeline_creation_cache_control")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_pipeline_creation_cache_control")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_EXT_rasterization_order_attachment_access(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3189,7 +3214,7 @@ bool check_VK_EXT_rasterization_order_attachment_access(const tcu::UVec2& v, con
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_optical_flow(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3201,7 +3226,7 @@ bool check_VK_NV_optical_flow(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_format_feature_flags2+VK_KHR_synchronization2),VK_VERSION_1_3
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_format_feature_flags2")) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_synchronization2")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_format_feature_flags2") && isSupported(vDEP, "VK_KHR_synchronization2")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_EXT_legacy_dithering(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3213,12 +3238,12 @@ bool check_VK_EXT_legacy_dithering(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_pipeline_protected_access(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3227,7 +3252,7 @@ bool check_VK_EXT_pipeline_protected_access(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_ANDROID_external_format_resolve(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3244,7 +3269,7 @@ bool check_VK_ANDROID_external_format_resolve(const tcu::UVec2& v, const ExtProp
 
 bool check_VK_KHR_maintenance5(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3253,7 +3278,31 @@ bool check_VK_KHR_maintenance5(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: (VK_VERSION_1_1+VK_KHR_dynamic_rendering),VK_VERSION_1_3
-	return (isCompatibile(1, 1, v) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
+	return ((isCompatible(1, 1, v) && isSupported(vDEP, "VK_KHR_dynamic_rendering")) || isCompatible(1, 3, v));
+}
+
+bool check_VK_KHR_present_id2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_present_id2"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_surface_capabilities2+VK_KHR_surface+VK_KHR_swapchain
+	return (isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vIEP, "VK_KHR_surface") && isSupported(vDEP, "VK_KHR_swapchain"));
+}
+
+bool check_VK_KHR_present_wait2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_present_wait2"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_surface_capabilities2+VK_KHR_surface+VK_KHR_swapchain+VK_KHR_present_id2
+	return (isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vIEP, "VK_KHR_surface") && isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_KHR_present_id2"));
 }
 
 bool check_VK_KHR_ray_tracing_position_fetch(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3277,7 +3326,7 @@ bool check_VK_EXT_shader_object(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_dynamic_rendering),VK_VERSION_1_3
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_dynamic_rendering")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_KHR_pipeline_binary(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3289,7 +3338,7 @@ bool check_VK_KHR_pipeline_binary(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_maintenance5,VK_VERSION_1_4
-	return (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5"));
+	return (isSupported(vDEP, "VK_KHR_maintenance5") || isCompatible(1, 4, v));
 }
 
 bool check_VK_QCOM_tile_properties(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3301,7 +3350,7 @@ bool check_VK_QCOM_tile_properties(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_SEC_amigo_profiling(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3313,7 +3362,7 @@ bool check_VK_SEC_amigo_profiling(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_QCOM_multiview_per_view_viewports(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3325,7 +3374,7 @@ bool check_VK_QCOM_multiview_per_view_viewports(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_NV_ray_tracing_invocation_reorder(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3349,7 +3398,7 @@ bool check_VK_EXT_mutable_descriptor_type(const tcu::UVec2& v, const ExtPropVect
 		return true;
 
 	// depends attribute in xml: VK_KHR_maintenance3,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
+	return (isSupported(vDEP, "VK_KHR_maintenance3") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_legacy_vertex_attributes(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3373,7 +3422,7 @@ bool check_VK_ARM_shader_core_builtins(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_pipeline_library_group_handles(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3385,7 +3434,7 @@ bool check_VK_EXT_pipeline_library_group_handles(const tcu::UVec2& v, const ExtP
 		return true;
 
 	// depends attribute in xml: VK_KHR_ray_tracing_pipeline+VK_KHR_pipeline_library
-	return isSupported(vDEP, "VK_KHR_ray_tracing_pipeline") && isSupported(vDEP, "VK_KHR_pipeline_library");
+	return (isSupported(vDEP, "VK_KHR_ray_tracing_pipeline") && isSupported(vDEP, "VK_KHR_pipeline_library"));
 }
 
 bool check_VK_EXT_dynamic_rendering_unused_attachments(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3397,7 +3446,7 @@ bool check_VK_EXT_dynamic_rendering_unused_attachments(const tcu::UVec2& v, cons
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_dynamic_rendering),VK_VERSION_1_3
-	return (((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
+	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_dynamic_rendering")) || isCompatible(1, 3, v));
 }
 
 bool check_VK_NV_low_latency2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3408,8 +3457,8 @@ bool check_VK_NV_low_latency2(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 	if (!isSupported(vDEP, "VK_NV_low_latency2"))
 		return true;
 
-	// depends attribute in xml: VK_VERSION_1_2,VK_KHR_timeline_semaphore
-	return isCompatibile(1, 2, v) || (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_timeline_semaphore"));
+	// depends attribute in xml: (VK_VERSION_1_2,VK_KHR_timeline_semaphore)+(VK_KHR_present_id,VK_KHR_present_id2)
+	return ((isCompatible(1, 2, v) || isSupported(vDEP, "VK_KHR_timeline_semaphore")) && (isSupported(vDEP, "VK_KHR_present_id") || isSupported(vDEP, "VK_KHR_present_id2")));
 }
 
 bool check_VK_KHR_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3421,7 +3470,7 @@ bool check_VK_KHR_cooperative_matrix(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_compute_shader_derivatives(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3433,7 +3482,7 @@ bool check_VK_KHR_compute_shader_derivatives(const tcu::UVec2& v, const ExtPropV
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_video_decode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3460,6 +3509,18 @@ bool check_VK_KHR_video_encode_av1(const tcu::UVec2& v, const ExtPropVect& vIEP,
 	return isSupported(vDEP, "VK_KHR_video_encode_queue");
 }
 
+bool check_VK_KHR_video_decode_vp9(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_video_decode_vp9"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_decode_queue
+	return isSupported(vDEP, "VK_KHR_video_decode_queue");
+}
+
 bool check_VK_KHR_video_maintenance1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3481,7 +3542,7 @@ bool check_VK_NV_per_stage_descriptor_set(const tcu::UVec2& v, const ExtPropVect
 		return true;
 
 	// depends attribute in xml: VK_KHR_maintenance6,VK_VERSION_1_4
-	return (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance6"));
+	return (isSupported(vDEP, "VK_KHR_maintenance6") || isCompatible(1, 4, v));
 }
 
 bool check_VK_QCOM_image_processing2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3517,7 +3578,7 @@ bool check_VK_QCOM_filter_cubic_clamp(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: (VK_EXT_filter_cubic)+(VK_VERSION_1_2,VK_EXT_sampler_filter_minmax)
-	return (isSupported(vDEP, "VK_EXT_filter_cubic")) && (isCompatibile(1, 2, v) || (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_EXT_sampler_filter_minmax")));
+	return (isSupported(vDEP, "VK_EXT_filter_cubic") && (isCompatible(1, 2, v) || isSupported(vDEP, "VK_EXT_sampler_filter_minmax")));
 }
 
 bool check_VK_EXT_attachment_feedback_loop_dynamic_state(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3529,12 +3590,12 @@ bool check_VK_EXT_attachment_feedback_loop_dynamic_state(const tcu::UVec2& v, co
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_EXT_attachment_feedback_loop_layout
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_EXT_attachment_feedback_loop_layout");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_attachment_feedback_loop_layout"));
 }
 
 bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3543,12 +3604,12 @@ bool check_VK_KHR_vertex_attribute_divisor(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_float_controls2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3557,7 +3618,7 @@ bool check_VK_KHR_shader_float_controls2(const tcu::UVec2& v, const ExtPropVect&
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1+VK_KHR_shader_float_controls
-	return isCompatibile(1, 1, v) && (isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_shader_float_controls"));
+	return (isCompatible(1, 1, v) && (isCompatible(1, 2, v) || isSupported(vDEP, "VK_KHR_shader_float_controls")));
 }
 
 bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3569,7 +3630,7 @@ bool check_VK_QNX_external_memory_screen_buffer(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_sampler_ycbcr_conversion+VK_KHR_external_memory+VK_KHR_dedicated_allocation),VK_VERSION_1_1)+VK_EXT_queue_family_foreign
-	return (((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory")) && (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_dedicated_allocation")))) && isSupported(vDEP, "VK_EXT_queue_family_foreign");
+	return (((isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") && isSupported(vDEP, "VK_KHR_external_memory") && isSupported(vDEP, "VK_KHR_dedicated_allocation")) || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_queue_family_foreign"));
 }
 
 bool check_VK_MSFT_layered_driver(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3581,12 +3642,12 @@ bool check_VK_MSFT_layered_driver(const tcu::UVec2& v, const ExtPropVect& vIEP, 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3595,12 +3656,12 @@ bool check_VK_KHR_index_type_uint8(const tcu::UVec2& v, const ExtPropVect& vIEP,
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3609,7 +3670,7 @@ bool check_VK_KHR_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIE
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3621,12 +3682,12 @@ bool check_VK_KHR_calibrated_timestamps(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_shader_expect_assume(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3635,12 +3696,12 @@ bool check_VK_KHR_shader_expect_assume(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_maintenance6(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
-	if (isCompatibile(1, 4, v))
+	if (isCompatible(1, 4, v))
 		return true;
 
 	DE_UNREF(vIEP);
@@ -3649,7 +3710,7 @@ bool check_VK_KHR_maintenance6(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_NV_descriptor_pool_overallocation(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3661,7 +3722,7 @@ bool check_VK_NV_descriptor_pool_overallocation(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_QCOM_tile_memory_heap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3673,7 +3734,7 @@ bool check_VK_QCOM_tile_memory_heap(const tcu::UVec2& v, const ExtPropVect& vIEP
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_memory_requirements2+VK_KHR_get_physical_device_properties2),VK_VERSION_1_1
-	return ((isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_get_memory_requirements2")) && (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")));
+	return ((isSupported(vDEP, "VK_KHR_get_memory_requirements2") && isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_video_encode_quantization_map(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3685,7 +3746,7 @@ bool check_VK_KHR_video_encode_quantization_map(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: VK_KHR_video_encode_queue+(VK_KHR_format_feature_flags2,VK_VERSION_1_3)
-	return isSupported(vDEP, "VK_KHR_video_encode_queue") && ((isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_format_feature_flags2")));
+	return (isSupported(vDEP, "VK_KHR_video_encode_queue") && (isSupported(vDEP, "VK_KHR_format_feature_flags2") || isCompatible(1, 3, v)));
 }
 
 bool check_VK_KHR_maintenance7(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3697,7 +3758,7 @@ bool check_VK_KHR_maintenance7(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_NV_cluster_acceleration_structure(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3733,7 +3794,7 @@ bool check_VK_EXT_device_generated_commands(const tcu::UVec2& v, const ExtPropVe
 		return true;
 
 	// depends attribute in xml: ((VK_KHR_buffer_device_address,VK_VERSION_1_2)+VK_KHR_maintenance5),VK_VERSION_1_3
-	return (((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_buffer_device_address"))) && (isCompatibile(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")));
+	return (((isSupported(vDEP, "VK_KHR_buffer_device_address") || isCompatible(1, 2, v)) && (isCompatible(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5"))) || isCompatible(1, 3, v));
 }
 
 bool check_VK_KHR_maintenance8(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3745,7 +3806,7 @@ bool check_VK_KHR_maintenance8(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: VK_VERSION_1_1
-	return isCompatibile(1, 1, v);
+	return isCompatible(1, 1, v);
 }
 
 bool check_VK_MESA_image_alignment_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3757,7 +3818,7 @@ bool check_VK_MESA_image_alignment_control(const tcu::UVec2& v, const ExtPropVec
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_depth_clamp_control(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3769,7 +3830,19 @@ bool check_VK_EXT_depth_clamp_control(const tcu::UVec2& v, const ExtPropVect& vI
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_KHR_maintenance9(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_maintenance9"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_video_maintenance2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3793,7 +3866,7 @@ bool check_VK_HUAWEI_hdr_vivid(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_KHR_swapchain+VK_EXT_hdr_metadata
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_EXT_hdr_metadata");
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_EXT_hdr_metadata"));
 }
 
 bool check_VK_NV_cooperative_matrix2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3829,7 +3902,7 @@ bool check_VK_EXT_external_memory_metal(const tcu::UVec2& v, const ExtPropVect& 
 		return true;
 
 	// depends attribute in xml: VK_KHR_external_memory,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vDEP, "VK_KHR_external_memory"));
+	return (isSupported(vDEP, "VK_KHR_external_memory") || isCompatible(1, 1, v));
 }
 
 bool check_VK_KHR_depth_clamp_zero_one(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3841,7 +3914,7 @@ bool check_VK_KHR_depth_clamp_zero_one(const tcu::UVec2& v, const ExtPropVect& v
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3853,7 +3926,19 @@ bool check_VK_EXT_vertex_attribute_robustness(const tcu::UVec2& v, const ExtProp
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_VALVE_fragment_density_map_layered(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_VALVE_fragment_density_map_layered"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_maintenance5,VK_VERSION_1_4)+VK_EXT_fragment_density_map
+	return ((isSupported(vDEP, "VK_KHR_maintenance5") || isCompatible(1, 4, v)) && isSupported(vDEP, "VK_EXT_fragment_density_map"));
 }
 
 bool check_VK_KHR_robustness2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3865,7 +3950,7 @@ bool check_VK_KHR_robustness2(const tcu::UVec2& v, const ExtPropVect& vIEP, cons
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 bool check_VK_EXT_fragment_density_map_offset(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3877,7 +3962,7 @@ bool check_VK_EXT_fragment_density_map_offset(const tcu::UVec2& v, const ExtProp
 		return true;
 
 	// depends attribute in xml: (VK_KHR_get_physical_device_properties2,VK_VERSION_1_1)+VK_EXT_fragment_density_map+(VK_KHR_create_renderpass2,VK_VERSION_1_2)+(VK_VERSION_1_3,VK_KHR_dynamic_rendering)
-	return ((isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"))) && isSupported(vDEP, "VK_EXT_fragment_density_map") && ((isCompatibile(1, 2, v) || isSupported(vDEP, "VK_KHR_create_renderpass2"))) && (isCompatibile(1, 3, v) || (isCompatibile(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_fragment_density_map") && (isSupported(vDEP, "VK_KHR_create_renderpass2") || isCompatible(1, 2, v)) && (isCompatible(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering")));
 }
 
 bool check_VK_EXT_zero_initialize_device_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -3889,7 +3974,7 @@ bool check_VK_EXT_zero_initialize_device_memory(const tcu::UVec2& v, const ExtPr
 		return true;
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
-	return (isCompatibile(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
 static const DependencyCheckVect deviceExtensionDependencies
@@ -4116,6 +4201,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_external_memory_acquire_unmodified",				&check_VK_EXT_external_memory_acquire_unmodified),
 	std::make_pair("VK_EXT_extended_dynamic_state3",						&check_VK_EXT_extended_dynamic_state3),
 	std::make_pair("VK_EXT_subpass_merge_feedback",							&check_VK_EXT_subpass_merge_feedback),
+	std::make_pair("VK_ARM_tensors",										&check_VK_ARM_tensors),
 	std::make_pair("VK_EXT_shader_module_identifier",						&check_VK_EXT_shader_module_identifier),
 	std::make_pair("VK_EXT_rasterization_order_attachment_access",			&check_VK_EXT_rasterization_order_attachment_access),
 	std::make_pair("VK_NV_optical_flow",									&check_VK_NV_optical_flow),
@@ -4123,6 +4209,8 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pipeline_protected_access",						&check_VK_EXT_pipeline_protected_access),
 	std::make_pair("VK_ANDROID_external_format_resolve",					&check_VK_ANDROID_external_format_resolve),
 	std::make_pair("VK_KHR_maintenance5",									&check_VK_KHR_maintenance5),
+	std::make_pair("VK_KHR_present_id2",									&check_VK_KHR_present_id2),
+	std::make_pair("VK_KHR_present_wait2",									&check_VK_KHR_present_wait2),
 	std::make_pair("VK_KHR_ray_tracing_position_fetch",						&check_VK_KHR_ray_tracing_position_fetch),
 	std::make_pair("VK_EXT_shader_object",									&check_VK_EXT_shader_object),
 	std::make_pair("VK_KHR_pipeline_binary",								&check_VK_KHR_pipeline_binary),
@@ -4140,6 +4228,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_compute_shader_derivatives",						&check_VK_KHR_compute_shader_derivatives),
 	std::make_pair("VK_KHR_video_decode_av1",								&check_VK_KHR_video_decode_av1),
 	std::make_pair("VK_KHR_video_encode_av1",								&check_VK_KHR_video_encode_av1),
+	std::make_pair("VK_KHR_video_decode_vp9",								&check_VK_KHR_video_decode_vp9),
 	std::make_pair("VK_KHR_video_maintenance1",								&check_VK_KHR_video_maintenance1),
 	std::make_pair("VK_NV_per_stage_descriptor_set",						&check_VK_NV_per_stage_descriptor_set),
 	std::make_pair("VK_QCOM_image_processing2",								&check_VK_QCOM_image_processing2),
@@ -4165,6 +4254,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_maintenance8",									&check_VK_KHR_maintenance8),
 	std::make_pair("VK_MESA_image_alignment_control",						&check_VK_MESA_image_alignment_control),
 	std::make_pair("VK_EXT_depth_clamp_control",							&check_VK_EXT_depth_clamp_control),
+	std::make_pair("VK_KHR_maintenance9",									&check_VK_KHR_maintenance9),
 	std::make_pair("VK_KHR_video_maintenance2",								&check_VK_KHR_video_maintenance2),
 	std::make_pair("VK_HUAWEI_hdr_vivid",									&check_VK_HUAWEI_hdr_vivid),
 	std::make_pair("VK_NV_cooperative_matrix2",								&check_VK_NV_cooperative_matrix2),
@@ -4172,6 +4262,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_external_memory_metal",							&check_VK_EXT_external_memory_metal),
 	std::make_pair("VK_KHR_depth_clamp_zero_one",							&check_VK_KHR_depth_clamp_zero_one),
 	std::make_pair("VK_EXT_vertex_attribute_robustness",					&check_VK_EXT_vertex_attribute_robustness),
+	std::make_pair("VK_VALVE_fragment_density_map_layered",					&check_VK_VALVE_fragment_density_map_layered),
 	std::make_pair("VK_KHR_robustness2",									&check_VK_KHR_robustness2),
 	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
 	std::make_pair("VK_EXT_zero_initialize_device_memory",					&check_VK_EXT_zero_initialize_device_memory),
@@ -4516,6 +4607,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_extended_dynamic_state3"),
 	std::make_tuple(1, 0, "VK_EXT_subpass_merge_feedback"),
 	std::make_tuple(1, 0, "VK_LUNARG_direct_driver_loading"),
+	std::make_tuple(1, 3, "VK_ARM_tensors"),
 	std::make_tuple(1, 0, "VK_EXT_shader_module_identifier"),
 	std::make_tuple(1, 0, "VK_EXT_rasterization_order_attachment_access"),
 	std::make_tuple(1, 0, "VK_NV_optical_flow"),
@@ -4524,6 +4616,8 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ANDROID_external_format_resolve"),
 	std::make_tuple(1, 0, "VK_KHR_maintenance5"),
 	std::make_tuple(1, 0, "VK_AMD_anti_lag"),
+	std::make_tuple(1, 0, "VK_KHR_present_id2"),
+	std::make_tuple(1, 0, "VK_KHR_present_wait2"),
 	std::make_tuple(1, 0, "VK_KHR_ray_tracing_position_fetch"),
 	std::make_tuple(1, 0, "VK_EXT_shader_object"),
 	std::make_tuple(1, 0, "VK_KHR_pipeline_binary"),
@@ -4545,6 +4639,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_compute_shader_derivatives"),
 	std::make_tuple(1, 0, "VK_KHR_video_decode_av1"),
 	std::make_tuple(1, 0, "VK_KHR_video_encode_av1"),
+	std::make_tuple(1, 0, "VK_KHR_video_decode_vp9"),
 	std::make_tuple(1, 0, "VK_KHR_video_maintenance1"),
 	std::make_tuple(1, 1, "VK_NV_per_stage_descriptor_set"),
 	std::make_tuple(1, 0, "VK_QCOM_image_processing2"),
@@ -4554,6 +4649,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_attachment_feedback_loop_dynamic_state"),
 	std::make_tuple(1, 0, "VK_KHR_vertex_attribute_divisor"),
 	std::make_tuple(1, 0, "VK_KHR_load_store_op_none"),
+	std::make_tuple(1, 0, "VK_KHR_unified_image_layouts"),
 	std::make_tuple(1, 1, "VK_KHR_shader_float_controls2"),
 	std::make_tuple(1, 0, "VK_QNX_external_memory_screen_buffer"),
 	std::make_tuple(1, 0, "VK_MSFT_layered_driver"),
@@ -4573,6 +4669,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_KHR_maintenance7"),
 	std::make_tuple(1, 0, "VK_NV_shader_atomic_float16_vector"),
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
+	std::make_tuple(1, 0, "VK_EXT_shader_float8"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_validation"),
 	std::make_tuple(1, 0, "VK_NV_cluster_acceleration_structure"),
 	std::make_tuple(1, 0, "VK_NV_partitioned_acceleration_structure"),
@@ -4581,13 +4678,17 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_MESA_image_alignment_control"),
 	std::make_tuple(1, 0, "VK_KHR_shader_fma"),
 	std::make_tuple(1, 0, "VK_EXT_depth_clamp_control"),
+	std::make_tuple(1, 0, "VK_KHR_maintenance9"),
 	std::make_tuple(1, 0, "VK_KHR_video_maintenance2"),
+	std::make_tuple(1, 0, "VK_OHOS_surface"),
 	std::make_tuple(1, 0, "VK_HUAWEI_hdr_vivid"),
 	std::make_tuple(1, 0, "VK_NV_cooperative_matrix2"),
 	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),
 	std::make_tuple(1, 0, "VK_EXT_external_memory_metal"),
 	std::make_tuple(1, 0, "VK_KHR_depth_clamp_zero_one"),
 	std::make_tuple(1, 0, "VK_EXT_vertex_attribute_robustness"),
+	std::make_tuple(1, 0, "VK_ARM_format_pack"),
+	std::make_tuple(1, 0, "VK_VALVE_fragment_density_map_layered"),
 	std::make_tuple(1, 0, "VK_KHR_robustness2"),
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),

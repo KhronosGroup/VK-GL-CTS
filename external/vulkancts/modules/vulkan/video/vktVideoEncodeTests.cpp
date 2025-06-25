@@ -857,12 +857,15 @@ struct EncodeTestParam
 class TestDefinition
 {
 public:
-    static MovePtr<TestDefinition> create(EncodeTestParam params)
+    static MovePtr<TestDefinition> create(EncodeTestParam params, bool generalLayout)
     {
-        return MovePtr<TestDefinition>(new TestDefinition(params));
+        return MovePtr<TestDefinition>(new TestDefinition(params, generalLayout));
     }
 
-    TestDefinition(EncodeTestParam params) : m_params(params), m_info(clipInfo(params.clip))
+    TestDefinition(EncodeTestParam params, bool generalLayout)
+        : m_params(params)
+        , m_generalLayout(generalLayout)
+        , m_info(clipInfo(params.clip))
     {
         VideoProfileInfo profile = m_info->sessionProfiles[0];
         m_profile = VkVideoCoreProfile(profile.codecOperation, profile.subsamplingFlags, profile.lumaBitDepth,
@@ -872,6 +875,11 @@ public:
     TestType getTestType() const
     {
         return m_params.type;
+    }
+
+    bool usesGeneralLayout() const
+    {
+        return m_generalLayout;
     }
 
     const char *getClipFilename() const
@@ -1137,6 +1145,7 @@ public:
 
 private:
     EncodeTestParam m_params;
+    bool m_generalLayout;
     const ClipInfo *m_info{};
     VkVideoCoreProfile m_profile;
 };
@@ -1310,12 +1319,13 @@ vector<T> createQuantizationPatternImage(VkExtent2D quantizationMapExtent, T lef
 
 void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
                        const VkBuffer &buffer, VkDeviceSize bufferSize, const VkExtent2D &imageSize,
-                       uint32_t arrayLayers, VkImage destImage)
+                       uint32_t arrayLayers, VkImage destImage, bool generalLayout)
 {
     Move<VkCommandPool> cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     Move<VkFence> fence             = createFence(vk, device);
-    VkImageLayout destImageLayout   = VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR;
+    VkImageLayout destImageLayout =
+        generalLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR;
     VkPipelineStageFlags destImageDstStageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     VkAccessFlags finalAccessMask               = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
 
@@ -2100,7 +2110,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
 
         copyBufferToImage(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueue, m_transferQueueFamilyIndex,
                           *quantizationMapBuffer, quantizationMapBufferSize, m_quantizationMapExtent, 1,
-                          quantizationMapImage->get());
+                          quantizationMapImage->get(), m_testDefinition->usesGeneralLayout());
 
         m_quantizationMapImages.push_back(std::move(quantizationMapImage));
         m_quantizationMapImageViews.push_back(std::move(quantizationMapImageView));
@@ -2943,11 +2953,14 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
             InternalError, processor.getNextFrame(&frame) > 0,
             "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
 
-        auto resultImage =
-            getDecodedImageFromContext(deviceContext,
-                                       basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
-                                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
-                                       &frame);
+        VkImageLayout layout;
+        if (m_testDefinition->usesGeneralLayout())
+            layout = VK_IMAGE_LAYOUT_GENERAL;
+        else
+            layout = basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
+                                                            VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
+
+        auto resultImage = getDecodedImageFromContext(deviceContext, layout, &frame);
         de::MovePtr<std::vector<uint8_t>> out =
             vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
 
@@ -3156,6 +3169,15 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
+
+    if (m_testDefinition->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    {
+        context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
+        if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
+        {
+            TCU_THROW(NotSupportedError, "unifiedImageLayoutsVideo");
+        }
+    }
 }
 
 TestInstance *VideoEncodeTestCase::createInstance(Context &context) const
@@ -3178,19 +3200,25 @@ tcu::TestCaseGroup *createVideoEncodeTests(tcu::TestContext &testCtx)
     MovePtr<tcu::TestCaseGroup> h264Group(new tcu::TestCaseGroup(testCtx, "h264", "H.264 video codec"));
     MovePtr<tcu::TestCaseGroup> h265Group(new tcu::TestCaseGroup(testCtx, "h265", "H.265 video codec"));
 
-    for (const auto &encodeTest : g_EncodeTests)
+    for (bool generalLayout : {true, false})
     {
-        auto defn = TestDefinition::create(encodeTest);
+        for (const auto &encodeTest : g_EncodeTests)
+        {
+            auto defn = TestDefinition::create(encodeTest, generalLayout);
 
-        const char *testName = getTestName(defn->getTestType());
-        auto testCodec       = getTestCodec(defn->getTestType());
+            std::string testName = std::string(getTestName(defn->getTestType())) +
+                                   std::string(generalLayout ? "_general_layout" : "_video_layout");
+            auto testCodec = getTestCodec(defn->getTestType());
 
-        if (testCodec == TEST_CODEC_H264)
-            h264Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
-        else if (testCodec == TEST_CODEC_H265)
-            h265Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
-        else
-            TCU_THROW(InternalError, "Unknown Video Codec");
+            if (testCodec == TEST_CODEC_H264)
+                h264Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
+            else if (testCodec == TEST_CODEC_H265)
+                h265Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
+            else
+            {
+                TCU_THROW(InternalError, "Unknown Video Codec");
+            }
+        }
     }
 
     group->addChild(h264Group.release());

@@ -133,6 +133,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, con
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createSurfaceOHOS (VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createDisplayPlaneSurfaceKHR (VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -359,6 +365,18 @@ VKAPI_ATTR VkResult VKAPI_CALL createExternalComputeQueueNV (VkDevice device, co
 {
 	DE_UNREF(pAllocator);
 	VK_NULL_RETURN((*pExternalQueue = allocateHandle<ExternalComputeQueueNV, VkExternalComputeQueueNV>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createTensorARM (VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pTensor = allocateNonDispHandle<TensorARM, VkTensorARM>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createTensorViewARM (VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pView = allocateNonDispHandle<TensorViewARM, VkTensorViewARM>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
@@ -639,6 +657,18 @@ VKAPI_ATTR void VKAPI_CALL destroyExternalComputeQueueNV (VkDevice device, VkExt
 {
 	DE_UNREF(device);
 	freeHandle<ExternalComputeQueueNV, VkExternalComputeQueueNV>(externalQueue, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyTensorARM (VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<TensorARM, VkTensorARM>(tensor, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyTensorViewARM (VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<TensorViewARM, VkTensorViewARM>(tensorView, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
@@ -3917,6 +3947,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getDrmDisplayEXT (VkPhysicalDevice physicalDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL waitForPresent2KHR (VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pPresentWait2Info);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout)
 {
 	DE_UNREF(device);
@@ -4439,9 +4477,10 @@ VKAPI_ATTR void VKAPI_CALL cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer 
 	DE_UNREF(pInfos);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchTileQCOM (VkCommandBuffer commandBuffer)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchTileQCOM (VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo)
 {
 	DE_UNREF(commandBuffer);
+	DE_UNREF(pDispatchTileInfo);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo)
@@ -4461,6 +4500,57 @@ VKAPI_ATTR void VKAPI_CALL getExternalComputeQueueDataNV (VkExternalComputeQueue
 	DE_UNREF(externalQueue);
 	DE_UNREF(params);
 	DE_UNREF(pData);
+}
+
+VKAPI_ATTR void VKAPI_CALL getTensorMemoryRequirementsARM (VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL bindTensorMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(bindInfoCount);
+	DE_UNREF(pBindInfos);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceTensorMemoryRequirementsARM (VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyTensorARM (VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyTensorInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getTensorOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getTensorViewOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalTensorPropertiesARM (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalTensorInfoARM* pExternalTensorInfo, VkExternalTensorPropertiesARM* pExternalTensorProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalTensorInfo);
+	DE_UNREF(pExternalTensorProperties);
 }
 
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
@@ -4488,6 +4578,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,								enumerateDeviceExtensionProperties),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,						getPhysicalDeviceSparseImageFormatProperties),
 	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,											createAndroidSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateSurfaceOHOS,													createSurfaceOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,								getPhysicalDeviceDisplayPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,						getPhysicalDeviceDisplayPlanePropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,								getDisplayPlaneSupportedDisplaysKHR),
@@ -4566,6 +4657,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,					getPhysicalDeviceCooperativeMatrixPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV,	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeVectorPropertiesNV,					getPhysicalDeviceCooperativeVectorPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalTensorPropertiesARM,						getPhysicalDeviceExternalTensorPropertiesARM),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -5018,6 +5110,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSamplerOpaqueCaptureDescriptorDataEXT,					getSamplerOpaqueCaptureDescriptorDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT,	getAccelerationStructureOpaqueCaptureDescriptorDataEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,								setDeviceMemoryPriorityEXT),
+	VK_NULL_FUNC_ENTRY(vkWaitForPresent2KHR,										waitForPresent2KHR),
 	VK_NULL_FUNC_ENTRY(vkWaitForPresentKHR,											waitForPresentKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateBufferCollectionFUCHSIA,								createBufferCollectionFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkSetBufferCollectionBufferConstraintsFUCHSIA,				setBufferCollectionBufferConstraintsFUCHSIA),
@@ -5102,5 +5195,15 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndPerTileExecutionQCOM,								cmdEndPerTileExecutionQCOM),
 	VK_NULL_FUNC_ENTRY(vkCreateExternalComputeQueueNV,								createExternalComputeQueueNV),
 	VK_NULL_FUNC_ENTRY(vkDestroyExternalComputeQueueNV,								destroyExternalComputeQueueNV),
+	VK_NULL_FUNC_ENTRY(vkCreateTensorARM,											createTensorARM),
+	VK_NULL_FUNC_ENTRY(vkDestroyTensorARM,											destroyTensorARM),
+	VK_NULL_FUNC_ENTRY(vkCreateTensorViewARM,										createTensorViewARM),
+	VK_NULL_FUNC_ENTRY(vkDestroyTensorViewARM,										destroyTensorViewARM),
+	VK_NULL_FUNC_ENTRY(vkGetTensorMemoryRequirementsARM,							getTensorMemoryRequirementsARM),
+	VK_NULL_FUNC_ENTRY(vkBindTensorMemoryARM,										bindTensorMemoryARM),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceTensorMemoryRequirementsARM,						getDeviceTensorMemoryRequirementsARM),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyTensorARM,											cmdCopyTensorARM),
+	VK_NULL_FUNC_ENTRY(vkGetTensorOpaqueCaptureDescriptorDataARM,					getTensorOpaqueCaptureDescriptorDataARM),
+	VK_NULL_FUNC_ENTRY(vkGetTensorViewOpaqueCaptureDescriptorDataARM,				getTensorViewOpaqueCaptureDescriptorDataARM),
 };
 

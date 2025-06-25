@@ -35,11 +35,9 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
-#include "vkObjUtil.hpp"
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
-#include "deSTLUtil.hpp"
 
 namespace vkt
 {
@@ -924,7 +922,7 @@ tcu::TestStatus ImageSamplingInstance::iterate(void)
 
     submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-    return verifyImage();
+    return verifyImage(false);
 }
 
 namespace
@@ -1525,7 +1523,7 @@ bool validateResultImage(const TestTexture &texture, const VkImageViewType image
 
 } // namespace
 
-tcu::TestStatus ImageSamplingInstance::verifyImage(void)
+tcu::TestStatus ImageSamplingInstance::verifyImage(const bool useGeneralLayout)
 {
     const VkPhysicalDeviceLimits &limits = m_context.getDeviceProperties().limits;
     // \note Color buffer is used to capture coordinates - not sampled texture values
@@ -1574,12 +1572,19 @@ tcu::TestStatus ImageSamplingInstance::verifyImage(void)
         lookupPrecision.coordBits = tcu::IVec3(17, 17, 17);
         lookupPrecision.uvwBits   = tcu::IVec3(5, 5, 5);
         lookupPrecision.colorMask = m_componentMask;
+
+        tcu::IVec4 formatBitDepth(7); // Approximation for almost all compressed formats that seems to work well.
+        if (!isCompressedFormat(m_imageFormat))
+            formatBitDepth = tcu::getTextureFormatBitDepth(mapVkFormat(m_imageFormat));
+        else if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
+            formatBitDepth = tcu::IVec4(5); // Approximation, seems to work well.
+
         lookupPrecision.colorThreshold =
-            tcu::computeFixedPointThreshold(max((tcu::IVec4(8, 8, 8, 8) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) /
+            tcu::computeFixedPointThreshold(
+                max((min(formatBitDepth, tcu::IVec4(8)) - (isNearestOnly ? 1 : 2)), tcu::IVec4(0))) /
             swizzleScaleBias(lookupScale, m_componentMapping, 1.0f);
 
-        if (m_imageFormat == VK_FORMAT_BC5_UNORM_BLOCK || m_imageFormat == VK_FORMAT_BC5_SNORM_BLOCK)
-            lookupPrecision.colorThreshold = tcu::Vec4(0.06f, 0.06f, 0.06f, 0.06f);
+        // Account for sRGB conversion precision.
         if (tcu::isSRGB(m_texture->getTextureFormat()))
             lookupPrecision.colorThreshold += tcu::Vec4(4.f / 255.f);
 
@@ -1634,7 +1639,8 @@ tcu::TestStatus ImageSamplingInstance::verifyImage(void)
             UniquePtr<tcu::TextureLevel> result(readColorAttachment(
                 m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
                 m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), **m_colorImages[imgNdx],
-                m_colorFormat, m_renderSize));
+                m_colorFormat, m_renderSize,
+                useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
             const tcu::ConstPixelBufferAccess resultAccess = result->getAccess();
             bool compareOk =
                 validateResultImage(*texture, m_imageViewType, subresource, sampler, m_componentMapping, coordAccess,
