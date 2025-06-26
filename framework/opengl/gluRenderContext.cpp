@@ -162,7 +162,9 @@ RenderContext *createRenderContext(tcu::Platform &platform, const tcu::CommandLi
     if (cmdLine.getSurfaceType() == tcu::SURFACETYPE_FBO)
     {
         if (sharedContext)
-            TCU_FAIL("Shared context not implemented for  FBO surface type");
+            throw tcu::NotSupportedError("Shared context not implemented for FBO surface type", DE_NULL, __FILE__,
+                                         __LINE__);
+
         return new FboRenderContext(*factory, config, cmdLine);
     }
     else
