@@ -76,6 +76,8 @@ class DefaultDevice;
 class Context
 {
 public:
+    // Constructor retained for compatibility with legacy code,
+    // only called in createServerVKSC() and VKSC pipeline compiler.
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
             vk::BinaryCollection &progCollection, de::SharedPtr<vk::ResourceInterface> resourceInterface);
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
@@ -206,7 +208,8 @@ public:
 protected:
     tcu::TestContext &m_testCtx;
     const vk::PlatformInterface &m_platformInterface;
-    const de::SharedPtr<const ContextManager> m_contextManager;
+    const de::SharedPtr<const ContextManager> m_contextManagerPtr;
+    const de::WeakPtr<const ContextManager> m_contextManager;
     vk::BinaryCollection &m_progCollection;
 
     de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
@@ -225,6 +228,10 @@ class TestInstance;
 
 class TestCase : public tcu::TestCase
 {
+    friend class ContextManager;
+    de::WeakPtr<const ContextManager> m_contextManager;
+    void setContextManager(de::SharedPtr<const ContextManager>);
+
 public:
     TestCase(tcu::TestContext &testCtx, const std::string &name);
     virtual ~TestCase(void) = default;
@@ -244,6 +251,13 @@ public:
     // instances can be reused or if a new custom instance needs to be created with
     // the capabilities defined in initInstanceCapabilities.
     virtual std::string getInstanceCapabilitiesId() const;
+
+    // Returns the ContextManager on which the currently executing test was run.
+    // ContextManager acts as a Vulkan instance with a physical device and the
+    // currently executing test can use the information contained in it for the
+    // time when the logical device has not been created in methods that do not
+    // have access to Context, such as checkSupport() or delayedInit().
+    de::SharedPtr<const ContextManager> getContextManager() const;
 
     // Override this function if test requires new custom instance.
     // Requirements for the new instance should be recorded to InstCaps.
