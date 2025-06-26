@@ -93,6 +93,8 @@ std::vector<vk::VkSparseImageMemoryRequirements> getDeviceImageSparseMemoryRequi
 
 #ifndef CTS_USES_VULKANSC
 VkMemoryRequirements getTensorMemoryRequirements(const DeviceInterface &vk, VkDevice device, VkTensorARM tensor);
+std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> getDataGraphPipelineSessionBindPointRequirements(
+    const DeviceInterface &vk, VkDevice device, VkDataGraphPipelineSessionARM session);
 #endif // CTS_USES_VULKANSC
 
 std::vector<VkLayerProperties> enumerateInstanceLayerProperties(const PlatformInterface &vkp);

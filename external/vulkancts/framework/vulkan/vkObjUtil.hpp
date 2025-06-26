@@ -40,6 +40,17 @@ struct CommandPoolWithBuffer
     CommandPoolWithBuffer(const DeviceInterface &vkd, const VkDevice device, const uint32_t queueFamilyIndex);
 };
 
+#ifndef CTS_USES_VULKANSC
+
+Move<VkPipeline> makeDataGraphPipeline(const DeviceInterface &vk, const VkDevice device,
+                                       const VkPipelineLayout pipelineLayout,
+                                       const VkPipelineCreateFlags2KHR pipelineFlags, const void *pipelinePNext,
+                                       const VkPipelineCache pipelineCache,
+                                       const VkDataGraphPipelineResourceInfoARM *resourceInfos,
+                                       uint32_t resourceInfoCount);
+
+#endif
+
 Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice device,
                                      const VkPipelineLayout pipelineLayout, const VkPipelineCreateFlags pipelineFlags,
                                      const void *pipelinePNext, const VkShaderModule shaderModule,

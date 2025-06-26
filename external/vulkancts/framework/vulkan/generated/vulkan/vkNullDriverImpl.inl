@@ -45,12 +45,6 @@ VKAPI_ATTR VkResult VKAPI_CALL createDataGraphPipelineSessionARM (VkDevice devic
 	VK_NULL_RETURN((*pSession = allocateNonDispHandle<DataGraphPipelineSessionARM, VkDataGraphPipelineSessionARM>(device, pCreateInfo, pAllocator)));
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL createDataGraphPipelinesARM (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
-{
-	DE_UNREF(pAllocator);
-	VK_NULL_RETURN((allocateNonDispHandleArray<Pipeline, VkPipeline>(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)));
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL createDebugReportCallbackEXT (VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback)
 {
 	DE_UNREF(pAllocator);

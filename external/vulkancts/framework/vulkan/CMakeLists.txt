@@ -103,6 +103,9 @@ set(VKUTILNOSHADER_SRCS
 	vkBarrierUtil.hpp
 	vkCmdUtil.cpp
 	vkCmdUtil.hpp
+	vkDataGraphUtil.hpp
+	vkDataGraphSessionWithMemory.hpp
+	vkDataGraphSessionWithMemory.cpp
 	vkDefs.cpp
 	vkDefs.hpp
 	vkRef.cpp
@@ -175,6 +178,8 @@ set(VKUTILNOSHADER_SRCS
 	vkMd5Sum.cpp
 	vkComputePipelineConstructionUtil.hpp
 	vkComputePipelineConstructionUtil.cpp
+	vkDataGraphPipelineConstructionUtil.hpp
+	vkDataGraphPipelineConstructionUtil.cpp
 	vkShaderObjectUtil.hpp
 	vkShaderObjectUtil.cpp
 	)

@@ -413,6 +413,38 @@ VkMemoryRequirements getTensorMemoryRequirements(const DeviceInterface &vk, VkDe
     return reqs.memoryRequirements;
 }
 
+std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> getDataGraphPipelineSessionBindPointRequirements(
+    const DeviceInterface &vk, VkDevice device, VkDataGraphPipelineSessionARM session)
+{
+    uint32_t numRequiredBindPoints = 0;
+
+    VkDataGraphPipelineSessionBindPointRequirementsInfoARM bindPointReqsInfo = initVulkanStructure();
+
+    bindPointReqsInfo.session = session;
+
+    VK_CHECK(vk.getDataGraphPipelineSessionBindPointRequirementsARM(device, &bindPointReqsInfo, &numRequiredBindPoints,
+                                                                    nullptr));
+
+    if (numRequiredBindPoints > 0)
+    {
+        VkDataGraphPipelineSessionBindPointRequirementARM bindPointReqs = initVulkanStructure();
+        std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> bindPoints(numRequiredBindPoints, bindPointReqs);
+        VK_CHECK(vk.getDataGraphPipelineSessionBindPointRequirementsARM(device, &bindPointReqsInfo,
+                                                                        &numRequiredBindPoints, bindPoints.data()));
+
+        for (const auto &bindPoint : bindPoints)
+        {
+            (void)bindPoint;
+            DE_ASSERT(bindPoint.bindPoint != VK_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_TRANSIENT_ARM ||
+                      bindPoint.numObjects == 1);
+        }
+
+        return bindPoints;
+    }
+
+    return {};
+}
+
 #endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements getImagePlaneMemoryRequirements(const DeviceInterface &vkd, VkDevice device, VkImage image,

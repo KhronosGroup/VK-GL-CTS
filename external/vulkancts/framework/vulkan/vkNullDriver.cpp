@@ -996,6 +996,40 @@ extern "C"
 
 #endif // CTS_USES_VULKANSC
 
+#ifndef CTS_USES_VULKANSC
+
+    VKAPI_ATTR VkResult VKAPI_CALL createDataGraphPipelinesARM(VkDevice device, VkPipelineCache, uint32_t count,
+                                                               const VkDataGraphPipelineCreateInfoARM *pCreateInfos,
+                                                               const VkAllocationCallbacks *pAllocator,
+                                                               VkPipeline *pPipelines)
+    {
+        uint32_t allocNdx;
+        try
+        {
+            for (allocNdx = 0; allocNdx < count; allocNdx++)
+                pPipelines[allocNdx] =
+                    allocateNonDispHandle<Pipeline, VkPipeline>(device, pCreateInfos + allocNdx, pAllocator);
+
+            return VK_SUCCESS;
+        }
+        catch (const std::bad_alloc &)
+        {
+            for (uint32_t freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+                freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+            return VK_ERROR_OUT_OF_HOST_MEMORY;
+        }
+        catch (VkResult err)
+        {
+            for (uint32_t freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+                freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+            return err;
+        }
+    }
+
+#endif // CTS_USES_VULKANSC
+
     VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDevices(VkInstance, uint32_t *pPhysicalDeviceCount,
                                                             VkPhysicalDevice *pDevices)
     {

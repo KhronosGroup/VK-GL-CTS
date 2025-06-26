@@ -93,6 +93,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_clip_space_w_scaling",
         "VK_NV_scissor_exclusive",
         "VK_NV_shading_rate_image",
+        "VK_ARM_data_graph",
         "VK_ARM_rasterization_order_attachment_access",
         "VK_ARM_tensors",
         "VK_GOOGLE_surfaceless_query",

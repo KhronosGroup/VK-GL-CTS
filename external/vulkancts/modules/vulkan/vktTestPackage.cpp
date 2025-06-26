@@ -137,6 +137,7 @@
 #include "vktDGCTests.hpp"
 #include "vktCooperativeVectorTests.hpp"
 #include "vktTensorTests.hpp"
+#include "vktDataGraphTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -1351,6 +1352,7 @@ void TestPackage::init(void)
     addRootChild("dgc", m_caseListFilter, DGC::createTests);
     addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);
     addRootChild("tensor", m_caseListFilter, tensor::createTests);
+    addRootChild("data_graph", m_caseListFilter, dataGraph::createTests);
 }
 
 void ExperimentalTestPackage::init(void)

@@ -238,6 +238,11 @@ uint32_t getSEUSafeMemoryTypes(const VkPhysicalDeviceMemoryProperties &deviceMem
 de::MovePtr<Allocation> bindTensor(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
                                    const VkTensorARM tensor, const MemoryRequirement requirement,
                                    VkDeviceSize *allocationSize = nullptr);
+
+std::vector<de::MovePtr<Allocation>> bindDataGraphSession(
+    const DeviceInterface &vk, const VkDevice device, Allocator &allocator, const VkDataGraphPipelineSessionARM session,
+    const std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> &bindPoints,
+    const MemoryRequirement requirement, VkDeviceSize *allocationSize = nullptr, bool testRequiresTransient = false);
 #endif // CTS_USES_VULKANSC
 
 void bindImagePlanesMemory(const vk::DeviceInterface &vkd, const vk::VkDevice device, const vk::VkImage image,

@@ -86,6 +86,7 @@ size_t getFormatSize(VkFormat format)
         return 8;
     case VK_FORMAT_R32_UINT:
     case VK_FORMAT_R32_SINT:
+    case VK_FORMAT_R32_SFLOAT:
         return 4;
     case VK_FORMAT_R16_UNORM:
     case VK_FORMAT_R16_SNORM:
@@ -93,6 +94,7 @@ size_t getFormatSize(VkFormat format)
     case VK_FORMAT_R16_SSCALED:
     case VK_FORMAT_R16_UINT:
     case VK_FORMAT_R16_SINT:
+    case VK_FORMAT_R16_SFLOAT:
         return 2;
     case VK_FORMAT_R8_UNORM:
     case VK_FORMAT_R8_SNORM:

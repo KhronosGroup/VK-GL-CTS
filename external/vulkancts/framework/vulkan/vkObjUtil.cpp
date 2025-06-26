@@ -38,6 +38,29 @@
 namespace vk
 {
 
+#ifndef CTS_USES_VULKANSC
+
+Move<VkPipeline> makeDataGraphPipeline(const DeviceInterface &vk, const VkDevice device,
+                                       const VkPipelineLayout pipelineLayout,
+                                       const VkPipelineCreateFlags2KHR pipelineFlags, const void *pipelinePNext,
+                                       const VkPipelineCache pipelineCache,
+                                       const VkDataGraphPipelineResourceInfoARM *resourceInfos,
+                                       uint32_t resourceInfoCount)
+{
+    const VkDataGraphPipelineCreateInfoARM pipelineCreateInfo = {
+        VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CREATE_INFO_ARM, // VkStructureType                              sType;
+        pipelinePNext,                                         // const void*                                  pNext;
+        pipelineFlags,                                         // VkPipelineCreateFlags2KHR                    flags;
+        pipelineLayout,                                        // VkPipelineLayout                             layout;
+        resourceInfoCount, // uint32_t                                     resourceInfoCount;
+        resourceInfos,     // const VkDataGraphPipelineResourceInfoARM*    pResourceInfos;
+    };
+
+    return createDataGraphPipelineARM(vk, device, VK_NULL_HANDLE, pipelineCache, &pipelineCreateInfo, nullptr);
+}
+
+#endif // ifndef CTS_USES_VULKANSC
+
 Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice device,
                                      const VkPipelineLayout pipelineLayout, const VkPipelineCreateFlags pipelineFlags,
                                      const void *pipelinePNext, const VkShaderModule shaderModule,
