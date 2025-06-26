@@ -138,6 +138,12 @@ set(VKUTILNOSHADER_SRCS
 	vkDebugReportUtil.hpp
 	vkBufferWithMemory.cpp
 	vkBufferWithMemory.hpp
+	vkTensorWithMemory.hpp
+	vkTensorWithMemory.cpp
+	vkTensorMemoryUtil.cpp
+	vkTensorMemoryUtil.hpp
+	vkTensorUtil.cpp
+	vkTensorUtil.hpp
 	vkImageWithMemory.cpp
 	vkImageWithMemory.hpp
 	vkImageWithMemory.cpp

@@ -6,6 +6,7 @@
  *
  * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2023-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -74,6 +75,12 @@ public:
     {
         DE_ASSERT(m_hostPtr);
         return m_hostPtr;
+    }
+
+    //! Is allocation host-visible?
+    bool isHostVisible(void) const
+    {
+        return m_hostPtr != nullptr;
     }
 
 protected:
@@ -225,6 +232,12 @@ uint32_t getCompatibleMemoryTypes(const VkPhysicalDeviceMemoryProperties &device
                                   MemoryRequirement requirement);
 #ifdef CTS_USES_VULKANSC
 uint32_t getSEUSafeMemoryTypes(const VkPhysicalDeviceMemoryProperties &deviceMemProps);
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+de::MovePtr<Allocation> bindTensor(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                   const VkTensorARM tensor, const MemoryRequirement requirement,
+                                   VkDeviceSize *allocationSize = nullptr);
 #endif // CTS_USES_VULKANSC
 
 void bindImagePlanesMemory(const vk::DeviceInterface &vkd, const vk::VkDevice device, const vk::VkImage image,

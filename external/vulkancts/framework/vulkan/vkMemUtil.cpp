@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2024-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -293,9 +294,13 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
     Move<VkDeviceMemory> mem = allocateMemory(m_vk, m_device, &allocInfo);
     MovePtr<HostPtr> hostPtr;
 
-    if (requirement & MemoryRequirement::HostVisible)
+    const bool requestedHostVisible = requirement & MemoryRequirement::HostVisible;
+    const bool isHostVisible        = isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex);
+    DE_UNREF(requestedHostVisible);
+    DE_ASSERT(!requestedHostVisible || isHostVisible);
+
+    if (isHostVisible)
     {
-        DE_ASSERT(isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex));
         hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, memReqs.size, 0u));
     }
 
@@ -750,6 +755,30 @@ de::MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice dev
     VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
     return alloc;
 }
+
+#ifndef CTS_USES_VULKANSC
+MovePtr<Allocation> bindTensor(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                               const VkTensorARM tensor, const MemoryRequirement requirement,
+                               VkDeviceSize *allocationSize)
+{
+    const VkMemoryRequirements tensor_requirements = getTensorMemoryRequirements(vk, device, tensor);
+    MovePtr<Allocation> alloc(allocator.allocate(tensor_requirements, requirement));
+
+    if (allocationSize != nullptr)
+    {
+        *allocationSize = tensor_requirements.size;
+    }
+
+    const VkBindTensorMemoryInfoARM bindInfo = {
+        VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM, nullptr, tensor, alloc->getMemory(), alloc->getOffset(),
+    };
+
+    VK_CHECK(vk.bindTensorMemoryARM(device, 1, &bindInfo));
+
+    return alloc;
+}
+
+#endif // CTS_USES_VULKANSC
 
 void zeroBuffer(const DeviceInterface &vk, const VkDevice device, const Allocation &alloc, const VkDeviceSize size)
 {

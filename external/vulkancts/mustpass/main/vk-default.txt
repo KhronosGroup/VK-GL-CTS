@@ -87,6 +87,7 @@ vk-default/ssbo.txt
 vk-default/subgroups.txt
 vk-default/synchronization.txt
 vk-default/synchronization2.txt
+vk-default/tensor.txt
 vk-default/tessellation.txt
 vk-default/texture.txt
 vk-default/transform-feedback.txt

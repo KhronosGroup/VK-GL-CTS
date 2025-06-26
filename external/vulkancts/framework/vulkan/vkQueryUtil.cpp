@@ -3,6 +3,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2024-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -392,6 +393,27 @@ VkMemoryRequirements getImageMemoryRequirements(const DeviceInterface &vk, VkDev
     vk.getImageMemoryRequirements(device, image, &req);
     return req;
 }
+
+#ifndef CTS_USES_VULKANSC
+VkMemoryRequirements getTensorMemoryRequirements(const DeviceInterface &vk, VkDevice device, VkTensorARM tensor)
+{
+    VkTensorMemoryRequirementsInfoARM memInfo;
+    VkMemoryRequirements2 reqs;
+
+    deMemset(&memInfo, 0, sizeof(memInfo));
+    deMemset(&reqs, 0, sizeof(reqs));
+
+    memInfo.sType  = VK_STRUCTURE_TYPE_TENSOR_MEMORY_REQUIREMENTS_INFO_ARM;
+    memInfo.tensor = tensor;
+
+    reqs.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+
+    vk.getTensorMemoryRequirementsARM(device, &memInfo, &reqs);
+
+    return reqs.memoryRequirements;
+}
+
+#endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements getImagePlaneMemoryRequirements(const DeviceInterface &vkd, VkDevice device, VkImage image,
                                                      VkImageAspectFlagBits planeAspect)

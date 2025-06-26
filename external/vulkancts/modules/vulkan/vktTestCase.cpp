@@ -5,6 +5,7 @@
  * Copyright (c) 2015 Google Inc.
  * Copyright (c) 2023 LunarG, Inc.
  * Copyright (c) 2023 Nintendo
+ * Copyright (c) 2024-2025 Arm Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -93,6 +94,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_scissor_exclusive",
         "VK_NV_shading_rate_image",
         "VK_ARM_rasterization_order_attachment_access",
+        "VK_ARM_tensors",
         "VK_GOOGLE_surfaceless_query",
         "VK_FUCHSIA_",
         "VK_NV_fragment_coverage_to_color",

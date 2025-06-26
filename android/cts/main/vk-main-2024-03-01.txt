@@ -67,6 +67,7 @@ vk-main-2024-03-01/ssbo.txt
 vk-main-2024-03-01/subgroups.txt
 vk-main-2024-03-01/synchronization.txt
 vk-main-2024-03-01/synchronization2.txt
+vk-main-2024-03-01/tensor.txt
 vk-main-2024-03-01/tessellation.txt
 vk-main-2024-03-01/texture.txt
 vk-main-2024-03-01/transform-feedback.txt

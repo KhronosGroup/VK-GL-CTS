@@ -54,6 +54,7 @@ add_subdirectory(video)
 add_subdirectory(shader_object)
 add_subdirectory(device_generated_commands)
 add_subdirectory(cooperative_vector)
+add_subdirectory(tensor)
 
 include_directories(
 	api
@@ -110,6 +111,7 @@ include_directories(
 	video
 	shader_object
 	device_generated_commands
+	tensor
 	)
 
 set(DEQP_VK_SRCS
@@ -186,6 +188,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-shader-object
 	deqp-vk-dgc
 	deqp-vk-cooperative_vector
+	deqp-vk-tensor
 	)
 
 set(DEQP_VKSC_LIBS

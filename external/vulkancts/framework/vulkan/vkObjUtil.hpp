@@ -5,6 +5,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -189,6 +190,22 @@ inline Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device,
 }
 
 VkBufferImageCopy makeBufferImageCopy(const VkExtent3D extent, const VkImageSubresourceLayers subresourceLayers);
+
+#ifndef CTS_USES_VULKANSC
+
+Move<VkTensorViewARM> makeTensorView(const DeviceInterface &vk, const VkDevice vkDevice, const VkTensorARM tensor,
+                                     const VkFormat format);
+
+VkTensorDescriptionARM makeTensorDescription(const VkTensorTilingARM tiling, const VkFormat format,
+                                             const std::vector<int64_t> &dimensions,
+                                             const std::vector<int64_t> &strides,
+                                             const VkTensorUsageFlagsARM usage = VK_TENSOR_USAGE_SHADER_BIT_ARM);
+
+VkTensorCreateInfoARM makeTensorCreateInfo(const VkTensorDescriptionARM *tensorDesc,
+                                           const VkTensorCreateFlagsARM createFlags        = 0,
+                                           const std::vector<uint32_t> &queueFamilyIndices = {});
+
+#endif //CTS_USES_VULKANSC
 
 } // namespace vk
 

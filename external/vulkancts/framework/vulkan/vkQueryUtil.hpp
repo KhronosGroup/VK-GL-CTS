@@ -5,6 +5,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2024-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -88,6 +89,10 @@ std::vector<VkSparseImageMemoryRequirements> getImageSparseMemoryRequirements(co
 std::vector<vk::VkSparseImageMemoryRequirements> getDeviceImageSparseMemoryRequirements(
     const DeviceInterface &vk, VkDevice device, const VkImageCreateInfo &imageCreateInfo,
     VkImageAspectFlagBits planeAspect);
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+VkMemoryRequirements getTensorMemoryRequirements(const DeviceInterface &vk, VkDevice device, VkTensorARM tensor);
 #endif // CTS_USES_VULKANSC
 
 std::vector<VkLayerProperties> enumerateInstanceLayerProperties(const PlatformInterface &vkp);

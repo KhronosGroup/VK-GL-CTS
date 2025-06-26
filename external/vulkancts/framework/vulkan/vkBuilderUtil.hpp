@@ -5,6 +5,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2023-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -205,6 +206,15 @@ public:
         return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, nullptr, nullptr,
                      nullptr, pAccelerationStructure);
     }
+
+    inline DescriptorSetUpdateBuilder &writeSingle(VkDescriptorSet destSet, const Location &destLocation,
+                                                   VkDescriptorType descriptorType,
+                                                   const VkWriteDescriptorSetTensorARM *pTensorInfo)
+    {
+        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, 1u, descriptorType, nullptr, nullptr,
+                     nullptr, pTensorInfo);
+    }
+
 #endif // CTS_USES_VULKANSC
 
     inline DescriptorSetUpdateBuilder &writeArray(VkDescriptorSet destSet, const Location &destLocation,
@@ -239,6 +249,15 @@ public:
         return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType,
                      nullptr, nullptr, nullptr, pAccelerationStructure);
     }
+
+    inline DescriptorSetUpdateBuilder &writeArray(VkDescriptorSet destSet, const Location &destLocation,
+                                                  VkDescriptorType descriptorType, uint32_t numDescriptors,
+                                                  const VkWriteDescriptorSetTensorARM *pTernsorInfo)
+    {
+        return write(destSet, destLocation.m_binding, destLocation.m_arrayElement, numDescriptors, descriptorType,
+                     nullptr, nullptr, nullptr, pTernsorInfo);
+    }
+
 #endif // CTS_USES_VULKANSC
 
     inline DescriptorSetUpdateBuilder &copySingle(VkDescriptorSet srcSet, const Location &srcLocation,
