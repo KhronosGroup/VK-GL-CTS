@@ -150,6 +150,7 @@ public:
                     makeCommonDependencyInfo(&memoryBarrier, nullptr, nullptr, true);
 #ifndef CTS_USES_VULKANSC
                 setDependencyInfo.dependencyFlags |= VK_DEPENDENCY_ASYMMETRIC_EVENT_BIT_KHR;
+                dependencyInfo.dependencyFlags |= VK_DEPENDENCY_ASYMMETRIC_EVENT_BIT_KHR;
 #endif
                 synchronizationWrapper->cmdSetEvent(*cmdBuffer, *event, &setDependencyInfo);
             }
