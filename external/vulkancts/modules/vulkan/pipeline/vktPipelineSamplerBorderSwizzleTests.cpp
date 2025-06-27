@@ -81,6 +81,7 @@ struct TestParams
     tcu::Vec2 textureCoordinates;
     tcu::Maybe<VkClearColorValue> customBorderColor;
     bool useStencilAspect;
+    bool disableCustomBorderColorFeatures;
 
     bool isCustom(void) const
     {
@@ -114,9 +115,17 @@ public:
     {
     }
 
-    virtual void initPrograms(vk::SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const;
-    virtual void checkSupport(Context &context) const;
+    std::string getRequiredCapabilitiesId() const override
+    {
+        return typeid(BorderSwizzleCase).name() +
+               std::string(m_params.disableCustomBorderColorFeatures ? "-NoCustomBorderColor" : "");
+    }
+
+    void initDeviceCapabilities(DevCaps &caps) override;
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+    void checkSupport(Context &context) const override;
 
 protected:
     TestParams m_params;
@@ -211,6 +220,15 @@ void BorderSwizzleCase::checkSupport(Context &context) const
     }
     else if (m_params.isOpaqueBlack())
     {
+        if (m_params.textureFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16)
+        {
+            const auto &m10Props = context.getMaintenance10Properties();
+            if (m10Props.rgba4OpaqueBlackSwizzled &&
+                (m_params.disableCustomBorderColorFeatures || !borderColorFeatures.customBorderColors))
+                TCU_THROW(NotSupportedError,
+                          "VK_FORMAT_B4G4R4A4_UNORM_PACK16 needs rgba4OpaqueBlackSwizzled set to false");
+        }
+
         if (!identity)
         {
             if (!borderSwizzleFeatures.borderColorSwizzle)
@@ -254,6 +272,38 @@ VkFormat getColorAttachmentFormat(VkFormat textureFormat, bool useStencil)
         return VK_FORMAT_R32G32B32A32_UINT;
 
     return VK_FORMAT_R32G32B32A32_SFLOAT;
+}
+
+void BorderSwizzleCase::initDeviceCapabilities(DevCaps &caps)
+{
+    caps.addExtension("VK_KHR_pipeline_library");
+    caps.addExtension("VK_EXT_graphics_pipeline_library");
+    caps.addExtension("VK_KHR_dynamic_rendering");
+    caps.addExtension("VK_KHR_depth_stencil_resolve");
+    caps.addExtension("VK_KHR_create_renderpass2");
+    caps.addExtension("VK_KHR_multiview");
+    caps.addExtension("VK_KHR_maintenance2");
+    caps.addExtension("VK_EXT_shader_object");
+    caps.addExtension("VK_KHR_maintenance5");
+    caps.addExtension("VK_EXT_border_color_swizzle");
+    caps.addExtension("VK_EXT_custom_border_color");
+    caps.addExtension("VK_KHR_maintenance10");
+
+    caps.addFeature(&VkPhysicalDeviceMaintenance5Features::maintenance5);
+    caps.addFeature(&VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT::graphicsPipelineLibrary);
+    caps.addFeature(&VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
+    caps.addFeature(&VkPhysicalDeviceShaderObjectFeaturesEXT::shaderObject);
+    caps.addFeature(&VkPhysicalDeviceBorderColorSwizzleFeaturesEXT::borderColorSwizzle);
+    caps.addFeature(&VkPhysicalDeviceBorderColorSwizzleFeaturesEXT::borderColorSwizzleFromImage);
+    caps.addFeature(&VkPhysicalDeviceMaintenance10FeaturesKHR::maintenance10);
+
+    if (!m_params.disableCustomBorderColorFeatures)
+    {
+        caps.addFeature(&VkPhysicalDeviceCustomBorderColorFeaturesEXT::customBorderColors);
+        caps.addFeature(&VkPhysicalDeviceCustomBorderColorFeaturesEXT::customBorderColorWithoutFormat);
+    }
+
+    DE_UNREF(caps);
 }
 
 void BorderSwizzleCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -1531,6 +1581,14 @@ tcu::TestCaseGroup *createSamplerBorderSwizzleTests(tcu::TestContext &testCtx,
                             params.useStencilAspect      = sampleStencil;
 
                             gatherGroup->addChild(new BorderSwizzleCase(testCtx, swizzleHint.name, params));
+
+                            if (format == VK_FORMAT_B4G4R4A4_UNORM_PACK16 &&
+                                params.borderColor == VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK)
+                            {
+                                params.disableCustomBorderColorFeatures = true;
+                                gatherGroup->addChild(new BorderSwizzleCase(
+                                    testCtx, swizzleHint.name + std::string("_no_border_color_features"), params));
+                            }
                         }
 
                         borderTypeGroup->addChild(gatherGroup.release());
