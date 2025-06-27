@@ -126,10 +126,13 @@ protected:
     vk::Move<vk::VkFramebuffer> m_fbWithClear;
 };
 
-void checkSupport(Context &context, DrawCommandType command)
+void checkSupport(Context &context, DrawCommandType command, const ConditionalData conditionalData)
 {
     if (command == DRAW_COMMAND_TYPE_DRAW_INDIRECT_COUNT || command == DRAW_COMMAND_TYPE_DRAW_INDEXED_INDIRECT_COUNT)
         context.requireDeviceFunctionality("VK_KHR_draw_indirect_count");
+
+    if (conditionalData.conditionInherited && !conditionalData.conditionInSecondaryCommandBuffer)
+        context.requireDeviceFunctionality("VK_KHR_maintenance7");
 }
 
 ConditionalDraw::ConditionalDraw(Context &context, ConditionalTestSpec testSpec)
@@ -143,7 +146,7 @@ ConditionalDraw::ConditionalDraw(Context &context, ConditionalTestSpec testSpec)
 {
     checkConditionalRenderingCapabilities(context, m_conditionalData);
     checkNestedRenderPassCapabilities(context);
-    checkSupport(context, m_command);
+    checkSupport(context, m_command, m_conditionalData);
 
     const float minX     = -0.3f;
     const float maxX     = 0.3f;
@@ -387,7 +390,10 @@ tcu::TestStatus ConditionalDraw::iterate(void)
     const bool useSecondaryCmdBuffer =
         m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
     const auto subpassContents =
-        (useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : vk::VK_SUBPASS_CONTENTS_INLINE);
+        (m_conditionalData.conditionInherited && !m_conditionalData.conditionInSecondaryCommandBuffer) ?
+            vk::VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR :
+            (useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS :
+                                     vk::VK_SUBPASS_CONTENTS_INLINE);
 
     if (m_conditionalData.clearInRenderPass)
     {
