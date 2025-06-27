@@ -546,3 +546,12 @@ virtual void				getDeviceTensorMemoryRequirementsARM					(VkDevice device, const
 virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const;
 virtual VkResult			getTensorOpaqueCaptureDescriptorDataARM					(VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const;
 virtual VkResult			getTensorViewOpaqueCaptureDescriptorDataARM				(VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const;
+virtual VkResult			createDataGraphPipelinesARM								(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const;
+virtual VkResult			createDataGraphPipelineSessionARM						(VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDataGraphPipelineSessionARM* pSession) const;
+virtual VkResult			getDataGraphPipelineSessionBindPointRequirementsARM		(VkDevice device, const VkDataGraphPipelineSessionBindPointRequirementsInfoARM* pInfo, uint32_t* pBindPointRequirementCount, VkDataGraphPipelineSessionBindPointRequirementARM* pBindPointRequirements) const;
+virtual void				getDataGraphPipelineSessionMemoryRequirementsARM		(VkDevice device, const VkDataGraphPipelineSessionMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const;
+virtual VkResult			bindDataGraphPipelineSessionMemoryARM					(VkDevice device, uint32_t bindInfoCount, const VkBindDataGraphPipelineSessionMemoryInfoARM* pBindInfos) const;
+virtual void				destroyDataGraphPipelineSessionARM						(VkDevice device, VkDataGraphPipelineSessionARM session, const VkAllocationCallbacks* pAllocator) const;
+virtual void				cmdDispatchDataGraphARM									(VkCommandBuffer commandBuffer, VkDataGraphPipelineSessionARM session, const VkDataGraphPipelineDispatchInfoARM* pInfo) const;
+virtual VkResult			getDataGraphPipelineAvailablePropertiesARM				(VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t* pPropertiesCount, VkDataGraphPipelinePropertyARM* pProperties) const;
+virtual VkResult			getDataGraphPipelinePropertiesARM						(VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t propertiesCount, VkDataGraphPipelinePropertyQueryResultARM* pProperties) const;

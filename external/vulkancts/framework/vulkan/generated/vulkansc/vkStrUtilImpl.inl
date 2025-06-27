@@ -3088,6 +3088,16 @@ tcu::Format::Bitfield<64> getTensorViewCreateFlagsARMStr (VkTensorViewCreateFlag
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<64> getDataGraphPipelineSessionCreateFlagsARMStr (VkDataGraphPipelineSessionCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getDataGraphPipelineDispatchFlagsARMStr (VkDataGraphPipelineDispatchFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);

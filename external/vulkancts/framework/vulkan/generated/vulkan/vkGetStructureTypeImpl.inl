@@ -5323,3 +5323,103 @@ template<> VkStructureType getStructureType<VkOHSurfaceCreateInfoOHOS> (void)
 	return VK_STRUCTURE_TYPE_OH_SURFACE_CREATE_INFO_OHOS;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineConstantTensorSemiStructuredSparsityInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CONSTANT_TENSOR_SEMI_STRUCTURED_SPARSITY_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineConstantARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CONSTANT_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineResourceInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_RESOURCE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineCompilerControlCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_COMPILER_CONTROL_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineShaderModuleCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SHADER_MODULE_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineSessionCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SESSION_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineSessionBindPointRequirementsInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_REQUIREMENTS_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineSessionBindPointRequirementARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_REQUIREMENT_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineSessionMemoryRequirementsInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SESSION_MEMORY_REQUIREMENTS_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkBindDataGraphPipelineSessionMemoryInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_DATA_GRAPH_PIPELINE_SESSION_MEMORY_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelinePropertyQueryResultARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_PROPERTY_QUERY_RESULT_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineIdentifierCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_IDENTIFIER_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineDispatchInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_DISPATCH_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyDataGraphPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_DATA_GRAPH_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceQueueFamilyDataGraphProcessingEngineInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_QUEUE_FAMILY_DATA_GRAPH_PROCESSING_ENGINE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkQueueFamilyDataGraphProcessingEnginePropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_QUEUE_FAMILY_DATA_GRAPH_PROCESSING_ENGINE_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphProcessingEngineCreateInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PROCESSING_ENGINE_CREATE_INFO_ARM;
+}
+

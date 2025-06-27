@@ -2847,3 +2847,48 @@ VkResult DeviceDriver::getTensorViewOpaqueCaptureDescriptorDataARM (VkDevice dev
 {
     return m_vk.getTensorViewOpaqueCaptureDescriptorDataARM(device, pInfo, pData);
 }
+
+VkResult DeviceDriver::createDataGraphPipelinesARM (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const
+{
+    return m_vk.createDataGraphPipelinesARM(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);
+}
+
+VkResult DeviceDriver::createDataGraphPipelineSessionARM (VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDataGraphPipelineSessionARM* pSession) const
+{
+    return m_vk.createDataGraphPipelineSessionARM(device, pCreateInfo, pAllocator, pSession);
+}
+
+VkResult DeviceDriver::getDataGraphPipelineSessionBindPointRequirementsARM (VkDevice device, const VkDataGraphPipelineSessionBindPointRequirementsInfoARM* pInfo, uint32_t* pBindPointRequirementCount, VkDataGraphPipelineSessionBindPointRequirementARM* pBindPointRequirements) const
+{
+    return m_vk.getDataGraphPipelineSessionBindPointRequirementsARM(device, pInfo, pBindPointRequirementCount, pBindPointRequirements);
+}
+
+void DeviceDriver::getDataGraphPipelineSessionMemoryRequirementsARM (VkDevice device, const VkDataGraphPipelineSessionMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
+{
+    m_vk.getDataGraphPipelineSessionMemoryRequirementsARM(device, pInfo, pMemoryRequirements);
+}
+
+VkResult DeviceDriver::bindDataGraphPipelineSessionMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindDataGraphPipelineSessionMemoryInfoARM* pBindInfos) const
+{
+    return m_vk.bindDataGraphPipelineSessionMemoryARM(device, bindInfoCount, pBindInfos);
+}
+
+void DeviceDriver::destroyDataGraphPipelineSessionARM (VkDevice device, VkDataGraphPipelineSessionARM session, const VkAllocationCallbacks* pAllocator) const
+{
+    m_vk.destroyDataGraphPipelineSessionARM(device, session, pAllocator);
+}
+
+void DeviceDriver::cmdDispatchDataGraphARM (VkCommandBuffer commandBuffer, VkDataGraphPipelineSessionARM session, const VkDataGraphPipelineDispatchInfoARM* pInfo) const
+{
+    m_vk.cmdDispatchDataGraphARM(commandBuffer, session, pInfo);
+}
+
+VkResult DeviceDriver::getDataGraphPipelineAvailablePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t* pPropertiesCount, VkDataGraphPipelinePropertyARM* pProperties) const
+{
+    return m_vk.getDataGraphPipelineAvailablePropertiesARM(device, pPipelineInfo, pPropertiesCount, pProperties);
+}
+
+VkResult DeviceDriver::getDataGraphPipelinePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t propertiesCount, VkDataGraphPipelinePropertyQueryResultARM* pProperties) const
+{
+    return m_vk.getDataGraphPipelinePropertiesARM(device, pPipelineInfo, propertiesCount, pProperties);
+}

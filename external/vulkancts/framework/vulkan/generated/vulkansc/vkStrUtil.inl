@@ -324,6 +324,8 @@ tcu::Format::Bitfield<64>	getBufferUsageFlags2Str										(VkBufferUsageFlags2 
 tcu::Format::Bitfield<64>	getTensorCreateFlagsARMStr									(VkTensorCreateFlagsARM value);
 tcu::Format::Bitfield<64>	getTensorUsageFlagsARMStr									(VkTensorUsageFlagsARM value);
 tcu::Format::Bitfield<64>	getTensorViewCreateFlagsARMStr								(VkTensorViewCreateFlagsARM value);
+tcu::Format::Bitfield<64>	getDataGraphPipelineSessionCreateFlagsARMStr				(VkDataGraphPipelineSessionCreateFlagsARM value);
+tcu::Format::Bitfield<64>	getDataGraphPipelineDispatchFlagsARMStr						(VkDataGraphPipelineDispatchFlagsARM value);
 tcu::Format::Bitfield<32>	getCompositeAlphaFlagsKHRStr								(VkCompositeAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlaneAlphaFlagsKHR value);
 tcu::Format::Bitfield<32>	getSurfaceTransformFlagsKHRStr								(VkSurfaceTransformFlagsKHR value);

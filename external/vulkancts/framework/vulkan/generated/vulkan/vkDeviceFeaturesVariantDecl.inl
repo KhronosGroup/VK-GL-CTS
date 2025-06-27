@@ -187,6 +187,7 @@ typedef std::variant<
     , VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT
     , VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT
     , VkPhysicalDeviceCooperativeMatrixFeaturesKHR
+    , VkPhysicalDeviceDataGraphFeaturesARM
     , VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
     , VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR
     , VkPhysicalDeviceVideoEncodeAV1FeaturesKHR

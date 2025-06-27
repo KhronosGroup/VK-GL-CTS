@@ -546,3 +546,12 @@ GetDeviceTensorMemoryRequirementsARMFunc					getDeviceTensorMemoryRequirementsAR
 CmdCopyTensorARMFunc										cmdCopyTensorARM;
 GetTensorOpaqueCaptureDescriptorDataARMFunc					getTensorOpaqueCaptureDescriptorDataARM;
 GetTensorViewOpaqueCaptureDescriptorDataARMFunc				getTensorViewOpaqueCaptureDescriptorDataARM;
+CreateDataGraphPipelinesARMFunc								createDataGraphPipelinesARM;
+CreateDataGraphPipelineSessionARMFunc						createDataGraphPipelineSessionARM;
+GetDataGraphPipelineSessionBindPointRequirementsARMFunc		getDataGraphPipelineSessionBindPointRequirementsARM;
+GetDataGraphPipelineSessionMemoryRequirementsARMFunc		getDataGraphPipelineSessionMemoryRequirementsARM;
+BindDataGraphPipelineSessionMemoryARMFunc					bindDataGraphPipelineSessionMemoryARM;
+DestroyDataGraphPipelineSessionARMFunc						destroyDataGraphPipelineSessionARM;
+CmdDispatchDataGraphARMFunc									cmdDispatchDataGraphARM;
+GetDataGraphPipelineAvailablePropertiesARMFunc				getDataGraphPipelineAvailablePropertiesARM;
+GetDataGraphPipelinePropertiesARMFunc						getDataGraphPipelinePropertiesARM;

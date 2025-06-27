@@ -1543,6 +1543,12 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR");
 		return;
 	}
+	if (extName == "VK_ARM_data_graph")
+	{
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM");
+		functions.push_back("vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM");
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
 		return;
@@ -3848,6 +3854,19 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_ARM_data_graph")
+	{
+		functions.push_back("vkCreateDataGraphPipelinesARM");
+		functions.push_back("vkCreateDataGraphPipelineSessionARM");
+		functions.push_back("vkGetDataGraphPipelineSessionBindPointRequirementsARM");
+		functions.push_back("vkGetDataGraphPipelineSessionMemoryRequirementsARM");
+		functions.push_back("vkBindDataGraphPipelineSessionMemoryARM");
+		functions.push_back("vkDestroyDataGraphPipelineSessionARM");
+		functions.push_back("vkCmdDispatchDataGraphARM");
+		functions.push_back("vkGetDataGraphPipelineAvailablePropertiesARM");
+		functions.push_back("vkGetDataGraphPipelinePropertiesARM");
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_render_areas")
 	{
 		return;
@@ -4528,6 +4547,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_dynamic_rendering_unused_attachments",
 	"VK_NV_low_latency2",
 	"VK_KHR_cooperative_matrix",
+	"VK_ARM_data_graph",
 	"VK_QCOM_multiview_per_view_render_areas",
 	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_video_decode_av1",

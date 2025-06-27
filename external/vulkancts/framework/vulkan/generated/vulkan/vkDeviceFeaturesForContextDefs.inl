@@ -173,6 +173,7 @@ const vk::VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&					Context::getShaderC
 const vk::VkPhysicalDevicePipelineLibraryGroupHandlesFeaturesEXT&			Context::getPipelineLibraryGroupHandlesFeaturesEXT			(void) const { return m_device->getPipelineLibraryGroupHandlesFeaturesEXT();		}
 const vk::VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT&		Context::getDynamicRenderingUnusedAttachmentsFeaturesEXT	(void) const { return m_device->getDynamicRenderingUnusedAttachmentsFeaturesEXT();	}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						Context::getCooperativeMatrixFeatures						(void) const { return m_device->getCooperativeMatrixFeatures();						}
+const vk::VkPhysicalDeviceDataGraphFeaturesARM&								Context::getDataGraphFeaturesARM							(void) const { return m_device->getDataGraphFeaturesARM();							}
 const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			Context::getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewRenderAreasFeaturesQCOM();		}
 const vk::VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR&				Context::getComputeShaderDerivativesFeatures				(void) const { return m_device->getComputeShaderDerivativesFeatures();				}
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						Context::getVideoEncodeAV1Features							(void) const { return m_device->getVideoEncodeAV1Features();						}
