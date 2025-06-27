@@ -91,8 +91,9 @@ bool formatHasThreeComponents(VkFormat format)
 
 VkFormat getSingleComponentFormat(VkFormat format)
 {
-    tcu::TextureFormat texFormat = mapVkFormat(format);
-    texFormat                    = tcu::TextureFormat(tcu::TextureFormat::R, texFormat.type);
+    tcu::TextureFormat texFormat           = mapVkFormat(format);
+    tcu::TextureFormat::ChannelOrder order = isSrgbFormat(format) ? tcu::TextureFormat::sR : tcu::TextureFormat::R;
+    texFormat                              = tcu::TextureFormat(order, texFormat.type);
     return mapTextureFormat(texFormat);
 }
 
