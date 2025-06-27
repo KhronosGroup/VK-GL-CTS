@@ -220,7 +220,6 @@ private:
     std::vector<Vertex4RGBA> m_vertices;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
 
-    PipelineConstructionType m_pipelineConstructionType;
     PipelineLayoutWrapper m_pipelineLayout;
     GraphicsPipelineWrapper m_graphicsPipelines[BlendTest::QUAD_COUNT];
 
@@ -232,7 +231,7 @@ private:
 class DualSourceBlendTestInstance : public vkt::TestInstance
 {
 public:
-    DualSourceBlendTestInstance(Context &context, const PipelineConstructionType m_pipelineConstructionType,
+    DualSourceBlendTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType,
                                 const VkFormat colorFormat,
                                 const VkPipelineColorBlendAttachmentState blendStates[DualSourceBlendTest::QUAD_COUNT]);
     virtual ~DualSourceBlendTestInstance(void);
@@ -260,7 +259,6 @@ private:
     std::vector<Vertex4RGBARGBA> m_vertices;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
 
-    PipelineConstructionType m_pipelineConstructionType;
     PipelineLayoutWrapper m_pipelineLayout;
     GraphicsPipelineWrapper m_graphicsPipelines[DualSourceBlendTest::QUAD_COUNT];
 
@@ -648,7 +646,6 @@ BlendTestInstance::BlendTestInstance(Context &context, const PipelineConstructio
     : vkt::TestInstance(context)
     , m_renderSize(32, 32)
     , m_colorFormat(colorFormat)
-    , m_pipelineConstructionType(pipelineConstructionType)
     , m_graphicsPipelines{{context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                            context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType},
                           {context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
@@ -1138,8 +1135,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
 
     // Render reference image
     {
-        const bool altMasks =
-            (isConstructionTypeShaderObject(m_pipelineConstructionType) && mustIncludeRGBDynamicMask(m_colorFormat));
+        const bool altMasks = mustIncludeRGBDynamicMask(m_colorFormat);
         const VkColorComponentFlags *colorWriteMasks =
             (altMasks ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
 
@@ -1239,7 +1235,6 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance(
     : vkt::TestInstance(context)
     , m_renderSize(32, 32)
     , m_colorFormat(colorFormat)
-    , m_pipelineConstructionType(pipelineConstructionType)
     , m_graphicsPipelines{{context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                            context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType},
                           {context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
@@ -1544,8 +1539,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
         tcu::Vec4 discardColor8  = access8.getPixel(0, 0);
         tcu::Vec4 discardColor64 = access64.getPixel(0, 0);
 
-        const bool altMasks =
-            (isConstructionTypeShaderObject(m_pipelineConstructionType) && mustIncludeRGBDynamicMask(m_colorFormat));
+        const bool altMasks = mustIncludeRGBDynamicMask(m_colorFormat);
         const VkColorComponentFlags *colorWriteMasks =
             (altMasks ? DualSourceBlendTest::s_altColorWriteMasks : DualSourceBlendTest::s_colorWriteMasks);
 
@@ -2204,8 +2198,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                 {
                     VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
                     const VkColorComponentFlags *colorWriteMasks =
-                        (isESO && needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks :
-                                                         BlendTest::s_colorWriteMasks);
+                        (needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
 
                     for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                     {
@@ -2246,8 +2239,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                         VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
                         bool isDualSourceBlendTest = false;
                         const VkColorComponentFlags *colorWriteMasks =
-                            (isESO && needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks :
-                                                             BlendTest::s_colorWriteMasks);
+                            (needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
 
                         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                         {
