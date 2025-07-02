@@ -355,25 +355,32 @@ static vector<std::array<T, 3>> getAllowedInputs(T a, T b, T c, DenormMode d)
 }
 
 template <typename T>
+T roundedFMA(T a, T b, T c, deRoundingMode m)
+{
+    deSetRoundingMode(m);
+    return std::fma(a, b, c);
+}
+
+template <typename T>
 static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool signedZero)
 {
     vector<T> ret;
 
     // We will change the rounding mode, so save the current one and restore it later.
-    int rm = fegetround();
+    deRoundingMode rm = deGetRoundingMode();
 
-    vector<int> allowedRoundingModes;
+    vector<deRoundingMode> allowedRoundingModes;
     switch (m)
     {
     case ROUND_RTZ:
-        allowedRoundingModes.push_back(FE_TOWARDZERO);
+        allowedRoundingModes.push_back(DE_ROUNDINGMODE_TO_ZERO);
         break;
     case ROUND_RTE:
-        allowedRoundingModes.push_back(FE_TONEAREST);
+        allowedRoundingModes.push_back(DE_ROUNDINGMODE_TO_NEAREST_EVEN);
         break;
     case ROUND_UNDEF:
-        allowedRoundingModes.push_back(FE_UPWARD);
-        allowedRoundingModes.push_back(FE_DOWNWARD);
+        allowedRoundingModes.push_back(DE_ROUNDINGMODE_TO_POSITIVE_INF);
+        allowedRoundingModes.push_back(DE_ROUNDINGMODE_TO_NEGATIVE_INF);
         break;
     }
 
@@ -381,22 +388,19 @@ static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool 
     vector<std::array<T, 3>> allowedInputs = getAllowedInputs(a, b, c, d);
 
     // For each allowed input vector, calculate all valid results
-    for (int mode : allowedRoundingModes)
+    for (deRoundingMode mode : allowedRoundingModes)
     {
         for (auto inp : allowedInputs)
         {
-            fesetround(mode);
-            T r = std::fma(inp[0], inp[1], inp[2]);
+            T r = roundedFMA(inp[0], inp[1], inp[2], mode);
 
             // Calculate variants rounded upward and downward for underflow detection.
             // (RTZ and the rounded result would do here for detecting the largest
             // denorms, but because 0.0 is not denormal we also need to check that both
             // values have not rounded down to 0.0. A tiny denorm that is flushed may be
             // more permissive with the sign of zero than an actual zero result).
-            fesetround(FE_DOWNWARD);
-            T rDown = std::fma(inp[0], inp[1], inp[2]);
-            fesetround(FE_UPWARD);
-            T rUp = std::fma(inp[0], inp[1], inp[2]);
+            T rDown = roundedFMA(inp[0], inp[1], inp[2], DE_ROUNDINGMODE_TO_NEGATIVE_INF);
+            T rUp   = roundedFMA(inp[0], inp[1], inp[2], DE_ROUNDINGMODE_TO_POSITIVE_INF);
 
             bool underflowAfterRounding  = isDenorm(r);
             bool underflowBeforeRounding = isDenorm(rUp) || isDenorm(rDown);
@@ -422,7 +426,7 @@ static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool 
     }
 
     // Restore the mode we recorded before beginning.
-    fesetround(rm);
+    deSetRoundingMode(rm);
     return ret;
 }
 
