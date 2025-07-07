@@ -2087,15 +2087,15 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAP_MEMORY_PLACED_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT:												return "VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT:												return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_EXT";
-		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT:								return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_EXT";
-		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT:									return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_EXT";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT";
-		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT:										return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT:											return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT:								return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_EXT";
-		case VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT:										return "VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_EXT";
+		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_KHR:												return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_KHR";
+		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_KHR:								return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_SCALING_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_KHR:									return "VK_STRUCTURE_TYPE_SURFACE_PRESENT_MODE_COMPATIBILITY_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_KHR:										return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_FENCE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_KHR:											return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR:								return "VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_KHR:										return "VK_STRUCTURE_TYPE_RELEASE_SWAPCHAIN_IMAGES_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV:									return "VK_STRUCTURE_TYPE_GRAPHICS_SHADER_GROUP_CREATE_INFO_NV";
@@ -2254,7 +2254,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT:					return "VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLIP_CONTROL_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3:														return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA:								return "VK_STRUCTURE_TYPE_IMPORT_MEMORY_ZIRCON_HANDLE_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA:									return "VK_STRUCTURE_TYPE_MEMORY_ZIRCON_HANDLE_PROPERTIES_FUCHSIA";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:									return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -2553,6 +2553,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_TILE_MEMORY_SIZE_INFO_QCOM:												return "VK_STRUCTURE_TYPE_TILE_MEMORY_SIZE_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_DISPLAY_SURFACE_STEREO_CREATE_INFO_NV:									return "VK_STRUCTURE_TYPE_DISPLAY_SURFACE_STEREO_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DISPLAY_MODE_STEREO_PROPERTIES_NV:										return "VK_STRUCTURE_TYPE_DISPLAY_MODE_STEREO_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_REFERENCE_INTRA_REFRESH_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_REFERENCE_INTRA_REFRESH_INFO_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_QUANTIZATION_MAP_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_INFO_KHR:									return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_INFO_KHR";
@@ -2640,6 +2645,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT:													return "VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC";
 		default:																						return nullptr;
 	}
 }
@@ -4526,7 +4532,7 @@ const char* getPresentModeKHRName (VkPresentModeKHR value)
 		case VK_PRESENT_MODE_FIFO_RELAXED_KHR:				return "VK_PRESENT_MODE_FIFO_RELAXED_KHR";
 		case VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR:		return "VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR";
 		case VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR:	return "VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR";
-		case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:			return "VK_PRESENT_MODE_FIFO_LATEST_READY_EXT";
+		case VK_PRESENT_MODE_FIFO_LATEST_READY_KHR:			return "VK_PRESENT_MODE_FIFO_LATEST_READY_KHR";
 		default:											return nullptr;
 	}
 }
@@ -4888,7 +4894,7 @@ tcu::Format::Bitfield<32> getSwapchainCreateFlagsKHRStr (VkSwapchainCreateFlagsK
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,	"VK_SWAPCHAIN_CREATE_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR,						"VK_SWAPCHAIN_CREATE_PROTECTED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR,				"VK_SWAPCHAIN_CREATE_MUTABLE_FORMAT_BIT_KHR"),
-		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT,	"VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR,	"VK_SWAPCHAIN_CREATE_DEFERRED_MEMORY_ALLOCATION_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR,					"VK_SWAPCHAIN_CREATE_PRESENT_ID_2_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR,				"VK_SWAPCHAIN_CREATE_PRESENT_WAIT_2_BIT_KHR"),
 	};
@@ -5154,24 +5160,24 @@ const char* getDeviceFaultAddressTypeEXTName (VkDeviceFaultAddressTypeEXT value)
 	}
 }
 
-tcu::Format::Bitfield<32> getPresentScalingFlagsEXTStr (VkPresentScalingFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentScalingFlagsKHRStr (VkPresentScalingFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT,				"VK_PRESENT_SCALING_ONE_TO_ONE_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT,	"VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PRESENT_SCALING_STRETCH_BIT_EXT,				"VK_PRESENT_SCALING_STRETCH_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_SCALING_ONE_TO_ONE_BIT_KHR,				"VK_PRESENT_SCALING_ONE_TO_ONE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_KHR,	"VK_PRESENT_SCALING_ASPECT_RATIO_STRETCH_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PRESENT_SCALING_STRETCH_BIT_KHR,				"VK_PRESENT_SCALING_STRETCH_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
-tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentGravityFlagsKHRStr (VkPresentGravityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_MIN_BIT_EXT,		"VK_PRESENT_GRAVITY_MIN_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_MAX_BIT_EXT,		"VK_PRESENT_GRAVITY_MAX_BIT_EXT"),
-		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_CENTERED_BIT_EXT,	"VK_PRESENT_GRAVITY_CENTERED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_MIN_BIT_KHR,		"VK_PRESENT_GRAVITY_MIN_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_MAX_BIT_KHR,		"VK_PRESENT_GRAVITY_MAX_BIT_KHR"),
+		tcu::Format::BitDesc(VK_PRESENT_GRAVITY_CENTERED_BIT_KHR,	"VK_PRESENT_GRAVITY_CENTERED_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5471,6 +5477,7 @@ tcu::Format::Bitfield<32> getVideoEncodeFlagsKHRStr (VkVideoEncodeFlagsKHR value
 	{
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_WITH_QUANTIZATION_DELTA_MAP_BIT_KHR,	"VK_VIDEO_ENCODE_WITH_QUANTIZATION_DELTA_MAP_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_WITH_EMPHASIS_MAP_BIT_KHR,				"VK_VIDEO_ENCODE_WITH_EMPHASIS_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_INTRA_REFRESH_BIT_KHR,					"VK_VIDEO_ENCODE_INTRA_REFRESH_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5548,6 +5555,19 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncod
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
+tcu::Format::Bitfield<32> getVideoEncodeIntraRefreshModeFlagsKHRStr (VkVideoEncodeIntraRefreshModeFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR,						"VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR,	"VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR,			"VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR,		"VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR,		"VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
 tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncodeH264CapabilityFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5562,6 +5582,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH264CapabilityFlagsKHRStr (VkVideoEncode
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_KHR,				"VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_KHR,				"VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_MB_QP_DIFF_WRAPAROUND_BIT_KHR,				"VK_VIDEO_ENCODE_H264_CAPABILITY_MB_QP_DIFF_WRAPAROUND_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H264_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR,			"VK_VIDEO_ENCODE_H264_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5622,6 +5643,7 @@ tcu::Format::Bitfield<32> getVideoEncodeH265CapabilityFlagsKHRStr (VkVideoEncode
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_TILES_PER_SLICE_SEGMENT_BIT_KHR,	"VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_TILES_PER_SLICE_SEGMENT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_SEGMENTS_PER_TILE_BIT_KHR,	"VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_SEGMENTS_PER_TILE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_CU_QP_DIFF_WRAPAROUND_BIT_KHR,				"VK_VIDEO_ENCODE_H265_CAPABILITY_CU_QP_DIFF_WRAPAROUND_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_H265_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR,			"VK_VIDEO_ENCODE_H265_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5700,6 +5722,7 @@ tcu::Format::Bitfield<32> getVideoEncodeAV1CapabilityFlagsKHRStr (VkVideoEncodeA
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_PRIMARY_REFERENCE_CDF_ONLY_BIT_KHR,				"VK_VIDEO_ENCODE_AV1_CAPABILITY_PRIMARY_REFERENCE_CDF_ONLY_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_FRAME_SIZE_OVERRIDE_BIT_KHR,					"VK_VIDEO_ENCODE_AV1_CAPABILITY_FRAME_SIZE_OVERRIDE_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_MOTION_VECTOR_SCALING_BIT_KHR,					"VK_VIDEO_ENCODE_AV1_CAPABILITY_MOTION_VECTOR_SCALING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_AV1_CAPABILITY_COMPOUND_PREDICTION_INTRA_REFRESH_BIT_KHR,		"VK_VIDEO_ENCODE_AV1_CAPABILITY_COMPOUND_PREDICTION_INTRA_REFRESH_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -17896,6 +17919,61 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineRasterizationProvokin
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeIntraRefreshCapabilitiesKHR& value)
+{
+	s << "VkVideoEncodeIntraRefreshCapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tintraRefreshModes = " << getVideoEncodeIntraRefreshModeFlagsKHRStr(value.intraRefreshModes) << '\n';
+	s << "\tmaxIntraRefreshCycleDuration = " << value.maxIntraRefreshCycleDuration << '\n';
+	s << "\tmaxIntraRefreshActiveReferencePictures = " << value.maxIntraRefreshActiveReferencePictures << '\n';
+	s << "\tpartitionIndependentIntraRefreshRegions = " << value.partitionIndependentIntraRefreshRegions << '\n';
+	s << "\tnonRectangularIntraRefreshRegions = " << value.nonRectangularIntraRefreshRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeSessionIntraRefreshCreateInfoKHR& value)
+{
+	s << "VkVideoEncodeSessionIntraRefreshCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tintraRefreshMode = " << value.intraRefreshMode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeIntraRefreshInfoKHR& value)
+{
+	s << "VkVideoEncodeIntraRefreshInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tintraRefreshCycleDuration = " << value.intraRefreshCycleDuration << '\n';
+	s << "\tintraRefreshIndex = " << value.intraRefreshIndex << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoReferenceIntraRefreshInfoKHR& value)
+{
+	s << "VkVideoReferenceIntraRefreshInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdirtyIntraRefreshRegions = " << value.dirtyIntraRefreshRegions << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoEncodeIntraRefresh = " << value.videoEncodeIntraRefresh << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkCuModuleCreateInfoNVX& value)
 {
 	s << "VkCuModuleCreateInfoNVX = {\n";
@@ -19855,9 +19933,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDynamicRenderin
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeKHR& value)
 {
-	s << "VkSurfacePresentModeEXT = {\n";
+	s << "VkSurfacePresentModeKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpresentMode = " << value.presentMode << '\n';
@@ -19865,23 +19943,23 @@ std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeEXT& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSurfacePresentScalingCapabilitiesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkSurfacePresentScalingCapabilitiesKHR& value)
 {
-	s << "VkSurfacePresentScalingCapabilitiesEXT = {\n";
+	s << "VkSurfacePresentScalingCapabilitiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tsupportedPresentScaling = " << getPresentScalingFlagsEXTStr(value.supportedPresentScaling) << '\n';
-	s << "\tsupportedPresentGravityX = " << getPresentGravityFlagsEXTStr(value.supportedPresentGravityX) << '\n';
-	s << "\tsupportedPresentGravityY = " << getPresentGravityFlagsEXTStr(value.supportedPresentGravityY) << '\n';
+	s << "\tsupportedPresentScaling = " << getPresentScalingFlagsKHRStr(value.supportedPresentScaling) << '\n';
+	s << "\tsupportedPresentGravityX = " << getPresentGravityFlagsKHRStr(value.supportedPresentGravityX) << '\n';
+	s << "\tsupportedPresentGravityY = " << getPresentGravityFlagsKHRStr(value.supportedPresentGravityY) << '\n';
 	s << "\tminScaledImageExtent = " << value.minScaledImageExtent << '\n';
 	s << "\tmaxScaledImageExtent = " << value.maxScaledImageExtent << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeCompatibilityEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeCompatibilityKHR& value)
 {
-	s << "VkSurfacePresentModeCompatibilityEXT = {\n";
+	s << "VkSurfacePresentModeCompatibilityKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpresentModeCount = " << value.presentModeCount << '\n';
@@ -19890,9 +19968,9 @@ std::ostream& operator<< (std::ostream& s, const VkSurfacePresentModeCompatibili
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR& value)
 {
-	s << "VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT = {\n";
+	s << "VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainMaintenance1 = " << value.swapchainMaintenance1 << '\n';
@@ -19900,9 +19978,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSwapchainMainte
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentFenceInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentFenceInfoKHR& value)
 {
-	s << "VkSwapchainPresentFenceInfoEXT = {\n";
+	s << "VkSwapchainPresentFenceInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
@@ -19911,9 +19989,9 @@ std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentFenceInfoEXT&
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModesCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModesCreateInfoKHR& value)
 {
-	s << "VkSwapchainPresentModesCreateInfoEXT = {\n";
+	s << "VkSwapchainPresentModesCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpresentModeCount = " << value.presentModeCount << '\n';
@@ -19922,9 +20000,9 @@ std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModesCreateIn
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModeInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModeInfoKHR& value)
 {
-	s << "VkSwapchainPresentModeInfoEXT = {\n";
+	s << "VkSwapchainPresentModeInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchainCount = " << value.swapchainCount << '\n';
@@ -19933,21 +20011,21 @@ std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentModeInfoEXT& 
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentScalingCreateInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkSwapchainPresentScalingCreateInfoKHR& value)
 {
-	s << "VkSwapchainPresentScalingCreateInfoEXT = {\n";
+	s << "VkSwapchainPresentScalingCreateInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
-	s << "\tscalingBehavior = " << getPresentScalingFlagsEXTStr(value.scalingBehavior) << '\n';
-	s << "\tpresentGravityX = " << getPresentGravityFlagsEXTStr(value.presentGravityX) << '\n';
-	s << "\tpresentGravityY = " << getPresentGravityFlagsEXTStr(value.presentGravityY) << '\n';
+	s << "\tscalingBehavior = " << getPresentScalingFlagsKHRStr(value.scalingBehavior) << '\n';
+	s << "\tpresentGravityX = " << getPresentGravityFlagsKHRStr(value.presentGravityX) << '\n';
+	s << "\tpresentGravityY = " << getPresentGravityFlagsKHRStr(value.presentGravityY) << '\n';
 	s << '}';
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkReleaseSwapchainImagesInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkReleaseSwapchainImagesInfoKHR& value)
 {
-	s << "VkReleaseSwapchainImagesInfoEXT = {\n";
+	s << "VkReleaseSwapchainImagesInfoKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tswapchain = " << value.swapchain << '\n';
@@ -21140,9 +21218,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderReplicate
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR& value)
 {
-	s << "VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT = {\n";
+	s << "VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpresentModeFifoLatestReady = " << value.presentModeFifoLatestReady << '\n';
@@ -22032,6 +22110,16 @@ std::ostream& operator<< (std::ostream& s, const VkDataGraphProcessingEngineCrea
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tprocessingEngineCount = " << value.processingEngineCount << '\n';
 	s << "\tpProcessingEngines = " << value.pProcessingEngines << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC& value)
+{
+	s << "VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpipelineCacheIncrementalMode = " << value.pipelineCacheIncrementalMode << '\n';
 	s << '}';
 	return s;
 }

@@ -2600,9 +2600,9 @@ void DeviceDriver::cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, const VkD
     m_vk.cmdSetDepthBias2EXT(commandBuffer, pDepthBiasInfo);
 }
 
-VkResult DeviceDriver::releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const
+VkResult DeviceDriver::releaseSwapchainImagesKHR (VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo) const
 {
-    return m_vk.releaseSwapchainImagesEXT(device, pReleaseInfo);
+    return m_vk.releaseSwapchainImagesKHR(device, pReleaseInfo);
 }
 
 void DeviceDriver::getDeviceImageSubresourceLayout (VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout) const

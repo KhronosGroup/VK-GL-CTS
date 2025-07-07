@@ -855,7 +855,9 @@ m_vk.bindOpticalFlowSessionImageNV = (BindOpticalFlowSessionImageNVFunc) GET_PRO
 m_vk.cmdOpticalFlowExecuteNV = (CmdOpticalFlowExecuteNVFunc) GET_PROC_ADDR("vkCmdOpticalFlowExecuteNV");
 m_vk.getDeviceFaultInfoEXT = (GetDeviceFaultInfoEXTFunc) GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
 m_vk.cmdSetDepthBias2EXT = (CmdSetDepthBias2EXTFunc) GET_PROC_ADDR("vkCmdSetDepthBias2EXT");
-m_vk.releaseSwapchainImagesEXT = (ReleaseSwapchainImagesEXTFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
+m_vk.releaseSwapchainImagesKHR = (ReleaseSwapchainImagesKHRFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesKHR");
+if (!m_vk.releaseSwapchainImagesKHR)
+    m_vk.releaseSwapchainImagesKHR = (ReleaseSwapchainImagesKHRFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
     m_vk.getDeviceImageSubresourceLayout = (GetDeviceImageSubresourceLayoutFunc) GET_PROC_ADDR("vkGetDeviceImageSubresourceLayout");
 if (!m_vk.getDeviceImageSubresourceLayout)

@@ -1493,6 +1493,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_surface_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_swapchain_maintenance1")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_viewports")
 	{
 		return;
@@ -1654,6 +1662,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_encode_intra_refresh")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_encode_quantization_map")
 	{
 		return;
@@ -1777,6 +1789,14 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_zero_initialize_device_memory")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_present_mode_fifo_latest_ready")
+	{
+		return;
+	}
+	if (extName == "VK_SEC_pipeline_cache_incremental_mode")
 	{
 		return;
 	}
@@ -3799,6 +3819,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_surface_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_swapchain_maintenance1")
+	{
+		functions.push_back("vkReleaseSwapchainImagesKHR");
+		return;
+	}
 	if (extName == "VK_QCOM_multiview_per_view_viewports")
 	{
 		return;
@@ -3988,6 +4017,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_video_encode_intra_refresh")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_video_encode_quantization_map")
 	{
 		return;
@@ -4131,6 +4164,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_present_mode_fifo_latest_ready")
+	{
+		return;
+	}
+	if (extName == "VK_SEC_pipeline_cache_incremental_mode")
+	{
+		return;
+	}
 	if (extName == "vulkan_video_codecs_common")
 	{
 		return;
@@ -4221,6 +4262,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_portability_enumeration",
 	"VK_GOOGLE_surfaceless_query",
 	"VK_LUNARG_direct_driver_loading",
+	"VK_KHR_surface_maintenance1",
 	"VK_EXT_layer_settings",
 	"VK_NV_display_stereo",
 	"VK_OHOS_surface",
@@ -4536,6 +4578,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_pipeline_binary",
 	"VK_QCOM_tile_properties",
 	"VK_SEC_amigo_profiling",
+	"VK_KHR_swapchain_maintenance1",
 	"VK_QCOM_multiview_per_view_viewports",
 	"VK_NV_ray_tracing_invocation_reorder",
 	"VK_NV_cooperative_vector",
@@ -4573,6 +4616,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_QCOM_tile_memory_heap",
+	"VK_KHR_video_encode_intra_refresh",
 	"VK_KHR_video_encode_quantization_map",
 	"VK_NV_raw_access_chains",
 	"VK_NV_external_compute_queue",
@@ -4603,4 +4647,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_present_metering",
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
+	"VK_KHR_present_mode_fifo_latest_ready",
+	"VK_SEC_pipeline_cache_incremental_mode",
 };

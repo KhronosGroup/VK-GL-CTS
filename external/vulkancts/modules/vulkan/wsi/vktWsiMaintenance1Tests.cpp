@@ -157,7 +157,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
         nullptr,                                                                // void* pNext;
         VK_TRUE,                                                                // VkBool32 swapchainMaintenance1;
     };
-    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT fifoLatestReadyFeatures{
+    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR fifoLatestReadyFeatures{
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT, // VkStructureType sType;
         nullptr,                                                                       // void *pNext;
         VK_TRUE, // VkBool32 presentModeFifoLatestReady;
@@ -2239,7 +2239,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             bool imagesReleased = false;
             if (testParams.releaseBeforePresent && imageReleaseSize > 0)
             {
-                VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
+                VK_CHECK(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                 imagesReleased = true;
             }
 
@@ -2270,7 +2270,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     // If OUT_OF_DATE is returned from present, recreate the swapchain and release images to the retired swapchain.
                     if (!imagesReleased && testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
-                        VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
+                        VK_CHECK(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                         imagesReleased = true;
                     }
 
@@ -2288,7 +2288,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     if (!imagesReleased && !testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
                         // Release the images to the retired swapchain before deleting it (as part of move assignment below)
-                        VK_CHECK(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
+                        VK_CHECK(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                         imagesReleased = true;
                     }
 
@@ -2313,7 +2313,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             // If asked to release after present, do it now.
             if (!imagesReleased && imageReleaseSize > 0)
             {
-                VK_CHECK_WSI(vkd.releaseSwapchainImagesEXT(device, &releaseInfo));
+                VK_CHECK_WSI(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
             }
         }
 

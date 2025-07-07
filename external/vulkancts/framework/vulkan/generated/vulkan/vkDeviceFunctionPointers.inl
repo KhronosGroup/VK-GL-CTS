@@ -497,7 +497,7 @@ BindOpticalFlowSessionImageNVFunc							bindOpticalFlowSessionImageNV;
 CmdOpticalFlowExecuteNVFunc									cmdOpticalFlowExecuteNV;
 GetDeviceFaultInfoEXTFunc									getDeviceFaultInfoEXT;
 CmdSetDepthBias2EXTFunc										cmdSetDepthBias2EXT;
-ReleaseSwapchainImagesEXTFunc								releaseSwapchainImagesEXT;
+ReleaseSwapchainImagesKHRFunc								releaseSwapchainImagesKHR;
 GetDeviceImageSubresourceLayoutFunc							getDeviceImageSubresourceLayout;
 MapMemory2Func												mapMemory2;
 UnmapMemory2Func											unmapMemory2;

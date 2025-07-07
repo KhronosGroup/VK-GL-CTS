@@ -685,7 +685,8 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindOpticalFlowSessionImageNVFunc)		
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdOpticalFlowExecuteNVFunc)												(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetDeviceFaultInfoEXTFunc)													(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdSetDepthBias2EXTFunc)													(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseSwapchainImagesEXTFunc)												(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseSwapchainImagesKHRFunc)												(VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo);
+typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ReleaseSwapchainImagesEXTFunc)												(VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceImageSubresourceLayoutFunc)										(VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout);
 typedef VKAPI_ATTR void					(VKAPI_CALL* GetDeviceImageSubresourceLayoutKHRFunc)									(VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* MapMemory2Func)															(VkDevice device, const VkMemoryMapInfo* pMemoryMapInfo, void** ppData);

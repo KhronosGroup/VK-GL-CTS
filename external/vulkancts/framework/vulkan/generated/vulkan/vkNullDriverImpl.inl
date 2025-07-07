@@ -4246,7 +4246,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, c
 	DE_UNREF(pDepthBiasInfo);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo)
+VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesKHR (VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(pReleaseInfo);
@@ -5241,7 +5241,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,									cmdOpticalFlowExecuteNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias2EXT,										cmdSetDepthBias2EXT),
-	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
+	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesKHR,									releaseSwapchainImagesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceImageSubresourceLayout,							getDeviceImageSubresourceLayout),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2,												mapMemory2),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2,												unmapMemory2),

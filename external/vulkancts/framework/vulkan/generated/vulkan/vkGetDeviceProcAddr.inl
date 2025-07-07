@@ -581,6 +581,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkReleaseCapturedPipelineDataKHR",
 		"vkGetFramebufferTilePropertiesQCOM",
 		"vkGetDynamicRenderingTilePropertiesQCOM",
+		"vkReleaseSwapchainImagesKHR",
 		"vkGetPhysicalDeviceCooperativeVectorPropertiesNV",
 		"vkConvertCooperativeVectorMatrixNV",
 		"vkCmdConvertCooperativeVectorMatrixNV",

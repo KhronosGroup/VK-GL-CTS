@@ -3338,12 +3338,12 @@ tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT v
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getPresentScalingFlagsEXTStr (VkPresentScalingFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentScalingFlagsKHRStr (VkPresentScalingFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentGravityFlagsKHRStr (VkPresentGravityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -3454,6 +3454,11 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRat
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncodeRateControlModeFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeIntraRefreshModeFlagsKHRStr (VkVideoEncodeIntraRefreshModeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }

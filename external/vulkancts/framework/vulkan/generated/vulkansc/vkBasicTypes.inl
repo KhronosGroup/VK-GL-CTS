@@ -3114,9 +3114,13 @@ typedef uint32_t VkOpticalFlowExecuteFlagsNV;
 
 typedef uint32_t VkFrameBoundaryFlagsEXT;
 
-typedef uint32_t VkPresentScalingFlagsEXT;
+typedef uint32_t VkPresentScalingFlagsKHR;
 
-typedef uint32_t VkPresentGravityFlagsEXT;
+typedef VkPresentScalingFlagsKHR VkPresentScalingFlagsEXT;
+
+typedef uint32_t VkPresentGravityFlagsKHR;
+
+typedef VkPresentGravityFlagsKHR VkPresentGravityFlagsEXT;
 
 typedef uint32_t VkShaderCreateFlagsEXT;
 
@@ -3161,6 +3165,8 @@ typedef uint32_t VkVideoEncodeFeedbackFlagsKHR;
 typedef uint32_t VkVideoEncodeRateControlFlagsKHR;
 
 typedef uint32_t VkVideoEncodeRateControlModeFlagsKHR;
+
+typedef uint32_t VkVideoEncodeIntraRefreshModeFlagsKHR;
 
 typedef uint32_t VkVideoChromaSubsamplingFlagsKHR;
 
