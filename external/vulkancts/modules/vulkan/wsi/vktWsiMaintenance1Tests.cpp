@@ -662,7 +662,7 @@ uint32_t getIterations(std::vector<VkPresentModeKHR> presentModes,
             break;
         case VK_PRESENT_MODE_IMMEDIATE_KHR:
         case VK_PRESENT_MODE_MAILBOX_KHR:
-        case VK_PRESENT_MODE_FIFO_LATEST_READY_EXT:
+        case VK_PRESENT_MODE_FIFO_LATEST_READY_KHR:
         default:
             hasNoVsync = true;
             break;
@@ -1129,7 +1129,7 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
-        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_KHR, "fifo_latest_ready"},
     };
 
     bool preferExt = true;
@@ -1366,7 +1366,7 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
-        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_KHR, "fifo_latest_ready"},
     };
 
     bool preferExt = true;
@@ -1615,7 +1615,8 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false, false, testParams.preferExt);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false, false,
+                                 testParams.preferExt);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -1876,7 +1877,7 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
-        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_KHR, "fifo_latest_ready"},
     };
 
     const struct
@@ -2048,7 +2049,7 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
-        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_KHR, "fifo_latest_ready"},
     };
 
     bool preferExt = true;
@@ -2468,7 +2469,7 @@ void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
         {VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR, "demand"},
         {VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR, "continuous"},
-        {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
+        {VK_PRESENT_MODE_FIFO_LATEST_READY_KHR, "fifo_latest_ready"},
     };
 
     const struct

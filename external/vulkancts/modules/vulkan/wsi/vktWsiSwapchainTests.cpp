@@ -171,8 +171,8 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
 
     for (const auto &ext : supportedExtensions)
     {
-        if (strcmp(ext.extensionName, "VK_EXT_present_mode_fifo_latest_ready") == 0)
-            extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+        if (strcmp(ext.extensionName, "VK_KHR_present_mode_fifo_latest_ready") == 0)
+            extensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
     }
 
     const void *pNext                       = nullptr;
@@ -848,10 +848,10 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
             createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow(),
                           context.getTestContext().getCommandLine(), failingAllocator.getCallbacks()));
         std::vector<std::string> additionalExtensions;
-        // If driver supports VK_PRESENT_MODE_FIFO_LATEST_READY_EXT and it will used, VK_EXT_present_mode_fifo_latest_ready must be enabled
-        if (context.isDeviceFunctionalitySupported("VK_EXT_present_mode_fifo_latest_ready"))
+        // If driver supports VK_PRESENT_MODE_FIFO_LATEST_READY_KHR and it will used, VK_KHR_present_mode_fifo_latest_ready must be enabled
+        if (context.isDeviceFunctionalitySupported("VK_KHR_present_mode_fifo_latest_ready"))
         {
-            additionalExtensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+            additionalExtensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
         }
         const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, additionalExtensions,
                                      failingAllocator.getCallbacks());
