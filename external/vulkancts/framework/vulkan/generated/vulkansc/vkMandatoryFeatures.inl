@@ -1130,7 +1130,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 
 	// VkPhysicalDeviceSubpassMergeFeedbackFeaturesEXT in APIs []
-	// VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT in APIs []
 	// VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_texel_buffer_alignment")) )
 	{
@@ -1420,6 +1419,8 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR in APIs []
+	// VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR in APIs []
 	// VkPhysicalDeviceSynchronization2FeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_synchronization2")) )
 	{

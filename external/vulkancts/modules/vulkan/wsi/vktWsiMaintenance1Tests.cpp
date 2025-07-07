@@ -2,8 +2,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2022 Google Inc.
- * Copyright (c) 2022 The Khronos Group Inc.
+ * Copyright (c) 2022,2025 Google Inc.
+ * Copyright (c) 2022,2025 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -19,7 +19,8 @@
  *
  *//*!
  * \file
- * \brief VK_EXT_surface_maintenance1 and VK_EXT_swapchain_maintenance1 extension tests
+ * \brief VK_KHR_surface_maintenance1, VK_KHR_swapchain_maintenance1,
+ *        VK_EXT_surface_maintenance1, and VK_EXT_swapchain_maintenance1 extension tests
  *//*--------------------------------------------------------------------*/
 
 #include "vktWsiMaintenance1Tests.hpp"
@@ -79,8 +80,40 @@ void checkAllSupported(const Extensions &supportedExtensions, const std::vector<
     }
 }
 
+// Note that the EXT and KHR versions of the extensions are identical.  So in terms of which
+// extension is used, the only real difference is which extension name is enabled and whether
+// vkReleaseSwapchainImagesKHR is used or vkReleaseSwapchainImagesEXT, which is automatically
+// handled by the fact that the KHR entry point is populated by the EXT by the framework if KHR is
+// not supported.  Everything else exposed by these extensions is a type / enum, which is identical
+// between the two.  The tests were written against EXT originally, and they have kept that suffix.
+//
+// As such, the test params express their preference, and this function returns whether ext should
+// be used based on availability and preference.
+bool chooseExt(const Extensions &supportedExtensions, const RequiredExtension &ext, const RequiredExtension &khr,
+               bool preferExt)
+{
+    const bool hasExt = isExtensionStructSupported(supportedExtensions, ext);
+    const bool hasKhr = isExtensionStructSupported(supportedExtensions, khr);
+
+    if (!hasExt)
+    {
+        // If EXT is not supported, use the KHR version no matter what the test asked for.
+        return false;
+    }
+    else if (!hasKhr)
+    {
+        // If KHR is not supported, use the EXT version no matter what the test asked for.
+        return true;
+    }
+
+    // Otherwise let the test use whatever the test config specified, as either both or none are
+    // supported.
+    return preferExt;
+}
+
 CustomInstance createInstanceWithWsi(Context &context, const Extensions &supportedExtensions, Type wsiType,
-                                     bool requireDeviceGroup, const VkAllocationCallbacks *pAllocator = nullptr)
+                                     bool requireDeviceGroup, bool preferExt,
+                                     const VkAllocationCallbacks *pAllocator = nullptr)
 {
     const uint32_t version = context.getUsedApiVersion();
     std::vector<std::string> extensions;
@@ -96,7 +129,33 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_get_surface_capabilities2")))
         extensions.push_back("VK_KHR_get_surface_capabilities2");
 
-    extensions.push_back("VK_EXT_surface_maintenance1");
+    const bool useExt = chooseExt(supportedExtensions, RequiredExtension("VK_EXT_surface_maintenance1"),
+                                  RequiredExtension("VK_KHR_surface_maintenance1"), preferExt);
+    extensions.push_back(useExt ? "VK_EXT_surface_maintenance1" : "VK_KHR_surface_maintenance1");
+
+    // If the preference is not overriden, it's possible the other extension also exists.
+    // Enable that too in that case.  This is to be able to run tests in this situation:
+    //
+    // * Multiple drivers exist, some expose KHR_surface_maintenance1 some don't.
+    //   * The instance exposes KHR
+    // * The driver being tested exposes EXT_swapchain_maintenance1 only
+    //
+    // In that case, the test would end up creating the instance with KHR and the device with EXT,
+    // which is not valid.  By enablng the EXT instance extension, that would be fixed.  The same
+    // issue exists if the driver only exposes KHR_swapchain_maintenance1 and the preference is EXT.
+    if (preferExt == useExt)
+    {
+        if (preferExt &&
+            isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_surface_maintenance1")))
+        {
+            extensions.push_back("VK_KHR_surface_maintenance1");
+        }
+        else if (!preferExt &&
+                 isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_surface_maintenance1")))
+        {
+            extensions.push_back("VK_EXT_surface_maintenance1");
+        }
+    }
 
     if (requireDeviceGroup)
         extensions.push_back("VK_KHR_device_group_creation");
@@ -117,7 +176,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
                                    bool requireSwapchainMaintenance1, bool requireDeviceGroup,
-                                   bool requireFifoLatestReady, bool validationEnabled)
+                                   bool requireFifoLatestReady, bool validationEnabled, bool preferExt)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -134,7 +193,9 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
     extensions.push_back("VK_KHR_swapchain");
     if (requireSwapchainMaintenance1)
     {
-        extensions.push_back("VK_EXT_swapchain_maintenance1");
+        const bool useExt = chooseExt(supportedExtensions, RequiredExtension("VK_EXT_swapchain_maintenance1"),
+                                      RequiredExtension("VK_KHR_swapchain_maintenance1"), preferExt);
+        extensions.push_back(useExt ? "VK_EXT_swapchain_maintenance1" : "VK_KHR_swapchain_maintenance1");
     }
     if (requireDeviceGroup)
     {
@@ -200,10 +261,11 @@ struct InstanceHelper
     const CustomInstance instance;
     const InstanceDriver &vki;
 
-    InstanceHelper(Context &context, Type wsiType, bool requireDeviceGroup,
+    InstanceHelper(Context &context, Type wsiType, bool requireDeviceGroup, bool preferExt,
                    const VkAllocationCallbacks *pAllocator = nullptr)
         : supportedExtensions(enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr))
-        , instance(createInstanceWithWsi(context, supportedExtensions, wsiType, requireDeviceGroup, pAllocator))
+        , instance(
+              createInstanceWithWsi(context, supportedExtensions, wsiType, requireDeviceGroup, preferExt, pAllocator))
         , vki(instance.getDriver())
     {
     }
@@ -219,14 +281,14 @@ struct DeviceHelper
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
                  bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool requireFifoLatestReady,
-                 const VkAllocationCallbacks *pAllocator = nullptr)
+                 bool preferExt, const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
                                      pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
                                      requireFifoLatestReady,
-                                     context.getTestContext().getCommandLine().isValidationEnabled()))
+                                     context.getTestContext().getCommandLine().isValidationEnabled(), preferExt))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
@@ -553,6 +615,10 @@ struct PresentFenceTestConfig
     bool changePresentModes;
     bool verifyFenceOrdering;
     bool nullHandles;
+    // Whether the EXT or KHR versions of the extensions should be used.  The test configs alternate
+    // between EXT and KHR to cover both without duplicating all the tests, but if only one of two
+    // is supported, the test automatically falls back to that one for all the tests.
+    bool preferExt;
 };
 
 bool canDoMultiSwapchainPresent(vk::wsi::Type wsiType)
@@ -719,7 +785,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     tcu::ResultCollector results(log);
 
     const uint32_t surfaceCount = (uint32_t)testParams.modes.size();
-    const InstanceHelper instHelper(context, testParams.wsiType, testParams.bindImageMemory);
+    const InstanceHelper instHelper(context, testParams.wsiType, testParams.bindImageMemory, testParams.preferExt);
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, surfaceCount);
     std::vector<Move<VkSurfaceKHR>> surfaces;
     for (uint32_t i = 0; i < surfaceCount; ++i)
@@ -729,7 +795,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     }
 
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surfaces[0], true,
-                                 testParams.bindImageMemory, false);
+                                 testParams.bindImageMemory, false, testParams.preferExt);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -1066,6 +1132,7 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
+    bool preferExt = true;
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
     {
         de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
@@ -1079,11 +1146,13 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
         config.nullHandles           = false;
+        config.preferExt             = preferExt;
 
         // Basic present fence test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
 
         config.verifyFenceOrdering = true;
+        config.preferExt           = !preferExt;
         // Test ordering guarantee of present fence signals
         addFunctionCase(&*presentModeGroup, "ordering", presentFenceTest, config);
 
@@ -1091,20 +1160,26 @@ void populatePresentFenceGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {
             config.verifyFenceOrdering = false;
             config.modes               = std::vector<VkPresentModeKHR>(3, presentModes[presentModeNdx].mode);
+            config.preferExt           = preferExt;
             // Present fence test with multiple swapchains
             addFunctionCase(&*presentModeGroup, "multi_swapchain", presentFenceTest, config);
 
             config.verifyFenceOrdering = true;
+            config.preferExt           = !preferExt;
             // Test ordering guarantee of present fence signals with multiple swapchains
             addFunctionCase(&*presentModeGroup, "mult_swapchain_ordering", presentFenceTest, config);
 
             config.modes               = std::vector<VkPresentModeKHR>(5, presentModes[presentModeNdx].mode);
             config.verifyFenceOrdering = false;
             config.nullHandles         = true;
+            config.preferExt           = preferExt;
             addFunctionCase(&*presentModeGroup, "null_handles", presentFenceTest, config);
         }
 
         testGroup->addChild(presentModeGroup.release());
+
+        // Make sure next iteration uses the other ext for the same class of tests.
+        preferExt = !preferExt;
     }
 }
 
@@ -1112,6 +1187,8 @@ struct PresentModesTestConfig
 {
     vk::wsi::Type wsiType;
     VkPresentModeKHR mode;
+    // See PresentFenceTestConfig::preferExt
+    bool preferExt;
 };
 
 tcu::TestStatus verifyCompatiblePresentModes(const std::vector<VkPresentModeKHR> &supportedModes,
@@ -1154,11 +1231,11 @@ tcu::TestStatus verifyCompatiblePresentModes(const std::vector<VkPresentModeKHR>
 
 tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestConfig testParams)
 {
-    const InstanceHelper instHelper(context, testParams.wsiType, false);
+    const InstanceHelper instHelper(context, testParams.wsiType, false, testParams.preferExt);
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1292,6 +1369,7 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
+    bool preferExt = true;
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
     {
         de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
@@ -1299,8 +1377,9 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 
         {
             PresentModesTestConfig config;
-            config.wsiType = wsiType;
-            config.mode    = presentModes[presentModeNdx].mode;
+            config.wsiType   = wsiType;
+            config.mode      = presentModes[presentModeNdx].mode;
+            config.preferExt = preferExt;
 
             // Query compatible present modes
             addFunctionCase(&*presentModeGroup, "query", presentModesQueryTest, config);
@@ -1315,19 +1394,22 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.changePresentModes    = true;
             config.verifyFenceOrdering   = false;
             config.nullHandles           = false;
+            config.preferExt             = !preferExt;
 
             // Switch between compatible modes
             addFunctionCase(&*presentModeGroup, "change_modes", presentFenceTest, config);
 
             if (canDoMultiSwapchainPresent(wsiType))
             {
-                config.modes = std::vector<VkPresentModeKHR>(4, presentModes[presentModeNdx].mode);
+                config.modes     = std::vector<VkPresentModeKHR>(4, presentModes[presentModeNdx].mode);
+                config.preferExt = preferExt;
 
                 // Switch between compatible modes with multiple swapchains
                 addFunctionCase(&*presentModeGroup, "change_modes_multi_swapchain", presentFenceTest, config);
 
                 config.modes                 = std::vector<VkPresentModeKHR>(2, presentModes[presentModeNdx].mode);
                 config.deferMemoryAllocation = true;
+                config.preferExt             = !preferExt;
 
                 // Switch between compatible modes while swapchain uses deferred allocation
                 addFunctionCase(&*presentModeGroup, "change_modes_with_deferred_alloc", presentFenceTest, config);
@@ -1335,6 +1417,8 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         }
 
         testGroup->addChild(presentModeGroup.release());
+
+        preferExt = !preferExt;
     }
 
     if (canDoMultiSwapchainPresent(wsiType))
@@ -1372,8 +1456,11 @@ void populatePresentModesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
                     config.changePresentModes    = true;
                     config.verifyFenceOrdering   = false;
                     config.nullHandles           = false;
+                    config.preferExt             = preferExt;
 
                     addFunctionCase(&*heterogenousGroup, testName, presentFenceTest, config);
+
+                    preferExt = !preferExt;
                 }
             }
         }
@@ -1400,6 +1487,8 @@ struct ScalingQueryTestConfig
 {
     vk::wsi::Type wsiType;
     VkPresentModeKHR mode;
+    // See PresentFenceTestConfig::preferExt
+    bool preferExt;
 };
 
 struct ScalingTestConfig
@@ -1413,15 +1502,17 @@ struct ScalingTestConfig
     SwapchainWindowAspect aspect;
     // Either have the swapchain be created with a different size, or resize the window after swapchain creation
     bool resizeWindow;
+    // See PresentFenceTestConfig::preferExt
+    bool preferExt;
 };
 
 tcu::TestStatus scalingQueryTest(Context &context, const ScalingQueryTestConfig testParams)
 {
-    const InstanceHelper instHelper(context, testParams.wsiType, false);
+    const InstanceHelper instHelper(context, testParams.wsiType, false, testParams.preferExt);
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1452,11 +1543,11 @@ tcu::TestStatus scalingQueryTest(Context &context, const ScalingQueryTestConfig 
 
 tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQueryTestConfig testParams)
 {
-    const InstanceHelper instHelper(context, testParams.wsiType, false);
+    const InstanceHelper instHelper(context, testParams.wsiType, false, testParams.preferExt);
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1519,12 +1610,12 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
 
 tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams)
 {
-    const InstanceHelper instHelper(context, testParams.wsiType, false);
+    const InstanceHelper instHelper(context, testParams.wsiType, false, testParams.preferExt);
     TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false, false, testParams.preferExt);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -1808,6 +1899,7 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
         {VK_PRESENT_GRAVITY_CENTERED_BIT_EXT, "center"},
     };
 
+    bool preferExt = true;
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
     {
         de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
@@ -1815,13 +1907,16 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
 
         {
             ScalingQueryTestConfig config;
-            config.wsiType = wsiType;
-            config.mode    = presentModes[presentModeNdx].mode;
+            config.wsiType   = wsiType;
+            config.mode      = presentModes[presentModeNdx].mode;
+            config.preferExt = preferExt;
 
             // Query supported scaling modes
             de::MovePtr<tcu::TestCaseGroup> queryGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "query"));
             // Basic test
             addFunctionCase(&*queryGroup, "basic", scalingQueryTest, config);
+
+            config.preferExt = !preferExt;
             // Verify compatible present modes have the same scaling capabilities
             addFunctionCase(&*queryGroup, "verify_compatible_present_modes", scalingQueryCompatibleModesTest, config);
             presentModeGroup->addChild(queryGroup.release());
@@ -1834,6 +1929,7 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
 
             const bool isStretch = scalingFlags[scalingFlagNdx].scaling == VK_PRESENT_SCALING_STRETCH_BIT_EXT;
 
+            bool subTestPreferExt = preferExt;
             for (size_t gravityFlagXNdx = 0; gravityFlagXNdx < DE_LENGTH_OF_ARRAY(gravityFlags); gravityFlagXNdx++)
             {
                 for (size_t gravityFlagYNdx = 0; gravityFlagYNdx < DE_LENGTH_OF_ARRAY(gravityFlags); gravityFlagYNdx++)
@@ -1854,6 +1950,7 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
                     config.size         = SwapchainWindowSize::Identical;
                     config.aspect       = SwapchainWindowAspect::Identical;
                     config.resizeWindow = resizeWindow;
+                    config.preferExt    = subTestPreferExt;
 
                     // Gravity does not apply to stretch
                     de::MovePtr<tcu::TestCaseGroup> *group = isStretch ? &scalingFlagGroup : &gravityFlagsGroup;
@@ -1861,37 +1958,45 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
                     // Basic test without actual scaling
                     addFunctionCase(&**group, "same_size_and_aspect", scalingTest, config);
 
-                    config.size = SwapchainWindowSize::SwapchainBigger;
+                    config.size      = SwapchainWindowSize::SwapchainBigger;
+                    config.preferExt = !subTestPreferExt;
                     // Swapchain is bigger than window, but has same aspect
                     addFunctionCase(&**group, "swapchain_bigger_same_aspect", scalingTest, config);
 
-                    config.size = SwapchainWindowSize::SwapchainSmaller;
+                    config.size      = SwapchainWindowSize::SwapchainSmaller;
+                    config.preferExt = subTestPreferExt;
                     // Swapchain is smaller than window, but has same aspect
                     addFunctionCase(&**group, "swapchain_smaller_same_aspect", scalingTest, config);
 
-                    config.size   = SwapchainWindowSize::Identical;
-                    config.aspect = SwapchainWindowAspect::SwapchainTaller;
+                    config.size      = SwapchainWindowSize::Identical;
+                    config.aspect    = SwapchainWindowAspect::SwapchainTaller;
+                    config.preferExt = !subTestPreferExt;
                     // Swapchain has same width, but is taller than window
                     addFunctionCase(&**group, "swapchain_taller", scalingTest, config);
 
-                    config.size = SwapchainWindowSize::SwapchainBigger;
+                    config.size      = SwapchainWindowSize::SwapchainBigger;
+                    config.preferExt = subTestPreferExt;
                     // Swapchain is bigger than window, and is taller in aspect ratio
                     addFunctionCase(&**group, "swapchain_bigger_taller_aspect", scalingTest, config);
 
-                    config.size = SwapchainWindowSize::SwapchainSmaller;
+                    config.size      = SwapchainWindowSize::SwapchainSmaller;
+                    config.preferExt = !subTestPreferExt;
                     // Swapchain is smaller than window, but is taller in aspect ratio
                     addFunctionCase(&**group, "swapchain_smaller_taller_aspect", scalingTest, config);
 
-                    config.size   = SwapchainWindowSize::Identical;
-                    config.aspect = SwapchainWindowAspect::SwapchainWider;
+                    config.size      = SwapchainWindowSize::Identical;
+                    config.aspect    = SwapchainWindowAspect::SwapchainWider;
+                    config.preferExt = subTestPreferExt;
                     // Swapchain has same height, but is wider than window
                     addFunctionCase(&**group, "swapchain_wider", scalingTest, config);
 
-                    config.size = SwapchainWindowSize::SwapchainBigger;
+                    config.size      = SwapchainWindowSize::SwapchainBigger;
+                    config.preferExt = !subTestPreferExt;
                     // Swapchain is bigger than window, and is wider in aspect ratio
                     addFunctionCase(&**group, "swapchain_bigger_wider_aspect", scalingTest, config);
 
-                    config.size = SwapchainWindowSize::SwapchainSmaller;
+                    config.size      = SwapchainWindowSize::SwapchainSmaller;
+                    config.preferExt = subTestPreferExt;
                     // Swapchain is smaller than window, but is wider in aspect ratio
                     addFunctionCase(&**group, "swapchain_smaller_wider_aspect", scalingTest, config);
 
@@ -1901,6 +2006,8 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
                     }
 
                     scalingFlagGroup->addChild(gravityFlagsGroup.release());
+
+                    subTestPreferExt = !subTestPreferExt;
                 }
 
                 if (isStretch)
@@ -1913,6 +2020,8 @@ void populateScalingTests(tcu::TestCaseGroup *testGroup, Type wsiType, bool resi
         }
 
         testGroup->addChild(presentModeGroup.release());
+
+        preferExt = !preferExt;
     }
 }
 
@@ -1942,6 +2051,7 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"},
     };
 
+    bool preferExt = true;
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
     {
         de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
@@ -1955,6 +2065,7 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         config.changePresentModes    = false;
         config.verifyFenceOrdering   = false;
         config.nullHandles           = false;
+        config.preferExt             = preferExt;
 
         // Basic deferred allocation test
         addFunctionCase(&*presentModeGroup, "basic", presentFenceTest, config);
@@ -1965,6 +2076,7 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         if (presentModes[presentModeNdx].mode != VK_PRESENT_MODE_SHARED_CONTINUOUS_REFRESH_KHR &&
             presentModes[presentModeNdx].mode != VK_PRESENT_MODE_SHARED_DEMAND_REFRESH_KHR)
         {
+            config.preferExt = !preferExt;
             // Bind image with VkBindImageMemorySwapchainInfoKHR
             addFunctionCase(&*presentModeGroup, "bind_image", presentFenceTest, config);
         }
@@ -1973,11 +2085,14 @@ void populateDeferredAllocGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {
             config.modes = std::vector<VkPresentModeKHR>(2, presentModes[presentModeNdx].mode);
 
+            config.preferExt = preferExt;
             // Bind image with VkBindImageMemorySwapchainInfoKHR with multiple swapchains
             addFunctionCase(&*presentModeGroup, "bind_image_multi_swapchain", presentFenceTest, config);
         }
 
         testGroup->addChild(presentModeGroup.release());
+
+        preferExt = !preferExt;
     }
 }
 
@@ -1996,18 +2111,20 @@ struct ReleaseImagesTestConfig
     ResizeWindow resizeWindow;
     bool releaseBeforePresent;
     bool releaseBeforeRetire;
+    // See PresentFenceTestConfig::preferExt
+    bool preferExt;
 };
 
 tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfig testParams)
 {
-    const InstanceHelper instHelper(context, testParams.wsiType, false);
+    const InstanceHelper instHelper(context, testParams.wsiType, false, testParams.preferExt);
     TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
     const bool requireFifoLatestReady = testParams.mode == VK_PRESENT_MODE_FIFO_LATEST_READY_EXT;
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false,
-                                 requireFifoLatestReady);
+                                 requireFifoLatestReady, testParams.preferExt);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -2363,11 +2480,13 @@ void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
         {VK_PRESENT_SCALING_STRETCH_BIT_EXT, "stretch"},
     };
 
+    bool preferExt = true;
     for (size_t presentModeNdx = 0; presentModeNdx < DE_LENGTH_OF_ARRAY(presentModes); presentModeNdx++)
     {
         de::MovePtr<tcu::TestCaseGroup> presentModeGroup(
             new tcu::TestCaseGroup(testGroup->getTestContext(), presentModes[presentModeNdx].name));
 
+        bool subTestPreferExt = preferExt;
         for (size_t scalingFlagNdx = 0; scalingFlagNdx < DE_LENGTH_OF_ARRAY(scalingFlags); scalingFlagNdx++)
         {
             de::MovePtr<tcu::TestCaseGroup> scalingFlagGroup(
@@ -2380,34 +2499,43 @@ void populateReleaseImagesGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
             config.resizeWindow         = ResizeWindow::No;
             config.releaseBeforePresent = false;
             config.releaseBeforeRetire  = false;
+            config.preferExt            = subTestPreferExt;
 
             // Basic release acquired images test
             addFunctionCase(&*scalingFlagGroup, "basic", checkPresentModeSupport, releaseImagesTest, config);
 
             config.releaseBeforePresent = true;
+            config.preferExt            = !subTestPreferExt;
             // Basic release acquired images test where release happens before presenting an image
             addFunctionCase(&*scalingFlagGroup, "release_before_present", checkPresentModeSupport, releaseImagesTest,
                             config);
 
             config.releaseBeforePresent = false;
             config.resizeWindow         = ResizeWindow::BeforeAcquire;
+            config.preferExt            = subTestPreferExt;
             // Release acquired images after a window resize before acquire
             addFunctionCase(&*scalingFlagGroup, "resize_window", checkPresentModeSupport, releaseImagesTest, config);
 
             config.resizeWindow = ResizeWindow::BeforePresent;
+            config.preferExt    = !subTestPreferExt;
             // Release acquired images after a window resize after acquire
             addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire", checkPresentModeSupport,
                             releaseImagesTest, config);
 
             config.releaseBeforeRetire = true;
+            config.preferExt           = subTestPreferExt;
             // Release acquired images after a window resize after acquire, but release the images before retiring the swapchain
             addFunctionCase(&*scalingFlagGroup, "resize_window_after_acquire_release_before_retire",
                             checkPresentModeSupport, releaseImagesTest, config);
 
             presentModeGroup->addChild(scalingFlagGroup.release());
+
+            subTestPreferExt = !subTestPreferExt;
         }
 
         testGroup->addChild(presentModeGroup.release());
+
+        preferExt = !preferExt;
     }
 }
 

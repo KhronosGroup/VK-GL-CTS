@@ -95,6 +95,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_spirv_1_4",
 	"VK_KHR_storage_buffer_storage_class",
 	"VK_KHR_swapchain",
+	"VK_KHR_swapchain_maintenance1",
 	"VK_KHR_swapchain_mutable_format",
 	"VK_KHR_synchronization2",
 	"VK_KHR_timeline_semaphore",
