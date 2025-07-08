@@ -881,6 +881,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 #endif // defined(CTS_USES_VULKAN)
 
+	// VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR for ext [VK_KHR_present_mode_fifo_latest_ready, VK_EXT_present_mode_fifo_latest_ready] in APIs []
+
+	vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR physicalDevicePresentModeFifoLatestReadyFeaturesKHR;
+	deMemset(&physicalDevicePresentModeFifoLatestReadyFeaturesKHR, 0, sizeof(physicalDevicePresentModeFifoLatestReadyFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready"))
+	{
+		physicalDevicePresentModeFifoLatestReadyFeaturesKHR.sType = getStructureType<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>();
+		*nextPtr = &physicalDevicePresentModeFifoLatestReadyFeaturesKHR;
+		nextPtr  = &physicalDevicePresentModeFifoLatestReadyFeaturesKHR.pNext;
+	}
+
 	// VkPhysicalDevicePresentWaitFeaturesKHR for ext [VK_KHR_present_wait] in APIs [vulkan]
 
 #if defined(CTS_USES_VULKAN)
@@ -3064,6 +3076,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 #endif // defined(CTS_USES_VULKAN)
+
+	// VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_present_mode_fifo_latest_ready")) )
+	{
+		if ( physicalDevicePresentModeFifoLatestReadyFeaturesKHR.presentModeFifoLatestReady == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature presentModeFifoLatestReady not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
 
 	// VkPhysicalDevicePresentWaitFeaturesKHR in APIs [vulkan]
 #if defined(CTS_USES_VULKAN)
