@@ -49,6 +49,7 @@ VK_KHR_maintenance9
 VK_KHR_present_mode_fifo_latest_ready
 VK_KHR_shader_bfloat16
 VK_EXT_shader_float8
+VK_KHR_surface_maintenance1
 VK_KHR_unified_image_layouts
 VK_KHR_video_decode_vp9
 VK_KHR_video_encode_av1
