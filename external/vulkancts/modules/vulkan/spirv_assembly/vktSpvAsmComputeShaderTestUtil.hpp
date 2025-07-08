@@ -697,6 +697,8 @@ struct ComputeShaderSpec
     bool coherentMemory;
     bool usesPhysStorageBuffer;
     const bool graphicsFeaturesRequired;
+    // The last numArrayInputs inputs are considered an array binding.
+    size_t numArrayInputs;
 
     ComputeShaderSpec(void)
         : entryPoint("main")
@@ -710,6 +712,7 @@ struct ComputeShaderSpec
         , coherentMemory(false)
         , usesPhysStorageBuffer(false)
         , graphicsFeaturesRequired(false)
+        , numArrayInputs(0)
     {
     }
 };

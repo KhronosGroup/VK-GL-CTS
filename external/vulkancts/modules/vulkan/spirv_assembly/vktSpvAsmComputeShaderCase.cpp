@@ -206,12 +206,27 @@ void invalidateMemory(const DeviceInterface &vkdi, const VkDevice &device, Alloc
  * All descriptors are created for compute pipeline.
  *//*--------------------------------------------------------------------*/
 Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vkdi, const VkDevice &device,
-                                                      const vector<VkDescriptorType> &dtypes)
+                                                      const vector<VkDescriptorType> &dtypes, size_t numInputs = 0,
+                                                      size_t numArrayInputs = 0)
 {
     DescriptorSetLayoutBuilder builder;
 
-    for (size_t bindingNdx = 0; bindingNdx < dtypes.size(); ++bindingNdx)
-        builder.addSingleBinding(dtypes[bindingNdx], VK_SHADER_STAGE_COMPUTE_BIT);
+    DE_ASSERT(numArrayInputs == 0 || dtypes.size() >= numInputs);
+    DE_ASSERT(numInputs >= numArrayInputs);
+    for (size_t bindingNdx = 0; bindingNdx < dtypes.size();)
+    {
+        if (numArrayInputs > 0 && bindingNdx == (numInputs - numArrayInputs))
+        {
+            builder.addArrayBinding(dtypes[bindingNdx], static_cast<uint32_t>(numArrayInputs),
+                                    VK_SHADER_STAGE_COMPUTE_BIT);
+            bindingNdx += numArrayInputs;
+        }
+        else
+        {
+            builder.addSingleBinding(dtypes[bindingNdx], VK_SHADER_STAGE_COMPUTE_BIT);
+            ++bindingNdx;
+        }
+    }
 
     return builder.build(vkdi, device);
 }
@@ -276,9 +291,12 @@ inline Move<VkDescriptorPool> createDescriptorPool(const DeviceInterface &vkdi, 
 Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkDevice &device, VkDescriptorPool pool,
                                           VkDescriptorSetLayout layout, const vector<VkDescriptorType> &dtypes,
                                           const vector<VkDescriptorBufferInfo> &descriptorInfos,
-                                          const vector<VkDescriptorImageInfo> &descriptorImageInfos)
+                                          const vector<VkDescriptorImageInfo> &descriptorImageInfos,
+                                          size_t numInputs = 0, size_t numArrayInputs = 0)
 {
     DE_ASSERT(dtypes.size() == descriptorInfos.size() + descriptorImageInfos.size());
+    DE_ASSERT(numArrayInputs == 0 || dtypes.size() >= numInputs);
+    DE_ASSERT(numInputs >= numArrayInputs);
 
     const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, pool, 1u,
                                                    &layout};
@@ -288,16 +306,29 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkD
 
     uint32_t bufferNdx = 0u;
     uint32_t imageNdx  = 0u;
+    uint32_t binding   = 0u;
 
-    for (uint32_t descriptorNdx = 0; descriptorNdx < dtypes.size(); ++descriptorNdx)
+    for (uint32_t descriptorNdx = 0; descriptorNdx < dtypes.size();)
     {
+        const auto location = DescriptorSetUpdateBuilder::Location::binding(binding++);
+
         switch (dtypes[descriptorNdx])
         {
         // Write buffer descriptor
         case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-            builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx),
-                                dtypes[descriptorNdx], &descriptorInfos[bufferNdx++]);
+            if (numArrayInputs > 0 && descriptorNdx == (numInputs - numArrayInputs))
+            {
+                uint32_t count = static_cast<uint32_t>(numArrayInputs);
+                builder.writeArray(*descriptorSet, location, dtypes[descriptorNdx], count, &descriptorInfos[bufferNdx]);
+                descriptorNdx += count;
+                bufferNdx += count;
+            }
+            else
+            {
+                builder.writeSingle(*descriptorSet, location, dtypes[descriptorNdx], &descriptorInfos[bufferNdx++]);
+                ++descriptorNdx;
+            }
             break;
 
         // Write image/sampler descriptor
@@ -305,8 +336,18 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkD
         case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
         case VK_DESCRIPTOR_TYPE_SAMPLER:
         case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-            builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx),
-                                dtypes[descriptorNdx], &descriptorImageInfos[imageNdx++]);
+            if (numArrayInputs > 0 && descriptorNdx == (numInputs - numArrayInputs))
+            {
+                uint32_t count = static_cast<uint32_t>(numArrayInputs);
+                builder.writeArray(*descriptorSet, location, dtypes[descriptorNdx], count, &descriptorInfos[imageNdx]);
+                descriptorNdx += count;
+                imageNdx += count;
+            }
+            else
+            {
+                builder.writeSingle(*descriptorSet, location, dtypes[descriptorNdx], &descriptorImageInfos[imageNdx++]);
+                ++descriptorNdx;
+            }
             break;
 
         default:
@@ -804,12 +845,14 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
 
     // Create layouts and descriptor set.
 
-    Unique<VkDescriptorSetLayout> descriptorSetLayout(createDescriptorSetLayout(vkdi, device, descriptorTypes));
+    Unique<VkDescriptorSetLayout> descriptorSetLayout(createDescriptorSetLayout(
+        vkdi, device, descriptorTypes, m_shaderSpec.inputs.size(), m_shaderSpec.numArrayInputs));
     Unique<VkPipelineLayout> pipelineLayout(
         createPipelineLayout(vkdi, device, *descriptorSetLayout, m_shaderSpec.pushConstants));
     Unique<VkDescriptorPool> descriptorPool(createDescriptorPool(vkdi, device, descriptorTypes));
     Unique<VkDescriptorSet> descriptorSet(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout,
-                                                              descriptorTypes, descriptorInfos, descriptorImageInfos));
+                                                              descriptorTypes, descriptorInfos, descriptorImageInfos,
+                                                              m_shaderSpec.inputs.size(), m_shaderSpec.numArrayInputs));
 
     // Create compute shader and pipeline.
 

@@ -236,6 +236,21 @@ enum class MemoryInterpretationTestCases : uint8_t
 };
 using MEMORY_INTERPRETATION_TEST_CASE = MemoryInterpretationTestCases;
 
+enum class BlockArrayTestCases : uint8_t
+{
+    BASIC = 0,
+    REINTERPRET_BLOCK_NORMAL_ACCESS_CHAIN,
+    REINTERPRET_BLOCK_NORMAL_PTR_ACCESS_CHAIN,
+    REINTERPRET_BLOCK_UNTYPED_ACCESS_CHAIN,
+    REINTERPRET_BLOCK_UNTYPED_PTR_ACCESS_CHAIN,
+    SELECT_BLOCK_NORMAL_ACCESS_CHAIN,
+    SELECT_BLOCK_NORMAL_PTR_ACCESS_CHAIN,
+    SELECT_BLOCK_UNTYPED_ACCESS_CHAIN,
+    SELECT_BLOCK_UNTYPED_PTR_ACCESS_CHAIN,
+    _ENUM_COUNT,
+};
+using BLOCK_ARRAY_TEST_CASE = BlockArrayTestCases;
+
 enum class WorkgroupTestCases : uint8_t
 {
     ALIASED = 0,
@@ -712,6 +727,23 @@ const char *toString(MEMORY_INTERPRETATION_TEST_CASE testCase)
         "char2_16bit_storage_cap",         // CHAR2_16BIT_STORAGE_CAP
         "untyped_from_typed_var",          // UNTYPED_FROM_TYPED_VAR
         "untyped_from_typed_access_chain", // UNTYPED_FROM_TYPED_ACCESS_CHAIN
+    };
+
+    return translateTable[DE_ENUM_INDEX(testCase)];
+}
+
+const char *toString(BLOCK_ARRAY_TEST_CASE testCase)
+{
+    static const char *const translateTable[DE_ENUM_COUNT(BlockArrayTestCases)] = {
+        "basic",                                      // BASIC
+        "reinterpret_block_normal_access_chain",      // REINTERPRET_BLOCK_NORMAL
+        "reinterpret_block_normal_ptr_access_chain",  // REINTERPRET_BLOCK_NORMAL
+        "reinterpret_block_untyped_access_chain",     // REINTERPRET_BLOCK_UNTYPED
+        "reinterpret_block_untyped_ptr_access_chain", // REINTERPRET_BLOCK_UNTYPED
+        "select_block_normal_access_chain",           // SELECT_BLOCK_NORMAL
+        "select_block_normal_ptr_access_chain",       // SELECT_BLOCK_NORMAL
+        "select_block_untyped_access_chain",          // SELECT_BLOCK_UNTYPED
+        "select_block_untyped_ptr_access_chain",      // SELECT_BLOCK_UNTYPED
     };
 
     return translateTable[DE_ENUM_INDEX(testCase)];
@@ -1641,6 +1673,35 @@ static void adjustSpecForMemoryInterpretation(ComputeShaderSpec &spec, std::vect
         spec.requestedVulkanFeatures.coreFeatures.shaderInt16                 = VK_TRUE;
 
         break;
+    }
+    default:
+    {
+        break;
+    }
+    }
+}
+
+static void adjustSpecForBlockArray(ComputeShaderSpec &spec, std::vector<const char *> &spvExtensions,
+                                    std::vector<const char *> &spvCapabilities, BLOCK_ARRAY_TEST_CASE testCase)
+{
+    spvExtensions.push_back("OpExtension \"SPV_EXT_descriptor_indexing\"\n");
+    spvCapabilities.push_back("OpCapability StorageBufferArrayDynamicIndexing\n");
+    spec.requestedVulkanFeatures.coreFeatures.shaderStorageBufferArrayDynamicIndexing = VK_TRUE;
+    spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
+    spec.extensions.push_back("VK_EXT_descriptor_indexing");
+    switch (testCase)
+    {
+    case BlockArrayTestCases::REINTERPRET_BLOCK_NORMAL_PTR_ACCESS_CHAIN:
+    case BlockArrayTestCases::REINTERPRET_BLOCK_UNTYPED_PTR_ACCESS_CHAIN:
+    case BlockArrayTestCases::SELECT_BLOCK_NORMAL_ACCESS_CHAIN:
+    case BlockArrayTestCases::SELECT_BLOCK_NORMAL_PTR_ACCESS_CHAIN:
+    case BlockArrayTestCases::SELECT_BLOCK_UNTYPED_ACCESS_CHAIN:
+    case BlockArrayTestCases::SELECT_BLOCK_UNTYPED_PTR_ACCESS_CHAIN:
+    {
+        spvExtensions.push_back("OpExtension \"SPV_KHR_variable_pointers\"\n");
+        spvCapabilities.push_back("OpCapability VariablePointersStorageBuffer\n");
+        spec.requestedVulkanFeatures.extVariablePointers.variablePointersStorageBuffer = VK_TRUE;
+        spec.extensions.push_back("VK_KHR_variable_pointers");
     }
     default:
     {
@@ -3091,6 +3152,33 @@ std::string createShaderAnnotations(MEMORY_INTERPRETATION_TEST_CASE testCase, bo
         break;
     }
     }
+
+    return annotations;
+}
+
+std::string createShaderAnnotations(BLOCK_ARRAY_TEST_CASE /* testCase */)
+{
+    std::string annotations = std::string("OpDecorate %id BuiltIn GlobalInvocationId\n"
+                                          "OpDecorate       %uni_var       DescriptorSet 0\n"
+                                          "OpDecorate       %uni_var       Binding       0\n"
+                                          "OpDecorate       %in_var        DescriptorSet 0\n"
+                                          "OpDecorate       %in_var        Binding       1\n"
+                                          "OpDecorate       %out_var       DescriptorSet 0\n"
+                                          "OpDecorate       %out_var       Binding       2\n"
+                                          "OpDecorate       %in_block_0    Block\n"
+                                          "OpMemberDecorate %in_block_0    0             Offset 0\n"
+                                          "OpDecorate       %in_block_1    Block\n"
+                                          "OpMemberDecorate %in_block_1    0             Offset 0\n"
+                                          "OpDecorate       %out_block     Block\n"
+                                          "OpMemberDecorate %out_block     0             Offset 0\n"
+                                          "OpDecorate       %uni_block     Block\n"
+                                          "OpMemberDecorate %uni_block     0             Offset 0\n"
+                                          "OpDecorate       %float_array   ArrayStride   4\n"
+                                          "OpDecorate       %int_array     ArrayStride   4\n"
+                                          "OpDecorate       %int4_array    ArrayStride   16\n"
+                                          "OpDecorate       %uni_array     ArrayStride   4\n"
+                                          "OpDecorate       %ptr_4_stride  ArrayStride   4\n"
+                                          "OpDecorate       %ptr_16_stride ArrayStride   16\n");
 
     return annotations;
 }
@@ -4830,6 +4918,66 @@ std::string createShaderVariables(MEMORY_INTERPRETATION_TEST_CASE testCase, bool
     return variables;
 }
 
+std::string createShaderVariables(BLOCK_ARRAY_TEST_CASE /* testCase */)
+{
+    std::string variables = std::string(
+        /* Base types */
+        "%void                  = OpTypeVoid\n"
+        "%bool                  = OpTypeBool\n"
+        "%uint32                = OpTypeInt 32 0\n"
+        "%float                 = OpTypeFloat 32\n"
+        "%vec3_uint32           = OpTypeVector %uint32      3\n"
+        "%vec4_uint32           = OpTypeVector %uint32      4\n"
+        "%int_array             = OpTypeRuntimeArray %uint32\n"
+        "%float_array           = OpTypeRuntimeArray %float\n"
+        "%int4_array            = OpTypeRuntimeArray %vec4_uint32\n"
+
+        /* Function types */
+        "%void_func             = OpTypeFunction %void\n"
+
+        /* Constants */
+        "%c_uint32_0            = OpConstant %uint32 0\n"
+        "%c_uint32_1            = OpConstant %uint32 1\n"
+        "%c_uint32_2            = OpConstant %uint32 2\n"
+        "%c_uint32_3            = OpConstant %uint32 3\n"
+        "%c_uint32_4            = OpConstant %uint32 4\n"
+        "%c_uint32_64           = OpConstant %uint32 64\n"
+
+        /* Uniform buffer */
+        "%uni_array             = OpTypeArray %uint32 ${threads_const}\n"
+        "%uni_block             = OpTypeStruct %uni_array\n"
+        "%ptr_uni_block         = OpTypePointer StorageBuffer %uni_block\n"
+        "%uni_var               = OpVariable %ptr_uni_block StorageBuffer\n"
+
+        /* Output buffer */
+        "%out_block             = OpTypeStruct %int_array\n"
+        "%ptr_out_block         = OpTypePointer StorageBuffer %out_block\n"
+        "%out_var               = OpVariable %ptr_out_block StorageBuffer\n"
+
+        /* Input buffer */
+        "%in_block_0            = OpTypeStruct %float_array\n"
+        "%in_block_1            = OpTypeStruct %int4_array\n"
+        "%block_array           = OpTypeArray %in_block_0 ${threads_const}\n"
+        "%ptr_storage_block     = OpTypePointer StorageBuffer %in_block_0\n"
+        "%ptr_storage_block_arr = OpTypePointer StorageBuffer %block_array\n"
+        "%in_var                = OpVariable %ptr_storage_block_arr StorageBuffer\n"
+
+        /* Pointers */
+        "%uint32_input_ptr      = OpTypePointer Input %uint32\n"
+        "%vec3_uint32_input_ptr = OpTypePointer Input %vec3_uint32\n"
+        "%ptr_no_stride         = OpTypeUntypedPointerKHR StorageBuffer\n"
+        "%ptr_4_stride          = OpTypeUntypedPointerKHR StorageBuffer\n"
+        "%ptr_16_stride         = OpTypeUntypedPointerKHR StorageBuffer\n"
+        "%uint32_storage_ptr    = OpTypePointer StorageBuffer %uint32\n"
+        "%block0_storage_ptr    = OpTypePointer StorageBuffer %in_block_0\n"
+        "%uint32_func_ptr       = OpTypePointer Function %uint32\n"
+
+        /* Variables */
+        "%id                    = OpVariable %vec3_uint32_input_ptr Input\n");
+
+    return variables;
+}
+
 std::string createShaderVariables(WORKGROUP_TEST_CASE testCase)
 {
     std::string variables = std::string(
@@ -6274,6 +6422,258 @@ std::string createShaderMain(MEMORY_INTERPRETATION_TEST_CASE testCase, bool read
 
     main += std::string("                OpReturn\n"
                         "                OpFunctionEnd\n");
+
+    return main;
+}
+
+std::string createShaderMain(BLOCK_ARRAY_TEST_CASE testCase, std::map<std::string, std::string> &specMap)
+{
+    std::string main = std::string("%main       = OpFunction %void None %void_func\n"
+                                   "%label_main = OpLabel\n"
+                                   "%value_var  = OpVariable %uint32_func_ptr Function %c_uint32_0\n"
+                                   "%gid        = OpLoad %vec3_uint32 %id\n"
+                                   "%gid_x      = OpCompositeExtract %uint32 %gid 0\n"
+                                   "%index_gep  = OpAccessChain %uint32_storage_ptr %uni_var %c_uint32_0 %gid_x\n"
+                                   "%index      = OpLoad %uint32 %index_gep\n"
+                                   "%gid_x_p1   = OpIAdd %uint32 %gid_x %c_uint32_1\n"
+                                   "%next_gid_x = OpUMod %uint32 %gid_x_p1 %c_uint32_4\n"
+                                   "%less       = OpULessThanEqual %bool %gid_x %index\n");
+
+    switch (testCase)
+    {
+    case BlockArrayTestCases::BASIC:
+    {
+        specMap["base_gep_0"] = "";
+        specMap["base_gep_1"] = "";
+        specMap["base_gep_2"] = "";
+        specMap["base_gep_3"] = "";
+        specMap["gep_0"]      = "OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x %c_uint32_0 %index";
+        specMap["gep_1"]      = "OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x %c_uint32_0 %index";
+        specMap["gep_2"]      = "OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x %c_uint32_0 %index";
+        specMap["gep_3"]      = "OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x %c_uint32_0 %index";
+        break;
+    }
+    case BlockArrayTestCases::REINTERPRET_BLOCK_NORMAL_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] = "%base_gep_0 = OpAccessChain %block0_storage_ptr %in_var %gid_x";
+        specMap["base_gep_1"] = "%base_gep_1 = OpAccessChain %block0_storage_ptr %in_var %gid_x";
+        specMap["base_gep_2"] = "%base_gep_2 = OpAccessChain %block0_storage_ptr %in_var %gid_x";
+        specMap["base_gep_3"] = "%base_gep_3 = OpAccessChain %block0_storage_ptr %in_var %gid_x";
+        specMap["gep_0"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_0 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_1"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_1 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_2"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_2 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_3"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_3 %c_uint32_0 %index %c_uint32_0";
+        break;
+    }
+    case BlockArrayTestCases::REINTERPRET_BLOCK_NORMAL_PTR_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] = std::string(
+            "%base_gep_0  = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%extra_gep_0 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_0 %c_uint32_0 %c_uint32_0");
+        specMap["base_gep_1"] = std::string(
+            "%base_gep_1  = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%extra_gep_1 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_1 %c_uint32_0 %c_uint32_0");
+        specMap["base_gep_2"] = std::string(
+            "%base_gep_2  = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%extra_gep_2 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_2 %c_uint32_0 %c_uint32_0");
+        specMap["base_gep_3"] = std::string(
+            "%base_gep_3  = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%extra_gep_3 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_3 %c_uint32_0 %c_uint32_0");
+        specMap["gep_0"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_0 %index %c_uint32_0";
+        specMap["gep_1"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_1 %index %c_uint32_0";
+        specMap["gep_2"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_2 %index %c_uint32_0";
+        specMap["gep_3"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_3 %index %c_uint32_0";
+        break;
+    }
+    case BlockArrayTestCases::REINTERPRET_BLOCK_UNTYPED_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] = "%base_gep_0 = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x";
+        specMap["base_gep_1"] = "%base_gep_1 = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x";
+        specMap["base_gep_2"] = "%base_gep_2 = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x";
+        specMap["base_gep_3"] = "%base_gep_3 = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x";
+        specMap["gep_0"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_0 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_1"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_1 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_2"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_2 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_3"] =
+            "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %base_gep_3 %c_uint32_0 %index %c_uint32_0";
+        break;
+    }
+    case BlockArrayTestCases::REINTERPRET_BLOCK_UNTYPED_PTR_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] = std::string(
+            "%base_gep_0  = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%extra_gep_0 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_0 %c_uint32_0 %c_uint32_0");
+        specMap["base_gep_1"] = std::string(
+            "%base_gep_1  = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%extra_gep_1 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_1 %c_uint32_0 %c_uint32_0");
+        specMap["base_gep_2"] = std::string(
+            "%base_gep_2  = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%extra_gep_2 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_2 %c_uint32_0 %c_uint32_0");
+        specMap["base_gep_3"] = std::string(
+            "%base_gep_3  = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%extra_gep_3 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %base_gep_3 %c_uint32_0 %c_uint32_0");
+        specMap["gep_0"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_0 %index %c_uint32_0";
+        specMap["gep_1"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_1 %index %c_uint32_0";
+        specMap["gep_2"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_2 %index %c_uint32_0";
+        specMap["gep_3"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_3 %index %c_uint32_0";
+        break;
+    }
+    case BlockArrayTestCases::SELECT_BLOCK_NORMAL_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] =
+            std::string("%base_gep_0a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+                        "%base_gep_0b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+                        "%sel_0       = OpSelect %block0_storage_ptr %less %base_gep_0a %base_gep_0b\n");
+        specMap["base_gep_1"] =
+            std::string("%base_gep_1a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+                        "%base_gep_1b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+                        "%sel_1       = OpSelect %block0_storage_ptr %less %base_gep_1a %base_gep_1b\n");
+        specMap["base_gep_2"] =
+            std::string("%base_gep_2a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+                        "%base_gep_2b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+                        "%sel_2       = OpSelect %block0_storage_ptr %less %base_gep_2a %base_gep_2b\n");
+        specMap["base_gep_3"] =
+            std::string("%base_gep_3a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+                        "%base_gep_3b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+                        "%sel_3       = OpSelect %block0_storage_ptr %less %base_gep_3a %base_gep_3b\n");
+        specMap["gep_0"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_0 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_1"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_1 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_2"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_2 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_3"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_3 %c_uint32_0 %index %c_uint32_0";
+        break;
+    }
+    case BlockArrayTestCases::SELECT_BLOCK_NORMAL_PTR_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] = std::string(
+            "%base_gep_0a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%base_gep_0b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+            "%sel_0       = OpSelect %block0_storage_ptr %less %base_gep_0a %base_gep_0b\n"
+            "%extra_gep_0 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_0 %c_uint32_0 %c_uint32_0\n");
+        specMap["base_gep_1"] = std::string(
+            "%base_gep_1a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%base_gep_1b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+            "%sel_1       = OpSelect %block0_storage_ptr %less %base_gep_1a %base_gep_1b\n"
+            "%extra_gep_1 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_1 %c_uint32_0 %c_uint32_0\n");
+        specMap["base_gep_2"] = std::string(
+            "%base_gep_2a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%base_gep_2b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+            "%sel_2       = OpSelect %block0_storage_ptr %less %base_gep_2a %base_gep_2b\n"
+            "%extra_gep_2 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_2 %c_uint32_0 %c_uint32_0\n");
+        specMap["base_gep_3"] = std::string(
+            "%base_gep_3a = OpAccessChain %block0_storage_ptr %in_var %gid_x\n"
+            "%base_gep_3b = OpAccessChain %block0_storage_ptr %in_var %next_gid_x\n"
+            "%sel_3       = OpSelect %block0_storage_ptr %less %base_gep_3a %base_gep_3b\n"
+            "%extra_gep_3 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_3 %c_uint32_0 %c_uint32_0\n");
+        specMap["gep_0"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_0 %index %c_uint32_0";
+        specMap["gep_1"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_1 %index %c_uint32_0";
+        specMap["gep_2"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_2 %index %c_uint32_0";
+        specMap["gep_3"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_3 %index %c_uint32_0";
+        break;
+    }
+    case BlockArrayTestCases::SELECT_BLOCK_UNTYPED_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] =
+            std::string("%base_gep_0a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+                        "%base_gep_0b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+                        "%sel_0       = OpSelect %ptr_no_stride %less %base_gep_0a %base_gep_0b\n");
+        specMap["base_gep_1"] =
+            std::string("%base_gep_1a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+                        "%base_gep_1b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+                        "%sel_1       = OpSelect %ptr_no_stride %less %base_gep_1a %base_gep_1b\n");
+        specMap["base_gep_2"] =
+            std::string("%base_gep_2a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+                        "%base_gep_2b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+                        "%sel_2       = OpSelect %ptr_no_stride %less %base_gep_2a %base_gep_2b\n");
+        specMap["base_gep_3"] =
+            std::string("%base_gep_3a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+                        "%base_gep_3b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+                        "%sel_3       = OpSelect %ptr_no_stride %less %base_gep_3a %base_gep_3b\n");
+        specMap["gep_0"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_0 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_1"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_1 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_2"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_2 %c_uint32_0 %index %c_uint32_0";
+        specMap["gep_3"] = "OpUntypedAccessChainKHR %ptr_no_stride %in_block_1 %sel_3 %c_uint32_0 %index %c_uint32_0";
+        break;
+    }
+    case BlockArrayTestCases::SELECT_BLOCK_UNTYPED_PTR_ACCESS_CHAIN:
+    {
+        specMap["base_gep_0"] = std::string(
+            "%base_gep_0a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%base_gep_0b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+            "%sel_0       = OpSelect %ptr_no_stride %less %base_gep_0a %base_gep_0b\n"
+            "%extra_gep_0 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_0 %c_uint32_0 %c_uint32_0\n");
+        specMap["base_gep_1"] = std::string(
+            "%base_gep_1a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%base_gep_1b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+            "%sel_1       = OpSelect %ptr_no_stride %less %base_gep_1a %base_gep_1b\n"
+            "%extra_gep_1 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_1 %c_uint32_0 %c_uint32_0\n");
+        specMap["base_gep_2"] = std::string(
+            "%base_gep_2a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%base_gep_2b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+            "%sel_2       = OpSelect %ptr_no_stride %less %base_gep_2a %base_gep_2b\n"
+            "%extra_gep_2 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_2 %c_uint32_0 %c_uint32_0\n");
+        specMap["base_gep_3"] = std::string(
+            "%base_gep_3a = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %gid_x\n"
+            "%base_gep_3b = OpUntypedAccessChainKHR %ptr_no_stride %block_array %in_var %next_gid_x\n"
+            "%sel_3       = OpSelect %ptr_no_stride %less %base_gep_3a %base_gep_3b\n"
+            "%extra_gep_3 = OpUntypedAccessChainKHR %ptr_16_stride %in_block_1 %sel_3 %c_uint32_0 %c_uint32_0\n");
+        specMap["gep_0"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_0 %index %c_uint32_0";
+        specMap["gep_1"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_1 %index %c_uint32_0";
+        specMap["gep_2"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_2 %index %c_uint32_0";
+        specMap["gep_3"] = "OpUntypedPtrAccessChainKHR %ptr_no_stride %int4_array %extra_gep_3 %index %c_uint32_0";
+        break;
+    }
+    default:
+    {
+        DE_ASSERT(0);
+        DE_FATAL("Unknown test case.");
+        break;
+    }
+    }
+
+    main += std::string("OpSelectionMerge %label_end None\n"
+                        "OpSwitch %gid_x %label_end 0 %label_0 1 %label_1 2 %label_2 3 %label_3\n"
+
+                        "%label_0 = OpLabel\n"
+                        "${base_gep_0}\n"
+                        "%gep_0   = ${gep_0}\n"
+                        "%value_0 = OpLoad %uint32 %gep_0\n"
+                        "OpStore %value_var %value_0\n"
+                        "OpBranch %label_end\n"
+
+                        "%label_1 = OpLabel\n"
+                        "${base_gep_1}\n"
+                        "%gep_1   = ${gep_1}\n"
+                        "%value_1 = OpLoad %uint32 %gep_1\n"
+                        "OpStore %value_var %value_1\n"
+                        "OpBranch %label_end\n"
+
+                        "%label_2 = OpLabel\n"
+                        "${base_gep_2}\n"
+                        "%gep_2   = ${gep_2}\n"
+                        "%value_2 = OpLoad %uint32 %gep_2\n"
+                        "OpStore %value_var %value_2\n"
+                        "OpBranch %label_end\n"
+
+                        "%label_3 = OpLabel\n"
+                        "${base_gep_3}\n"
+                        "%gep_3   = ${gep_3}\n"
+                        "%value_3 = OpLoad %uint32 %gep_3\n"
+                        "OpStore %value_var %value_3\n"
+                        "OpBranch %label_end\n"
+
+                        "%label_end = OpLabel\n"
+                        "%value = OpLoad %uint32 %value_var\n"
+                        "%out_gep = OpAccessChain %uint32_storage_ptr %out_var %c_uint32_0 %gid_x\n"
+                        "OpStore %out_gep %value\n"
+                        "OpReturn\n"
+                        "OpFunctionEnd\n");
 
     return main;
 }
@@ -11175,6 +11575,94 @@ void addMemoryReinterpretationTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
     }
 }
 
+void addBlockArrayTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
+{
+    tcu::TestContext &testCtx = testGroup->getTestContext();
+
+    tcu::StringTemplate shaderHeader(createShaderHeader());
+
+    tcu::StringTemplate shaderVariables(createShaderVariables(BlockArrayTestCases::BASIC));
+
+    const uint32_t numWGs     = 4;
+    const uint32_t bufferSize = 128;
+
+    for (uint32_t i = 0; i < DE_ENUM_COUNT(BlockArrayTestCases); ++i)
+    {
+        BlockArrayTestCases testCase = static_cast<BlockArrayTestCases>(i);
+
+        std::string testName = toString(testCase);
+
+        tcu::StringTemplate shaderAnnotations(createShaderAnnotations(testCase));
+
+        std::map<std::string, std::string> specMap;
+
+        tcu::StringTemplate shaderFunctions(createShaderMain(testCase, specMap));
+
+        std::string memModelOp;
+        std::vector<const char *> spvExts;
+        std::vector<const char *> spvCaps;
+        ComputeShaderSpec spec;
+        adjustSpecForUntypedPointers(spec, spvExts, spvCaps);
+        adjustSpecForMemoryModel(memModel, spec, memModelOp, spvExts, spvCaps);
+        adjustSpecForBlockArray(spec, spvExts, spvCaps, testCase);
+
+        specMap["memModelOp"]    = memModelOp;
+        specMap["extensions"]    = toString(spvExts);
+        specMap["capabilities"]  = toString(spvCaps);
+        specMap["threads"]       = "4";
+        specMap["threads_const"] = "%c_uint32_4";
+
+        const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
+                                      shaderVariables.specialize(specMap) + shaderFunctions.specialize(specMap);
+
+        spec.numArrayInputs               = 4;
+        std::vector<uint32_t> indicesData = {0, 4, 8, 12};
+        std::vector<uint32_t> inputData0(bufferSize, 0);
+        std::vector<uint32_t> inputData1(bufferSize, 0);
+        std::vector<uint32_t> inputData2(bufferSize, 0);
+        std::vector<uint32_t> inputData3(bufferSize, 0);
+        if (testCase == BlockArrayTestCases::BASIC)
+        {
+            inputData0[0]  = 42;
+            inputData1[4]  = 43;
+            inputData2[8]  = 44;
+            inputData3[12] = 45;
+        }
+        else
+        {
+            inputData0[0]  = 42;
+            inputData1[16] = 43;
+            inputData2[32] = 44;
+            inputData3[48] = 45;
+        }
+        std::vector<uint32_t> outputData = {42, 43, 44, 45};
+
+        Resource indicesResource =
+            Resource(BufferSp(new Buffer<uint32_t>(indicesData, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        Resource inputResource0 =
+            Resource(BufferSp(new Buffer<uint32_t>(inputData0, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        Resource inputResource1 =
+            Resource(BufferSp(new Buffer<uint32_t>(inputData1, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        Resource inputResource2 =
+            Resource(BufferSp(new Buffer<uint32_t>(inputData2, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        Resource inputResource3 =
+            Resource(BufferSp(new Buffer<uint32_t>(inputData3, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        Resource outputResource =
+            Resource(BufferSp(new Buffer<uint32_t>(outputData, 0)), vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+
+        spec.assembly      = shaderAsm;
+        spec.numWorkGroups = tcu::IVec3(numWGs, 1, 1);
+        spec.inputs.push_back(indicesResource);
+        spec.inputs.push_back(inputResource0);
+        spec.inputs.push_back(inputResource1);
+        spec.inputs.push_back(inputResource2);
+        spec.inputs.push_back(inputResource3);
+        spec.outputs.push_back(outputResource);
+
+        testGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+    }
+}
+
 void addMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
 {
     tcu::TestContext &testCtx = testGroup->getTestContext();
@@ -12308,6 +12796,11 @@ void addCooperativeMatrixInteractionTestGroup(tcu::TestCaseGroup *testGroup, MEM
     addTestGroup(testGroup, "mixed", addCooperativeMatrixInteractionMixedTests, memModel);
 }
 
+void addBlockArrayTestGroup(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
+{
+    addTestGroup(testGroup, "block_array", addBlockArrayTests, memModel);
+}
+
 void addVulkanMemoryModelTestGroup(tcu::TestCaseGroup *testGroup)
 {
     addTestGroup(testGroup, "basic_usecase", addBasicUsecaseTestGroup, MemoryModelTypes::VULKAN);
@@ -12317,6 +12810,7 @@ void addVulkanMemoryModelTestGroup(tcu::TestCaseGroup *testGroup)
     addTestGroup(testGroup, "workgroup_memory_explicit_layout", addWorkgroupMemoryExplicitLayoutInteractionTestGroup,
                  MemoryModelTypes::VULKAN);
     addTestGroup(testGroup, "cooperative_matrix", addCooperativeMatrixInteractionTestGroup, MemoryModelTypes::VULKAN);
+    addTestGroup(testGroup, "block_array", addBlockArrayTestGroup, MemoryModelTypes::VULKAN);
 }
 
 void addGLSLMemoryModelTestGroup(tcu::TestCaseGroup *testGroup)
@@ -12327,6 +12821,7 @@ void addGLSLMemoryModelTestGroup(tcu::TestCaseGroup *testGroup)
     addTestGroup(testGroup, "physical_storage", addPhysicalStorageBufferInteractionTestGroup, MemoryModelTypes::GLSL);
     addTestGroup(testGroup, "workgroup_memory_explicit_layout", addWorkgroupMemoryExplicitLayoutInteractionTestGroup,
                  MemoryModelTypes::GLSL);
+    addTestGroup(testGroup, "block_array", addBlockArrayTestGroup, MemoryModelTypes::GLSL);
 }
 
 tcu::TestCaseGroup *createUntypedPointersTestGroup(tcu::TestContext &testCtx)
