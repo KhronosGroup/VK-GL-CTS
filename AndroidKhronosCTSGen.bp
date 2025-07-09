@@ -1427,6 +1427,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/fragment_shading_rate/vktFragmentShadingRateTests.cpp",
         "external/vulkancts/modules/vulkan/geometry/vktGeometryBasicClass.cpp",
         "external/vulkancts/modules/vulkan/geometry/vktGeometryBasicGeometryShaderTests.cpp",
+        "external/vulkancts/modules/vulkan/geometry/vktGeometryBuiltinVariableGeometryShaderTests.cpp",
         "external/vulkancts/modules/vulkan/geometry/vktGeometryEmitGeometryShaderTests.cpp",
         "external/vulkancts/modules/vulkan/geometry/vktGeometryInputGeometryShaderTests.cpp",
         "external/vulkancts/modules/vulkan/geometry/vktGeometryInstancedRenderingTests.cpp",
