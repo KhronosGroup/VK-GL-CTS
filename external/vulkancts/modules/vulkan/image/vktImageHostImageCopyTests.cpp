@@ -811,10 +811,10 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
 
         {
             auto imageMemoryBarrier = makeImageMemoryBarrier(
-                vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, m_parameters.dstLayout,
+                vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, m_parameters.dstLayout,
                 m_parameters.intermediateLayout, sampledImage, sampledSubresourceRange);
-            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  0u, 0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
+            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT, 0u,
+                                  0u, DE_NULL, 0u, DE_NULL, 1, &imageMemoryBarrier);
         }
 
         vk::endCommandBuffer(vk, *cmdBuffer);
@@ -995,9 +995,17 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
     commandsLog << "vkCmdCopyImageToBuffer() with image " << **outputImage << ", xOffset (" << imageOffset.x
                 << "), yOffset (" << imageOffset.y << "), width (" << renderArea.extent.width << "), height ("
                 << renderArea.extent.height << "\n";
+
+    const auto postBufferBarrier = makeBufferMemoryBarrier(
+        vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, **colorOutputBuffer, 0, VK_WHOLE_SIZE);
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 0, nullptr, 1, &postBufferBarrier, 0, nullptr);
+
     vk::endCommandBuffer(vk, *cmdBuffer);
 
     vk::submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
 
     // Verify image
     tcu::ConstPixelBufferAccess resultBuffer =
@@ -1601,10 +1609,18 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         };
         vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **outputBuffer, 1u,
                                 &copyRegion);
+
+        const auto postBufferBarrier = makeBufferMemoryBarrier(
+            vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_ACCESS_HOST_READ_BIT, **outputBuffer, 0, VK_WHOLE_SIZE);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 1, &postBufferBarrier, 0, nullptr);
     }
     vk::endCommandBuffer(vk, *cmdBuffer);
 
     vk::submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+    invalidateAlloc(vk, device, outputBuffer->getAllocation());
+
     auto outputPtr = outputBuffer->getAllocation().getHostPtr();
     bool match     = memcmp(data, outputPtr, bufferSize) == 0;
 

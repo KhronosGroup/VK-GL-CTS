@@ -627,7 +627,7 @@ tcu::TestStatus MeshTriangleRenderer::iterate()
     const tcu::Vec4 threshold(0.0f); // The color can be represented exactly.
 
     if (!tcu::floatThresholdCompare(log, "Result", "", m_params.expectedColor, outPixels, threshold,
-                                    tcu::COMPARE_LOG_EVERYTHING))
+                                    tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::fail("Failed; check log for details");
 
     return tcu::TestStatus::pass("Pass");

@@ -1456,13 +1456,13 @@ bool CommonDescriptorInstance::iterateVerifyResults(IterateCommonVariables &vari
     if (FUZZY_COMPARE)
     {
         result = tcu::fuzzyCompare(m_context.getTestContext().getLog(), "Fuzzy Compare", "Comparison result",
-                                   *referenceResult.get(), *programResult.get(), 0.02f, tcu::COMPARE_LOG_EVERYTHING);
+                                   *referenceResult.get(), *programResult.get(), 0.02f, tcu::COMPARE_LOG_ON_ERROR);
     }
     else
     {
         result = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Float Threshold Compare",
                                             "Comparison result", *referenceResult.get(), *programResult.get(),
-                                            tcu::Vec4(0.02f, 0.02f, 0.02f, 0.02f), tcu::COMPARE_LOG_EVERYTHING);
+                                            tcu::Vec4(0.02f, 0.02f, 0.02f, 0.02f), tcu::COMPARE_LOG_ON_ERROR);
     }
 
     if (m_testParams.allowVertexStoring)
