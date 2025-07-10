@@ -795,6 +795,20 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
     }
     else
     {
+#ifndef CTS_USES_VULKANSC
+        // Check that the reported number makes sense.
+        if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+        {
+            const auto &iubProperties = context.getInlineUniformBlockProperties();
+            if (normalValues.maxVariableDescriptorCount > iubProperties.maxInlineUniformBlockSize)
+                TCU_FAIL("Implementation supports a max IUB size larger than maxInlineUniformBlockSize");
+
+            // The number needs to make sense for VUID-VkDescriptorSetLayoutBinding-descriptorType-02209 too.
+            if (normalValues.maxVariableDescriptorCount % 4u != 0u)
+                TCU_FAIL("Implementation reports a max IUB size that is not a multiple of 4");
+        }
+#endif
+
         // Verify if we switch from one to zero descriptors we get the same reply back.
         bindings.back().descriptorCount = 0u;
         const auto zeroDescriptorValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
