@@ -398,7 +398,7 @@ tcu::TestStatus EmptyFSInstance::iterate(void)
 
     auto &log = m_context.getTestContext().getLog();
     if (!tcu::dsThresholdCompare(log, "DepthResult", "", referenceAccess, resultAccess, depthThres,
-                                 tcu::COMPARE_LOG_EVERYTHING))
+                                 tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
 
     return tcu::TestStatus::pass("Pass");
