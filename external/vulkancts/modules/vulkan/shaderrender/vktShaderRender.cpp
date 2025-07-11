@@ -2524,11 +2524,11 @@ bool ShaderRenderCaseInstance::compareImages(const tcu::Surface &resImage, const
 {
     if (m_fuzzyCompare)
         return tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ComparisonResult", "Image comparison result",
-                                 refImage, resImage, errorThreshold, tcu::COMPARE_LOG_EVERYTHING);
+                                 refImage, resImage, errorThreshold, tcu::COMPARE_LOG_ON_ERROR);
     else
         return tcu::pixelThresholdCompare(m_context.getTestContext().getLog(), "ComparisonResult",
                                           "Image comparison result", refImage, resImage, tcu::RGBA(1, 1, 1, 1),
-                                          tcu::COMPARE_LOG_EVERYTHING);
+                                          tcu::COMPARE_LOG_ON_ERROR);
 }
 
 } // namespace sr
