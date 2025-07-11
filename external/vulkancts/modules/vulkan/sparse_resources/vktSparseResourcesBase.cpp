@@ -213,9 +213,12 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         queueInfos.push_back(queueInfo);
     }
 
-    auto shaderImageAtomicInt64Features  = m_context.getShaderImageAtomicInt64FeaturesEXT();
-    auto maintenance5Features            = m_context.getMaintenance5Features();
-    auto transformFeedbackFeatures       = m_context.getTransformFeedbackFeaturesEXT();
+    auto shaderImageAtomicInt64Features = m_context.getShaderImageAtomicInt64FeaturesEXT();
+    auto maintenance5Features           = m_context.getMaintenance5Features();
+    auto transformFeedbackFeatures      = m_context.getTransformFeedbackFeaturesEXT();
+    auto copyMemoryIndirectFeatures     = m_context.getCopyMemoryIndirectFeatures();
+    auto bufferDeviceAddressFeatures    = m_context.getBufferDeviceAddressFeatures();
+
     shaderImageAtomicInt64Features.pNext = nullptr;
     maintenance5Features.pNext           = nullptr;
     transformFeedbackFeatures.pNext      = nullptr;
@@ -223,8 +226,8 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
     const VkPhysicalDeviceFeatures deviceFeatures = getPhysicalDeviceFeatures(instanceDriver, physicalDevice);
     vk::VkPhysicalDeviceFeatures2 deviceFeatures2 = getPhysicalDeviceFeatures2(instanceDriver, physicalDevice);
 
-    const bool useFeatures2 =
-        (requireShaderImageAtomicInt64Features || requireMaintenance5 || requireTransformFeedback);
+    const bool useFeatures2 = (requireShaderImageAtomicInt64Features || requireMaintenance5 ||
+                               requireTransformFeedback || requireCopyMemoryIndirect || requireBufferDeviceAddress);
 
     void *pNext = nullptr;
 
@@ -264,11 +267,17 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
 
         if (requireCopyMemoryIndirect)
         {
+            copyMemoryIndirectFeatures.pNext = deviceFeatures2.pNext;
+            deviceFeatures2.pNext            = &copyMemoryIndirectFeatures;
+
             deviceExtensions.push_back("VK_KHR_copy_memory_indirect");
         }
 
         if (requireBufferDeviceAddress)
         {
+            bufferDeviceAddressFeatures.pNext = deviceFeatures2.pNext;
+            deviceFeatures2.pNext             = &bufferDeviceAddressFeatures;
+
             deviceExtensions.push_back("VK_KHR_buffer_device_address");
         }
     }
@@ -277,28 +286,42 @@ void SparseResourcesBaseInstance::createDeviceSupportingQueues(const QueueRequir
         pNext = &deviceGroupInfo;
     }
 
-    // Add these extensions regardless of whether we're using features2
-    if (requireCopyMemoryIndirect)
-    {
-        deviceExtensions.push_back("VK_KHR_copy_memory_indirect");
-    }
+    const std::vector<VkExtensionProperties> deviceExtensionProperties =
+        enumerateDeviceExtensionProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice(), nullptr);
 
-    if (requireBufferDeviceAddress)
+    // Helper function to check if a device extension is supported
+    auto isDeviceExtensionSupported = [&deviceExtensionProperties](const std::string &extensionName) -> bool
     {
-        deviceExtensions.push_back("VK_KHR_buffer_device_address");
+        for (const auto &ext : deviceExtensionProperties)
+        {
+            if (std::string(ext.extensionName) == extensionName)
+                return true;
+        }
+        return false;
+    };
+
+    // Check device extensions are supported before adding them
+    std::vector<const char *> validatedDeviceExtensions;
+
+    for (const auto &extName : deviceExtensions)
+    {
+        if (!isDeviceExtensionSupported(extName))
+            TCU_THROW(NotSupportedError, (std::string(extName) + " device extension is not supported").c_str());
+        validatedDeviceExtensions.push_back(extName);
     }
 
     const VkDeviceCreateInfo deviceInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,                     // VkStructureType sType;
-        pNext,                                                    // const void* pNext;
-        (VkDeviceCreateFlags)0,                                   // VkDeviceCreateFlags flags;
-        static_cast<uint32_t>(queueInfos.size()),                 // uint32_t queueCreateInfoCount;
-        &queueInfos[0],                                           // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-        0u,                                                       // uint32_t enabledLayerCount;
-        nullptr,                                                  // const char* const* ppEnabledLayerNames;
-        uint32_t(deviceExtensions.size()),                        // uint32_t enabledExtensionCount;
-        deviceExtensions.size() ? &deviceExtensions[0] : nullptr, // const char* const* ppEnabledExtensionNames;
-        useFeatures2 ? nullptr : &deviceFeatures,                 // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,       // VkStructureType sType;
+        pNext,                                      // const void* pNext;
+        (VkDeviceCreateFlags)0,                     // VkDeviceCreateFlags flags;
+        static_cast<uint32_t>(queueInfos.size()),   // uint32_t queueCreateInfoCount;
+        &queueInfos[0],                             // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        0u,                                         // uint32_t enabledLayerCount;
+        nullptr,                                    // const char* const* ppEnabledLayerNames;
+        uint32_t(validatedDeviceExtensions.size()), // uint32_t enabledExtensionCount;
+        validatedDeviceExtensions.size() ? &validatedDeviceExtensions[0] :
+                                           nullptr, // const char* const* ppEnabledExtensionNames;
+        useFeatures2 ? nullptr : &deviceFeatures,   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     m_logicalDevice =

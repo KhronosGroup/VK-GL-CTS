@@ -3079,6 +3079,16 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
 #ifndef CTS_USES_VULKANSC
     if (m_params.extensionFlags & INDIRECT_COPY)
     {
+
+        if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D)
+        {
+            // For 3D images, cmdCopyMemoryToImageIndirectKHR uses baseArrayLayer/layerCount instead of image.extent.depth
+            for (auto &region : copyRegions)
+            {
+                region.imageSubresource.baseArrayLayer = region.imageOffset.z;
+                region.imageSubresource.layerCount     = region.imageExtent.depth;
+            }
+        }
         copyBufferToImageIndirect(vk, vki, vkPhysDevice, vkDevice, queue, activeQueueFamilyIndex(),
                                   m_sourceBuffer->get(), m_texture->getCompressedSize(), copyRegions, nullptr,
                                   VK_IMAGE_ASPECT_COLOR_BIT, m_texture->getNumLevels(), m_texture->getArraySize(),
@@ -3251,6 +3261,66 @@ void CopyCompressedImageToBufferTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Format not supported");
     }
 
+#ifndef CTS_USES_VULKANSC
+    if (m_params.extensionFlags & INDIRECT_COPY)
+    {
+        VkFormatProperties3 formatProps3;
+        formatProps3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+        formatProps3.pNext = nullptr;
+
+        VkFormatProperties2 formatProps2;
+        formatProps2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+        formatProps2.pNext = &formatProps3;
+        instance.getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), m_params.src.image.format,
+                                                    &formatProps2);
+
+        if (m_params.src.image.tiling == VK_IMAGE_TILING_OPTIMAL)
+        {
+            if (!(formatProps3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+        }
+        if (m_params.src.image.tiling == VK_IMAGE_TILING_LINEAR)
+        {
+            if (!(formatProps3.linearTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+        }
+
+        VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR copyMemoryIndirectProperties = {};
+        copyMemoryIndirectProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR;
+        VkPhysicalDeviceProperties2 deviceProperties = {};
+        deviceProperties.sType                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        deviceProperties.pNext                       = &copyMemoryIndirectProperties;
+        instance.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &deviceProperties);
+
+        switch (m_params.queueSelection)
+        {
+        case QueueSelectionOptions::Universal:
+        {
+            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_GRAPHICS_BIT))
+            {
+                TCU_THROW(NotSupportedError, "Graphics queue not supported!");
+            }
+            break;
+        }
+        case QueueSelectionOptions::TransferOnly:
+        {
+            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_TRANSFER_BIT))
+            {
+                TCU_THROW(NotSupportedError, "Transfer queue not supported!");
+            }
+            break;
+        }
+        case QueueSelectionOptions::ComputeOnly:
+        {
+            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_COMPUTE_BIT))
+            {
+                TCU_THROW(NotSupportedError, "Compute queue not supported!");
+            }
+            break;
+        }
+        }
+    }
+#endif
     if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT))
         TCU_THROW(NotSupportedError, "TRANSFER_SRC is not supported on this image type");
 }
@@ -3508,6 +3578,32 @@ void CopyMipmappedImageToBufferTestCase::checkSupport(Context &context) const
 
     if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT))
         TCU_THROW(NotSupportedError, "TRANSFER_SRC is not supported on this image type");
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.extensionFlags & INDIRECT_COPY)
+    {
+        VkFormatProperties3 formatProps3;
+        formatProps3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+        formatProps3.pNext = nullptr;
+
+        VkFormatProperties2 formatProps2;
+        formatProps2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+        formatProps2.pNext = &formatProps3;
+        context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(),
+                                                                          m_params.src.image.format, &formatProps2);
+
+        if (m_params.src.image.tiling == VK_IMAGE_TILING_OPTIMAL)
+        {
+            if (!(formatProps3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+        }
+        if (m_params.src.image.tiling == VK_IMAGE_TILING_LINEAR)
+        {
+            if (!(formatProps3.linearTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+        }
+    }
+#endif
 }
 
 // Copy from buffer to image.
@@ -4370,6 +4466,32 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkExtensionSupport(context, m_params.extensionFlags);
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.extensionFlags & INDIRECT_COPY)
+        {
+            VkFormatProperties3 formatProps3;
+            formatProps3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+            formatProps3.pNext = nullptr;
+
+            VkFormatProperties2 formatProps2;
+            formatProps2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+            formatProps2.pNext = &formatProps3;
+            context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(),
+                                                                              m_params.dst.image.format, &formatProps2);
+
+            if (m_params.dst.image.tiling == VK_IMAGE_TILING_OPTIMAL)
+            {
+                if (!(formatProps3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                    TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+            }
+            if (m_params.dst.image.tiling == VK_IMAGE_TILING_LINEAR)
+            {
+                if (!(formatProps3.linearTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                    TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+            }
+        }
+#endif
     }
 
 private:
@@ -13676,6 +13798,7 @@ void add1dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                 params.useSparseBinding          = testGroupParams->useSparseBinding;
                 params.useGeneralLayout          = testGroupParams->useGeneralLayout;
                 params.arrayLayers               = numLayers;
+                params.extensionFlags            = INDIRECT_COPY; //vkkk
 
                 for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
                 {
@@ -16807,6 +16930,32 @@ public:
 
         if ((features & vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT) == 0)
             TCU_THROW(NotSupportedError, "Format doesn't support transfer operations");
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.extensionFlags & INDIRECT_COPY)
+        {
+            VkFormatProperties3 formatProps3;
+            formatProps3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+            formatProps3.pNext = nullptr;
+
+            VkFormatProperties2 formatProps2;
+            formatProps2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+            formatProps2.pNext = &formatProps3;
+            context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(),
+                                                                              m_params.dst.image.format, &formatProps2);
+
+            if (m_params.dst.image.tiling == VK_IMAGE_TILING_OPTIMAL)
+            {
+                if (!(formatProps3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                    TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+            }
+            if (m_params.dst.image.tiling == VK_IMAGE_TILING_LINEAR)
+            {
+                if (!(formatProps3.linearTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR))
+                    TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
+            }
+        }
+#endif
     }
 
     virtual void checkSupport(Context &context) const
@@ -17873,6 +18022,11 @@ void addImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGro
     addTestGroup(group, "1d_images", add1dImageToBufferTests, testGroupParams);
     addTestGroup(group, "2d_images", add2dImageToBufferTests, testGroupParams);
     addTestGroup(group, "3d_images", add3dImageToBufferTests, testGroupParams);
+
+    testGroupParams->extensionFlags |= INDIRECT_COPY;
+    addTestGroup(group, "1d_images_indirect", add1dImageToBufferTests, testGroupParams);
+    // 2D images are exercised with addMemoryToImageTests
+    addTestGroup(group, "3d_images_indirect", add3dImageToBufferTests, testGroupParams);
 }
 
 void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationKind allocationKind,
