@@ -968,7 +968,7 @@ bool SingleTriangleConfiguration::verifyImage(BufferWithMemory *resultBuffer, Co
         }
     }
     return tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result comparison", "", referenceAccess,
-                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
 }
 
 VkFormat SingleTriangleConfiguration::getResultImageFormat()
@@ -1148,7 +1148,7 @@ bool UpdateableASConfiguration::verifyImage(BufferWithMemory *resultBuffer, Cont
         }
     }
     return tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result comparison", "", referenceAccess,
-                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
 }
 
 VkFormat UpdateableASConfiguration::getResultImageFormat()

@@ -96,8 +96,9 @@ public:
     {
         DE_UNREF(testCtx);
     };
-    virtual bool usesLocalStatus()
+    virtual bool usesLocalStatus(TestContext &testCtx)
     {
+        DE_UNREF(testCtx);
         return false;
     }
     virtual void updateGlobalStatus(tcu::TestRunStatus &status)

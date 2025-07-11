@@ -172,7 +172,7 @@ void TestSessionExecutor::leaveTestPackage(TestPackage *testPackage)
     DE_UNREF(testPackage);
     m_caseExecutor->deinitTestPackage(m_testCtx);
     // If m_caseExecutor uses local status then it may perform some tests in deinitTestPackage(). We have to update TestSessionExecutor::m_status
-    if (m_caseExecutor->usesLocalStatus())
+    if (m_caseExecutor->usesLocalStatus(m_testCtx))
         m_caseExecutor->updateGlobalStatus(m_status);
 
     const int64_t duration = deGetMicroseconds() - m_packageStartTime;
@@ -309,7 +309,7 @@ void TestSessionExecutor::leaveTestCase(TestCase *testCase)
 #if (DE_OS == DE_OS_WIN32)
         fflush(stdout);
 #endif
-        if (!m_caseExecutor->usesLocalStatus())
+        if (!m_caseExecutor->usesLocalStatus(m_testCtx))
         {
             m_status.numExecuted += 1;
             switch (testResult)
