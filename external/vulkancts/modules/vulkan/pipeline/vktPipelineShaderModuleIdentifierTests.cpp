@@ -3710,7 +3710,7 @@ tcu::TestStatus HLSLTessellationInstance::iterate(void)
                 referenceAccess.setPixel(outColors.at(y * iExtent.x() + x), x, y);
 
         tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
-                                   tcu::COMPARE_LOG_EVERYTHING);
+                                   tcu::COMPARE_LOG_ON_ERROR);
     }
 
     return tcu::TestStatus::pass("Pass");
