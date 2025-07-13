@@ -37,6 +37,7 @@
 #include "vktWsiFullScreenExclusiveTests.hpp"
 #include "vktWsiPresentIdWaitTests.hpp"
 #include "vktWsiMaintenance1Tests.hpp"
+#include "vktWsiMultisampledRenderToSwapchainTests.hpp"
 
 namespace vkt
 {
@@ -68,6 +69,8 @@ void createTypeSpecificTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTyp
     addTestGroup(testGroup, "present_id_wait", createPresentIdWaitTests, wsiType);
     // VK_KHR_(surface|swapchain)_maintenance1 tests
     addTestGroup(testGroup, "maintenance1", createMaintenance1Tests, wsiType);
+    // VK_EXT_multisampled_render_to_swapchain
+    addTestGroup(testGroup, "multisampled_render_to_swapchain", createMultisampledRenderToSwapchainTests, wsiType);
 }
 
 void createWsiTests(tcu::TestCaseGroup *apiTests)

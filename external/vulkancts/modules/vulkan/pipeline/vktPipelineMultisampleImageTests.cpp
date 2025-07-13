@@ -49,6 +49,7 @@
 
 #include <cmath>
 #include <string>
+#include <cmath>
 
 namespace vkt
 {
