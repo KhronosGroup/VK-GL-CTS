@@ -3,19 +3,51 @@
     "description": "The whitelist includes cases where certain validation errors or warnings are permitted. The message outlines the validation error/warning that is allowed, while the description provides a justification for why these errors/warnings are deemed acceptable.",
     "whitelist": [
         {
-            "path": "dEQP-VK.dynamic_rendering.*.suballocation.unused_clear_attachments.*",
-            "message": "Undefined-Value-ShaderInputNotProduced-DynamicRendering",
+            "groups": [
+                "dEQP-VK.dynamic_rendering.*.suballocation.unused_clear_attachments.*",
+                "dEQP-VK.dynamic_rendering.*.unused_attachments.*"
+            ],
+            "messages": [
+                "Undefined-Value-ShaderInputNotProduced-DynamicRendering"
+            ],
             "description": "Warning about attachments not being written in FS, however, this behavior is intentional."
         },
         {
-            "path": "dEQP-VK.dynamic_rendering.*.unused_attachments.*",
-            "message": "Undefined-Value-ShaderInputNotProduced-DynamicRendering",
-            "description": "Warning about attachments not being written in FS, however, this behavior is intentional."
-        },
-        {
-            "path": "dEQP-VK.draw.renderpass.shader_layer.*_shader_1",
-            "message": "Undefined-Layer-Written",
+            "groups": [
+                "dEQP-VK.draw.renderpass.shader_layer.*_shader_1"
+            ],
+            "messages": [
+                "Undefined-Layer-Written"
+            ],
             "description": "Warning when writing to gl_Layer while FramebufferCreateInfo::layer is set to 1. In these cases, tests are designed to write exclusively to layer 0. However, VVL does not recognize this distinction and incorrectly assumes that gl_Layer should not be used when there's only a single layer."
+        },
+        {
+            "groups": [
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.unused.*"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-None-08114"
+            ],
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline, is declared in pipeline layout and not written to descriptor set. Producing this error is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.storage_image"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-format-07753"
+            ],
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.sampled_image",
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.combined_image_sampler"
+            ],
+            "messages": [
+                "VUID-RuntimeSpirv-samples-08725"
+            ],
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional."
         }
     ]
 }
