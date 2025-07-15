@@ -131,6 +131,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/binding_model/vktBindingUnusedInvalidDescriptorTests.cpp",
         "external/vulkancts/modules/vulkan/clipping/vktClippingTests.cpp",
         "external/vulkancts/modules/vulkan/compute/vktComputeBasicComputeShaderTests.cpp",
+        "external/vulkancts/modules/vulkan/compute/vktComputeCooperativeMatrixOpConstantNullTests.cpp",
         "external/vulkancts/modules/vulkan/compute/vktComputeCooperativeMatrixTests.cpp",
         "external/vulkancts/modules/vulkan/compute/vktComputeIndirectComputeDispatchTests.cpp",
         "external/vulkancts/modules/vulkan/compute/vktComputeShaderBuiltinVarTests.cpp",
