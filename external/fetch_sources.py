@@ -405,6 +405,8 @@ def parseArgs ():
                         help="Select protocol to checkout git repositories.")
     parser.add_argument('--force', dest='force', action='store_true', default=False,
                         help="Pass --force to git fetch and checkout commands")
+    parser.add_argument('--include-vvl', dest='include_vvl', action='store_true', default=False,
+                        help='Download the Vulkan Validation Layers')
     parser.add_argument("-v", "--verbose",
                         dest="verbose",
                         action="store_true",
@@ -417,7 +419,7 @@ def parseArgs ():
                 if sys.version_info < versionItem:
                     parser.error("For --insecure minimum required python version is " +
                                 versionsForInsecureStr)
-                break;
+                break
 
     return args
 
@@ -451,6 +453,7 @@ if __name__ == "__main__":
             if args.clean:
                 pkg.clean()
             else:
-                pkg.update(args.protocol, args.force)
+                if pkg.baseDir != 'vulkan-validationlayers' or args.include_vvl:
+                    pkg.update(args.protocol, args.force)
     except KeyboardInterrupt:
         sys.exit("") # Returns 1.
