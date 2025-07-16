@@ -304,13 +304,12 @@ class VideoTestInstance : public VideoBaseTestInstance
 {
 public:
     VideoTestInstance(Context &context, const std::string &inputClipFilename, const std::string &outputClipFilename,
-                      const VkExtent2D expectedOutputExtent, const TestDefinition &definition, bool generatedContent)
+                      const VkExtent2D expectedOutputExtent, const TestDefinition &definition)
         : VideoBaseTestInstance(context)
         , m_inputClipFilename(inputClipFilename)
         , m_outputClipFilename(outputClipFilename)
         , m_expectedOutputExtent(expectedOutputExtent)
         , m_definition(definition)
-        , m_generatedContent(generatedContent)
     {
     }
     virtual tcu::TestStatus iterate(void);
@@ -333,7 +332,6 @@ private:
     VkExtent2D m_expectedOutputExtent;
 
     TestDefinition m_definition;
-    bool m_generatedContent;
 };
 
 class VideoTestCase : public TestCase
@@ -374,15 +372,16 @@ static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testD
 
     clipName += "_" + std::string(testDef.subsampling.subName);
     clipName += "_" + std::string(testDef.bitDepth.subName);
-    clipName += "_" + std::string(testDef.gop.subName);
-    clipName += "_" + std::to_string(testDef.gop.frameCount);
-
-    std::string testName("");
-    buildTestName(testDef, testName);
-    clipName += "_" + testName;
 
     if (output)
+    {
+        clipName += "_" + std::string(testDef.gop.subName);
+        clipName += "_" + std::to_string(testDef.gop.frameCount);
+        std::string testName("");
+        buildTestName(testDef, testName);
+        clipName += "_" + testName;
         clipName += ".ivf";
+    }
     else
         clipName += ".yuv";
 }
@@ -457,10 +456,6 @@ tcu::TestStatus VideoTestInstance::iterate(void)
     status = tcu::TestStatus::fail("Vulkan video is not supported on this platform");
 #endif
 #if STREAM_DUMP_DEBUG == 0
-    if (m_generatedContent)
-    {
-        removeClip(m_inputClipFilename);
-    }
     removeClip(m_outputClipFilename);
 #endif
 
@@ -488,7 +483,6 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
 #endif
     VideoTestInstance *testInstance;
     std::vector<const char *> args;
-    bool generatedContent = false;
     std::vector<std::string> encoderParams;
     std::stringstream ss;
     std::string deviceID;
@@ -529,7 +523,6 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
                                             m_definition.frameSize.height, m_definition.subsampling.subsampling,
                                             m_definition.bitDepth.depth);
 #endif
-        generatedContent = true;
     }
 
     VkExtent2D expectedOutputExtent = {m_definition.frameSize.width, m_definition.frameSize.height};
@@ -549,8 +542,7 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
         throw tcu::TestError("Failed to create VulkanVideoEncoder");
     }
 #endif
-    testInstance =
-        new VideoTestInstance(ctx, inputClipName, outputClipName, expectedOutputExtent, m_definition, generatedContent);
+    testInstance = new VideoTestInstance(ctx, inputClipName, outputClipName, expectedOutputExtent, m_definition);
 #ifdef DE_BUILD_VIDEO
     testInstance->setEncoder(encoder);
 #endif
