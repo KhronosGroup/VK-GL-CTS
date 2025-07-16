@@ -5796,6 +5796,176 @@ void MultipleOutputsVertsInstance::generateReferenceLevel()
         }
 }
 
+// The goal here is to make sure the compiler doesn't choke and also that it uses the right EmitMeshTasksEXT call.
+// We will launch a single workgroup and the task shader should only dispatch one mesh workgroup. That workgroup will
+// draw only on half the framebuffer. If the workgroup id of the task shader is non-zero (it should not be), the task
+// shader would dispatch 2 mesh workgroups that will draw over the full framebuffer instead.
+struct EmitInControlFlowParams
+{
+    bool wrongEmitLast; // Which branch of the control flow to put the wrong emit on.
+};
+
+class EmitInControlFlowInstance : public vkt::TestInstance
+{
+public:
+    EmitInControlFlowInstance(Context &context) : vkt::TestInstance(context)
+    {
+    }
+    virtual ~EmitInControlFlowInstance(void)
+    {
+    }
+
+    tcu::TestStatus iterate(void) override;
+};
+
+class EmitInControlFlowCase : public vkt::TestCase
+{
+public:
+    EmitInControlFlowCase(tcu::TestContext &testCtx, const std::string &name, const EmitInControlFlowParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~EmitInControlFlowCase(void) = default;
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override
+    {
+        checkTaskMeshShaderSupportEXT(context, true, true);
+    }
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new EmitInControlFlowInstance(context);
+    }
+
+protected:
+    const EmitInControlFlowParams m_params;
+};
+
+void EmitInControlFlowCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+
+    std::ostringstream task;
+    task << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "\n"
+         << "layout (local_size_x=1) in;\n"
+         << "\n"
+         << "void main ()\n"
+         << "{\n";
+
+    if (m_params.wrongEmitLast)
+    {
+        task << "    if (gl_WorkGroupID.x == 0 && gl_WorkGroupID.y == 0 && gl_WorkGroupID.z == 0) {\n"
+             << "        EmitMeshTasksEXT(1u, 1u, 1u);\n"
+             << "    } else {\n"
+             << "        EmitMeshTasksEXT(2u, 1u, 1u);\n"
+             << "    }\n";
+    }
+    else
+    {
+        task << "    if (gl_WorkGroupID.x != 0 || gl_WorkGroupID.y != 0 || gl_WorkGroupID.z != 0) {\n"
+             << "        EmitMeshTasksEXT(2u, 1u, 1u);\n"
+             << "    } else {\n"
+             << "        EmitMeshTasksEXT(1u, 1u, 1u);\n"
+             << "    }\n";
+    }
+
+    task << "}\n";
+    programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << buildOptions;
+
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "\n"
+         << "layout(local_size_x=1) in;\n"
+         << "layout(triangles) out;\n"
+         << "layout(max_vertices=3, max_primitives=1) out;\n"
+         << "\n"
+         << "void main ()\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3u, 1u);\n"
+         << "    if (gl_WorkGroupID.x != 0) {\n"
+         << "        // Cover the right side of the framebuffer\n"
+         << "        gl_MeshVerticesEXT[0].gl_Position = vec4( 0.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[1].gl_Position = vec4( 0.0f,  3.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[2].gl_Position = vec4( 3.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "    } else {\n"
+         << "        // Cover the left side of the framebuffer\n"
+         << "        gl_MeshVerticesEXT[0].gl_Position = vec4( 0.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[1].gl_Position = vec4(-3.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[2].gl_Position = vec4( 0.0f,  3.0f, 0.0f, 1.0f);\n"
+         << "    }\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    ;
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) { outColor = vec4(0.0, 0.0, 1.0, 1.0); }\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus EmitInControlFlowInstance::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 fbExtent(2, 1, 1);
+    const auto extentVk  = makeExtent3D(fbExtent);
+    const auto imgFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imgUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const tcu::Vec4 geomColor(0.0f, 0.0f, 1.0f, 1.0f);  // Must match frag color above.
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f); // Must be different from the frag shader color above.
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, imgFormat, imgUsage, VK_IMAGE_TYPE_2D);
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto taskShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("task"));
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+    const auto renderPass     = makeRenderPass(ctx.vkd, ctx.device, imgFormat);
+    const auto framebuffer =
+        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), extentVk.width, extentVk.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *taskShader, *meshShader,
+                                               *fragShader, *renderPass, viewports, scissors);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(imgFormat);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    reference.setPixel(geomColor, 0, 0);
+    reference.setPixel(clearColor, 1, 0);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f); // Expect exact results.
+    auto &log = m_context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
@@ -6253,6 +6423,13 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             /*height*/ 8u));
 
         miscTests->addChild(new MultipleOutputsVertsCase(testCtx, "multiple_outputs_vertices", std::move(paramsPtr)));
+    }
+
+    for (const bool badEmitLast : {false, true})
+    {
+        const auto testName = std::string("emit_in_control_flow") + (badEmitLast ? "_bad_emit_last" : "");
+        const EmitInControlFlowParams params{badEmitLast};
+        miscTests->addChild(new EmitInControlFlowCase(testCtx, testName, params));
     }
 
     return miscTests.release();

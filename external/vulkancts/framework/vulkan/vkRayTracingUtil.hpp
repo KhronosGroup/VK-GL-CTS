@@ -180,6 +180,7 @@ public:
     virtual VkDeviceSize getVertexStride(void) const                      = 0;
     virtual VkDeviceSize getAABBStride(void) const                        = 0;
     virtual size_t getVertexByteSize(void) const                          = 0;
+    virtual size_t getVertexMinAlign(void) const                          = 0;
     virtual uint32_t getIndexCount(void) const                            = 0;
     virtual const uint8_t *getIndexPointer(void) const                    = 0;
     virtual VkDeviceSize getIndexStride(void) const                       = 0;
@@ -248,6 +249,10 @@ typedef tcu::Vector<int16_t, 4> Vec4_16SNorm;
 typedef tcu::Vector<int8_t, 2> Vec2_8SNorm;
 typedef tcu::Vector<int8_t, 3> Vec3_8SNorm;
 typedef tcu::Vector<int8_t, 4> Vec4_8SNorm;
+typedef struct
+{
+    uint32_t x;
+} Vec1010102;
 
 template <typename V>
 VkFormat vertexFormatFromType();
@@ -325,6 +330,11 @@ template <>
 inline VkFormat vertexFormatFromType<Vec4_8SNorm>()
 {
     return VK_FORMAT_R8G8B8A8_SNORM;
+}
+template <>
+inline VkFormat vertexFormatFromType<Vec1010102>()
+{
+    return VK_FORMAT_A2B10G10R10_UNORM_PACK32;
 }
 
 struct EmptyIndex
@@ -432,6 +442,15 @@ inline Vec4_8SNorm convertFloatTo<Vec4_8SNorm>(const tcu::Vec3 &vertex)
     return Vec4_8SNorm(deFloat32ToSNorm<int8_t>(vertex.x()), deFloat32ToSNorm<int8_t>(vertex.y()),
                        deFloat32ToSNorm<int8_t>(vertex.z()), deFloat32ToSNorm<int8_t>(0.0f));
 }
+template <>
+inline Vec1010102 convertFloatTo<Vec1010102>(const tcu::Vec3 &vertex)
+{
+    uint32_t x = uint32_t(de::clamp<float>(vertex.x(), 0.0f, 1.0f) * 1023 + 0.5);
+    uint32_t y = uint32_t(de::clamp<float>(vertex.y(), 0.0f, 1.0f) * 1023 + 0.5);
+    uint32_t z = uint32_t(de::clamp<float>(vertex.z(), 0.0f, 1.0f) * 1023 + 0.5);
+
+    return Vec1010102{(z << 20) | (y << 10) | x};
+}
 
 template <typename V>
 V convertIndexTo(uint32_t index);
@@ -458,15 +477,17 @@ class RaytracedGeometry : public RaytracedGeometryBase
 public:
     RaytracedGeometry()                                  = delete;
     RaytracedGeometry(const RaytracedGeometry &geometry) = delete;
-    RaytracedGeometry(VkGeometryTypeKHR geometryType, uint32_t paddingBlocks = 0u);
+    RaytracedGeometry(VkGeometryTypeKHR geometryType, uint32_t paddingBlocks = 0u, uint32_t minAlign = 0u);
     RaytracedGeometry(VkGeometryTypeKHR geometryType, const std::vector<V> &vertices,
-                      const std::vector<I> &indices = std::vector<I>(), uint32_t paddingBlocks = 0u);
+                      const std::vector<I> &indices = std::vector<I>(), uint32_t paddingBlocks = 0u,
+                      uint32_t minAlign = 0u);
 
     uint32_t getVertexCount(void) const override;
     const uint8_t *getVertexPointer(void) const override;
     VkDeviceSize getVertexStride(void) const override;
     VkDeviceSize getAABBStride(void) const override;
     size_t getVertexByteSize(void) const override;
+    size_t getVertexMinAlign(void) const override;
     uint32_t getIndexCount(void) const override;
     const uint8_t *getIndexPointer(void) const override;
     VkDeviceSize getIndexStride(void) const override;
@@ -516,6 +537,7 @@ private:
 
     const uint32_t m_paddingBlocks;
     size_t m_vertexCount;
+    uint32_t m_minAlign;
     std::vector<uint8_t> m_vertices;               // Vertices are stored as byte blocks.
     std::vector<I> m_indices;                      // Indices are stored natively.
     de::MovePtr<VkTransformMatrixKHR> m_transform; // Transform matrix is stored natively.
@@ -528,20 +550,22 @@ private:
 };
 
 template <typename V, typename I>
-RaytracedGeometry<V, I>::RaytracedGeometry(VkGeometryTypeKHR geometryType, uint32_t paddingBlocks)
+RaytracedGeometry<V, I>::RaytracedGeometry(VkGeometryTypeKHR geometryType, uint32_t paddingBlocks, uint32_t minAlign)
     : RaytracedGeometryBase(geometryType, vertexFormatFromType<V>(), indexTypeFromType<I>())
     , m_paddingBlocks(paddingBlocks)
     , m_vertexCount(0)
+    , m_minAlign(minAlign)
 {
     init();
 }
 
 template <typename V, typename I>
 RaytracedGeometry<V, I>::RaytracedGeometry(VkGeometryTypeKHR geometryType, const std::vector<V> &vertices,
-                                           const std::vector<I> &indices, uint32_t paddingBlocks)
+                                           const std::vector<I> &indices, uint32_t paddingBlocks, uint32_t minAlign)
     : RaytracedGeometryBase(geometryType, vertexFormatFromType<V>(), indexTypeFromType<I>())
     , m_paddingBlocks(paddingBlocks)
     , m_vertexCount(0)
+    , m_minAlign(minAlign)
     , m_vertices()
     , m_indices(indices)
 {
@@ -578,7 +602,13 @@ VkDeviceSize RaytracedGeometry<V, I>::getAABBStride(void) const
 template <typename V, typename I>
 size_t RaytracedGeometry<V, I>::getVertexByteSize(void) const
 {
-    return m_vertices.size();
+    return m_vertices.size() + m_minAlign;
+}
+
+template <typename V, typename I>
+size_t RaytracedGeometry<V, I>::getVertexMinAlign(void) const
+{
+    return static_cast<size_t>(m_minAlign);
 }
 
 template <typename V, typename I>
@@ -721,7 +751,8 @@ size_t RaytracedGeometry<V, I>::getBlockSize() const
 }
 
 de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry(VkGeometryTypeKHR geometryType, VkFormat vertexFormat,
-                                                           VkIndexType indexType, bool padVertices = false);
+                                                           VkIndexType indexType, bool padVertices = false,
+                                                           uint32_t minAlign = 0);
 
 VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vkd, const VkDevice device, const VkBuffer buffer,
                                        VkDeviceSize offset);
@@ -1189,7 +1220,7 @@ public:
     Move<VkPipeline> createPipeline(const DeviceInterface &vk, const VkDevice device,
                                     const VkPipelineLayout pipelineLayout,
                                     const std::vector<VkPipeline> &pipelineLibraries,
-                                    const VkPipelineCache pipelineCache);
+                                    const VkPipelineCache pipelineCache, const void *pNext = nullptr);
     std::vector<de::SharedPtr<Move<VkPipeline>>> createPipelineWithLibraries(const DeviceInterface &vk,
                                                                              const VkDevice device,
                                                                              const VkPipelineLayout pipelineLayout);
@@ -1230,7 +1261,8 @@ protected:
     Move<VkPipeline> createPipelineKHR(const DeviceInterface &vk, const VkDevice device,
                                        const VkPipelineLayout pipelineLayout,
                                        const std::vector<VkPipeline> &pipelineLibraries,
-                                       const VkPipelineCache pipelineCache = VK_NULL_HANDLE);
+                                       const VkPipelineCache pipelineCache = VK_NULL_HANDLE,
+                                       const void *pNext                   = nullptr);
 
     std::vector<de::SharedPtr<Move<VkShaderModule>>> m_shadersModules;
     std::vector<de::SharedPtr<de::MovePtr<RayTracingPipeline>>> m_pipelineLibraries;

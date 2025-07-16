@@ -45,7 +45,13 @@ DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "frame
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
 VK_KHR_cooperative_matrix
+VK_KHR_maintenance9
+VK_KHR_present_mode_fifo_latest_ready
 VK_KHR_shader_bfloat16
+VK_EXT_shader_float8
+VK_KHR_surface_maintenance1
+VK_KHR_unified_image_layouts
+VK_KHR_video_decode_vp9
 VK_KHR_video_encode_av1
 VK_KHR_video_encode_quantization_map
 """.split()
@@ -137,6 +143,9 @@ PLATFORM_TYPES = [
     (["NvSciSyncFence"], ["NvSciSyncFence"], "int"),
     (["NvSciBufAttrList"], ["NvSciBufAttrList"], "int"),
     (["NvSciSyncAttrList"], ["NvSciSyncAttrList"], "int"),
+
+    # VK_OHOS_surface
+    (["OHNativeWindow"], ["OHNativeWindow"], "void*"),
 ]
 
 PLATFORM_TYPE_NAMESPACE = "pt"
@@ -191,16 +200,81 @@ def printAttributesToFile(obj, file, indent=0):
         else:
             file.write(f"{indent_str}{repr(obj)}\n")
 
-# Converts the dependecies expression into an Abstract Syntax Tree that uses boolean operators
+def transformSingleDependsConditionToCpp(depPart, api, checkVersionString, checkExtensionString, extension, depends):
+    ret = None
+    if 'VK_VERSION' in depPart:
+        # when dependency is vulkan version then replace it with proper condition
+        ret = checkVersionString % (depPart[-3], depPart[-1])
+    else:
+        # when dependency is extension check if it was promoted
+        for dExt in api.extensions:
+            if depPart == dExt.name:
+                depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
+                isSupportedCheck = checkExtensionString % (depExtVector, depPart)
+                ret = isSupportedCheck
+                # This check is just heuristics. In theory we should check if the promotion is actually checked properly
+                # in the dependency
+                if dExt.promotedto is not None and dExt.promotedto not in depends:
+                     p = dExt.promotedto
+                     # check if dependency was promoted to vulkan version or other extension
+                     if 'VK_VERSION' in p:
+                         ret = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
+                     else:
+                         ret = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
+        # for SC when extension was not found try checking also not supported
+        # extensions and see if this extension is part of core
+        if ret is None and api.apiName == "vulkansc":
+            for dExt in api.notSupportedExtensions:
+                if depPart == dExt.name:
+                    p = dExt.promotedto
+                    if p is None:
+                        break
+                    if int(p[-1]) > 2:
+                        break
+                    ret = "true"
+        if ret is None:
+            ret = "false /* UNSUPPORTED CONDITION: " + depPart + "*/"
+        if ret is None:
+            assert False, f"{depPart} not found: {extension} : {depends}"
+    return ret
+
+def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString, extension):
+    tree = parseDependsEpression(depends)
+    condition = generateCppDependencyAST(tree, api, checkVersionString, checkExtensionString, extension, depends)
+    return condition
+
+# Converts the dependencies expression into an Abstract Syntax Tree that uses boolean operators
 def parseDependsEpression(string):
     try:
         # Parse the input string into an abstract syntax tree (AST)
-        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or '), mode='eval')
+        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or ').replace('::', '__'), mode='eval')
         expression = tree.body
         return expression
     except SyntaxError as e:
-        print(f"Syntax error in the input string: {e}")
-        return None
+        print(f"Syntax error in the input string: {e} \"" + string + "\"")
+        sys.exit(-1)
+
+def generateCppDependencyAST(node, api, checkVersionString, checkExtensionString, extension, depends):
+    if isinstance(node, ast.BoolOp):
+        parts = [
+            generateCppDependencyAST(v, api, checkVersionString, checkExtensionString, extension, depends)
+            for v in node.values
+        ]
+        op = "&&" if isinstance(node.op, ast.And) else "||"
+        # Parenthesize each part, then join with the operator, and wrap the whole
+        joined = f" {op} ".join(f"{p}" for p in parts)
+        return f"({joined})"
+
+    elif isinstance(node, ast.Name):
+        return transformSingleDependsConditionToCpp(
+            node.id, api, checkVersionString, checkExtensionString, extension, depends
+        )
+
+    elif isinstance(node, ast.Constant):
+        return node.value
+
+    else:
+        raise NotImplementedError(f"Unsupported AST node: {node!r}")
 
 # Checks the dependencies AST against the passed extensions
 def checkDependencyAST(node, extensions):
@@ -1313,6 +1387,9 @@ class API:
                 minor = int(p[-1])
                 core = f'0.{major}.{minor}.0'
                 if "vulkan" in mandatory_variants and major == 1 and minor <= 2:
+                    mandatory_variants = []
+            else:
+                if "vulkansc" not in mandatory_variants:
                     mandatory_variants = []
             for requirement in ext.requirementsList:
                 featureStructName = None
@@ -2479,6 +2556,10 @@ def writeTypeUtil (api, filename):
             "StdVideoEncodeAV1OperatingPointInfoFlags",
             "StdVideoEncodeAV1PictureInfoFlags",
             "StdVideoEncodeAV1ReferenceInfoFlags",
+            "StdVideoVP9ColorConfigFlags",
+            "StdVideoVP9LoopFilterFlags",
+            "StdVideoVP9SegmentationFlags",
+            "StdVideoDecodeVP9PictureInfoFlags",
             "VkClusterAccelerationStructureGeometryIndexAndGeometryFlagsNV",
             "VkClusterAccelerationStructureBuildTriangleClusterInfoNV",
         ])
@@ -2560,7 +2641,7 @@ def writeSupportedExtensions(api, filename):
         for version in map:
             result.append("    if (coreVersion >= " + str(version) + ")")
             result.append("    {")
-            for extension in map[version]:
+            for extension in sorted(map[version], key=lambda e: e.name):
                 result.append('        dst.push_back("' + extension.name + '");')
             result.append("    }")
 
@@ -2692,7 +2773,7 @@ def writeExtensionFunctions (api, filename):
                 condition = None
                 if requirement.depends is not None:
                     try:
-                        condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")')
+                        condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")', ext.name)
                     except Exception as e:
                         if api.apiName != "vulkansc":
                             raise e
@@ -3868,12 +3949,15 @@ def writeMandatoryFeatures(api, filename):
     varVariants = {} # Some variables are going to be declared only for specific variants.
 
     for structName, extensions in apiStructs:
+        mandatoryVariantList = []
+        if structName in dictStructs:
+            mandatoryVariantList = dictStructs[structName][1]
+        stream.append('\t// ' + structName + ' for ext [' + ', '.join(extensions) + '] in APIs [' + ', '.join(mandatoryVariantList) + ']\n')
         # The variable name will be the structure name without the Vk prefix and starting in lowercase.
         newVar = structName[2].lower() + structName[3:]
 
         metaCondition = ''
         if structName in dictStructs:
-            mandatoryVariantList = dictStructs[structName][1]
             if len(mandatoryVariantList) > 0:
                 mandatoryVariant = mandatoryVariantList[0]
                 metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
@@ -3918,6 +4002,7 @@ def writeMandatoryFeatures(api, filename):
                    ''])
 
     for v in dictData:
+        stream.append('\t// ' + v[0] + ' in APIs [' + ', '.join(v[3]) + ']')
         if not structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
             continue
         structType = v[0]
@@ -3980,7 +4065,11 @@ def writeMandatoryFeatures(api, filename):
         else:
             stream.extend([''])
 
+    last_extension = None
     for extension, requirements, mandatory_variant in extData:
+        if last_extension != extension:
+            stream.append('\t// ' + extension + '\n')
+            last_extension = extension
         metaCondition = ''
         if mandatory_variant != '':
             metaCondition = metaCondition + ' || defined(CTS_USES_' + mandatory_variant[0].upper() + ')'
@@ -4059,58 +4148,6 @@ def writeExtensionList(api, filename, extensionType):
     stream.append('};\n')
     writeInlFile(filename, INL_HEADER, stream)
 
-def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString):
-    depList = re.split(r'(\W+)', depends)
-    for idx, depPart in enumerate(depList):
-        if ',' in depPart:
-            depList[idx] = depList[idx].replace(',', ' || ')
-        elif '+' in depPart:
-            depList[idx] = depList[idx].replace('+', ' && ')
-        elif 'VK_' in depPart:
-            if 'VK_VERSION' in depPart:
-                if idx > 0 and ' || ' in depList[idx-1]:
-                    # some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
-                    # script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
-                    # accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
-                    depList[idx-1] = depList[idx-1].replace(' || ', '')
-                    depList[idx] = ''
-                    continue
-                # when dependency is vulkan version then replace it with proper condition
-                depList[idx] = checkVersionString % (depPart[-3], depPart[-1])
-            else:
-                # when dependency is extension check if it was promoted
-                extNotFound = True
-                for dExt in api.extensions:
-                    if depPart == dExt.name:
-                        depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
-                        isSupportedCheck = checkExtensionString % (depExtVector, depPart)
-                        if dExt.promotedto is not None:
-                            p = dExt.promotedto
-                            # check if dependency was promoted to vulkan version or other extension
-                            if 'VK_VERSION' in p:
-                                depList[idx] = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
-                            else:
-                                depList[idx] = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
-                        else:
-                            depList[idx] = isSupportedCheck
-                        extNotFound = False
-                        break
-                # for SC when extension was not found try checking also not supported
-                # extensions and see if this extension is part of core
-                if extNotFound and api.apiName == "vulkansc":
-                    for dExt in api.notSupportedExtensions:
-                        if depPart == dExt.name:
-                            p = dExt.promotedto
-                            if p is None:
-                                break
-                            if int(p[-1]) > 2:
-                                break
-                            extNotFound = False
-                            depList[idx] = "true"
-                if extNotFound:
-                    assert False, f"{depPart} from dependencies ({depends}) not found"
-    return ''.join(depList)
-
 def writeApiExtensionDependencyInfo(api, filename):
 
     def genHelperFunctions():
@@ -4118,7 +4155,7 @@ def writeApiExtensionDependencyInfo(api, filename):
         yield 'using ExtPropVect = std::vector<vk::VkExtensionProperties>;'
         yield 'using IsSupportedFun = bool (*)(const tcu::UVec2&, const ExtPropVect&, const ExtPropVect&);'
         yield 'using DependencyCheckVect = std::vector<std::pair<const char*, IsSupportedFun> >;\n'
-        yield 'bool isCompatibile(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
+        yield 'bool isCompatible(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
         yield '{'
         yield '\t// return true when tested api version is greater'
         yield '\t// or equal to version represented by two uints'
@@ -4154,7 +4191,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             # check if extension was promoted; for SC we need to check vulkan version as sc10 is based on vk12
             if ext.promotedto is not None and 'VK_VERSION' in ext.promotedto:
                 p = ext.promotedto
-                yield f'\tif (isCompatibile({p[-3]}, {p[-1]}, v))'
+                yield f'\tif (isCompatible({p[-3]}, {p[-1]}, v))'
                 yield '\t\treturn true;\n'
             else:
                 yield '\tDE_UNREF(v);'
@@ -4164,7 +4201,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
             yield '\t\treturn true;\n'
             # replace dependent extensions/versions with proper conditions
-            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatibile(%s, %s, v)', 'isSupported(%s, "%s")')
+            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")', ext.name)
             yield f'\t// depends attribute in xml: {ext.depends}'
             yield f'\treturn {finalCondition};'
             yield '}\n'

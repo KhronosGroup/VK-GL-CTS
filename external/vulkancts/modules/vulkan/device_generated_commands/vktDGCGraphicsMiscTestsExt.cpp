@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDGCGraphicsMiscTestsExt.hpp"
+#include "util/vktShaderObjectUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -1233,9 +1234,9 @@ tcu::TestStatus NormalDGCMixInstance::iterate(void)
 
             if (m_params.shaderObjects)
             {
-                bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors,
-                                      normalTopology, 0u, vtxInfoPtr, &normalRasterizationInfo, nullptr,
-                                      &normalDepthStencilInfo, nullptr);
+                vkt::shaderobjutil::bindShaderObjectState(
+                    ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors, normalTopology, 0u,
+                    vtxInfoPtr, &normalRasterizationInfo, nullptr, &normalDepthStencilInfo, nullptr);
 
                 std::map<VkShaderStageFlagBits, VkShaderEXT> boundShaders;
                 if (meshEnabled)
@@ -1271,9 +1272,9 @@ tcu::TestStatus NormalDGCMixInstance::iterate(void)
             // We need to bind the pipeline or shaders no matter if we use DGC execution sets or not.
             if (m_params.shaderObjects)
             {
-                bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors,
-                                      dgcTopology, 0u, vtxInfoPtr, &dgcRasterizationInfo, nullptr, &dgcDepthStencilInfo,
-                                      nullptr);
+                vkt::shaderobjutil::bindShaderObjectState(
+                    ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors, dgcTopology, 0u,
+                    vtxInfoPtr, &dgcRasterizationInfo, nullptr, &dgcDepthStencilInfo, nullptr);
 
                 std::map<VkShaderStageFlagBits, VkShaderEXT> boundShaders;
                 if (meshEnabled)
@@ -2319,9 +2320,9 @@ void IfaceMatchingInstance::submitWork(const ContextCommonData &ctx, const std::
         for (const auto &stageHandle : boundShaders)
             ctx.vkd.cmdBindShadersEXT(cmdBuffer, 1u, &stageHandle.first, &stageHandle.second);
 
-        bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors,
-                              VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, &vertexInputState, nullptr, nullptr, nullptr,
-                              nullptr);
+        vkt::shaderobjutil::bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports,
+                                                  scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, &vertexInputState,
+                                                  nullptr, nullptr, nullptr, nullptr);
     }
     else
         ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines.at(0u));
@@ -2468,9 +2469,9 @@ void IESReplaceInstance::submitWork(const ContextCommonData &ctx, const std::vec
             for (const auto &stageHandle : boundShaders)
                 ctx.vkd.cmdBindShadersEXT(cmdBuffer, 1u, &stageHandle.first, &stageHandle.second);
 
-            bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors,
-                                  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, &vertexInputState, nullptr, nullptr,
-                                  nullptr, nullptr);
+            vkt::shaderobjutil::bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports,
+                                                      scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u,
+                                                      &vertexInputState, nullptr, nullptr, nullptr, nullptr);
         }
         else
             ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines.at(0u));
@@ -2647,9 +2648,9 @@ void IESAdditionInstance::submitWork(const ContextCommonData &ctx, const std::ve
             for (const auto &stageHandle : boundShaders)
                 ctx.vkd.cmdBindShadersEXT(cmdBuffer, 1u, &stageHandle.first, &stageHandle.second);
 
-            bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors,
-                                  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u, &vertexInputState, nullptr, nullptr,
-                                  nullptr, nullptr);
+            vkt::shaderobjutil::bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports,
+                                                      scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u,
+                                                      &vertexInputState, nullptr, nullptr, nullptr, nullptr);
         }
         else
             ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelines.at(0u));
@@ -8245,7 +8246,7 @@ tcu::TestStatus DynamicFSRInstance::iterate(void)
     const tcu::Vec4 threshold(compThreshold, compThreshold, compThreshold, 0.0f);
 
     if (!tcu::floatThresholdCompare(log, "Expanded Result (4 horizontal pixels per original pixel)", "", refAccess,
-                                    resAccess, threshold, tcu::COMPARE_LOG_EVERYTHING))
+                                    resAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Unexpected results in expanded color buffer; check log for details --");
 
     return tcu::TestStatus::pass("Pass");

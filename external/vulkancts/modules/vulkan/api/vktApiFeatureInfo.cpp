@@ -1212,6 +1212,12 @@ tcu::TestStatus validateLimits14(Context &context)
         {PN(checkAlways), PN(limits.subTexelPrecisionBits), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
         {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[0]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[1]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[0]), LIM_MAX_FLOAT(-15360.0f)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[1]), LIM_MIN_FLOAT(15359.0f)},
+        {PN(checkAlways), PN(limits.maxFramebufferWidth), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxFramebufferHeight), LIM_MIN_UINT32(7680)},
         {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.timestampComputeAndGraphics), LIM_MIN_UINT32(1)},
         {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
@@ -1663,20 +1669,20 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     const VkBool32 checkAlways            = VK_TRUE;
     const InstanceInterface &vk           = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorPropertiesKHR =
+    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertexAttributeDivisorPropertiesEXT =
         vk::initVulkanStructure();
-    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesKHR);
+    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
 
     vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
     FeatureLimitTableItem featureLimitTable[] = {
-        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesKHR.maxVertexAttribDivisor),
+        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),
          LIM_MIN_UINT32((1 << 16) - 1)},
     };
 
-    log << TestLog::Message << vertexAttributeDivisorPropertiesKHR << TestLog::EndMessage;
+    log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
         limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -4607,7 +4613,9 @@ bool isRequiredImageParameterCombination(const VkPhysicalDeviceFeatures &deviceF
 
 VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLimits &deviceLimits, bool hasVulkan12,
                                                         const VkPhysicalDeviceVulkan12Properties &vulkan12Properties,
-                                                        const VkFormat format, const VkImageUsageFlags usageFlags)
+                                                        const VkPhysicalDeviceFeatures &deviceFeatures,
+                                                        const VkImageCreateFlags createFlags, const VkFormat format,
+                                                        const VkImageUsageFlags usageFlags)
 {
     if (isCompressedFormat(format))
         return VK_SAMPLE_COUNT_1_BIT;
@@ -4675,6 +4683,17 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
 
         if (hasStencilComp)
             sampleCounts &= deviceLimits.framebufferStencilSampleCounts;
+    }
+
+    if ((createFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) != 0)
+    {
+        const VkSampleCountFlags sparseSampleCounts =
+            VK_SAMPLE_COUNT_1_BIT | (deviceFeatures.sparseResidency2Samples ? VK_SAMPLE_COUNT_2_BIT : 0) |
+            (deviceFeatures.sparseResidency4Samples ? VK_SAMPLE_COUNT_4_BIT : 0) |
+            (deviceFeatures.sparseResidency8Samples ? VK_SAMPLE_COUNT_8_BIT : 0) |
+            (deviceFeatures.sparseResidency16Samples ? VK_SAMPLE_COUNT_16_BIT : 0);
+
+        sampleCounts &= sparseSampleCounts;
     }
 
     // If there is no usage flag set that would have corresponding device limit,
@@ -4812,8 +4831,9 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
                     (supportedFeatures &
                      (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)))
                 {
-                    const VkSampleCountFlags requiredSampleCounts = getRequiredOptimalTilingSampleCounts(
-                        deviceLimits, hasVulkan12, vulkan12Properties, format, curUsageFlags);
+                    const VkSampleCountFlags requiredSampleCounts =
+                        getRequiredOptimalTilingSampleCounts(deviceLimits, hasVulkan12, vulkan12Properties,
+                                                             deviceFeatures, curCreateFlags, format, curUsageFlags);
                     results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts,
                                   "Required sample counts not supported");
                 }

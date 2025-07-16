@@ -48,7 +48,6 @@ dEQP-VK.graphicsfuzz.cov-const-folding-vector-shuffle
 dEQP-VK.graphicsfuzz.cov-constant-folding-atan-over-tanh
 dEQP-VK.graphicsfuzz.cov-constants-combine-add-sub
 dEQP-VK.graphicsfuzz.cov-constants-mix-uniform
-dEQP-VK.graphicsfuzz.cov-copy-prop-arrays-func-argument
 dEQP-VK.graphicsfuzz.cov-copy-prop-arrays-no-stores
 dEQP-VK.graphicsfuzz.cov-copy-prop-arrays-param-uniform
 dEQP-VK.graphicsfuzz.cov-dag-combiner-clamp-undefined-access-array
@@ -281,7 +280,6 @@ dEQP-VK.graphicsfuzz.stable-rects-vec4-clamp-conditional-min-mix
 dEQP-VK.graphicsfuzz.stable-triangle-array-nested-loop
 dEQP-VK.graphicsfuzz.stable-triangle-nested-for-loop-and-true-if
 dEQP-VK.graphicsfuzz.struct-array-data-as-loop-iterator
-dEQP-VK.graphicsfuzz.switch-case-with-undefined-expression
 dEQP-VK.graphicsfuzz.switch-inside-while-always-return
 dEQP-VK.graphicsfuzz.switch-loop-switch-if
 dEQP-VK.graphicsfuzz.switch-with-fall-through-cases

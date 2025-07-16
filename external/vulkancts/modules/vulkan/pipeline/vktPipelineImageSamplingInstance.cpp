@@ -922,7 +922,7 @@ tcu::TestStatus ImageSamplingInstance::iterate(void)
 
     submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-    return verifyImage();
+    return verifyImage(false);
 }
 
 namespace
@@ -1523,7 +1523,7 @@ bool validateResultImage(const TestTexture &texture, const VkImageViewType image
 
 } // namespace
 
-tcu::TestStatus ImageSamplingInstance::verifyImage(void)
+tcu::TestStatus ImageSamplingInstance::verifyImage(const bool useGeneralLayout)
 {
     const VkPhysicalDeviceLimits &limits = m_context.getDeviceProperties().limits;
     // \note Color buffer is used to capture coordinates - not sampled texture values
@@ -1639,7 +1639,8 @@ tcu::TestStatus ImageSamplingInstance::verifyImage(void)
             UniquePtr<tcu::TextureLevel> result(readColorAttachment(
                 m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
                 m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), **m_colorImages[imgNdx],
-                m_colorFormat, m_renderSize));
+                m_colorFormat, m_renderSize,
+                useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
             const tcu::ConstPixelBufferAccess resultAccess = result->getAccess();
             bool compareOk =
                 validateResultImage(*texture, m_imageViewType, subresource, sampler, m_componentMapping, coordAccess,

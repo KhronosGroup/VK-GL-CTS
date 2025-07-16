@@ -35,9 +35,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
-#include "vkBarrierUtil.hpp"
 #include "tcuTexture.hpp"
-#include "tcuPlatform.hpp"
 #include "tcuImageCompare.hpp"
 #include "deMemory.h"
 
@@ -989,7 +987,14 @@ void FragmentImage2DView3DImageTest::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "fragmentStoresAndAtomics not supported");
 
     if (m_testParameters.imageBindingType == Sparse)
+    {
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+        context.requireDeviceFunctionality("VK_KHR_maintenance9");
+
+        const auto &maint9Properties = context.getMaintenance9Properties();
+        if (!maint9Properties.image2DViewOf3DSparse)
+            TCU_THROW(NotSupportedError, "image2DViewOf3DSparse not supported");
+    }
 }
 
 TestInstance *FragmentImage2DView3DImageTest::createInstance(Context &context) const
@@ -1029,14 +1034,14 @@ tcu::TestCaseGroup *createImage2DViewOf3DTests(tcu::TestContext &testCtx,
                 // for (const auto &imageBindingType : {ImageBindingType::Normal, ImageBindingType::Sparse})
                 {
                     TestParameters testParameters{
-                        tcu::IVec3(imageDimension), // IVec3                        imageSize
-                        mipLevel,                   // uint32_t                        mipLevel
-                        layer,                      // int32_t                        layerNdx
-                        imageAccessType.imageType,  // ImageAccessType                imageType
-                        Fragment,                   // TestType                        testType
-                        VK_FORMAT_R8G8B8A8_UNORM,   // VkFormat                        imageFormat
-                        pipelineConstructionType,   // PipelineConstructionType        pipelineConstructionType
-                        imageBindingType            // ImageBindingType             imageBindingType
+                        tcu::IVec3(imageDimension), // IVec3                    imageSize
+                        mipLevel,                   // uint32_t                 mipLevel
+                        layer,                      // int32_t                  layerNdx
+                        imageAccessType.imageType,  // ImageAccessType          imageType
+                        Fragment,                   // TestType                 testType
+                        VK_FORMAT_R8G8B8A8_UNORM,   // VkFormat                 imageFormat
+                        pipelineConstructionType,   // PipelineConstructionType pipelineConstructionType
+                        imageBindingType            // ImageBindingType         imageBindingType
                     };
                     std::string testName = "mip" + std::to_string(mipLevel) + "_layer" + std::to_string(layer) +
                                            (imageBindingType == Sparse ? "_sparse" : "");

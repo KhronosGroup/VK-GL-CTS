@@ -61,6 +61,7 @@ DevCaps::DevCaps(const std::string &id_, const ContextManager *mgr, tcu::TestCon
     , m_queueCreateInfos()
     , m_hasInheritedExtensions(false) // don't add all extensions that are available on the device
     , m_testContext(testContext)
+    , m_allocatorParams(tcu::Nothing)
     , id(id_)
 {
     reset();
@@ -74,6 +75,7 @@ DevCaps::DevCaps(const DevCaps &caps)
     , m_queueCreateInfos(caps.m_queueCreateInfos)
     , m_hasInheritedExtensions(caps.m_hasInheritedExtensions)
     , m_testContext(caps.m_testContext)
+    , m_allocatorParams(caps.m_allocatorParams)
     , id(caps.id)
 {
 }
@@ -86,6 +88,7 @@ DevCaps::DevCaps(DevCaps &&caps) noexcept
     , m_queueCreateInfos(std::move(caps.m_queueCreateInfos))
     , m_hasInheritedExtensions(caps.m_hasInheritedExtensions)
     , m_testContext(caps.m_testContext)
+    , m_allocatorParams(caps.m_allocatorParams)
     , id(caps.id)
 {
 }
@@ -753,6 +756,8 @@ de::SharedPtr<Context> ContextManager::findContext(de::SharedPtr<const ContextMa
 }
 
 DevCaps::RuntimeData_::RuntimeData_(const DevCaps &caps)
+    : familyToQueueIndices()
+    , allocatorCreateParams(caps.m_allocatorParams)
 {
     std::vector<float> queuePriorities;
     std::vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -762,28 +767,39 @@ DevCaps::RuntimeData_::RuntimeData_(const DevCaps &caps)
 void DevCaps::RuntimeData_::resetQueues(const DevCaps &caps, std::vector<VkDeviceQueueCreateInfo> &infos,
                                         std::vector<float> &priorities)
 {
-    const ContextManager &mgr = caps.getContextManager();
-    uint32_t allQueueCount    = 0;
+    const ContextManager &mgr    = caps.getContextManager();
+    uint32_t requestedQueueCount = 0;
 
     const auto &queueCreateInfos = caps.getQueueCreateInfos();
     for (const auto &qci : queueCreateInfos)
-        allQueueCount += qci.count;
+        requestedQueueCount += qci.count;
 
     infos.clear();
     priorities.clear();
     infos.reserve(queueCreateInfos.size());
-    priorities.reserve(allQueueCount);
+    priorities.reserve(requestedQueueCount);
 
     familyToQueueIndices.clear();
-    familyToQueueIndices.reserve(allQueueCount);
+    familyToQueueIndices.reserve(requestedQueueCount);
 
-    uint32_t whatever = 0u;
+    uint32_t whatever            = 0u;
+    uint32_t availableQueueCount = 0u;
     std::multimap<uint32_t, uint32_t> familyToQueueIndicesMap;
 
     for (const DevCaps::QueueCreateInfo &qci : queueCreateInfos)
     {
         const uint32_t queueFamilyIndex = findQueueFamilyIndexWithCaps(
-            mgr.getInstanceInterface(), mgr.getPhysicalDevice(), qci.required, qci.excluded);
+            mgr.getInstanceInterface(), mgr.getPhysicalDevice(), qci.required, qci.excluded, &availableQueueCount);
+        if (qci.count > availableQueueCount)
+        {
+            std::ostringstream os;
+            os << "Requested queue count (" << qci.count << ") exceeds available queue count (" << availableQueueCount
+               << "), ";
+            os << __func__ << "(requiredCaps=0x" << std::hex << uint32_t(qci.required);
+            os << ", excludedCaps=0x" << std::hex << uint32_t(qci.excluded) << ')';
+            os.flush();
+            TCU_THROW(NotSupportedError, os.str());
+        }
 
         priorities.emplace_back(qci.priority);
 
@@ -800,8 +816,8 @@ void DevCaps::RuntimeData_::resetQueues(const DevCaps &caps, std::vector<VkDevic
         }
     }
 
-    DE_ASSERT(priorities.size() == allQueueCount);
-    DE_ASSERT(familyToQueueIndices.size() == allQueueCount);
+    DE_ASSERT(priorities.size() == requestedQueueCount);
+    DE_ASSERT(familyToQueueIndices.size() == requestedQueueCount);
 }
 
 #ifdef CTS_USES_VULKANSC
@@ -976,6 +992,11 @@ DevCaps::QueueInfo DevCaps::RuntimeData_::getQueue(const DeviceInterface &di, vk
     return info;
 }
 
+const DevCaps::AllocatorParams &DevCaps::RuntimeData_::getAllocatorCreateParams() const
+{
+    return allocatorCreateParams;
+}
+
 void ContextManager::print(tcu::TestLog &log, const VkDeviceCreateInfo &createInfo) const
 {
     const std::string logFile = fs::path(m_commandLine.getLogFileName()).filename().string();
@@ -985,6 +1006,11 @@ void ContextManager::print(tcu::TestLog &log, const VkDeviceCreateInfo &createIn
         printDeviceCreateInfo(msg, createInfo);
         msg << tcu::TestLog::EndMessage << tcu::TestLog::EndSection;
     }
+}
+
+void ContextManager::setContextManager(de::SharedPtr<const ContextManager> cm, vkt::TestCase *testCase)
+{
+    testCase->setContextManager(cm);
 }
 
 template <class Stream>

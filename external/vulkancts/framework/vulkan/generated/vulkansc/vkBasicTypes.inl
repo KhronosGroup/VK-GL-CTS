@@ -37,8 +37,10 @@
 #define VK_MAX_SHADER_MODULE_IDENTIFIER_SIZE_EXT						(static_cast<uint32_t>			(32))
 #define VK_MAX_PIPELINE_BINARY_KEY_SIZE_KHR								(static_cast<uint32_t>			(32))
 #define VK_MAX_VIDEO_AV1_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(7))
+#define VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(3))
 #define VK_SHADER_INDEX_UNUSED_AMDX										(static_cast<uint32_t>			((~0U)))
 #define VK_PARTITIONED_ACCELERATION_STRUCTURE_PARTITION_INDEX_GLOBAL_NV	(static_cast<uint32_t>			((~0U)))
+#define VK_MAX_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_SET_NAME_SIZE_ARM	(static_cast<uint32_t>			(128))
 #define VKSC_API_MAX_FRAMEWORK_VERSION	VKSC_API_VERSION_1_0
 
 // Handles
@@ -194,6 +196,11 @@ enum VkFramebufferCreateFlagBits
 {
 	VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT			= 0x00000001,
 	VK_FRAMEBUFFER_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
+};
+
+enum VkQueryPoolCreateFlagBits
+{
+	VK_QUERY_POOL_CREATE_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
 };
 
 enum VkRenderPassCreateFlagBits
@@ -2163,7 +2170,8 @@ enum VkPipelineCacheValidationVersion
 
 enum VkHostImageCopyFlagBits
 {
-	VK_HOST_IMAGE_COPY_MEMCPY				= 0x00000001,
+	VK_HOST_IMAGE_COPY_MEMCPY_BIT			= 0x00000001,
+	VK_HOST_IMAGE_COPY_MEMCPY				= VK_HOST_IMAGE_COPY_MEMCPY_BIT,
 	VK_HOST_IMAGE_COPY_FLAG_BITS_MAX_ENUM	= 0x7FFFFFFF
 };
 typedef VkHostImageCopyFlagBits VkHostImageCopyFlagBitsEXT;
@@ -2922,6 +2930,16 @@ typedef uint64_t VkBufferUsageFlags2;
 
 typedef VkBufferUsageFlags2 VkBufferUsageFlags2KHR;
 
+typedef uint64_t VkTensorCreateFlagsARM;
+
+typedef uint64_t VkTensorUsageFlagsARM;
+
+typedef uint64_t VkTensorViewCreateFlagsARM;
+
+typedef uint64_t VkDataGraphPipelineSessionCreateFlagsARM;
+
+typedef uint64_t VkDataGraphPipelineDispatchFlagsARM;
+
 typedef uint32_t VkCompositeAlphaFlagsKHR;
 
 typedef uint32_t VkDisplayPlaneAlphaFlagsKHR;
@@ -3096,15 +3114,21 @@ typedef uint32_t VkOpticalFlowExecuteFlagsNV;
 
 typedef uint32_t VkFrameBoundaryFlagsEXT;
 
-typedef uint32_t VkPresentScalingFlagsEXT;
+typedef uint32_t VkPresentScalingFlagsKHR;
 
-typedef uint32_t VkPresentGravityFlagsEXT;
+typedef VkPresentScalingFlagsKHR VkPresentScalingFlagsEXT;
+
+typedef uint32_t VkPresentGravityFlagsKHR;
+
+typedef VkPresentGravityFlagsKHR VkPresentGravityFlagsEXT;
 
 typedef uint32_t VkShaderCreateFlagsEXT;
 
 typedef uint32_t VkTileShadingRenderPassFlagsQCOM;
 
 typedef uint64_t VkPhysicalDeviceSchedulingControlsFlagsARM;
+
+typedef uint32_t VkSurfaceCreateFlagsOHOS;
 
 typedef uint32_t VkVideoCodecOperationFlagsKHR;
 
@@ -3141,6 +3165,8 @@ typedef uint32_t VkVideoEncodeFeedbackFlagsKHR;
 typedef uint32_t VkVideoEncodeRateControlFlagsKHR;
 
 typedef uint32_t VkVideoEncodeRateControlModeFlagsKHR;
+
+typedef uint32_t VkVideoEncodeIntraRefreshModeFlagsKHR;
 
 typedef uint32_t VkVideoChromaSubsamplingFlagsKHR;
 
@@ -3209,6 +3235,7 @@ VK_DEFINE_PLATFORM_TYPE(NvSciSyncObj,				int)
 VK_DEFINE_PLATFORM_TYPE(NvSciSyncFence,				int)
 VK_DEFINE_PLATFORM_TYPE(NvSciBufAttrList,			int)
 VK_DEFINE_PLATFORM_TYPE(NvSciSyncAttrList,			int)
+VK_DEFINE_PLATFORM_TYPE(OHNativeWindow,				void*)
 
 // Extensions
 #define VK_KHR_SURFACE_SPEC_VERSION 25

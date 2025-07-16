@@ -54,10 +54,23 @@ namespace
 {
 
 vk::Move<vk::VkQueryPool> makeOcclusionQueryPool(const vk::DeviceInterface &vkd, const vk::VkDevice device,
-                                                 uint32_t numQueries)
+                                                 uint32_t numQueries, bool createReset = false)
 {
+#ifdef CTS_USES_VULKANSC
+    DE_UNREF(createReset);
+#endif
+
     const vk::VkQueryPoolCreateInfo queryPoolCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0u, vk::VK_QUERY_TYPE_OCCLUSION, numQueries, 0u,
+        vk::VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        nullptr,
+#ifndef CTS_USES_VULKANSC
+        vk::VkQueryPoolCreateFlags((createReset) ? vk::VK_QUERY_POOL_CREATE_RESET_BIT_KHR : 0),
+#else
+        0U,
+#endif
+        vk::VK_QUERY_TYPE_OCCLUSION,
+        numQueries,
+        0u,
     };
     return vk::createQueryPool(vkd, device, &queryPoolCreateInfo);
 }
@@ -312,6 +325,7 @@ enum OcclusionQueryResultsMode
 {
     RESULTS_MODE_GET,
     RESULTS_MODE_GET_RESET,
+    RESULTS_MODE_GET_CREATE_RESET,
     RESULTS_MODE_COPY,
     RESULTS_MODE_COPY_RESET
 };
@@ -621,7 +635,8 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance(vkt::Context &context,
                                           NUM_VERTICES_IN_DRAWCALL + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL +
                                               NUM_VERTICES_IN_OCCLUDER_DRAWCALL,
                                           m_testVector.primitiveTopology, m_testVector.noColorAttachments));
-    m_queryPool = makeOcclusionQueryPool(vk, device, NUM_QUERIES_IN_POOL);
+    m_queryPool = makeOcclusionQueryPool(vk, device, NUM_QUERIES_IN_POOL,
+                                         (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET));
 
     if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
     {
@@ -667,6 +682,15 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             throw tcu::NotSupportedError(
                 std::string("Implementation doesn't support resetting queries from the host").c_str());
     }
+#ifndef CTS_USES_VULKANSC
+    else if (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
+    {
+        // Check VK_KHR_maintenance9 is supported
+        m_context.requireDeviceFunctionality("VK_KHR_maintenance9");
+        if (m_context.getMaintenance9Features().maintenance9 == VK_FALSE)
+            throw tcu::NotSupportedError(std::string("Implementation doesn't support creating reset queries").c_str());
+    }
+#endif
 
     // 1st triangle
     vertices[START_VERTEX + 0] = tcu::Vec4(0.5, 0.5, 0.5, 1.0);
@@ -881,7 +905,8 @@ vk::Move<vk::VkCommandBuffer> OcclusionQueryTestInstance::recordRender(vk::VkCom
     std::vector<vk::VkClearValue> renderPassClearValues(2);
     deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(vk::VkClearValue));
 
-    if (!hasSeparateResetCmdBuf() && m_testVector.queryResultsMode != RESULTS_MODE_GET_RESET)
+    if (!hasSeparateResetCmdBuf() && m_testVector.queryResultsMode != RESULTS_MODE_GET_RESET &&
+        m_testVector.queryResultsMode != RESULTS_MODE_GET_CREATE_RESET)
     {
         vk.cmdResetQueryPool(*cmdBuffer, *m_queryPool, 0, NUM_QUERIES_IN_POOL);
     }
@@ -1042,7 +1067,8 @@ void OcclusionQueryTestInstance::captureResults(uint64_t *retResults, uint64_t *
                                              m_testVector.queryResultsStride;
     std::vector<uint8_t> resultsBuffer(static_cast<size_t>(resultsSize * NUM_QUERIES_IN_POOL));
 
-    if (m_testVector.queryResultsMode == RESULTS_MODE_GET || m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
+    if (m_testVector.queryResultsMode == RESULTS_MODE_GET || m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET ||
+        m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
     {
         vk::VkResult queryResult =
             vk.getQueryPoolResults(device, *m_queryPool, 0, NUM_QUERIES_IN_POOL, resultsBuffer.size(),
@@ -1539,8 +1565,10 @@ void QueryPoolOcclusionTests::init(void)
                     for (int waitIdx = 0; waitIdx < DE_LENGTH_OF_ARRAY(wait); ++waitIdx)
                     {
                         const OcclusionQueryResultsMode resultsMode[] = {RESULTS_MODE_GET, RESULTS_MODE_GET_RESET,
+                                                                         RESULTS_MODE_GET_CREATE_RESET,
                                                                          RESULTS_MODE_COPY, RESULTS_MODE_COPY_RESET};
-                        const char *const resultsModeStr[]            = {"get", "get_reset", "copy", "copy_reset"};
+                        const char *const resultsModeStr[]            = {"get", "get_reset", "get_create_reset", "copy",
+                                                                         "copy_reset"};
 
                         for (int resultsModeIdx = 0; resultsModeIdx < DE_LENGTH_OF_ARRAY(resultsMode); ++resultsModeIdx)
                         {

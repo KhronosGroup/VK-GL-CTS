@@ -67,6 +67,7 @@
 #include "gl4cTextureViewTests.hpp"
 #include "gl4cVertexAttrib64BitTest.hpp"
 #include "gl4cVertexAttribBindingTests.hpp"
+#include "gl4cTextureQueryLevelsTests.hpp"
 #include "glcAggressiveShaderOptimizationsTests.hpp"
 #include "gl4cTextureQueryLodTests.hpp"
 #include "glcBindImageTextureTests.hpp"
@@ -89,6 +90,7 @@
 #include "glcViewportArrayTests.hpp"
 #include "glcPixelStorageModesTests.hpp"
 #include "gl4cClearTexImageAndSubImageTests.hpp"
+#include "glcNegativeTextureLookupFunctionsBiasTests.hpp"
 
 #include "../gles31/es31cDrawIndirectTests.hpp"
 #include "../gles31/es31cExplicitUniformLocationTest.hpp"
@@ -315,6 +317,7 @@ void GL43TestPackage::init(void)
         addChild(new glcts::ShaderConstExprTests(getContext()));
         addChild(new gl4cts::ClearTextureImageTestCases(getContext()));
         addChild(new glcts::AggressiveShaderOptimizationsTests(getContext()));
+        addChild(new gl4cts::TextureQueryLevelsTests(getContext()));
         addChild(new gl4cts::TextureQueryLodTests(getContext()));
         addChild(new gl4cts::TextureBufferTests(getContext()));
     }
@@ -447,6 +450,7 @@ void GL45TestPackage::init(void)
         addChild(new gl4cts::SpirvExtensionsTests(getContext()));
         addChild(new gl4cts::GlSpirvTests(getContext()));
         addChild(new gl4cts::es31compatibility::Tests(getContext()));
+        addChild(new glcts::NegativeTextureLookupFunctionsBiasTests(getContext()));
     }
     catch (...)
     {

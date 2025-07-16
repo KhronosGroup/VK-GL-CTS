@@ -155,7 +155,9 @@ class SourcePackage (Source):
         tmpPath = os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
         dstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 
-        if self.filename.endswith(".zip"):
+        isZipFile = self.filename.endswith(".zip")
+
+        if isZipFile:
             archive = zipfile.ZipFile(srcPath)
         else:
             archive = tarfile.open(srcPath)
@@ -165,7 +167,10 @@ class SourcePackage (Source):
 
         os.mkdir(tmpPath)
 
-        archive.extractall(tmpPath)
+        if (not isZipFile) and sys.version_info >= (3, 13):
+            archive.extractall(tmpPath, filter='data') # Safe extraction of tar file data.
+        else:
+            archive.extractall(tmpPath)
         archive.close()
 
         extractedEntries = os.listdir(tmpPath)
@@ -242,13 +247,14 @@ class SourceFile (Source):
         writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
-    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = ""):
+    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = "", postCheckout = None):
         Source.__init__(self, baseDir, extractDir)
         self.httpsUrl = httpsUrl
         self.sshUrl = sshUrl
         self.revision = revision
         self.removeTags = removeTags
         self.patch = patch
+        self.postCheckout = postCheckout
 
     def checkout(self, url, fullDstPath, force):
         print("Directory: " + fullDstPath)
@@ -296,6 +302,12 @@ class GitRepo (Source):
 
         try:
             self.checkout(url, fullDstPath, force)
+            if self.postCheckout:
+                if self.baseDir == "vulkan-validationlayers" and SYSTEM_NAME != "Linux":
+                    print(f"Skipping post checkout command for {self.baseDir} on {SYSTEM_NAME} platform")
+                else:
+                    print(f"Running post checkout command for {self.baseDir}: {self.postCheckout}")
+                    subprocess.check_call(self.postCheckout, shell=True, cwd=fullDstPath)
         except KeyboardInterrupt:
             # Propagate the exception to stop the process if possible.
             raise
@@ -324,29 +336,30 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "f06e0f3d2e5acfe4b14e714e4103dd1ccdb237e5",
+        "e0bad2825dacf274578ec6d3c0e64e406d5e4fd7",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "963588074b26326ff0426c8953c1235213309bdb",
+        "8a85691a0740d390761a1008b4696f57facd02c4",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "6d0784e9f1ab92c17eeea94821b2465c14a52be9",
+        "2a611a970fdbc41ac2e3e328802aed9985352dca",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "112aee75d162412a4623e7d22a3de52e0233cbf5",
+        "6ecb205ac29c6c07186c500460c1d9b837993ec2",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "6ae58a2b17b2bcebdc5377995007391b85ffa10f",
-        "vulkan-validationlayers"),
+        "68e4cdd8269c2af39aa16793c9089d1893eae972",
+        "vulkan-validationlayers",
+        postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
@@ -363,14 +376,12 @@ PACKAGES = [
     GitRepo(
         "https://github.com/Igalia/vk_video_samples.git",
         "git@github.com:Igalia/vk_video_samples.git",
-        "45fe88b456c683120138f052ea81f0a958ff3ec4",
+        "435807a3f875d83aa00f5b4b0702dc156ba3ffa9",
         "nvidia-video-samples"),
-    # NOTE: Temporary vk_video_samples repo and branch where AV1
-    # encoder library is being developed by NVidia.
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "a22e0084e6f38a16dc0dcebb4c19a14651a6665b",
+        "c29c26e8a25749855aea5905500e6c2b29fadae5",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(

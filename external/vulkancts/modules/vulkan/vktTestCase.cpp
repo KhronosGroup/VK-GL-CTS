@@ -484,7 +484,7 @@ int findQueueFamilyIndexWithCapsNoThrow(const InstanceInterface &vkInstance, VkP
 }
 
 uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhysicalDevice physicalDevice,
-                                      VkQueueFlags requiredCaps, VkQueueFlags excludedCaps)
+                                      VkQueueFlags requiredCaps, VkQueueFlags excludedCaps, uint32_t *availableCount)
 {
     const vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(vkInstance, physicalDevice);
@@ -493,10 +493,19 @@ uint32_t findQueueFamilyIndexWithCaps(const InstanceInterface &vkInstance, VkPhy
     {
         uint32_t queueFlags = queueProps[queueNdx].queueFlags;
         if ((queueFlags & requiredCaps) == requiredCaps && !(queueFlags & excludedCaps))
+        {
+            if (availableCount)
+                *availableCount = queueProps[queueNdx].queueCount;
             return (uint32_t)queueNdx;
+        }
     }
 
-    TCU_THROW(NotSupportedError, "No matching queue found");
+    std::ostringstream os;
+    os << "No matching queue found: " << __func__ << '(';
+    os << "requiredCaps=0x" << std::hex << uint32_t(requiredCaps);
+    os << ", excludedCaps=0x" << std::hex << uint32_t(excludedCaps) << ')';
+    os.flush();
+    TCU_THROW(NotSupportedError, os.str());
 }
 
 vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(de::SharedPtr<ContextManager> mgr)
@@ -523,19 +532,13 @@ class DefaultDevice
 {
 public:
     DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
-                  de::SharedPtr<vk::ResourceInterface> resourceInterface, const std::string &deviceID);
-    DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
-                  de::SharedPtr<const ContextManager> ctxmgr, Move<VkDevice> device, const std::string &deviceID,
+                  const ContextManager *pContextManager, Move<VkDevice> device, const std::string &deviceID,
                   const std::vector<std::string> *pDeviceExtensions);
     virtual ~DefaultDevice() = default;
 
     VkInstance getInstance(void) const
     {
         return *m_instance;
-    }
-    de::SharedPtr<const ContextManager> getContextManager() const
-    {
-        return m_contextManager;
     }
     bool getEmbeddedContextManager() const
     {
@@ -667,7 +670,7 @@ public:
 #endif // CTS_USES_VULKANSC
 
 private:
-    de::SharedPtr<const ContextManager> m_contextManager;
+    const ContextManager *m_contextManager;
 
 #ifndef CTS_USES_VULKANSC
     using DebugReportRecorderPtr = de::SharedPtr<vk::DebugReportRecorder>;
@@ -842,18 +845,6 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
     m_contexts.reserve(m_maxCustomDevices + 1);
 }
 
-DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
-                             de::SharedPtr<vk::ResourceInterface> resourceInterface, const std::string &deviceID)
-    : DefaultDevice(
-          vkPlatform, cmdLine,
-          ContextManager::create(vkPlatform, cmdLine, resourceInterface,
-                                 std::clamp(cmdLine.getMaxCustomDevices(), 1, std::numeric_limits<int>::max()),
-                                 InstCaps(vkPlatform, cmdLine)),
-          Move<VkDevice>(), deviceID, nullptr)
-{
-    m_embeddedContextManager = true;
-}
-
 Move<VkDevice> checkNotDefaultDevice(Move<VkDevice> device, const std::string &deviceID)
 {
     DE_UNREF(deviceID);
@@ -863,29 +854,29 @@ Move<VkDevice> checkNotDefaultDevice(Move<VkDevice> device, const std::string &d
 }
 
 DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::CommandLine &cmdLine,
-                             de::SharedPtr<const ContextManager> contextManager, Move<VkDevice> suggestedDevice,
+                             const ContextManager *pContextManager, Move<VkDevice> suggestedDevice,
                              const std::string &deviceID, const std::vector<std::string> *pDeviceExtensions)
-    : m_contextManager(contextManager)
-    , m_maximumFrameworkVulkanVersion(contextManager->getMaximumFrameworkVulkanVersion())
-    , m_availableInstanceVersion(contextManager->getAvailableInstanceVersion())
-    , m_usedInstanceVersion(contextManager->getUsedInstanceVersion())
-    , m_deviceVersions(contextManager->getDeviceVersions())
-    , m_usedApiVersion(contextManager->getUsedApiVersion())
+    : m_contextManager(pContextManager)
+    , m_maximumFrameworkVulkanVersion(m_contextManager->getMaximumFrameworkVulkanVersion())
+    , m_availableInstanceVersion(m_contextManager->getAvailableInstanceVersion())
+    , m_usedInstanceVersion(m_contextManager->getUsedInstanceVersion())
+    , m_deviceVersions(m_contextManager->getDeviceVersions())
+    , m_usedApiVersion(m_contextManager->getUsedApiVersion())
 #ifndef CTS_USES_VULKANSC
-    , m_debugReportRecorder(contextManager->getDebugReportRecorder())
+    , m_debugReportRecorder(m_contextManager->getDebugReportRecorder())
 #endif // CTS_USES_VULKANSC
-    , m_instanceExtensions(contextManager->getInstanceExtensions())
-    , m_instanceHandle(contextManager->getInstanceHandle())
-    , m_instance(contextManager->getInstance())
-    , m_instanceInterface(contextManager->getInstanceDriver())
+    , m_instanceExtensions(m_contextManager->getInstanceExtensions())
+    , m_instanceHandle(m_contextManager->getInstanceHandle())
+    , m_instance(m_contextManager->getInstance())
+    , m_instanceInterface(m_contextManager->getInstanceDriver())
 #ifndef CTS_USES_VULKANSC
-    , m_debugReportCallbackHandle(contextManager->getDebugReportCallbackHandle())
-    , m_debugReportCallback(contextManager->getDebugReportCallback())
+    , m_debugReportCallbackHandle(m_contextManager->getDebugReportCallbackHandle())
+    , m_debugReportCallback(m_contextManager->getDebugReportCallback())
 #endif // CTS_USES_VULKANSC
-    , m_physicalDevice(contextManager->getPhysicalDevice())
-    , m_deviceVersion(contextManager->getDeviceVersion())
-    , m_deviceExtensions((deviceID != DevCaps::DefDevId) ? *pDeviceExtensions : contextManager->getDeviceExtensions())
-    , m_deviceFeaturesPtr(contextManager->getDeviceFeaturesPtr())
+    , m_physicalDevice(m_contextManager->getPhysicalDevice())
+    , m_deviceVersion(m_contextManager->getDeviceVersion())
+    , m_deviceExtensions((deviceID != DevCaps::DefDevId) ? *pDeviceExtensions : m_contextManager->getDeviceExtensions())
+    , m_deviceFeaturesPtr(m_contextManager->getDeviceFeaturesPtr())
     , m_deviceFeatures(*m_deviceFeaturesPtr)
     , m_universalQueueFamilyIndex(findQueueFamilyIndexWithCaps(
           *m_instanceInterface, m_physicalDevice,
@@ -902,7 +893,7 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
                                                                     VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT))
     , m_transferQueueFamilyIndex(findQueueFamilyIndexWithCapsNoThrow(
           *m_instanceInterface, m_physicalDevice, VK_QUEUE_TRANSFER_BIT, VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT))
-    , m_devicePropertiesPtr(contextManager->getDevicePropertiesPtr())
+    , m_devicePropertiesPtr(m_contextManager->getDevicePropertiesPtr())
     , m_deviceProperties(*m_devicePropertiesPtr)
     // When the default device is created, we remove the core extensions from the extension list, but those core extensions are
     // still reported as part of Context::getDeviceExtensions(). If we need the list of extensions actually used when creating the
@@ -913,15 +904,15 @@ DefaultDevice::DefaultDevice(const PlatformInterface &vkPlatform, const tcu::Com
                    createDefaultDevice(vkPlatform, *m_instance, *m_instanceInterface, m_physicalDevice,
                                        m_universalQueueFamilyIndex, m_sparseQueueFamilyIndex, m_computeQueueFamilyIndex,
                                        m_transferQueueFamilyIndex, m_deviceFeatures.getCoreFeatures2(),
-                                       m_creationExtensions, cmdLine, contextManager->getResourceInterface()))
+                                       m_creationExtensions, cmdLine, m_contextManager->getResourceInterface()))
 #ifndef CTS_USES_VULKANSC
     , m_deviceInterface(
           de::MovePtr<DeviceDriver>(new DeviceDriver(vkPlatform, *m_instance, *m_device, m_usedApiVersion, cmdLine)))
 #else
-    , m_deviceInterface(de::MovePtr<DeviceDriverSC>(
-          new DeviceDriverSC(vkPlatform, *m_instance, *m_device, cmdLine, contextManager->getResourceInterface(),
-                             contextManager->getDeviceFeaturesAndProperties().getDeviceVulkanSC10Properties(),
-                             contextManager->getDeviceFeaturesAndProperties().getDeviceProperties(), m_usedApiVersion)))
+    , m_deviceInterface(de::MovePtr<DeviceDriverSC>(new DeviceDriverSC(
+          vkPlatform, *m_instance, *m_device, cmdLine, m_contextManager->getResourceInterface(),
+          m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkanSC10Properties(),
+          m_contextManager->getDeviceFeaturesAndProperties().getDeviceProperties(), m_usedApiVersion)))
 #endif // CTS_USES_VULKANSC
     , m_deviceID(deviceID)
 {
@@ -962,14 +953,15 @@ namespace
 {
 // Allocator utilities
 
-vk::Allocator *createAllocator(DefaultDevice *device)
+vk::Allocator *createAllocator(DefaultDevice *device,
+                               const typename SimpleAllocator::OptionalOffsetParams &offsetParams = tcu::Nothing)
 {
     const auto &vki             = device->getInstanceInterface();
     const auto physicalDevice   = device->getPhysicalDevice();
     const auto memoryProperties = vk::getPhysicalDeviceMemoryProperties(vki, physicalDevice);
 
     // \todo [2015-07-24 jarkko] support allocator selection/configuration from command line (or compile time)
-    return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties);
+    return new SimpleAllocator(device->getDeviceInterface(), device->getDevice(), memoryProperties, offsetParams);
 }
 
 } // namespace
@@ -980,14 +972,17 @@ Context::Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platfor
                  vk::BinaryCollection &progCollection, de::SharedPtr<vk::ResourceInterface> resourceInterface)
     : m_testCtx(testCtx)
     , m_platformInterface(platformInterface)
-    , m_contextManager(ContextManager::create(
+    , m_contextManagerPtr(ContextManager::create(
           platformInterface, testCtx.getCommandLine(), resourceInterface,
           std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max()),
           InstCaps(platformInterface, testCtx.getCommandLine())))
+    , m_contextManager(m_contextManagerPtr)
     , m_progCollection(progCollection)
     , m_resourceInterface(resourceInterface)
     , m_deviceRuntimeData()
-    , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), resourceInterface, DevCaps::DefDevId))
+    , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), m_contextManagerPtr.get(),
+                                 Move<VkDevice>(), DevCaps::DefDevId, nullptr))
+
     , m_allocator(createAllocator(m_device.get()))
     , m_resultSetOnValidation(false)
 {
@@ -999,13 +994,14 @@ Context::Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platfor
                  de::SharedPtr<DevCaps::RuntimeData> pRuntimeData, const std::vector<std::string> *pDeviceExtensions)
     : m_testCtx(testCtx)
     , m_platformInterface(platformInterface)
+    , m_contextManagerPtr()
     , m_contextManager(contextManager)
     , m_progCollection(progCollection)
     , m_resourceInterface(contextManager->getResourceInterface())
     , m_deviceRuntimeData(pRuntimeData)
-    , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), contextManager, suggestedDevice,
+    , m_device(new DefaultDevice(m_platformInterface, testCtx.getCommandLine(), contextManager.get(), suggestedDevice,
                                  deviceID, pDeviceExtensions))
-    , m_allocator(createAllocator(m_device.get()))
+    , m_allocator(createAllocator(m_device.get(), pRuntimeData->getAllocatorCreateParams()))
     , m_resultSetOnValidation(false)
 {
 }
@@ -1197,7 +1193,7 @@ static bool isDeviceFunctionalitySupported(const ContextManager *mgr, const std:
 
 bool Context::isDeviceFunctionalitySupported(const std::string &extension) const
 {
-    return ::vkt::isDeviceFunctionalitySupported(m_device->getContextManager().get(), extension);
+    return ::vkt::isDeviceFunctionalitySupported(getContextManager().get(), extension);
 }
 
 static bool isInstanceFunctionalitySupported(const ContextManager *mgr, const std::string &extension)
@@ -1210,41 +1206,41 @@ static bool isInstanceFunctionalitySupported(const ContextManager *mgr, const st
 
 bool Context::isInstanceFunctionalitySupported(const std::string &extension) const
 {
-    return ::vkt::isInstanceFunctionalitySupported(m_device->getContextManager().get(), extension);
+    return ::vkt::isInstanceFunctionalitySupported(getContextManager().get(), extension);
 }
 
 #include "vkDeviceFeaturesForContextDefs.inl"
 
 const vk::VkPhysicalDeviceProperties &Context::getDeviceProperties(void) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceProperties();
+    return getContextManager()->getDeviceFeaturesAndProperties().getDeviceProperties();
 }
 const vk::VkPhysicalDeviceProperties2 &Context::getDeviceProperties2(void) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceProperties2();
+    return getContextManager()->getDeviceFeaturesAndProperties().getDeviceProperties2();
 }
 const vk::VkPhysicalDeviceVulkan11Properties &Context::getDeviceVulkan11Properties(void) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan11Properties();
+    return getContextManager()->getDeviceFeaturesAndProperties().getDeviceVulkan11Properties();
 }
 const vk::VkPhysicalDeviceVulkan12Properties &Context::getDeviceVulkan12Properties(void) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan12Properties();
+    return getContextManager()->getDeviceFeaturesAndProperties().getDeviceVulkan12Properties();
 }
 #ifndef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkan13Properties &Context::getDeviceVulkan13Properties(void) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan13Properties();
+    return getContextManager()->getDeviceFeaturesAndProperties().getDeviceVulkan13Properties();
 }
 const vk::VkPhysicalDeviceVulkan14Properties &Context::getDeviceVulkan14Properties(void) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkan14Properties();
+    return getContextManager()->getDeviceFeaturesAndProperties().getDeviceVulkan14Properties();
 }
 #endif // CTS_USES_VULKANSC
 #ifdef CTS_USES_VULKANSC
 const vk::VkPhysicalDeviceVulkanSC10Properties &Context::getDeviceVulkanSC10Properties(void) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().getDeviceVulkanSC10Properties();
+    return getContextManager()->getDeviceFeaturesAndProperties().getDeviceVulkanSC10Properties();
 }
 #endif // CTS_USES_VULKANSC
 
@@ -1326,11 +1322,11 @@ bool Context::contextSupports(const uint32_t requiredApiVersionBits) const
 }
 bool Context::isDeviceFeatureInitialized(vk::VkStructureType sType) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().isDeviceFeatureInitialized(sType);
+    return getContextManager()->getDeviceFeaturesAndProperties().isDeviceFeatureInitialized(sType);
 }
 bool Context::isDevicePropertyInitialized(vk::VkStructureType sType) const
 {
-    return m_contextManager->getDeviceFeaturesAndProperties().isDevicePropertyInitialized(sType);
+    return getContextManager()->getDeviceFeaturesAndProperties().isDevicePropertyInitialized(sType);
 }
 
 bool Context::requireDeviceFunctionality(const std::string &required) const
@@ -1727,7 +1723,7 @@ std::string Context::getDeviceID() const
 
 de::SharedPtr<const ContextManager> Context::getContextManager() const
 {
-    return m_device->getContextManager();
+    return m_contextManagerPtr ? m_contextManagerPtr : de::SharedPtr<const ContextManager>(m_contextManager);
 }
 
 DevCaps::QueueInfo Context::getDeviceQueueInfo(uint32_t queueIndex)
@@ -1848,6 +1844,16 @@ void TestCase::initInstanceCapabilities(InstCaps &caps)
     TCU_THROW(EnforceDefaultInstance,
               "Default implementation of TestCase::initInstanceCapabilities()."
               "If the test provides getInstanceCapabilities() then it must provide initInstanceCapabilities() as well");
+}
+
+void TestCase::setContextManager(de::SharedPtr<const ContextManager> cm)
+{
+    m_contextManager = cm;
+}
+
+de::SharedPtr<const ContextManager> TestCase::getContextManager() const
+{
+    return de::SharedPtr<const ContextManager>(m_contextManager);
 }
 
 TestInstance *TestCase::createInstance(Context &) const

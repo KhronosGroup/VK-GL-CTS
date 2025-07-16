@@ -27,6 +27,8 @@
 #include "tcuTestCase.hpp"
 #include "deUniquePtr.hpp"
 #include "vkRef.hpp"
+#include "tcuVector.hpp"
+#include "tcuFloat.hpp"
 
 #include <sstream>
 
@@ -84,6 +86,13 @@ static auto makeStdBeginEnd(void *p, uint32_t n) -> std::pair<R, R>
     return {begin, std::next(begin, n)};
 }
 
+template <class T, class P = const T (*)[1], class R = decltype(std::begin(*std::declval<P>()))>
+static auto makeStdBeginEnd(const void *p, uint32_t n) -> std::pair<R, R>
+{
+    auto begin = std::begin(*P(p));
+    return {begin, std::next(begin, n)};
+}
+
 template <typename X, typename... CtorArgs>
 de::MovePtr<X> makeMovePtr(CtorArgs &&...args)
 {
@@ -107,6 +116,61 @@ const X *fwd_as_ptr(const X &x)
 {
     return &x;
 }
+
+struct alignas(4) AlignedBFloat16_t : public tcu::BrainFloat16
+{
+    using tcu::BrainFloat16::BrainFloat16;
+    AlignedBFloat16_t(float);
+    AlignedBFloat16_t(const tcu::Vector<float, 1> &);
+    AlignedBFloat16_t &operator[](uint32_t);
+    const AlignedBFloat16_t &operator[](uint32_t) const;
+    static const int count = 1;
+    operator float() const
+    {
+        return asFloat();
+    }
+    operator tcu::Vec1() const
+    {
+        return tcu::Vec1(asFloat());
+    }
+    void revert();
+};
+struct AlignedBF16Vec2 : public tcu::Vector<tcu::BrainFloat16, 2>
+{
+    using tcu::Vector<tcu::BrainFloat16, 2>::Vector;
+    AlignedBF16Vec2(float, float);
+    AlignedBF16Vec2(const tcu::Vec2 &);
+    static const int count = 2;
+    operator tcu::Vec2() const
+    {
+        return {x().asFloat(), y().asFloat()};
+    }
+    void revert();
+};
+struct alignas(8) AlignedBF16Vec3 : public tcu::Vector<tcu::BrainFloat16, 3>
+{
+    using tcu::Vector<tcu::BrainFloat16, 3>::Vector;
+    AlignedBF16Vec3(float, float, float);
+    AlignedBF16Vec3(const tcu::Vec3 &);
+    static const int count = 3;
+    operator tcu::Vec3() const
+    {
+        return {x().asFloat(), y().asFloat(), z().asFloat()};
+    }
+    void revert();
+};
+struct AlignedBF16Vec4 : public tcu::Vector<tcu::BrainFloat16, 4>
+{
+    using tcu::Vector<tcu::BrainFloat16, 4>::Vector;
+    AlignedBF16Vec4(float, float, float, float);
+    AlignedBF16Vec4(const tcu::Vec4 &);
+    static const int count = 4;
+    operator tcu::Vec4() const
+    {
+        return {x().asFloat(), y().asFloat(), z().asFloat(), w().asFloat()};
+    }
+    void revert();
+};
 
 } // namespace bf16
 
