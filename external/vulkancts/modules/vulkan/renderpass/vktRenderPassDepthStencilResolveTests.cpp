@@ -311,8 +311,8 @@ bool DepthStencilResolveTest::isFeaturesSupported()
     instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
 
     // check if both modes are supported
-    VkResolveModeFlagBits depthResolveMode   = m_config.depthResolveMode;
-    VkResolveModeFlagBits stencilResolveMode = m_config.stencilResolveMode;
+    const auto &depthResolveMode   = m_config.depthResolveMode;
+    const auto &stencilResolveMode = m_config.stencilResolveMode;
 
     if ((depthResolveMode != VK_RESOLVE_MODE_NONE) &&
         !(depthResolveMode & dsResolveProperties.supportedDepthResolveModes))
@@ -322,18 +322,25 @@ bool DepthStencilResolveTest::isFeaturesSupported()
         !(stencilResolveMode & dsResolveProperties.supportedStencilResolveModes))
         TCU_THROW(NotSupportedError, "Stencil resolve mode not supported");
 
-    // check if the implementation supports setting the depth and stencil resolve
-    // modes to different values when one of those modes is VK_RESOLVE_MODE_NONE
-    if (dsResolveProperties.independentResolveNone)
+    // Check independent resolve support.
+    const auto tcuFormat  = mapVkFormat(m_config.format);
+    const auto hasDepth   = tcu::hasDepthComponent(tcuFormat.order);
+    const auto hasStencil = tcu::hasStencilComponent(tcuFormat.order);
+
+    if (hasDepth && hasStencil)
     {
-        if ((!dsResolveProperties.independentResolve) && (depthResolveMode != stencilResolveMode) &&
-            (depthResolveMode != VK_RESOLVE_MODE_NONE) && (stencilResolveMode != VK_RESOLVE_MODE_NONE))
-            TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
-    }
-    else if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
-    {
-        // when independentResolveNone and independentResolve are VK_FALSE then both modes must be the same
-        TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
+        if (depthResolveMode == stencilResolveMode)
+            ;
+        else if (depthResolveMode == VK_RESOLVE_MODE_NONE || stencilResolveMode == VK_RESOLVE_MODE_NONE)
+        {
+            if (!dsResolveProperties.independentResolveNone)
+                TCU_THROW(NotSupportedError, "independentResolveNone not supported");
+        }
+        else
+        {
+            if (!dsResolveProperties.independentResolve)
+                TCU_THROW(NotSupportedError, "independentResolve not supported");
+        }
     }
 
     // Check alternative format support if needed.
