@@ -653,6 +653,15 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance(vkt::Context &context,
           (m_testVector.queryResultSize == RESULT_SIZE_64_BIT ? vk::VK_QUERY_RESULT_64_BIT : 0) |
           (m_testVector.queryResultsAvailability ? vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : 0))
 {
+#ifndef CTS_USES_VULKANSC
+    if (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
+    {
+        // Check VK_KHR_maintenance9 is supported
+        m_context.requireDeviceFunctionality("VK_KHR_maintenance9");
+        if (m_context.getMaintenance9Features().maintenance9 == VK_FALSE)
+            throw tcu::NotSupportedError(std::string("Implementation doesn't support creating reset queries").c_str());
+    }
+#endif
     const vk::VkDevice device     = m_context.getDevice();
     const vk::DeviceInterface &vk = m_context.getDeviceInterface();
 
@@ -711,15 +720,6 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             throw tcu::NotSupportedError(
                 std::string("Implementation doesn't support resetting queries from the host").c_str());
     }
-#ifndef CTS_USES_VULKANSC
-    else if (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
-    {
-        // Check VK_KHR_maintenance9 is supported
-        m_context.requireDeviceFunctionality("VK_KHR_maintenance9");
-        if (m_context.getMaintenance9Features().maintenance9 == VK_FALSE)
-            throw tcu::NotSupportedError(std::string("Implementation doesn't support creating reset queries").c_str());
-    }
-#endif
 
     // 1st triangle
     vertices[START_VERTEX + 0] = tcu::Vec4(0.5, 0.5, 0.5, 1.0);
