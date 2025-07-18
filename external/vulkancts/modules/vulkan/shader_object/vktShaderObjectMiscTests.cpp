@@ -923,7 +923,7 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
     if (eds2Features.extendedDynamicState2LogicOp)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT);
-    if (eds2Features.extendedDynamicState2PatchControlPoints)
+    if (eds2Features.extendedDynamicState2PatchControlPoints && !m_params.meshShader)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT);
     if (eds3Features.extendedDynamicState3TessellationDomainOrigin)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT);
@@ -1864,10 +1864,10 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         const auto depthBuffer =
             readDepthAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage, depthStencilAttachmentFormat,
                                 tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
-        const auto depthAccess = depthBuffer->getAccess();
-        const auto stencilBuffer =
-            readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
-                                  depthStencilAttachmentFormat, tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
+        const auto depthAccess   = depthBuffer->getAccess();
+        const auto stencilBuffer = readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
+                                                         depthStencilAttachmentFormat, tcu::UVec2(width, height),
+                                                         vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         const auto stencilAccess = stencilBuffer->getAccess();
         const float depthEpsilon = 0.02f;
 
