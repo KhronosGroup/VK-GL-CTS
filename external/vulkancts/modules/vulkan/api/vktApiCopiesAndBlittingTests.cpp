@@ -3188,6 +3188,30 @@ void CopyCompressedImageToBufferTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Format not supported");
     }
 
+    const uint32_t arrayLayers = getArraySize(m_params.src.image);
+    uint32_t mipLevels         = 0;
+
+    {
+        const auto &width  = m_params.src.image.extent.width;
+        const auto &height = m_params.src.image.extent.height;
+        const auto &depth  = m_params.src.image.extent.depth;
+
+        if (m_params.src.image.imageType == VK_IMAGE_TYPE_1D)
+            mipLevels = deLog2Floor32(width) + 1u;
+        else if (m_params.src.image.imageType == VK_IMAGE_TYPE_2D)
+            mipLevels = deLog2Floor32(de::max(width, height)) + 1u;
+        else if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D)
+            mipLevels = deLog2Floor32(de::max(width, de::max(height, depth))) + 1u;
+        else
+            DE_ASSERT(false);
+    }
+
+    if (imageFormatProperties.maxMipLevels < mipLevels)
+        TCU_THROW(NotSupportedError, "Required number of mip levels not supported");
+
+    if (imageFormatProperties.maxArrayLayers < arrayLayers)
+        TCU_THROW(NotSupportedError, "Required number of layers not supported");
+
     if (!(formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT))
         TCU_THROW(NotSupportedError, "TRANSFER_SRC is not supported on this image type");
 }
