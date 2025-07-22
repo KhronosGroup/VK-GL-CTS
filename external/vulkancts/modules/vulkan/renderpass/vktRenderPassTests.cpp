@@ -2822,9 +2822,11 @@ public:
                 (m_renderInfo.getInputAttachmentIndex(inputAttachmentNdx) ==
                  *m_renderInfo.getDepthStencilAttachmentIndex()))
             {
-                const tcu::TextureFormat format    = mapVkFormat(m_renderInfo.getDepthStencilAttachment()->getFormat());
-                const bool hasDepth                = hasDepthComponent(format.order);
-                const bool hasStencil              = hasStencilComponent(format.order);
+                const tcu::TextureFormat format = mapVkFormat(m_renderInfo.getDepthStencilAttachment()->getFormat());
+                const bool hasDepth             = hasDepthComponent(format.order);
+                const bool hasStencil           = hasStencilComponent(format.order);
+                const auto layout =
+                    dynamicRendering ? inputAttachmenLayout : m_renderInfo.getInputAttachmentLayout(inputAttachmentNdx);
                 const VkImageMemoryBarrier barrier = {
                     VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // sType;
                     nullptr,                                // pNext;
@@ -2832,8 +2834,8 @@ public:
                     VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // srcAccessMask
                     VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,          // dstAccessMask
 
-                    inputAttachmenLayout, // oldLayout
-                    inputAttachmenLayout, // newLayout;
+                    layout, // oldLayout
+                    layout, // newLayout
 
                     VK_QUEUE_FAMILY_IGNORED, // srcQueueFamilyIndex;
                     VK_QUEUE_FAMILY_IGNORED, // destQueueFamilyIndex;

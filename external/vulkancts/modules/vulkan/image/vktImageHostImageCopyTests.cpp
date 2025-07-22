@@ -1098,6 +1098,15 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
                     log << tcu::TestLog::Message << "At byte " << i << " data from vkCopyImageToMemoryEXT() is "
                         << data[i] << ", but data from vkCmdCopyImageToBuffer() (after padding) is "
                         << ((uint8_t *)resultBuffer.getDataPtr())[i] << tcu::TestLog::EndMessage;
+
+                    const auto fbExtent = tcu::IVec3(imageSize.width, imageSize.height, imageSize.depth);
+                    const auto testColorAccess =
+                        tcu::ConstPixelBufferAccess(mapVkFormat(m_parameters.imageOutputFormat), fbExtent, data.data());
+                    const auto outputColorAccess = tcu::ConstPixelBufferAccess(
+                        mapVkFormat(m_parameters.imageOutputFormat), fbExtent, resultBuffer.getDataPtr());
+                    log << tcu::TestLog::ImageSet("ColorComparison", "")
+                        << tcu::TestLog::Image("ColorResult", "", outputColorAccess)
+                        << tcu::TestLog::Image("ColorInput", "", testColorAccess) << tcu::TestLog::EndImageSet;
                     break;
                 }
             }
@@ -1138,16 +1147,15 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
         }
         if (!match)
         {
-            if (!isCompressedFormat(m_parameters.imageSampledFormat))
-            {
-                const tcu::ConstPixelBufferAccess bufferData(
-                    mapVkFormat(m_parameters.imageSampledFormat), m_parameters.imageSize.width,
-                    m_parameters.imageSize.height, m_parameters.imageSize.depth, outputAlloc.getHostPtr());
+            const auto fbExtent = tcu::IVec3(imageSize.width, imageSize.height, imageSize.depth);
+            const auto testColorAccess =
+                tcu::ConstPixelBufferAccess(mapVkFormat(m_parameters.imageOutputFormat), fbExtent, testData.data());
+            const auto outputColorAccess = tcu::ConstPixelBufferAccess(mapVkFormat(m_parameters.imageOutputFormat),
+                                                                       fbExtent, resultBuffer.getDataPtr());
+            log << tcu::TestLog::ImageSet("ColorComparison", "")
+                << tcu::TestLog::Image("ColorResult", "", outputColorAccess)
+                << tcu::TestLog::Image("ColorInput", "", testColorAccess) << tcu::TestLog::EndImageSet;
 
-                m_context.getTestContext().getLog()
-                    << tcu::TestLog::Section("host_copy_result", "host_copy_result")
-                    << tcu::LogImage("image", "", bufferData) << tcu::TestLog::EndSection;
-            }
             return tcu::TestStatus::fail("Image verification failed");
         }
     }
@@ -3253,6 +3261,16 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
             {
                 log << tcu::TestLog::Message << "At byte " << i << " generated data is " << testData[i]
                     << ", but output data is " << outputData[i] << tcu::TestLog::EndMessage;
+
+                const auto fbExtent =
+                    tcu::IVec3(createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth);
+                const auto testColorAccess =
+                    tcu::ConstPixelBufferAccess(mapVkFormat(m_params.format), fbExtent, testData.data());
+                const auto outputColorAccess =
+                    tcu::ConstPixelBufferAccess(mapVkFormat(m_params.format), fbExtent, outputData.data());
+                log << tcu::TestLog::ImageSet("ColorComparison", "")
+                    << tcu::TestLog::Image("ColorResult", "", outputColorAccess)
+                    << tcu::TestLog::Image("ColorInput", "", testColorAccess) << tcu::TestLog::EndImageSet;
                 break;
             }
         }

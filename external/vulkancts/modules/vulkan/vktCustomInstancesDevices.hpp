@@ -184,6 +184,7 @@ public:
         VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP             = 0x00000040,
         VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_2                = 0x00000080,
         VIDEO_DEVICE_FLAG_REQUIRE_DECODE_VP9                   = 0x00000100,
+        VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH                = 0x00000200,
     };
 
     typedef uint32_t VideoDeviceFlags;
