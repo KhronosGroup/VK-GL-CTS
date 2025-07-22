@@ -42,6 +42,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuImageCompare.hpp"
 
 #include <string>
 
@@ -1083,6 +1084,218 @@ inline vector<int> createPattern(int count0, int count1)
     return pattern;
 }
 
+enum class SideEffectCase
+{
+    CONDITION = 0,
+    DEGENERATE,
+};
+
+struct SideEffectParams
+{
+    SideEffectCase sideEffectCase;
+};
+
+void sideEffectSupportCheck(Context &context, SideEffectParams)
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
+}
+
+void sideEffectInitPrograms(vk::SourceCollections &dst, SideEffectParams params)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "};\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "void main(void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    outColor = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+    // Passthrough geometry shader.
+    std::ostringstream geom;
+    geom << "#version 460\n"
+         << "layout (triangles) in;\n"
+         << "layout (triangle_strip, max_vertices=3) out;\n"
+         << "in gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "} gl_in[3];\n"
+         << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "};\n"
+         << "layout (set=0, binding=0, std430) buffer SSBO_Block {\n"
+         << "    uint condition;\n"
+         << "    uint value;\n"
+         << "} ssbo;\n"
+         << "void main() {\n";
+
+    if (params.sideEffectCase == SideEffectCase::CONDITION)
+    {
+        geom << "    ssbo.value = 777u;\n"
+             << "    if (ssbo.condition != 0u) {\n"
+             << "        for (uint i = 0; i < 3; ++i) {\n"
+             << "            gl_Position = gl_in[i].gl_Position;\n"
+             << "            EmitVertex();\n"
+             << "        }\n"
+             << "        EndPrimitive();\n"
+             << "    }\n";
+    }
+    else if (params.sideEffectCase == SideEffectCase::DEGENERATE)
+    {
+        geom << "    ssbo.value = 777u;\n"
+             << "    gl_Position = gl_in[0].gl_Position;\n"
+             << "    EmitVertex();\n"
+             << "    gl_Position = gl_in[1].gl_Position;\n"
+             << "    EmitVertex();\n"
+             << "    EndPrimitive();\n";
+    }
+    else
+        DE_ASSERT(false);
+
+    geom << "}\n";
+    dst.glslSources.add("geom") << glu::GeometrySource(geom.str());
+}
+
+tcu::TestStatus sideEffectTest(Context &context, SideEffectParams)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk   = makeExtent3D(extent);
+    const auto imgFormat  = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imgUsage   = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto descStages = VK_SHADER_STAGE_GEOMETRY_BIT;
+    const auto descType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, imgFormat, imgUsage, VK_IMAGE_TYPE_2D);
+
+    struct
+    {
+        uint32_t condition;
+        uint32_t value;
+    } ssbo;
+
+    const auto ssboBufferSize  = static_cast<VkDeviceSize>(sizeof(ssbo));
+    const auto ssboBufferUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    const auto ssboBufferInfo  = makeBufferCreateInfo(ssboBufferSize, ssboBufferUsage);
+    BufferWithMemory ssboBuffer(ctx.vkd, ctx.device, ctx.allocator, ssboBufferInfo, MemoryRequirement::HostVisible);
+    auto &ssboAlloc = ssboBuffer.getAllocation();
+    {
+        memset(ssboAlloc.getHostPtr(), 0, sizeof(ssbo)); // Note this also sets the condition value to zero.
+        flushAlloc(ctx.vkd, ctx.device, ssboAlloc);
+    }
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, descStages);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto vertShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+    const auto geomShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("geom"));
+
+    const auto renderPass = makeRenderPass(ctx.vkd, ctx.device, imgFormat);
+    const auto framebuffer =
+        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), extentVk.width, extentVk.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const std::vector<tcu::Vec4> vertices{
+        // clang-format off
+        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+        tcu::Vec4(-1.0f,  3.0f, 0.0f, 1.0f),
+        tcu::Vec4( 3.0f, -1.0f, 0.0f, 1.0f),
+        // clang-format on
+    };
+    const auto vertexBufferSize           = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferUsage          = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    const auto vertexBufferInfo           = makeBufferCreateInfo(vertexBufferSize, vertexBufferUsage);
+    const VkDeviceSize vertexBufferOffset = 0ull;
+    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = vertexBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    const auto pipeline =
+        makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             *geomShader, *fragShader, *renderPass, viewports, scissors);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto ssboDescInfo = makeDescriptorBufferInfo(*ssboBuffer, 0ull, VK_WHOLE_SIZE);
+    setUpdateBuilder.writeSingle(*descSet, binding(0u), descType, &ssboDescInfo);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f); // Must be different from the color set in the frag shader.
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+    ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Validate color buffer has not been written to and the SSBO value is as we expect.
+
+    {
+        invalidateAlloc(ctx.vkd, ctx.device, ssboAlloc);
+        memcpy(&ssbo, ssboAlloc.getHostPtr(), sizeof(ssbo));
+    }
+    const uint32_t expected = 777u; // Must match geometry shader.
+    if (ssbo.value != expected)
+    {
+        std::ostringstream msg;
+        msg << "Unexpected value found in SSBO: expected " << expected << " but found " << ssbo.value;
+        TCU_FAIL(msg.str());
+    }
+
+    {
+        const auto tcuFormat = mapVkFormat(imgFormat);
+
+        tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+        tcu::PixelBufferAccess reference = refLevel.getAccess();
+        tcu::clear(reference, clearColor);
+
+        invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+        tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+        auto &log = context.getTestContext().getLog();
+        const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+
+        if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+            TCU_FAIL("Unexpected results in color buffer; check log for details --");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 TestCaseGroup *createBasicGeometryShaderTests(TestContext &testCtx)
@@ -1121,6 +1334,25 @@ TestCaseGroup *createBasicGeometryShaderTests(TestContext &testCtx)
         new BuiltinVariableRenderTest(testCtx, "primitive_id_in_restarted", TEST_PRIMITIVE_ID_IN, true));
     // test gl_PrimitiveID
     basicGroup->addChild(new BuiltinVariableRenderTest(testCtx, "primitive_id", TEST_PRIMITIVE_ID));
+
+    {
+        const struct
+        {
+            SideEffectCase sideEffectCase;
+            const char *name;
+        } sideEffectCases[] = {
+            {SideEffectCase::CONDITION, "condition"},
+            {SideEffectCase::DEGENERATE, "degenerate"},
+        };
+
+        for (const auto &sideEffectCase : sideEffectCases)
+        {
+            const auto testName = std::string("side_effect_with_") + sideEffectCase.name;
+            const SideEffectParams params{sideEffectCase.sideEffectCase};
+            addFunctionCaseWithPrograms(basicGroup.get(), testName, sideEffectSupportCheck, sideEffectInitPrograms,
+                                        sideEffectTest, params);
+        }
+    }
 
     return basicGroup.release();
 }

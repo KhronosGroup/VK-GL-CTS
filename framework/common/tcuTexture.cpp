@@ -529,6 +529,9 @@ void floatToChannel(uint8_t *dst, float src, TextureFormat::ChannelType type)
     case TextureFormat::SIGNED_INT32:
         *((int32_t *)dst) = convertSatRte<int32_t>(src);
         break;
+    case TextureFormat::SIGNED_INT64:
+        *((int64_t *)dst) = convertSatRte<int32_t>(src); // Note we convert as 32-bits, but store as 64.
+        break;
     case TextureFormat::UNSIGNED_INT8:
         *((uint8_t *)dst) = convertSatRte<uint8_t>(src);
         break;
@@ -540,6 +543,9 @@ void floatToChannel(uint8_t *dst, float src, TextureFormat::ChannelType type)
         break;
     case TextureFormat::UNSIGNED_INT32:
         *((uint32_t *)dst) = convertSatRte<uint32_t>(src);
+        break;
+    case TextureFormat::UNSIGNED_INT64:
+        *((uint64_t *)dst) = convertSatRte<uint32_t>(src); // Note we convert as 32-bits, but store as 64.
         break;
     case TextureFormat::HALF_FLOAT:
         *((deFloat16 *)dst) = deFloat32To16(src);

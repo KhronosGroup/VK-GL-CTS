@@ -263,6 +263,7 @@ struct VulkanFeatures
     vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR extIntegerDotProduct;
     vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR extFloatControls2;
     vk::VkPhysicalDeviceMaintenance8FeaturesKHR extMaintenance8;
+    vk::VkPhysicalDeviceMaintenance9FeaturesKHR maint9Features;
 #endif // CTS_USES_VULKANSC
     vk::VkPhysicalDeviceFloatControlsProperties floatControlsProperties;
 
@@ -278,6 +279,7 @@ struct VulkanFeatures
         deMemset(&extIntegerDotProduct, 0, sizeof(vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR));
         deMemset(&extFloatControls2, 0, sizeof(vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR));
         deMemset(&extMaintenance8, 0, sizeof(vk::VkPhysicalDeviceMaintenance8FeaturesKHR));
+        deMemset(&maint9Features, 0, sizeof(maint9Features));
 #endif // CTS_USES_VULKANSC
         deMemset(&floatControlsProperties, 0, sizeof(vk::VkPhysicalDeviceFloatControlsProperties));
         floatControlsProperties.denormBehaviorIndependence = vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;

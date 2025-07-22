@@ -2158,7 +2158,12 @@ void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
     DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
 
     context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
     vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
     imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
     imageViewMinLodFeatures.pNext = nullptr;
@@ -2177,7 +2182,7 @@ void Texture2DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
         TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
 
     if (robustness2Features.robustImageAccess2 == false)
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+        TCU_THROW(NotSupportedError, "robustImageAccess2 feature not supported");
 }
 
 TestInstance *Texture2DImageViewMinLodIntTexCoordTest::createInstance(Context &context) const
@@ -2332,7 +2337,12 @@ void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
     DE_ASSERT(m_params.testType > util::TextureCommonTestCaseParameters::TEST_IMAGE_VIEW_MINLOD);
 
     context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
-    context.requireDeviceFunctionality("VK_EXT_robustness2");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
     vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT imageViewMinLodFeatures;
     imageViewMinLodFeatures.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT;
     imageViewMinLodFeatures.pNext = nullptr;
@@ -2351,7 +2361,7 @@ void Texture3DImageViewMinLodIntTexCoordTest::checkSupport(Context &context) con
         TCU_THROW(NotSupportedError, "VK_EXT_image_view_min_lod minLod feature not supported");
 
     if (robustness2Features.robustImageAccess2 == false)
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+        TCU_THROW(NotSupportedError, "robustImageAccess2 feature not supported");
 }
 
 TestInstance *Texture3DImageViewMinLodIntTexCoordTest::createInstance(Context &context) const
@@ -2436,6 +2446,25 @@ public:
     void initPrograms(vk::SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
     void checkSupport(Context &context) const override;
+    virtual std::string getRequiredCapabilitiesId() const override
+    {
+        if (m_params.needsRobustness2())
+            return typeid(TextureGatherMinLodTest).name();
+
+        return DevCaps::DefDevId;
+    }
+    virtual void initDeviceCapabilities(DevCaps &caps) override
+    {
+        if (m_params.needsRobustness2())
+        {
+            caps.addExtension("VK_EXT_robustness2");
+            caps.addExtension("VK_EXT_image_view_min_lod");
+
+            caps.addFeature(&VkPhysicalDeviceImageViewMinLodFeaturesEXT::minLod);
+            caps.addFeature(&VkPhysicalDeviceRobustness2FeaturesEXT::robustBufferAccess2);
+            caps.addFeature(&VkPhysicalDeviceFeatures::robustBufferAccess);
+        }
+    }
 
 protected:
     GatherParams m_params;
@@ -2505,7 +2534,10 @@ void TextureGatherMinLodTest::checkSupport(Context &context) const
 
     if (m_params.needsRobustness2())
     {
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
         VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure();
         VkPhysicalDeviceFeatures2 features2                        = initVulkanStructure(&robustness2Features);
@@ -2516,195 +2548,22 @@ void TextureGatherMinLodTest::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "robustImageAccess2 not supported");
     }
 }
-
 TestInstance *TextureGatherMinLodTest::createInstance(Context &context) const
 {
     return new TextureGatherMinLodInstance(context, m_params);
 }
 
-// Device helper: this is needed because we sometimes need a custom device with robustImageAccess2.
-class DeviceHelper
-{
-public:
-    virtual ~DeviceHelper()
-    {
-    }
-    virtual const DeviceInterface &getDeviceInterface(void) const = 0;
-    virtual VkDevice getDevice(void) const                        = 0;
-    virtual uint32_t getQueueFamilyIndex(void) const              = 0;
-    virtual VkQueue getQueue(void) const                          = 0;
-    virtual Allocator &getAllocator(void) const                   = 0;
-};
-
-// This one just reuses the default device from the context.
-class ContextDeviceHelper : public DeviceHelper
-{
-public:
-    ContextDeviceHelper(Context &context)
-        : m_deviceInterface(context.getDeviceInterface())
-        , m_device(context.getDevice())
-        , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
-        , m_queue(context.getUniversalQueue())
-        , m_allocator(context.getDefaultAllocator())
-    {
-    }
-
-    virtual ~ContextDeviceHelper()
-    {
-    }
-
-    const DeviceInterface &getDeviceInterface(void) const override
-    {
-        return m_deviceInterface;
-    }
-    VkDevice getDevice(void) const override
-    {
-        return m_device;
-    }
-    uint32_t getQueueFamilyIndex(void) const override
-    {
-        return m_queueFamilyIndex;
-    }
-    VkQueue getQueue(void) const override
-    {
-        return m_queue;
-    }
-    Allocator &getAllocator(void) const override
-    {
-        return m_allocator;
-    }
-
-protected:
-    const DeviceInterface &m_deviceInterface;
-    const VkDevice m_device;
-    const uint32_t m_queueFamilyIndex;
-    const VkQueue m_queue;
-    Allocator &m_allocator;
-};
-
-// This one creates a new device with robustImageAccess2.
-class RobustImageAccess2DeviceHelper : public DeviceHelper
-{
-public:
-    RobustImageAccess2DeviceHelper(Context &context)
-    {
-        const auto &vkp           = context.getPlatformInterface();
-        const auto &vki           = context.getInstanceInterface();
-        const auto instance       = context.getInstance();
-        const auto physicalDevice = context.getPhysicalDevice();
-        const auto queuePriority  = 1.0f;
-
-        // Queue index first.
-        m_queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-
-        // Create a universal queue that supports graphics and compute.
-        const VkDeviceQueueCreateInfo queueParams = {
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                    // const void* pNext;
-            0u,                                         // VkDeviceQueueCreateFlags flags;
-            m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
-            1u,                                         // uint32_t queueCount;
-            &queuePriority                              // const float* pQueuePriorities;
-        };
-
-        const char *extensions[] = {
-            "VK_EXT_robustness2",
-            "VK_EXT_image_view_min_lod",
-        };
-
-        VkPhysicalDeviceImageViewMinLodFeaturesEXT minLodfeatures  = initVulkanStructure();
-        VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure(&minLodfeatures);
-        VkPhysicalDeviceFeatures2 features2                        = initVulkanStructure(&robustness2Features);
-
-        vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-
-        const VkDeviceCreateInfo deviceCreateInfo = {
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,               //sType;
-            &features2,                                         //pNext;
-            0u,                                                 //flags
-            1u,                                                 //queueRecordCount;
-            &queueParams,                                       //pRequestedQueues;
-            0u,                                                 //layerCount;
-            nullptr,                                            //ppEnabledLayerNames;
-            static_cast<uint32_t>(de::arrayLength(extensions)), // uint32_t enabledExtensionCount;
-            extensions,                                         // const char* const* ppEnabledExtensionNames;
-            nullptr,                                            //pEnabledFeatures;
-        };
-
-        m_device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance,
-                                      vki, physicalDevice, &deviceCreateInfo);
-        m_vkd.reset(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(),
-                                     context.getTestContext().getCommandLine()));
-        m_queue = getDeviceQueue(*m_vkd, *m_device, m_queueFamilyIndex, 0u);
-        m_allocator.reset(
-            new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
-    }
-
-    virtual ~RobustImageAccess2DeviceHelper()
-    {
-    }
-
-    const DeviceInterface &getDeviceInterface(void) const override
-    {
-        return *m_vkd;
-    }
-    VkDevice getDevice(void) const override
-    {
-        return m_device.get();
-    }
-    uint32_t getQueueFamilyIndex(void) const override
-    {
-        return m_queueFamilyIndex;
-    }
-    VkQueue getQueue(void) const override
-    {
-        return m_queue;
-    }
-    Allocator &getAllocator(void) const override
-    {
-        return *m_allocator;
-    }
-
-protected:
-    Move<VkDevice> m_device;
-    std::unique_ptr<DeviceDriver> m_vkd;
-    uint32_t m_queueFamilyIndex;
-    VkQueue m_queue;
-    std::unique_ptr<SimpleAllocator> m_allocator;
-};
-
-std::unique_ptr<DeviceHelper> g_robustness2DeviceHelper;
-std::unique_ptr<DeviceHelper> g_contextDeviceHelper;
-
-DeviceHelper &getDeviceHelper(Context &context, bool needsRobustness2)
-{
-    if (needsRobustness2)
-    {
-        if (!g_robustness2DeviceHelper)
-            g_robustness2DeviceHelper.reset(new RobustImageAccess2DeviceHelper(context));
-        return *g_robustness2DeviceHelper;
-    }
-
-    if (!g_contextDeviceHelper)
-        g_contextDeviceHelper.reset(new ContextDeviceHelper(context));
-    return *g_contextDeviceHelper;
-}
-
-// Cleanup function for the test group.
-void destroyDeviceHelpers(tcu::TestCaseGroup *)
-{
-    g_robustness2DeviceHelper.reset(nullptr);
-    g_contextDeviceHelper.reset(nullptr);
-}
-
 tcu::TestStatus TextureGatherMinLodInstance::iterate(void)
 {
-    const auto &deviceHelper = getDeviceHelper(m_context, m_params.needsRobustness2());
-    const auto &vkd          = deviceHelper.getDeviceInterface();
-    const auto device        = deviceHelper.getDevice();
-    const auto queueIndex    = deviceHelper.getQueueFamilyIndex();
-    const auto queue         = deviceHelper.getQueue();
-    auto &alloc              = deviceHelper.getAllocator();
+    DE_ASSERT(m_context.getDeviceID() ==
+              (m_params.needsRobustness2() ? typeid(TextureGatherMinLodTest).name() : DevCaps::DefDevId));
+    const auto &vkd       = m_context.getDeviceInterface();
+    const auto device     = m_context.getDevice();
+    const auto queueIndex = m_params.needsRobustness2() ? m_context.getDeviceQueueInfo(0).familyIndex :
+                                                          m_context.getUniversalQueueFamilyIndex();
+    const auto queue =
+        m_params.needsRobustness2() ? m_context.getDeviceQueueInfo(0).queue : m_context.getUniversalQueue();
+    auto &alloc = m_context.getDefaultAllocator();
 
     const auto imageFormat = VK_FORMAT_R8G8B8A8_UNORM;
     const auto tcuFormat   = mapVkFormat(imageFormat);
@@ -3717,8 +3576,7 @@ void populateTextureMipmappingTests(tcu::TestCaseGroup *textureMipmappingTests)
 #ifndef CTS_USES_VULKANSC
     {
         // Test minLod with textureGather operations
-        const auto minLodGatherGroup =
-            createTestGroup(testCtx, "min_lod_gather", populateMinLodGatherGroup, destroyDeviceHelpers);
+        const auto minLodGatherGroup = createTestGroup(testCtx, "min_lod_gather", populateMinLodGatherGroup);
         textureMipmappingTests->addChild(minLodGatherGroup);
     }
 #endif // CTS_USES_VULKANSC

@@ -628,7 +628,7 @@ tcu::TestStatus MeshTriangleRenderer::iterate()
     const tcu::Vec4 threshold(0.0f); // The color can be represented exactly.
 
     if (!tcu::floatThresholdCompare(log, "Result", "", m_params.expectedColor, outPixels, threshold,
-                                    tcu::COMPARE_LOG_EVERYTHING))
+                                    tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::fail("Failed; check log for details");
 
     return tcu::TestStatus::pass("Pass");
@@ -927,6 +927,8 @@ tcu::TestStatus testFullscreenGradient(Context &context, GradientParams params)
     tcu::clear(errorAccess, green);
     bool globalFail = false;
 
+    const auto diagonalEdge = (imageDim.x() + imageDim.y()) / 2 - 1;
+
     for (int y = 0; y < imageDim.y() / blockHeight; ++y)
         for (int x = 0; x < imageDim.x() / blockWidth; ++x)
         {
@@ -938,6 +940,7 @@ tcu::TestStatus testFullscreenGradient(Context &context, GradientParams params)
             const auto cornerY     = y * blockHeight;
             const auto cornerX     = x * blockWidth;
             const auto cornerColor = outPixels.getPixel(cornerX, cornerY);
+            bool edgeBlock         = false;
 
             for (int blockY = 0; blockY < blockHeight; ++blockY)
                 for (int blockX = 0; blockX < blockWidth; ++blockX)
@@ -948,7 +951,13 @@ tcu::TestStatus testFullscreenGradient(Context &context, GradientParams params)
 
                     candidates.push_back(refAccess.getPixel(absX, absY));
 
-                    if (cornerColor != resColor)
+                    if ((absY + absX) == diagonalEdge)
+                    {
+                        // Block uniformity is not guaranteed if the VRS block spans across multiple primitives
+                        edgeBlock = ((blockHeight > 1) || (blockWidth > 1));
+                    }
+
+                    if ((cornerColor != resColor) && (!edgeBlock))
                     {
                         std::ostringstream msg;
                         msg << "Block not uniform: " << coordColorFormat(cornerX, cornerY, cornerColor) << " vs "

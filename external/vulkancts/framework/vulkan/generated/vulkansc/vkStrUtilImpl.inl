@@ -75,6 +75,7 @@ std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, OHNativeWindow				v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
@@ -207,6 +208,15 @@ tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,	"VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2268,7 +2278,7 @@ tcu::Format::Bitfield<32> getHostImageCopyFlagsStr (VkHostImageCopyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY,	"VK_HOST_IMAGE_COPY_MEMCPY"),
+		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY_BIT,	"VK_HOST_IMAGE_COPY_MEMCPY_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2883,11 +2893,6 @@ const char* getDriverIdName (VkDriverId value)
 	}
 }
 
-tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
 tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3071,6 +3076,31 @@ tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLo
 tcu::Format::Bitfield<32> getAddressCopyFlagsKHRStr (VkAddressCopyFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorCreateFlagsARMStr (VkTensorCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorUsageFlagsARMStr (VkTensorUsageFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorViewCreateFlagsARMStr (VkTensorViewCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getDataGraphPipelineSessionCreateFlagsARMStr (VkDataGraphPipelineSessionCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getDataGraphPipelineDispatchFlagsARMStr (VkDataGraphPipelineDispatchFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
@@ -3313,12 +3343,12 @@ tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT v
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getPresentScalingFlagsEXTStr (VkPresentScalingFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentScalingFlagsKHRStr (VkPresentScalingFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentGravityFlagsKHRStr (VkPresentGravityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -3336,6 +3366,11 @@ tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRen
 tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhysicalDeviceSchedulingControlsFlagsARM value)
 {
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getSurfaceCreateFlagsOHOSStr (VkSurfaceCreateFlagsOHOS value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperationFlagsKHR value)
@@ -3424,6 +3459,11 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRat
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncodeRateControlModeFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeIntraRefreshModeFlagsKHRStr (VkVideoEncodeIntraRefreshModeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }

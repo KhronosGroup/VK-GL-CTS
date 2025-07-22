@@ -40,7 +40,7 @@
 #include <type_traits>
 #include <map>
 
-#include "SPIRV/spirv.hpp"
+#include "spirv/unified1/spirv.hpp11"
 
 namespace vk
 {
@@ -48,6 +48,8 @@ namespace vk
 #ifndef CTS_USES_VULKANSC
 
 static const uint32_t WATCHDOG_INTERVAL = 16384; // Touch watchDog every N iterations.
+
+static constexpr uint32_t geometryVertexAlign = 16;
 
 struct DeferredThreadParams
 {
@@ -192,18 +194,20 @@ struct GeometryBuilderParams
 {
     VkGeometryTypeKHR geometryType;
     bool usePadding;
+    uint32_t minAlign;
 };
 
 template <typename V, typename I>
 RaytracedGeometryBase *buildRaytracedGeometry(const GeometryBuilderParams &params)
 {
-    return new RaytracedGeometry<V, I>(params.geometryType, (params.usePadding ? 1u : 0u));
+    DE_ASSERT(!params.usePadding);
+    return new RaytracedGeometry<V, I>(params.geometryType, (params.usePadding ? 1u : 0u), params.minAlign);
 }
 
 de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry(VkGeometryTypeKHR geometryType, VkFormat vertexFormat,
-                                                           VkIndexType indexType, bool padVertices)
+                                                           VkIndexType indexType, bool padVertices, uint32_t minAlign)
 {
-    const GeometryBuilderParams builderParams{geometryType, padVertices};
+    const GeometryBuilderParams builderParams{geometryType, padVertices, minAlign};
 
     switch (vertexFormat)
     {
@@ -387,6 +391,18 @@ de::SharedPtr<RaytracedGeometryBase> makeRaytracedGeometry(VkGeometryTypeKHR geo
             return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_8SNorm, uint32_t>(builderParams));
         case VK_INDEX_TYPE_NONE_KHR:
             return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec4_8SNorm, EmptyIndex>(builderParams));
+        default:
+            TCU_THROW(InternalError, "Wrong index type");
+        }
+    case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+        switch (indexType)
+        {
+        case VK_INDEX_TYPE_UINT16:
+            return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec1010102, uint16_t>(builderParams));
+        case VK_INDEX_TYPE_UINT32:
+            return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec1010102, uint32_t>(builderParams));
+        case VK_INDEX_TYPE_NONE_KHR:
+            return de::SharedPtr<RaytracedGeometryBase>(buildRaytracedGeometry<Vec1010102, EmptyIndex>(builderParams));
         default:
             TCU_THROW(InternalError, "Wrong index type");
         }
@@ -872,7 +888,7 @@ VkDeviceSize getVertexBufferSize(const std::vector<de::SharedPtr<RaytracedGeomet
     DE_ASSERT(geometriesData.size() != 0);
     VkDeviceSize bufferSizeBytes = 0;
     for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
-        bufferSizeBytes += deAlignSize(geometriesData[geometryNdx]->getVertexByteSize(), 8);
+        bufferSizeBytes += deAlignSize(geometriesData[geometryNdx]->getVertexByteSize(), geometryVertexAlign);
     return bufferSizeBytes;
 }
 
@@ -903,12 +919,19 @@ void updateVertexBuffer(const DeviceInterface &vk, const VkDevice device,
 
     for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
     {
-        const void *geometryPtr      = geometriesData[geometryNdx]->getVertexPointer();
-        const size_t geometryPtrSize = geometriesData[geometryNdx]->getVertexByteSize();
+        const void *geometryPtr       = geometriesData[geometryNdx]->getVertexPointer();
+        const size_t geometryPtrSize  = geometriesData[geometryNdx]->getVertexByteSize();
+        const size_t geometryMinAlign = geometriesData[geometryNdx]->getVertexMinAlign();
+
+        // Make sure we're starting off well-aligned so we can min-align by pure offsetting
+        DE_ASSERT(geometryMinAlign <= geometryVertexAlign);
+        DE_ASSERT((bufferOffset & (geometryVertexAlign - 1)) == 0);
+
+        bufferOffset += geometryMinAlign;
 
         deMemcpy(&bufferStart[bufferOffset], geometryPtr, geometryPtrSize);
 
-        bufferOffset += deAlignSize(geometryPtrSize, 8);
+        bufferOffset += deAlignSize(geometryPtrSize, geometryVertexAlign);
     }
 
     // Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
@@ -1779,13 +1802,21 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
     for (size_t geometryNdx = 0; geometryNdx < m_geometriesData.size(); ++geometryNdx)
     {
         const de::SharedPtr<RaytracedGeometryBase> &geometryData = m_geometriesData[geometryNdx];
+        const size_t geometryMinAlign                            = geometryData->getVertexMinAlign();
         VkDeviceOrHostAddressConstKHR vertexData, indexData, transformData;
         if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
         {
             if (getVertexBuffer() != nullptr)
             {
+                // Make sure we're starting off well-aligned so we can min-align by pure offsetting
+                DE_ASSERT(geometryMinAlign <= geometryVertexAlign);
+                DE_ASSERT((vertexBufferOffset & (geometryVertexAlign - 1)) == 0);
+                DE_ASSERT(!m_indirectBuffer || (geometryMinAlign == 0));
+
+                vertexBufferOffset += geometryMinAlign;
+
                 vertexData = makeDeviceOrHostAddressConstKHR(vk, device, getVertexBuffer()->get(), vertexBufferOffset);
-                vertexBufferOffset += deAlignSize(geometryData->getVertexByteSize(), 8);
+                vertexBufferOffset += deAlignSize(geometryData->getVertexByteSize(), geometryVertexAlign);
             }
             else
                 vertexData = makeDeviceOrHostAddressConstKHR(nullptr);
@@ -2299,7 +2330,7 @@ size_t BottomLevelAccelerationStructurePool::getAllocationCount(const DeviceInte
 
         if (vertexSize != 0)
         {
-            const VkDeviceSize alignedVertBuffSize = deAlign64(vertexSize, 8);
+            const VkDeviceSize alignedVertBuffSize = deAlign64(vertexSize, geometryVertexAlign);
             const uint32_t vertBuffIndex           = (iVertex / batchVertexCount);
             vertBuffSizes[vertBuffIndex] += alignedVertBuffSize;
             iVertex += 1;
@@ -2357,7 +2388,7 @@ tcu::Vector<VkDeviceSize, 5> BottomLevelAccelerationStructurePool::getAllocation
         sumStrSize += deAlign64(strSize, 256);
         //sumUpdateScratchSize    += deAlign64(updateScratchSize, 256);    not used yet, disabled for future implementation
         sumBuildScratchSize += deAlign64(buildScratchSize, 256);
-        sumVertexSize += deAlign64(vertexSize, 8);
+        sumVertexSize += deAlign64(vertexSize, geometryVertexAlign);
         sumIndexSize += deAlign64(indexSize, 8);
         sumTransformSize += deAlign64(transformSize, 16);
     }
@@ -2500,7 +2531,7 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
 
         if (vertexSize != 0)
         {
-            const VkDeviceSize alignedVertBuffSize = deAlign64(vertexSize, 8);
+            const VkDeviceSize alignedVertBuffSize = deAlign64(vertexSize, geometryVertexAlign);
             const uint32_t vertBuffIndex           = (iVertex / batchVertexCount);
             if (iVertex != 0 && (iVertex % batchVertexCount) == 0)
             {
@@ -4111,7 +4142,7 @@ uint32_t RayTracingPipeline::getFullShaderGroupCount(void)
 Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk, const VkDevice device,
                                                        const VkPipelineLayout pipelineLayout,
                                                        const std::vector<VkPipeline> &pipelineLibraries,
-                                                       const VkPipelineCache pipelineCache)
+                                                       const VkPipelineCache pipelineCache, const void *pNext)
 {
     for (size_t groupNdx = 0; groupNdx < m_shadersGroupCreateInfos.size(); ++groupNdx)
         DE_ASSERT(m_shadersGroupCreateInfos[groupNdx].sType ==
@@ -4149,7 +4180,7 @@ Move<VkPipeline> RayTracingPipeline::createPipelineKHR(const DeviceInterface &vk
 
     VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR, //  VkStructureType sType;
-        nullptr,                                                //  const void* pNext;
+        pNext,                                                  //  const void* pNext;
         m_pipelineCreateFlags,                                  //  VkPipelineCreateFlags flags;
         de::sizeU32(m_shaderCreateInfos),                       //  uint32_t stageCount;
         de::dataOrNull(m_shaderCreateInfos),                    //  const VkPipelineShaderStageCreateInfo* pStages;
@@ -4207,9 +4238,9 @@ Move<VkPipeline> RayTracingPipeline::createPipeline(
 Move<VkPipeline> RayTracingPipeline::createPipeline(const DeviceInterface &vk, const VkDevice device,
                                                     const VkPipelineLayout pipelineLayout,
                                                     const std::vector<VkPipeline> &pipelineLibraries,
-                                                    const VkPipelineCache pipelineCache)
+                                                    const VkPipelineCache pipelineCache, const void *pNext)
 {
-    return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache);
+    return createPipelineKHR(vk, device, pipelineLayout, pipelineLibraries, pipelineCache, pNext);
 }
 
 std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineWithLibraries(
@@ -4543,7 +4574,7 @@ void cmdTraceRaysIndirect2(const DeviceInterface &vk, VkCommandBuffer commandBuf
     return cmdTraceRaysIndirect2KHR(vk, commandBuffer, indirectDeviceAddress);
 }
 
-constexpr uint32_t NO_INT_VALUE = spv::RayQueryCommittedIntersectionTypeMax;
+constexpr uint32_t NO_INT_VALUE = static_cast<uint32_t>(spv::RayQueryCommittedIntersectionType::Max);
 
 void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestParams params, std::string rayQueryPart,
                              float max_t)

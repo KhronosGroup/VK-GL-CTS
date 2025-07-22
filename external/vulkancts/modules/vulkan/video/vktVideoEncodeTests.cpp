@@ -113,6 +113,12 @@ enum TestType
     TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES, // VK_KHR_video_maintenance1 required test: Encode one I frame with DPB resources defined without passing an encode profile
     TEST_TYPE_H264_ENCODE_RESOLUTION_CHANGE_DPB, // Encode one I frame and one P frame with session created with a smaller resolution than extracted frame
 
+    // New intra refresh test types for H264
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED,
+
     TEST_TYPE_H265_ENCODE_I,
     TEST_TYPE_H265_ENCODE_RC_VBR,
     TEST_TYPE_H265_ENCODE_RC_CBR,
@@ -132,6 +138,12 @@ enum TestType
     TEST_TYPE_H265_ENCODE_INLINE_QUERY,
     TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES,
     TEST_TYPE_H265_ENCODE_RESOLUTION_CHANGE_DPB,
+
+    // New intra refresh test types for H265
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED,
 
     TEST_TYPE_LAST
 };
@@ -205,6 +217,18 @@ const char *getTestName(const TestType testType)
     case TEST_TYPE_H264_ENCODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_ENCODE_RESOURCES_WITHOUT_PROFILES:
         return "resources_without_profiles";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION:
+        return "intra_refresh_picture_partition";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
+        return "intra_refresh_any_block_based";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED:
+        return "intra_refresh_row_based";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+        return "intra_refresh_column_based";
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
@@ -233,6 +257,10 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H264_ENCODE_QM_DELTA:
     case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_CBR:
     case TEST_TYPE_H264_ENCODE_QM_EMPHASIS_VBR:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED:
         return TEST_CODEC_H264;
     case TEST_TYPE_H265_ENCODE_I:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
@@ -253,6 +281,10 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_ENCODE_QM_DELTA:
     case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_CBR:
     case TEST_TYPE_H265_ENCODE_QM_EMPHASIS_VBR:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED:
         return TEST_CODEC_H265;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
@@ -280,18 +312,43 @@ enum Option : uint32_t
     UseStatusQueries =
         1
         << 0, // All encode operations will have their status checked for success (Q2 2023: not all vendors support these)
-    UseVariableBitrateControl = 1 << 1,
-    UseConstantBitrateControl = 1 << 2,
-    SwapOrder                 = 1 << 3,
-    DisableRateControl        = 1 << 4, // const QP
-    ResolutionChange          = 1 << 5,
-    UseQualityLevel           = 1 << 6,
-    UseEncodeUsage            = 1 << 7,
-    UseInlineQueries          = 1 << 8,  // Inline queries from the video_mainteance1 extension.
-    ResourcesWithoutProfiles  = 1 << 9,  // Test profile-less resources from the video_mainteance1 extension.
-    UseDeltaMap               = 1 << 10, // VK_KHR_video_encode_quantization_map
-    UseEmphasisMap            = 1 << 11, // VK_KHR_video_encode_quantization_map
+    UseVariableBitrateControl    = 1 << 1,
+    UseConstantBitrateControl    = 1 << 2,
+    SwapOrder                    = 1 << 3,
+    DisableRateControl           = 1 << 4, // const QP
+    ResolutionChange             = 1 << 5,
+    UseQualityLevel              = 1 << 6,
+    UseEncodeUsage               = 1 << 7,
+    UseInlineQueries             = 1 << 8,  // Inline queries from the video_mainteance1 extension.
+    ResourcesWithoutProfiles     = 1 << 9,  // Test profile-less resources from the video_mainteance1 extension.
+    UseDeltaMap                  = 1 << 10, // VK_KHR_video_encode_quantization_map
+    UseEmphasisMap               = 1 << 11, // VK_KHR_video_encode_quantization_map
+    IntraRefreshPicturePartition = 1 << 12, // Per picture partition intra refresh mode
+    IntraRefreshBlockBased       = 1 << 13, // Block-based intra refresh mode
+    IntraRefreshBlockRow         = 1 << 14, // Block row-based intra refresh mode
+    IntraRefreshBlockColumn      = 1 << 15, // Block column-based intra refresh mode
 };
+
+#define INTRA_REFRESH_ENCODE_TEST_PATTERN(testType, clipName, option)                                         \
+    {                                                                                                         \
+        testType, clipName, 1, {IDR_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME,     \
+                                P_FRAME,   P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME},    \
+            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},                                           \
+            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15}, 4, {1, 0},                                \
+            {refs(0, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0),  \
+             refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0)}, \
+            {{}, {0}, {1}, {2}, {3}, {4}, {5}, {6}, {7}, {8}, {9}, {10}, {11}, {12}, {13}, {14}},             \
+            {0, 1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15},                                           \
+            {refs<std::vector<uint8_t>>({}, {}),   refs<std::vector<uint8_t>>({0}, {}),                       \
+             refs<std::vector<uint8_t>>({1}, {}),  refs<std::vector<uint8_t>>({2}, {}),                       \
+             refs<std::vector<uint8_t>>({3}, {}),  refs<std::vector<uint8_t>>({4}, {}),                       \
+             refs<std::vector<uint8_t>>({5}, {}),  refs<std::vector<uint8_t>>({6}, {}),                       \
+             refs<std::vector<uint8_t>>({7}, {}),  refs<std::vector<uint8_t>>({8}, {}),                       \
+             refs<std::vector<uint8_t>>({9}, {}),  refs<std::vector<uint8_t>>({10}, {}),                      \
+             refs<std::vector<uint8_t>>({11}, {}), refs<std::vector<uint8_t>>({12}, {}),                      \
+             refs<std::vector<uint8_t>>({13}, {}), refs<std::vector<uint8_t>>({14}, {})},                     \
+            static_cast<Option>(option)                                                                       \
+    }
 
 struct EncodeTestParam
 {
@@ -581,6 +638,14 @@ struct EncodeTestParam
       refs<std::vector<uint8_t>>({3, 2}, {}), refs<std::vector<uint8_t>>({3, 2}, {4, 3}),
       refs<std::vector<uint8_t>>({3, 2}, {4, 3}), refs<std::vector<uint8_t>>({4, 3}, {})},
      /* encoderOptions */ Option::Default},
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockColumn),
     {TEST_TYPE_H265_ENCODE_I,
      CLIP_H265_ENC_F,
      1,
@@ -852,17 +917,27 @@ struct EncodeTestParam
       refs<std::vector<uint8_t>>({3, 2}, {}), refs<std::vector<uint8_t>>({3, 2}, {4, 3}),
       refs<std::vector<uint8_t>>({3, 2}, {4, 3}), refs<std::vector<uint8_t>>({4, 3}, {})},
      /* encoderOptions */ Option::Default},
-};
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshBlockColumn)};
 
 class TestDefinition
 {
 public:
-    static MovePtr<TestDefinition> create(EncodeTestParam params)
+    static MovePtr<TestDefinition> create(EncodeTestParam params, bool generalLayout)
     {
-        return MovePtr<TestDefinition>(new TestDefinition(params));
+        return MovePtr<TestDefinition>(new TestDefinition(params, generalLayout));
     }
 
-    TestDefinition(EncodeTestParam params) : m_params(params), m_info(clipInfo(params.clip))
+    TestDefinition(EncodeTestParam params, bool generalLayout)
+        : m_params(params)
+        , m_generalLayout(generalLayout)
+        , m_info(clipInfo(params.clip))
     {
         VideoProfileInfo profile = m_info->sessionProfiles[0];
         m_profile = VkVideoCoreProfile(profile.codecOperation, profile.subsamplingFlags, profile.lumaBitDepth,
@@ -872,6 +947,11 @@ public:
     TestType getTestType() const
     {
         return m_params.type;
+    }
+
+    bool usesGeneralLayout() const
+    {
+        return m_generalLayout;
     }
 
     const char *getClipFilename() const
@@ -899,6 +979,11 @@ public:
     uint32_t getClipFrameRate() const
     {
         return m_info->frameRate;
+    }
+
+    uint32_t getClipTotalFrames() const
+    {
+        return m_info->totalFrames;
     }
 
     VkVideoCodecOperationFlagBitsKHR getCodecOperation() const
@@ -1104,6 +1189,12 @@ public:
             if (hasOption(Option::UseDeltaMap) || hasOption(Option::UseEmphasisMap))
                 flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP;
 
+            if (hasOption(Option::IntraRefreshPicturePartition) || hasOption(Option::IntraRefreshBlockBased) ||
+                hasOption(Option::IntraRefreshBlockRow) || hasOption(Option::IntraRefreshBlockColumn))
+            {
+                flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH;
+            }
+
             return flags;
         }
         default:
@@ -1137,6 +1228,7 @@ public:
 
 private:
     EncodeTestParam m_params;
+    bool m_generalLayout;
     const ClipInfo *m_info{};
     VkVideoCoreProfile m_profile;
 };
@@ -1310,12 +1402,13 @@ vector<T> createQuantizationPatternImage(VkExtent2D quantizationMapExtent, T lef
 
 void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
                        const VkBuffer &buffer, VkDeviceSize bufferSize, const VkExtent2D &imageSize,
-                       uint32_t arrayLayers, VkImage destImage)
+                       uint32_t arrayLayers, VkImage destImage, bool generalLayout)
 {
     Move<VkCommandPool> cmdPool = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
     Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     Move<VkFence> fence             = createFence(vk, device);
-    VkImageLayout destImageLayout   = VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR;
+    VkImageLayout destImageLayout =
+        generalLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR;
     VkPipelineStageFlags destImageDstStageFlags = VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
     VkAccessFlags finalAccessMask               = VK_ACCESS_MEMORY_READ_BIT | VK_ACCESS_MEMORY_WRITE_BIT;
 
@@ -1612,6 +1705,22 @@ private:
 
     // Verify Encoded Bitstream
     tcu::TestStatus verifyEncodedBitstream(const BufferWithMemory &encodeBuffer, VkDeviceSize encodeBufferSize);
+
+    // Intra refresh capabilities and parameters
+    bool m_useIntraRefresh;
+    VkVideoEncodeIntraRefreshModeFlagBitsKHR m_intraRefreshMode;
+    uint32_t m_intraRefreshRegionCount;
+    uint32_t m_intraRefreshCycleDuration;
+    MovePtr<VkVideoEncodeIntraRefreshCapabilitiesKHR> m_videoEncodeIntraRefreshCapabilities;
+    void queryIntraRefreshCapabilities(void);
+
+    MovePtr<VkVideoEncodeIntraRefreshInfoKHR> createIntraRefreshInfo(uint32_t nalIdx);
+    std::vector<MovePtr<VkVideoReferenceIntraRefreshInfoKHR>> m_referenceIntraRefreshInfos;
+    void updateReferenceSlotsForIntraRefresh(uint32_t nalIdx, VkVideoReferenceSlotInfoKHR *referenceSlots,
+                                             uint8_t refsCount);
+    VkVideoEncodeFlagsKHR getEncodeFlags(uint32_t nalIdx);
+
+    uint32_t calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width, uint32_t height);
 };
 
 VideoEncodeTestInstance::VideoEncodeTestInstance(Context &context, const TestDefinition *testDefinition)
@@ -1774,6 +1883,22 @@ void VideoEncodeTestInstance::initializeTestParameters()
 
     // Set up quality level
     m_qualityLevel = 0;
+
+    // Initialize intra refresh parameters
+    if (m_testDefinition->hasOption(Option::IntraRefreshPicturePartition))
+        m_intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR;
+    else if (m_testDefinition->hasOption(Option::IntraRefreshBlockBased))
+        m_intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR;
+    else if (m_testDefinition->hasOption(Option::IntraRefreshBlockRow))
+        m_intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR;
+    else if (m_testDefinition->hasOption(Option::IntraRefreshBlockColumn))
+        m_intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR;
+    else
+        m_intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR;
+
+    m_useIntraRefresh           = (m_intraRefreshMode != VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR);
+    m_intraRefreshRegionCount   = 0;
+    m_intraRefreshCycleDuration = 0;
 }
 
 void VideoEncodeTestInstance::setupDeviceAndQueues()
@@ -1831,12 +1956,30 @@ void VideoEncodeTestInstance::queryAndValidateCapabilities()
 
     // Get encode capabilities
     m_videoEncodeCapabilities = getVideoEncodeCapabilities(videoCapabilitiesExtensionPtr);
+
+    if (m_useIntraRefresh)
+    {
+        m_videoEncodeIntraRefreshCapabilities = getIntraRefreshCapabilities();
+        appendStructurePtrToVulkanChain((const void **)&m_videoEncodeCapabilities->pNext,
+                                        m_videoEncodeIntraRefreshCapabilities.get());
+    }
+
     m_videoCapabilities =
         getVideoCapabilities(*m_vki, m_physicalDevice, m_videoEncodeProfile.get(), m_videoEncodeCapabilities.get());
     m_minBitstreamBufferOffsetAlignment = m_videoCapabilities->minBitstreamBufferOffsetAlignment;
 
+    if (m_useIntraRefresh)
+    {
+        // @FIXME: For now the GOP size can't be larger than available DPB slots due to limitations
+        //         in DPB slot management.
+        DE_ASSERT(m_videoCapabilities->maxDpbSlots >= m_gopFrameCount);
+    }
+
     DE_ASSERT(m_videoEncodeCapabilities->supportedEncodeFeedbackFlags &
               VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR);
+
+    // Check intra-refresh capabilities
+    queryIntraRefreshCapabilities();
 
     // Check for required features
     if (m_useDeltaMap)
@@ -1924,6 +2067,19 @@ void VideoEncodeTestInstance::createVideoSession(void)
     const MovePtr<VkVideoSessionCreateInfoKHR> videoEncodeSessionCreateInfo = getVideoSessionCreateInfo(
         m_encodeQueueFamilyIndex, videoSessionFlags, m_videoEncodeProfile.get(), m_codedExtent, m_imageFormat,
         m_dpbImageFormat, m_dpbSlots, m_videoCapabilities->maxActiveReferencePictures);
+
+    // Create intra refresh create info if needed
+    VkVideoEncodeSessionIntraRefreshCreateInfoKHR intraRefreshCreateInfo;
+    if (m_useIntraRefresh)
+    {
+        intraRefreshCreateInfo.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR;
+        intraRefreshCreateInfo.pNext = VK_NULL_HANDLE;
+
+        // Set the intra refresh mode based on the test
+        intraRefreshCreateInfo.intraRefreshMode = m_intraRefreshMode;
+
+        appendStructurePtrToVulkanChain(&videoEncodeSessionCreateInfo.get()->pNext, &intraRefreshCreateInfo);
+    }
 
     // Create the video session
     m_videoEncodeSession =
@@ -2100,7 +2256,7 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
 
         copyBufferToImage(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueue, m_transferQueueFamilyIndex,
                           *quantizationMapBuffer, quantizationMapBufferSize, m_quantizationMapExtent, 1,
-                          quantizationMapImage->get());
+                          quantizationMapImage->get(), m_testDefinition->usesGeneralLayout());
 
         m_quantizationMapImages.push_back(std::move(quantizationMapImage));
         m_quantizationMapImageViews.push_back(std::move(quantizationMapImageView));
@@ -2299,6 +2455,20 @@ void VideoEncodeTestInstance::prepareDPBResources(void)
 
         j++;
     }
+
+    // Ensure m_dpbImageVideoReferenceSlots has enough entries for all possible slot indices
+    // Fill remaining slots with properly initialized but inactive slots
+    while (m_dpbImageVideoReferenceSlots.size() < m_dpbSlots)
+    {
+        // Create a dummy slot with proper sType initialization
+        VkVideoReferenceSlotInfoKHR dummySlot = {
+            VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR, // sType
+            nullptr,                                         // pNext
+            -1,                                              // slotIndex (inactive)
+            nullptr                                          // pPictureResource
+        };
+        m_dpbImageVideoReferenceSlots.push_back(dummySlot);
+    }
 }
 
 void VideoEncodeTestInstance::prepareInputImages(void)
@@ -2355,44 +2525,64 @@ void VideoEncodeTestInstance::loadVideoFrames(void)
 
     m_inVector.clear();
 
-    for (uint32_t i = 0; i < m_gopCount; ++i)
+    // Get the available frame count from the clip info, but if it is zero then calculate it.
+    uint32_t availableFrames = m_testDefinition->getClipTotalFrames();
+    if (availableFrames == 0)
+        availableFrames = calculateTotalFramesFromClipData(*clip, m_codedExtent.width, m_codedExtent.height);
+
+    // Log the available frame count
+    m_context.getTestContext().getLog() << tcu::TestLog::Message << "Available frames in clip: " << availableFrames
+                                        << tcu::TestLog::EndMessage;
+
+    // FIXME: Adjust gopFrameCount if needed (for intra refresh tests). An issue has been detected
+    // where the DPB slots are not being used correctly by the test definition.
+    if (m_useIntraRefresh)
     {
-        for (uint32_t j = 0; j < m_gopFrameCount; ++j)
+        // Limit gopFrameCount to available frames
+        m_gopFrameCount = std::min(m_gopFrameCount, availableFrames);
+
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Final frame count for intra refresh: " << m_gopFrameCount
+            << tcu::TestLog::EndMessage;
+    }
+
+    // Limit the number of frames to process based on availableFrames
+    uint32_t framesToProcess = std::min(m_gopCount * m_gopFrameCount, availableFrames);
+
+    for (uint32_t i = 0; i < framesToProcess; ++i)
+    {
+        uint32_t gopIdx = i / m_gopFrameCount;
+
+        uint32_t extentWidth  = m_codedExtent.width;
+        uint32_t extentHeight = m_codedExtent.height;
+
+        bool half_size = false;
+
+        if (m_resolutionChange && gopIdx == 1)
         {
-            uint32_t index = i * m_gopFrameCount + j;
+            extentWidth /= 2;
+            extentHeight /= 2;
+            half_size = true;
+        }
 
-            uint32_t extentWidth  = m_codedExtent.width;
-            uint32_t extentHeight = m_codedExtent.height;
+        MovePtr<MultiPlaneImageData> multiPlaneImageData(
+            new MultiPlaneImageData(m_imageFormat, tcu::UVec2(extentWidth, extentHeight)));
+        vkt::ycbcr::extractI420Frame(*clip, i, m_codedExtent.width, m_codedExtent.height, multiPlaneImageData.get(),
+                                     half_size);
 
-            bool half_size = false;
-
-            if (m_resolutionChange && i == 1)
-            {
-                extentWidth /= 2;
-                extentHeight /= 2;
-                half_size = true;
-            }
-
-            MovePtr<MultiPlaneImageData> multiPlaneImageData(
-                new MultiPlaneImageData(m_imageFormat, tcu::UVec2(extentWidth, extentHeight)));
-            vkt::ycbcr::extractI420Frame(*clip, index, m_codedExtent.width, m_codedExtent.height,
-                                         multiPlaneImageData.get(), half_size);
-
-            // Save NV12 Multiplanar frame to YUV 420p 8 bits
-            de::MovePtr<std::vector<uint8_t>> in =
-                vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(multiPlaneImageData.get());
+        // Save NV12 Multiplanar frame to YUV 420p 8 bits
+        de::MovePtr<std::vector<uint8_t>> in =
+            vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(multiPlaneImageData.get());
 
 #if STREAM_DUMP_DEBUG
-            std::string filename = "in_" + std::to_string(index) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint8_t>::save(*in, filename);
+        std::string filename = "in_" + std::to_string(gopIdx) + ".yuv";
+        vkt::ycbcr::YCbCrContent<uint8_t>::save(*in, filename);
 #endif
 
-            vkt::ycbcr::uploadImage(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueueFamilyIndex,
-                                    getAllocator(), *(*m_imageVector[index]), *multiPlaneImageData, 0,
-                                    VK_IMAGE_LAYOUT_GENERAL);
+        vkt::ycbcr::uploadImage(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueueFamilyIndex, getAllocator(),
+                                *(*m_imageVector[i]), *multiPlaneImageData, 0, VK_IMAGE_LAYOUT_GENERAL);
 
-            m_inVector.push_back(std::move(in));
-        }
+        m_inVector.push_back(std::move(in));
     }
 }
 
@@ -2562,6 +2752,7 @@ void VideoEncodeTestInstance::encodeFrames(void)
                 deAlign64(m_bitstreamBufferOffset + m_headersData[1].size(), m_minBitstreamBufferOffsetAlignment);
         }
 
+        // Use the adjusted m_gopFrameCount instead of the original pattern size
         for (uint32_t NALIdx = emptyRefSlotIdx; NALIdx < m_gopFrameCount; (m_swapOrder ? --NALIdx : ++NALIdx))
         {
             encodeFrame(GOPIdx, NALIdx, m_encodeBuffer.get()->get(), m_encodeFrameBufferSizeAligned, m_encodeQueryPool);
@@ -2599,14 +2790,20 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
     std::vector<de::MovePtr<StdVideoEncodeH265ReferenceListsInfo>> videoEncodeH265ReferenceListInfos;
     std::vector<de::MovePtr<StdVideoEncodeH265PictureInfo>> H265pictureInfos;
     std::vector<de::MovePtr<VkVideoEncodeH265PictureInfoKHR>> videoEncodeH265PictureInfos;
-
     std::vector<de::MovePtr<VkVideoEncodeInfoKHR>> m_videoEncodeFrameInfos;
+
+    // Storage for contiguous slice arrays (persistent for this frame)
+    std::vector<VkVideoEncodeH264NaluSliceInfoKHR> h264SliceArray;
+    std::vector<VkVideoEncodeH265NaluSliceSegmentInfoKHR> h265SliceSegmentArray;
 
     VkCommandBuffer encodeCmdBuffer = (nalIdx == 1 && m_swapOrder) ? *m_secondEncodeCmdBuffer : *m_firstEncodeCmdBuffer;
 
     // Reset dpb slots list.
-    for (uint32_t dpb = 0; dpb < m_dpbSlots; dpb++)
-        m_dpbImageVideoReferenceSlots[dpb].slotIndex = -1;
+    for (uint32_t dpb = 0; dpb < std::min(m_dpbSlots, m_gopFrameCount); dpb++)
+    {
+        if (dpb < m_dpbImageVideoReferenceSlots.size())
+            m_dpbImageVideoReferenceSlots[dpb].slotIndex = -1;
+    }
 
     beginCommandBuffer(*m_videoDeviceDriver, encodeCmdBuffer, 0u);
 
@@ -2736,28 +2933,95 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
         }
     }
 
-    bool h264ActiveOverrideFlag = (stdVideoH264SliceType != STD_VIDEO_H264_SLICE_TYPE_I) &&
-                                  ((m_testDefinition->ppsActiveRefs0() != m_testDefinition->shActiveRefs0(nalIdx)) ||
-                                   (m_testDefinition->ppsActiveRefs1() != m_testDefinition->shActiveRefs1(nalIdx)));
+    // Determine number of slices needed for H.264
+    uint32_t numSlices = 1;
+    if (m_useIntraRefresh && m_intraRefreshMode == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR &&
+        nalIdx > 0 && nalIdx <= m_intraRefreshRegionCount)
+    {
+        numSlices = m_intraRefreshCycleDuration;
+        // Validate that the number of slices doesn't exceed codec capabilities
+        if (m_testDefinition->getProfile()->IsH264() && m_videoH264CapabilitiesExtension &&
+            numSlices > m_videoH264CapabilitiesExtension->maxSliceCount)
+        {
+            TCU_THROW(NotSupportedError, "Intra refresh cycle duration exceeds maximum H.264 slice count");
+        }
+    }
 
-    stdVideoEncodeH264SliceHeaders.push_back(
-        getStdVideoEncodeH264SliceHeader(stdVideoH264SliceType, h264ActiveOverrideFlag));
-    videoEncodeH264NaluSlices.push_back(getVideoEncodeH264NaluSlice(
-        stdVideoEncodeH264SliceHeaders.back().get(),
-        (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? m_constQp : 0));
+    // Create the required number of slices for H.264
+    for (uint32_t sliceIdx = 0; sliceIdx < numSlices; ++sliceIdx)
+    {
+        // For intra refresh per-picture partition mode, only the slice corresponding to intraRefreshIndex should be I-type
+        StdVideoH264SliceType currentSliceType = stdVideoH264SliceType;
+        if (m_useIntraRefresh &&
+            m_intraRefreshMode == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR && nalIdx > 0 &&
+            nalIdx <= m_intraRefreshRegionCount)
+        {
+            uint32_t intraRefreshIndex = nalIdx - 1;
+            if (sliceIdx == intraRefreshIndex)
+                currentSliceType = STD_VIDEO_H264_SLICE_TYPE_I;
+        }
+
+        bool h264ActiveOverrideFlag =
+            (currentSliceType != STD_VIDEO_H264_SLICE_TYPE_I) &&
+            ((m_testDefinition->ppsActiveRefs0() != m_testDefinition->shActiveRefs0(nalIdx)) ||
+             (m_testDefinition->ppsActiveRefs1() != m_testDefinition->shActiveRefs1(nalIdx)));
+
+        stdVideoEncodeH264SliceHeaders.push_back(
+            getStdVideoEncodeH264SliceHeader(currentSliceType, h264ActiveOverrideFlag));
+        videoEncodeH264NaluSlices.push_back(getVideoEncodeH264NaluSlice(
+            stdVideoEncodeH264SliceHeaders.back().get(),
+            (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? m_constQp : 0));
+
+        h264SliceArray.push_back(*videoEncodeH264NaluSlices.back().get());
+    }
+
     videoEncodeH264ReferenceListInfos.push_back(
         getVideoEncodeH264ReferenceListsInfo(H264RefPicList0, H264RefPicList1, numL0, numL1));
     H264pictureInfos.push_back(getStdVideoEncodeH264PictureInfo(
         getH264PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->frameNumber(nalIdx),
         m_testDefinition->frameIdx(nalIdx) * 2, gopIdx,
         nalIdx > 0 ? videoEncodeH264ReferenceListInfos.back().get() : nullptr));
-    videoEncodeH264PictureInfo.push_back(
-        getVideoEncodeH264PictureInfo(H264pictureInfos.back().get(), videoEncodeH264NaluSlices.back().get()));
 
-    stdVideoEncodeH265SliceSegmentHeaders.push_back(getStdVideoEncodeH265SliceSegmentHeader(stdVideoH265SliceType));
-    videoEncodeH265NaluSliceSegments.push_back(getVideoEncodeH265NaluSliceSegment(
-        stdVideoEncodeH265SliceSegmentHeaders.back().get(),
-        (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? m_constQp : 0));
+    // Create H.264 picture info with all slices
+    videoEncodeH264PictureInfo.push_back(
+        getVideoEncodeH264PictureInfo(H264pictureInfos.back().get(), numSlices, h264SliceArray.data()));
+
+    // Determine number of slice segments needed for H.265
+    uint32_t numSliceSegments = 1;
+    if (m_useIntraRefresh && m_intraRefreshMode == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR &&
+        nalIdx > 0 && nalIdx <= m_intraRefreshRegionCount)
+    {
+        numSliceSegments = m_intraRefreshCycleDuration;
+        // Validate that the number of slice segments doesn't exceed codec capabilities
+        if (m_testDefinition->getProfile()->IsH265() && m_videoH265CapabilitiesExtension &&
+            numSliceSegments > m_videoH265CapabilitiesExtension->maxSliceSegmentCount)
+        {
+            TCU_THROW(NotSupportedError, "Intra refresh cycle duration exceeds maximum H.265 slice segment count");
+        }
+    }
+
+    // Create the required number of slice segments for H.265
+    for (uint32_t sliceIdx = 0; sliceIdx < numSliceSegments; ++sliceIdx)
+    {
+        // For intra refresh per-picture partition mode, only the slice corresponding to intraRefreshIndex should be I-type
+        StdVideoH265SliceType currentSliceType = stdVideoH265SliceType;
+        if (m_useIntraRefresh &&
+            m_intraRefreshMode == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR && nalIdx > 0 &&
+            nalIdx <= m_intraRefreshRegionCount)
+        {
+            uint32_t intraRefreshIndex = nalIdx - 1;
+            if (sliceIdx == intraRefreshIndex)
+                currentSliceType = STD_VIDEO_H265_SLICE_TYPE_I;
+        }
+
+        stdVideoEncodeH265SliceSegmentHeaders.push_back(getStdVideoEncodeH265SliceSegmentHeader(currentSliceType));
+        videoEncodeH265NaluSliceSegments.push_back(getVideoEncodeH265NaluSliceSegment(
+            stdVideoEncodeH265SliceSegmentHeaders.back().get(),
+            (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? m_constQp : 0));
+
+        h265SliceSegmentArray.push_back(*videoEncodeH265NaluSliceSegments.back().get());
+    }
+
     videoEncodeH265ReferenceListInfos.push_back(getVideoEncodeH265ReferenceListsInfo(H265RefPicList0, H265RefPicList1));
     stdVideoH265ShortTermRefPicSets.push_back(getStdVideoH265ShortTermRefPicSet(
         getH265PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->frameIdx(nalIdx),
@@ -2766,8 +3030,10 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
         getH265PictureType(m_testDefinition->frameType(nalIdx)), m_testDefinition->frameIdx(nalIdx),
         nalIdx > 0 ? videoEncodeH265ReferenceListInfos.back().get() : nullptr,
         stdVideoH265ShortTermRefPicSets.back().get()));
+
+    // Create picture info with all slice segments
     videoEncodeH265PictureInfos.push_back(
-        getVideoEncodeH265PictureInfo(H265pictureInfos.back().get(), videoEncodeH265NaluSliceSegments.back().get()));
+        getVideoEncodeH265PictureInfo(H265pictureInfos.back().get(), numSliceSegments, h265SliceSegmentArray.data()));
 
     const void *videoEncodePictureInfoPtr = nullptr;
 
@@ -2803,35 +3069,34 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
         dstBufferOffset = m_bitstreamBufferOffset;
     }
 
-    de::MovePtr<VkVideoInlineQueryInfoKHR> inlineQueryInfo =
-        getVideoInlineQueryInfo(encodeQueryPool.get(), m_queryId, 1, nullptr);
+    // Set up the pNext chain for various features
+    VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
 
-    de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR> quantizationMapInfo;
-
+    de::MovePtr<VkVideoInlineQueryInfoKHR> inlineQueryInfo;
     if (m_useInlineQueries)
     {
-        VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
-        while (pStruct->pNext)
-            pStruct = (VkBaseInStructure *)pStruct->pNext;
-        pStruct->pNext = (VkBaseInStructure *)inlineQueryInfo.get();
-    }
-    else if (m_useDeltaMap || m_useEmphasisMap)
-    {
-        VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
-        quantizationMapInfo        = getQuantizationMapInfo(
-            m_quantizationMapImageViews[gopIdx % m_quantizationMapCount]->get(), m_quantizationMapExtent);
-        while (pStruct->pNext)
-            pStruct = (VkBaseInStructure *)pStruct->pNext;
-        pStruct->pNext = (VkBaseInStructure *)quantizationMapInfo.get();
+        inlineQueryInfo = getVideoInlineQueryInfo(encodeQueryPool.get(), m_queryId, 1, nullptr);
+        appendStructurePtrToVulkanChain((const void **)&pStruct->pNext, inlineQueryInfo.get());
     }
 
-    VkVideoEncodeFlagsKHR encodeFlags;
-    if (m_useDeltaMap)
-        encodeFlags = static_cast<VkVideoEncodeFlagsKHR>(VK_VIDEO_ENCODE_WITH_QUANTIZATION_DELTA_MAP_BIT_KHR);
-    else if (m_useEmphasisMap)
-        encodeFlags = static_cast<VkVideoEncodeFlagsKHR>(VK_VIDEO_ENCODE_WITH_EMPHASIS_MAP_BIT_KHR);
-    else
-        encodeFlags = static_cast<VkVideoEncodeFlagsKHR>(0);
+    de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR> quantizationMapInfo;
+    if (m_useDeltaMap || m_useEmphasisMap)
+    {
+        quantizationMapInfo = getQuantizationMapInfo(
+            m_quantizationMapImageViews[gopIdx % m_quantizationMapCount]->get(), m_quantizationMapExtent);
+        appendStructurePtrToVulkanChain((const void **)&pStruct->pNext, quantizationMapInfo.get());
+    }
+
+    MovePtr<VkVideoEncodeIntraRefreshInfoKHR> intraRefreshInfo;
+    if (m_useIntraRefresh)
+    {
+        intraRefreshInfo = createIntraRefreshInfo(nalIdx);
+        updateReferenceSlotsForIntraRefresh(nalIdx, referenceSlots, refsCount);
+        appendStructurePtrToVulkanChain((const void **)&pStruct->pNext, intraRefreshInfo.get());
+    }
+
+    // Get encode flags for the current frame
+    VkVideoEncodeFlagsKHR encodeFlags = getEncodeFlags(nalIdx);
 
     m_videoEncodeFrameInfos.push_back(
         getVideoEncodeInfo(videoEncodePictureInfoPtr, encodeFlags, encodeBuffer, dstBufferOffset,
@@ -2918,8 +3183,11 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
     auto decodeProfile =
         VkVideoCoreProfile(m_videoCodecDecodeOperation, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
                            VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, profileIdc);
-    auto basicDecoder =
-        createBasicDecoder(&deviceContext, &decodeProfile, m_testDefinition->framesToCheck(), m_resolutionChange);
+
+    // Use the actual frame count processed rather than the pattern definition
+    uint32_t actualFramesToCheck = m_gopCount * m_gopFrameCount;
+
+    auto basicDecoder = createBasicDecoder(&deviceContext, &decodeProfile, actualFramesToCheck, m_resolutionChange);
 
     Demuxer::Params demuxParams = {};
     demuxParams.data            = std::make_unique<BufferedReader>(
@@ -2936,18 +3204,26 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
     std::vector<int> correctFrames;
     std::vector<double> psnrDiff;
 
-    for (int NALIdx = 0; NALIdx < m_testDefinition->framesToCheck(); NALIdx++)
+    // Log how many frames we expect to process
+    m_context.getTestContext().getLog() << tcu::TestLog::Message << "Expecting to verify " << actualFramesToCheck
+                                        << " frames" << tcu::TestLog::EndMessage;
+
+    for (uint32_t NALIdx = 0; NALIdx < actualFramesToCheck; NALIdx++)
     {
         DecodedFrame frame;
+        const auto gotFrame = processor.getNextFrame(&frame);
         TCU_CHECK_AND_THROW(
-            InternalError, processor.getNextFrame(&frame) > 0,
+            InternalError, gotFrame > 0,
             "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an invalid bitstream");
 
-        auto resultImage =
-            getDecodedImageFromContext(deviceContext,
-                                       basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
-                                                                              VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
-                                       &frame);
+        VkImageLayout layout;
+        if (m_testDefinition->usesGeneralLayout())
+            layout = VK_IMAGE_LAYOUT_GENERAL;
+        else
+            layout = basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
+                                                            VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
+
+        auto resultImage = getDecodedImageFromContext(deviceContext, layout, &frame);
         de::MovePtr<std::vector<uint8_t>> out =
             vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
 
@@ -3009,7 +3285,8 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
             }
         }
     }
-    const string passMessage = std::to_string(m_testDefinition->framesToCheck()) + " correctly encoded frames";
+
+    const string passMessage = std::to_string(actualFramesToCheck) + " correctly encoded frames";
     return tcu::TestStatus::pass(passMessage);
 #else
     DE_UNREF(encodeBuffer);
@@ -3044,6 +3321,233 @@ void VideoEncodeTestInstance::prepareEncodeBuffer(void)
 
     deMemset(encodeBufferHostPtr, 0x00, static_cast<size_t>(m_encodeBufferSize));
     flushAlloc(*m_videoDeviceDriver, m_videoEncodeDevice, encodeBufferAlloc);
+}
+
+void VideoEncodeTestInstance::queryIntraRefreshCapabilities(void)
+{
+    if (!m_useIntraRefresh)
+        return;
+
+    // Check if the requested intra refresh mode is supported
+    VkVideoEncodeIntraRefreshModeFlagsKHR supportedModes = m_videoEncodeIntraRefreshCapabilities->intraRefreshModes;
+
+    if (!(supportedModes & m_intraRefreshMode))
+    {
+        const char *modeStr = "unknown";
+        switch (m_intraRefreshMode)
+        {
+        case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR:
+            modeStr = "Per-picture partition";
+            break;
+        case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR:
+            modeStr = "Block-based";
+            break;
+        case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR:
+            modeStr = "Block row-based";
+            break;
+        case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR:
+            modeStr = "Block column-based";
+            break;
+        case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR:
+            modeStr = "None";
+            break;
+        default:
+            break;
+        }
+        TCU_THROW(NotSupportedError, (std::string(modeStr) + " intra refresh mode not supported").c_str());
+    }
+
+    // Calculate intraRefreshRegionCount based on the mode and codec
+    VkExtent2D minCodingBlockSize           = {};
+    VkExtent2D codedExtentInMinCodingBlocks = {};
+    uint32_t maxCodecPartitions             = 0;
+    uint32_t maxPartitionsInBlocks          = 0;
+
+    if (m_testDefinition->getProfile()->IsH264())
+    {
+        // H.264: min coding block size is 16x16
+        minCodingBlockSize = {16, 16};
+
+        // Calculate coded extent in min coding blocks
+        codedExtentInMinCodingBlocks.width =
+            (m_codedExtent.width + minCodingBlockSize.width - 1) / minCodingBlockSize.width;
+        codedExtentInMinCodingBlocks.height =
+            (m_codedExtent.height + minCodingBlockSize.height - 1) / minCodingBlockSize.height;
+
+        // Get max slice count
+        maxCodecPartitions = m_videoH264CapabilitiesExtension->maxSliceCount;
+
+        // Calculate max partitions in blocks based on ROW_UNALIGNED_SLICE capability
+        if (m_videoH264CapabilitiesExtension->flags & VK_VIDEO_ENCODE_H264_CAPABILITY_ROW_UNALIGNED_SLICE_BIT_KHR)
+            maxPartitionsInBlocks = codedExtentInMinCodingBlocks.width * codedExtentInMinCodingBlocks.height;
+        else
+            maxPartitionsInBlocks = codedExtentInMinCodingBlocks.height;
+    }
+    else if (m_testDefinition->getProfile()->IsH265())
+    {
+        if ((m_videoH265CapabilitiesExtension->ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_KHR) != 0)
+        {
+            minCodingBlockSize = {16, 16};
+        }
+        else if ((m_videoH265CapabilitiesExtension->ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_KHR) != 0)
+        {
+            minCodingBlockSize = {32, 32};
+        }
+        else
+        {
+            DE_ASSERT((m_videoH265CapabilitiesExtension->ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_KHR) != 0);
+            minCodingBlockSize = {64, 64};
+        }
+
+        // Calculate coded extent in min coding blocks
+        codedExtentInMinCodingBlocks.width =
+            (m_codedExtent.width + minCodingBlockSize.width - 1) / minCodingBlockSize.width;
+        codedExtentInMinCodingBlocks.height =
+            (m_codedExtent.height + minCodingBlockSize.height - 1) / minCodingBlockSize.height;
+
+        // Get max slice segment count
+        maxCodecPartitions = m_videoH265CapabilitiesExtension->maxSliceSegmentCount;
+
+        // Calculate max partitions in blocks based on ROW_UNALIGNED_SLICE_SEGMENT capability
+        if (m_videoH265CapabilitiesExtension->flags &
+            VK_VIDEO_ENCODE_H265_CAPABILITY_ROW_UNALIGNED_SLICE_SEGMENT_BIT_KHR)
+        {
+            maxPartitionsInBlocks = codedExtentInMinCodingBlocks.width * codedExtentInMinCodingBlocks.height;
+        }
+        else
+        {
+            maxPartitionsInBlocks = codedExtentInMinCodingBlocks.height;
+        }
+    }
+
+    uint32_t maxPicturePartitions = 0;
+
+    switch (m_intraRefreshMode)
+    {
+    case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR:
+        maxPicturePartitions = std::min(maxCodecPartitions, maxPartitionsInBlocks);
+        break;
+    case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR:
+        maxPicturePartitions = codedExtentInMinCodingBlocks.height;
+        break;
+    case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR:
+        maxPicturePartitions = codedExtentInMinCodingBlocks.width;
+        break;
+    case VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR:
+        maxPicturePartitions = codedExtentInMinCodingBlocks.width * codedExtentInMinCodingBlocks.height;
+        break;
+    default:
+        maxPicturePartitions = 0;
+        break;
+    }
+
+    // Calculate intraRefreshRegionCount and intraRefreshCycleDuration
+    m_intraRefreshRegionCount =
+        std::min(m_videoEncodeIntraRefreshCapabilities->maxIntraRefreshCycleDuration, maxPicturePartitions);
+
+    // For per-picture partition mode, further limit based on rectangular region constraints
+    if (m_intraRefreshMode == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR &&
+        !m_videoEncodeIntraRefreshCapabilities->nonRectangularIntraRefreshRegions)
+    {
+        uint32_t maxRectangularPartitions = 0;
+        if (m_testDefinition->getProfile()->IsH264())
+        {
+            // H.264: Limited by macroblock rows (16x16)
+            uint32_t mbHeight        = 16;
+            maxRectangularPartitions = (m_codedExtent.height + mbHeight - 1) / mbHeight;
+        }
+        else if (m_testDefinition->getProfile()->IsH265())
+        {
+            // H.265: Limited by CTU rows (assume 64x64 CTU)
+            uint32_t ctuHeight       = 64;
+            maxRectangularPartitions = (m_codedExtent.height + ctuHeight - 1) / ctuHeight;
+        }
+
+        if (maxRectangularPartitions > 0)
+        {
+            m_intraRefreshRegionCount = std::min(m_intraRefreshRegionCount, maxRectangularPartitions);
+        }
+    }
+
+    m_intraRefreshCycleDuration = m_intraRefreshRegionCount;
+
+    // For basic intra-refresh tests, the GOP frame count is clamped to the cycle duration plus one IDR frame.
+    m_gopFrameCount = std::min(m_gopFrameCount, m_intraRefreshCycleDuration + 1);
+}
+
+MovePtr<VkVideoEncodeIntraRefreshInfoKHR> VideoEncodeTestInstance::createIntraRefreshInfo(uint32_t nalIdx)
+{
+    if (!m_useIntraRefresh || nalIdx == 0 || nalIdx > m_intraRefreshRegionCount)
+        return MovePtr<VkVideoEncodeIntraRefreshInfoKHR>(); // Return empty MovePtr instead of nullptr
+
+    MovePtr<VkVideoEncodeIntraRefreshInfoKHR> intraRefreshInfo(new VkVideoEncodeIntraRefreshInfoKHR());
+    intraRefreshInfo->sType                     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR;
+    intraRefreshInfo->pNext                     = nullptr;
+    intraRefreshInfo->intraRefreshCycleDuration = m_intraRefreshCycleDuration;
+    intraRefreshInfo->intraRefreshIndex         = nalIdx - 1; // Index 0 is the first intra refresh frame (after IDR)
+
+    return intraRefreshInfo;
+}
+
+void VideoEncodeTestInstance::updateReferenceSlotsForIntraRefresh(uint32_t nalIdx,
+                                                                  VkVideoReferenceSlotInfoKHR *referenceSlots,
+                                                                  uint8_t refsCount)
+{
+    if (!m_useIntraRefresh || nalIdx <= 1 || nalIdx > m_intraRefreshRegionCount)
+        return;
+
+    // Only frames after the first intra refresh frame need reference intra refresh info
+    MovePtr<VkVideoReferenceIntraRefreshInfoKHR> referenceIntraRefreshInfo(new VkVideoReferenceIntraRefreshInfoKHR());
+    referenceIntraRefreshInfo->sType                    = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_INTRA_REFRESH_INFO_KHR;
+    referenceIntraRefreshInfo->pNext                    = nullptr;
+    referenceIntraRefreshInfo->dirtyIntraRefreshRegions = m_intraRefreshCycleDuration - (nalIdx - 1);
+
+    // Add the reference intra refresh info to the immediately preceding reference frame
+    if (refsCount > 0)
+    {
+        VkVideoReferenceSlotInfoKHR &refSlot = referenceSlots[0];
+
+        // Save the original pNext
+        const void *origPNext = refSlot.pNext;
+
+        // Update pNext to include referenceIntraRefreshInfo
+        referenceIntraRefreshInfo->pNext = origPNext;
+
+        // Store the pointer in the reference slot
+        refSlot.pNext = referenceIntraRefreshInfo.get();
+
+        // Store the MovePtr for cleanup later
+        m_referenceIntraRefreshInfos.push_back(std::move(referenceIntraRefreshInfo));
+    }
+}
+
+// Updates encode flags to include intra refresh if needed
+VkVideoEncodeFlagsKHR VideoEncodeTestInstance::getEncodeFlags(uint32_t nalIdx)
+{
+    VkVideoEncodeFlagsKHR encodeFlags = 0;
+
+    if (m_useDeltaMap)
+        encodeFlags |= VK_VIDEO_ENCODE_WITH_QUANTIZATION_DELTA_MAP_BIT_KHR;
+    else if (m_useEmphasisMap)
+        encodeFlags |= VK_VIDEO_ENCODE_WITH_EMPHASIS_MAP_BIT_KHR;
+
+    if (m_useIntraRefresh && nalIdx > 0 && nalIdx <= m_intraRefreshRegionCount)
+        encodeFlags |= VK_VIDEO_ENCODE_INTRA_REFRESH_BIT_KHR;
+
+    return encodeFlags;
+}
+
+uint32_t VideoEncodeTestInstance::calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width,
+                                                                   uint32_t height)
+{
+    // Calculate frame size in bytes for YUV 4:2:0 format
+    size_t frameSize = width * height * 3 / 2; // Y: width*height, U/V: width*height/4 each
+    DE_ASSERT(frameSize > 0);
+    // Calculate the maximum number of complete frames in the clip
+    size_t maxFrames = static_cast<uint32_t>(clip.size() / frameSize);
+    DE_ASSERT(maxFrames <= UINT32_MAX);
+
+    return static_cast<uint32_t>(maxFrames);
 }
 
 tcu::TestStatus VideoEncodeTestInstance::iterate(void)
@@ -3126,6 +3630,13 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
         context.requireDeviceFunctionality("VK_KHR_video_encode_quantization_map");
         break;
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
+        break;
     case TEST_TYPE_H265_ENCODE_I:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
     case TEST_TYPE_H265_ENCODE_RC_CBR:
@@ -3153,8 +3664,24 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
         context.requireDeviceFunctionality("VK_KHR_video_encode_quantization_map");
         break;
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
+        break;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
+    }
+
+    if (m_testDefinition->usesGeneralLayout() == VK_IMAGE_LAYOUT_GENERAL)
+    {
+        context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
+        if (!context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
+        {
+            TCU_THROW(NotSupportedError, "unifiedImageLayoutsVideo");
+        }
     }
 }
 
@@ -3178,19 +3705,25 @@ tcu::TestCaseGroup *createVideoEncodeTests(tcu::TestContext &testCtx)
     MovePtr<tcu::TestCaseGroup> h264Group(new tcu::TestCaseGroup(testCtx, "h264", "H.264 video codec"));
     MovePtr<tcu::TestCaseGroup> h265Group(new tcu::TestCaseGroup(testCtx, "h265", "H.265 video codec"));
 
-    for (const auto &encodeTest : g_EncodeTests)
+    for (bool generalLayout : {true, false})
     {
-        auto defn = TestDefinition::create(encodeTest);
+        for (const auto &encodeTest : g_EncodeTests)
+        {
+            auto defn = TestDefinition::create(encodeTest, generalLayout);
 
-        const char *testName = getTestName(defn->getTestType());
-        auto testCodec       = getTestCodec(defn->getTestType());
+            std::string testName = std::string(getTestName(defn->getTestType())) +
+                                   std::string(generalLayout ? "_general_layout" : "_video_layout");
+            auto testCodec = getTestCodec(defn->getTestType());
 
-        if (testCodec == TEST_CODEC_H264)
-            h264Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
-        else if (testCodec == TEST_CODEC_H265)
-            h265Group->addChild(new VideoEncodeTestCase(testCtx, testName, defn));
-        else
-            TCU_THROW(InternalError, "Unknown Video Codec");
+            if (testCodec == TEST_CODEC_H264)
+                h264Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
+            else if (testCodec == TEST_CODEC_H265)
+                h265Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
+            else
+            {
+                TCU_THROW(InternalError, "Unknown Video Codec");
+            }
+        }
     }
 
     group->addChild(h264Group.release());

@@ -2013,9 +2013,7 @@ InvalidBlobTestInstance::~InvalidBlobTestInstance(void)
 class InternallySynchronizedInstance : public vkt::TestInstance
 {
 public:
-    InternallySynchronizedInstance(Context &context, bool pipelineCreationFeedback)
-        : vkt::TestInstance(context)
-        , m_pipelineCreationFeedback(pipelineCreationFeedback)
+    InternallySynchronizedInstance(Context &context) : vkt::TestInstance(context)
     {
     }
     virtual ~InternallySynchronizedInstance(void)
@@ -2023,9 +2021,6 @@ public:
     }
 
     tcu::TestStatus iterate(void) override;
-
-private:
-    bool m_pipelineCreationFeedback;
 };
 
 class CreatePipelineThread : public de::Thread
@@ -2232,36 +2227,18 @@ tcu::TestStatus InternallySynchronizedInstance::iterate(void)
         nullptr,                                             // const VkSpecializationInfo*         pSpecializationInfo;
     };
 
-    VkPipelineCreationFeedbackEXT feedback = {};
-
-    const VkPipelineCreationFeedbackCreateInfo pipelineCreationFeedbackCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_CREATION_FEEDBACK_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                  // const void *pNext;
-        &feedback, // VkPipelineCreationFeedback *pPipelineCreationFeedback;
-        0u,        // uint32_t pipelineStageCreationFeedbackCount;
-        nullptr,   // VkPipelineCreationFeedback *pPipelineStageCreationFeedbacks;
-    };
-
     VkComputePipelineCreateInfo pipelineCreateInfo{
-        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,                             // VkStructureType sType;
-        m_pipelineCreationFeedback ? &pipelineCreationFeedbackCreateInfo : nullptr, // const void* pNext;
-        0,                                                                          // VkPipelineCreateFlags flags;
-        stageCreateInfo, // VkPipelineShaderStageCreateInfo stage;
-        *pipelineLayout, // VkPipelineLayout layout;
-        VK_NULL_HANDLE,  // VkPipeline basePipelineHandle;
-        0u,              // int32_t basePipelineIndex;
+        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                        // const void* pNext;
+        0,                                              // VkPipelineCreateFlags flags;
+        stageCreateInfo,                                // VkPipelineShaderStageCreateInfo stage;
+        *pipelineLayout,                                // VkPipelineLayout layout;
+        VK_NULL_HANDLE,                                 // VkPipeline basePipelineHandle;
+        0u,                                             // int32_t basePipelineIndex;
     };
 
     auto pipeline = createComputePipeline(vk, device, *globalPipelineCache, &pipelineCreateInfo);
     createComputePipeline(vk, device, *globalPipelineCache, &pipelineCreateInfo);
-
-    if (m_pipelineCreationFeedback)
-    {
-        if ((feedback.flags & VK_PIPELINE_CREATION_FEEDBACK_APPLICATION_PIPELINE_CACHE_HIT_BIT_EXT) == 0)
-        {
-            return tcu::TestStatus::fail("Pipeline cache missed");
-        }
-    }
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -2269,9 +2246,7 @@ tcu::TestStatus InternallySynchronizedInstance::iterate(void)
 class InternallySynchronizedTest : public vkt::TestCase
 {
 public:
-    InternallySynchronizedTest(tcu::TestContext &testCtx, const std::string &name, bool pipelineCreationFeedback)
-        : vkt::TestCase(testCtx, name)
-        , m_pipelineCreationFeedback(pipelineCreationFeedback)
+    InternallySynchronizedTest(tcu::TestContext &testCtx, const std::string &name) : vkt::TestCase(testCtx, name)
     {
     }
     virtual ~InternallySynchronizedTest(void)
@@ -2282,20 +2257,13 @@ public:
     virtual void initPrograms(vk::SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override
     {
-        return new InternallySynchronizedInstance(context, m_pipelineCreationFeedback);
+        return new InternallySynchronizedInstance(context);
     }
-
-private:
-    bool m_pipelineCreationFeedback;
 };
 
 void InternallySynchronizedTest::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_KHR_maintenance8");
-    if (m_pipelineCreationFeedback)
-    {
-        context.requireDeviceFunctionality("VK_EXT_pipeline_creation_feedback");
-    }
 }
 
 void InternallySynchronizedTest::initPrograms(vk::SourceCollections &programCollection) const
@@ -2478,10 +2446,7 @@ de::MovePtr<tcu::TestCaseGroup> createPipelineBlobTestsInternal(tcu::TestContext
 
         if (pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
         {
-            miscTests->addChild(new InternallySynchronizedTest(testCtx, "internally_synchronized_test", false));
-
-            miscTests->addChild(
-                new InternallySynchronizedTest(testCtx, "internally_synchronized_with_feedback_test", true));
+            miscTests->addChild(new InternallySynchronizedTest(testCtx, "internally_synchronized_test"));
         }
 
         blobTests->addChild(miscTests.release());

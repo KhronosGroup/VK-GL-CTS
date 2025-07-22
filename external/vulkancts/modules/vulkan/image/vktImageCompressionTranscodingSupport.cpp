@@ -1665,7 +1665,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                                                            refLayerPtr);
 
                     if (!fuzzyCompare(m_context.getTestContext().getLog(), imageName.c_str(), "", resultPixels,
-                                      referencePixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING))
+                                      referencePixels, 0.001f, tcu::COMPARE_LOG_ON_ERROR))
                         return false;
                 }
             }
@@ -2714,10 +2714,10 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
 
             if (isWriteToCompressedOperation())
                 tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ImageComparison", comment.c_str(), refPixels,
-                                  resPixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING);
+                                  resPixels, 0.001f, tcu::COMPARE_LOG_ON_ERROR);
             else
                 tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ImageComparison", comment.c_str(), resPixels,
-                                  refPixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING);
+                                  refPixels, 0.001f, tcu::COMPARE_LOG_ON_ERROR);
 
             return false;
         }

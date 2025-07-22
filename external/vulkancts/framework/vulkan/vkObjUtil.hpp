@@ -104,7 +104,9 @@ Move<VkPipeline> makeGraphicsPipeline(
     const VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo     = nullptr,
     const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = nullptr,
     const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = nullptr,
-    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr);
+    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr,
+    const VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo     = nullptr,
+    const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyStateCreateInfo = nullptr);
 
 Move<VkRenderPass> makeRenderPass(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat = VK_FORMAT_UNDEFINED,

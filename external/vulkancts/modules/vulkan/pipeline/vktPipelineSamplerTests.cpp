@@ -2299,7 +2299,7 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
     const tcu::Vec4 threshold(channelThreshold, channelThreshold, channelThreshold, 0.0f);
 
     if (!tcu::floatThresholdCompare(log, "Result", "", levelColors.at(static_cast<size_t>(accessedLevel)), resultAccess,
-                                    threshold, tcu::COMPARE_LOG_EVERYTHING))
+                                    threshold, tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::fail("Unexpected color found in color buffer -- check log for details");
 
     return tcu::TestStatus::pass("Pass");
@@ -2337,6 +2337,7 @@ tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
         VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
         VK_FORMAT_B4G4R4A4_UNORM_PACK16,
         VK_FORMAT_B5G5R5A1_UNORM_PACK16,
+        VK_FORMAT_A1R5G5B5_UNORM_PACK16,
         VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
         VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
 #ifndef CTS_USES_VULKANSC

@@ -127,7 +127,8 @@ protected:
 //
 void SmokeTestCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+    const SpirvVersion spirvVersion = SPIRV_VERSION_1_3;
+    const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
     std::ostringstream comp;
     comp << "#version 460\n"
@@ -176,7 +177,7 @@ void SmokeTestCase::initPrograms(vk::SourceCollections &programCollection) const
             << "        }\n"
             << "    }\n"
             << "}\n";
-        programCollection.glslSources.add("gen") << glu::ComputeSource(gen.str());
+        programCollection.glslSources.add("gen") << glu::ComputeSource(gen.str()) << buildOptions;
     }
 }
 

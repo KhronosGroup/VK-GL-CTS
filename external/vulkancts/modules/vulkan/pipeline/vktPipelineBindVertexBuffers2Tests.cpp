@@ -1295,7 +1295,11 @@ void BindVertexBuffers2Case::checkSupport(Context &context) const
         if (!features2.features.robustBufferAccess)
             TCU_THROW(NotSupportedError, "robustBufferAccess not supported by this implementation");
 
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+
         if (!robustness2Features.robustBufferAccess2)
             TCU_THROW(NotSupportedError, "robustBufferAccess2 not supported by this implementation");
     }
@@ -1365,7 +1369,8 @@ TestInstance *BindVertexBuffers2Case::createInstance(Context &context) const
 
         const auto addFeatures = vk::makeStructChainAdder(&features2);
         addFeatures(&robustness2Features);
-        enabledDeviceExtensions.push_back("VK_EXT_robustness2");
+        enabledDeviceExtensions.push_back(
+            context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ? "VK_KHR_robustness2" : "VK_EXT_robustness2");
 
 #ifndef CTS_USES_VULKANSC
         addFeatures(&maintenance5Features);

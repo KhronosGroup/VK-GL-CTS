@@ -383,6 +383,11 @@ struct TestParams
         return stage == VK_SHADER_STAGE_COMPUTE_BIT;
     }
 
+    bool isComputeQueue() const
+    {
+        return (queue == VK_QUEUE_COMPUTE_BIT);
+    }
+
     bool isGraphics() const
     {
         return (stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0;
@@ -2393,7 +2398,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
     if ((m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS) ||
         (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR))
     {
-        if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+        if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2") ||
+            context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
         {
             VkPhysicalDeviceFeatures2 features2                        = initVulkanStructure();
             VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features = initVulkanStructure();
@@ -2412,7 +2418,7 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         }
         else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR)
         {
-            TCU_THROW(NotSupportedError, "VK_EXT_robustness2 is not supported");
+            TCU_THROW(NotSupportedError, "VK_EXT_robustness2 and VK_KHR_robustness2 are not supported");
         }
         else if (m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
         {
@@ -2923,7 +2929,12 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
              m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
     {
-        if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+        if (context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
+        {
+            extensions.push_back("VK_KHR_robustness2");
+            addToChainVulkanStructure(&nextPtr, robustness2Features);
+        }
+        else if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
         {
             extensions.push_back("VK_EXT_robustness2");
             addToChainVulkanStructure(&nextPtr, robustness2Features);
@@ -3977,12 +3988,25 @@ void DescriptorBufferTestInstance::createGraphicsPipeline()
         subpass.preserveAttachmentCount = 0;
         subpass.pPreserveAttachments    = nullptr;
 
+        // This is needed for the finalLayout transition to transfer_src_optimal.
+        const VkSubpassDependency subpassDep = {
+            0u,
+            VK_SUBPASS_EXTERNAL,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            0u,
+        };
+
         VkRenderPassCreateInfo createInfo = initVulkanStructure();
         // No explicit dependencies
         createInfo.attachmentCount = u32(attachments.size());
         createInfo.pAttachments    = attachments.data();
         createInfo.subpassCount    = 1;
         createInfo.pSubpasses      = &subpass;
+        createInfo.dependencyCount = 1u;
+        createInfo.pDependencies   = &subpassDep;
 
         m_renderPass = createRenderPass(*m_deviceInterface, *m_device, &createInfo);
     }
@@ -4175,7 +4199,7 @@ void DescriptorBufferTestInstance::createBufferForBinding(ResourceHolder &resour
     DE_ASSERT(!bufferResource.alloc);
     bufferResource.alloc = allocate(memReqs, MemoryRequirement::HostVisible, &allocFlagsInfo);
 
-    if (isCaptureDescriptor(descriptorType))
+    if (!isResultBuffer && isCaptureDescriptor(descriptorType))
     {
         VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
 
@@ -5418,11 +5442,17 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                                   m_params.isRayTracing() ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR :
                                   m_params.isGraphics()   ? VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT :
                                                             VK_PIPELINE_STAGE_2_NONE;
+
+        // This is needed for render pass attachments only.
+        const auto otherDstStageUp =
+            (m_params.isComputeQueue() ? VK_PIPELINE_STAGE_2_NONE : VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+
         const auto dstStageMaskUp =
-            m_params.isCompute()    ? VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
-            m_params.isRayTracing() ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR :
-            m_params.isGraphics()   ? VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT :
-                                      VK_PIPELINE_STAGE_2_NONE;
+            ((m_params.isCompute()    ? VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
+              m_params.isRayTracing() ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR :
+              m_params.isGraphics()   ? VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT :
+                                        VK_PIPELINE_STAGE_2_NONE) |
+             otherDstStageUp);
 
         beginCommandBuffer(vk, *cmdBuf);
 
@@ -5554,11 +5584,15 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                         }
 
                         {
+                            // This is needed for render pass attachments only.
+                            const auto otherDstAccess =
+                                (m_params.isComputeQueue() ? VK_ACCESS_2_NONE : VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT);
+
                             VkImageMemoryBarrier2 barrier = initVulkanStructure();
                             barrier.srcStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
                             barrier.srcAccessMask         = VK_ACCESS_2_TRANSFER_WRITE_BIT;
                             barrier.dstStageMask          = dstStageMaskUp; // beginning of the shader pipeline
-                            barrier.dstAccessMask         = VK_ACCESS_2_SHADER_READ_BIT;
+                            barrier.dstAccessMask         = (VK_ACCESS_2_SHADER_READ_BIT | otherDstAccess);
                             barrier.oldLayout             = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                             barrier.newLayout             = dstImage.layout;
                             barrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;

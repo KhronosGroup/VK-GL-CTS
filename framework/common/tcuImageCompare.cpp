@@ -239,7 +239,7 @@ bool fuzzyCompare(TestLog &log, const char *imageSetName, const char *imageSetDe
     Vec4 pixelBias(0.0f, 0.0f, 0.0f, 0.0f);
     Vec4 pixelScale(1.0f, 1.0f, 1.0f, 1.0f);
 
-    if (!isOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!isOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // Generate more accurate error mask.
         params.maxSampleSkip = 0;
@@ -326,7 +326,7 @@ bool bitwiseCompare(TestLog &log, const char *imageSetName, const char *imageSet
         }
     }
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         {
             const auto refChannelClass = tcu::getTextureChannelClass(reference.getFormat().type);
@@ -416,7 +416,7 @@ bool fuzzyCompareMaxError(TestLog &log, const char *imageSetName, const char *im
     Vec4 pixelBias(0.0f, 0.0f, 0.0f, 0.0f);
     Vec4 pixelScale(1.0f, 1.0f, 1.0f, 1.0f);
 
-    if (!isOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!isOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // Generate more accurate error mask.
         params.maxSampleSkip = 0;
@@ -589,7 +589,7 @@ int measurePixelDiffAccuracy(TestLog &log, const char *imageSetName, const char 
     Vec4 pixelBias(0.0f, 0.0f, 0.0f, 0.0f);
     Vec4 pixelScale(1.0f, 1.0f, 1.0f, 1.0f);
 
-    if (logMode == COMPARE_LOG_EVERYTHING || score <= failThreshold)
+    if (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages() || score <= failThreshold)
     {
         if (result.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8) &&
             reference.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))
@@ -765,7 +765,7 @@ bool floatUlpThresholdCompare(TestLog &log, const char *imageSetName, const char
 
     bool compareOk = boolAll(lessThanEqual(maxDiff, threshold));
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
         if (tcu::getTextureChannelClass(reference.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
@@ -854,7 +854,7 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
 
     bool compareOk = boolAll(lessThanEqual(maxDiff, threshold));
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
         if (tcu::getTextureChannelClass(reference.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
@@ -950,7 +950,7 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
 
     bool compareOk = boolAll(lessThanEqual(maxDiff, threshold));
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
         if (tcu::getTextureChannelClass(reference.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
@@ -1038,7 +1038,7 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
 
     bool compareOk = boolAll(lessThanEqual(maxDiff, threshold));
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
         if (tcu::getTextureChannelClass(result.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT)
@@ -1144,7 +1144,7 @@ bool intThresholdCompare(TestLog &log, const char *imageSetName, const char *ima
 
     bool compareOk = boolAll(lessThanEqual(maxDiff, threshold64));
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         {
             const auto refChannelClass = tcu::getTextureChannelClass(reference.getFormat().type);
@@ -1268,7 +1268,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
     const bool allDepthOk = (!hasDepth || (maxDiff <= threshold));
     bool compareOk        = allDepthOk && allStencilOk;
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         if (!compareOk)
         {
@@ -1391,7 +1391,7 @@ bool intThresholdPositionDeviationCompare(TestLog &log, const char *imageSetName
     Vec4 pixelBias(0.0f, 0.0f, 0.0f, 0.0f);
     Vec4 pixelScale(1.0f, 1.0f, 1.0f, 1.0f);
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
         if (tcu::getTextureChannelClass(reference.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
@@ -1471,7 +1471,7 @@ bool intThresholdPositionDeviationErrorThresholdCompare(
     Vec4 pixelBias(0.0f, 0.0f, 0.0f, 0.0f);
     Vec4 pixelScale(1.0f, 1.0f, 1.0f, 1.0f);
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         // All formats except normalized unsigned fixed point ones need remapping in order to fit into unorm channels in logged images.
         if (tcu::getTextureChannelClass(reference.getFormat().type) != tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT ||
@@ -1559,7 +1559,7 @@ bool bilinearCompare(TestLog &log, const char *imageSetName, const char *imageSe
     Vec4 pixelBias(0.0f, 0.0f, 0.0f, 0.0f);
     Vec4 pixelScale(1.0f, 1.0f, 1.0f, 1.0f);
 
-    if (!isOk || logMode == COMPARE_LOG_EVERYTHING)
+    if (!isOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
     {
         if (result.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8) &&
             reference.getFormat() != TextureFormat(TextureFormat::RGBA, TextureFormat::UNORM_INT8))

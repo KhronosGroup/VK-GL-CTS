@@ -56,6 +56,8 @@ enum TestType
     TEST_TYPE_H265_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY, // Test case 4b iteration 2
     TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,
+    TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY,
+    TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY,
     TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY, // Test case 5a
@@ -64,6 +66,10 @@ enum TestType
     TEST_TYPE_H265_ENCODE_CAPABILITIES_QUERY, // Test case 5d
     TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY,
     TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY,
+    TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY,
+    TEST_TYPE_AV1_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY,
     TEST_TYPE_LAST
 };
 
@@ -218,6 +224,10 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::VideoFormatPropertiesQ
     case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
         m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR;
         break;
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+        m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+        break;
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         m_videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
@@ -254,9 +264,11 @@ VideoFormatPropertiesQueryTestInstance<ProfileOperation>::VideoFormatPropertiesQ
         m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
         break;
     case TEST_TYPE_AV1_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
         m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR;
         break;
     case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         m_imageUsageFlags = VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR;
         break;
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
@@ -309,6 +321,13 @@ VkVideoDecodeAV1ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<
     VkVideoDecodeAV1ProfileInfoKHR>::getProfileOperation()
 {
     return getProfileOperationAV1Decode();
+}
+
+template <>
+VkVideoDecodeVP9ProfileInfoKHR VideoFormatPropertiesQueryTestInstance<
+    VkVideoDecodeVP9ProfileInfoKHR>::getProfileOperation()
+{
+    return getProfileOperationVP9Decode();
 }
 
 template <>
@@ -447,6 +466,8 @@ typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeH265ProfileInfoKHR>
     VideoFormatPropertiesQueryH265EncodeTestInstance;
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeAV1ProfileInfoKHR>
     VideoFormatPropertiesQueryAV1DecodeTestInstance;
+typedef VideoFormatPropertiesQueryTestInstance<VkVideoDecodeVP9ProfileInfoKHR>
+    VideoFormatPropertiesQueryVP9DecodeTestInstance;
 typedef VideoFormatPropertiesQueryTestInstance<VkVideoEncodeAV1ProfileInfoKHR>
     VideoFormatPropertiesQueryAV1EncodeTestInstance;
 
@@ -708,7 +729,8 @@ public:
 
 private:
     void validateVideoCapabilitiesExt(const VkVideoEncodeH264CapabilitiesKHR &videoCapabilitiesKHR,
-                                      const VkVideoEncodeH264CapabilitiesKHR &videoCapabilitiesKHRSecond);
+                                      const VkVideoEncodeH264CapabilitiesKHR &videoCapabilitiesKHRSecond,
+                                      const VkVideoEncodeIntraRefreshCapabilitiesKHR &intraRefreshCapabilities);
 };
 
 VideoCapabilitiesQueryH264EncodeTestInstance::VideoCapabilitiesQueryH264EncodeTestInstance(Context &context,
@@ -742,6 +764,7 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate(void)
     VkVideoEncodeH264CapabilitiesKHR videoEncodeH264Capabilities[2];
     VkVideoEncodeCapabilitiesKHR videoEncodeCapabilities[2];
     VkVideoCapabilitiesKHR videoCapabilites[2];
+    VkVideoEncodeIntraRefreshCapabilitiesKHR intraRefreshCapabilities[2];
 
     for (size_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(videoCapabilites); ++ndx)
     {
@@ -750,13 +773,16 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate(void)
         deMemset(&videoCapabilites[ndx], filling, sizeof(videoCapabilites[ndx]));
         deMemset(&videoEncodeCapabilities[ndx], filling, sizeof(videoEncodeCapabilities[ndx]));
         deMemset(&videoEncodeH264Capabilities[ndx], filling, sizeof(videoEncodeH264Capabilities[ndx]));
+        deMemset(&intraRefreshCapabilities[ndx], filling, sizeof(intraRefreshCapabilities[ndx]));
 
         videoCapabilites[ndx].sType            = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
         videoCapabilites[ndx].pNext            = &videoEncodeCapabilities[ndx];
         videoEncodeCapabilities[ndx].sType     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext     = &videoEncodeH264Capabilities[ndx];
         videoEncodeH264Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR;
-        videoEncodeH264Capabilities[ndx].pNext = nullptr;
+        videoEncodeH264Capabilities[ndx].pNext = &intraRefreshCapabilities[ndx];
+        intraRefreshCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR;
+        intraRefreshCapabilities[ndx].pNext    = VK_NULL_HANDLE;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -776,14 +802,16 @@ tcu::TestStatus VideoCapabilitiesQueryH264EncodeTestInstance::iterate(void)
     validateVideoEncodeCapabilities(videoEncodeCapabilities[0], videoEncodeCapabilities[1]);
     validateExtensionProperties(videoCapabilites[0].stdHeaderVersion,
                                 *getVideoExtensionProperties(videoCodecOperation));
-    validateVideoCapabilitiesExt(videoEncodeH264Capabilities[0], videoEncodeH264Capabilities[1]);
+    validateVideoCapabilitiesExt(videoEncodeH264Capabilities[0], videoEncodeH264Capabilities[1],
+                                 intraRefreshCapabilities[0]);
 
     return tcu::TestStatus::pass("Pass");
 }
 
 void VideoCapabilitiesQueryH264EncodeTestInstance::validateVideoCapabilitiesExt(
     const VkVideoEncodeH264CapabilitiesKHR &videoCapabilitiesKHR,
-    const VkVideoEncodeH264CapabilitiesKHR &videoCapabilitiesKHRSecond)
+    const VkVideoEncodeH264CapabilitiesKHR &videoCapabilitiesKHRSecond,
+    const VkVideoEncodeIntraRefreshCapabilitiesKHR &intraRefreshCapabilities)
 {
     const VkVideoEncodeH264CapabilityFlagsKHR videoCapabilityFlags =
         VK_VIDEO_ENCODE_H264_CAPABILITY_HRD_COMPLIANCE_BIT_KHR |
@@ -795,7 +823,8 @@ void VideoCapabilitiesQueryH264EncodeTestInstance::validateVideoCapabilitiesExt(
         VK_VIDEO_ENCODE_H264_CAPABILITY_PER_PICTURE_TYPE_MIN_MAX_QP_BIT_KHR |
         VK_VIDEO_ENCODE_H264_CAPABILITY_PER_SLICE_CONSTANT_QP_BIT_KHR |
         VK_VIDEO_ENCODE_H264_CAPABILITY_GENERATE_PREFIX_NALU_BIT_KHR |
-        VK_VIDEO_ENCODE_H264_CAPABILITY_MB_QP_DIFF_WRAPAROUND_BIT_KHR;
+        VK_VIDEO_ENCODE_H264_CAPABILITY_MB_QP_DIFF_WRAPAROUND_BIT_KHR |
+        VK_VIDEO_ENCODE_H264_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR;
 
     VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
     VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, flags);
@@ -816,6 +845,14 @@ void VideoCapabilitiesQueryH264EncodeTestInstance::validateVideoCapabilitiesExt(
 
     if ((videoCapabilitiesKHR.flags & ~videoCapabilityFlags) != 0)
         TCU_FAIL("Undefined videoCapabilitiesKHR.flags");
+
+    // If H.264 capabilities have VK_VIDEO_ENCODE_H264_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR bit set,
+    // then at least one intra-refresh mode must be supported.
+    if ((videoCapabilitiesKHR.flags & VK_VIDEO_ENCODE_H264_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR) != 0 &&
+        intraRefreshCapabilities.intraRefreshModes == 0)
+    {
+        TCU_FAIL("H.264 capabilities have B_PICTURE_INTRA_REFRESH bit set but no intra refresh mode is supported");
+    }
 }
 
 class VideoCapabilitiesQueryH265DecodeTestInstance : public VideoCapabilitiesQueryTestInstance
@@ -999,6 +1036,96 @@ void VideoCapabilitiesQueryAV1DecodeTestInstance::validateVideoCapabilitiesExt(
     VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevel);
 }
 
+class VideoCapabilitiesQueryVP9DecodeTestInstance : public VideoCapabilitiesQueryTestInstance
+{
+public:
+    VideoCapabilitiesQueryVP9DecodeTestInstance(Context &context, const CaseDef &data);
+    virtual ~VideoCapabilitiesQueryVP9DecodeTestInstance(void);
+    tcu::TestStatus iterate(void);
+
+protected:
+    void validateVideoCapabilitiesExt(const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHR,
+                                      const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHRSecond);
+};
+
+VideoCapabilitiesQueryVP9DecodeTestInstance::VideoCapabilitiesQueryVP9DecodeTestInstance(Context &context,
+                                                                                         const CaseDef &data)
+    : VideoCapabilitiesQueryTestInstance(context, data)
+{
+}
+
+VideoCapabilitiesQueryVP9DecodeTestInstance::~VideoCapabilitiesQueryVP9DecodeTestInstance(void)
+{
+}
+
+tcu::TestStatus VideoCapabilitiesQueryVP9DecodeTestInstance::iterate(void)
+{
+    const InstanceInterface &vk                                = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                      = m_context.getPhysicalDevice();
+    const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR;
+    VkVideoDecodeVP9ProfileInfoKHR videoProfileOperation       = {
+        VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_PROFILE_INFO_KHR, //  VkStructureType sType;
+        nullptr,                                             //  const void* pNext;
+        STD_VIDEO_VP9_PROFILE_0,                             //  StdVideoAV1ProfileIdc stdProfileIdc;
+    };
+    VkVideoProfileInfoKHR videoProfile = {
+        VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
+        (void *)&videoProfileOperation,           //  void* pNext;
+        videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
+        VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR chromaBitDepth;
+    };
+    VkVideoDecodeVP9CapabilitiesKHR videoDecodeVP9Capabilities[2];
+    VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities[2];
+    VkVideoCapabilitiesKHR videoCapabilites[2];
+
+    for (size_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(videoCapabilites); ++ndx)
+    {
+        const uint8_t filling = (ndx == 0) ? 0x00 : 0xFF;
+
+        deMemset(&videoCapabilites[ndx], filling, sizeof(videoCapabilites[ndx]));
+        deMemset(&videoDecodeCapabilities[ndx], filling, sizeof(videoDecodeCapabilities[ndx]));
+        deMemset(&videoDecodeVP9Capabilities[ndx], filling, sizeof(videoDecodeVP9Capabilities[ndx]));
+
+        videoCapabilites[ndx].sType           = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+        videoCapabilites[ndx].pNext           = &videoDecodeCapabilities[ndx];
+        videoDecodeCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_DECODE_CAPABILITIES_KHR;
+        videoDecodeCapabilities[ndx].pNext    = &videoDecodeVP9Capabilities[ndx];
+        videoDecodeVP9Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_DECODE_VP9_CAPABILITIES_KHR;
+        videoDecodeVP9Capabilities[ndx].pNext = nullptr;
+
+        VkResult result =
+            vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
+
+        if (result != VK_SUCCESS)
+        {
+            ostringstream failMsg;
+
+            failMsg << "Failed query call to vkGetPhysicalDeviceVideoCapabilitiesKHR with " << result
+                    << " at iteration " << ndx;
+
+            return tcu::TestStatus::fail(failMsg.str());
+        }
+    }
+
+    validateVideoCapabilities(videoCapabilites[0], videoCapabilites[1]);
+    validateExtensionProperties(videoCapabilites[0].stdHeaderVersion,
+                                *getVideoExtensionProperties(videoCodecOperation));
+    validateVideoDecodeCapabilities(videoDecodeCapabilities[0], videoDecodeCapabilities[1]);
+    validateVideoCapabilitiesExt(videoDecodeVP9Capabilities[0], videoDecodeVP9Capabilities[1]);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void VideoCapabilitiesQueryVP9DecodeTestInstance::validateVideoCapabilitiesExt(
+    const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHR,
+    const VkVideoDecodeVP9CapabilitiesKHR &videoCapabilitiesKHRSecond)
+{
+    VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, sType);
+    VALIDATE_FIELD_EQUAL(videoCapabilitiesKHR, videoCapabilitiesKHRSecond, maxLevel);
+}
+
 class VideoCapabilitiesQueryAV1EncodeTestInstance : public VideoCapabilitiesQueryTestInstance
 {
 public:
@@ -1008,7 +1135,8 @@ public:
 
 protected:
     void validateVideoCapabilitiesExt(const VkVideoEncodeAV1CapabilitiesKHR &videoCapabilitiesKHR,
-                                      const VkVideoEncodeAV1CapabilitiesKHR &videoCapabilitiesKHRSecond);
+                                      const VkVideoEncodeAV1CapabilitiesKHR &videoCapabilitiesKHRSecond,
+                                      const VkVideoEncodeIntraRefreshCapabilitiesKHR &intraRefreshCapabilities);
 };
 
 VideoCapabilitiesQueryAV1EncodeTestInstance::VideoCapabilitiesQueryAV1EncodeTestInstance(Context &context,
@@ -1042,6 +1170,7 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
     VkVideoEncodeAV1CapabilitiesKHR videoEncodeAV1Capabilities[2];
     VkVideoEncodeCapabilitiesKHR videoEncodeCapabilities[2];
     VkVideoCapabilitiesKHR videoCapabilites[2];
+    VkVideoEncodeIntraRefreshCapabilitiesKHR intraRefreshCapabilities[2];
 
     for (size_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(videoCapabilites); ++ndx)
     {
@@ -1050,13 +1179,16 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
         deMemset(&videoCapabilites[ndx], filling, sizeof(videoCapabilites[ndx]));
         deMemset(&videoEncodeCapabilities[ndx], filling, sizeof(videoEncodeCapabilities[ndx]));
         deMemset(&videoEncodeAV1Capabilities[ndx], filling, sizeof(videoEncodeAV1Capabilities[ndx]));
+        deMemset(&intraRefreshCapabilities[ndx], filling, sizeof(intraRefreshCapabilities[ndx]));
 
         videoCapabilites[ndx].sType           = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
         videoCapabilites[ndx].pNext           = &videoEncodeCapabilities[ndx];
         videoEncodeCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext    = &videoEncodeAV1Capabilities[ndx];
         videoEncodeAV1Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR;
-        videoEncodeAV1Capabilities[ndx].pNext = nullptr;
+        videoEncodeAV1Capabilities[ndx].pNext = &intraRefreshCapabilities[ndx];
+        intraRefreshCapabilities[ndx].sType   = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR;
+        intraRefreshCapabilities[ndx].pNext   = VK_NULL_HANDLE;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -1076,14 +1208,16 @@ tcu::TestStatus VideoCapabilitiesQueryAV1EncodeTestInstance::iterate(void)
     validateVideoEncodeCapabilities(videoEncodeCapabilities[0], videoEncodeCapabilities[1]);
     validateExtensionProperties(videoCapabilites[0].stdHeaderVersion,
                                 *getVideoExtensionProperties(videoCodecOperation));
-    validateVideoCapabilitiesExt(videoEncodeAV1Capabilities[0], videoEncodeAV1Capabilities[1]);
+    validateVideoCapabilitiesExt(videoEncodeAV1Capabilities[0], videoEncodeAV1Capabilities[1],
+                                 intraRefreshCapabilities[0]);
 
     return tcu::TestStatus::pass("Pass");
 }
 
 void VideoCapabilitiesQueryAV1EncodeTestInstance::validateVideoCapabilitiesExt(
     const VkVideoEncodeAV1CapabilitiesKHR &videoCapabilitiesKHR,
-    const VkVideoEncodeAV1CapabilitiesKHR &videoCapabilitiesKHRSecond)
+    const VkVideoEncodeAV1CapabilitiesKHR &videoCapabilitiesKHRSecond,
+    const VkVideoEncodeIntraRefreshCapabilitiesKHR &intraRefreshCapabilities)
 {
     const VkVideoEncodeAV1CapabilityFlagsKHR flags =
         VK_VIDEO_ENCODE_AV1_CAPABILITY_PER_RATE_CONTROL_GROUP_MIN_MAX_Q_INDEX_BIT_KHR |
@@ -1123,6 +1257,14 @@ void VideoCapabilitiesQueryAV1EncodeTestInstance::validateVideoCapabilitiesExt(
 
     if ((videoCapabilitiesKHR.superblockSizes & ~superblockSizeFlags) != 0)
         TCU_FAIL("Undefined videoCapabilitiesKHR.superblockSizes");
+    // If AV1 capabilities have VK_VIDEO_ENCODE_AV1_CAPABILITY_COMPOUND_PREDICTION_INTRA_REFRESH_BIT_KHR bit set,
+    // then at least one intra-refresh mode must be supported.
+    if ((videoCapabilitiesKHR.flags & VK_VIDEO_ENCODE_AV1_CAPABILITY_COMPOUND_PREDICTION_INTRA_REFRESH_BIT_KHR) != 0 &&
+        intraRefreshCapabilities.intraRefreshModes == 0)
+    {
+        TCU_FAIL(
+            "AV1 capabilities have COMPOUND_PREDICTION_INTRA_REFRESH bit set but no intra refresh mode is supported");
+    }
 }
 
 class VideoCapabilitiesQueryH265EncodeTestInstance : public VideoCapabilitiesQueryTestInstance
@@ -1134,7 +1276,8 @@ public:
 
 protected:
     void validateVideoCapabilitiesExt(const VkVideoEncodeH265CapabilitiesKHR &videoCapabilitiesKHR,
-                                      const VkVideoEncodeH265CapabilitiesKHR &videoCapabilitiesKHRSecond);
+                                      const VkVideoEncodeH265CapabilitiesKHR &videoCapabilitiesKHRSecond,
+                                      const VkVideoEncodeIntraRefreshCapabilitiesKHR &intraRefreshCapabilities);
 };
 
 VideoCapabilitiesQueryH265EncodeTestInstance::VideoCapabilitiesQueryH265EncodeTestInstance(Context &context,
@@ -1168,6 +1311,7 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate(void)
     VkVideoEncodeH265CapabilitiesKHR videoEncodeH265Capabilities[2];
     VkVideoEncodeCapabilitiesKHR videoEncodeCapabilities[2];
     VkVideoCapabilitiesKHR videoCapabilites[2];
+    VkVideoEncodeIntraRefreshCapabilitiesKHR intraRefreshCapabilities[2];
 
     for (size_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(videoCapabilites); ++ndx)
     {
@@ -1176,13 +1320,16 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate(void)
         deMemset(&videoCapabilites[ndx], filling, sizeof(videoCapabilites[ndx]));
         deMemset(&videoEncodeCapabilities[ndx], filling, sizeof(videoEncodeCapabilities[ndx]));
         deMemset(&videoEncodeH265Capabilities[ndx], filling, sizeof(videoEncodeH265Capabilities[ndx]));
+        deMemset(&intraRefreshCapabilities[ndx], filling, sizeof(intraRefreshCapabilities[ndx]));
 
         videoCapabilites[ndx].sType            = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
         videoCapabilites[ndx].pNext            = &videoEncodeCapabilities[ndx];
         videoEncodeCapabilities[ndx].sType     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
         videoEncodeCapabilities[ndx].pNext     = &videoEncodeH265Capabilities[ndx];
         videoEncodeH265Capabilities[ndx].sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR;
-        videoEncodeH265Capabilities[ndx].pNext = nullptr;
+        videoEncodeH265Capabilities[ndx].pNext = &intraRefreshCapabilities[ndx];
+        intraRefreshCapabilities[ndx].sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR;
+        intraRefreshCapabilities[ndx].pNext    = VK_NULL_HANDLE;
 
         VkResult result =
             vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilites[ndx]);
@@ -1202,14 +1349,16 @@ tcu::TestStatus VideoCapabilitiesQueryH265EncodeTestInstance::iterate(void)
     validateVideoEncodeCapabilities(videoEncodeCapabilities[0], videoEncodeCapabilities[1]);
     validateExtensionProperties(videoCapabilites[0].stdHeaderVersion,
                                 *getVideoExtensionProperties(videoCodecOperation));
-    validateVideoCapabilitiesExt(videoEncodeH265Capabilities[0], videoEncodeH265Capabilities[1]);
+    validateVideoCapabilitiesExt(videoEncodeH265Capabilities[0], videoEncodeH265Capabilities[1],
+                                 intraRefreshCapabilities[0]);
 
     return tcu::TestStatus::pass("Pass");
 }
 
 void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt(
     const VkVideoEncodeH265CapabilitiesKHR &videoCapabilitiesKHR,
-    const VkVideoEncodeH265CapabilitiesKHR &videoCapabilitiesKHRSecond)
+    const VkVideoEncodeH265CapabilitiesKHR &videoCapabilitiesKHRSecond,
+    const VkVideoEncodeIntraRefreshCapabilitiesKHR &intraRefreshCapabilities)
 {
     const VkVideoEncodeH265CapabilityFlagsKHR videoCapabilityFlags =
         VK_VIDEO_ENCODE_H265_CAPABILITY_HRD_COMPLIANCE_BIT_KHR |
@@ -1222,7 +1371,8 @@ void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt(
         VK_VIDEO_ENCODE_H265_CAPABILITY_PER_SLICE_SEGMENT_CONSTANT_QP_BIT_KHR |
         VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_TILES_PER_SLICE_SEGMENT_BIT_KHR |
         VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_SEGMENTS_PER_TILE_BIT_KHR |
-        VK_VIDEO_ENCODE_H265_CAPABILITY_CU_QP_DIFF_WRAPAROUND_BIT_KHR;
+        VK_VIDEO_ENCODE_H265_CAPABILITY_CU_QP_DIFF_WRAPAROUND_BIT_KHR |
+        VK_VIDEO_ENCODE_H265_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR;
 
     const VkVideoEncodeH265CtbSizeFlagsKHR ctbSizeFlags = VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_KHR |
                                                           VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_KHR |
@@ -1263,6 +1413,306 @@ void VideoCapabilitiesQueryH265EncodeTestInstance::validateVideoCapabilitiesExt(
 
     if ((videoCapabilitiesKHR.transformBlockSizes & ~transformBlockSizes) != 0)
         TCU_FAIL("Undefined videoCapabilitiesKHR.transformBlockSizes");
+
+    // If H.265 capabilities have VK_VIDEO_ENCODE_H265_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR bit set,
+    // then at least one intra-refresh mode must be supported.
+    if ((videoCapabilitiesKHR.flags & VK_VIDEO_ENCODE_H265_CAPABILITY_B_PICTURE_INTRA_REFRESH_BIT_KHR) != 0 &&
+        intraRefreshCapabilities.intraRefreshModes == 0)
+    {
+        TCU_FAIL("H.265 capabilities have B_PICTURE_INTRA_REFRESH bit set but no intra refresh mode is supported");
+    }
+}
+
+static void validateIntraRefreshCapabilities(const VkVideoEncodeIntraRefreshCapabilitiesKHR &intraRefreshCapabilities,
+                                             const uint32_t maxPicturePartitions)
+{
+    // 2. VkVideoEncodeIntraRefreshCapabilitiesKHR::intraRefreshModes should
+    //    have at least one bit set and no bits outside the currently defined
+    //    set of modes.
+    if (intraRefreshCapabilities.intraRefreshModes == 0)
+        TCU_FAIL("At least one intra-refresh mode must be supported");
+    const uint32_t allModes = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR |
+                              VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR |
+                              VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR |
+                              VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR;
+    if ((intraRefreshCapabilities.intraRefreshModes & (~allModes)) != 0)
+        TCU_FAIL("Intra-refresh modes capability has invalid bits set");
+
+    // 3. If either VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_ROW_BASED_BIT_KHR or
+    //    VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_COLUMN_BASED_BIT_KHR is
+    //    supported, then VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_ANY_BLOCK_BASED_BIT_KHR
+    //    must also be supported.
+    if ((intraRefreshCapabilities.intraRefreshModes & VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR) !=
+            0 ||
+        (intraRefreshCapabilities.intraRefreshModes & VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR) !=
+            0)
+    {
+        if ((intraRefreshCapabilities.intraRefreshModes & VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR) == 0)
+            TCU_FAIL("If either row or column based intra-refresh mode is supported, then any-block based mode should "
+                     "also be supported");
+    }
+
+    // 4. If VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR is the only supported intra-refresh mode,
+    //    then VkVideoEncodeIntraRefreshCapabilitiesKHR::maxIntraRefreshCycleDuration must be less than or equal to max
+    //    picture partitions.
+    if (intraRefreshCapabilities.intraRefreshModes == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR)
+    {
+        if (intraRefreshCapabilities.maxIntraRefreshCycleDuration > maxPicturePartitions)
+            TCU_FAIL("Intra-refresh per-picture partition mode requires capability `maxIntraRefreshCycleDuration` be "
+                     "less than or equal to codec's max picture partitions");
+    }
+
+    // 5. Implementations must report
+    //    VkVideoEncodeIntraRefreshCapabilitiesKHR::maxIntraRefreshCycleDuration >= 2.
+    if (intraRefreshCapabilities.maxIntraRefreshCycleDuration < 2)
+        TCU_FAIL("Intra-refresh `maxIntraRefreshCycleDuration` capability must be greater than or equal to 2");
+
+    // 6. Implementations must report
+    //    VkVideoEncodeIntraRefreshCapabilitiesKHR::maxIntraRefreshActiveReferencePictures >= 1.
+    if (intraRefreshCapabilities.maxIntraRefreshActiveReferencePictures < 1)
+        TCU_FAIL(
+            "Intra-refresh `maxIntraRefreshActiveReferencePictures` capability must be greater than or equal to 1");
+}
+
+class VideoCapabilitiesIntraRefreshH264EncodeTestInstance : public VideoCapabilitiesQueryTestInstance
+{
+public:
+    VideoCapabilitiesIntraRefreshH264EncodeTestInstance(Context &context, const CaseDef &data);
+    virtual ~VideoCapabilitiesIntraRefreshH264EncodeTestInstance(void);
+    tcu::TestStatus iterate(void);
+};
+
+VideoCapabilitiesIntraRefreshH264EncodeTestInstance::VideoCapabilitiesIntraRefreshH264EncodeTestInstance(
+    Context &context, const CaseDef &data)
+    : VideoCapabilitiesQueryTestInstance(context, data)
+{
+}
+
+VideoCapabilitiesIntraRefreshH264EncodeTestInstance::~VideoCapabilitiesIntraRefreshH264EncodeTestInstance(void)
+{
+}
+
+tcu::TestStatus VideoCapabilitiesIntraRefreshH264EncodeTestInstance::iterate(void)
+{
+    const InstanceInterface &vk                                 = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                       = m_context.getPhysicalDevice();
+    const VkVideoCodecOperationFlagBitsKHR videoCodecOperation  = VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR;
+    const VkVideoEncodeH264ProfileInfoKHR videoProfileOperation = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PROFILE_INFO_KHR, //  VkStructureType sType;
+        nullptr,                                              //  const void* pNext;
+        STD_VIDEO_H264_PROFILE_IDC_BASELINE,                  //  StdVideoH264ProfileIdc stdProfileIdc;
+    };
+    const VkVideoProfileInfoKHR videoProfile = {
+        VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
+        (void *)&videoProfileOperation,           //  void* pNext;
+        videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
+        VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR chromaBitDepth;
+    };
+    VkVideoEncodeH264CapabilitiesKHR videoEncodeH264Capabilities;
+    VkVideoEncodeCapabilitiesKHR videoEncodeCapabilities;
+    VkVideoCapabilitiesKHR videoCapabilities;
+    VkVideoEncodeIntraRefreshCapabilitiesKHR intraRefreshCapabilities;
+
+    deMemset(&videoCapabilities, 0x00, sizeof(videoCapabilities));
+    deMemset(&videoEncodeCapabilities, 0x00, sizeof(videoEncodeCapabilities));
+    deMemset(&videoEncodeH264Capabilities, 0x00, sizeof(videoEncodeH264Capabilities));
+    deMemset(&intraRefreshCapabilities, 0x00, sizeof(intraRefreshCapabilities));
+
+    videoCapabilities.sType           = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+    videoCapabilities.pNext           = &videoEncodeCapabilities;
+    videoEncodeCapabilities.sType     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
+    videoEncodeCapabilities.pNext     = &videoEncodeH264Capabilities;
+    videoEncodeH264Capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_CAPABILITIES_KHR;
+    videoEncodeH264Capabilities.pNext = &intraRefreshCapabilities;
+    intraRefreshCapabilities.sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR;
+    intraRefreshCapabilities.pNext    = VK_NULL_HANDLE;
+
+    VkResult result = vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilities);
+
+    if (result != VK_SUCCESS)
+    {
+        ostringstream failMsg;
+
+        failMsg << "Failed query call to vkGetPhysicalDeviceVideoCapabilitiesKHR with " << result;
+
+        return tcu::TestStatus::fail(failMsg.str());
+    }
+
+    // 1. Implementations must support using at least one reference frame (in
+    //    other words, must be capable of encoding a P-frame and/or a B-frame).
+    if (videoEncodeH264Capabilities.maxPPictureL0ReferenceCount == 0 &&
+        videoEncodeH264Capabilities.maxBPictureL0ReferenceCount == 0)
+    {
+        TCU_FAIL("No P or B frames supported");
+    }
+
+    validateIntraRefreshCapabilities(intraRefreshCapabilities, videoEncodeH264Capabilities.maxSliceCount);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class VideoCapabilitiesIntraRefreshH265EncodeTestInstance : public VideoCapabilitiesQueryTestInstance
+{
+public:
+    VideoCapabilitiesIntraRefreshH265EncodeTestInstance(Context &context, const CaseDef &data);
+    virtual ~VideoCapabilitiesIntraRefreshH265EncodeTestInstance(void);
+    tcu::TestStatus iterate(void);
+};
+
+VideoCapabilitiesIntraRefreshH265EncodeTestInstance::VideoCapabilitiesIntraRefreshH265EncodeTestInstance(
+    Context &context, const CaseDef &data)
+    : VideoCapabilitiesQueryTestInstance(context, data)
+{
+}
+
+VideoCapabilitiesIntraRefreshH265EncodeTestInstance::~VideoCapabilitiesIntraRefreshH265EncodeTestInstance(void)
+{
+}
+
+tcu::TestStatus VideoCapabilitiesIntraRefreshH265EncodeTestInstance::iterate(void)
+{
+    const InstanceInterface &vk                                 = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                       = m_context.getPhysicalDevice();
+    const VkVideoCodecOperationFlagBitsKHR videoCodecOperation  = VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR;
+    const VkVideoEncodeH265ProfileInfoKHR videoProfileOperation = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PROFILE_INFO_KHR, //  VkStructureType sType;
+        nullptr,                                              //  const void* pNext;
+        STD_VIDEO_H265_PROFILE_IDC_MAIN,                      //  StdVideoH265ProfileIdc stdProfileIdc;
+    };
+    const VkVideoProfileInfoKHR videoProfile = {
+        VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
+        (void *)&videoProfileOperation,           //  void* pNext;
+        videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
+        VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR chromaBitDepth;
+    };
+    VkVideoEncodeH265CapabilitiesKHR videoEncodeH265Capabilities;
+    VkVideoEncodeCapabilitiesKHR videoEncodeCapabilities;
+    VkVideoCapabilitiesKHR videoCapabilities;
+    VkVideoEncodeIntraRefreshCapabilitiesKHR intraRefreshCapabilities;
+
+    deMemset(&videoCapabilities, 0x00, sizeof(videoCapabilities));
+    deMemset(&videoEncodeCapabilities, 0x00, sizeof(videoEncodeCapabilities));
+    deMemset(&videoEncodeH265Capabilities, 0x00, sizeof(videoEncodeH265Capabilities));
+    deMemset(&intraRefreshCapabilities, 0x00, sizeof(intraRefreshCapabilities));
+
+    videoCapabilities.sType           = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+    videoCapabilities.pNext           = &videoEncodeCapabilities;
+    videoEncodeCapabilities.sType     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
+    videoEncodeCapabilities.pNext     = &videoEncodeH265Capabilities;
+    videoEncodeH265Capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_CAPABILITIES_KHR;
+    videoEncodeH265Capabilities.pNext = &intraRefreshCapabilities;
+    intraRefreshCapabilities.sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR;
+    intraRefreshCapabilities.pNext    = VK_NULL_HANDLE;
+
+    VkResult result = vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilities);
+
+    if (result != VK_SUCCESS)
+    {
+        ostringstream failMsg;
+
+        failMsg << "Failed query call to vkGetPhysicalDeviceVideoCapabilitiesKHR with " << result;
+
+        return tcu::TestStatus::fail(failMsg.str());
+    }
+
+    // 1. Implementations must support using at least one reference frame (in
+    //    other words, must be capable of encoding a P-frame and/or a B-frame).
+    if (videoEncodeH265Capabilities.maxPPictureL0ReferenceCount == 0 &&
+        videoEncodeH265Capabilities.maxBPictureL0ReferenceCount == 0)
+    {
+        TCU_FAIL("No P or B frames supported");
+    }
+
+    validateIntraRefreshCapabilities(intraRefreshCapabilities, videoEncodeH265Capabilities.maxSliceSegmentCount);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class VideoCapabilitiesIntraRefreshAV1EncodeTestInstance : public VideoCapabilitiesQueryTestInstance
+{
+public:
+    VideoCapabilitiesIntraRefreshAV1EncodeTestInstance(Context &context, const CaseDef &data);
+    virtual ~VideoCapabilitiesIntraRefreshAV1EncodeTestInstance(void);
+    tcu::TestStatus iterate(void);
+};
+
+VideoCapabilitiesIntraRefreshAV1EncodeTestInstance::VideoCapabilitiesIntraRefreshAV1EncodeTestInstance(
+    Context &context, const CaseDef &data)
+    : VideoCapabilitiesQueryTestInstance(context, data)
+{
+}
+
+VideoCapabilitiesIntraRefreshAV1EncodeTestInstance::~VideoCapabilitiesIntraRefreshAV1EncodeTestInstance(void)
+{
+}
+
+tcu::TestStatus VideoCapabilitiesIntraRefreshAV1EncodeTestInstance::iterate(void)
+{
+    const InstanceInterface &vk                                = m_context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                      = m_context.getPhysicalDevice();
+    const VkVideoCodecOperationFlagBitsKHR videoCodecOperation = VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR;
+    const VkVideoEncodeAV1ProfileInfoKHR videoProfileOperation = {
+        VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_PROFILE_INFO_KHR, //  VkStructureType sType;
+        VK_NULL_HANDLE,                                      //  const void* pNext;
+        STD_VIDEO_AV1_PROFILE_MAIN,                          //  StdVideoAV1ProfileIdc stdProfileIdc;
+    };
+    const VkVideoProfileInfoKHR videoProfile = {
+        VK_STRUCTURE_TYPE_VIDEO_PROFILE_INFO_KHR, //  VkStructureType sType;
+        (void *)&videoProfileOperation,           //  void* pNext;
+        videoCodecOperation,                      //  VkVideoCodecOperationFlagBitsKHR videoCodecOperation;
+        VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,  //  VkVideoChromaSubsamplingFlagsKHR chromaSubsampling;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR lumaBitDepth;
+        VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR,   //  VkVideoComponentBitDepthFlagsKHR chromaBitDepth;
+    };
+    VkVideoEncodeAV1CapabilitiesKHR videoEncodeAV1Capabilities;
+    VkVideoEncodeCapabilitiesKHR videoEncodeCapabilities;
+    VkVideoCapabilitiesKHR videoCapabilities;
+    VkVideoEncodeIntraRefreshCapabilitiesKHR intraRefreshCapabilities;
+
+    deMemset(&videoCapabilities, 0x00, sizeof(videoCapabilities));
+    deMemset(&videoEncodeCapabilities, 0x00, sizeof(videoEncodeCapabilities));
+    deMemset(&videoEncodeAV1Capabilities, 0x00, sizeof(videoEncodeAV1Capabilities));
+    deMemset(&intraRefreshCapabilities, 0x00, sizeof(intraRefreshCapabilities));
+
+    videoCapabilities.sType          = VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR;
+    videoCapabilities.pNext          = &videoEncodeCapabilities;
+    videoEncodeCapabilities.sType    = VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
+    videoEncodeCapabilities.pNext    = &videoEncodeAV1Capabilities;
+    videoEncodeAV1Capabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_AV1_CAPABILITIES_KHR;
+    videoEncodeAV1Capabilities.pNext = &intraRefreshCapabilities;
+    intraRefreshCapabilities.sType   = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR;
+    intraRefreshCapabilities.pNext   = VK_NULL_HANDLE;
+
+    VkResult result = vk.getPhysicalDeviceVideoCapabilitiesKHR(physicalDevice, &videoProfile, &videoCapabilities);
+
+    if (result != VK_SUCCESS)
+    {
+        ostringstream failMsg;
+
+        failMsg << "Failed query call to vkGetPhysicalDeviceVideoCapabilitiesKHR with " << result;
+
+        return tcu::TestStatus::fail(failMsg.str());
+    }
+
+    // 1. Implementations must support using at least one reference frame. In
+    //    the case of AV1, there has to be enough reference frames for at least
+    //    one of the prediction modes except intra-only: single, unidirectional
+    //    compound, and bidirectional compound.
+    if (videoEncodeAV1Capabilities.maxSingleReferenceCount == 0 &&
+        videoEncodeAV1Capabilities.maxUnidirectionalCompoundReferenceCount == 0 &&
+        videoEncodeAV1Capabilities.maxBidirectionalCompoundReferenceCount == 0)
+    {
+        TCU_FAIL("Not enough reference slots");
+    }
+
+    validateIntraRefreshCapabilities(intraRefreshCapabilities, videoEncodeAV1Capabilities.maxTiles.width *
+                                                                   videoEncodeAV1Capabilities.maxTiles.height);
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 class VideoCapabilitiesQueryTestCase : public TestCase
@@ -1320,6 +1770,10 @@ void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
         break;
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+        context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
+        break;
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_encode_av1");
@@ -1339,8 +1793,23 @@ void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_CAPABILITIES_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
         break;
+    case TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY:
+        context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
+        break;
     case TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY:
         context.requireDeviceFunctionality("VK_KHR_video_encode_av1");
+        break;
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
+        break;
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
+        break;
+    case TEST_TYPE_AV1_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_av1");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
         break;
     default:
         TCU_THROW(NotSupportedError, "Unknown TestType");
@@ -1373,6 +1842,10 @@ TestInstance *VideoCapabilitiesQueryTestCase::createInstance(Context &context) c
         return new VideoFormatPropertiesQueryAV1DecodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         return new VideoFormatPropertiesQueryAV1DecodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+        return new VideoFormatPropertiesQueryVP9DecodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+        return new VideoFormatPropertiesQueryVP9DecodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_ENCODE_SRC_VIDEO_FORMAT_SUPPORT_QUERY:
         return new VideoFormatPropertiesQueryAV1EncodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
@@ -1389,6 +1862,14 @@ TestInstance *VideoCapabilitiesQueryTestCase::createInstance(Context &context) c
         return new VideoCapabilitiesQueryAV1DecodeTestInstance(context, m_caseDef);
     case TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY:
         return new VideoCapabilitiesQueryAV1EncodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY:
+        return new VideoCapabilitiesQueryVP9DecodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        return new VideoCapabilitiesIntraRefreshH264EncodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        return new VideoCapabilitiesIntraRefreshH265EncodeTestInstance(context, m_caseDef);
+    case TEST_TYPE_AV1_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        return new VideoCapabilitiesIntraRefreshAV1EncodeTestInstance(context, m_caseDef);
     default:
         TCU_THROW(NotSupportedError, "Unknown TestType");
     }
@@ -1424,6 +1905,10 @@ const char *getTestName(const TestType testType)
         return "av1_encode_src_video_format_support_query";
     case TEST_TYPE_AV1_ENCODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
         return "av1_encode_dpb_video_format_support_query";
+    case TEST_TYPE_VP9_DECODE_DST_VIDEO_FORMAT_SUPPORT_QUERY:
+        return "vp9_decode_dst_video_format_support_query";
+    case TEST_TYPE_VP9_DECODE_DPB_VIDEO_FORMAT_SUPPORT_QUERY:
+        return "vp9_decode_dpb_video_format_support_query";
     case TEST_TYPE_H264_DECODE_CAPABILITIES_QUERY:
         return "h264_decode_capabilities_query";
     case TEST_TYPE_H264_ENCODE_CAPABILITIES_QUERY:
@@ -1436,6 +1921,14 @@ const char *getTestName(const TestType testType)
         return "av1_decode_capabilities_query";
     case TEST_TYPE_AV1_ENCODE_CAPABILITIES_QUERY:
         return "av1_encode_capabilities_query";
+    case TEST_TYPE_VP9_DECODE_CAPABILITIES_QUERY:
+        return "vp9_decode_capabilities_query";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        return "h264_encode_intra_refresh_capabilities_query";
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        return "h265_encode_intra_refresh_capabilities_query";
+    case TEST_TYPE_AV1_ENCODE_INTRA_REFRESH_CAPABILITIES_QUERY:
+        return "av1_encode_intra_refresh_capabilities_query";
     default:
         TCU_THROW(NotSupportedError, "Unknown TestType");
     }
@@ -1448,6 +1941,7 @@ struct CodecCaps
     VkVideoDecodeH264CapabilitiesKHR h264Dec;
     VkVideoDecodeH265CapabilitiesKHR h265Dec;
     VkVideoDecodeAV1CapabilitiesKHR av1Dec;
+    VkVideoDecodeVP9CapabilitiesKHR vp9Dec;
 
     VkVideoEncodeH264CapabilitiesKHR h264Enc;
     VkVideoEncodeH265CapabilitiesKHR h265Enc;
@@ -1459,6 +1953,7 @@ struct VideoProfile
     VkVideoDecodeH264ProfileInfoKHR h264Dec;
     VkVideoDecodeH265ProfileInfoKHR h265Dec;
     VkVideoDecodeAV1ProfileInfoKHR av1Dec;
+    VkVideoDecodeVP9ProfileInfoKHR vp9Dec;
 
     VkVideoEncodeH264ProfileInfoKHR h264Enc;
     VkVideoEncodeH265ProfileInfoKHR h265Enc;
@@ -1473,6 +1968,7 @@ struct TestParams
         VkVideoDecodeH264ProfileInfoKHR h264Dec;
         VkVideoDecodeH265ProfileInfoKHR h265Dec;
         VkVideoDecodeAV1ProfileInfoKHR av1Dec;
+        VkVideoDecodeVP9ProfileInfoKHR vp9Dec;
 
         VkVideoEncodeH264ProfileInfoKHR h264Enc;
         VkVideoEncodeH265ProfileInfoKHR h265Enc;
@@ -1500,7 +1996,8 @@ struct TestParams
     {
         return (profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR ||
                 profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR ||
-                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR);
+                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR ||
+                profile.videoCodecOperation == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
     }
 };
 
@@ -1517,6 +2014,9 @@ std::string getTestName(const TestParams &params)
         break;
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
         ss << "decode_av1";
+        break;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        ss << "decode_vp9";
         break;
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
         ss << "encode_h264";
@@ -1664,6 +2164,9 @@ void checkSupport(Context &context, de::SharedPtr<TestParams> params)
         break;
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
         context.requireDeviceFunctionality("VK_KHR_video_decode_av1");
+        break;
+    case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+        context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
         break;
     case VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR:
         context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
@@ -1820,8 +2323,9 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
 
     std::vector<VkVideoCodecOperationFlagBitsKHR> codecs = {
         VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR, VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR,
-        VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,  VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR,
-        VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR, VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR};
+        VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR,  VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR,
+        VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR, VK_VIDEO_CODEC_OPERATION_ENCODE_H265_BIT_KHR,
+        VK_VIDEO_CODEC_OPERATION_ENCODE_AV1_BIT_KHR};
 
     std::vector<VkFormat> formats = {
         VK_FORMAT_R8_UNORM,
@@ -1972,6 +2476,17 @@ tcu::TestCaseGroup *createVideoFormatsTests(tcu::TestContext &testCtx)
 
                             params->codecCaps.av1Dec  = initVulkanStructure();
                             params->decodeCaps        = initVulkanStructure(&params->codecCaps.av1Dec);
+                            params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
+
+                            break;
+                        case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+                            params->codecProfile.vp9Dec            = initVulkanStructure();
+                            params->codecProfile.vp9Dec.stdProfile = STD_VIDEO_VP9_PROFILE_0;
+
+                            params->profile = initVulkanStructure(&params->codecProfile.vp9Dec);
+
+                            params->codecCaps.vp9Dec  = initVulkanStructure();
+                            params->decodeCaps        = initVulkanStructure(&params->codecCaps.vp9Dec);
                             params->selectedCodecCaps = (VkBaseInStructure *)&params->decodeCaps;
 
                             break;

@@ -156,6 +156,15 @@ enum DpbMode
     DPB_MODE_LAYERED,
 };
 
+enum IntraRefreshMode
+{
+    IR_OFF,
+    IR_PICTURE_PARTITION,
+    IR_ROW_BASED,
+    IR_COLUMN_BASED,
+    IR_ANY_BLOCK_BASED
+};
+
 struct FrameSizeDef
 {
     const char *baseClipName;
@@ -245,6 +254,12 @@ struct DpbModeDef
     const char *subName;
 };
 
+struct IntraRefreshDef
+{
+    enum IntraRefreshMode mode;
+    const char *subName;
+};
+
 struct TestDefinition
 {
     const FrameSizeDef &frameSize;
@@ -261,6 +276,7 @@ struct TestDefinition
     const LoopRestoreDef &loopRestore;
     const CDEFDef &cdef;
     const DpbModeDef &dpbMode;
+    const IntraRefreshDef &intraRefresh;
 };
 
 struct TestRequirements
@@ -281,6 +297,8 @@ struct TestRequirements
     bool isXSubsampled;
     bool isYSubsampled;
     tcu::UVec4 colorDepth;
+    bool useIntraRefresh;
+    VkVideoEncodeIntraRefreshModeFlagsKHR intraRefreshMode;
 };
 class VideoTestInstance : public VideoBaseTestInstance
 {
@@ -333,6 +351,12 @@ protected:
     TestRequirements m_requirements;
     TestDefinition m_definition;
     static VkExtent2D codedPictureAlignment;
+    const MovePtr<VkVideoEncodeAV1CapabilitiesKHR> m_av1Capabilities;
+    const MovePtr<VkVideoEncodeIntraRefreshCapabilitiesKHR> m_intraRefreshCapabilities;
+
+private:
+    void buildEncoderParams(std::vector<std::string> &params) const;
+    uint32_t computeIntraRefreshCycleDuration() const;
 };
 
 VkExtent2D VideoTestCase::codedPictureAlignment = VkExtent2D({0, 0});
@@ -361,120 +385,6 @@ static void buildClipName(tcu::TestContext &testCtx, const TestDefinition &testD
         clipName += ".ivf";
     else
         clipName += ".yuv";
-}
-
-static void buildEncoderParams(const TestDefinition &testDef, std::vector<std::string> &params)
-{
-    params.push_back("--codec");
-    params.push_back("av1");
-
-    params.push_back("--numFrames");
-    params.push_back(de::toString(testDef.gop.frameCount));
-
-    params.push_back("--inputWidth");
-    params.push_back(de::toString(testDef.frameSize.width));
-    params.push_back("--inputHeight");
-    params.push_back(de::toString(testDef.frameSize.height));
-
-    params.push_back("--idrPeriod");
-    switch (testDef.gop.gop)
-    {
-    case GOP_IDR_P_B:
-        params.push_back("30");
-        break;
-    default:
-        params.push_back("0");
-        break;
-    }
-
-    switch (testDef.tiling.tiling)
-    {
-    case TILING_1x2:
-    {
-        uint32_t tileWidthInSbs, tileHeightInSbs;
-        if (testDef.superblock.superblock)
-        {
-            tileWidthInSbs = static_cast<uint32_t>(
-                std::ceil((double)testDef.frameSize.width / (double)testDef.superblock.superblock));
-            tileHeightInSbs = static_cast<uint32_t>(
-                std::ceil((double)testDef.frameSize.height / (double)testDef.superblock.superblock));
-        }
-        else
-        {
-            TCU_THROW(NotSupportedError, "superblock should not be null");
-        }
-        params.push_back("--tiles");
-        params.push_back("--params");
-        params.push_back("0");
-        params.push_back("1");
-        params.push_back(std::to_string(tileWidthInSbs - 1));
-        params.push_back("2");
-        params.push_back(std::to_string((tileHeightInSbs / 2) - 1));
-        params.push_back(std::to_string((tileHeightInSbs - tileHeightInSbs / 2) - 1));
-        params.push_back("0");
-        break;
-    }
-    case TILING_4x4:
-        params.push_back("--tiles");
-        params.push_back("--params");
-        params.push_back("1");
-        params.push_back("4");
-        params.push_back("4");
-        params.push_back("0");
-        break;
-    default:
-        break;
-    }
-
-    params.push_back("--inputChromaSubsampling");
-    params.push_back(std::to_string(testDef.subsampling.subsampling).c_str());
-
-    params.push_back("--inputBpp");
-    params.push_back(std::to_string(testDef.bitDepth.depth));
-
-    params.push_back("--consecutiveBFrameCount");
-    params.push_back(de::toString(testDef.gop.consecutiveBFrames));
-
-    params.push_back("--gopFrameCount");
-    params.push_back(de::toString(testDef.gop.frameCount));
-
-    params.push_back("--qpI");
-    params.push_back(de::toString(testDef.quantization.qIndex));
-
-    params.push_back("--qpP");
-    params.push_back(de::toString(testDef.quantization.qIndex));
-
-    params.push_back("--qpB");
-    params.push_back(de::toString(testDef.quantization.qIndex));
-
-    params.push_back("--rateControlMode");
-    params.push_back(de::toString(testDef.rateControl.rc));
-
-    if (testDef.loopFilter.lf == LF_ON)
-        params.push_back("--lf");
-
-    if (testDef.loopRestore.lr == LR_ON)
-        params.push_back("--lr");
-
-    if (testDef.loopRestore.lr == LR_ON)
-        params.push_back("--cdef");
-
-    switch (testDef.dpbMode.mode)
-    {
-    case DPB_MODE_SEPARATE:
-        params.push_back("--dpbMode");
-        params.push_back("separate");
-        break;
-    case DPB_MODE_LAYERED:
-        params.push_back("--dpbMode");
-        params.push_back("layered");
-        break;
-    default:
-        break;
-    }
-
-    if (testDef.ordering.order == UNORDERED)
-        params.push_back("--testOutOfOrderRecording");
 }
 
 VkVideoChromaSubsamplingFlagsKHR getChromaSubSampling(enum ChromaSubsampling subSampling)
@@ -562,7 +472,8 @@ VideoTestCase::VideoTestCase(tcu::TestContext &testCtx, const char *testName, co
     : TestCase(testCtx, testName)
     , m_requirements(requirements)
     , m_definition(definition)
-
+    , m_av1Capabilities(getVideoCapabilitiesExtensionAV1E())
+    , m_intraRefreshCapabilities(getIntraRefreshCapabilities())
 {
 }
 
@@ -582,7 +493,7 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
     std::stringstream ss;
     std::string deviceID;
 
-    buildEncoderParams(m_definition, encoderParams);
+    buildEncoderParams(encoderParams);
 
     std::string inputClipName("");
     buildClipName(getTestContext(), m_definition, inputClipName, false);
@@ -693,16 +604,19 @@ void VideoTestCase::validateCapabilities(Context &context) const
     const InstanceInterface &vki          = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
 
-    const MovePtr<VkVideoEncodeAV1CapabilitiesKHR> av1Capabilities = getVideoCapabilitiesExtensionAV1E();
+    const MovePtr<VkVideoEncodeCapabilitiesKHR> encodeCapabilities =
+        getVideoEncodeCapabilities(m_av1Capabilities.get());
 
-    const MovePtr<VkVideoEncodeCapabilitiesKHR> encodeCapabilities = getVideoEncodeCapabilities(av1Capabilities.get());
+    void *headStruct = encodeCapabilities.get();
+    if (m_requirements.useIntraRefresh)
+        appendStructurePtrToVulkanChain((const void **)&headStruct, m_intraRefreshCapabilities.get());
 
     const MovePtr<VkVideoCapabilitiesKHR> videoCapabilities =
-        getVideoCapabilities(vki, physicalDevice, videoEncodeProfile.get(), encodeCapabilities.get());
+        getVideoCapabilities(vki, physicalDevice, videoEncodeProfile.get(), headStruct);
 
     if (m_requirements.requireBFrames)
     {
-        if (av1Capabilities->maxBidirectionalCompoundReferenceCount == 0)
+        if (m_av1Capabilities->maxBidirectionalCompoundReferenceCount == 0)
             throw tcu::NotSupportedError("B frames encoding not supported for AV1");
     }
 
@@ -718,7 +632,7 @@ void VideoTestCase::validateCapabilities(Context &context) const
         throw tcu::NotSupportedError("Constant bitrate not supported");
     }
 
-    if (!(av1Capabilities->superblockSizes & m_requirements.superblockSizes))
+    if (!(m_av1Capabilities->superblockSizes & m_requirements.superblockSizes))
     {
         throw tcu::NotSupportedError("Required superblock size not supported");
     }
@@ -747,13 +661,14 @@ void VideoTestCase::validateCapabilities(Context &context) const
             (m_requirements.width + m_requirements.maxTileColumns - 1) / m_requirements.maxTileColumns;
         uint32_t minTileHeight = (m_requirements.height + m_requirements.maxTileRows - 1) / m_requirements.maxTileRows;
 
-        if (minTileWidth < av1Capabilities->minTileSize.width || minTileHeight < av1Capabilities->minTileSize.height)
+        if (minTileWidth < m_av1Capabilities->minTileSize.width ||
+            minTileHeight < m_av1Capabilities->minTileSize.height)
         {
             throw tcu::NotSupportedError("Required tile dimensions are smaller than minTileSize");
         }
 
-        if (m_requirements.width > av1Capabilities->maxTiles.width * av1Capabilities->maxTileSize.width ||
-            m_requirements.height > av1Capabilities->maxTiles.height * av1Capabilities->maxTileSize.height)
+        if (m_requirements.width > m_av1Capabilities->maxTiles.width * m_av1Capabilities->maxTileSize.width ||
+            m_requirements.height > m_av1Capabilities->maxTiles.height * m_av1Capabilities->maxTileSize.height)
         {
             throw tcu::NotSupportedError("Required dimensions exceed maximum possible tiled area");
         }
@@ -795,7 +710,16 @@ void VideoTestCase::validateCapabilities(Context &context) const
         TCU_THROW(NotSupportedError,
                   "No supported format found matching the required chroma subsampling and color depth");
 
-    codedPictureAlignment = av1Capabilities->codedPictureAlignment;
+    codedPictureAlignment = m_av1Capabilities->codedPictureAlignment;
+
+    if (m_requirements.useIntraRefresh)
+    {
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_video_encode_intra_refresh"))
+            throw tcu::NotSupportedError("VK_KHR_video_encode_intra_refresh not supported");
+
+        if ((m_intraRefreshCapabilities->intraRefreshModes & m_requirements.intraRefreshMode) == 0)
+            throw tcu::NotSupportedError("Required intra-refresh mode not supported");
+    }
 }
 
 VideoTestCase *createVideoTestCase(tcu::TestContext &testCtx, const char *testname,
@@ -803,6 +727,196 @@ VideoTestCase *createVideoTestCase(tcu::TestContext &testCtx, const char *testna
 {
     VideoTestCase *testCase = new VideoTestCase(testCtx, testname, requirements, definition);
     return testCase;
+}
+
+uint32_t VideoTestCase::computeIntraRefreshCycleDuration() const
+{
+    VkExtent2D minCodingBlockSize;
+    if (m_av1Capabilities->superblockSizes & VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_64_BIT_KHR)
+        minCodingBlockSize = {64, 64};
+    else if (m_av1Capabilities->superblockSizes & VK_VIDEO_ENCODE_AV1_SUPERBLOCK_SIZE_128_BIT_KHR)
+        minCodingBlockSize = {128, 128};
+    else
+        throw std::runtime_error("No supported superblock size for AV1");
+
+    VkExtent2D codedExtentInMinCodingBlocks;
+    codedExtentInMinCodingBlocks.width =
+        (m_definition.frameSize.width + minCodingBlockSize.width - 1) / minCodingBlockSize.width;
+    codedExtentInMinCodingBlocks.height =
+        (m_definition.frameSize.height + minCodingBlockSize.height - 1) / minCodingBlockSize.height;
+
+    uint32_t maxPicturePartitions = 0;
+    switch (m_definition.intraRefresh.mode)
+    {
+    case IR_PICTURE_PARTITION:
+    {
+        uint32_t maxCodecPartitions    = m_av1Capabilities->maxTiles.width * m_av1Capabilities->maxTiles.height;
+        uint32_t maxPartitionsInBlocks = codedExtentInMinCodingBlocks.width * codedExtentInMinCodingBlocks.height;
+        maxPicturePartitions           = std::min(maxCodecPartitions, maxPartitionsInBlocks);
+        break;
+    }
+    case IR_ROW_BASED:
+        maxPicturePartitions = codedExtentInMinCodingBlocks.height;
+        break;
+    case IR_COLUMN_BASED:
+        maxPicturePartitions = codedExtentInMinCodingBlocks.width;
+        break;
+    case IR_ANY_BLOCK_BASED:
+        maxPicturePartitions = codedExtentInMinCodingBlocks.width * codedExtentInMinCodingBlocks.height;
+        break;
+    case IR_OFF:
+        return 0;
+    default:
+        throw std::runtime_error("Invalid intra-refresh mode");
+    }
+
+    return std::min(m_intraRefreshCapabilities->maxIntraRefreshCycleDuration, maxPicturePartitions);
+}
+
+void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
+{
+    params.push_back("--codec");
+    params.push_back("av1");
+
+    params.push_back("--numFrames");
+    params.push_back(de::toString(m_definition.gop.frameCount));
+
+    params.push_back("--inputWidth");
+    params.push_back(de::toString(m_definition.frameSize.width));
+    params.push_back("--inputHeight");
+    params.push_back(de::toString(m_definition.frameSize.height));
+
+    params.push_back("--idrPeriod");
+    switch (m_definition.gop.gop)
+    {
+    case GOP_IDR_P_B:
+        params.push_back("30");
+        break;
+    default:
+        params.push_back("0");
+        break;
+    }
+
+    switch (m_definition.tiling.tiling)
+    {
+    case TILING_1x2:
+    {
+        uint32_t tileWidthInSbs, tileHeightInSbs;
+        if (m_definition.superblock.superblock)
+        {
+            tileWidthInSbs = static_cast<uint32_t>(
+                std::ceil((double)m_definition.frameSize.width / (double)m_definition.superblock.superblock));
+            tileHeightInSbs = static_cast<uint32_t>(
+                std::ceil((double)m_definition.frameSize.height / (double)m_definition.superblock.superblock));
+        }
+        else
+        {
+            TCU_THROW(NotSupportedError, "superblock should not be null");
+        }
+        params.push_back("--tiles");
+        params.push_back("--params");
+        params.push_back("0");
+        params.push_back("1");
+        params.push_back(std::to_string(tileWidthInSbs - 1));
+        params.push_back("2");
+        params.push_back(std::to_string((tileHeightInSbs / 2) - 1));
+        params.push_back(std::to_string((tileHeightInSbs - tileHeightInSbs / 2) - 1));
+        params.push_back("0");
+        break;
+    }
+    case TILING_4x4:
+        params.push_back("--tiles");
+        params.push_back("--params");
+        params.push_back("1");
+        params.push_back("4");
+        params.push_back("4");
+        params.push_back("0");
+        break;
+    default:
+        break;
+    }
+
+    params.push_back("--inputChromaSubsampling");
+    params.push_back(std::to_string(m_definition.subsampling.subsampling).c_str());
+
+    params.push_back("--inputBpp");
+    params.push_back(std::to_string(m_definition.bitDepth.depth));
+
+    params.push_back("--consecutiveBFrameCount");
+    params.push_back(de::toString(m_definition.gop.consecutiveBFrames));
+
+    params.push_back("--gopFrameCount");
+    params.push_back(de::toString(m_definition.gop.frameCount));
+
+    params.push_back("--qpI");
+    params.push_back(de::toString(m_definition.quantization.qIndex));
+
+    params.push_back("--qpP");
+    params.push_back(de::toString(m_definition.quantization.qIndex));
+
+    params.push_back("--qpB");
+    params.push_back(de::toString(m_definition.quantization.qIndex));
+
+    params.push_back("--rateControlMode");
+    params.push_back(de::toString(m_definition.rateControl.rc));
+
+    if (m_definition.loopFilter.lf == LF_ON)
+        params.push_back("--lf");
+
+    if (m_definition.loopRestore.lr == LR_ON)
+        params.push_back("--lr");
+
+    if (m_definition.loopRestore.lr == LR_ON)
+        params.push_back("--cdef");
+
+    switch (m_definition.dpbMode.mode)
+    {
+    case DPB_MODE_SEPARATE:
+        params.push_back("--dpbMode");
+        params.push_back("separate");
+        break;
+    case DPB_MODE_LAYERED:
+        params.push_back("--dpbMode");
+        params.push_back("layered");
+        break;
+    default:
+        break;
+    }
+
+    if (m_definition.ordering.order == UNORDERED)
+        params.push_back("--testOutOfOrderRecording");
+
+    if (m_definition.intraRefresh.mode != IR_OFF)
+    {
+        uint32_t intraRefreshCycleDuration = 0;
+        intraRefreshCycleDuration          = computeIntraRefreshCycleDuration();
+        DE_ASSERT(intraRefreshCycleDuration > 0);
+
+        switch (m_definition.intraRefresh.mode)
+        {
+        case IR_PICTURE_PARTITION:
+            params.push_back("--intraRefreshMode");
+            params.push_back("picpartition");
+            break;
+        case IR_ROW_BASED:
+            params.push_back("--intraRefreshMode");
+            params.push_back("blockrows");
+            break;
+        case IR_COLUMN_BASED:
+            params.push_back("--intraRefreshMode");
+            params.push_back("blockcolumns");
+            break;
+        case IR_ANY_BLOCK_BASED:
+            params.push_back("--intraRefreshMode");
+            params.push_back("blocks");
+            break;
+        default:
+            break;
+        }
+
+        params.push_back("--intraRefreshCycleDuration");
+        params.push_back(std::to_string(intraRefreshCycleDuration));
+    }
 }
 
 bool validateTestDefinition(const TestDefinition &testDef)
@@ -851,12 +965,16 @@ bool validateTestDefinition(const TestDefinition &testDef)
     if (testDef.frameSize.width == 7680 && testDef.frameSize.height == 4320 && (testDef.tiling.tiling == TILING_1x2))
         return false;
 
+    // Intra-refresh is only supported with P frames, not with B frames
+    if (testDef.intraRefresh.mode != IR_OFF && testDef.gop.gop != GOP_I_P)
+        return false;
+
     return true;
 }
 
 bool checkClipFileExists(const std::string &clipName)
 {
-    ifstream f(clipName.c_str());
+    std::ifstream f(clipName.c_str());
     return f.good();
 }
 
@@ -896,6 +1014,7 @@ void buildTestName(const TestDefinition &testDef, std::string &testName)
     addSubName(s, testDef.loopRestore.subName);
     addSubName(s, testDef.cdef.subName);
     addSubName(s, testDef.dpbMode.subName);
+    addSubName(s, testDef.intraRefresh.subName);
 
     testName = s.str();
     if (testName == "")
@@ -974,6 +1093,36 @@ void buildTestRequirements(const TestDefinition &testDef, TestRequirements &requ
     case BIT_DEPTH_12:
         requirements.colorDepth = tcu::UVec4(12, 12, 12, 0);
         break;
+    }
+
+    if (testDef.intraRefresh.mode != IR_OFF)
+    {
+        requirements.extensions.push_back("VK_KHR_video_encode_intra_refresh");
+        requirements.useIntraRefresh = true;
+
+        switch (testDef.intraRefresh.mode)
+        {
+        case IR_PICTURE_PARTITION:
+            requirements.intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR;
+            break;
+        case IR_ROW_BASED:
+            requirements.intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_ROW_BASED_BIT_KHR;
+            break;
+        case IR_COLUMN_BASED:
+            requirements.intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_COLUMN_BASED_BIT_KHR;
+            break;
+        case IR_ANY_BLOCK_BASED:
+            requirements.intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_BLOCK_BASED_BIT_KHR;
+            break;
+        default:
+            requirements.intraRefreshMode = 0;
+            break;
+        }
+    }
+    else
+    {
+        requirements.useIntraRefresh  = false;
+        requirements.intraRefreshMode = 0;
     }
 }
 
@@ -1078,6 +1227,14 @@ static const std::vector<DpbModeDef> dpbModeTests = {
     {DPB_MODE_LAYERED, "layered_dpb"},
 };
 
+static const std::vector<IntraRefreshDef> intraRefreshTests = {
+    {IR_OFF, ""},
+    {IR_PICTURE_PARTITION, "intra_refresh_picture_partition"},
+    {IR_ROW_BASED, "intra_refresh_row_based"},
+    {IR_COLUMN_BASED, "intra_refresh_column_based"},
+    {IR_ANY_BLOCK_BASED, "intra_refresh_any_block_based"},
+};
+
 tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
 {
     MovePtr<tcu::TestCaseGroup> av1group(new tcu::TestCaseGroup(testCtx, "av1", "AV1 video codec"));
@@ -1113,17 +1270,22 @@ tcu::TestCaseGroup *createVideoEncodeTestsAV1(tcu::TestContext &testCtx)
                                                 for (const auto &lrTest : lrTests)
                                                     for (const auto &cdefTest : cdefTests)
                                                         for (const auto &dpbModeTest : dpbModeTests)
-                                                        {
-                                                            TestDefinition testDef = {
-                                                                frameSizeTest,    bitDepthTest, subsamplingTest,
-                                                                gopTest,          orderingTest, resolutionChangeTest,
-                                                                quantizationTest, tilingTest,   superblockTest,
-                                                                rateControlTest,  lfTest,       lrTest,
-                                                                cdefTest,         dpbModeTest};
-                                                            auto testCase = createVideoEncodeTestAV1(testCtx, testDef);
-                                                            if (testCase != nullptr)
-                                                                gopGroup->addChild(testCase);
-                                                        }
+                                                            for (const auto &intraRefreshTest : intraRefreshTests)
+                                                            {
+                                                                TestDefinition testDef = {
+                                                                    frameSizeTest,    bitDepthTest,
+                                                                    subsamplingTest,  gopTest,
+                                                                    orderingTest,     resolutionChangeTest,
+                                                                    quantizationTest, tilingTest,
+                                                                    superblockTest,   rateControlTest,
+                                                                    lfTest,           lrTest,
+                                                                    cdefTest,         dpbModeTest,
+                                                                    intraRefreshTest};
+                                                                auto testCase =
+                                                                    createVideoEncodeTestAV1(testCtx, testDef);
+                                                                if (testCase != nullptr)
+                                                                    gopGroup->addChild(testCase);
+                                                            }
                     }
                     resGroup->addChild(gopGroup.release());
                 }

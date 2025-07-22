@@ -355,7 +355,7 @@ class AttachmentFeedbackLoopLayoutImageSamplingInstance : public ImageSamplingIn
 {
 public:
     AttachmentFeedbackLoopLayoutImageSamplingInstance(Context &context, ImageSamplingInstanceParams params,
-                                                      bool useImageAsColorOrDSAttachment_,
+                                                      bool useGeneralLayout_, bool useImageAsColorOrDSAttachment_,
                                                       bool useDifferentAreasSampleWrite_,
                                                       bool interleaveReadWriteComponents_,
                                                       ImageAspectTestMode imageAspectTestMode,
@@ -366,10 +366,11 @@ public:
     virtual tcu::TestStatus iterate(void) override;
 
 protected:
-    virtual tcu::TestStatus verifyImage(void) override;
+    virtual tcu::TestStatus verifyImage(const bool useGeneralLayout) override;
     virtual void setup(void) override;
 
     ImageSamplingInstanceParams m_params;
+    const bool m_useGeneralLayout;
     const bool m_useImageAsColorOrDSAttachment;
     const bool m_useDifferentAreasSampleWrite;
     const bool m_interleaveReadWriteComponents;
@@ -383,8 +384,8 @@ class AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance
 {
 public:
     AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(
-        Context &context, ImageSamplingInstanceParams params, bool useImageAsColorOrDSAttachment_,
-        bool useDifferentAreasSampleWrite_, bool interleaveReadWriteComponents_,
+        Context &context, ImageSamplingInstanceParams params, bool useGeneralLayout,
+        bool useImageAsColorOrDSAttachment_, bool useDifferentAreasSampleWrite_, bool interleaveReadWriteComponents_,
         ImageAspectTestMode imageAspectTestMode, PipelineStateMode pipelineStateMode, bool useMaintenance5_);
 
     virtual ~AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(void);
@@ -392,7 +393,7 @@ public:
     virtual tcu::TestStatus iterate(void) override;
 
 protected:
-    virtual tcu::TestStatus verifyImage(void) override;
+    virtual tcu::TestStatus verifyImage(const bool useGeneralLayout) override;
     virtual void setup(void) override;
 
     bool m_separateStencilUsage;
@@ -403,11 +404,12 @@ protected:
 };
 
 AttachmentFeedbackLoopLayoutImageSamplingInstance::AttachmentFeedbackLoopLayoutImageSamplingInstance(
-    Context &context, ImageSamplingInstanceParams params, bool useImageAsColorOrDSAttachment_,
+    Context &context, ImageSamplingInstanceParams params, bool useGeneralLayout_, bool useImageAsColorOrDSAttachment_,
     bool useDifferentAreasSampleWrite_, bool interleaveReadWriteComponents_, ImageAspectTestMode imageAspectTestMode,
     PipelineStateMode pipelineStateMode, bool useMaintenance5_)
     : ImageSamplingInstance(context, params)
     , m_params(params)
+    , m_useGeneralLayout(useGeneralLayout_)
     , m_useImageAsColorOrDSAttachment(useImageAsColorOrDSAttachment_)
     , m_useDifferentAreasSampleWrite(useDifferentAreasSampleWrite_)
     , m_interleaveReadWriteComponents(interleaveReadWriteComponents_)
@@ -433,6 +435,8 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
     tcu::UVec2 renderSize                         = m_useImageAsColorOrDSAttachment ?
                                                         tcu::UVec2({(unsigned)m_imageSize.x(), (unsigned)m_imageSize.y()}) :
                                                         m_renderSize;
+
+    const VkImageLayout layout = m_useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : m_imageLayout;
 
     DE_ASSERT(m_samplerParams.pNext == nullptr);
 
@@ -498,8 +502,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
                                         (*m_imageAllocs[imgNdx])->getOffset()));
 
             // Upload texture data
-            uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, **m_images[imgNdx],
-                              m_imageLayout);
+            uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, **m_images[imgNdx], layout);
 
             // Create image view and sampler
             const VkImageViewCreateInfo imageViewParams = {
@@ -548,11 +551,12 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         const VkSampler sampler = m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? VK_NULL_HANDLE : *m_sampler;
         std::vector<VkDescriptorImageInfo> descriptorImageInfo(m_imageCount);
+
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
             descriptorImageInfo[imgNdx].sampler     = sampler;                // VkSampler sampler;
             descriptorImageInfo[imgNdx].imageView   = **m_imageViews[imgNdx]; // VkImageView imageView;
-            descriptorImageInfo[imgNdx].imageLayout = m_imageLayout;          // VkImageLayout imageLayout;
+            descriptorImageInfo[imgNdx].imageLayout = layout;                 // VkImageLayout imageLayout;
         }
 
         DescriptorSetUpdateBuilder setUpdateBuilder;
@@ -561,7 +565,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
             const VkDescriptorImageInfo descriptorSamplerInfo = {
                 *m_sampler,     // VkSampler sampler;
                 VK_NULL_HANDLE, // VkImageView imageView;
-                m_imageLayout,  // VkImageLayout imageLayout;
+                layout,         // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &descriptorSamplerInfo);
@@ -644,8 +648,13 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         VkAttachmentLoadOp loadOp =
             m_useImageAsColorOrDSAttachment ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
-        VkImageLayout imageLayout =
-            m_useImageAsColorOrDSAttachment ? m_imageLayout : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        VkImageLayout imageLayout;
+        if (m_useGeneralLayout)
+            imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+        else if (m_useImageAsColorOrDSAttachment)
+            imageLayout = m_imageLayout;
+        else
+            imageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
 
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
@@ -854,14 +863,32 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         if (m_useMaintenance5)
             m_graphicsPipeline.setPipelineCreateFlags2(translateCreateFlag(m_params.pipelineCreateFlags));
 
+        VkFormat colorAttachmentFormat = m_colorFormat;
+        VkFormat dsAttachmentFormat    = m_useImageAsColorOrDSAttachment ? m_imageFormat : VK_FORMAT_UNDEFINED;
+
+        vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
+            nullptr,                                              // const void*        pNext
+            0u,                                                   // uint32_t            viewMask
+            1u,                                                   // uint32_t            colorAttachmentCount
+            &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
+            dsAttachmentFormat,                                   // VkFormat            depthAttachmentFormat
+            dsAttachmentFormat,                                   // VkFormat            stencilAttachmentFormat
+        };
+
+        PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfoPtr(
+            m_useGeneralLayout ? &pipelineRenderingCreateInfo : nullptr);
+
         m_graphicsPipeline.setDynamicState(&dynamicStateInfo)
             .setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
+            .setRenderingColorAttachmentsInfo(pipelineRenderingCreateInfoPtr)
             .setDefaultDepthStencilState()
             .setDefaultRasterizationState()
             .setDefaultMultisampleState()
             .setupVertexInputState(&vertexInputStateParams)
             .setupPreRasterizationShaderState(viewports, scissors, m_preRasterizationStatePipelineLayout, *m_renderPass,
-                                              0u, m_vertexShaderModule)
+                                              0u, m_vertexShaderModule, nullptr, {}, {}, {}, nullptr, nullptr,
+                                              pipelineRenderingCreateInfoPtr)
             .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
             .buildPipeline();
@@ -899,6 +926,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         VkFormat clearFormat = m_useImageAsColorOrDSAttachment ? m_imageFormat : m_colorFormat;
         const std::vector<VkClearValue> attachmentClearValues(m_imageCount, defaultClearValue(clearFormat));
 
+        std::vector<VkMemoryBarrier> preAttachmentMemoryBarriers(m_imageCount);
         std::vector<VkImageMemoryBarrier> preAttachmentBarriers(m_imageCount);
 
         VkAccessFlags dstAccessMask             = isDepthStencilFormat(m_imageFormat) ?
@@ -910,12 +938,17 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
+            preAttachmentMemoryBarriers[imgNdx].sType         = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+            preAttachmentMemoryBarriers[imgNdx].pNext         = nullptr;
+            preAttachmentMemoryBarriers[imgNdx].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
+            preAttachmentMemoryBarriers[imgNdx].dstAccessMask = dstAccessMask;
+
             preAttachmentBarriers[imgNdx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; // VkStructureType sType;
             preAttachmentBarriers[imgNdx].pNext = nullptr;                                // const void* pNext;
             preAttachmentBarriers[imgNdx].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // VkAccessFlags srcAccessMask;
             preAttachmentBarriers[imgNdx].dstAccessMask = dstAccessMask;                // VkAccessFlags dstAccessMask;
-            preAttachmentBarriers[imgNdx].oldLayout     = m_imageLayout;                // VkImageLayout oldLayout;
-            preAttachmentBarriers[imgNdx].newLayout     = m_imageLayout;                // VkImageLayout newLayout;
+            preAttachmentBarriers[imgNdx].oldLayout     = layout;                       // VkImageLayout oldLayout;
+            preAttachmentBarriers[imgNdx].newLayout     = layout;                       // VkImageLayout newLayout;
             preAttachmentBarriers[imgNdx].srcQueueFamilyIndex =
                 VK_QUEUE_FAMILY_IGNORED; // uint32_t srcQueueFamilyIndex;
             preAttachmentBarriers[imgNdx].dstQueueFamilyIndex =
@@ -928,10 +961,13 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
         vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, pipelineStageFlags, (VkDependencyFlags)0,
-                              0u, nullptr, 0u, nullptr, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
+                              m_useGeneralLayout ? (uint32_t)m_imageCount : 0u, &preAttachmentMemoryBarriers[0], 0u,
+                              nullptr, m_useGeneralLayout ? 0u : (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
 
         if (!m_useImageAsColorOrDSAttachment)
         {
+            const VkImageLayout attachmentLayout =
+                m_useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
             // Pipeline barrier for the color attachment, which is a different image than the sampled one.
             for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
             {
@@ -941,8 +977,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
                 preAttachmentBarriers[imgNdx].dstAccessMask =
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;                            // VkAccessFlags dstAccessMask;
                 preAttachmentBarriers[imgNdx].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // VkImageLayout oldLayout;
-                preAttachmentBarriers[imgNdx].newLayout =
-                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout newLayout;
+                preAttachmentBarriers[imgNdx].newLayout = attachmentLayout;          // VkImageLayout newLayout;
                 preAttachmentBarriers[imgNdx].srcQueueFamilyIndex =
                     VK_QUEUE_FAMILY_IGNORED; // uint32_t srcQueueFamilyIndex;
                 preAttachmentBarriers[imgNdx].dstQueueFamilyIndex =
@@ -989,12 +1024,12 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
 
 AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::
     AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance(
-        Context &context, ImageSamplingInstanceParams params, bool useImageAsColorOrDSAttachment_,
-        bool useDifferentAreasSampleWrite_, bool interleaveReadWriteComponents_,
+        Context &context, ImageSamplingInstanceParams params, bool useGeneralLayout,
+        bool useImageAsColorOrDSAttachment_, bool useDifferentAreasSampleWrite_, bool interleaveReadWriteComponents_,
         ImageAspectTestMode imageAspectTestMode, PipelineStateMode pipelineStateMode, bool useMaintenance5_)
-    : AttachmentFeedbackLoopLayoutImageSamplingInstance(context, params, useImageAsColorOrDSAttachment_,
-                                                        useDifferentAreasSampleWrite_, interleaveReadWriteComponents_,
-                                                        imageAspectTestMode, pipelineStateMode, useMaintenance5_)
+    : AttachmentFeedbackLoopLayoutImageSamplingInstance(
+          context, params, useGeneralLayout, useImageAsColorOrDSAttachment_, useDifferentAreasSampleWrite_,
+          interleaveReadWriteComponents_, imageAspectTestMode, pipelineStateMode, useMaintenance5_)
     , m_separateStencilUsage(params.separateStencilUsage)
 {
 }
@@ -1016,6 +1051,8 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         vk, vkDevice,
         getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
     tcu::UVec2 renderSize = tcu::UVec2({(unsigned)m_imageSize.x(), (unsigned)m_imageSize.y()});
+
+    const VkImageLayout layout = m_useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : m_imageLayout;
 
     DE_ASSERT(m_useImageAsColorOrDSAttachment && isDepthStencilFormat(m_imageFormat));
     DE_ASSERT(m_samplerParams.pNext == nullptr);
@@ -1082,8 +1119,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
                                         (*m_imageAllocs[imgNdx])->getOffset()));
 
             // Upload texture data
-            uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, **m_images[imgNdx],
-                              m_imageLayout);
+            uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, **m_images[imgNdx], layout);
         }
 
         for (int imgNdx = 0; imgNdx < numImageViews; ++imgNdx)
@@ -1147,7 +1183,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         {
             descriptorImageInfo[imgNdx].sampler     = sampler;                // VkSampler sampler;
             descriptorImageInfo[imgNdx].imageView   = **m_imageViews[imgNdx]; // VkImageView imageView;
-            descriptorImageInfo[imgNdx].imageLayout = m_imageLayout;          // VkImageLayout imageLayout;
+            descriptorImageInfo[imgNdx].imageLayout = layout;                 // VkImageLayout imageLayout;
         }
 
         DescriptorSetUpdateBuilder setUpdateBuilder;
@@ -1156,7 +1192,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             const VkDescriptorImageInfo descriptorSamplerInfo = {
                 *m_sampler,     // VkSampler sampler;
                 VK_NULL_HANDLE, // VkImageView imageView;
-                m_imageLayout,  // VkImageLayout imageLayout;
+                layout,         // VkImageLayout imageLayout;
             };
             setUpdateBuilder.writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0),
                                          VK_DESCRIPTOR_TYPE_SAMPLER, &descriptorSamplerInfo);
@@ -1199,12 +1235,12 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             attachmentDescriptions[imgNdx].stencilLoadOp =
                 VK_ATTACHMENT_LOAD_OP_LOAD; // VkAttachmentLoadOp stencilLoadOp;
             attachmentDescriptions[imgNdx].stencilStoreOp =
-                VK_ATTACHMENT_STORE_OP_STORE;                             // VkAttachmentStoreOp stencilStoreOp;
-            attachmentDescriptions[imgNdx].initialLayout = m_imageLayout; // VkImageLayout initialLayout;
-            attachmentDescriptions[imgNdx].finalLayout   = m_imageLayout; // VkImageLayout finalLayout;
+                VK_ATTACHMENT_STORE_OP_STORE;                      // VkAttachmentStoreOp stencilStoreOp;
+            attachmentDescriptions[imgNdx].initialLayout = layout; // VkImageLayout initialLayout;
+            attachmentDescriptions[imgNdx].finalLayout   = layout; // VkImageLayout finalLayout;
 
             attachmentReferences[imgNdx].attachment = (uint32_t)imgNdx; // uint32_t attachment;
-            attachmentReferences[imgNdx].layout     = m_imageLayout;    // VkImageLayout layout;
+            attachmentReferences[imgNdx].layout     = layout;           // VkImageLayout layout;
         }
 
         const VkSubpassDescription subpassDescription = {
@@ -1244,6 +1280,12 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             subpassDependencies.push_back(spdVal);
         }
 
+        const VkAttachmentFeedbackLoopInfoEXT attachmentFeedbackLoopInfo = {
+            VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT, // VkStructureType sType;
+            nullptr,                                             // const void* pNext;
+            VK_TRUE,                                             // VkBool32 feedbackLoopEnable;
+        };
+
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         // VkStructureType sType;
             nullptr,                                           // const void* pNext;
@@ -1256,7 +1298,14 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             de::dataOrNull(subpassDependencies),               // const VkSubpassDependency* pDependencies;
         };
 
-        m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
+        if (m_useGeneralLayout)
+        {
+            m_renderPass = RenderPassWrapper(vk, vkDevice, &renderPassParams, &attachmentFeedbackLoopInfo);
+        }
+        else
+        {
+            m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
+        }
     }
 
     // Create framebuffer
@@ -1384,15 +1433,27 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             colorBlendAttachmentStates[imgNdx].colorWriteMask = 0u; // VkColorComponentFlags colorWriteMask;
         }
 
+        const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+            VK_FALSE,                            // VkBool32				    blendEnable;
+            VK_BLEND_FACTOR_SRC_ALPHA,           // VkBlendFactor			srcColorBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstColorBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp				colorBlendOp;
+            VK_BLEND_FACTOR_SRC_ALPHA,           // VkBlendFactor			srcAlphaBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstAlphaBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp				alphaBlendOp;
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT // VkColorComponentFlags	colorWriteMask;
+        };
+
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
             nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
-            0u,                                                       // uint32_t attachmentCount;
-            nullptr,                 // const VkPipelineColorBlendAttachmentState* pAttachments;
-            {0.0f, 0.0f, 0.0f, 0.0f} // float blendConstants[4];
+            1u,                                                       // uint32_t attachmentCount;
+            &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState* pAttachments;
+            {0.0f, 0.0f, 0.0f, 0.0f}    // float blendConstants[4];
         };
 
         VkBool32 depthTestEnable =
@@ -1440,14 +1501,39 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
         if (m_useMaintenance5)
             m_graphicsPipeline.setPipelineCreateFlags2(translateCreateFlag(m_params.pipelineCreateFlags));
 
+        VkFormat colorAttachmentFormat = m_colorFormat;
+        VkFormat depthAttachmentFormat =
+            (m_useImageAsColorOrDSAttachment && tcu::hasDepthComponent(mapVkFormat(m_imageFormat).order)) ?
+                m_imageFormat :
+                VK_FORMAT_UNDEFINED;
+        VkFormat stencilAttachmentFormat =
+            (m_useImageAsColorOrDSAttachment && tcu::hasStencilComponent(mapVkFormat(m_imageFormat).order)) ?
+                m_imageFormat :
+                VK_FORMAT_UNDEFINED;
+
+        vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
+            nullptr,                                              // const void*        pNext
+            0u,                                                   // uint32_t            viewMask
+            1u,                                                   // uint32_t            colorAttachmentCount
+            &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
+            depthAttachmentFormat,                                // VkFormat            depthAttachmentFormat
+            stencilAttachmentFormat,                              // VkFormat            stencilAttachmentFormat
+        };
+
+        PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfoPtr(
+            m_useGeneralLayout ? &pipelineRenderingCreateInfo : nullptr);
+
         m_graphicsPipeline.setDynamicState(&dynamicStateInfo)
             .setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
+            .setRenderingColorAttachmentsInfo(pipelineRenderingCreateInfoPtr)
             .setDefaultDepthStencilState()
             .setDefaultRasterizationState()
             .setDefaultMultisampleState()
             .setupVertexInputState(&vertexInputStateParams)
             .setupPreRasterizationShaderState(viewports, scissors, m_preRasterizationStatePipelineLayout, *m_renderPass,
-                                              0u, m_vertexShaderModule)
+                                              0u, m_vertexShaderModule, nullptr, {}, {}, {}, nullptr, nullptr,
+                                              pipelineRenderingCreateInfoPtr)
             .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule,
                                       &depthStencilStateCreateInfo)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
@@ -1492,9 +1578,9 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             preAttachmentBarriers[imgNdx].srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT; // VkAccessFlags srcAccessMask;
             preAttachmentBarriers[imgNdx].dstAccessMask =
                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
-                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;        // VkAccessFlags dstAccessMask;
-            preAttachmentBarriers[imgNdx].oldLayout = m_imageLayout; // VkImageLayout oldLayout;
-            preAttachmentBarriers[imgNdx].newLayout = m_imageLayout; // VkImageLayout newLayout;
+                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT; // VkAccessFlags dstAccessMask;
+            preAttachmentBarriers[imgNdx].oldLayout = layout; // VkImageLayout oldLayout;
+            preAttachmentBarriers[imgNdx].newLayout = layout; // VkImageLayout newLayout;
             preAttachmentBarriers[imgNdx].srcQueueFamilyIndex =
                 VK_QUEUE_FAMILY_IGNORED; // uint32_t srcQueueFamilyIndex;
             preAttachmentBarriers[imgNdx].dstQueueFamilyIndex =
@@ -1535,7 +1621,7 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
     }
 }
 
-tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::verifyImage(void)
+tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::verifyImage(const bool useGeneralLayout)
 {
     const tcu::TextureFormat tcuFormat = getSizeCompatibleTcuTextureFormat(m_imageFormat);
     const bool isDepth =
@@ -1546,7 +1632,7 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::v
         (m_interleaveReadWriteComponents && (m_subresourceRange.aspectMask & VK_IMAGE_ASPECT_DEPTH_BIT));
     // ImageSamplingInstance::verifyImage() doesn't support stencil sampling.
     if (!m_useImageAsColorOrDSAttachment && !isStencil)
-        return ImageSamplingInstance::verifyImage();
+        return ImageSamplingInstance::verifyImage(useGeneralLayout);
 
     const tcu::Vec4 fThreshold(0.005f);
     const tcu::UVec4 uThreshold(
@@ -1607,6 +1693,8 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::v
                 }
             }
 
+    const VkImageLayout layout =
+        m_useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT;
     for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
     {
         if (isDepth)
@@ -1615,7 +1703,7 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::v
             de::MovePtr<tcu::TextureLevel> resultTexture(readDepthAttachment(
                 m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
                 m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), **m_dsImages[imgNdx],
-                m_imageFormat, renderSize, VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT));
+                m_imageFormat, renderSize, layout));
 
             const tcu::ConstPixelBufferAccess result      = resultTexture->getAccess();
             const tcu::Sampler::DepthStencilMode mode     = tcu::Sampler::MODE_DEPTH;
@@ -1645,7 +1733,7 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::v
             de::MovePtr<tcu::TextureLevel> resultTexture(readStencilAttachment(
                 m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
                 m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), **m_dsImages[imgNdx],
-                m_imageFormat, renderSize, VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT));
+                m_imageFormat, renderSize, layout));
 
             const tcu::ConstPixelBufferAccess result        = resultTexture->getAccess();
             const tcu::Sampler::DepthStencilMode mode       = tcu::Sampler::MODE_STENCIL;
@@ -1682,13 +1770,13 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::i
     setup();
     submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-    return verifyImage();
+    return verifyImage(m_useGeneralLayout);
 }
 
-tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::verifyImage(void)
+tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::verifyImage(const bool useGeneralLayout)
 {
     if (!m_useImageAsColorOrDSAttachment)
-        return ImageSamplingInstance::verifyImage();
+        return ImageSamplingInstance::verifyImage(useGeneralLayout);
 
     const tcu::Vec4 fThreshold(0.01f);
     const tcu::UVec4 uThreshold(1u);
@@ -1735,7 +1823,8 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::verifyImage(v
         de::MovePtr<tcu::TextureLevel> resultTexture(readColorAttachment(
             m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
             m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), **m_colorImages[imgNdx],
-            m_colorFormat, renderSize, vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT));
+            m_colorFormat, renderSize,
+            m_useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT));
         const tcu::ConstPixelBufferAccess result = resultTexture->getAccess();
         const bool isIntegerFormat               = isUintFormat(m_imageFormat) || isIntFormat(m_imageFormat);
 
@@ -1771,7 +1860,7 @@ tcu::TestStatus AttachmentFeedbackLoopLayoutImageSamplingInstance::iterate(void)
     setup();
     submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-    return verifyImage();
+    return verifyImage(m_useGeneralLayout);
 }
 
 class AttachmentFeedbackLoopLayoutSamplerTest : public vkt::TestCase
@@ -1779,10 +1868,11 @@ class AttachmentFeedbackLoopLayoutSamplerTest : public vkt::TestCase
 public:
     AttachmentFeedbackLoopLayoutSamplerTest(tcu::TestContext &testContext,
                                             vk::PipelineConstructionType pipelineConstructionType, const char *name,
-                                            SamplerViewType imageViewType, VkFormat imageFormat, int imageSize,
-                                            VkDescriptorType imageDescriptorType, float samplerLod, TestMode testMode,
-                                            ImageAspectTestMode imageAspectTestMode, bool interleaveReadWriteComponents,
-                                            PipelineStateMode pipelineStateMode, bool useMaintenance5);
+                                            SamplerViewType imageViewType, VkFormat imageFormat, bool useGeneralLayout,
+                                            int imageSize, VkDescriptorType imageDescriptorType, float samplerLod,
+                                            TestMode testMode, ImageAspectTestMode imageAspectTestMode,
+                                            bool interleaveReadWriteComponents, PipelineStateMode pipelineStateMode,
+                                            bool useMaintenance5);
     virtual ~AttachmentFeedbackLoopLayoutSamplerTest(void)
     {
     }
@@ -1814,6 +1904,7 @@ protected:
     vk::PipelineConstructionType m_pipelineConstructionType;
     SamplerViewType m_imageViewType;
     VkFormat m_imageFormat;
+    bool m_useGeneralLayout;
     int m_imageSize;
     VkDescriptorType m_imageDescriptorType;
     float m_samplerLod;
@@ -1828,13 +1919,14 @@ protected:
 
 AttachmentFeedbackLoopLayoutSamplerTest::AttachmentFeedbackLoopLayoutSamplerTest(
     tcu::TestContext &testContext, vk::PipelineConstructionType pipelineConstructionType, const char *name,
-    SamplerViewType imageViewType, VkFormat imageFormat, int imageSize, VkDescriptorType imageDescriptorType,
-    float samplerLod, TestMode testMode, ImageAspectTestMode imageAspectTestMode, bool interleaveReadWriteComponents,
-    PipelineStateMode pipelineStateMode, bool useMaintenance5)
+    SamplerViewType imageViewType, VkFormat imageFormat, bool useGeneralLayout, int imageSize,
+    VkDescriptorType imageDescriptorType, float samplerLod, TestMode testMode, ImageAspectTestMode imageAspectTestMode,
+    bool interleaveReadWriteComponents, PipelineStateMode pipelineStateMode, bool useMaintenance5)
     : vkt::TestCase(testContext, name)
     , m_pipelineConstructionType(pipelineConstructionType)
     , m_imageViewType(imageViewType)
     , m_imageFormat(imageFormat)
+    , m_useGeneralLayout(useGeneralLayout)
     , m_imageSize(imageSize)
     , m_imageDescriptorType(imageDescriptorType)
     , m_samplerLod(samplerLod)
@@ -1935,6 +2027,9 @@ void AttachmentFeedbackLoopLayoutSamplerTest::checkSupport(Context &context) con
             (m_interleaveReadWriteComponents && m_imageAspectTestMode == IMAGE_ASPECT_TEST_DEPTH))
             context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
     }
+
+    if (m_useGeneralLayout)
+        context.requireDeviceFunctionality("VK_KHR_unified_image_layouts");
 }
 
 std::string AttachmentFeedbackLoopLayoutSamplerTest::getGlslTextureType(const tcu::TextureFormat &format,
@@ -2222,14 +2317,14 @@ TestInstance *AttachmentFeedbackLoopLayoutSamplerTest::createInstance(Context &c
             context,
             getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType,
                                            m_samplerLod),
-            useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite, m_interleaveReadWriteComponents,
-            m_imageAspectTestMode, m_pipelineStateMode, m_useMaintenance5);
+            m_useGeneralLayout, useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite,
+            m_interleaveReadWriteComponents, m_imageAspectTestMode, m_pipelineStateMode, m_useMaintenance5);
     return new AttachmentFeedbackLoopLayoutImageSamplingInstance(
         context,
         getImageSamplingInstanceParams(m_imageViewType, m_imageFormat, m_imageSize, m_imageDescriptorType,
                                        m_samplerLod),
-        useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite, m_interleaveReadWriteComponents,
-        m_imageAspectTestMode, m_pipelineStateMode, m_useMaintenance5);
+        m_useGeneralLayout, useImageAsColorOrDSAttachment, useDifferentAreasSampleWrite,
+        m_interleaveReadWriteComponents, m_imageAspectTestMode, m_pipelineStateMode, m_useMaintenance5);
 }
 
 tcu::UVec2 AttachmentFeedbackLoopLayoutSamplerTest::getRenderSize(SamplerViewType viewType) const
@@ -3070,6 +3165,15 @@ tcu::TestCaseGroup *createAttachmentFeedbackLoopLayoutSamplerTests(
     // TODO: implement layer rendering with a geometry shader to render to arrays, 3D and cube images.
     const struct
     {
+        const char *name;
+        const bool useGeneralLayout;
+    } imageLayouts[] = {
+        {"attachment_feedback_loop_optimal", false},
+        {"general", true},
+    };
+
+    const struct
+    {
         SamplerViewType type;
         const char *name;
         bool readOnly;
@@ -3129,121 +3233,133 @@ tcu::TestCaseGroup *createAttachmentFeedbackLoopLayoutSamplerTests(
         {PipelineStateMode::DYNAMIC_WITH_CONTRADICTORY_STATIC, "_dynamic_bad_static"},
     };
 
-    for (int imageDescriptorTypeNdx = 0; imageDescriptorTypeNdx < DE_LENGTH_OF_ARRAY(imageDescriptorTypes);
-         imageDescriptorTypeNdx++)
+    for (int imageLayoutNdx = 0; imageLayoutNdx < DE_LENGTH_OF_ARRAY(imageLayouts); imageLayoutNdx++)
     {
-        VkDescriptorType imageDescriptorType = imageDescriptorTypes[imageDescriptorTypeNdx].type;
-        TestCaseGroupPtr imageDescriptorTypeGroup(
-            new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name));
-        TestCaseGroupPtr imageTypeTests(new tcu::TestCaseGroup(testCtx, "image_type"));
-
-        for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
+        TestCaseGroupPtr imageLayoutGroup(new tcu::TestCaseGroup(testCtx, imageLayouts[imageLayoutNdx].name));
+        for (int imageDescriptorTypeNdx = 0; imageDescriptorTypeNdx < DE_LENGTH_OF_ARRAY(imageDescriptorTypes);
+             imageDescriptorTypeNdx++)
         {
-            const SamplerViewType viewType = imageViewTypes[viewTypeNdx].type;
-            TestCaseGroupPtr viewTypeGroup(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
-            TestCaseGroupPtr formatTests(new tcu::TestCaseGroup(testCtx, "format"));
+            VkDescriptorType imageDescriptorType = imageDescriptorTypes[imageDescriptorTypeNdx].type;
+            TestCaseGroupPtr imageDescriptorTypeGroup(
+                new tcu::TestCaseGroup(testCtx, imageDescriptorTypes[imageDescriptorTypeNdx].name));
+            TestCaseGroupPtr imageTypeTests(new tcu::TestCaseGroup(testCtx, "image_type"));
 
-            for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
+            for (int viewTypeNdx = 0; viewTypeNdx < DE_LENGTH_OF_ARRAY(imageViewTypes); viewTypeNdx++)
             {
-                const VkFormat format     = formats[formatNdx];
-                const bool isCompressed   = isCompressedFormat(format);
-                const bool isDepthStencil = !isCompressed && tcu::hasDepthComponent(mapVkFormat(format).order) &&
-                                            tcu::hasStencilComponent(mapVkFormat(format).order);
-                ImageAspectTestMode imageAspectTestMode = getImageAspectTestMode(format);
+                const SamplerViewType viewType = imageViewTypes[viewTypeNdx].type;
+                TestCaseGroupPtr viewTypeGroup(new tcu::TestCaseGroup(testCtx, imageViewTypes[viewTypeNdx].name));
+                TestCaseGroupPtr formatTests(new tcu::TestCaseGroup(testCtx, "format"));
 
-                if (isCompressed)
+                for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); formatNdx++)
                 {
-                    // Do not use compressed formats with 1D and 1D array textures.
-                    if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
-                        break;
-                }
+                    const VkFormat format     = formats[formatNdx];
+                    const bool isCompressed   = isCompressedFormat(format);
+                    const bool isDepthStencil = !isCompressed && tcu::hasDepthComponent(mapVkFormat(format).order) &&
+                                                tcu::hasStencilComponent(mapVkFormat(format).order);
+                    ImageAspectTestMode imageAspectTestMode = getImageAspectTestMode(format);
 
-                for (int testModeNdx = 0; testModeNdx < DE_LENGTH_OF_ARRAY(testModes); testModeNdx++)
-                {
-                    if (imageViewTypes[viewTypeNdx].readOnly && testModes[testModeNdx].mode != TEST_MODE_READ_ONLY)
-                        continue;
-
-                    for (int restrictColorNdx = 0;
-                         restrictColorNdx < DE_LENGTH_OF_ARRAY(interleaveReadWriteComponentsModes); restrictColorNdx++)
+                    if (isCompressed)
                     {
-                        // Limit the interleaveReadWriteComponents test to the ones sampling and writing to the same pixel, to avoid having more tests that are not really adding coverage.
-                        if (interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents &&
-                            testModes[testModeNdx].mode != TEST_MODE_READ_WRITE_SAME_PIXEL)
+                        // Do not use compressed formats with 1D and 1D array textures.
+                        if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
+                            break;
+                    }
+
+                    for (int testModeNdx = 0; testModeNdx < DE_LENGTH_OF_ARRAY(testModes); testModeNdx++)
+                    {
+                        if (imageViewTypes[viewTypeNdx].readOnly && testModes[testModeNdx].mode != TEST_MODE_READ_ONLY)
                             continue;
 
-                        // If the format is depth-only or stencil-only, do not read one component and write it to the other, as it is missing.
-                        if (interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents &&
-                            (tcu::hasDepthComponent(mapVkFormat(format).order) ||
-                             tcu::hasStencilComponent(mapVkFormat(format).order)) &&
-                            !isDepthStencil)
-                            continue;
-
-                        for (const auto &pipelineStateMode : pipelineStateModes)
+                        for (int restrictColorNdx = 0;
+                             restrictColorNdx < DE_LENGTH_OF_ARRAY(interleaveReadWriteComponentsModes);
+                             restrictColorNdx++)
                         {
-                            // In shader object variants of the tests there's no static part, so the
-                            // DYNAMIC_WITH_CONTRADICTORY_STATIC variants serve no purpose. We could keep just one of the variants,
-                            // but we run both a static and a dynamic one because the command sequence is not exactly the same in
-                            // both cases, and the flags used in vkCmdSetAttachmentFeedbackLoopEnableEXT also differ slightly.
-                            //
-                            // The static variant allows us to check a different sequence and that the code in the pipeline
-                            // construction utils is working correctly.
-                            //
-                            // The dynamic variant sets the state later explicitly (see above) and uses more specific aspect flags.
-                            //
-                            if (pipelineStateMode.pipelineStateMode ==
-                                    PipelineStateMode::DYNAMIC_WITH_CONTRADICTORY_STATIC &&
-                                isConstructionTypeShaderObject(pipelineConstructionType))
+                            // Limit the interleaveReadWriteComponents test to the ones sampling and writing to the same pixel, to avoid having more tests that are not really adding coverage.
+                            if (interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents &&
+                                testModes[testModeNdx].mode != TEST_MODE_READ_WRITE_SAME_PIXEL)
                                 continue;
 
-                            std::string name = getFormatCaseName(format) + imageAspectTestModes[imageAspectTestMode] +
-                                               testModes[testModeNdx].name +
-                                               interleaveReadWriteComponentsModes[restrictColorNdx].name +
-                                               pipelineStateMode.suffix;
-                            formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(
-                                testCtx, pipelineConstructionType, name.c_str(), viewType, format, outputImageSize,
-                                imageDescriptorType, 0.0f, testModes[testModeNdx].mode, imageAspectTestMode,
-                                interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents,
-                                pipelineStateMode.pipelineStateMode, false));
+                            // If the format is depth-only or stencil-only, do not read one component and write it to the other, as it is missing.
+                            if (interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents &&
+                                (tcu::hasDepthComponent(mapVkFormat(format).order) ||
+                                 tcu::hasStencilComponent(mapVkFormat(format).order)) &&
+                                !isDepthStencil)
+                                continue;
 
-                            if (!isCompressed && isDepthStencil)
+                            for (const auto &pipelineStateMode : pipelineStateModes)
                             {
-                                // Image is depth-stencil. Add the stencil case as well.
-                                std::string stencilTestName =
-                                    getFormatCaseName(format) + imageAspectTestModes[IMAGE_ASPECT_TEST_STENCIL] +
-                                    testModes[testModeNdx].name +
-                                    interleaveReadWriteComponentsModes[restrictColorNdx].name +
-                                    pipelineStateMode.suffix;
+                                // In shader object variants of the tests there's no static part, so the
+                                // DYNAMIC_WITH_CONTRADICTORY_STATIC variants serve no purpose. We could keep just one of the variants,
+                                // but we run both a static and a dynamic one because the command sequence is not exactly the same in
+                                // both cases, and the flags used in vkCmdSetAttachmentFeedbackLoopEnableEXT also differ slightly.
+                                //
+                                // The static variant allows us to check a different sequence and that the code in the pipeline
+                                // construction utils is working correctly.
+                                //
+                                // The dynamic variant sets the state later explicitly (see above) and uses more specific aspect flags.
+                                //
+                                if (pipelineStateMode.pipelineStateMode ==
+                                        PipelineStateMode::DYNAMIC_WITH_CONTRADICTORY_STATIC &&
+                                    isConstructionTypeShaderObject(pipelineConstructionType))
+                                    continue;
+
+                                std::string name = getFormatCaseName(format) +
+                                                   imageAspectTestModes[imageAspectTestMode] +
+                                                   testModes[testModeNdx].name +
+                                                   interleaveReadWriteComponentsModes[restrictColorNdx].name +
+                                                   pipelineStateMode.suffix;
                                 formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(
-                                    testCtx, pipelineConstructionType, stencilTestName.c_str(), viewType, format,
-                                    outputImageSize, imageDescriptorType, 0.0f, testModes[testModeNdx].mode,
-                                    IMAGE_ASPECT_TEST_STENCIL,
+                                    testCtx, pipelineConstructionType, name.c_str(), viewType, format,
+                                    imageLayouts[imageLayoutNdx].useGeneralLayout, outputImageSize, imageDescriptorType,
+                                    0.0f, testModes[testModeNdx].mode, imageAspectTestMode,
                                     interleaveReadWriteComponentsModes[restrictColorNdx].interleaveReadWriteComponents,
                                     pipelineStateMode.pipelineStateMode, false));
+
+                                if (!isCompressed && isDepthStencil)
+                                {
+                                    // Image is depth-stencil. Add the stencil case as well.
+                                    std::string stencilTestName =
+                                        getFormatCaseName(format) + imageAspectTestModes[IMAGE_ASPECT_TEST_STENCIL] +
+                                        testModes[testModeNdx].name +
+                                        interleaveReadWriteComponentsModes[restrictColorNdx].name +
+                                        pipelineStateMode.suffix;
+                                    formatTests->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(
+                                        testCtx, pipelineConstructionType, stencilTestName.c_str(), viewType, format,
+                                        imageLayouts[imageLayoutNdx].useGeneralLayout, outputImageSize,
+                                        imageDescriptorType, 0.0f, testModes[testModeNdx].mode,
+                                        IMAGE_ASPECT_TEST_STENCIL,
+                                        interleaveReadWriteComponentsModes[restrictColorNdx]
+                                            .interleaveReadWriteComponents,
+                                        pipelineStateMode.pipelineStateMode, false));
+                                }
                             }
                         }
                     }
                 }
+
+                viewTypeGroup->addChild(formatTests.release());
+                imageTypeTests->addChild(viewTypeGroup.release());
             }
-
-            viewTypeGroup->addChild(formatTests.release());
-            imageTypeTests->addChild(viewTypeGroup.release());
+            imageDescriptorTypeGroup->addChild(imageTypeTests.release());
+            imageLayoutGroup->addChild(imageDescriptorTypeGroup.release());
         }
-        imageDescriptorTypeGroup->addChild(imageTypeTests.release());
-        samplingTypeTests->addChild(imageDescriptorTypeGroup.release());
-    }
 
-    if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-    {
-        TestCaseGroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
-        miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(
-            testCtx, pipelineConstructionType, "maintenance5_color_attachment", VK_IMAGE_VIEW_TYPE_2D,
-            VK_FORMAT_R8G8B8A8_UNORM, outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY,
-            IMAGE_ASPECT_TEST_COLOR, false, PipelineStateMode::STATIC, true));
-        miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(
-            testCtx, pipelineConstructionType, "maintenance5_ds_attachment", VK_IMAGE_VIEW_TYPE_2D, VK_FORMAT_D16_UNORM,
-            outputImageSize, VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH,
-            false, PipelineStateMode::STATIC, true));
-        samplingTypeTests->addChild(miscGroup.release());
+        if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+        {
+            TestCaseGroupPtr miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+            miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(
+                testCtx, pipelineConstructionType, "maintenance5_color_attachment", VK_IMAGE_VIEW_TYPE_2D,
+                VK_FORMAT_R8G8B8A8_UNORM, imageLayouts[imageLayoutNdx].useGeneralLayout, outputImageSize,
+                VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_COLOR, false,
+                PipelineStateMode::STATIC, true));
+            miscGroup->addChild(new AttachmentFeedbackLoopLayoutSamplerTest(
+                testCtx, pipelineConstructionType, "maintenance5_ds_attachment", VK_IMAGE_VIEW_TYPE_2D,
+                VK_FORMAT_D16_UNORM, imageLayouts[imageLayoutNdx].useGeneralLayout, outputImageSize,
+                VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, 0.0f, TEST_MODE_READ_ONLY, IMAGE_ASPECT_TEST_DEPTH, false,
+                PipelineStateMode::STATIC, true));
+            imageLayoutGroup->addChild(miscGroup.release());
+        }
+        samplingTypeTests->addChild(imageLayoutGroup.release());
     }
 
     return samplingTypeTests.release();
