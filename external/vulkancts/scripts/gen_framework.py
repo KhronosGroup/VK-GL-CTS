@@ -3444,112 +3444,6 @@ def constructPromotionCheckerFunString(defs, FeatureOrProperty):
              "\t\treturn {};\n"
              "\treturn it->second;\n}")
 
-def writeFeaturesVariant(dfDefs, filename):
-    types = []
-
-    extendVariant = \
-        "template<class Variant, class... Types> struct extend_variant;\n" \
-        "template<class... X, class... Types>\n" \
-        "    struct extend_variant<std::variant<X...>, Types...> {\n" \
-        "        typedef std::variant<X..., Types...> type;\n" \
-        "};"
-
-    variantIndex = \
-        "template <class X, class Variant> struct variant_index;\n" \
-        "template <class X, class... Types> struct variant_index<X, std::variant<X, Types...>>\n" \
-        "    : std::integral_constant<std::size_t, 0> { };\n" \
-        "template <class X, class Y, class... Types> struct variant_index<X, std::variant<Y, Types...>>\n" \
-        "    : std::integral_constant<std::size_t, 1 + variant_index<X, std::variant<Types...>>::value> { };\n" \
-        "template <class X> struct variant_index<X, std::variant<>> : std::integral_constant<std::size_t, 0> { };\n" \
-        "template <typename X, typename Variant>\n" \
-        "    constexpr std::size_t variant_index_v = variant_index<X, Variant>::value;"
-
-    feature2sType = []
-    f2st0 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceFeatures> = VK_STRUCTURE_TYPE_MAX_ENUM;"
-    f2st1 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceFeatures2> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n" \
-            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan11Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;"
-    f2st2 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan12Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;"
-    f2st3 = "#if defined(VK_API_VERSION_1_3) && !defined(CTS_USES_VULKANSC)\n" \
-            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan13Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;\n" \
-            "#endif"
-    f2st4 = "#if defined(VK_API_VERSION_1_4) && !defined(CTS_USES_VULKANSC)\n" \
-            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan14Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;\n" \
-            "#endif"
-    f2stsc10 = "#ifdef CTS_USES_VULKANSC\n" \
-               "template <> inline constexpr VkStructureType feature2sType<VkFaultCallbackInfo> = VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO;\n" \
-               "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkanSC10Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES;\n" \
-               "template <> inline constexpr VkStructureType feature2sType<VkDeviceObjectReservationCreateInfo> = VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO;\n" \
-               "#endif"
-
-    feature2sType.append("template <class> VkStructureType feature2sType;")
-    feature2sType.append(f2st0)
-    feature2sType.append(f2st1)
-    feature2sType.append(f2st2)
-    feature2sType.append(f2st3)
-    feature2sType.append(f2st4)
-    feature2sType.append(f2stsc10)
-
-    getFeatureSType = \
-        "template <class X> VkStructureType getFeatureSType() {\n" \
-        "if constexpr (variant_index_v<X, ImplementedFeaturesVariant> < std::variant_size_v<ImplementedFeaturesVariant>)\n" \
-        "    return vk::makeFeatureDesc<X>().sType;\n" \
-        "else\n" \
-        "    return feature2sType<X>;\n" \
-        "}"
-
-    hasPnextOfVoidPtr = \
-        "template<class, class = void>\n" \
-        "    struct hasPnextOfVoidPtr : std::false_type {};\n" \
-        "template<class X>\n" \
-        "    struct hasPnextOfVoidPtr<X, std::void_t<decltype(std::declval<X>().pNext)>>\n" \
-        "        : std::integral_constant<bool,\n" \
-        "              std::is_same<decltype(std::declval<X>().pNext), void*>::value ||\n" \
-        "              std::is_same<decltype(std::declval<X>().pNext), const void*>::value> {};"
-
-    implementedVariantBegin = "typedef std::variant<"
-    for idx, (sType, sVerSuffix, sExtSuffix, extStruct, _, extNameDef, specVersionDef) in enumerate(dfDefs):
-        types.append("    {0}{1}".format((", " if idx else ""), extStruct))
-    implementedVariantEnd = "> ImplementedFeaturesVariant;"
-    v10 = "    VkPhysicalDeviceFeatures"
-    v11 = "#ifdef VK_API_VERSION_1_1\n" \
-          "    , VkPhysicalDeviceFeatures2\n" \
-          "    , VkPhysicalDeviceVulkan11Features\n" \
-          "#endif"
-    v12 = "#ifdef VK_API_VERSION_1_2\n" \
-          "    , VkPhysicalDeviceVulkan12Features\n" \
-          "#endif"
-    v13 = "#if defined(VK_API_VERSION_1_3) && !defined(CTS_USES_VULKANSC)\n" \
-          "    , VkPhysicalDeviceVulkan13Features\n" \
-          "#endif"
-    v14 = "#if defined(VK_API_VERSION_1_4) && !defined(CTS_USES_VULKANSC)\n" \
-          "    , VkPhysicalDeviceVulkan14Features\n" \
-          "#endif"
-    vsc10 = "#ifdef CTS_USES_VULKANSC\n" \
-            "    , VkFaultCallbackInfo\n" \
-            "    , VkPhysicalDeviceVulkanSC10Features\n" \
-            "    , VkDeviceObjectReservationCreateInfo\n" \
-            "#endif"
-    fullVariant = []
-    fullVariant.append("typedef typename extend_variant<ImplementedFeaturesVariant,")
-    fullVariant.append(v10)
-    fullVariant.append(v11)
-    fullVariant.append(v12)
-    fullVariant.append(v13)
-    fullVariant.append(v14)
-    fullVariant.append(vsc10)
-    fullVariant.append(">::type FullFeaturesVariant;")
-    stream = []
-    stream.append(extendVariant)
-    stream.append(variantIndex)
-    stream.append(implementedVariantBegin)
-    stream.extend(types)
-    stream.append(implementedVariantEnd)
-    stream.extend(fullVariant)
-    stream.extend(feature2sType)
-    stream.append(getFeatureSType)
-    stream.append(hasPnextOfVoidPtr)
-    writeInlFile(filename, INL_HEADER, stream)
-
 def writeDeviceFeatures(api, dfDefs, filename):
     # find VkPhysicalDeviceVulkan[1-9][0-9]Features blob structurs
     # and construct dictionary with all of their attributes
@@ -4939,7 +4833,6 @@ if __name__ == "__main__":
 
     dfd = generateDeviceFeaturesOrPropertiesDefs(api, 'Features')
     writeDeviceFeatures                         (api, dfd, os.path.join(outputPath, "vkDeviceFeatures.inl"))
-    writeFeaturesVariant                        (dfd, os.path.join(outputPath, "vkDeviceFeaturesVariantDecl.inl"))
     writeDeviceFeaturesDefaultDeviceDefs        (dfd, os.path.join(outputPath, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
     writeDeviceFeaturesContextDecl              (dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDecl.inl"))
     writeDeviceFeaturesContextDefs              (dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDefs.inl"))
