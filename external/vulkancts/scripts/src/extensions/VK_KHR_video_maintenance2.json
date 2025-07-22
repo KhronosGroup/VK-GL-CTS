@@ -1,0 +1,21 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceVideoMaintenance2FeaturesKHR": [
+            {
+                "features": [
+                    "videoMaintenance2"
+                ],
+                "requirements": [
+                    "VK_KHR_video_maintenance2"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}

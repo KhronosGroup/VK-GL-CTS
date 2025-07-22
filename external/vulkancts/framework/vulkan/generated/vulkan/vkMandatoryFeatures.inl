@@ -1274,6 +1274,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 #endif // defined(CTS_USES_VULKAN)
 
 #if defined(CTS_USES_VULKAN)
+	vk::VkPhysicalDeviceVideoMaintenance2FeaturesKHR physicalDeviceVideoMaintenance2FeaturesKHR;
+	deMemset(&physicalDeviceVideoMaintenance2FeaturesKHR, 0, sizeof(physicalDeviceVideoMaintenance2FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_maintenance2"))
+	{
+		physicalDeviceVideoMaintenance2FeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoMaintenance2FeaturesKHR>();
+		*nextPtr = &physicalDeviceVideoMaintenance2FeaturesKHR;
+		nextPtr  = &physicalDeviceVideoMaintenance2FeaturesKHR.pNext;
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
 	vk::VkPhysicalDeviceVulkan11Features physicalDeviceVulkan11Features;
 	deMemset(&physicalDeviceVulkan11Features, 0, sizeof(physicalDeviceVulkan11Features));
 
@@ -2925,6 +2937,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.videoEncodeQuantizationMap == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature videoEncodeQuantizationMap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+#endif // defined(CTS_USES_VULKAN)
+
+#if defined(CTS_USES_VULKAN)
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_maintenance2")) )
+	{
+		if ( physicalDeviceVideoMaintenance2FeaturesKHR.videoMaintenance2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature videoMaintenance2 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
