@@ -890,7 +890,7 @@ def getDefaultBuildRoot ():
     return os.path.join(tempfile.gettempdir(), "deqp-ohos-build")
 
 def parseArgs ():
-    nativeBuildTypes = ['Release', 'Debug', 'MinSizeRel', 'RelWithAsserts', 'RelWithDebInfo']
+    nativeBuildTypes = ['Release', 'Debug']
     defaultSDKPath = findSDK()
     defaultCLTPath = findCLT()
     defaultBuildRoot = getDefaultBuildRoot()
