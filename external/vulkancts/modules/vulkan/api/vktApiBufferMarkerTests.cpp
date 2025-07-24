@@ -312,7 +312,7 @@ tcu::TestStatus bufferMarkerSequential(Context &context, BaseTestParams params)
     std::vector<uint32_t> expected(params.size);
 
     for (size_t i = 0; i < params.size; ++i)
-        expected[i] = rng.getUint32();
+        expected[i] = 0;
 
     if (params.useHostPtr)
     {
@@ -324,6 +324,9 @@ tcu::TestStatus bufferMarkerSequential(Context &context, BaseTestParams params)
         deMemcpy(markerMemory->getHostPtr(), &expected[0], static_cast<size_t>(markerBufferSize));
         flushMappedMemoryRange(vk, device, markerMemory->getMemory(), markerMemory->getOffset(), VK_WHOLE_SIZE);
     }
+
+    for (size_t i = 0; i < params.size; ++i)
+        expected[i] = rng.getUint32();
 
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, wd.queueFamilyIdx));
