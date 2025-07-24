@@ -1502,20 +1502,90 @@ public:
             getPhysicalDeviceMemoryProperties(vki, physicalDevice);
         const VkDeviceSize nonCoherentAtomSize = context.getDeviceProperties().limits.nonCoherentAtomSize;
 
+        VkMemoryRequirements memReqsDB, memReqsRB, memReqsSB;
+        bool descriptor_buffer_supported = context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer");
+
+        /* If descriptor buffers are supported we need to record which memory types
+         * can be used for descriptor buffers as their memory allocations will
+         * have some limitations.
+         */
+        if (descriptor_buffer_supported)
+        {
+            VkBufferCreateFlags createFlags = (vk::VkBufferCreateFlagBits)0u;
+            VkBufferUsageFlags usageFlagsDB = vk::VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT |
+                                              vk::VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+            VkBufferUsageFlags usageFlagsRB = vk::VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+            VkBufferUsageFlags usageFlagsSB = vk::VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+            VkSharingMode sharingMode       = vk::VK_SHARING_MODE_EXCLUSIVE;
+            uint32_t queueFamilyIndex       = 0;
+            const VkDevice device           = context.getDevice();
+            const DeviceInterface &vkd      = context.getDeviceInterface();
+            const VkDeviceSize bufferSize   = 1024;
+            Move<VkBuffer> buffer;
+
+            VkBufferCreateInfo bufferParams = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType          sType;
+                nullptr,                              // const void*              pNext;
+                createFlags,                          // VkBufferCreateFlags      flags;
+                bufferSize,                           // VkDeviceSize             size;
+                usageFlagsDB,                         // VkBufferUsageFlags       usage;
+                sharingMode,                          // VkSharingMode            sharingMode;
+                1u,                                   // uint32_t                 queueFamilyIndexCount;
+                &queueFamilyIndex,                    // const uint32_t*          pQueueFamilyIndices;
+            };
+
+            buffer = createBuffer(vkd, device, &bufferParams);
+            vkd.getBufferMemoryRequirements(device, *buffer, &memReqsDB);
+
+            bufferParams.usage = usageFlagsRB;
+            buffer             = createBuffer(vkd, device, &bufferParams);
+            vkd.getBufferMemoryRequirements(device, *buffer, &memReqsRB);
+
+            bufferParams.usage = usageFlagsSB;
+            buffer             = createBuffer(vkd, device, &bufferParams);
+            vkd.getBufferMemoryRequirements(device, *buffer, &memReqsSB);
+        }
+
         // Initialize heaps
         {
             vector<vector<MemoryType>> memoryTypes(memoryProperties.memoryHeapCount);
+            vector<VkMemoryHeap> memoryHeaps(&memoryProperties.memoryHeaps[0],
+                                             &memoryProperties.memoryHeaps[memoryProperties.memoryHeapCount]);
 
             for (uint32_t memoryTypeNdx = 0; memoryTypeNdx < memoryProperties.memoryTypeCount; memoryTypeNdx++)
             {
                 if (memoryProperties.memoryTypes[memoryTypeNdx].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
                     memoryTypes[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].push_back(
                         MemoryType(memoryTypeNdx, memoryProperties.memoryTypes[memoryTypeNdx]));
+
+                /* If descriptor buffers are supported, then we need to limit heaps maximum allocation
+                 * size by the limit of the descriptor buffer address space
+                 */
+                if (descriptor_buffer_supported)
+                {
+                    auto descriptorBufferProperties = context.getDescriptorBufferPropertiesEXT();
+                    uint32_t heapIndex              = memoryProperties.memoryTypes[memoryTypeNdx].heapIndex;
+
+                    if ((1 << memoryTypeNdx) & memReqsDB.memoryTypeBits)
+                        memoryHeaps[heapIndex].size =
+                            de::min(memoryHeaps[heapIndex].size,
+                                    descriptorBufferProperties.descriptorBufferAddressSpaceSize / 8);
+
+                    if ((1 << memoryTypeNdx) & memReqsRB.memoryTypeBits)
+                        memoryHeaps[heapIndex].size =
+                            de::min(memoryHeaps[heapIndex].size,
+                                    descriptorBufferProperties.resourceDescriptorBufferAddressSpaceSize / 8);
+
+                    if ((1 << memoryTypeNdx) & memReqsSB.memoryTypeBits)
+                        memoryHeaps[heapIndex].size =
+                            de::min(memoryHeaps[heapIndex].size,
+                                    descriptorBufferProperties.samplerDescriptorBufferAddressSpaceSize / 8);
+                }
             }
 
             for (uint32_t heapIndex = 0; heapIndex < memoryProperties.memoryHeapCount; heapIndex++)
             {
-                const VkMemoryHeap heapInfo = memoryProperties.memoryHeaps[heapIndex];
+                const VkMemoryHeap heapInfo = memoryHeaps[heapIndex];
 
                 if (!memoryTypes[heapIndex].empty())
                 {

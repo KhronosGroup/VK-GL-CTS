@@ -724,6 +724,50 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance(Context &context, TestC
     TCU_CHECK(m_memoryProperties.memoryHeapCount <= 32);
     TCU_CHECK(m_memoryProperties.memoryTypeCount <= 32);
 
+    VkMemoryRequirements memReqsDB, memReqsRB, memReqsSB;
+    bool descriptor_buffer_supported = context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer");
+
+    /* If descriptor buffers are supported we need to record which memory types
+     * can be used for descriptor buffers as their memory allocations will
+     * have some limitations.
+     */
+    if (descriptor_buffer_supported)
+    {
+        VkBufferCreateFlags createFlags = (vk::VkBufferCreateFlagBits)0u;
+        VkBufferUsageFlags usageFlagsDB = vk::VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT |
+                                          vk::VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+        VkBufferUsageFlags usageFlagsRB = vk::VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+        VkBufferUsageFlags usageFlagsSB = vk::VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+        VkSharingMode sharingMode       = vk::VK_SHARING_MODE_EXCLUSIVE;
+        uint32_t queueFamilyIndex       = 0;
+        const VkDevice device           = getDevice();
+        const DeviceInterface &vkd      = getDeviceInterface();
+        const VkDeviceSize bufferSize   = 1024;
+        Move<VkBuffer> buffer;
+
+        VkBufferCreateInfo bufferParams = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType          sType;
+            nullptr,                              // const void*              pNext;
+            createFlags,                          // VkBufferCreateFlags      flags;
+            bufferSize,                           // VkDeviceSize             size;
+            usageFlagsDB,                         // VkBufferUsageFlags       usage;
+            sharingMode,                          // VkSharingMode            sharingMode;
+            1u,                                   // uint32_t                 queueFamilyIndexCount;
+            &queueFamilyIndex,                    // const uint32_t*          pQueueFamilyIndices;
+        };
+
+        buffer = createBuffer(vkd, device, &bufferParams);
+        vkd.getBufferMemoryRequirements(device, *buffer, &memReqsDB);
+
+        bufferParams.usage = usageFlagsRB;
+        buffer             = createBuffer(vkd, device, &bufferParams);
+        vkd.getBufferMemoryRequirements(device, *buffer, &memReqsRB);
+
+        bufferParams.usage = usageFlagsSB;
+        buffer             = createBuffer(vkd, device, &bufferParams);
+        vkd.getBufferMemoryRequirements(device, *buffer, &memReqsSB);
+    }
+
     m_heaps.resize(m_memoryProperties.memoryHeapCount);
 
     for (uint32_t heapNdx = 0; heapNdx < m_memoryProperties.memoryHeapCount; heapNdx++)
@@ -749,6 +793,29 @@ RandomAllocFreeTestInstance::RandomAllocFreeTestInstance(Context &context, TestC
         }
 
         m_heaps[type.type.heapIndex].types.push_back(type);
+
+        /* If descriptor buffers are supported, then we need to limit heaps maximum allocation
+         * size by the limit of the descriptor buffer address space
+         */
+        if (descriptor_buffer_supported)
+        {
+            auto descriptorBufferProperties = context.getDescriptorBufferPropertiesEXT();
+
+            if ((1 << memoryTypeNdx) & memReqsDB.memoryTypeBits)
+                m_heaps[type.type.heapIndex].maxMemoryUsage =
+                    de::min(m_heaps[type.type.heapIndex].maxMemoryUsage,
+                            descriptorBufferProperties.descriptorBufferAddressSpaceSize / 8);
+
+            if ((1 << memoryTypeNdx) & memReqsRB.memoryTypeBits)
+                m_heaps[type.type.heapIndex].maxMemoryUsage =
+                    de::min(m_heaps[type.type.heapIndex].maxMemoryUsage,
+                            descriptorBufferProperties.resourceDescriptorBufferAddressSpaceSize / 8);
+
+            if ((1 << memoryTypeNdx) & memReqsSB.memoryTypeBits)
+                m_heaps[type.type.heapIndex].maxMemoryUsage =
+                    de::min(m_heaps[type.type.heapIndex].maxMemoryUsage,
+                            descriptorBufferProperties.samplerDescriptorBufferAddressSpaceSize / 8);
+        }
     }
 }
 
