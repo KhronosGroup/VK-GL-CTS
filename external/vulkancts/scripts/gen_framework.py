@@ -55,6 +55,7 @@ VK_KHR_video_decode_vp9
 VK_KHR_video_encode_av1
 VK_KHR_video_encode_intra_refresh
 VK_KHR_video_encode_quantization_map
+VK_KHR_video_maintenance2
 """.split()
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = [s for s in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON if not s.startswith('#')]
