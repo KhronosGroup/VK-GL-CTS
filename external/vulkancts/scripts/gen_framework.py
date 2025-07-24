@@ -53,6 +53,7 @@ VK_KHR_surface_maintenance1
 VK_KHR_unified_image_layouts
 VK_KHR_video_decode_vp9
 VK_KHR_video_encode_av1
+VK_KHR_video_encode_intra_refresh
 VK_KHR_video_encode_quantization_map
 """.split()
 

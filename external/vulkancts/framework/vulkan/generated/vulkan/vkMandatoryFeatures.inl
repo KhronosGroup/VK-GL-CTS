@@ -1549,6 +1549,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceVideoEncodeAV1FeaturesKHR.pNext;
 	}
 
+	// VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR for ext [VK_KHR_video_encode_intra_refresh] in APIs []
+
+	vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR physicalDeviceVideoEncodeIntraRefreshFeaturesKHR;
+	deMemset(&physicalDeviceVideoEncodeIntraRefreshFeaturesKHR, 0, sizeof(physicalDeviceVideoEncodeIntraRefreshFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_intra_refresh"))
+	{
+		physicalDeviceVideoEncodeIntraRefreshFeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>();
+		*nextPtr = &physicalDeviceVideoEncodeIntraRefreshFeaturesKHR;
+		nextPtr  = &physicalDeviceVideoEncodeIntraRefreshFeaturesKHR.pNext;
+	}
+
 	// VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR for ext [VK_KHR_video_encode_quantization_map] in APIs []
 
 	vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
@@ -3441,6 +3453,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceVideoEncodeAV1FeaturesKHR.videoEncodeAV1 == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature videoEncodeAV1 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_intra_refresh")) )
+	{
+		if ( physicalDeviceVideoEncodeIntraRefreshFeaturesKHR.videoEncodeIntraRefresh == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature videoEncodeIntraRefresh not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
