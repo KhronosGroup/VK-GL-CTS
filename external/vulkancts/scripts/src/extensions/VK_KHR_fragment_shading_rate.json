@@ -2,5 +2,21 @@
     "register_extension": {
         "type": "device",
         "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceFragmentShadingRateFeaturesKHR": [
+            {
+                "features": [
+                    "pipelineFragmentShadingRate"
+                ],
+                "requirements": [
+                    "VK_KHR_fragment_shading_rate"
+                ],
+                "mandatory_variant": [
+                    "vulkan",
+                    "vulkansc"
+                ]
+            }
+        ]
     }
 }

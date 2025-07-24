@@ -10,14 +10,6 @@
                     "swapchainMaintenance1"
                 ],
                 "requirements": [
-                    "VK_EXT_swapchain_maintenance1"
-                ]
-            },
-            {
-                "features": [
-                    "swapchainMaintenance1"
-                ],
-                "requirements": [
                     "VK_KHR_swapchain_maintenance1"
                 ]
             }

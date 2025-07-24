@@ -4,13 +4,13 @@
         "core": ""
     },
     "mandatory_features": {
-        "VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR": [
+        "VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT": [
             {
                 "features": [
-                    "fragmentShaderBarycentric"
+                    "globalPriorityQuery"
                 ],
                 "requirements": [
-                    "VK_KHR_fragment_shader_barycentric"
+                    "VK_EXT_global_priority_query"
                 ]
             }
         ]

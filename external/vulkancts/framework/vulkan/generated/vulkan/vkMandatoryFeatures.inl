@@ -329,7 +329,19 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceDeviceGeneratedCommandsFeaturesNV.pNext;
 	}
 
-	// VkPhysicalDeviceDynamicRenderingLocalReadFeatures,VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR for ext [VK_KHR_dynamic_rendering_local_read] in APIs []
+	// VkPhysicalDeviceDynamicRenderingFeatures,VkPhysicalDeviceDynamicRenderingFeaturesKHR for ext [VK_KHR_dynamic_rendering] in APIs [vulkan]
+
+	vk::VkPhysicalDeviceDynamicRenderingFeatures physicalDeviceDynamicRenderingFeatures;
+	deMemset(&physicalDeviceDynamicRenderingFeatures, 0, sizeof(physicalDeviceDynamicRenderingFeatures));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_dynamic_rendering"))
+	{
+		physicalDeviceDynamicRenderingFeatures.sType = getStructureType<VkPhysicalDeviceDynamicRenderingFeatures>();
+		*nextPtr = &physicalDeviceDynamicRenderingFeatures;
+		nextPtr  = &physicalDeviceDynamicRenderingFeatures.pNext;
+	}
+
+	// VkPhysicalDeviceDynamicRenderingLocalReadFeatures,VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR for ext [VK_KHR_dynamic_rendering_local_read] in APIs [vulkan]
 
 	vk::VkPhysicalDeviceDynamicRenderingLocalReadFeatures physicalDeviceDynamicRenderingLocalReadFeatures;
 	deMemset(&physicalDeviceDynamicRenderingLocalReadFeatures, 0, sizeof(physicalDeviceDynamicRenderingLocalReadFeatures));
@@ -411,6 +423,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceFragmentDensityMapOffsetFeaturesEXT.sType = getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>();
 		*nextPtr = &physicalDeviceFragmentDensityMapOffsetFeaturesEXT;
 		nextPtr  = &physicalDeviceFragmentDensityMapOffsetFeaturesEXT.pNext;
+	}
+
+	// VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR,VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV,VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV for ext [VK_KHR_fragment_shader_barycentric, VK_NV_fragment_shader_barycentric] in APIs []
+
+	vk::VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR physicalDeviceFragmentShaderBarycentricFeaturesKHR;
+	deMemset(&physicalDeviceFragmentShaderBarycentricFeaturesKHR, 0, sizeof(physicalDeviceFragmentShaderBarycentricFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_fragment_shader_barycentric", "VK_NV_fragment_shader_barycentric"))
+	{
+		physicalDeviceFragmentShaderBarycentricFeaturesKHR.sType = getStructureType<VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR>();
+		*nextPtr = &physicalDeviceFragmentShaderBarycentricFeaturesKHR;
+		nextPtr  = &physicalDeviceFragmentShaderBarycentricFeaturesKHR.pNext;
 	}
 
 	// VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT for ext [VK_EXT_fragment_shader_interlock] in APIs []
@@ -783,6 +807,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		physicalDevicePerformanceQueryFeaturesKHR.sType = getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR>();
 		*nextPtr = &physicalDevicePerformanceQueryFeaturesKHR;
 		nextPtr  = &physicalDevicePerformanceQueryFeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDevicePipelineBinaryFeaturesKHR for ext [VK_KHR_pipeline_binary] in APIs []
+
+	vk::VkPhysicalDevicePipelineBinaryFeaturesKHR physicalDevicePipelineBinaryFeaturesKHR;
+	deMemset(&physicalDevicePipelineBinaryFeaturesKHR, 0, sizeof(physicalDevicePipelineBinaryFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_pipeline_binary"))
+	{
+		physicalDevicePipelineBinaryFeaturesKHR.sType = getStructureType<VkPhysicalDevicePipelineBinaryFeaturesKHR>();
+		*nextPtr = &physicalDevicePipelineBinaryFeaturesKHR;
+		nextPtr  = &physicalDevicePipelineBinaryFeaturesKHR.pNext;
 	}
 
 	// VkPhysicalDevicePipelineExecutablePropertiesFeaturesKHR for ext [VK_KHR_pipeline_executable_properties] in APIs []
@@ -1491,6 +1527,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>();
 		*nextPtr = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR;
 		nextPtr  = &physicalDeviceVideoEncodeQuantizationMapFeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDeviceVideoMaintenance1FeaturesKHR for ext [VK_KHR_video_maintenance1] in APIs []
+
+	vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR physicalDeviceVideoMaintenance1FeaturesKHR;
+	deMemset(&physicalDeviceVideoMaintenance1FeaturesKHR, 0, sizeof(physicalDeviceVideoMaintenance1FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_maintenance1"))
+	{
+		physicalDeviceVideoMaintenance1FeaturesKHR.sType = getStructureType<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>();
+		*nextPtr = &physicalDeviceVideoMaintenance1FeaturesKHR;
+		nextPtr  = &physicalDeviceVideoMaintenance1FeaturesKHR.pNext;
 	}
 
 	// VkPhysicalDeviceVideoMaintenance2FeaturesKHR for ext [VK_KHR_video_maintenance2] in APIs []
@@ -2208,6 +2256,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
+	{
+		if ( physicalDeviceGlobalPriorityQueryFeatures.globalPriorityQuery == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	// VkPhysicalDeviceHostQueryResetFeatures in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_host_query_reset")) )
 	{
@@ -2578,6 +2636,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_swapchain_maintenance1")) )
+	{
+		if ( physicalDeviceSwapchainMaintenance1FeaturesKHR.swapchainMaintenance1 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature swapchainMaintenance1 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	// VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_texel_buffer_alignment")) )
 	{
@@ -2689,7 +2757,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 
 	// VkPhysicalDeviceBufferDeviceAddressFeatures in APIs []
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_buffer_device_address")) )
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
 	{
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
 		{
@@ -2698,8 +2766,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	// VkPhysicalDeviceBufferDeviceAddressFeatures in APIs []
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	// VkPhysicalDeviceVulkan12Features in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_VERSION_1_2")) )
+	{
+		if ( physicalDeviceVulkan12Features.descriptorIndexing == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature descriptorIndexing not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDeviceBufferDeviceAddressFeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_buffer_device_address")) )
 	{
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
 		{
@@ -2738,7 +2816,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	// VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR in APIs []
+	// VkPhysicalDeviceDynamicRenderingFeaturesKHR in APIs [vulkan]
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_dynamic_rendering")) )
+	{
+		if ( physicalDeviceDynamicRenderingFeatures.dynamicRendering == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature dynamicRendering not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR in APIs [vulkan]
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_dynamic_rendering_local_read")) )
 	{
 		if ( physicalDeviceDynamicRenderingLocalReadFeatures.dynamicRenderingLocalRead == VK_FALSE )
@@ -2748,17 +2836,27 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs []
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
+	// VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shader_barycentric")) )
 	{
-		if ( physicalDeviceGlobalPriorityQueryFeatures.globalPriorityQuery == VK_FALSE )
+		if ( physicalDeviceFragmentShaderBarycentricFeaturesKHR.fragmentShaderBarycentric == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature fragmentShaderBarycentric not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs []
+	// VkPhysicalDeviceFragmentShadingRateFeaturesKHR in APIs [vulkan, vulkansc]
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shading_rate")) )
+	{
+		if ( physicalDeviceFragmentShadingRateFeaturesKHR.pipelineFragmentShadingRate == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineFragmentShadingRate not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs [vulkan, vulkansc]
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
 	{
 		if ( physicalDeviceGlobalPriorityQueryFeatures.globalPriorityQuery == VK_FALSE )
@@ -2874,6 +2972,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDevicePerformanceQueryFeaturesKHR.performanceCounterQueryPools == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature performanceCounterQueryPools not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDevicePipelineBinaryFeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_pipeline_binary")) )
+	{
+		if ( physicalDevicePipelineBinaryFeaturesKHR.pipelineBinaries == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature pipelineBinaries not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
@@ -3159,16 +3267,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 
 	// VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR in APIs []
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_swapchain_maintenance1")) )
-	{
-		if ( physicalDeviceSwapchainMaintenance1FeaturesKHR.swapchainMaintenance1 == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature swapchainMaintenance1 not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	// VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain_maintenance1")) )
 	{
 		if ( physicalDeviceSwapchainMaintenance1FeaturesKHR.swapchainMaintenance1 == VK_FALSE )
@@ -3278,6 +3376,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceVideoMaintenance1FeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_maintenance1")) )
+	{
+		if ( physicalDeviceVideoMaintenance1FeaturesKHR.videoMaintenance1 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature videoMaintenance1 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	// VkPhysicalDeviceVideoMaintenance2FeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_maintenance2")) )
 	{
@@ -3301,9 +3409,9 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	// VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_workgroup_memory_explicit_layout")) )
 	{
-		if ( ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayoutScalarBlockLayout == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout8BitAccess == VK_FALSE ) && ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout16BitAccess == VK_FALSE ) )
+		if ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayout == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature workgroupMemoryExplicitLayout or workgroupMemoryExplicitLayoutScalarBlockLayout or workgroupMemoryExplicitLayout8BitAccess or workgroupMemoryExplicitLayout16BitAccess not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature workgroupMemoryExplicitLayout not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

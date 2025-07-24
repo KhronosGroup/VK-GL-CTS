@@ -29,6 +29,7 @@ const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&		Context::getSepa
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&		Context::getFragmentShaderInterlockFeaturesEXT		(void) const { return m_device->getFragmentShaderInterlockFeaturesEXT();		}
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&				Context::getYcbcrImageArraysFeaturesEXT				(void) const { return m_device->getYcbcrImageArraysFeaturesEXT();				}
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&		Context::getUniformBufferStandardLayoutFeatures		(void) const { return m_device->getUniformBufferStandardLayoutFeatures();		}
+const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&				Context::getBufferDeviceAddressFeatures				(void) const { return m_device->getBufferDeviceAddressFeatures();				}
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&				Context::getShaderAtomicFloatFeaturesEXT			(void) const { return m_device->getShaderAtomicFloatFeaturesEXT();				}
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&			Context::getExtendedDynamicStateFeaturesEXT			(void) const { return m_device->getExtendedDynamicStateFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&	Context::getShaderDemoteToHelperInvocationFeatures	(void) const { return m_device->getShaderDemoteToHelperInvocationFeatures();	}
@@ -54,4 +55,3 @@ const vk::VkPhysicalDeviceShaderDrawParametersFeatures&				Context::getShaderDra
 const vk::VkPhysicalDeviceHostQueryResetFeatures&					Context::getHostQueryResetFeatures					(void) const { return m_device->getHostQueryResetFeatures();					}
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&				Context::getDescriptorIndexingFeatures				(void) const { return m_device->getDescriptorIndexingFeatures();				}
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&				Context::getScalarBlockLayoutFeatures				(void) const { return m_device->getScalarBlockLayoutFeatures();					}
-const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&				Context::getBufferDeviceAddressFeatures				(void) const { return m_device->getBufferDeviceAddressFeatures();				}

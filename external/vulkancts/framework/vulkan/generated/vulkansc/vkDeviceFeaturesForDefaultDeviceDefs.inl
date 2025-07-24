@@ -29,6 +29,7 @@ const VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&		getSeparateDepthSten
 const VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&		getFragmentShaderInterlockFeaturesEXT		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT>();		}
 const VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&				getYcbcrImageArraysFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceYcbcrImageArraysFeaturesEXT>();				}
 const VkPhysicalDeviceUniformBufferStandardLayoutFeatures&		getUniformBufferStandardLayoutFeatures		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceUniformBufferStandardLayoutFeatures>();		}
+const VkPhysicalDeviceBufferDeviceAddressFeatures&				getBufferDeviceAddressFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceBufferDeviceAddressFeatures>();				}
 const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&				getShaderAtomicFloatFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>();				}
 const VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&			getExtendedDynamicStateFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceExtendedDynamicStateFeaturesEXT>();			}
 const VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&	getShaderDemoteToHelperInvocationFeatures	(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures>();	}
@@ -54,4 +55,3 @@ const VkPhysicalDeviceShaderDrawParametersFeatures&				getShaderDrawParametersFe
 const VkPhysicalDeviceHostQueryResetFeatures&					getHostQueryResetFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceHostQueryResetFeatures>();					}
 const VkPhysicalDeviceDescriptorIndexingFeatures&				getDescriptorIndexingFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDescriptorIndexingFeatures>();				}
 const VkPhysicalDeviceScalarBlockLayoutFeatures&				getScalarBlockLayoutFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceScalarBlockLayoutFeatures>();					}
-const VkPhysicalDeviceBufferDeviceAddressFeatures&				getBufferDeviceAddressFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceBufferDeviceAddressFeatures>();				}
