@@ -196,6 +196,7 @@ enum class TestVariant : uint32_t
     ROBUST_BUFFER_ACCESS,        // robust buffer access
     ROBUST_NULL_DESCRIPTOR,      // robustness2 with null descriptor
     CAPTURE_REPLAY,              // capture and replay capability with descriptor buffers
+    INVALIDATION_RULES,          // verify set invalidation rules based on pipeline compatibility
     MUTABLE_DESCRIPTOR_TYPE,     // use VK_EXT_mutable_descriptor_type
     YCBCR_SAMPLER_2PLANES,       // use VK_KHR_sampler_ycbcr_conversion with a 2-plane format
     YCBCR_SAMPLER_3PLANES,       // use VK_KHR_sampler_ycbcr_conversion with a 3-plane format
@@ -6807,6 +6808,318 @@ void CaptureReplayTestCase::initPrograms(vk::SourceCollections &dst) const
     dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
 }
 
+enum class InvalidationMode
+{
+    SwitchFromDescriptorBufferToLegacy = 0,
+    SwitchFromLegacyToDescriptorBuffer,
+    UseLegacyAndBindDescriptorBuffer,
+};
+
+class InvalidationRulesTestInstance : public TestInstance
+{
+public:
+    InvalidationRulesTestInstance(Context &context, InvalidationMode mode);
+
+    tcu::TestStatus iterate() override;
+
+protected:
+    void fillBuffer(BufferWithMemory &buffer, std::size_t itemCount, uint32_t value);
+    bool isBufferValid(BufferWithMemory &buffer, std::size_t itemCount, uint32_t initialValue);
+
+private:
+    InvalidationMode m_mode;
+    bool m_useBindDescriptorBufferBeforeBindDescriptorSets       = false;
+    bool m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets = false;
+    bool m_useBindDescriptorBufferAfterBindDescriptorSets        = false;
+    bool m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets  = false;
+    bool m_usePipelineWithLegacyDescriptorSetBeforeDispatch      = false;
+    bool m_useDispatch                                           = false;
+    bool m_verifyBufferSetUsingDescriptorBuffer                  = false;
+    bool m_verifyBufferSetUsingLegacyDescriptor                  = false;
+};
+
+InvalidationRulesTestInstance::InvalidationRulesTestInstance(Context &context, InvalidationMode mode)
+    : TestInstance(context)
+    , m_mode(mode)
+{
+    // configure test case based on the invalidation mode
+    switch (m_mode)
+    {
+    // vkCmdBindDescriptorBuffersEXT + vkCmdSetDescriptorBufferOffsetsEXT
+    // vkCmdBindDescriptorSets
+    // vkCmdDispatch - using legacy
+    case InvalidationMode::SwitchFromDescriptorBufferToLegacy:
+        m_useBindDescriptorBufferBeforeBindDescriptorSets       = true;
+        m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets = true;
+        m_useDispatch                                           = true;
+        m_verifyBufferSetUsingLegacyDescriptor                  = true;
+        break;
+
+    // vkCmdBindDescriptorSets
+    // vkCmdBindDescriptorBuffersEXT + vkCmdSetDescriptorBufferOffsetsEXT
+    // vkCmdDispatch - using descriptor buffer
+    case InvalidationMode::SwitchFromLegacyToDescriptorBuffer:
+        m_useBindDescriptorBufferAfterBindDescriptorSets       = true;
+        m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets = true;
+        m_useDispatch                                          = true;
+        m_verifyBufferSetUsingDescriptorBuffer                 = true;
+        break;
+
+    // vkCmdBindDescriptorSets
+    // vkCmdBindDescriptorBuffersEXT - doesn't invalidate anything in spec
+    // vkCmdDispatch - using legacy
+    case InvalidationMode::UseLegacyAndBindDescriptorBuffer:
+        m_useBindDescriptorBufferAfterBindDescriptorSets   = true;
+        m_usePipelineWithLegacyDescriptorSetBeforeDispatch = true;
+        m_useDispatch                                      = true;
+        m_verifyBufferSetUsingLegacyDescriptor             = true;
+        break;
+    }
+}
+
+tcu::TestStatus InvalidationRulesTestInstance::iterate()
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    const auto &dbProperties  = m_context.getDescriptorBufferPropertiesEXT();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+
+    // define generic descriptor set layout with a single storage buffer
+    const VkShaderStageFlags stageFlag = VK_SHADER_STAGE_COMPUTE_BIT;
+    VkDescriptorSetLayoutBinding binding{
+        2u,                                // uint32_t binding;
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
+        1u,                                // uint32_t descriptorCount;
+        stageFlag,                         // VkShaderStageFlags stageFlags;
+        nullptr                            // const VkSampler* pImmutableSamplers;
+    };
+    VkDescriptorSetLayoutCreateInfo createInfo = initVulkanStructure();
+    createInfo.flags                           = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+    createInfo.bindingCount                    = 1;
+    createInfo.pBindings                       = &binding;
+
+    // create descriptor set layouts, one for descriptor buffer and one for legacy descriptor set
+    auto descriptorSetLayoutA = createDescriptorSetLayout(vk, device, &createInfo);
+    createInfo.flags          = 0;
+    auto descriptorSetLayoutB = createDescriptorSetLayout(vk, device, &createInfo);
+
+    // create pipelines with a layout that expects descriptor set 0
+    auto pipelineFlags   = VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+    auto &bc             = m_context.getBinaryCollection();
+    auto shaderModule    = createShaderModule(vk, device, bc.get("comp"));
+    auto pipelineLayoutA = makePipelineLayout(vk, device, *descriptorSetLayoutA);
+    auto pipelineA       = makeComputePipeline(vk, device, *pipelineLayoutA, pipelineFlags, nullptr, *shaderModule, 0);
+    auto pipelineLayoutB = makePipelineLayout(vk, device, *descriptorSetLayoutB);
+    auto pipelineB       = makeComputePipeline(vk, device, *pipelineLayoutB, 0, nullptr, *shaderModule, 0);
+
+    VkDeviceSize descriptorLayoutSize;
+    vk.getDescriptorSetLayoutSizeEXT(device, *descriptorSetLayoutA, &descriptorLayoutSize);
+
+    auto descriptorBufferOffsetAlignment = dbProperties.descriptorBufferOffsetAlignment;
+    descriptorLayoutSize                 = deAlign64(descriptorLayoutSize, descriptorBufferOffsetAlignment);
+
+    // create buffer that will be used as descriptor buffer
+    VkBufferCreateFlags usageFlags =
+        VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    auto bufferCreateInfo = makeBufferCreateInfo(descriptorLayoutSize, usageFlags);
+    BufferWithMemory descriptorBuffer(vk, device, allocator, bufferCreateInfo,
+                                      MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    auto descriptorBufferHostPtr = reinterpret_cast<char *>(descriptorBuffer.getAllocation().getHostPtr());
+
+    // create legacy descriptor set
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto legacyDescriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayoutB);
+
+    // create buffers for data
+    uint32_t dataBufferItems    = 16u;
+    VkDeviceSize dataBufferSize = dataBufferItems * sizeof(uint32_t);
+    bufferCreateInfo.usage =
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    bufferCreateInfo.size = dataBufferSize;
+    BufferWithMemory dataBufferB(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+    bufferCreateInfo.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    BufferWithMemory dataBufferA(vk, device, allocator, bufferCreateInfo,
+                                 MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+
+    // fill data buffer filled by pipeline that uses descriptor buffer
+    const uint32_t initialValueA = 3u;
+    fillBuffer(dataBufferA, dataBufferItems, initialValueA);
+
+    VkDescriptorAddressInfoEXT descriptorAddressInfo = initVulkanStructure();
+    descriptorAddressInfo.range                      = dataBufferSize;
+    descriptorAddressInfo.address                    = getBufferDeviceAddress(vk, device, *dataBufferA, 0);
+
+    VkDescriptorGetInfoEXT descGetInfo = initVulkanStructure();
+    descGetInfo.type                   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descGetInfo.data.pStorageBuffer    = &descriptorAddressInfo;
+    vk.getDescriptorEXT(device, &descGetInfo, dbProperties.storageBufferDescriptorSize, descriptorBufferHostPtr);
+
+    // fill data buffer B
+    const uint32_t initialValueB = 5u;
+    fillBuffer(dataBufferB, dataBufferItems, initialValueB);
+
+    const auto outDescInfo = makeDescriptorBufferInfo(*dataBufferB, 0u, VK_WHOLE_SIZE);
+    DescriptorSetUpdateBuilder dsUpdateBuilder;
+    dsUpdateBuilder.writeSingle(*legacyDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(2u),
+                                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outDescInfo);
+    dsUpdateBuilder.update(vk, device);
+
+    // setup data needed for descriptor buffer binding
+    VkDescriptorBufferBindingInfoEXT descriptorBufferBindingInfo = initVulkanStructure();
+    descriptorBufferBindingInfo.address = getBufferDeviceAddress(vk, device, *descriptorBuffer, 0);
+    descriptorBufferBindingInfo.usage   = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+    uint32_t bIndices                   = 0;
+    VkDeviceSize bOffsets               = 0;
+
+    const auto wiatForHostMemoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT);
+    const auto waitForDeviceMemoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_HOST_READ_BIT);
+
+    VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+    auto cmdPool                  = makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
+    auto cmdBuffer                = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    // wait for buffer to be ready for shader access
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1,
+                          &wiatForHostMemoryBarrier, 0, 0, 0, 0);
+
+    if (m_useBindDescriptorBufferBeforeBindDescriptorSets || m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets)
+    {
+        // bind pipeline prepared for descriptor buffer
+        vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineA);
+
+        if (m_useBindDescriptorBufferBeforeBindDescriptorSets)
+            vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1, &descriptorBufferBindingInfo);
+
+        if (m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets)
+            vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, bindPoint, *pipelineLayoutA, 0, 1, &bIndices, &bOffsets);
+    }
+
+    // bind pipeline prepared for legacy descriptor set
+    vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineB);
+
+    // bind legacy descriptor set
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayoutB, 0, 1, &*legacyDescriptorSet, 0, nullptr);
+
+    if (m_useBindDescriptorBufferAfterBindDescriptorSets || m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets)
+    {
+        // bind pipeline prepared for descriptor buffer
+        vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineA);
+
+        if (m_useBindDescriptorBufferAfterBindDescriptorSets)
+            vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1, &descriptorBufferBindingInfo);
+
+        if (m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets)
+            vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, bindPoint, *pipelineLayoutA, 0, 1, &bIndices, &bOffsets);
+    }
+
+    // bind pipeline prepared for legacy descriptor set
+    if (m_usePipelineWithLegacyDescriptorSetBeforeDispatch)
+        vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineB);
+
+    if (m_useDispatch)
+        vk.cmdDispatch(*cmdBuffer, dataBufferItems, 1, 1);
+
+    // wait for device to finish work
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
+                          &waitForDeviceMemoryBarrier, 0, 0, 0, 0);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    // submit and wait for all commands
+    submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+    // check content of data buffer A
+    if (m_verifyBufferSetUsingDescriptorBuffer && !isBufferValid(dataBufferA, dataBufferItems, initialValueA))
+        return tcu::TestStatus::fail("Data in bufferA is not valid");
+
+    // check content of data buffer B
+    if (m_verifyBufferSetUsingLegacyDescriptor && !isBufferValid(dataBufferB, dataBufferItems, initialValueB))
+        return tcu::TestStatus::fail("Data in bufferB is not valid");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void InvalidationRulesTestInstance::fillBuffer(BufferWithMemory &buffer, std::size_t itemCount, uint32_t value)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    auto &allocation          = buffer.getAllocation();
+
+    uint32_t *data = static_cast<uint32_t *>(allocation.getHostPtr());
+    std::fill(data, data + itemCount, value);
+
+    flushAlloc(vk, device, allocation);
+}
+
+bool InvalidationRulesTestInstance::isBufferValid(BufferWithMemory &buffer, std::size_t itemCount,
+                                                  uint32_t initialValue)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    auto &allocation          = buffer.getAllocation();
+
+    invalidateAlloc(vk, device, allocation);
+    uint32_t *data = static_cast<uint32_t *>(allocation.getHostPtr());
+
+    for (std::size_t i = 0; i < itemCount; ++i)
+    {
+        if (data[i] != (i + initialValue))
+            return false;
+    }
+
+    return true;
+}
+
+class InvalidationRulesTestCase : public TestCase
+{
+public:
+    InvalidationRulesTestCase(tcu::TestContext &testCtx, const std::string &name, InvalidationMode mode);
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+private:
+    InvalidationMode m_mode;
+};
+
+InvalidationRulesTestCase::InvalidationRulesTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                                     InvalidationMode mode)
+    : TestCase(testCtx, name)
+    , m_mode(mode)
+{
+}
+
+void InvalidationRulesTestCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    programCollection.glslSources.add("comp") << glu::ComputeSource("#version 450\n"
+                                                                    "layout (local_size_x=1) in;\n"
+                                                                    "layout (set=0, binding=2, std430) buffer Block {\n"
+                                                                    "    uint data[];\n"
+                                                                    "};\n"
+                                                                    "\n"
+                                                                    "void main() {\n"
+                                                                    "    uint idx = gl_GlobalInvocationID.x;\n"
+                                                                    "    data[idx] = data[idx] + idx;\n"
+                                                                    "}\n");
+}
+
+void InvalidationRulesTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+}
+
+TestInstance *InvalidationRulesTestCase::createInstance(Context &context) const
+{
+    return new InvalidationRulesTestInstance(context, m_mode);
+}
+
 void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceResidency resourceResidency)
 {
     tcu::TestContext &testCtx = topGroup->getTestContext();
@@ -7290,21 +7603,44 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                     }
                 }
 
-        std::pair<std::string, CaptureReplayTestMode> captureReplyModes[]{
-            {"image", CaptureReplayTestMode::Image},
-            {"sparse_image", CaptureReplayTestMode::Sparse_Image},
-            {"buffer", CaptureReplayTestMode::Buffer},
-            {"sparse_buffer", CaptureReplayTestMode::Sparse_Buffer},
-        };
+        if (resourceResidency == ResourceResidency::TRADITIONAL)
+        {
+            std::pair<std::string, CaptureReplayTestMode> captureReplyModes[]{
+                {"image", CaptureReplayTestMode::Image},
+                {"sparse_image", CaptureReplayTestMode::Sparse_Image},
+                {"buffer", CaptureReplayTestMode::Buffer},
+                {"sparse_buffer", CaptureReplayTestMode::Sparse_Buffer},
+            };
 
-        for (const auto &captureReplyMode : captureReplyModes)
-            for (const bool useDescriptor : {false, true})
+            for (const auto &captureReplyMode : captureReplyModes)
             {
-                std::string name =
-                    captureReplyMode.first + "_descriptor_data_consistency" + (useDescriptor ? "_and_usage" : "");
-                const CaptureReplayParams params{captureReplyMode.second, useDescriptor};
-                subGroup->addChild(new CaptureReplayTestCase(testCtx, name, params));
+                for (const bool useDescriptor : {false, true})
+                {
+                    std::string name =
+                        captureReplyMode.first + "_descriptor_data_consistency" + (useDescriptor ? "_and_usage" : "");
+                    const CaptureReplayParams params{captureReplyMode.second, useDescriptor};
+                    subGroup->addChild(new CaptureReplayTestCase(testCtx, name, params));
+                }
             }
+        }
+
+        topGroup->addChild(subGroup.release());
+    }
+
+    if (resourceResidency == ResourceResidency::TRADITIONAL)
+    {
+        //
+        // Verify set invalidation rules based on pipeline compatibility
+        //
+        MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "invalidation_rules", ""));
+
+        std::pair<std::string, InvalidationMode> invalidationCases[]{
+            {"switch_from_descriptor_buffer_to_legacy", InvalidationMode::SwitchFromDescriptorBufferToLegacy},
+            {"switch_from_legacy_to_descriptor_buffer", InvalidationMode::SwitchFromLegacyToDescriptorBuffer},
+            {"use_legacy_and_bind_descriptor_buffer", InvalidationMode::UseLegacyAndBindDescriptorBuffer},
+        };
+        for (auto [name, mode] : invalidationCases)
+            subGroup->addChild(new InvalidationRulesTestCase(testCtx, name, mode));
 
         topGroup->addChild(subGroup.release());
     }

@@ -129,6 +129,24 @@
                 "VUID-vkCmdDraw-pStrides-04913"
             ],
             "description": "Tests bind unused mesh shading pipeline before graphics pipeline, intentionally invalidating dynamic stride state to test pipeline binding edge cases."
-        }
+        },
+        {
+            "groups": [
+            "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.switch_from_descriptor_buffer_to_legacy"
+        ],
+        "messages": [
+            "VUID-vkCmdDispatch-None-08115"
+        ],
+        "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
+    },
+    {
+        "groups": [
+            "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.use_legacy_and_bind_descriptor_buffer"
+        ],
+        "messages": [
+            "VUID-vkCmdDispatch-None-08115"
+        ],
+        "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
+    }
     ]
 }
