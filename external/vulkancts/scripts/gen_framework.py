@@ -1499,6 +1499,15 @@ class API:
 
         self.additionalExtensionData = sorted(self.additionalExtensionData, key=lambda e: e[0])
 
+        for ext in self.extensions:
+            if not ext.name.startswith("VK_KHR"):
+                continue
+            jsonFilePath = os.path.join(SCRIPTS_SRC_DIR, "extensions", ext.name + ".json")
+            if os.path.isfile(jsonFilePath):
+                logging.info("Extension %s has json %s", ext.name, jsonFilePath)
+            else:
+                logging.error("Extension %s is missing JSON!", ext.name)
+
 def prefixName (prefix, name):
     name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name[2:])
     name = re.sub(r'([a-zA-Z])([0-9])', r'\1_\2', name)
