@@ -665,8 +665,8 @@ void VideoTestCase::validateCapabilities(Context &context) const
             throw tcu::NotSupportedError("Required dimensions exceed maximum possible tiled area");
         }
 
-        if (m_requirements.maxTileColumns > av1Capabilities->maxTiles.width ||
-            m_requirements.maxTileRows > av1Capabilities->maxTiles.height)
+        if (m_requirements.maxTileColumns > m_av1Capabilities->maxTiles.width ||
+            m_requirements.maxTileRows > m_av1Capabilities->maxTiles.height)
         {
             throw tcu::NotSupportedError("Required tile columns/rows exceed supported maximum");
         }
