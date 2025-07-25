@@ -704,12 +704,6 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
             subpassDependencies.push_back(spdVal);
         }
 
-        const VkAttachmentFeedbackLoopInfoEXT attachmentFeedbackLoopInfo = {
-            VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT, // VkStructureType sType;
-            nullptr,                                             // const void* pNext;
-            VK_TRUE,                                             // VkBool32 feedbackLoopEnable;
-        };
-
         const VkRenderPassCreateInfo renderPassParams = {
             VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,         // VkStructureType sType;
             nullptr,                                           // const void* pNext;
@@ -722,14 +716,7 @@ void AttachmentFeedbackLoopLayoutImageSamplingInstance::setup(void)
             de::dataOrNull(subpassDependencies),               // const VkSubpassDependency* pDependencies;
         };
 
-        if (m_useGeneralLayout)
-        {
-            m_renderPass = RenderPassWrapper(vk, vkDevice, &renderPassParams, &attachmentFeedbackLoopInfo);
-        }
-        else
-        {
-            m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
-        }
+        m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
     }
 
     // Create framebuffer
@@ -1446,15 +1433,27 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             colorBlendAttachmentStates[imgNdx].colorWriteMask = 0u; // VkColorComponentFlags colorWriteMask;
         }
 
+        const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+            VK_FALSE,                            // VkBool32				    blendEnable;
+            VK_BLEND_FACTOR_SRC_ALPHA,           // VkBlendFactor			srcColorBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstColorBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp				colorBlendOp;
+            VK_BLEND_FACTOR_SRC_ALPHA,           // VkBlendFactor			srcAlphaBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstAlphaBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp				alphaBlendOp;
+            VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                VK_COLOR_COMPONENT_A_BIT // VkColorComponentFlags	colorWriteMask;
+        };
+
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
             nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
-            0u,                                                       // uint32_t attachmentCount;
-            nullptr,                 // const VkPipelineColorBlendAttachmentState* pAttachments;
-            {0.0f, 0.0f, 0.0f, 0.0f} // float blendConstants[4];
+            1u,                                                       // uint32_t attachmentCount;
+            &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState* pAttachments;
+            {0.0f, 0.0f, 0.0f, 0.0f}    // float blendConstants[4];
         };
 
         VkBool32 depthTestEnable =
@@ -1503,7 +1502,14 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             m_graphicsPipeline.setPipelineCreateFlags2(translateCreateFlag(m_params.pipelineCreateFlags));
 
         VkFormat colorAttachmentFormat = m_colorFormat;
-        VkFormat dsAttachmentFormat    = m_useImageAsColorOrDSAttachment ? m_imageFormat : VK_FORMAT_UNDEFINED;
+        VkFormat depthAttachmentFormat =
+            (m_useImageAsColorOrDSAttachment && tcu::hasDepthComponent(mapVkFormat(m_imageFormat).order)) ?
+                m_imageFormat :
+                VK_FORMAT_UNDEFINED;
+        VkFormat stencilAttachmentFormat =
+            (m_useImageAsColorOrDSAttachment && tcu::hasStencilComponent(mapVkFormat(m_imageFormat).order)) ?
+                m_imageFormat :
+                VK_FORMAT_UNDEFINED;
 
         vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
@@ -1511,8 +1517,8 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
             0u,                                                   // uint32_t            viewMask
             1u,                                                   // uint32_t            colorAttachmentCount
             &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
-            dsAttachmentFormat,                                   // VkFormat            depthAttachmentFormat
-            dsAttachmentFormat,                                   // VkFormat            stencilAttachmentFormat
+            depthAttachmentFormat,                                // VkFormat            depthAttachmentFormat
+            stencilAttachmentFormat,                              // VkFormat            stencilAttachmentFormat
         };
 
         PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfoPtr(

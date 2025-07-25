@@ -497,7 +497,7 @@ virtual VkResult			bindOpticalFlowSessionImageNV							(VkDevice device, VkOptic
 virtual void				cmdOpticalFlowExecuteNV									(VkCommandBuffer commandBuffer, VkOpticalFlowSessionNV session, const VkOpticalFlowExecuteInfoNV* pExecuteInfo) const = 0;
 virtual VkResult			getDeviceFaultInfoEXT									(VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const = 0;
 virtual void				cmdSetDepthBias2EXT										(VkCommandBuffer commandBuffer, const VkDepthBiasInfoEXT* pDepthBiasInfo) const = 0;
-virtual VkResult			releaseSwapchainImagesEXT								(VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo) const = 0;
+virtual VkResult			releaseSwapchainImagesKHR								(VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo) const = 0;
 virtual void				getDeviceImageSubresourceLayout							(VkDevice device, const VkDeviceImageSubresourceInfo* pInfo, VkSubresourceLayout2* pLayout) const = 0;
 virtual VkResult			mapMemory2												(VkDevice device, const VkMemoryMapInfo* pMemoryMapInfo, void** ppData) const = 0;
 virtual VkResult			unmapMemory2											(VkDevice device, const VkMemoryUnmapInfo* pMemoryUnmapInfo) const = 0;
@@ -546,3 +546,12 @@ virtual void				getDeviceTensorMemoryRequirementsARM					(VkDevice device, const
 virtual void				cmdCopyTensorARM										(VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo) const = 0;
 virtual VkResult			getTensorOpaqueCaptureDescriptorDataARM					(VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const = 0;
 virtual VkResult			getTensorViewOpaqueCaptureDescriptorDataARM				(VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const = 0;
+virtual VkResult			createDataGraphPipelinesARM								(VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines) const = 0;
+virtual VkResult			createDataGraphPipelineSessionARM						(VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDataGraphPipelineSessionARM* pSession) const = 0;
+virtual VkResult			getDataGraphPipelineSessionBindPointRequirementsARM		(VkDevice device, const VkDataGraphPipelineSessionBindPointRequirementsInfoARM* pInfo, uint32_t* pBindPointRequirementCount, VkDataGraphPipelineSessionBindPointRequirementARM* pBindPointRequirements) const = 0;
+virtual void				getDataGraphPipelineSessionMemoryRequirementsARM		(VkDevice device, const VkDataGraphPipelineSessionMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
+virtual VkResult			bindDataGraphPipelineSessionMemoryARM					(VkDevice device, uint32_t bindInfoCount, const VkBindDataGraphPipelineSessionMemoryInfoARM* pBindInfos) const = 0;
+virtual void				destroyDataGraphPipelineSessionARM						(VkDevice device, VkDataGraphPipelineSessionARM session, const VkAllocationCallbacks* pAllocator) const = 0;
+virtual void				cmdDispatchDataGraphARM									(VkCommandBuffer commandBuffer, VkDataGraphPipelineSessionARM session, const VkDataGraphPipelineDispatchInfoARM* pInfo) const = 0;
+virtual VkResult			getDataGraphPipelineAvailablePropertiesARM				(VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t* pPropertiesCount, VkDataGraphPipelinePropertyARM* pProperties) const = 0;
+virtual VkResult			getDataGraphPipelinePropertiesARM						(VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t propertiesCount, VkDataGraphPipelinePropertyQueryResultARM* pProperties) const = 0;

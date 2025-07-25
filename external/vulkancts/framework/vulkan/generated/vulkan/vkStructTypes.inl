@@ -1793,6 +1793,11 @@ struct VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV
 	VkDeviceAddress	clusterReferences;
 };
 
+struct VkClusterAccelerationStructureGetTemplateIndicesInfoNV
+{
+	VkDeviceAddress	clusterTemplateAddress;
+};
+
 struct VkClusterAccelerationStructureBuildTriangleClusterInfoNV
 {
 	uint32_t														clusterID;
@@ -6299,7 +6304,7 @@ struct VkColorBlendAdvancedEXT
 struct VkRenderPassTransformBeginInfoQCOM
 {
 	VkStructureType					sType;
-	void*							pNext;
+	const void*						pNext;
 	VkSurfaceTransformFlagBitsKHR	transform;
 };
 
@@ -6313,7 +6318,7 @@ struct VkCopyCommandTransformInfoQCOM
 struct VkCommandBufferInheritanceRenderPassTransformInfoQCOM
 {
 	VkStructureType					sType;
-	void*							pNext;
+	const void*						pNext;
 	VkSurfaceTransformFlagBitsKHR	transform;
 	VkRect2D						renderArea;
 };
@@ -8223,6 +8228,46 @@ struct VkPipelineRasterizationProvokingVertexStateCreateInfoEXT
 	VkProvokingVertexModeEXT	provokingVertexMode;
 };
 
+struct VkVideoEncodeIntraRefreshCapabilitiesKHR
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkVideoEncodeIntraRefreshModeFlagsKHR	intraRefreshModes;
+	uint32_t								maxIntraRefreshCycleDuration;
+	uint32_t								maxIntraRefreshActiveReferencePictures;
+	VkBool32								partitionIndependentIntraRefreshRegions;
+	VkBool32								nonRectangularIntraRefreshRegions;
+};
+
+struct VkVideoEncodeSessionIntraRefreshCreateInfoKHR
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	VkVideoEncodeIntraRefreshModeFlagBitsKHR	intraRefreshMode;
+};
+
+struct VkVideoEncodeIntraRefreshInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		intraRefreshCycleDuration;
+	uint32_t		intraRefreshIndex;
+};
+
+struct VkVideoReferenceIntraRefreshInfoKHR
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		dirtyIntraRefreshRegions;
+};
+
+struct VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoEncodeIntraRefresh;
+};
+
 struct VkCuModuleCreateInfoNVX
 {
 	VkStructureType	sType;
@@ -9705,25 +9750,25 @@ struct VkPhysicalDeviceDynamicRenderingUnusedAttachmentsFeaturesEXT
 	VkBool32		dynamicRenderingUnusedAttachments;
 };
 
-struct VkSurfacePresentModeEXT
+struct VkSurfacePresentModeKHR
 {
 	VkStructureType		sType;
 	void*				pNext;
 	VkPresentModeKHR	presentMode;
 };
 
-struct VkSurfacePresentScalingCapabilitiesEXT
+struct VkSurfacePresentScalingCapabilitiesKHR
 {
 	VkStructureType				sType;
 	void*						pNext;
-	VkPresentScalingFlagsEXT	supportedPresentScaling;
-	VkPresentGravityFlagsEXT	supportedPresentGravityX;
-	VkPresentGravityFlagsEXT	supportedPresentGravityY;
+	VkPresentScalingFlagsKHR	supportedPresentScaling;
+	VkPresentGravityFlagsKHR	supportedPresentGravityX;
+	VkPresentGravityFlagsKHR	supportedPresentGravityY;
 	VkExtent2D					minScaledImageExtent;
 	VkExtent2D					maxScaledImageExtent;
 };
 
-struct VkSurfacePresentModeCompatibilityEXT
+struct VkSurfacePresentModeCompatibilityKHR
 {
 	VkStructureType		sType;
 	void*				pNext;
@@ -9731,14 +9776,14 @@ struct VkSurfacePresentModeCompatibilityEXT
 	VkPresentModeKHR*	pPresentModes;
 };
 
-struct VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT
+struct VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		swapchainMaintenance1;
 };
 
-struct VkSwapchainPresentFenceInfoEXT
+struct VkSwapchainPresentFenceInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -9746,7 +9791,7 @@ struct VkSwapchainPresentFenceInfoEXT
 	const VkFence*	pFences;
 };
 
-struct VkSwapchainPresentModesCreateInfoEXT
+struct VkSwapchainPresentModesCreateInfoKHR
 {
 	VkStructureType			sType;
 	const void*				pNext;
@@ -9754,7 +9799,7 @@ struct VkSwapchainPresentModesCreateInfoEXT
 	const VkPresentModeKHR*	pPresentModes;
 };
 
-struct VkSwapchainPresentModeInfoEXT
+struct VkSwapchainPresentModeInfoKHR
 {
 	VkStructureType			sType;
 	const void*				pNext;
@@ -9762,16 +9807,16 @@ struct VkSwapchainPresentModeInfoEXT
 	const VkPresentModeKHR*	pPresentModes;
 };
 
-struct VkSwapchainPresentScalingCreateInfoEXT
+struct VkSwapchainPresentScalingCreateInfoKHR
 {
 	VkStructureType				sType;
 	const void*					pNext;
-	VkPresentScalingFlagsEXT	scalingBehavior;
-	VkPresentGravityFlagsEXT	presentGravityX;
-	VkPresentGravityFlagsEXT	presentGravityY;
+	VkPresentScalingFlagsKHR	scalingBehavior;
+	VkPresentGravityFlagsKHR	presentGravityX;
+	VkPresentGravityFlagsKHR	presentGravityY;
 };
 
-struct VkReleaseSwapchainImagesInfoEXT
+struct VkReleaseSwapchainImagesInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -10648,7 +10693,7 @@ struct VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT
 	VkBool32		shaderReplicatedComposites;
 };
 
-struct VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT
+struct VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -11136,6 +11181,199 @@ struct VkOHSurfaceCreateInfoOHOS
 	const void*					pNext;
 	VkSurfaceCreateFlagsOHOS	flags;
 	pt::OHNativeWindow*			window;
+};
+
+struct VkPhysicalDeviceDataGraphFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		dataGraph;
+	VkBool32		dataGraphUpdateAfterBind;
+	VkBool32		dataGraphSpecializationConstants;
+	VkBool32		dataGraphDescriptorBuffer;
+	VkBool32		dataGraphShaderModule;
+};
+
+struct VkDataGraphPipelineConstantTensorSemiStructuredSparsityInfoARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		dimension;
+	uint32_t		zeroCount;
+	uint32_t		groupSize;
+};
+
+struct VkDataGraphPipelineConstantARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		id;
+	const void*		pConstantData;
+};
+
+struct VkDataGraphPipelineResourceInfoARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		descriptorSet;
+	uint32_t		binding;
+	uint32_t		arrayElement;
+};
+
+struct VkDataGraphPipelineCompilerControlCreateInfoARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	const char*		pVendorOptions;
+};
+
+struct VkDataGraphPipelineCreateInfoARM
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	VkPipelineCreateFlags2KHR					flags;
+	VkPipelineLayout							layout;
+	uint32_t									resourceInfoCount;
+	const VkDataGraphPipelineResourceInfoARM*	pResourceInfos;
+};
+
+struct VkDataGraphPipelineShaderModuleCreateInfoARM
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkShaderModule							module;
+	const char*								pName;
+	const VkSpecializationInfo*				pSpecializationInfo;
+	uint32_t								constantCount;
+	const VkDataGraphPipelineConstantARM*	pConstants;
+};
+
+struct VkDataGraphPipelineSessionCreateInfoARM
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	VkDataGraphPipelineSessionCreateFlagsARM	flags;
+	VkPipeline									dataGraphPipeline;
+};
+
+struct VkDataGraphPipelineSessionBindPointRequirementsInfoARM
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDataGraphPipelineSessionARM	session;
+};
+
+struct VkDataGraphPipelineSessionBindPointRequirementARM
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	VkDataGraphPipelineSessionBindPointARM		bindPoint;
+	VkDataGraphPipelineSessionBindPointTypeARM	bindPointType;
+	uint32_t									numObjects;
+};
+
+struct VkDataGraphPipelineSessionMemoryRequirementsInfoARM
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkDataGraphPipelineSessionARM			session;
+	VkDataGraphPipelineSessionBindPointARM	bindPoint;
+	uint32_t								objectIndex;
+};
+
+struct VkBindDataGraphPipelineSessionMemoryInfoARM
+{
+	VkStructureType							sType;
+	const void*								pNext;
+	VkDataGraphPipelineSessionARM			session;
+	VkDataGraphPipelineSessionBindPointARM	bindPoint;
+	uint32_t								objectIndex;
+	VkDeviceMemory							memory;
+	VkDeviceSize							memoryOffset;
+};
+
+struct VkDataGraphPipelineInfoARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkPipeline		dataGraphPipeline;
+};
+
+struct VkDataGraphPipelinePropertyQueryResultARM
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDataGraphPipelinePropertyARM	property;
+	VkBool32						isText;
+	size_t							dataSize;
+	void*							pData;
+};
+
+struct VkDataGraphPipelineIdentifierCreateInfoARM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		identifierSize;
+	const uint8_t*	pIdentifier;
+};
+
+struct VkDataGraphPipelineDispatchInfoARM
+{
+	VkStructureType						sType;
+	void*								pNext;
+	VkDataGraphPipelineDispatchFlagsARM	flags;
+};
+
+struct VkPhysicalDeviceDataGraphProcessingEngineARM
+{
+	VkPhysicalDeviceDataGraphProcessingEngineTypeARM	type;
+	VkBool32											isForeign;
+};
+
+struct VkPhysicalDeviceDataGraphOperationSupportARM
+{
+	VkPhysicalDeviceDataGraphOperationTypeARM	operationType;
+	char										name[VK_MAX_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_SET_NAME_SIZE_ARM];
+	uint32_t									version;
+};
+
+struct VkQueueFamilyDataGraphPropertiesARM
+{
+	VkStructureType									sType;
+	const void*										pNext;
+	VkPhysicalDeviceDataGraphProcessingEngineARM	engine;
+	VkPhysicalDeviceDataGraphOperationSupportARM	operation;
+};
+
+struct VkPhysicalDeviceQueueFamilyDataGraphProcessingEngineInfoARM
+{
+	VkStructureType										sType;
+	const void*											pNext;
+	uint32_t											queueFamilyIndex;
+	VkPhysicalDeviceDataGraphProcessingEngineTypeARM	engineType;
+};
+
+struct VkQueueFamilyDataGraphProcessingEnginePropertiesARM
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkExternalSemaphoreHandleTypeFlags	foreignSemaphoreHandleTypes;
+	VkExternalMemoryHandleTypeFlags		foreignMemoryHandleTypes;
+};
+
+struct VkDataGraphProcessingEngineCreateInfoARM
+{
+	VkStructureType									sType;
+	const void*										pNext;
+	uint32_t										processingEngineCount;
+	VkPhysicalDeviceDataGraphProcessingEngineARM*	pProcessingEngines;
+};
+
+struct VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		pipelineCacheIncrementalMode;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -13110,6 +13348,8 @@ typedef VkPhysicalDeviceShaderIntegerDotProductProperties VkPhysicalDeviceShader
 
 typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
 
+typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
+
 typedef VkFormatProperties3 VkFormatProperties3KHR;
 
 typedef VkPipelineRenderingCreateInfo VkPipelineRenderingCreateInfoKHR;
@@ -13140,6 +13380,24 @@ typedef VkPipelineRobustnessCreateInfo VkPipelineRobustnessCreateInfoEXT;
 
 typedef VkPhysicalDevicePipelineRobustnessProperties VkPhysicalDevicePipelineRobustnessPropertiesEXT;
 
+typedef VkSurfacePresentModeKHR VkSurfacePresentModeEXT;
+
+typedef VkSurfacePresentScalingCapabilitiesKHR VkSurfacePresentScalingCapabilitiesEXT;
+
+typedef VkSurfacePresentModeCompatibilityKHR VkSurfacePresentModeCompatibilityEXT;
+
+typedef VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT;
+
+typedef VkSwapchainPresentFenceInfoKHR VkSwapchainPresentFenceInfoEXT;
+
+typedef VkSwapchainPresentModesCreateInfoKHR VkSwapchainPresentModesCreateInfoEXT;
+
+typedef VkSwapchainPresentModeInfoKHR VkSwapchainPresentModeInfoEXT;
+
+typedef VkSwapchainPresentScalingCreateInfoKHR VkSwapchainPresentScalingCreateInfoEXT;
+
+typedef VkReleaseSwapchainImagesInfoKHR VkReleaseSwapchainImagesInfoEXT;
+
 typedef VkDeviceImageSubresourceInfo VkDeviceImageSubresourceInfoKHR;
 
 typedef VkMemoryMapInfo VkMemoryMapInfoKHR;
@@ -13167,6 +13425,10 @@ typedef VkPhysicalDeviceDynamicRenderingLocalReadFeatures VkPhysicalDeviceDynami
 typedef VkRenderingAttachmentLocationInfo VkRenderingAttachmentLocationInfoKHR;
 
 typedef VkRenderingInputAttachmentIndexInfo VkRenderingInputAttachmentIndexInfoKHR;
+
+typedef VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT;
+
+typedef VkPhysicalDeviceDepthClampZeroOneFeaturesKHR VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;
 
 typedef VkOHSurfaceCreateInfoOHOS VkSurfaceCreateInfoOHOS;
 

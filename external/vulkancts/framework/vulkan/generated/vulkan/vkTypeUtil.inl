@@ -464,6 +464,13 @@ inline VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV makeClusterA
 	return res;
 }
 
+inline VkClusterAccelerationStructureGetTemplateIndicesInfoNV makeClusterAccelerationStructureGetTemplateIndicesInfoNV (VkDeviceAddress clusterTemplateAddress)
+{
+	VkClusterAccelerationStructureGetTemplateIndicesInfoNV res;
+	res.clusterTemplateAddress	= clusterTemplateAddress;
+	return res;
+}
+
 inline VkBindShaderGroupIndirectCommandNV makeBindShaderGroupIndirectCommandNV (uint32_t groupIndex)
 {
 	VkBindShaderGroupIndirectCommandNV res;
@@ -983,6 +990,14 @@ inline VkDepthClampRangeEXT makeDepthClampRangeEXT (float minDepthClamp, float m
 	VkDepthClampRangeEXT res;
 	res.minDepthClamp	= minDepthClamp;
 	res.maxDepthClamp	= maxDepthClamp;
+	return res;
+}
+
+inline VkPhysicalDeviceDataGraphProcessingEngineARM makePhysicalDeviceDataGraphProcessingEngineARM (VkPhysicalDeviceDataGraphProcessingEngineTypeARM type, VkBool32 isForeign)
+{
+	VkPhysicalDeviceDataGraphProcessingEngineARM res;
+	res.type		= type;
+	res.isForeign	= isForeign;
 	return res;
 }
 

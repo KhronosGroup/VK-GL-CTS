@@ -1819,7 +1819,7 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
     auto &log                  = m_context.getTestContext().getLog();
     const float thresholdValue = 0.005f; // 1/255 < 0.005 < 2/255
     const tcu::Vec4 threshold(thresholdValue, 0.0f, 0.0f, 0.0f);
-    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_EVERYTHING))
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Unexpected results in color buffer; check log for details");
 
     return tcu::TestStatus::pass("Pass");

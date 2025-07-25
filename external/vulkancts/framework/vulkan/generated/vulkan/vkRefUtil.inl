@@ -65,3 +65,4 @@ Move<VkOpticalFlowSessionNV>		createOpticalFlowSessionNV			(const DeviceInterfac
 Move<VkExternalComputeQueueNV>		createExternalComputeQueueNV		(const DeviceInterface& vk, VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkTensorARM>					createTensorARM						(const DeviceInterface& vk, VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
 Move<VkTensorViewARM>				createTensorViewARM					(const DeviceInterface& vk, VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);
+Move<VkDataGraphPipelineSessionARM>	createDataGraphPipelineSessionARM	(const DeviceInterface& vk, VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator = nullptr);

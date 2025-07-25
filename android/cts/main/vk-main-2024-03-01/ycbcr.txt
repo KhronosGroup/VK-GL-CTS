@@ -18814,3 +18814,4 @@ dEQP-VK.ycbcr.copy.r8g8b8a8_unorm.r12x4g12x4_unorm_2pack16.optimal_disjoint_buff
 dEQP-VK.ycbcr.copy.r8g8b8a8_unorm.r12x4g12x4_unorm_2pack16.optimal_disjoint_buffer_linear_disjoint
 dEQP-VK.ycbcr.copy.r8g8b8a8_unorm.r12x4g12x4_unorm_2pack16.optimal_disjoint_buffer_optimal
 dEQP-VK.ycbcr.copy.r8g8b8a8_unorm.r12x4g12x4_unorm_2pack16.optimal_disjoint_buffer_optimal_disjoint
+dEQP-VK.ycbcr.misc.relaxed_precision

@@ -1,6 +1,6 @@
 {
     "register_extension": {
-        "type": "device",
+        "type": "instance",
         "core": ""
     }
 }

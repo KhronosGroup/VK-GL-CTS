@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkTypeUtil.hpp"
+#include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkDeviceFeatures.hpp"
 #include "vkDeviceProperties.hpp"
@@ -175,12 +176,14 @@ class DevCaps
         uint32_t count;
         float priority;
     };
+    using AllocatorParams_ = typename vk::SimpleAllocator::OptionalOffsetParams;
     struct RuntimeData_
     {
         friend class ContextManager;
         void verify() const;
         QueueInfo_ getQueue(const vk::DeviceInterface &, vk::VkDevice, uint32_t queueIndex,
                             bool isDefaultContext) const;
+        const AllocatorParams_ &getAllocatorCreateParams() const;
         RuntimeData_() = default;
         RuntimeData_(const DevCaps &caps); // calls resetQueues
 
@@ -189,6 +192,7 @@ class DevCaps
         // index in familyToQueueIndices refers to programmer queue index
         // familyToQueueIndices[] refers to a pair of {queueFamilyIndex, queueIndex in family}
         std::vector<std::pair<uint32_t, uint32_t>> familyToQueueIndices;
+        AllocatorParams_ allocatorCreateParams;
     };
     struct FeatureInfo_
     {
@@ -235,6 +239,7 @@ class DevCaps
     std::vector<QueueCreateInfo_> m_queueCreateInfos;
     bool m_hasInheritedExtensions;
     tcu::TestContext &m_testContext;
+    AllocatorParams_ m_allocatorParams;
 
     template <class FeatureStruct>
     void prepareFeature(FeatureStruct &feature, vk::VkStructureType sType)
@@ -336,6 +341,7 @@ public:
     using FeatureInfo     = FeatureInfo_;
     using FeaturesVar     = FeaturesVar_;
     using Features        = Features_;
+    using AllocatorParams = AllocatorParams_;
 
     friend class ContextManager;
     const ContextManager &getContextManager() const;
@@ -405,6 +411,11 @@ public:
     void resetQueues(const QueueCreateInfo (&infos)[N])
     {
         resetQueues(infos, N);
+    }
+
+    void setAllocatorParams(const AllocatorParams &allocatorCreateParams)
+    {
+        m_allocatorParams = allocatorCreateParams;
     }
 };
 

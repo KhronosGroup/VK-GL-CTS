@@ -1271,7 +1271,7 @@ bool MultiViewRenderTestInstance::checkImage(tcu::ConstPixelBufferAccess &render
             tcu::ConstPixelBufferAccess dst(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u,
                                             renderedFrame.getPixelPtr(0, 0, layerNdx));
             tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", ref,
-                                       dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                       dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
         }
 
     return result;

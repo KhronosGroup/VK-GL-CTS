@@ -61,6 +61,7 @@ DevCaps::DevCaps(const std::string &id_, const ContextManager *mgr, tcu::TestCon
     , m_queueCreateInfos()
     , m_hasInheritedExtensions(false) // don't add all extensions that are available on the device
     , m_testContext(testContext)
+    , m_allocatorParams(tcu::Nothing)
     , id(id_)
 {
     reset();
@@ -74,6 +75,7 @@ DevCaps::DevCaps(const DevCaps &caps)
     , m_queueCreateInfos(caps.m_queueCreateInfos)
     , m_hasInheritedExtensions(caps.m_hasInheritedExtensions)
     , m_testContext(caps.m_testContext)
+    , m_allocatorParams(caps.m_allocatorParams)
     , id(caps.id)
 {
 }
@@ -86,6 +88,7 @@ DevCaps::DevCaps(DevCaps &&caps) noexcept
     , m_queueCreateInfos(std::move(caps.m_queueCreateInfos))
     , m_hasInheritedExtensions(caps.m_hasInheritedExtensions)
     , m_testContext(caps.m_testContext)
+    , m_allocatorParams(caps.m_allocatorParams)
     , id(caps.id)
 {
 }
@@ -753,6 +756,8 @@ de::SharedPtr<Context> ContextManager::findContext(de::SharedPtr<const ContextMa
 }
 
 DevCaps::RuntimeData_::RuntimeData_(const DevCaps &caps)
+    : familyToQueueIndices()
+    , allocatorCreateParams(caps.m_allocatorParams)
 {
     std::vector<float> queuePriorities;
     std::vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -985,6 +990,11 @@ DevCaps::QueueInfo DevCaps::RuntimeData_::getQueue(const DeviceInterface &di, vk
     di.getDeviceQueue(device, queueFamilyIndex, queueIndexInFamily, &info.queue);
 
     return info;
+}
+
+const DevCaps::AllocatorParams &DevCaps::RuntimeData_::getAllocatorCreateParams() const
+{
+    return allocatorCreateParams;
 }
 
 void ContextManager::print(tcu::TestLog &log, const VkDeviceCreateInfo &createInfo) const

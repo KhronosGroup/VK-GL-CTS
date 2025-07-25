@@ -152,17 +152,17 @@ GCC_64BIT_CFLAGS = COMMON_GCC_CFLAGS + ["-m64"]
 CLANG_64BIT_CFLAGS = COMMON_CLANG_CFLAGS + ["-m64"]
 CLANG_VERSION = getClangVersion()
 
-# Always ran before any receipe
+# Always ran before any recipe
 PREREQUISITES = [
-    RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--force"] + (["--verbose"] if env.verbose else []))
+    RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--force", "--include-vvl"] + (["--verbose"] if env.verbose else []))
 ]
 
-# Always ran after any receipe
+# Always ran after any recipe
 POST_CHECKS = [
     CheckSrcChanges()
 ]
 
-# Optional step to clean up external resources after finishing receipe
+# Optional step to clean up external resources after finishing recipe
 POST_CLEANUP = [
     RunScript(os.path.join("external", "fetch_sources.py"), lambda env: ["--clean"])
 ]

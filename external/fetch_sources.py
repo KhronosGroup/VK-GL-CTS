@@ -247,13 +247,14 @@ class SourceFile (Source):
         writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
-    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = ""):
+    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = "", postCheckout = None):
         Source.__init__(self, baseDir, extractDir)
         self.httpsUrl = httpsUrl
         self.sshUrl = sshUrl
         self.revision = revision
         self.removeTags = removeTags
         self.patch = patch
+        self.postCheckout = postCheckout
 
     def checkout(self, url, fullDstPath, force):
         print("Directory: " + fullDstPath)
@@ -301,6 +302,12 @@ class GitRepo (Source):
 
         try:
             self.checkout(url, fullDstPath, force)
+            if self.postCheckout:
+                if self.baseDir == "vulkan-validationlayers" and SYSTEM_NAME != "Linux":
+                    print(f"Skipping post checkout command for {self.baseDir} on {SYSTEM_NAME} platform")
+                else:
+                    print(f"Running post checkout command for {self.baseDir}: {self.postCheckout}")
+                    subprocess.check_call(self.postCheckout, shell=True, cwd=fullDstPath)
         except KeyboardInterrupt:
             # Propagate the exception to stop the process if possible.
             raise
@@ -329,29 +336,30 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "e0bad2825dacf274578ec6d3c0e64e406d5e4fd7",
+        "a983ab19d6f91a07a8272767427b6c5208576d08",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "05cfcc1613c28c1274036f53616d66324f7cd383",
+        "8a85691a0740d390761a1008b4696f57facd02c4",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
         "git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
-        "8885f8b577a08a7def5c6334187a2c8efcc35e56",
+        "d40ca27c51f192252f0bd0fc5be84b8773566c2b",
         "spirv-headers"),
     GitRepo(
         "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "4e3f2725ad2b1eda5ea674dbe493f46f38e88986",
+        "bb6d2d50baf96a89979e763598e1d89113a01d6c",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "2f8ff8694f97a9a7f4ae65a917b7f059874c8d44",
-        "vulkan-validationlayers"),
+        "68e4cdd8269c2af39aa16793c9089d1893eae972",
+        "vulkan-validationlayers",
+        postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
@@ -373,7 +381,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "c29c26e8a25749855aea5905500e6c2b29fadae5",
+        "v0.3.1",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(
@@ -397,6 +405,8 @@ def parseArgs ():
                         help="Select protocol to checkout git repositories.")
     parser.add_argument('--force', dest='force', action='store_true', default=False,
                         help="Pass --force to git fetch and checkout commands")
+    parser.add_argument('--include-vvl', dest='include_vvl', action='store_true', default=False,
+                        help='Download the Vulkan Validation Layers')
     parser.add_argument("-v", "--verbose",
                         dest="verbose",
                         action="store_true",
@@ -409,7 +419,7 @@ def parseArgs ():
                 if sys.version_info < versionItem:
                     parser.error("For --insecure minimum required python version is " +
                                 versionsForInsecureStr)
-                break;
+                break
 
     return args
 
@@ -443,6 +453,7 @@ if __name__ == "__main__":
             if args.clean:
                 pkg.clean()
             else:
-                pkg.update(args.protocol, args.force)
+                if pkg.baseDir != 'vulkan-validationlayers' or args.include_vvl:
+                    pkg.update(args.protocol, args.force)
     except KeyboardInterrupt:
         sys.exit("") # Returns 1.

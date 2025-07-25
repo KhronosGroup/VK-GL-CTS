@@ -76,6 +76,8 @@ class DefaultDevice;
 class Context
 {
 public:
+    // Constructor retained for compatibility with legacy code,
+    // only called in createServerVKSC() and VKSC pipeline compiler.
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
             vk::BinaryCollection &progCollection, de::SharedPtr<vk::ResourceInterface> resourceInterface);
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
@@ -206,7 +208,8 @@ public:
 protected:
     tcu::TestContext &m_testCtx;
     const vk::PlatformInterface &m_platformInterface;
-    const de::SharedPtr<const ContextManager> m_contextManager;
+    const de::SharedPtr<const ContextManager> m_contextManagerPtr;
+    const de::WeakPtr<const ContextManager> m_contextManager;
     vk::BinaryCollection &m_progCollection;
 
     de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
@@ -226,7 +229,7 @@ class TestInstance;
 class TestCase : public tcu::TestCase
 {
     friend class ContextManager;
-    de::SharedPtr<const ContextManager> m_contextManager;
+    de::WeakPtr<const ContextManager> m_contextManager;
     void setContextManager(de::SharedPtr<const ContextManager>);
 
 public:

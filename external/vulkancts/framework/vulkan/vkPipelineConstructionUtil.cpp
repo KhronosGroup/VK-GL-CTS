@@ -4262,7 +4262,8 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates(vk::VkCommandBuffer c
                 vk.cmdSetScissorWithCount(cmdBuffer, (uint32_t)state->scissors.size(), state->scissors.data());
             break;
         case vk::VK_DYNAMIC_STATE_LINE_WIDTH:
-            if (polygonModeLine || topologyLine)
+            // Mesh shaders can produce line topology so ensure lineWidth is set
+            if (polygonModeLine || topologyLine || meshOrTask)
                 vk.cmdSetLineWidth(cmdBuffer, state->lineWidth);
             break;
         case vk::VK_DYNAMIC_STATE_DEPTH_BIAS:
