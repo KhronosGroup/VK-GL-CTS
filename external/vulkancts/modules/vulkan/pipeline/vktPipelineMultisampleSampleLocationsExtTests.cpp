@@ -1030,8 +1030,27 @@ void recordWaitEventWithImage(const DeviceInterface &vk, const VkCommandBuffer c
 }
 
 void recordCopyImageToBuffer(const DeviceInterface &vk, const VkCommandBuffer cmdBuffer, const UVec2 &imageSize,
-                             const VkImage srcImage, const VkBuffer dstBuffer)
+                             const VkImage srcImage, const VkBuffer dstBuffer,
+                             const VkImageLayout layout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
 {
+    // Image read barrier
+    {
+        const VkImageMemoryBarrier barrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType			sType;
+            nullptr,                                // const void*				pNext;
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // VkAccessFlags			srcAccessMask;
+            VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags			dstAccessMask;
+            layout,                                 // VkImageLayout			oldLayout;
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout			newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t				    srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t				    dstQueueFamilyIndex;
+            srcImage,                               // VkImage					image;
+            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
+                                      1u) // VkImageSubresourceRange	subresourceRange;
+        };
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u, &barrier);
+    }
     // Color/Resolve image -> host buffer
     {
         const VkBufferImageCopy region = {
@@ -2976,7 +2995,7 @@ protected:
         {
             const VkImage sourceImage = (isMSAA() ? *m_resolveImage : *m_colorImage);
 
-            recordCopyImageToBuffer(vk, currentCmdBuffer, m_renderSize, sourceImage, *m_colorBuffer);
+            recordCopyImageToBuffer(vk, currentCmdBuffer, m_renderSize, sourceImage, *m_colorBuffer, colorLayout1);
         }
 
         endCommandBuffer(vk, currentCmdBuffer);
