@@ -27,7 +27,6 @@
 #include "vktDrawImageObjectUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
-#include "vktCustomInstancesDevices.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
@@ -5192,6 +5191,676 @@ tcu::TestStatus MultipleGeomStatsTestInstance::iterate(void)
         return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
 
     return tcu::TestStatus::pass("Pass");
+}
+
+class TessellationGeometryShaderTestInstance : public GraphicBasicTestInstance
+{
+public:
+    TessellationGeometryShaderTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
+                                           const ParametersGraphic &parametersGraphic,
+                                           const std::vector<uint64_t> &drawRepeats);
+
+protected:
+    virtual void checkExtensions(bool hostQueryResetEnabled);
+    virtual void createPipeline(void);
+    virtual tcu::TestStatus executeTest(void);
+    virtual tcu::TestStatus checkResult(VkQueryPool queryPool);
+    void draw(VkCommandBuffer cmdBuffer);
+};
+
+TessellationGeometryShaderTestInstance::TessellationGeometryShaderTestInstance(
+    vkt::Context &context, const std::vector<VertexData> &data, const ParametersGraphic &parametersGraphic,
+    const std::vector<uint64_t> &drawRepeats)
+    : GraphicBasicTestInstance(context, data, parametersGraphic, drawRepeats)
+{
+}
+
+void TessellationGeometryShaderTestInstance::checkExtensions(bool hostQueryResetEnabled)
+{
+    StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
+    if (!m_context.getDeviceFeatures().tessellationShader)
+        throw tcu::NotSupportedError("Tessellation shader are not supported");
+    if (!m_context.getDeviceFeatures().geometryShader)
+        throw tcu::NotSupportedError("Geometry shader are not supported");
+}
+
+void TessellationGeometryShaderTestInstance::createPipeline(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+
+    // Pipeline
+    Unique<VkShaderModule> vs(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("vertex"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> tc(createShaderModule(
+        vk, device, m_context.getBinaryCollection().get("tessellation_control"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> te(createShaderModule(
+        vk, device, m_context.getBinaryCollection().get("tessellation_evaluation"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> gs(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("geometry"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> fs(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("fragment"), (VkShaderModuleCreateFlags)0));
+
+    const PipelineCreateInfo::ColorBlendState::Attachment attachmentState;
+
+    std::vector<VkPushConstantRange> pcRanges;
+
+    if (m_parametersGraphic.noColorAttachments)
+        pcRanges.push_back(makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, kFloatSize, kFloatSize));
+
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(std::vector<VkDescriptorSetLayout>(), de::sizeU32(pcRanges),
+                                                            de::dataOrNull(pcRanges));
+
+    m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
+    const VkVertexInputBindingDescription vertexInputBindingDescription = {
+        0u,                                        // binding;
+        static_cast<uint32_t>(sizeof(VertexData)), // stride;
+        VK_VERTEX_INPUT_RATE_VERTEX                // inputRate
+    };
+
+    const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] = {
+        {0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u}, // VertexElementData::position
+        {1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<uint32_t>(sizeof(tcu::Vec4))}, // VertexElementData::color
+    };
+
+    const VkPipelineVertexInputStateCreateInfo vf_info = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType;
+        NULL,                                                      // pNext;
+        0u,                                                        // flags;
+        1u,                                                        // vertexBindingDescriptionCount;
+        &vertexInputBindingDescription,                            // pVertexBindingDescriptions;
+        2u,                                                        // vertexAttributeDescriptionCount;
+        vertexInputAttributeDescriptions                           // pVertexAttributeDescriptions;
+    };
+
+    PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
+    pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", VK_SHADER_STAGE_VERTEX_BIT));
+    pipelineCreateInfo.addShader(
+        PipelineCreateInfo::PipelineShaderStage(*tc, "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+    pipelineCreateInfo.addShader(
+        PipelineCreateInfo::PipelineShaderStage(*te, "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+    pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*gs, "main", VK_SHADER_STAGE_GEOMETRY_BIT));
+    pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", VK_SHADER_STAGE_FRAGMENT_BIT));
+
+    pipelineCreateInfo.addState(PipelineCreateInfo::TessellationState(
+        m_parametersGraphic.tessPatchSize ? m_parametersGraphic.tessPatchSize : 4u));
+
+    pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST));
+    pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
+
+    const VkViewport viewport = makeViewport(m_width, m_height);
+    const VkRect2D scissor    = makeRect2D(m_width, m_height);
+
+    pipelineCreateInfo.addState(
+        PipelineCreateInfo::ViewportState(1, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
+
+    const VkBool32 depthTestAndWrites = makeVkBool(m_parametersGraphic.noColorAttachments);
+    pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState(depthTestAndWrites, depthTestAndWrites));
+
+    pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
+    pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
+    pipelineCreateInfo.addState(vf_info);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+}
+
+tcu::TestStatus TessellationGeometryShaderTestInstance::executeTest(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
+    const Move<VkCommandPool> cmdPool = createCommandPool(vk, device, &cmdPoolCreateInfo);
+    const uint32_t queryCount         = static_cast<uint32_t>(m_drawRepeats.size());
+    const Unique<VkQueryPool> queryPool(makeQueryPool(vk, device, queryCount, m_parametersGraphic.queryStatisticFlags));
+
+    const VkDeviceSize vertexBufferOffset = 0u;
+    const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
+    const VkBuffer vertexBuffer           = vertexBufferSp->object();
+
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    {
+        std::vector<VkClearValue> renderPassClearValues(2);
+        deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
+
+        if (!m_parametersGraphic.noColorAttachments)
+            initialTransitionColor2DImage(
+                vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        initialTransitionDepth2DImage(
+            vk, *cmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        if (m_parametersGraphic.resetType != RESET_TYPE_HOST)
+            vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
+
+        beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height),
+                        (uint32_t)renderPassClearValues.size(), &renderPassClearValues[0]);
+
+        for (uint32_t i = 0; i < queryCount; ++i)
+        {
+            vk.cmdBeginQuery(*cmdBuffer, *queryPool, i, (VkQueryControlFlags)0u);
+            vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+            for (uint64_t j = 0; j < m_drawRepeats[i]; ++j)
+                draw(*cmdBuffer);
+
+            vk.cmdEndQuery(*cmdBuffer, *queryPool, i);
+        }
+
+        endRenderPass(vk, *cmdBuffer);
+
+        if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY || m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            VkDeviceSize stride          = m_parametersGraphic.querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
+            vk::VkQueryResultFlags flags = m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+            {
+                flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride *= 2u;
+            }
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY)
+            {
+                vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
+                flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride = sizeof(ValueAndAvailability);
+            }
+
+            VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
+            VkDeviceSize copyStride     = stride;
+            if (m_parametersGraphic.strideType == STRIDE_TYPE_ZERO)
+                copyStride = 0u;
+
+            vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(), dstOffsetQuery,
+                                       copyStride, flags);
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+                vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
+
+            const VkBufferMemoryBarrier barrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
+                nullptr,                                 //  const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
+                m_resetBuffer->object(),                 //  VkBuffer buffer;
+                0u,                                      //  VkDeviceSize offset;
+                queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
+            };
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
+        }
+
+        if (!m_parametersGraphic.noColorAttachments)
+            transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    }
+    endCommandBuffer(vk, *cmdBuffer);
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        vk.resetQueryPool(device, *queryPool, 0u, queryCount);
+
+    // Wait for completion
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+    return checkResult(*queryPool);
+}
+
+tcu::TestStatus TessellationGeometryShaderTestInstance::checkResult(VkQueryPool queryPool)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    uint64_t expectedMin      = 0u;
+    std::string errorMsg;
+
+    switch (m_parametersGraphic.queryStatisticFlags)
+    {
+    case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT:
+        expectedMin = m_parametersGraphic.numTessPrimitives;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT:
+        expectedMin = 4u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT:
+        expectedMin = 100u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT:
+        expectedMin = 64u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT:
+        expectedMin = 64u;
+        break;
+    default:
+        DE_FATAL("Unexpected type of statistics query");
+        break;
+    }
+
+    const uint32_t queryCount = static_cast<uint32_t>(m_drawRepeats.size());
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_NORMAL || m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+    {
+        ResultsVector results(queryCount, 0u);
+
+        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags()),
+                                          m_parametersGraphic.dstOffset);
+        }
+        else
+        {
+            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
+        }
+
+        if (results[0] < expectedMin)
+        {
+            std::ostringstream msg;
+            msg << "QueryPoolResults incorrect: expected at least " << expectedMin << " but got " << results[0];
+            errorMsg = msg.str();
+        }
+        else if (queryCount > 1)
+        {
+            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+            if (fabs(pearson) < 0.8)
+            {
+                std::ostringstream msg;
+                msg << "QueryPoolResults are nonlinear: Pearson " << pearson << " for";
+                for (const auto &x : results)
+                    msg << " " << x;
+                errorMsg = msg.str();
+            }
+        }
+    }
+    else if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+    {
+        ResultsVectorWithAvailability results(queryCount, pair<uint64_t, uint64_t>(0u, 0u));
+
+        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                           VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
+                                          m_parametersGraphic.dstOffset);
+        }
+        else
+        {
+            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                                VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
+        }
+
+        if (results[0].first < expectedMin || results[0].second == 0)
+        {
+            std::ostringstream msg;
+            msg << "QueryPoolResults incorrect: expected at least " << expectedMin << " with availability 1 but got "
+                << results[0].first << " with availability " << results[0].second;
+            errorMsg = msg.str();
+        }
+        else if (queryCount > 1)
+        {
+            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+            if (fabs(pearson) < 0.8)
+            {
+                std::ostringstream msg;
+                msg << "QueryPoolResults are nonlinear: Pearson " << pearson << " for";
+                for (const auto &x : results)
+                    msg << " " << x.first;
+                errorMsg = msg.str();
+            }
+        }
+        else
+        {
+            uint64_t temp = results[0].first;
+
+            vk.resetQueryPool(device, queryPool, 0, queryCount);
+            vk::VkResult res = GetQueryPoolResultsVector(
+                results, vk, device, queryPool, 0u, queryCount,
+                (m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+
+            /* From Vulkan spec:
+             *
+             * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+             * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+             * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+             */
+            if (res != vk::VK_NOT_READY || results[0].first != temp || results[0].second != 0u)
+                errorMsg = "QueryPoolResults incorrect reset";
+        }
+    }
+    else
+    {
+        // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
+        const auto result = verifyUnavailable();
+        if (result.isFail())
+            errorMsg = result.getDescription();
+    }
+
+    // Verify image output if needed
+#ifdef CTS_USES_VULKANSC
+    const bool checkImageResult = checkImage();
+    if (!m_parametersGraphic.noColorAttachments && errorMsg.empty() && !checkImageResult)
+#else
+    if (!m_parametersGraphic.noColorAttachments && errorMsg.empty() && !checkImage())
+#endif
+        errorMsg = "Result image doesn't match expected image";
+
+    if (!errorMsg.empty())
+        return tcu::TestStatus::fail(errorMsg);
+    return tcu::TestStatus::pass("Pass");
+}
+
+void TessellationGeometryShaderTestInstance::draw(VkCommandBuffer cmdBuffer)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    vk.cmdDraw(cmdBuffer, m_parametersGraphic.tessPatchSize * m_parametersGraphic.numTessPrimitives, 1u, 0u, 0u);
+}
+
+class TessellationGeometryShaderSecondaryTestInstance : public TessellationGeometryShaderTestInstance
+{
+public:
+    TessellationGeometryShaderSecondaryTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
+                                                    const ParametersGraphic &parametersGraphic,
+                                                    const std::vector<uint64_t> &drawRepeats);
+
+protected:
+    virtual tcu::TestStatus executeTest(void);
+};
+
+TessellationGeometryShaderSecondaryTestInstance::TessellationGeometryShaderSecondaryTestInstance(
+    vkt::Context &context, const std::vector<VertexData> &data, const ParametersGraphic &parametersGraphic,
+    const std::vector<uint64_t> &drawRepeats)
+    : TessellationGeometryShaderTestInstance(context, data, parametersGraphic, drawRepeats)
+{
+}
+
+tcu::TestStatus TessellationGeometryShaderSecondaryTestInstance::executeTest(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
+    const Move<VkCommandPool> cmdPool = createCommandPool(vk, device, &cmdPoolCreateInfo);
+    const uint32_t queryCount         = static_cast<uint32_t>(m_drawRepeats.size());
+    const Unique<VkQueryPool> queryPool(makeQueryPool(vk, device, queryCount, m_parametersGraphic.queryStatisticFlags));
+
+    const VkDeviceSize vertexBufferOffset = 0u;
+    const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
+    const VkBuffer vertexBuffer           = vertexBufferSp->object();
+
+    const Unique<VkCommandBuffer> primaryCmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    std::vector<VkCommandBufferSp> secondaryCmdBuffers(queryCount);
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+        secondaryCmdBuffers[i] = VkCommandBufferSp(new vk::Unique<VkCommandBuffer>(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+    {
+        beginSecondaryCommandBuffer(vk, secondaryCmdBuffers[i]->get(), m_parametersGraphic.queryStatisticFlags,
+                                    *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+        vk.cmdBeginQuery(secondaryCmdBuffers[i]->get(), *queryPool, i, (VkQueryControlFlags)0u);
+        vk.cmdBindPipeline(secondaryCmdBuffers[i]->get(), VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        vk.cmdBindVertexBuffers(secondaryCmdBuffers[i]->get(), 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+        for (uint32_t j = 0; j < m_drawRepeats[i]; ++j)
+            draw(secondaryCmdBuffers[i]->get());
+        vk.cmdEndQuery(secondaryCmdBuffers[i]->get(), *queryPool, i);
+        endCommandBuffer(vk, secondaryCmdBuffers[i]->get());
+    }
+
+    beginCommandBuffer(vk, *primaryCmdBuffer);
+    {
+        std::vector<VkClearValue> renderPassClearValues(2);
+        deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
+
+        if (!m_parametersGraphic.noColorAttachments)
+            initialTransitionColor2DImage(
+                vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        initialTransitionDepth2DImage(
+            vk, *primaryCmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        if (m_parametersGraphic.resetType != RESET_TYPE_HOST)
+            vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+        beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height),
+                        (uint32_t)renderPassClearValues.size(), &renderPassClearValues[0],
+                        VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        for (uint32_t i = 0; i < queryCount; ++i)
+            vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &(secondaryCmdBuffers[i]->get()));
+        endRenderPass(vk, *primaryCmdBuffer);
+
+        if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY || m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            VkDeviceSize stride          = m_parametersGraphic.querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
+            vk::VkQueryResultFlags flags = m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+            {
+                flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride *= 2u;
+            }
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY)
+            {
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+                flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride = sizeof(ValueAndAvailability);
+            }
+
+            VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
+            VkDeviceSize copyStride     = stride;
+            if (m_parametersGraphic.strideType == STRIDE_TYPE_ZERO)
+                copyStride = 0u;
+
+            vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                       dstOffsetQuery, copyStride, flags);
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+            const VkBufferMemoryBarrier barrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
+                nullptr,                                 //  const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
+                m_resetBuffer->object(),                 //  VkBuffer buffer;
+                0u,                                      //  VkDeviceSize offset;
+                queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
+            };
+            vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
+        }
+
+        if (!m_parametersGraphic.noColorAttachments)
+            transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    }
+    endCommandBuffer(vk, *primaryCmdBuffer);
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        vk.resetQueryPool(device, *queryPool, 0u, queryCount);
+
+    // Wait for completion
+    submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
+    return checkResult(*queryPool);
+}
+
+class TessellationGeometryShaderSecondaryInheritedTestInstance : public TessellationGeometryShaderTestInstance
+{
+public:
+    TessellationGeometryShaderSecondaryInheritedTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
+                                                             const ParametersGraphic &parametersGraphic,
+                                                             const std::vector<uint64_t> &drawRepeats);
+
+protected:
+    virtual void checkExtensions(bool hostQueryResetEnabled);
+    virtual tcu::TestStatus executeTest(void);
+};
+
+TessellationGeometryShaderSecondaryInheritedTestInstance::TessellationGeometryShaderSecondaryInheritedTestInstance(
+    vkt::Context &context, const std::vector<VertexData> &data, const ParametersGraphic &parametersGraphic,
+    const std::vector<uint64_t> &drawRepeats)
+    : TessellationGeometryShaderTestInstance(context, data, parametersGraphic, drawRepeats)
+{
+}
+
+void TessellationGeometryShaderSecondaryInheritedTestInstance::checkExtensions(bool hostQueryResetEnabled)
+{
+    TessellationGeometryShaderTestInstance::checkExtensions(hostQueryResetEnabled);
+    if (!m_context.getDeviceFeatures().inheritedQueries)
+        throw tcu::NotSupportedError("Inherited queries are not supported");
+}
+
+tcu::TestStatus TessellationGeometryShaderSecondaryInheritedTestInstance::executeTest(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
+    const Move<VkCommandPool> cmdPool = createCommandPool(vk, device, &cmdPoolCreateInfo);
+    const uint32_t queryCount         = static_cast<uint32_t>(m_drawRepeats.size());
+    const Unique<VkQueryPool> queryPool(makeQueryPool(vk, device, queryCount, m_parametersGraphic.queryStatisticFlags));
+
+    const VkDeviceSize vertexBufferOffset = 0u;
+    const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
+    const VkBuffer vertexBuffer           = vertexBufferSp->object();
+
+    const Unique<VkCommandBuffer> primaryCmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    std::vector<VkCommandBufferSp> secondaryCmdBuffers(queryCount);
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+        secondaryCmdBuffers[i] = VkCommandBufferSp(new vk::Unique<VkCommandBuffer>(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+    {
+        beginSecondaryCommandBuffer(vk, secondaryCmdBuffers[i]->get(), m_parametersGraphic.queryStatisticFlags,
+                                    *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+        vk.cmdBindPipeline(secondaryCmdBuffers[i]->get(), VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        vk.cmdBindVertexBuffers(secondaryCmdBuffers[i]->get(), 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+        for (uint32_t j = 0; j < m_drawRepeats[i]; ++j)
+            draw(secondaryCmdBuffers[i]->get());
+        endCommandBuffer(vk, secondaryCmdBuffers[i]->get());
+    }
+
+    beginCommandBuffer(vk, *primaryCmdBuffer);
+    {
+        std::vector<VkClearValue> renderPassClearValues(2);
+        deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
+
+        if (!m_parametersGraphic.noColorAttachments)
+            initialTransitionColor2DImage(
+                vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        initialTransitionDepth2DImage(
+            vk, *primaryCmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        if (m_parametersGraphic.resetType != RESET_TYPE_HOST)
+            vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+        for (uint32_t i = 0; i < queryCount; ++i)
+        {
+            vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, i, (VkQueryControlFlags)0u);
+            beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height),
+                            (uint32_t)renderPassClearValues.size(), &renderPassClearValues[0],
+                            VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+            vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &(secondaryCmdBuffers[i]->get()));
+            endRenderPass(vk, *primaryCmdBuffer);
+            vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, i);
+        }
+
+        if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY || m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            VkDeviceSize stride          = m_parametersGraphic.querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
+            vk::VkQueryResultFlags flags = m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+            {
+                flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride *= 2u;
+            }
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY)
+            {
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+                flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride = sizeof(ValueAndAvailability);
+            }
+
+            VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
+            VkDeviceSize copyStride     = stride;
+            if (m_parametersGraphic.strideType == STRIDE_TYPE_ZERO)
+                copyStride = 0u;
+
+            vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                       dstOffsetQuery, copyStride, flags);
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+            const VkBufferMemoryBarrier barrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
+                nullptr,                                 //  const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
+                m_resetBuffer->object(),                 //  VkBuffer buffer;
+                0u,                                      //  VkDeviceSize offset;
+                queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
+            };
+            vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
+        }
+
+        if (!m_parametersGraphic.noColorAttachments)
+            transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    }
+    endCommandBuffer(vk, *primaryCmdBuffer);
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        vk.resetQueryPool(device, *queryPool, 0u, queryCount);
+
+    // Wait for completion
+    submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
+    return checkResult(*queryPool);
 }
 
 } // namespace
