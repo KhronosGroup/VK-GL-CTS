@@ -48,6 +48,15 @@
                 "VUID-RuntimeSpirv-samples-08725"
             ],
             "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional."
+        },
+        {
+            "groups": [
+                "dEQP-VK.binding_model.unused_invalid_descriptor.copy.*"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-None-08114"
+            ],
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline was destroyed before copying to destination set. Producing this error is intentional."
         }
     ]
 }
