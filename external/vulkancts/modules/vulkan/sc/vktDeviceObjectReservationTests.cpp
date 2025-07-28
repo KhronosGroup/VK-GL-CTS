@@ -628,7 +628,7 @@ void createDescriptorPools(const DeviceInterface &vkd, const VkDevice device, ui
 {
     for (std::vector<DescriptorPoolSp>::iterator it = begin; it != end; ++it)
     {
-        const VkDescriptorPoolSize poolSizes              = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u};
+        const VkDescriptorPoolSize poolSizes              = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxSets};
         const VkDescriptorPoolCreateInfo descriptorPoolCI = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // sType
             DE_NULL,                                           // pNext
