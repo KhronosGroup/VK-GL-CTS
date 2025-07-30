@@ -62,6 +62,8 @@ set(DEQP_VK_RAY_TRACING_SRCS
 	vktRayTracingShaderExecutionReorderTests.hpp
 	vktRayTracingLinearSweptSpheresTests.cpp
     vktRayTracingLinearSweptSpheresTests.hpp
+	vktRayTracingInvocationReorderActivityTests.cpp
+	vktRayTracingInvocationReorderActivityTests.hpp
 	)
 
 set(DEQP_VK_RAY_TRACING_LIBS

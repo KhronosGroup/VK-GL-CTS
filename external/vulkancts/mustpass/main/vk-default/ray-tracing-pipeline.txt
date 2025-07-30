@@ -14728,6 +14728,7 @@ dEQP-VK.ray_tracing_pipeline.position_fetch.gpu_built.r8g8b8a8_snorm.NoFlags
 dEQP-VK.ray_tracing_pipeline.position_fetch.gpu_built.r8g8b8a8_snorm.instance_transform
 dEQP-VK.ray_tracing_pipeline.procedural_geometry.object_behind_bounding_boxes
 dEQP-VK.ray_tracing_pipeline.procedural_geometry.triangle_in_between
+dEQP-VK.ray_tracing_pipeline.rtir_activity.activity
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.array_160x91
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.custom_index_160x91
 dEQP-VK.ray_tracing_pipeline.ser.builtin_var.empty_160x91
