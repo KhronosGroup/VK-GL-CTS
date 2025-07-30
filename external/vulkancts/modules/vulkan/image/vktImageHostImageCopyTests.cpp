@@ -3220,7 +3220,7 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
             if (testData[i] != outputData[i])
             {
                 log << tcu::TestLog::Message << "At byte " << i << " generated data is " << testData[i]
-                    << ", but output data is " << outputData[i] << tcu::TestLog::EndMessage;
+                    << ", but output data is " << (int)outputData[i] << tcu::TestLog::EndMessage;
                 break;
             }
         }
