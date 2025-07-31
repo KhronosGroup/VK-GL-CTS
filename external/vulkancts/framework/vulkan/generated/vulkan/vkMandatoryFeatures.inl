@@ -401,6 +401,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFragmentDensityMapFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT,VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM for ext [VK_EXT_fragment_density_map_offset, VK_QCOM_fragment_density_map_offset] in APIs []
+
+	vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT physicalDeviceFragmentDensityMapOffsetFeaturesEXT;
+	deMemset(&physicalDeviceFragmentDensityMapOffsetFeaturesEXT, 0, sizeof(physicalDeviceFragmentDensityMapOffsetFeaturesEXT));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_fragment_density_map_offset", "VK_QCOM_fragment_density_map_offset"))
+	{
+		physicalDeviceFragmentDensityMapOffsetFeaturesEXT.sType = getStructureType<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>();
+		*nextPtr = &physicalDeviceFragmentDensityMapOffsetFeaturesEXT;
+		nextPtr  = &physicalDeviceFragmentDensityMapOffsetFeaturesEXT.pNext;
+	}
+
 	// VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT for ext [VK_EXT_fragment_shader_interlock] in APIs []
 
 	vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT physicalDeviceFragmentShaderInterlockFeaturesEXT;
@@ -2138,6 +2150,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceFragmentDensityMapFeaturesEXT.fragmentDensityMap == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature fragmentDensityMap not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_density_map_offset")) )
+	{
+		if ( physicalDeviceFragmentDensityMapOffsetFeaturesEXT.fragmentDensityMapOffset == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature fragmentDensityMapOffset not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

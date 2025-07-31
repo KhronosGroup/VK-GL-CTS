@@ -164,11 +164,11 @@ tcu::TestStatus RelaxedPrecisionTestInstance::iterate(void)
     const VkDescriptorSetLayoutBinding binding = makeDescriptorSetLayoutBinding(
         0u, VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 1u, VK_SHADER_STAGE_FRAGMENT_BIT, &*sampler);
     const VkDescriptorSetLayoutCreateInfo descriptorSetLayoutCreateInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType						sType;
-        nullptr,                                             // const void*							pNext;
-        (VkDescriptorSetLayoutCreateFlags)0u,                // VkDescriptorSetLayoutCreateFlags	    flags;
-        1u,                                                  // uint32_t							    bindingCount;
-        &binding                                             // const VkDescriptorSetLayoutBinding*	pBindings;
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                             // const void* pNext;
+        (VkDescriptorSetLayoutCreateFlags)0u,                // VkDescriptorSetLayoutCreateFlags     flags;
+        1u,                                                  // uint32_t     bindingCount;
+        &binding                                             // const VkDescriptorSetLayoutBinding* pBindings;
     };
     const Move<VkDescriptorSetLayout> descriptorSetLayout =
         createDescriptorSetLayout(vk, device, &descriptorSetLayoutCreateInfo);

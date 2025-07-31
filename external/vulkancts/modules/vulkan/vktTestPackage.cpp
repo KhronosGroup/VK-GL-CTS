@@ -601,8 +601,15 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
 
         // Collect and report any debug messages
 #ifndef CTS_USES_VULKANSC
-    if (validContext && m_context->hasDebugReportRecorder())
-        collectAndReportDebugMessages(m_context->getDebugReportRecorder(), *m_context);
+    if (validContext && m_context->hasDebugReportRecorders())
+    {
+        const auto recorders = m_context->getDebugReportRecorders();
+        for (const auto &r : recorders)
+        {
+            if (r != nullptr)
+                collectAndReportDebugMessages(*r, *m_context);
+        }
+    }
 #endif // CTS_USES_VULKANSC
 
     if (testCase != nullptr)

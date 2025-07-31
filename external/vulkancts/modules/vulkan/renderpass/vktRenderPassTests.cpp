@@ -3672,11 +3672,11 @@ void pushReadImagesToBuffers(const DeviceInterface &vk, VkCommandBuffer commandB
             VkExtent3D extent = {targetSize.x(), targetSize.y(), 1u};
 
             VkImageResolve resolve = {
-                subresourceLayers, // VkImageSubresourceLayers	srcSubresource;
-                offset,            // VkOffset3D				srcOffset;
-                subresourceLayers, // VkImageSubresourceLayers	dstSubresource;
-                offset,            // VkOffset3D				dstOffset;
-                extent,            // VkExtent3D				extent;
+                subresourceLayers, // VkImageSubresourceLayers srcSubresource;
+                offset,            // VkOffset3D srcOffset;
+                subresourceLayers, // VkImageSubresourceLayers dstSubresource;
+                offset,            // VkOffset3D dstOffset;
+                extent,            // VkExtent3D extent;
             };
 
             VkImageSubresourceRange subresourceRange =

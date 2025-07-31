@@ -115,6 +115,10 @@ CustomInstance::CustomInstance(Context &context, Move<VkInstance> instance)
                                     context.getTestContext().getCommandLine(), context.getResourceInterface()))
 #endif // CTS_USES_VULKANSC
 {
+#ifndef CTS_USES_VULKANSC
+    if (m_recorder)
+        m_context->addExternalDebugReportRecorder(m_recorder.get());
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance::CustomInstance()
@@ -138,6 +142,10 @@ CustomInstance::CustomInstance(CustomInstance &&other) : CustomInstance()
 CustomInstance::~CustomInstance()
 {
     collectMessages();
+#ifndef CTS_USES_VULKANSC
+    if (m_recorder)
+        m_context->removeExternalDebugReportRecorder(m_recorder.get());
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance &CustomInstance::operator=(CustomInstance &&other)
