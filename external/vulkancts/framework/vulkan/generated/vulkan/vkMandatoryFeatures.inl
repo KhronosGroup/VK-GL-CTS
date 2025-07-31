@@ -221,6 +221,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceCustomBorderColorFeaturesEXT.pNext;
 	}
 
+	// VkPhysicalDeviceCustomResolveFeaturesEXT for ext [VK_EXT_custom_resolve, VK_QCOM_render_pass_shader_resolve] in APIs [vulkan]
+
+	vk::VkPhysicalDeviceCustomResolveFeaturesEXT physicalDeviceCustomResolveFeaturesEXT;
+	deMemset(&physicalDeviceCustomResolveFeaturesEXT, 0, sizeof(physicalDeviceCustomResolveFeaturesEXT));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_custom_resolve", "VK_QCOM_render_pass_shader_resolve"))
+	{
+		physicalDeviceCustomResolveFeaturesEXT.sType = getStructureType<VkPhysicalDeviceCustomResolveFeaturesEXT>();
+		*nextPtr = &physicalDeviceCustomResolveFeaturesEXT;
+		nextPtr  = &physicalDeviceCustomResolveFeaturesEXT.pNext;
+	}
+
 	// VkPhysicalDeviceDepthBiasControlFeaturesEXT for ext [VK_EXT_depth_bias_control] in APIs [vulkan]
 
 	vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT physicalDeviceDepthBiasControlFeaturesEXT;
@@ -1678,6 +1690,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceCustomBorderColorFeaturesEXT.customBorderColors == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature customBorderColors not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDeviceCustomResolveFeaturesEXT in APIs [vulkan]
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_custom_resolve")) )
+	{
+		if ( physicalDeviceCustomResolveFeaturesEXT.customResolve == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature customResolve not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

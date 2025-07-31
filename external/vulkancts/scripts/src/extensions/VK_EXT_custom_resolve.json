@@ -1,0 +1,21 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceCustomResolveFeaturesEXT": [
+            {
+                "features": [
+                    "customResolve"
+                ],
+                "requirements": [
+                    "VK_EXT_custom_resolve"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}

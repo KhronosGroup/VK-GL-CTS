@@ -557,6 +557,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDeviceCustomResolveFeaturesEXT in APIs [vulkan]
 	// VkPhysicalDeviceDepthBiasControlFeaturesEXT in APIs [vulkan]
 	// VkPhysicalDeviceDepthClampControlFeaturesEXT in APIs []
 	// VkPhysicalDeviceDepthClipControlFeaturesEXT in APIs []
