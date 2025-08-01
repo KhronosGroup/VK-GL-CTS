@@ -121,8 +121,10 @@ VK_KHR_pipeline_library
 VK_KHR_portability_enumeration
 VK_KHR_portability_subset
 VK_KHR_present_id
+VK_KHR_present_id2
 VK_KHR_present_mode_fifo_latest_ready
 VK_KHR_present_wait
+VK_KHR_present_wait2
 VK_KHR_push_descriptor
 VK_KHR_ray_query
 VK_KHR_ray_tracing_maintenance1

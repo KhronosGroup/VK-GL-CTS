@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDevicePresentWait2FeaturesKHR": [
+            {
+                "features": [
+                    "presentWait2"
+                ],
+                "requirements": [
+                    "VK_KHR_present_wait2"
+                ]
+            }
+        ]
+    }
+}

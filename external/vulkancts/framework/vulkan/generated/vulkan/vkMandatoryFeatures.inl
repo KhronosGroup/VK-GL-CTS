@@ -821,6 +821,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevicePipelineProtectedAccessFeatures.pNext;
 	}
 
+	// VkPhysicalDevicePresentId2FeaturesKHR for ext [VK_KHR_present_id2] in APIs []
+
+	vk::VkPhysicalDevicePresentId2FeaturesKHR physicalDevicePresentId2FeaturesKHR;
+	deMemset(&physicalDevicePresentId2FeaturesKHR, 0, sizeof(physicalDevicePresentId2FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_id2"))
+	{
+		physicalDevicePresentId2FeaturesKHR.sType = getStructureType<VkPhysicalDevicePresentId2FeaturesKHR>();
+		*nextPtr = &physicalDevicePresentId2FeaturesKHR;
+		nextPtr  = &physicalDevicePresentId2FeaturesKHR.pNext;
+	}
+
 	// VkPhysicalDevicePresentIdFeaturesKHR for ext [VK_KHR_present_id] in APIs []
 
 	vk::VkPhysicalDevicePresentIdFeaturesKHR physicalDevicePresentIdFeaturesKHR;
@@ -843,6 +855,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		physicalDevicePresentModeFifoLatestReadyFeaturesKHR.sType = getStructureType<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>();
 		*nextPtr = &physicalDevicePresentModeFifoLatestReadyFeaturesKHR;
 		nextPtr  = &physicalDevicePresentModeFifoLatestReadyFeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDevicePresentWait2FeaturesKHR for ext [VK_KHR_present_wait2] in APIs []
+
+	vk::VkPhysicalDevicePresentWait2FeaturesKHR physicalDevicePresentWait2FeaturesKHR;
+	deMemset(&physicalDevicePresentWait2FeaturesKHR, 0, sizeof(physicalDevicePresentWait2FeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_wait2"))
+	{
+		physicalDevicePresentWait2FeaturesKHR.sType = getStructureType<VkPhysicalDevicePresentWait2FeaturesKHR>();
+		*nextPtr = &physicalDevicePresentWait2FeaturesKHR;
+		nextPtr  = &physicalDevicePresentWait2FeaturesKHR.pNext;
 	}
 
 	// VkPhysicalDevicePresentWaitFeaturesKHR for ext [VK_KHR_present_wait] in APIs []
@@ -2874,6 +2898,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
+	// VkPhysicalDevicePresentId2FeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_present_id2")) )
+	{
+		if ( physicalDevicePresentId2FeaturesKHR.presentId2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature presentId2 not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
 	// VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_present_mode_fifo_latest_ready")) )
 	{
@@ -2890,6 +2924,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDevicePresentWaitFeaturesKHR.presentWait == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature presentWait not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDevicePresentWait2FeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_present_wait2")) )
+	{
+		if ( physicalDevicePresentWait2FeaturesKHR.presentWait2 == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature presentWait2 not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
