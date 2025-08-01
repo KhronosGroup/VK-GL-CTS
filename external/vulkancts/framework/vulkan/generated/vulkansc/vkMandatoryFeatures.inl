@@ -885,7 +885,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 	}
 
 	// VkPhysicalDeviceFragmentDensityMapFeaturesEXT in APIs []
-	// VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT in APIs []
 	// VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_fragment_shader_interlock")) )
 	{

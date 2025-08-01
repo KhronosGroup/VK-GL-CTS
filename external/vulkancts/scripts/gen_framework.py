@@ -47,6 +47,7 @@ EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
 VK_EXT_conservative_rasterization
 VK_EXT_custom_border_color
 VK_EXT_extended_dynamic_state3
+VK_EXT_fragment_density_map_offset
 VK_EXT_mesh_shader
 VK_EXT_shader_atomic_float
 VK_EXT_shader_atomic_float2
