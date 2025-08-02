@@ -321,13 +321,10 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
     }
     transitionUnusedLayers(vk, *cmdBuffer, **image);
     {
-        VkImageLayout previousLayout             = m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_3D ?
-                                                       VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
-                                                       VK_IMAGE_LAYOUT_GENERAL;
         VkImageSubresourceRange subresourceRange = makeSubresourceRange(m_parameters.secondLayer);
-        VkImageMemoryBarrier imageMemoryBarrier =
-            makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, previousLayout,
-                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
+        VkImageMemoryBarrier imageMemoryBarrier  = makeImageMemoryBarrier(
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                               nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
 
