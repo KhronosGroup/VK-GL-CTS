@@ -53,6 +53,9 @@ void checkConditionalRenderingCapabilities(vkt::Context &context, const Conditio
         if (!features.nestedCommandBuffer)
             TCU_THROW(NotSupportedError, "nestedCommandBuffer is not supported");
     }
+
+    if (data.conditionInherited && !data.conditionInSecondaryCommandBuffer)
+        context.requireDeviceFunctionality("VK_KHR_maintenance7");
 }
 
 void checkNestedRenderPassCapabilities(vkt::Context &context)
