@@ -17880,18 +17880,29 @@ void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocat
     addTestGroup(group, "resolve_image", addResolveImageTests, allocationKind, extensionFlags);
     addTestGroup(group, "depth_stencil_msaa_copy", addDepthStencilCopyMSAATestGroup, allocationKind, extensionFlags);
 
+    TestGroupParamsPtr transferOnlyGroup(new TestGroupParams{
+        allocationKind,
+        extensionFlags,
+        QueueSelectionOptions::TransferOnly,
+        false,
+        false,
+        false,
+    });
+    addTestGroup(group, "image_to_buffer_transfer_queue", addImageToBufferTests, transferOnlyGroup);
+
+    TestGroupParamsPtr computeOnlyGroup(new TestGroupParams{
+        allocationKind,
+        extensionFlags,
+        QueueSelectionOptions::ComputeOnly,
+        false,
+        false,
+        false,
+    });
+    addTestGroup(group, "image_to_buffer_compute_queue", addImageToBufferTests, computeOnlyGroup);
+
     if (extensionFlags == COPY_COMMANDS_2)
     {
-        TestGroupParamsPtr transferOnlyGroup(new TestGroupParams{
-            allocationKind,
-            extensionFlags,
-            QueueSelectionOptions::TransferOnly,
-            false,
-            false,
-            false,
-        });
         addTestGroup(group, "image_to_image_transfer_queue", addImageToImageTests, transferOnlyGroup);
-        addTestGroup(group, "image_to_buffer_transfer_queue", addImageToBufferTests, transferOnlyGroup);
         addTestGroup(group, "buffer_to_image_transfer_queue", addBufferToImageTests, transferOnlyGroup);
         addTestGroup(group, "buffer_to_buffer_transfer_queue", addBufferToBufferTests, transferOnlyGroup);
 
