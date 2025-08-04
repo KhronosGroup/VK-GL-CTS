@@ -1627,7 +1627,7 @@ MeshPayloadShMemSizeCase::ParamsFromContext MeshPayloadShMemSizeCase::getParamsF
         std::min(meshProperties.maxMeshPayloadAndOutputMemorySize, meshProperties.maxMeshPayloadAndSharedMemorySize);
     const auto maxPayloadElements = std::min(maxTaskPayloadSize, maxMeshPayloadSize) / kElementSize;
     const auto maxShMemElements   = meshProperties.maxMeshSharedMemorySize / kElementSize;
-    const auto maxTotalElements   = meshProperties.maxTaskPayloadAndSharedMemorySize / kElementSize;
+    const auto maxTotalElements   = meshProperties.maxMeshPayloadAndSharedMemorySize / kElementSize;
 
     if (m_params.testType == PayLoadShMemSizeType::PAYLOAD)
     {
