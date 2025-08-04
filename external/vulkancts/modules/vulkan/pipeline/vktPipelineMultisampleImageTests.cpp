@@ -40,15 +40,21 @@
 #include "vkImageUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
 
+#include "tcuImageCompare.hpp"
+#include "tcuTexture.hpp"
+#include "tcuVectorType.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuRGBA.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 
 #include <cmath>
 #include <string>
+#include <vector>
 
 namespace vkt
 {
@@ -61,6 +67,7 @@ using de::MovePtr;
 using de::SharedPtr;
 using de::UniquePtr;
 using tcu::IVec2;
+using tcu::IVec3;
 using tcu::Vec4;
 
 typedef SharedPtr<Unique<VkImageView>> ImageViewSp;
@@ -75,6 +82,15 @@ struct CaseDef
     VkFormat colorFormat;
     VkSampleCountFlagBits numSamples;
     bool colorSamples;
+};
+
+struct CaseDef3d
+{
+    PipelineConstructionType pipelineConstructionType;
+    IVec3 renderSize;
+    int numLayers;
+    VkFormat colorFormat;
+    VkSampleCountFlagBits numSamples;
 };
 
 template <typename T>
@@ -1377,6 +1393,475 @@ tcu::TestStatus test(Context &context, const CaseDef caseDef)
 
 } // namespace SampledImage
 
+namespace Image3d
+{
+
+void initPrograms(SourceCollections &programCollection, const CaseDef3d caseDef)
+{
+    DE_UNREF(caseDef);
+
+    std::ostringstream vert;
+    {
+        vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+             << "layout(location = 0) in vec4 inPosition;\n"
+             << "void main()\n"
+             << "{\n"
+             << "    gl_Position = inPosition;\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    {
+        frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+             << "layout(location = 0) out vec4 outColor;\n"
+             << "\n"
+             << "layout(push_constant) uniform PushConsts {\n"
+             << "    int width;\n"
+             << "    int height;\n"
+             << "    int numSamples;\n"
+             << "} pc;\n"
+             << "\n"
+             << "void main()\n"
+             << "{\n"
+             << "    int s = gl_SampleID;\n"
+             << "\n"
+             << "    float R = float(int(gl_FragCoord.x) + s) / float(pc.width + pc.numSamples);\n"
+             << "    float G = float(int(gl_FragCoord.y) + s) / float(pc.height + pc.numSamples);\n"
+             << "    float B = (pc.numSamples > 1) ? float(s) / float(pc.numSamples - 1) : 0.0;\n"
+             << "    float A = 1.0f;\n"
+             << "\n"
+             << "    outColor = vec4(R, G, B, A);\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void checkSupport(Context &context, const CaseDef3d caseDef)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    const VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    const VkSampleCountFlagBits sampleCount = caseDef.numSamples;
+
+    {
+        VkImageFormatProperties srcImageFormatProperties;
+        const VkResult srcImageFormatResult = vki.getPhysicalDeviceImageFormatProperties(
+            physicalDevice, caseDef.colorFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, colorImageUsage,
+            (VkImageCreateFlags)0, &srcImageFormatProperties);
+
+        if (srcImageFormatResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
+            TCU_THROW(NotSupportedError, "Image format is not supported");
+
+        if ((srcImageFormatProperties.sampleCounts & sampleCount) != sampleCount)
+            TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+    }
+
+    {
+        VkImageFormatProperties dstImageFormatProperties;
+        const VkResult dstImageFormatResult = vki.getPhysicalDeviceImageFormatProperties(
+            physicalDevice, caseDef.colorFormat, VK_IMAGE_TYPE_3D, VK_IMAGE_TILING_OPTIMAL, colorImageUsage,
+            (VkImageCreateFlags)0, &dstImageFormatProperties);
+
+        if (dstImageFormatResult == VK_ERROR_FORMAT_NOT_SUPPORTED)
+            TCU_THROW(NotSupportedError, "Image format is not supported");
+    }
+
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          caseDef.pipelineConstructionType);
+}
+
+tcu::TestStatus test(Context &context, const CaseDef3d caseDef)
+{
+    const InstanceInterface &vki = context.getInstanceInterface();
+    const DeviceInterface &vkd   = context.getDeviceInterface();
+    const auto phyDevice         = context.getPhysicalDevice();
+    const VkDevice device        = context.getDevice();
+    Allocator &alloc             = context.getDefaultAllocator();
+    const uint32_t queueIndex    = context.getUniversalQueueFamilyIndex();
+    const VkQueue queue          = context.getUniversalQueue();
+
+    const IVec3 size                    = caseDef.renderSize;
+    const VkSampleCountFlagBits samples = caseDef.numSamples;
+    const VkExtent3D msImageExtent      = makeExtent3D(size.x(), size.y(), 1u);
+    const VkRect2D renderArea           = makeRect2D(size.x(), size.y());
+    const Vec4 srcClearColor(tcu::RGBA::black().toVec());
+    const Vec4 dstClearColor(tcu::RGBA::green().toVec());
+    const auto dstClearColorValue         = makeClearValueColorVec4(dstClearColor);
+    const auto colorSubresourceRange      = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const VkDeviceSize vertexBufferOffset = 0u;
+
+    // Create a multisampled image of type 2D
+    VkImageCreateInfo srcImageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                             // const void* pNext;
+        VkImageCreateFlags(0u),              // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        caseDef.colorFormat,                 // VkFormat format;
+        msImageExtent,                       // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        1u,                                  // uint32_t arrayLayers;
+        samples,                             // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t queueFamilyIndexCount;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
+    };
+
+    const ImageWithMemory multisampledImage{vkd, device, alloc, srcImageParams, MemoryRequirement::Any};
+
+    // Create a normal image of type 3D
+    VkImageCreateInfo dstImageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,        // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
+        VkImageCreateFlags(0u),                     // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_3D,                           // VkImageType imageType;
+        caseDef.colorFormat,                        // VkFormat format;
+        makeExtent3D(size.x(), size.y(), size.z()), // VkExtent3D extent;
+        1u,                                         // uint32_t mipLevels;
+        1u,                                         // uint32_t arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,                      // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,                    // VkImageTiling tiling;
+        VK_IMAGE_USAGE_TRANSFER_SRC_BIT             // VkImageUsageFlags usage;
+            | VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode;
+        0u,                        // uint32_t queueFamilyIndexCount;
+        nullptr,                   // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
+    };
+
+    const ImageWithMemory dst3dImage{vkd, device, alloc, dstImageParams, MemoryRequirement::Any};
+
+    std::vector<tcu::Vec4> vertices;
+    {
+        const tcu::Vec4 a(-1.0f, -1.0f, 0.0f, 1.0f);
+        const tcu::Vec4 b(1.0f, -1.0f, 0.0f, 1.0f);
+        const tcu::Vec4 c(1.0f, 1.0f, 0.0f, 1.0f);
+        const tcu::Vec4 d(-1.0f, 1.0f, 0.0f, 1.0f);
+
+        vertices.push_back(a);
+        vertices.push_back(c);
+        vertices.push_back(b);
+        vertices.push_back(a);
+        vertices.push_back(c);
+        vertices.push_back(d);
+    }
+
+    // Create vertex buffer
+    const VkDeviceSize vertexDataSize = vertices.size() * sizeof(tcu::Vec4);
+    const BufferWithMemory vertexBuffer{vkd, device, alloc,
+                                        makeBufferCreateInfo(vertexDataSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
+                                        MemoryRequirement::HostVisible};
+    {
+        const auto &vertexBufferAlloc = vertexBuffer.getAllocation();
+        const auto vertexDataPtr =
+            reinterpret_cast<char *>(vertexBufferAlloc.getHostPtr()) + vertexBufferAlloc.getOffset();
+        deMemcpy(vertexDataPtr, de::dataOrNull(vertices), static_cast<size_t>(vertexDataSize));
+        flushAlloc(vkd, device, vertexBufferAlloc);
+    }
+
+    // Initialize samples
+    const uint32_t width      = static_cast<uint32_t>(size.x());
+    const uint32_t height     = static_cast<uint32_t>(size.y());
+    const uint32_t numSamples = static_cast<uint32_t>(caseDef.numSamples);
+
+    std::vector<std::vector<tcu::Vec4>> sampleVals(width * height, std::vector<tcu::Vec4>(numSamples));
+
+    for (uint32_t y = 0; y < height; ++y)
+    {
+        for (uint32_t x = 0; x < width; ++x)
+        {
+            const uint32_t pixelIndex = y * width + x;
+
+            for (uint32_t s = 0; s < numSamples; ++s)
+            {
+                float R = static_cast<float>(x + s) / static_cast<float>(width + numSamples);
+                float G = static_cast<float>(y + s) / static_cast<float>(height + numSamples);
+                float B = (numSamples > 1) ? static_cast<float>(s) / static_cast<float>(numSamples - 1) : 0.0f;
+                float A = 1.0f;
+
+                sampleVals[pixelIndex][s] = tcu::Vec4(R, G, B, A);
+            }
+        }
+    }
+
+    // Push constants
+    const struct ImageInfo
+    {
+        int32_t width;
+        int32_t height;
+        int32_t numSamples;
+    } pushConstantData = {
+        static_cast<int32_t>(size.x()),
+        static_cast<int32_t>(size.y()),
+        static_cast<int32_t>(caseDef.numSamples),
+    };
+    const auto pushConstantSize = static_cast<uint32_t>(sizeof(ImageInfo));
+
+    // Shader modules
+    const auto vertexModule = ShaderWrapper(vkd, device, context.getBinaryCollection().get("vert"), 0u);
+    const auto fragModule   = ShaderWrapper(vkd, device, context.getBinaryCollection().get("frag"), 0u);
+
+    RenderPassWrapper renderPass;
+
+    // Render pass
+    {
+        const VkAttachmentDescription colorAttachment = {
+            0u,                                      // VkAttachmentDescriptionFlags flags;
+            caseDef.colorFormat,                     // VkFormat format;
+            samples,                                 // VkSampleCountFlagBits samples;
+            VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp stencilStoreOp;
+            VK_IMAGE_LAYOUT_UNDEFINED,               // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout finalLayout;
+        };
+
+        const VkAttachmentReference colorRef = {
+            0u,                                       // uint32_t attachment;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
+        };
+
+        const VkSubpassDescription subpass = {
+            0u,                              // VkSubpassDescriptionFlags flags;
+            VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
+            0u,                              // uint32_t inputAttachmentCount;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
+            1u,                              // uint32_t colorAttachmentCount;
+            &colorRef,                       // const VkAttachmentReference* pColorAttachments;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
+            0u,                              // uint32_t preserveAttachmentCount;
+            nullptr,                         // const uint32_t* pPreserveAttachments;
+        };
+
+        const VkRenderPassCreateInfo renderPassInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                   // const void* pNext;
+            0u,                                        // VkRenderPassCreateFlags flags;
+            1u,                                        // uint32_t attachmentCount;
+            &colorAttachment,                          // const VkAttachmentDescription* pAttachments;
+            1u,                                        // uint32_t subpassCount;
+            &subpass,                                  // const VkSubpassDescription* pSubpasses;
+            0u,                                        // uint32_t dependencyCount;
+            nullptr,                                   // const VkSubpassDependency* pDependencies;
+        };
+
+        renderPass = RenderPassWrapper(caseDef.pipelineConstructionType, vkd, device, &renderPassInfo);
+    }
+
+    // Framebuffer
+    const auto msImageView = makeImageView(vkd, device, multisampledImage.get(), VK_IMAGE_VIEW_TYPE_2D,
+                                           caseDef.colorFormat, colorSubresourceRange);
+
+    renderPass.createFramebuffer(vkd, device, 1u, &multisampledImage.get(), &msImageView.get(), msImageExtent.width,
+                                 msImageExtent.height, msImageExtent.depth);
+
+    // Pipeline
+    const VkPushConstantRange pushConstantRange = {
+        VK_SHADER_STAGE_FRAGMENT_BIT, // VkShaderStageFlags stageFlags;
+        0u,                           // uint32_t offset;
+        pushConstantSize,             // uint32_t size;
+    };
+    const PipelineLayoutWrapper pipelineLayout(caseDef.pipelineConstructionType, vkd, device, VK_NULL_HANDLE,
+                                               &pushConstantRange);
+    GraphicsPipelineWrapper graphicsPipeline(vki, vkd, phyDevice, device, context.getDeviceExtensions(),
+                                             caseDef.pipelineConstructionType);
+
+    {
+        const std::vector<VkViewport> viewports{makeViewport(msImageExtent)};
+        const std::vector<VkRect2D> scissors{renderArea};
+
+        const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                                  // const void* pNext;
+            0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
+            samples,                                                  // VkSampleCountFlagBits rasterizationSamples;
+            VK_FALSE,                                                 // VkBool32 sampleShadingEnable;
+            0.0f,                                                     // float minSampleShading;
+            nullptr,                                                  // const VkSampleMask* pSampleMask;
+            VK_FALSE,                                                 // VkBool32 alphaToCoverageEnable;
+            VK_FALSE                                                  // VkBool32 alphaToOneEnable;
+        };
+
+        graphicsPipeline.setDefaultDepthStencilState()
+            .setDefaultRasterizationState()
+            .setDefaultColorBlendState()
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertexModule)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule, nullptr, &multisampleStateParams)
+            .setupFragmentOutputState(*renderPass, 0u, nullptr, &multisampleStateParams)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline();
+    }
+
+    // Command buffer
+    Move<VkCommandPool> cmdPool =
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueIndex);
+    Move<VkCommandBuffer> cmdBufferPtr =
+        allocateCommandBuffer(vkd, device, cmdPool.get(), VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer = cmdBufferPtr.get();
+
+    // Execute upload commands
+    {
+        beginCommandBuffer(vkd, cmdBuffer);
+
+        renderPass.begin(vkd, cmdBuffer, renderArea, srcClearColor);
+
+        graphicsPipeline.bind(cmdBuffer);
+
+        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+
+        vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), VK_SHADER_STAGE_FRAGMENT_BIT, 0u, pushConstantSize,
+                             &pushConstantData);
+
+        vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+
+        renderPass.end(vkd, cmdBuffer);
+
+        endCommandBuffer(vkd, cmdBuffer);
+        submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    }
+
+    context.resetCommandPoolForVKSC(device, *cmdPool);
+
+    // Multisampled 2D image has been rendered
+    // Now, resolve multisampled 2D to a 3D image
+
+    // Resolve region - full
+    const auto colorSubresourceLayers = makeDefaultImageSubresourceLayers();
+    const auto resolveRegionOffset    = makeOffset3D(0u, 0u, 0u);
+
+    const VkImageResolve resolveRegion = {
+        colorSubresourceLayers, // VkImageSubresourceLayers	srcSubresource
+        resolveRegionOffset,    // VkOffset3D					srcOffset
+        colorSubresourceLayers, // VkImageSubresourceLayers	dstSubresource
+        resolveRegionOffset,    // VkOffset3D					dstOffset
+        msImageExtent           // VkExtent3D					extent
+    };
+
+    const VkBufferImageCopy copyRegion = {
+        0u,                                        // VkDeviceSize				bufferOffset
+        0u,                                        // uint32_t					bufferRowLength
+        0u,                                        // uint32_t					bufferImageHeight
+        colorSubresourceLayers,                    // VkImageSubresourceLayers	imageSubresource
+        resolveRegionOffset,                       // VkOffset3D					imageOffset
+        makeExtent3D(size.x(), size.y(), size.z()) // VkExtent3D					imageExtent
+    };
+
+    // Output buffer
+    const VkDeviceSize resultBufferSize = static_cast<VkDeviceSize>(
+        static_cast<uint32_t>(getPixelSize(mapVkFormat(caseDef.colorFormat))) * size.x() * size.y() * size.z());
+    const auto resultBufferInfo = makeBufferCreateInfo(resultBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const BufferWithMemory resultBuffer{vkd, device, alloc, resultBufferInfo, MemoryRequirement::HostVisible};
+
+    const auto srcImageBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, multisampledImage.get(), colorSubresourceRange);
+    const auto dstImageBarrier1 =
+        makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dst3dImage.get(), colorSubresourceRange);
+
+    const auto dstImageBarrier2 = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst3dImage.get(), colorSubresourceRange);
+
+    const auto dstImageBarrier3 = makeImageMemoryBarrier(
+        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, dst3dImage.get(), colorSubresourceRange);
+
+    // Execute resolve commands
+    {
+        beginCommandBuffer(vkd, cmdBuffer);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &srcImageBarrier);
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &dstImageBarrier1);
+
+        vkd.cmdClearColorImage(cmdBuffer, dst3dImage.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                               &dstClearColorValue.color, 1u, &colorSubresourceRange);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &dstImageBarrier3);
+
+        vkd.cmdResolveImage(cmdBuffer, multisampledImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, dst3dImage.get(),
+                            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &resolveRegion);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1u, &dstImageBarrier2);
+
+        vkd.cmdCopyImageToBuffer(cmdBuffer, dst3dImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, resultBuffer.get(),
+                                 1u, &copyRegion);
+
+        endCommandBuffer(vkd, cmdBuffer);
+        submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    }
+
+    // Get results
+    const auto &resultBufferAlloc = resultBuffer.getAllocation();
+    invalidateAlloc(vkd, device, resultBufferAlloc);
+
+    const auto resultsBufferPtr =
+        reinterpret_cast<const char *>(resultBufferAlloc.getHostPtr()) + resultBufferAlloc.getOffset();
+
+    const tcu::ConstPixelBufferAccess resultPixels{mapVkFormat(caseDef.colorFormat), size.x(), size.y(), size.z(),
+                                                   resultsBufferPtr};
+
+    // Reference images against each depth slices of the 3d image
+    const uint32_t numSlices3d         = static_cast<uint32_t>(size.z());
+    const tcu::TextureFormat tcuFormat = mapVkFormat(caseDef.colorFormat);
+    std::vector<tcu::TextureLevel> refImages(numSlices3d, {tcuFormat, size.x(), size.y()});
+
+    // Initialize the reference images
+    for (uint32_t z = 0; z < numSlices3d; ++z)
+    {
+        tcu::PixelBufferAccess refPixels = refImages[z].getAccess();
+
+        if (z == 0)
+        {
+            for (uint32_t y = 0; y < height; ++y)
+            {
+                for (uint32_t x = 0; x < width; ++x)
+                {
+                    const auto &pixelSamples = sampleVals[y * width + x];
+
+                    // Average resolve
+                    tcu::Vec4 sum(0.0f);
+                    for (const auto &sample : pixelSamples)
+                        sum += sample;
+                    refPixels.setPixel(sum / static_cast<float>(numSamples), x, y);
+                }
+            }
+        }
+        else
+        {
+            tcu::clear(refPixels, dstClearColor);
+        }
+    }
+
+    // Verification
+    for (uint32_t sliceNdx = 0u; sliceNdx < numSlices3d; sliceNdx++)
+    {
+        tcu::ConstPixelBufferAccess resultImageSlice(tcuFormat, size.x(), size.y(), 1u,
+                                                     resultPixels.getPixelPtr(0, 0, sliceNdx));
+        const std::string imageSetName = "Result_" + de::toString(sliceNdx);
+        if (!tcu::floatThresholdCompare(context.getTestContext().getLog(), imageSetName.c_str(),
+                                        "Image comparison result", refImages[sliceNdx].getAccess(), resultImageSlice,
+                                        tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR))
+            return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+} // namespace Image3d
+
 namespace StorageImage
 {
 
@@ -2247,6 +2732,13 @@ std::string getSizeLayerString(const IVec2 &size, const int numLayers)
     return str.str();
 }
 
+std::string getSizeLayerString(const IVec3 &size, const int numLayers)
+{
+    std::ostringstream str;
+    str << size.x() << "x" << size.y() << "x" << size.z() << "_" << numLayers;
+    return str.str();
+}
+
 std::string getFormatString(const VkFormat format)
 {
     std::string name(getFormatName(format));
@@ -2295,6 +2787,52 @@ void addTestCasesWithFunctions(tcu::TestCaseGroup *group, FunctionSupport1<CaseD
                         format[formatNdx],        // VkFormat colorFormat;
                         samples[samplesNdx],      // VkSampleCountFlagBits numSamples;
                         false,                    // bool colorQuad;
+                    };
+
+                    addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), checkSupport, initPrograms, testFunc,
+                                                caseDef);
+                }
+                sizeLayerGroup->addChild(formatGroup.release());
+            }
+            group->addChild(sizeLayerGroup.release());
+        }
+}
+
+void addTestCasesWithFunctions3d(tcu::TestCaseGroup *group, FunctionSupport1<CaseDef3d>::Function checkSupport,
+                                 FunctionPrograms1<CaseDef3d>::Function initPrograms,
+                                 FunctionInstance1<CaseDef3d>::Function testFunc,
+                                 PipelineConstructionType pipelineConstructionType)
+{
+    const IVec3 size[]                    = {IVec3(64, 64, 8)};
+    const int numLayers[]                 = {1};
+    const VkSampleCountFlagBits samples[] = {
+        VK_SAMPLE_COUNT_2_BIT,  VK_SAMPLE_COUNT_4_BIT,  VK_SAMPLE_COUNT_8_BIT,
+        VK_SAMPLE_COUNT_16_BIT, VK_SAMPLE_COUNT_32_BIT, VK_SAMPLE_COUNT_64_BIT,
+    };
+    const VkFormat format[] = {
+        VK_FORMAT_R8G8B8A8_UNORM,
+    };
+
+    for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(size); ++sizeNdx)
+        for (int layerNdx = 0; layerNdx < DE_LENGTH_OF_ARRAY(numLayers); ++layerNdx)
+        {
+            MovePtr<tcu::TestCaseGroup> sizeLayerGroup(new tcu::TestCaseGroup(
+                group->getTestContext(), getSizeLayerString(size[sizeNdx], numLayers[layerNdx]).c_str()));
+            for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(format); ++formatNdx)
+            {
+                MovePtr<tcu::TestCaseGroup> formatGroup(
+                    new tcu::TestCaseGroup(group->getTestContext(), getFormatString(format[formatNdx]).c_str()));
+                for (int samplesNdx = 0; samplesNdx < DE_LENGTH_OF_ARRAY(samples); ++samplesNdx)
+                {
+                    std::ostringstream caseName;
+                    caseName << "samples_" << getNumSamples(samples[samplesNdx]);
+
+                    const CaseDef3d caseDef{
+                        pipelineConstructionType, // PipelineConstructionType pipelineConstructionType;
+                        size[sizeNdx],            // IVec3 renderSize;
+                        numLayers[layerNdx],      // int numLayers;
+                        format[formatNdx],        // VkFormat colorFormat;
+                        samples[samplesNdx],      // VkSampleCountFlagBits numSamples;
                     };
 
                     addFunctionCaseWithPrograms(formatGroup.get(), caseName.str(), checkSupport, initPrograms, testFunc,
@@ -2381,6 +2919,12 @@ void createSampledImageTestsInGroup(tcu::TestCaseGroup *group, PipelineConstruct
                               pipelineConstructionType);
 }
 
+void create3dImageTestsInGroup(tcu::TestCaseGroup *group, PipelineConstructionType pipelineConstructionType)
+{
+    addTestCasesWithFunctions3d(group, Image3d::checkSupport, Image3d::initPrograms, Image3d::test,
+                                pipelineConstructionType);
+}
+
 void createStorageImageTestsInGroup(tcu::TestCaseGroup *group, PipelineConstructionType pipelineConstructionType)
 {
     addTestCasesWithFunctions(group, StorageImage::checkSupport, StorageImage::initPrograms, StorageImage::test,
@@ -2432,6 +2976,13 @@ tcu::TestCaseGroup *createMultisampleSamplesMappingOrderTests(tcu::TestContext &
 {
     return createTestGroup(testCtx, "samples_mapping_order", createSamplesMappingOrderTestsInGroup,
                            pipelineConstructionType);
+}
+
+//! Render to a multisampled image and resolve it to a 3D image
+tcu::TestCaseGroup *createMultisample3dImageTests(tcu::TestContext &testCtx,
+                                                  PipelineConstructionType pipelineConstructionType)
+{
+    return createTestGroup(testCtx, "3d", create3dImageTestsInGroup, pipelineConstructionType);
 }
 
 } // namespace pipeline

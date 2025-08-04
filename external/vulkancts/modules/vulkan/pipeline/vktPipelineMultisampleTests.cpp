@@ -7648,6 +7648,9 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         // Sampling from a multisampled image texture (texelFetch)
         multisampleTests->addChild(createMultisampleSampledImageTests(testCtx, pipelineConstructionType));
 
+        // Sampling from a multisampled image texture (texelFetch)
+        multisampleTests->addChild(createMultisample3dImageTests(testCtx, pipelineConstructionType));
+
         // Load/store on a multisampled rendered image (different kinds of access: color attachment write, storage image, etc.)
         multisampleTests->addChild(createMultisampleStorageImageTests(testCtx, pipelineConstructionType));
 
