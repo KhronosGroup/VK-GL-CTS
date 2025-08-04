@@ -25,6 +25,7 @@ import os
 import argparse
 import tempfile
 import sys
+import time
 
 from ctsbuild.common import *
 from ctsbuild.build import *
@@ -62,6 +63,7 @@ class RunScript(BuildTestStep):
             args += self.getExtraArgs(env)
 
         execute(args)
+        return args
 
     def __repr__(self):
         return "RunScript:%s" % (self.scriptPath)
@@ -117,7 +119,7 @@ class Build(BuildTestStep):
         buildDir = os.path.join(env.tmpDir, self.buildDir)
         curConfig = self.configGen.getBuildConfig(env, buildDir)
 
-        build(curConfig, self.generator)
+        return build(curConfig, self.generator)
 
 class CheckSrcChanges(BuildTestStep):
     def getName (self):
@@ -138,10 +140,13 @@ def getClangVersion ():
 def runSteps (steps):
     for step in steps:
         if step.isAvailable(env):
-            print("Run: %s" % step.getName())
-            step.run(env)
+            logging.info("Running step: %s" % step.getName())
+            start = time.time()
+            step_args = step.run(env)
+            end = time.time()
+            logging.info("Step completed: %s took %.1f seconds %s from project %s" % (step.getName(), end - start, step_args, os.getcwd()))
         else:
-            print("Skip: %s" % step.getName())
+            logging.info("Skip: %s" % step.getName())
 
 COMMON_CFLAGS = ["-Werror", "-Wno-error=unused-function"]
 COMMON_GCC_CFLAGS = COMMON_CFLAGS + ["-Wno-error=array-bounds"]
@@ -316,9 +321,9 @@ if __name__ == "__main__":
         selectedRecipes = getAllRecipe(RECIPES) if args.recipes == "all" \
                         else getRecipesByName(RECIPES, args.recipes)
 
-        print("Running %s" % ','.join(selectedRecipes.keys()))
+        logging.info("Running %s" % ','.join(selectedRecipes.keys()))
         selectedSteps = list(itertools.chain.from_iterable(selectedRecipes.values()))
         allSteps = (PREREQUISITES if (args.skipPrerequisites == False) else []) + selectedSteps + (POST_CHECKS if (args.skipPostCheck == False) else []) + (POST_CLEANUP if (args.applyPostExternalDependencyCleanup == True) else [])
         runSteps(allSteps)
 
-        print("All steps completed successfully")
+        logging.info("All steps completed successfully")
