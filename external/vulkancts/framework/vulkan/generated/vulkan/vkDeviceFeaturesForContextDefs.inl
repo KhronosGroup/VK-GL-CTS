@@ -154,6 +154,7 @@ const vk::VkPhysicalDevicePipelineProtectedAccessFeatures&					Context::getPipel
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				Context::getExternalFormatResolveFeaturesANDROID			(void) const { return m_device->getExternalFormatResolveFeaturesANDROID();			}
 const vk::VkPhysicalDeviceMaintenance5Features&								Context::getMaintenance5Features							(void) const { return m_device->getMaintenance5Features();							}
 const vk::VkPhysicalDeviceAntiLagFeaturesAMD&								Context::getAntiLagFeaturesAMD								(void) const { return m_device->getAntiLagFeaturesAMD();							}
+const vk::VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX&					Context::getDenseGeometryFormatFeaturesAMDX					(void) const { return m_device->getDenseGeometryFormatFeaturesAMDX();				}
 const vk::VkPhysicalDevicePresentId2FeaturesKHR&							Context::getPresentId2Features								(void) const { return m_device->getPresentId2Features();							}
 const vk::VkPhysicalDevicePresentWait2FeaturesKHR&							Context::getPresentWait2Features							(void) const { return m_device->getPresentWait2Features();							}
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				Context::getRayTracingPositionFetchFeatures					(void) const { return m_device->getRayTracingPositionFetchFeatures();				}

@@ -5113,6 +5113,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeRobus
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DENSE_GEOMETRY_FORMAT_TRIANGLES_DATA_AMDX;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR;

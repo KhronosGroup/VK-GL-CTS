@@ -406,6 +406,7 @@ template<> void initFeatureFromBlob<VkPhysicalDevicePresentModeFifoLatestReadyFe
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>(VkPhysicalDeviceCooperativeMatrix2FeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceHdrVividFeaturesHUAWEI>(VkPhysicalDeviceHdrVividFeaturesHUAWEI&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>(VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX>(VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR>(VkPhysicalDeviceDepthClampZeroOneFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeVectorFeaturesNV>(VkPhysicalDeviceCooperativeVectorFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceTileShadingFeaturesQCOM>(VkPhysicalDeviceTileShadingFeaturesQCOM&, const AllFeaturesBlobs&) {}
@@ -569,6 +570,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineProtectedAccessFe
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_FEATURES_ANDROID, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceMaintenance5Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR, VK_KHR_MAINTENANCE_5_EXTENSION_NAME, VK_KHR_MAINTENANCE_5_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceAntiLagFeaturesAMD>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD, VK_AMD_ANTI_LAG_EXTENSION_NAME, VK_AMD_ANTI_LAG_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX, VK_AMDX_DENSE_GEOMETRY_FORMAT_EXTENSION_NAME, VK_AMDX_DENSE_GEOMETRY_FORMAT_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentId2FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR, VK_KHR_PRESENT_ID_2_EXTENSION_NAME, VK_KHR_PRESENT_ID_2_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentWait2FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR, VK_KHR_PRESENT_WAIT_2_EXTENSION_NAME, VK_KHR_PRESENT_WAIT_2_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR, VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME, VK_KHR_RAY_TRACING_POSITION_FETCH_SPEC_VERSION}; }
@@ -795,6 +797,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceExternalFormatResolveFeaturesANDROID>, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceMaintenance5Features>, VK_KHR_MAINTENANCE_5_EXTENSION_NAME, VK_KHR_MAINTENANCE_5_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceAntiLagFeaturesAMD>, VK_AMD_ANTI_LAG_EXTENSION_NAME, VK_AMD_ANTI_LAG_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX>, VK_AMDX_DENSE_GEOMETRY_FORMAT_EXTENSION_NAME, VK_AMDX_DENSE_GEOMETRY_FORMAT_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentId2FeaturesKHR>, VK_KHR_PRESENT_ID_2_EXTENSION_NAME, VK_KHR_PRESENT_ID_2_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentWait2FeaturesKHR>, VK_KHR_PRESENT_WAIT_2_EXTENSION_NAME, VK_KHR_PRESENT_WAIT_2_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR>, VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME, VK_KHR_RAY_TRACING_POSITION_FETCH_SPEC_VERSION },

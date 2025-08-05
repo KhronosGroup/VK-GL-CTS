@@ -1465,6 +1465,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_AMDX_dense_geometry_format")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_present_id2")
 	{
 		return;
@@ -3681,6 +3685,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkAntiLagUpdateAMD");
 		return;
 	}
+	if (extName == "VK_AMDX_dense_geometry_format")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_present_id2")
 	{
 		return;
@@ -4571,6 +4579,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_AMD_anti_lag",
+	"VK_AMDX_dense_geometry_format",
 	"VK_KHR_present_id2",
 	"VK_KHR_present_wait2",
 	"VK_KHR_ray_tracing_position_fetch",

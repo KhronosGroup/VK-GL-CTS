@@ -105,6 +105,7 @@ const char*	getCubicFilterWeightsQCOMName							(VkCubicFilterWeightsQCOM value)
 const char*	getBlockMatchWindowCompareModeQCOMName					(VkBlockMatchWindowCompareModeQCOM value);
 const char*	getLayeredDriverUnderlyingApiMSFTName					(VkLayeredDriverUnderlyingApiMSFT value);
 const char*	getPhysicalDeviceLayeredApiKHRName						(VkPhysicalDeviceLayeredApiKHR value);
+const char*	getCompressedTriangleFormatAMDXName						(VkCompressedTriangleFormatAMDX value);
 const char*	getDepthClampModeEXTName								(VkDepthClampModeEXT value);
 const char*	getCooperativeVectorMatrixLayoutNVName					(VkCooperativeVectorMatrixLayoutNV value);
 const char*	getTensorTilingARMName									(VkTensorTilingARM value);
@@ -291,6 +292,7 @@ inline tcu::Format::Enum<VkCubicFilterWeightsQCOM>							getCubicFilterWeightsQC
 inline tcu::Format::Enum<VkBlockMatchWindowCompareModeQCOM>					getBlockMatchWindowCompareModeQCOMStr					(VkBlockMatchWindowCompareModeQCOM value)					{ return tcu::Format::Enum<VkBlockMatchWindowCompareModeQCOM>(getBlockMatchWindowCompareModeQCOMName, value);								}
 inline tcu::Format::Enum<VkLayeredDriverUnderlyingApiMSFT>					getLayeredDriverUnderlyingApiMSFTStr					(VkLayeredDriverUnderlyingApiMSFT value)					{ return tcu::Format::Enum<VkLayeredDriverUnderlyingApiMSFT>(getLayeredDriverUnderlyingApiMSFTName, value);									}
 inline tcu::Format::Enum<VkPhysicalDeviceLayeredApiKHR>						getPhysicalDeviceLayeredApiKHRStr						(VkPhysicalDeviceLayeredApiKHR value)						{ return tcu::Format::Enum<VkPhysicalDeviceLayeredApiKHR>(getPhysicalDeviceLayeredApiKHRName, value);										}
+inline tcu::Format::Enum<VkCompressedTriangleFormatAMDX>					getCompressedTriangleFormatAMDXStr						(VkCompressedTriangleFormatAMDX value)						{ return tcu::Format::Enum<VkCompressedTriangleFormatAMDX>(getCompressedTriangleFormatAMDXName, value);										}
 inline tcu::Format::Enum<VkDepthClampModeEXT>								getDepthClampModeEXTStr									(VkDepthClampModeEXT value)									{ return tcu::Format::Enum<VkDepthClampModeEXT>(getDepthClampModeEXTName, value);															}
 inline tcu::Format::Enum<VkCooperativeVectorMatrixLayoutNV>					getCooperativeVectorMatrixLayoutNVStr					(VkCooperativeVectorMatrixLayoutNV value)					{ return tcu::Format::Enum<VkCooperativeVectorMatrixLayoutNV>(getCooperativeVectorMatrixLayoutNVName, value);								}
 inline tcu::Format::Enum<VkTensorTilingARM>									getTensorTilingARMStr									(VkTensorTilingARM value)									{ return tcu::Format::Enum<VkTensorTilingARM>(getTensorTilingARMName, value);																}
@@ -477,6 +479,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCubicFilterWeightsQCOM value
 inline std::ostream&	operator<<	(std::ostream& s, VkBlockMatchWindowCompareModeQCOM value)					{ return s << getBlockMatchWindowCompareModeQCOMStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkLayeredDriverUnderlyingApiMSFT value)					{ return s << getLayeredDriverUnderlyingApiMSFTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkPhysicalDeviceLayeredApiKHR value)						{ return s << getPhysicalDeviceLayeredApiKHRStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkCompressedTriangleFormatAMDX value)						{ return s << getCompressedTriangleFormatAMDXStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkDepthClampModeEXT value)								{ return s << getDepthClampModeEXTStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkCooperativeVectorMatrixLayoutNV value)					{ return s << getCooperativeVectorMatrixLayoutNVStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkTensorTilingARM value)									{ return s << getTensorTilingARMStr(value);									}
@@ -1967,6 +1970,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeMatrixFlexibleDimensionsPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceHdrVividFeaturesHUAWEI& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX& value);
+std::ostream&	operator<<	(std::ostream& s, const VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCooperativeVectorFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCooperativeVectorPropertiesNV& value);

@@ -10757,6 +10757,26 @@ struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
 	VkBool32		vertexAttributeRobustness;
 };
 
+struct VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		denseGeometryFormat;
+};
+
+struct VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceOrHostAddressConstKHR	compressedData;
+	VkDeviceSize					dataSize;
+	uint32_t						numTriangles;
+	uint32_t						numVertices;
+	uint32_t						maxPrimitiveIndex;
+	uint32_t						maxGeometryIndex;
+	VkCompressedTriangleFormatAMDX	format;
+};
+
 struct VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
 {
 	VkStructureType	sType;

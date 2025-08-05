@@ -3294,6 +3294,18 @@ bool check_VK_KHR_maintenance5(const tcu::UVec2& v, const ExtPropVect& vIEP, con
 	return ((isCompatible(1, 1, v) && isSupported(vDEP, "VK_KHR_dynamic_rendering")) || isCompatible(1, 3, v));
 }
 
+bool check_VK_AMDX_dense_geometry_format(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_AMDX_dense_geometry_format"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_acceleration_structure+(VK_KHR_maintenance5,VK_VERSION_1_4)
+	return (isSupported(vDEP, "VK_KHR_acceleration_structure") && (isSupported(vDEP, "VK_KHR_maintenance5") || isCompatible(1, 4, v)));
+}
+
 bool check_VK_KHR_present_id2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4270,6 +4282,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pipeline_protected_access",						&check_VK_EXT_pipeline_protected_access),
 	std::make_pair("VK_ANDROID_external_format_resolve",					&check_VK_ANDROID_external_format_resolve),
 	std::make_pair("VK_KHR_maintenance5",									&check_VK_KHR_maintenance5),
+	std::make_pair("VK_AMDX_dense_geometry_format",							&check_VK_AMDX_dense_geometry_format),
 	std::make_pair("VK_KHR_present_id2",									&check_VK_KHR_present_id2),
 	std::make_pair("VK_KHR_present_wait2",									&check_VK_KHR_present_wait2),
 	std::make_pair("VK_KHR_ray_tracing_position_fetch",						&check_VK_KHR_ray_tracing_position_fetch),
@@ -4681,6 +4694,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ANDROID_external_format_resolve"),
 	std::make_tuple(1, 0, "VK_KHR_maintenance5"),
 	std::make_tuple(1, 0, "VK_AMD_anti_lag"),
+	std::make_tuple(1, 0, "VK_AMDX_dense_geometry_format"),
 	std::make_tuple(1, 0, "VK_KHR_present_id2"),
 	std::make_tuple(1, 0, "VK_KHR_present_wait2"),
 	std::make_tuple(1, 0, "VK_KHR_ray_tracing_position_fetch"),
