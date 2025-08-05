@@ -97,12 +97,26 @@ enum StrideType
     STRIDE_TYPE_ZERO,
 };
 
+enum CommandBufferType
+{
+    PRIMARY,
+    SECONDARY,
+    SECONDARY_INHERITED
+};
+
 enum ClearOperation
 {
     CLEAR_NOOP,
     CLEAR_COLOR,
     CLEAR_DEPTH,
     CLEAR_SKIP,
+};
+
+enum TessPrimitiveMode
+{
+    TESS_PRIM_TRIANGLES,
+    TESS_PRIM_ISOLINES,
+    TESS_PRIM_QUADS
 };
 
 constexpr uint32_t kTriangleVertices         = 3u;
@@ -123,6 +137,7 @@ std::string inputTypeToGLString(const VkPrimitiveTopology &inputType)
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
+    case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
         return "triangles";
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
@@ -149,6 +164,7 @@ std::string outputTypeToGLString(const VkPrimitiveTopology &outputType)
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY:
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
+    case VK_PRIMITIVE_TOPOLOGY_PATCH_LIST:
         return "triangle_strip";
     default:
         DE_ASSERT(false);
@@ -1377,7 +1393,8 @@ public:
                           const bool dstOffset_ = false, const ClearOperation clearOp_ = CLEAR_NOOP,
                           const bool noColorAttachments_ = false, const StrideType strideType_ = STRIDE_TYPE_VALID,
                           const bool hasTess_ = false, const uint32_t tessPatchSize_ = 0u,
-                          const uint32_t numTessPrimitives_ = 1u)
+                          const uint32_t numTessPrimitives_ = 1u, TessPrimitiveMode primMode_ = TESS_PRIM_QUADS,
+                          const bool pointMode_ = false)
             : GenericParameters{resetType_, copyType_, query64Bits_, dstOffset_, strideType_}
             , queryStatisticFlags(queryStatisticFlags_)
             , primitiveTopology(primitiveTopology_)
@@ -1387,6 +1404,8 @@ public:
             , hasTess(hasTess_)
             , tessPatchSize(tessPatchSize_)
             , numTessPrimitives(numTessPrimitives_)
+            , primMode(primMode_)
+            , pointMode(pointMode_)
         {
         }
 
@@ -1398,6 +1417,8 @@ public:
         bool hasTess;
         uint32_t tessPatchSize;
         uint32_t numTessPrimitives;
+        TessPrimitiveMode primMode;
+        bool pointMode;
     };
     GraphicBasicTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
                              const ParametersGraphic &parametersGraphic, const std::vector<uint64_t> &drawRepeats);
@@ -1676,9 +1697,40 @@ bool GraphicBasicTestInstance::checkImage(void)
     if (m_parametersGraphic.tessPatchSize != 0)
     {
         const auto blue = tcu::RGBA::blue().toVec();
-        for (int y = 0; y < iHeight; ++y)
-            for (int x = 0; x < iWidth; ++x)
-                referenceFrame.getLevel(0).setPixel(blue, x, y);
+        if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+        {
+            // Triangle in top-left corner
+            for (int y = 0; y < iHeight; ++y)
+            {
+                for (int x = 0; x < iWidth; ++x)
+                {
+                    if (x < (iWidth - y) - 1)
+                        referenceFrame.getLevel(0).setPixel(blue, x, y);
+                    else
+                        referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f), x, y);
+                }
+            }
+        }
+        else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+        {
+            // Fill with a single horizontal line at the bottom
+            for (int y = 0; y < iHeight; ++y)
+            {
+                for (int x = 0; x < iWidth; ++x)
+                {
+                    if (y >= iHeight - 1)
+                        referenceFrame.getLevel(0).setPixel(blue, x, y);
+                    else
+                        referenceFrame.getLevel(0).setPixel(tcu::Vec4(0.0f), x, y);
+                }
+            }
+        }
+        else // TESS_PRIM_QUADS (default)
+        {
+            for (int y = 0; y < iHeight; ++y)
+                for (int x = 0; x < iWidth; ++x)
+                    referenceFrame.getLevel(0).setPixel(blue, x, y);
+        }
     }
     else
     {
@@ -1988,6 +2040,34 @@ tcu::TestStatus VertexShaderTestInstance::checkResult(VkQueryPool queryPool)
             m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY  ? 992u :
             m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY ? 2048u :
                                                                                                            0u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT:
+        expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST                ? 16u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST                 ? 8u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP                ? 15u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 5u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP            ? 8u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN              ? 8u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY  ? 4u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY ? 13u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY ? 2u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY ?
+                                                                                                                    6u :
+                                                                                                                    0u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT:
+        expectedMin = m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST                ? 16u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST                 ? 8u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP                ? 15u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST             ? 5u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP            ? 8u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN              ? 8u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY  ? 4u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY ? 13u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY ? 2u :
+                      m_parametersGraphic.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY ?
+                                                                                                                    6u :
+                                                                                                                    0u;
         break;
     default:
         DE_FATAL("Unexpected type of statistics query");
@@ -3199,14 +3279,14 @@ void TessellationShaderTestInstance::createPipeline(void)
     };
 
     const VkPipelineVertexInputStateCreateInfo vf_info = {
-        // sType;
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // pNext;
-        NULL,                                                      // flags;
-        0u,                                                        // vertexBindingDescriptionCount;
-        1u,                                                        // pVertexBindingDescriptions;
-        &vertexInputBindingDescription,                            // vertexAttributeDescriptionCount;
-        2u,                                                        // pVertexAttributeDescriptions;
-        vertexInputAttributeDescriptions};
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType;
+        NULL,                                                      // pNext;
+        0u,                                                        // flags;
+        1u,                                                        // vertexBindingDescriptionCount;
+        &vertexInputBindingDescription,                            // pVertexBindingDescriptions;
+        2u,                                                        // vertexAttributeDescriptionCount;
+        vertexInputAttributeDescriptions                           // pVertexAttributeDescriptions;
+    };
 
     PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
     pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", VK_SHADER_STAGE_VERTEX_BIT));
@@ -3354,12 +3434,55 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult(VkQueryPool queryPoo
     case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT:
         expectedMin = m_parametersGraphic.numTessPrimitives;
         break;
+
     case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT:
         expectedMin = 4u;
         break;
+
     case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT:
-        expectedMin = 100u;
+        if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+        {
+            expectedMin = 76;
+        }
+        else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+        {
+            expectedMin = 80;
+        }
+        else // TESS_PRIM_QUADS
+        {
+            expectedMin = 100;
+        }
         break;
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT:
+        if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+        {
+            expectedMin = m_parametersGraphic.pointMode ? 15u : 16u;
+        }
+        else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+        {
+            expectedMin = m_parametersGraphic.pointMode ? 9u : 12u;
+        }
+        else // TESS_PRIM_QUADS
+        {
+            expectedMin = m_parametersGraphic.pointMode ? 25u : 32u;
+        }
+        break;
+
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT:
+        if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+        {
+            expectedMin = m_parametersGraphic.pointMode ? 15u : 16u;
+        }
+        else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+        {
+            expectedMin = m_parametersGraphic.pointMode ? 9u : 12u;
+        }
+        else // TESS_PRIM_QUADS
+        {
+            expectedMin = m_parametersGraphic.pointMode ? 25u : 32u;
+        }
+        break;
+
     default:
         DE_FATAL("Unexpected type of statistics query");
         break;
@@ -3391,7 +3514,9 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult(VkQueryPool queryPoo
             }
 
             if (results[0] < expectedMin)
+            {
                 throw tcu::TestStatus::fail("QueryPoolResults incorrect");
+            }
             if (queryCount > 1)
             {
                 double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
@@ -3399,7 +3524,8 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult(VkQueryPool queryPoo
                     throw tcu::TestStatus::fail("QueryPoolResults are nonlinear");
             }
 
-            if (!m_parametersGraphic.noColorAttachments && !checkImageResult)
+            // Skip image verification for point mode tessellation tests
+            if (!m_parametersGraphic.noColorAttachments && !m_parametersGraphic.pointMode && !checkImageResult)
                 throw tcu::TestStatus::fail("Result image doesn't match expected image.");
         }
         else if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
@@ -3421,7 +3547,13 @@ tcu::TestStatus TessellationShaderTestInstance::checkResult(VkQueryPool queryPoo
             }
 
             if (results[0].first < expectedMin || results[0].second == 0u)
-                return tcu::TestStatus::fail("QueryPoolResults incorrect");
+            {
+                // return tcu::TestStatus::fail("QueryPoolResults incorrect");
+                std::ostringstream msg;
+                msg << "QueryPoolResults incorrect: expected at least " << expectedMin << " but got "
+                    << results[0].first << " or the " << results[0].second << " was equal to 0u";
+                return tcu::TestStatus::fail(msg.str());
+            }
 
             if (queryCount > 1)
             {
@@ -4063,49 +4195,100 @@ public:
                 sourceCollections.glslSources.add("vertex") << glu::VertexSource(source.str());
             }
         }
-
         if (m_parametersGraphic.hasTess)
         { // Tessellation control & evaluation
             std::ostringstream source_tc;
             source_tc << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                      << "#extension GL_EXT_tessellation_shader : require\n"
-                      << "layout(vertices = 4) out;\n"
-                      << "vec4 positions[4] = vec4[](\n"
-                      << "    vec4(-1.0f, -1.0f, 0.0f, 1.0f),\n"
-                      << "    vec4( 1.0f, -1.0f, 0.0f, 1.0f),\n"
-                      << "    vec4(-1.0f,  1.0f, 0.0f, 1.0f),\n"
-                      << "    vec4( 1.0f,  1.0f, 0.0f, 1.0f)\n"
-                      << ");\n"
-                      << "layout(location = 0) in vec4 in_color[];\n"
+                      << "#extension GL_EXT_tessellation_shader : require\n";
+
+            // Adjust the output vertices based on primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+                source_tc << "layout(vertices = 3) out;\n";
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+                source_tc << "layout(vertices = 2) out;\n";
+            else // TESS_PRIM_QUADS
+                source_tc << "layout(vertices = 4) out;\n";
+
+            // Define positions array based on primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+            {
+                source_tc << "vec4 positions[3] = vec4[](\n"
+                          << "    vec4(-0.5f, -0.5f, 0.0f, 1.0f),\n"
+                          << "    vec4( 0.5f, -0.5f, 0.0f, 1.0f),\n"
+                          << "    vec4( 0.0f,  0.5f, 0.0f, 1.0f)\n"
+                          << ");\n";
+            }
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+            {
+                source_tc << "vec4 positions[2] = vec4[](\n"
+                          << "    vec4(-0.5f,  0.0f, 0.0f, 1.0f),\n"
+                          << "    vec4( 0.5f,  0.0f, 0.0f, 1.0f)\n"
+                          << ");\n";
+            }
+            else // TESS_PRIM_QUADS
+            {
+                source_tc << "vec4 positions[4] = vec4[](\n"
+                          << "    vec4(-1.0f, -1.0f, 0.0f, 1.0f),\n"
+                          << "    vec4( 1.0f, -1.0f, 0.0f, 1.0f),\n"
+                          << "    vec4(-1.0f,  1.0f, 0.0f, 1.0f),\n"
+                          << "    vec4( 1.0f,  1.0f, 0.0f, 1.0f)\n"
+                          << ");\n";
+            }
+
+            source_tc << "layout(location = 0) in vec4 in_color[];\n"
                       << "layout(location = 0) out vec4 out_color[];\n"
                       << "\n"
                       << "void main (void)\n"
                       << "{\n"
                       << "    if( gl_InvocationID == 0 )\n"
-                      << "    {\n"
-                      << "        gl_TessLevelInner[0] = 4.0f;\n"
-                      << "        gl_TessLevelInner[1] = 4.0f;\n"
-                      << "        gl_TessLevelOuter[0] = 4.0f;\n"
-                      << "        gl_TessLevelOuter[1] = 4.0f;\n"
-                      << "        gl_TessLevelOuter[2] = 4.0f;\n"
-                      << "        gl_TessLevelOuter[3] = 4.0f;\n"
-                      << "    }\n";
+                      << "    {\n";
 
-            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < 4))
+            // Configure tessellation levels based on the primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+            {
+                source_tc << "        gl_TessLevelInner[0] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[0] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[1] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[2] = 4.0f;\n";
+            }
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+            {
+                source_tc << "        gl_TessLevelOuter[0] = 4.0f; // Number of lines\n"
+                          << "        gl_TessLevelOuter[1] = 4.0f; // Number of segments per line\n";
+            }
+            else // TESS_PRIM_QUADS
+            {
+                source_tc << "        gl_TessLevelInner[0] = 4.0f;\n"
+                          << "        gl_TessLevelInner[1] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[0] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[1] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[2] = 4.0f;\n"
+                          << "        gl_TessLevelOuter[3] = 4.0f;\n";
+            }
+
+            source_tc << "    }\n";
+
+            // Handle patch size customization
+            uint32_t verticesNeeded = 4; // Default for quads
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+                verticesNeeded = 3;
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+                verticesNeeded = 2;
+
+            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < verticesNeeded))
             {
                 source_tc << "\n"
                           << "    if (gl_InvocationID < " << m_parametersGraphic.tessPatchSize << ")\n"
                           << "    {\n";
             }
 
-            source_tc << "    out_color[gl_InvocationID] = in_color[gl_InvocationID];\n"
-                      << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n";
+            source_tc << "        out_color[gl_InvocationID] = in_color[gl_InvocationID];\n"
+                      << "        gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n";
 
-            // Provide position and color for missing quad data.
-            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < 4))
+            // Provide position and color for missing data
+            if ((m_parametersGraphic.tessPatchSize > 0) && (m_parametersGraphic.tessPatchSize < verticesNeeded))
             {
                 source_tc << "    }\n"
-
                           << "    else\n"
                           << "    {\n"
                           << "        out_color[gl_InvocationID] = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
@@ -4117,25 +4300,58 @@ public:
             sourceCollections.glslSources.add("tessellation_control")
                 << glu::TessellationControlSource(source_tc.str());
 
+            // Tessellation evaluation shader
             std::ostringstream source_te;
             source_te << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
-                      << "#extension GL_EXT_tessellation_shader : require\n"
-                      << "layout( quads, equal_spacing, ccw ) in;\n"
-                      << "layout(location = 0) in vec4 in_color[];\n"
+                      << "#extension GL_EXT_tessellation_shader : require\n";
+
+            // Set primitive mode, spacing, and winding
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+                source_te << "layout(triangles, equal_spacing, ccw) in;\n";
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+                source_te << "layout(isolines, equal_spacing) in;\n";
+            else // TESS_PRIM_QUADS
+                source_te << "layout(quads, equal_spacing, ccw) in;\n";
+
+            // Add point_mode if enabled
+            if (m_parametersGraphic.pointMode)
+                source_te << "layout(point_mode) in;\n";
+
+            source_te << "layout(location = 0) in vec4 in_color[];\n"
                       << "layout(location = 0) out vec4 out_color;\n"
                       << "void main (void)\n"
-                      << "{\n"
-                      << "    const float u = gl_TessCoord.x;\n"
-                      << "    const float v = gl_TessCoord.y;\n"
-                      << "    const float w = gl_TessCoord.z;\n"
-                      << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position +(1 - u) * v * "
-                         "gl_in[1].gl_Position + u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n"
-                      << "    out_color = in_color[0];\n"
+                      << "{\n";
+
+            // Position calculation depends on the primitive mode
+            if (m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES)
+            {
+                source_te << "    const float u = gl_TessCoord.x;\n"
+                          << "    const float v = gl_TessCoord.y;\n"
+                          << "    const float w = gl_TessCoord.z;\n"
+                          << "    gl_Position = u * gl_in[0].gl_Position + v * gl_in[1].gl_Position + w * "
+                             "gl_in[2].gl_Position;\n";
+            }
+            else if (m_parametersGraphic.primMode == TESS_PRIM_ISOLINES)
+            {
+                source_te << "    const float u = gl_TessCoord.x; // Position along the line\n"
+                          << "    const float v = gl_TessCoord.y; // Which line\n"
+                          << "    gl_Position = mix(gl_in[0].gl_Position, gl_in[1].gl_Position, u);\n";
+            }
+            else // TESS_PRIM_QUADS
+            {
+                source_te
+                    << "    const float u = gl_TessCoord.x;\n"
+                    << "    const float v = gl_TessCoord.y;\n"
+                    << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * "
+                       "gl_in[1].gl_Position + u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
+            }
+
+            source_te << "    out_color = in_color[0];\n"
                       << "}\n";
+
             sourceCollections.glslSources.add("tessellation_evaluation")
                 << glu::TessellationEvaluationSource(source_te.str());
         }
-
         if (m_parametersGraphic.queryStatisticFlags & (VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT |
                                                        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT |
                                                        VK_QUERY_PIPELINE_STATISTIC_GEOMETRY_SHADER_INVOCATIONS_BIT |
@@ -5185,6 +5401,671 @@ tcu::TestStatus MultipleGeomStatsTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class TessellationGeometryShaderTestInstance : public GraphicBasicTestInstance
+{
+public:
+    TessellationGeometryShaderTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
+                                           const ParametersGraphic &parametersGraphic,
+                                           const std::vector<uint64_t> &drawRepeats);
+
+protected:
+    virtual void checkExtensions(bool hostQueryResetEnabled);
+    virtual void createPipeline(void);
+    virtual tcu::TestStatus executeTest(void);
+    virtual tcu::TestStatus checkResult(VkQueryPool queryPool);
+    void draw(VkCommandBuffer cmdBuffer);
+};
+
+TessellationGeometryShaderTestInstance::TessellationGeometryShaderTestInstance(
+    vkt::Context &context, const std::vector<VertexData> &data, const ParametersGraphic &parametersGraphic,
+    const std::vector<uint64_t> &drawRepeats)
+    : GraphicBasicTestInstance(context, data, parametersGraphic, drawRepeats)
+{
+}
+
+void TessellationGeometryShaderTestInstance::checkExtensions(bool hostQueryResetEnabled)
+{
+    StatisticQueryTestInstance::checkExtensions(hostQueryResetEnabled);
+    if (!m_context.getDeviceFeatures().tessellationShader)
+        throw tcu::NotSupportedError("Tessellation shader are not supported");
+    if (!m_context.getDeviceFeatures().geometryShader)
+        throw tcu::NotSupportedError("Geometry shader are not supported");
+}
+
+void TessellationGeometryShaderTestInstance::createPipeline(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+
+    // Pipeline
+    Unique<VkShaderModule> vs(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("vertex"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> tc(createShaderModule(
+        vk, device, m_context.getBinaryCollection().get("tessellation_control"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> te(createShaderModule(
+        vk, device, m_context.getBinaryCollection().get("tessellation_evaluation"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> gs(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("geometry"), (VkShaderModuleCreateFlags)0));
+    Unique<VkShaderModule> fs(
+        createShaderModule(vk, device, m_context.getBinaryCollection().get("fragment"), (VkShaderModuleCreateFlags)0));
+
+    const PipelineCreateInfo::ColorBlendState::Attachment attachmentState;
+
+    std::vector<VkPushConstantRange> pcRanges;
+
+    if (m_parametersGraphic.noColorAttachments)
+        pcRanges.push_back(makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, kFloatSize, kFloatSize));
+
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(std::vector<VkDescriptorSetLayout>(), de::sizeU32(pcRanges),
+                                                            de::dataOrNull(pcRanges));
+
+    m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
+
+    const VkVertexInputBindingDescription vertexInputBindingDescription = {
+        0u,                                        // binding;
+        static_cast<uint32_t>(sizeof(VertexData)), // stride;
+        VK_VERTEX_INPUT_RATE_VERTEX                // inputRate
+    };
+
+    const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[] = {
+        {0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, 0u}, // VertexElementData::position
+        {1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT, static_cast<uint32_t>(sizeof(tcu::Vec4))}, // VertexElementData::color
+    };
+
+    const VkPipelineVertexInputStateCreateInfo vf_info = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // sType;
+        NULL,                                                      // pNext;
+        0u,                                                        // flags;
+        1u,                                                        // vertexBindingDescriptionCount;
+        &vertexInputBindingDescription,                            // pVertexBindingDescriptions;
+        2u,                                                        // vertexAttributeDescriptionCount;
+        vertexInputAttributeDescriptions                           // pVertexAttributeDescriptions;
+    };
+
+    PipelineCreateInfo pipelineCreateInfo(*m_pipelineLayout, *m_renderPass, 0, (VkPipelineCreateFlags)0);
+    pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*vs, "main", VK_SHADER_STAGE_VERTEX_BIT));
+    pipelineCreateInfo.addShader(
+        PipelineCreateInfo::PipelineShaderStage(*tc, "main", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT));
+    pipelineCreateInfo.addShader(
+        PipelineCreateInfo::PipelineShaderStage(*te, "main", VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT));
+    pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*gs, "main", VK_SHADER_STAGE_GEOMETRY_BIT));
+    pipelineCreateInfo.addShader(PipelineCreateInfo::PipelineShaderStage(*fs, "main", VK_SHADER_STAGE_FRAGMENT_BIT));
+
+    pipelineCreateInfo.addState(PipelineCreateInfo::TessellationState(
+        m_parametersGraphic.tessPatchSize ? m_parametersGraphic.tessPatchSize : 4u));
+
+    pipelineCreateInfo.addState(PipelineCreateInfo::InputAssemblerState(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST));
+    pipelineCreateInfo.addState(PipelineCreateInfo::ColorBlendState(1, &attachmentState));
+
+    const VkViewport viewport = makeViewport(m_width, m_height);
+    const VkRect2D scissor    = makeRect2D(m_width, m_height);
+
+    pipelineCreateInfo.addState(
+        PipelineCreateInfo::ViewportState(1, std::vector<VkViewport>(1, viewport), std::vector<VkRect2D>(1, scissor)));
+
+    const VkBool32 depthTestAndWrites = makeVkBool(m_parametersGraphic.noColorAttachments);
+    pipelineCreateInfo.addState(PipelineCreateInfo::DepthStencilState(depthTestAndWrites, depthTestAndWrites));
+
+    pipelineCreateInfo.addState(PipelineCreateInfo::RasterizerState());
+    pipelineCreateInfo.addState(PipelineCreateInfo::MultiSampleState());
+    pipelineCreateInfo.addState(vf_info);
+    m_pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+}
+
+tcu::TestStatus TessellationGeometryShaderTestInstance::executeTest(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
+    const Move<VkCommandPool> cmdPool = createCommandPool(vk, device, &cmdPoolCreateInfo);
+    const uint32_t queryCount         = static_cast<uint32_t>(m_drawRepeats.size());
+    const Unique<VkQueryPool> queryPool(makeQueryPool(vk, device, queryCount, m_parametersGraphic.queryStatisticFlags));
+
+    const VkDeviceSize vertexBufferOffset = 0u;
+    const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
+    const VkBuffer vertexBuffer           = vertexBufferSp->object();
+
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    {
+        std::vector<VkClearValue> renderPassClearValues(2);
+        deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
+
+        if (!m_parametersGraphic.noColorAttachments)
+            initialTransitionColor2DImage(
+                vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        initialTransitionDepth2DImage(
+            vk, *cmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        if (m_parametersGraphic.resetType != RESET_TYPE_HOST)
+            vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
+
+        beginRenderPass(vk, *cmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height),
+                        (uint32_t)renderPassClearValues.size(), &renderPassClearValues[0]);
+
+        for (uint32_t i = 0; i < queryCount; ++i)
+        {
+            vk.cmdBeginQuery(*cmdBuffer, *queryPool, i, (VkQueryControlFlags)0u);
+            vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
+            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+            for (uint64_t j = 0; j < m_drawRepeats[i]; ++j)
+                draw(*cmdBuffer);
+
+            vk.cmdEndQuery(*cmdBuffer, *queryPool, i);
+        }
+
+        endRenderPass(vk, *cmdBuffer);
+
+        if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY || m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            VkDeviceSize stride          = m_parametersGraphic.querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
+            vk::VkQueryResultFlags flags = m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+            {
+                flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride *= 2u;
+            }
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY)
+            {
+                vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
+                flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride = sizeof(ValueAndAvailability);
+            }
+
+            VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
+            VkDeviceSize copyStride     = stride;
+            if (m_parametersGraphic.strideType == STRIDE_TYPE_ZERO)
+                copyStride = 0u;
+
+            vk.cmdCopyQueryPoolResults(*cmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(), dstOffsetQuery,
+                                       copyStride, flags);
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+                vk.cmdResetQueryPool(*cmdBuffer, *queryPool, 0u, queryCount);
+
+            const VkBufferMemoryBarrier barrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
+                nullptr,                                 //  const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
+                m_resetBuffer->object(),                 //  VkBuffer buffer;
+                0u,                                      //  VkDeviceSize offset;
+                queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
+            };
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
+        }
+
+        if (!m_parametersGraphic.noColorAttachments)
+            transition2DImage(vk, *cmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    }
+    endCommandBuffer(vk, *cmdBuffer);
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        vk.resetQueryPool(device, *queryPool, 0u, queryCount);
+
+    // Wait for completion
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+    return checkResult(*queryPool);
+}
+
+tcu::TestStatus TessellationGeometryShaderTestInstance::checkResult(VkQueryPool queryPool)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    uint64_t expectedMin      = 0u;
+    std::string errorMsg;
+
+    switch (m_parametersGraphic.queryStatisticFlags)
+    {
+    case VK_QUERY_PIPELINE_STATISTIC_INPUT_ASSEMBLY_PRIMITIVES_BIT:
+        expectedMin = m_parametersGraphic.numTessPrimitives;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT:
+        expectedMin = 4u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT:
+        expectedMin = 100u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT:
+        expectedMin = 64u;
+        break;
+    case VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT:
+        expectedMin = 64u;
+        break;
+    default:
+        DE_FATAL("Unexpected type of statistics query");
+        break;
+    }
+
+    const uint32_t queryCount = static_cast<uint32_t>(m_drawRepeats.size());
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_NORMAL || m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+    {
+        ResultsVector results(queryCount, 0u);
+
+        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags()),
+                                          m_parametersGraphic.dstOffset);
+        }
+        else
+        {
+            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags())));
+        }
+
+        if (results[0] < expectedMin)
+        {
+            std::ostringstream msg;
+            msg << "QueryPoolResults incorrect: expected at least " << expectedMin << " but got " << results[0];
+            errorMsg = msg.str();
+        }
+        else if (queryCount > 1)
+        {
+            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+            if (fabs(pearson) < 0.8)
+            {
+                std::ostringstream msg;
+                msg << "QueryPoolResults are nonlinear: Pearson " << pearson << " for";
+                for (const auto &x : results)
+                    msg << " " << x;
+                errorMsg = msg.str();
+            }
+        }
+    }
+    else if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+    {
+        ResultsVectorWithAvailability results(queryCount, pair<uint64_t, uint64_t>(0u, 0u));
+
+        if (m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            const vk::Allocation &allocation = m_resetBuffer->getBoundMemory();
+            cmdCopyQueryPoolResultsVector(results, vk, device, allocation, queryCount,
+                                          (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                           VK_QUERY_RESULT_WITH_AVAILABILITY_BIT),
+                                          m_parametersGraphic.dstOffset);
+        }
+        else
+        {
+            VK_CHECK(GetQueryPoolResultsVector(results, vk, device, queryPool, 0u, queryCount,
+                                               (VK_QUERY_RESULT_WAIT_BIT | m_parametersGraphic.querySizeFlags() |
+                                                VK_QUERY_RESULT_WITH_AVAILABILITY_BIT)));
+        }
+
+        if (results[0].first < expectedMin || results[0].second == 0)
+        {
+            std::ostringstream msg;
+            msg << "QueryPoolResults incorrect: expected at least " << expectedMin << " with availability 1 but got "
+                << results[0].first << " with availability " << results[0].second;
+            errorMsg = msg.str();
+        }
+        else if (queryCount > 1)
+        {
+            double pearson = calculatePearsonCorrelation(m_drawRepeats, results);
+            if (fabs(pearson) < 0.8)
+            {
+                std::ostringstream msg;
+                msg << "QueryPoolResults are nonlinear: Pearson " << pearson << " for";
+                for (const auto &x : results)
+                    msg << " " << x.first;
+                errorMsg = msg.str();
+            }
+        }
+        else
+        {
+            uint64_t temp = results[0].first;
+
+            vk.resetQueryPool(device, queryPool, 0, queryCount);
+            vk::VkResult res = GetQueryPoolResultsVector(
+                results, vk, device, queryPool, 0u, queryCount,
+                (m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT));
+
+            /* From Vulkan spec:
+             *
+             * If VK_QUERY_RESULT_WAIT_BIT and VK_QUERY_RESULT_PARTIAL_BIT are both not set then no result values are written to pData
+             * for queries that are in the unavailable state at the time of the call, and vkGetQueryPoolResults returns VK_NOT_READY.
+             * However, availability state is still written to pData for those queries if VK_QUERY_RESULT_WITH_AVAILABILITY_BIT is set.
+             */
+            if (res != vk::VK_NOT_READY || results[0].first != temp || results[0].second != 0u)
+                errorMsg = "QueryPoolResults incorrect reset";
+        }
+    }
+    else
+    {
+        // With RESET_TYPE_BEFORE_COPY, we only need to verify the result after the copy include an availability bit set as zero.
+        const auto result = verifyUnavailable();
+        if (result.isFail())
+            errorMsg = result.getDescription();
+    }
+
+    // Verify image output if needed
+    if (!m_parametersGraphic.noColorAttachments && errorMsg.empty() && !checkImage())
+        errorMsg = "Result image doesn't match expected image";
+
+    if (!errorMsg.empty())
+        return tcu::TestStatus::fail(errorMsg);
+    return tcu::TestStatus::pass("Pass");
+}
+
+void TessellationGeometryShaderTestInstance::draw(VkCommandBuffer cmdBuffer)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    vk.cmdDraw(cmdBuffer, m_parametersGraphic.tessPatchSize * m_parametersGraphic.numTessPrimitives, 1u, 0u, 0u);
+}
+
+class TessellationGeometryShaderSecondaryTestInstance : public TessellationGeometryShaderTestInstance
+{
+public:
+    TessellationGeometryShaderSecondaryTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
+                                                    const ParametersGraphic &parametersGraphic,
+                                                    const std::vector<uint64_t> &drawRepeats);
+
+protected:
+    virtual tcu::TestStatus executeTest(void);
+};
+
+TessellationGeometryShaderSecondaryTestInstance::TessellationGeometryShaderSecondaryTestInstance(
+    vkt::Context &context, const std::vector<VertexData> &data, const ParametersGraphic &parametersGraphic,
+    const std::vector<uint64_t> &drawRepeats)
+    : TessellationGeometryShaderTestInstance(context, data, parametersGraphic, drawRepeats)
+{
+}
+
+tcu::TestStatus TessellationGeometryShaderSecondaryTestInstance::executeTest(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
+    const Move<VkCommandPool> cmdPool = createCommandPool(vk, device, &cmdPoolCreateInfo);
+    const uint32_t queryCount         = static_cast<uint32_t>(m_drawRepeats.size());
+    const Unique<VkQueryPool> queryPool(makeQueryPool(vk, device, queryCount, m_parametersGraphic.queryStatisticFlags));
+
+    const VkDeviceSize vertexBufferOffset = 0u;
+    const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
+    const VkBuffer vertexBuffer           = vertexBufferSp->object();
+
+    const Unique<VkCommandBuffer> primaryCmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    std::vector<VkCommandBufferSp> secondaryCmdBuffers(queryCount);
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+        secondaryCmdBuffers[i] = VkCommandBufferSp(new vk::Unique<VkCommandBuffer>(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+    {
+        beginSecondaryCommandBuffer(vk, secondaryCmdBuffers[i]->get(), m_parametersGraphic.queryStatisticFlags,
+                                    *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+        vk.cmdBeginQuery(secondaryCmdBuffers[i]->get(), *queryPool, i, (VkQueryControlFlags)0u);
+        vk.cmdBindPipeline(secondaryCmdBuffers[i]->get(), VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        vk.cmdBindVertexBuffers(secondaryCmdBuffers[i]->get(), 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+        for (uint32_t j = 0; j < m_drawRepeats[i]; ++j)
+            draw(secondaryCmdBuffers[i]->get());
+        vk.cmdEndQuery(secondaryCmdBuffers[i]->get(), *queryPool, i);
+        endCommandBuffer(vk, secondaryCmdBuffers[i]->get());
+    }
+
+    beginCommandBuffer(vk, *primaryCmdBuffer);
+    {
+        std::vector<VkClearValue> renderPassClearValues(2);
+        deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
+
+        if (!m_parametersGraphic.noColorAttachments)
+            initialTransitionColor2DImage(
+                vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        initialTransitionDepth2DImage(
+            vk, *primaryCmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        if (m_parametersGraphic.resetType != RESET_TYPE_HOST)
+            vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+        beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height),
+                        (uint32_t)renderPassClearValues.size(), &renderPassClearValues[0],
+                        VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+        for (uint32_t i = 0; i < queryCount; ++i)
+            vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &(secondaryCmdBuffers[i]->get()));
+        endRenderPass(vk, *primaryCmdBuffer);
+
+        if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY || m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            VkDeviceSize stride          = m_parametersGraphic.querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
+            vk::VkQueryResultFlags flags = m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+            {
+                flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride *= 2u;
+            }
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY)
+            {
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+                flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride = sizeof(ValueAndAvailability);
+            }
+
+            VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
+            VkDeviceSize copyStride     = stride;
+            if (m_parametersGraphic.strideType == STRIDE_TYPE_ZERO)
+                copyStride = 0u;
+
+            vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                       dstOffsetQuery, copyStride, flags);
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+            const VkBufferMemoryBarrier barrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
+                nullptr,                                 //  const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
+                m_resetBuffer->object(),                 //  VkBuffer buffer;
+                0u,                                      //  VkDeviceSize offset;
+                queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
+            };
+            vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
+        }
+
+        if (!m_parametersGraphic.noColorAttachments)
+            transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    }
+    endCommandBuffer(vk, *primaryCmdBuffer);
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        vk.resetQueryPool(device, *queryPool, 0u, queryCount);
+
+    // Wait for completion
+    submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
+    return checkResult(*queryPool);
+}
+
+class TessellationGeometryShaderSecondaryInheritedTestInstance : public TessellationGeometryShaderTestInstance
+{
+public:
+    TessellationGeometryShaderSecondaryInheritedTestInstance(vkt::Context &context, const std::vector<VertexData> &data,
+                                                             const ParametersGraphic &parametersGraphic,
+                                                             const std::vector<uint64_t> &drawRepeats);
+
+protected:
+    virtual void checkExtensions(bool hostQueryResetEnabled);
+    virtual tcu::TestStatus executeTest(void);
+};
+
+TessellationGeometryShaderSecondaryInheritedTestInstance::TessellationGeometryShaderSecondaryInheritedTestInstance(
+    vkt::Context &context, const std::vector<VertexData> &data, const ParametersGraphic &parametersGraphic,
+    const std::vector<uint64_t> &drawRepeats)
+    : TessellationGeometryShaderTestInstance(context, data, parametersGraphic, drawRepeats)
+{
+}
+
+void TessellationGeometryShaderSecondaryInheritedTestInstance::checkExtensions(bool hostQueryResetEnabled)
+{
+    TessellationGeometryShaderTestInstance::checkExtensions(hostQueryResetEnabled);
+    if (!m_context.getDeviceFeatures().inheritedQueries)
+        throw tcu::NotSupportedError("Inherited queries are not supported");
+}
+
+tcu::TestStatus TessellationGeometryShaderSecondaryInheritedTestInstance::executeTest(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    const CmdPoolCreateInfo cmdPoolCreateInfo(queueFamilyIndex);
+    const Move<VkCommandPool> cmdPool = createCommandPool(vk, device, &cmdPoolCreateInfo);
+    const uint32_t queryCount         = static_cast<uint32_t>(m_drawRepeats.size());
+    const Unique<VkQueryPool> queryPool(makeQueryPool(vk, device, queryCount, m_parametersGraphic.queryStatisticFlags));
+
+    const VkDeviceSize vertexBufferOffset = 0u;
+    const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
+    const VkBuffer vertexBuffer           = vertexBufferSp->object();
+
+    const Unique<VkCommandBuffer> primaryCmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    std::vector<VkCommandBufferSp> secondaryCmdBuffers(queryCount);
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+        secondaryCmdBuffers[i] = VkCommandBufferSp(new vk::Unique<VkCommandBuffer>(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY)));
+
+    for (uint32_t i = 0; i < queryCount; ++i)
+    {
+        beginSecondaryCommandBuffer(vk, secondaryCmdBuffers[i]->get(), m_parametersGraphic.queryStatisticFlags,
+                                    *m_renderPass, *m_framebuffer, VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT);
+        vk.cmdBindPipeline(secondaryCmdBuffers[i]->get(), VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+        vk.cmdBindVertexBuffers(secondaryCmdBuffers[i]->get(), 0u, 1u, &vertexBuffer, &vertexBufferOffset);
+        for (uint32_t j = 0; j < m_drawRepeats[i]; ++j)
+            draw(secondaryCmdBuffers[i]->get());
+        endCommandBuffer(vk, secondaryCmdBuffers[i]->get());
+    }
+
+    beginCommandBuffer(vk, *primaryCmdBuffer);
+    {
+        std::vector<VkClearValue> renderPassClearValues(2);
+        deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
+
+        if (!m_parametersGraphic.noColorAttachments)
+            initialTransitionColor2DImage(
+                vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        initialTransitionDepth2DImage(
+            vk, *primaryCmdBuffer, m_depthImage->object(), VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        if (m_parametersGraphic.resetType != RESET_TYPE_HOST)
+            vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+        for (uint32_t i = 0; i < queryCount; ++i)
+        {
+            vk.cmdBeginQuery(*primaryCmdBuffer, *queryPool, i, (VkQueryControlFlags)0u);
+            beginRenderPass(vk, *primaryCmdBuffer, *m_renderPass, *m_framebuffer, makeRect2D(0, 0, m_width, m_height),
+                            (uint32_t)renderPassClearValues.size(), &renderPassClearValues[0],
+                            VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
+            vk.cmdExecuteCommands(*primaryCmdBuffer, 1u, &(secondaryCmdBuffers[i]->get()));
+            endRenderPass(vk, *primaryCmdBuffer);
+            vk.cmdEndQuery(*primaryCmdBuffer, *queryPool, i);
+        }
+
+        if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY ||
+            m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY || m_parametersGraphic.copyType == COPY_TYPE_CMD)
+        {
+            VkDeviceSize stride          = m_parametersGraphic.querySizeFlags() ? sizeof(uint64_t) : sizeof(uint32_t);
+            vk::VkQueryResultFlags flags = m_parametersGraphic.querySizeFlags() | VK_QUERY_RESULT_WAIT_BIT;
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+            {
+                flags |= VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride *= 2u;
+            }
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_BEFORE_COPY)
+            {
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+                flags  = VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                stride = sizeof(ValueAndAvailability);
+            }
+
+            VkDeviceSize dstOffsetQuery = (m_parametersGraphic.dstOffset) ? stride : 0;
+            VkDeviceSize copyStride     = stride;
+            if (m_parametersGraphic.strideType == STRIDE_TYPE_ZERO)
+                copyStride = 0u;
+
+            vk.cmdCopyQueryPoolResults(*primaryCmdBuffer, *queryPool, 0, queryCount, m_resetBuffer->object(),
+                                       dstOffsetQuery, copyStride, flags);
+
+            if (m_parametersGraphic.resetType == RESET_TYPE_AFTER_COPY)
+                vk.cmdResetQueryPool(*primaryCmdBuffer, *queryPool, 0u, queryCount);
+
+            const VkBufferMemoryBarrier barrier = {
+                VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, //  VkStructureType sType;
+                nullptr,                                 //  const void* pNext;
+                VK_ACCESS_TRANSFER_WRITE_BIT,            //  VkAccessFlags srcAccessMask;
+                VK_ACCESS_HOST_READ_BIT,                 //  VkAccessFlags dstAccessMask;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                 //  uint32_t destQueueFamilyIndex;
+                m_resetBuffer->object(),                 //  VkBuffer buffer;
+                0u,                                      //  VkDeviceSize offset;
+                queryCount * stride + dstOffsetQuery,    //  VkDeviceSize size;
+            };
+            vk.cmdPipelineBarrier(*primaryCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1u, &barrier, 0, nullptr);
+        }
+
+        if (!m_parametersGraphic.noColorAttachments)
+            transition2DImage(vk, *primaryCmdBuffer, m_colorAttachmentImage->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                              VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL,
+                              VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+    }
+    endCommandBuffer(vk, *primaryCmdBuffer);
+
+    if (m_parametersGraphic.resetType == RESET_TYPE_HOST)
+        vk.resetQueryPool(device, *queryPool, 0u, queryCount);
+
+    // Wait for completion
+    submitCommandsAndWait(vk, device, queue, *primaryCmdBuffer);
+    return checkResult(*queryPool);
+}
+
 } // namespace
 
 QueryPoolStatisticsTests::QueryPoolStatisticsTests(tcu::TestContext &testCtx)
@@ -5214,6 +6095,81 @@ void QueryPoolStatisticsTests::init(void)
                                                              "patch_list"};
 
     std::vector<uint64_t> sixRepeats = {1, 3, 5, 8, 15, 24};
+
+    auto addChilds = [&](de::MovePtr<TestCaseGroup> &group, const std::string &testName,
+                         const GraphicBasicTestInstance::ParametersGraphic &baseParams, CommandBufferType cmdBufferType)
+    {
+        if (baseParams.primitiveTopology != VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
+        {
+            if (cmdBufferType == PRIMARY)
+            {
+                group->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
+                    m_testCtx, testName + "_geometry", baseParams, sixRepeats));
+
+                group->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderTestInstance>(
+                    m_testCtx, testName + "_vertex", baseParams, sixRepeats));
+            }
+            else if (cmdBufferType == SECONDARY)
+            {
+                group->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
+                    m_testCtx, testName + "_geometry", baseParams, sixRepeats));
+
+                group->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryTestInstance>(
+                    m_testCtx, testName + "_vertex", baseParams, sixRepeats));
+            }
+            else // SECONDARY_INHERITED
+            {
+                group->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
+                    m_testCtx, testName + "_geometry", baseParams, sixRepeats));
+
+                group->addChild(new QueryPoolGraphicStatisticsTest<VertexShaderSecondaryInheritedTestInstance>(
+                    m_testCtx, testName + "_vertex", baseParams, sixRepeats));
+            }
+        }
+        else
+        {
+            GraphicBasicTestInstance::ParametersGraphic tessParams = baseParams;
+
+            tessParams.hasTess = true;
+
+            if (tessParams.tessPatchSize == 0)
+                tessParams.tessPatchSize = 4; // Default patch size
+
+            if (tessParams.numTessPrimitives == 0)
+                tessParams.numTessPrimitives = 1; // Default primitive count
+
+            if (tessParams.strideType == STRIDE_TYPE_ZERO)
+                tessParams.strideType = STRIDE_TYPE_VALID;
+
+            if (cmdBufferType == PRIMARY)
+            {
+                group->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(
+                    m_testCtx, testName + "_tessellation", tessParams, sixRepeats));
+
+                group->addChild(new QueryPoolGraphicStatisticsTest<TessellationGeometryShaderTestInstance>(
+                    m_testCtx, testName + "_tessellation_geometry", tessParams, sixRepeats));
+            }
+            else if (cmdBufferType == SECONDARY)
+            {
+                group->addChild(new QueryPoolGraphicStatisticsTest<TessellationGeometryShaderSecondaryTestInstance>(
+                    m_testCtx, testName + "_tessellation", tessParams, sixRepeats));
+
+                group->addChild(new QueryPoolGraphicStatisticsTest<TessellationGeometryShaderSecondaryTestInstance>(
+                    m_testCtx, testName + "_tessellation_geometry", tessParams, sixRepeats));
+            }
+            else // SECONDARY_INHERITED
+            {
+                group->addChild(
+                    new QueryPoolGraphicStatisticsTest<TessellationGeometryShaderSecondaryInheritedTestInstance>(
+                        m_testCtx, testName + "_tessellation", tessParams, sixRepeats));
+
+                group->addChild(
+                    new QueryPoolGraphicStatisticsTest<TessellationGeometryShaderSecondaryInheritedTestInstance>(
+                        m_testCtx, testName + "_tessellation_geometry", tessParams, sixRepeats));
+            }
+        }
+    };
+
     de::MovePtr<TestCaseGroup> computeShaderInvocationsGroup(
         new TestCaseGroup(m_testCtx, "compute_shader_invocations"));
     de::MovePtr<TestCaseGroup> inputAssemblyVertices(new TestCaseGroup(m_testCtx, "input_assembly_vertices"));
@@ -6978,7 +7934,7 @@ void QueryPoolStatisticsTests::init(void)
 
         for (uint32_t copyTypeIdx = 0; copyTypeIdx < DE_LENGTH_OF_ARRAY(copyType); copyTypeIdx++)
         {
-            for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+            for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx <= VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
                  ++topologyNdx)
             {
                 for (uint32_t i = 0; i < 4; ++i)
@@ -6991,42 +7947,40 @@ void QueryPoolStatisticsTests::init(void)
                     if (copyType[copyTypeIdx] == COPY_TYPE_GET && dstOffset)
                         continue;
 
-                    // Tests with no attachments for only primary command to reduce # of test cases.
-                    primary->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                        m_testCtx,
+                    addChilds(
+                        primary,
                         prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + "_with_no_color_attachments",
                         GraphicBasicTestInstance::ParametersGraphic(
                             VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
                             RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP, true),
-                        sixRepeats));
+                        PRIMARY);
 
-                    primaryHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                        m_testCtx,
+                    addChilds(
+                        primaryHostQueryReset,
                         prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + "_with_no_color_attachments",
                         GraphicBasicTestInstance::ParametersGraphic(
                             VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
                             RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP, true),
-                        sixRepeats));
+                        PRIMARY);
 
-                    primaryResetBeforeCopy->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                        m_testCtx,
-                        prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + "_with_no_color_attachments",
-                        GraphicBasicTestInstance::ParametersGraphic(
-                            VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                            RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                            true),
-                        sixRepeats));
+                    addChilds(primaryResetBeforeCopy,
+                              prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                  "_with_no_color_attachments",
+                              GraphicBasicTestInstance::ParametersGraphic(
+                                  VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                  (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
+                                  query64Bits, false, dstOffset, CLEAR_NOOP, true),
+                              PRIMARY);
 
                     if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
-                        primaryResetAfterCopy->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
-                                "_with_no_color_attachments",
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                                true),
-                            sixRepeats));
+                        addChilds(primaryResetAfterCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      "_with_no_color_attachments",
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, CLEAR_NOOP, true),
+                                  PRIMARY);
 
                     /* Tests for clear operation within a statistics query activated.
                      * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -7038,114 +7992,108 @@ void QueryPoolStatisticsTests::init(void)
 
                     for (int clearOpIdx = 0; clearOpIdx < DE_LENGTH_OF_ARRAY(clearOp); ++clearOpIdx)
                     {
-                        primary->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
-                        secondary->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
+                        addChilds(primary,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_NORMAL, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  PRIMARY);
+                        addChilds(secondary,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_NORMAL, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  SECONDARY);
 
-                        primaryHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
-                        secondaryHostQueryReset->addChild(
-                            new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                                m_testCtx,
-                                prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                                GraphicBasicTestInstance::ParametersGraphic(
-                                    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
-                                    (VkPrimitiveTopology)topologyNdx, RESET_TYPE_HOST, copyType[copyTypeIdx],
-                                    query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                sixRepeats));
+                        addChilds(primaryHostQueryReset,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_HOST, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  PRIMARY);
 
-                        primaryResetBeforeCopy->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
-                        secondaryResetBeforeCopy->addChild(
-                            new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                                m_testCtx,
-                                prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                                GraphicBasicTestInstance::ParametersGraphic(
-                                    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
-                                    (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
-                                    query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                sixRepeats));
+                        addChilds(secondaryHostQueryReset,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_HOST, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  SECONDARY);
+
+                        addChilds(primaryResetBeforeCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  PRIMARY);
+
+                        addChilds(secondaryResetBeforeCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  SECONDARY);
 
                         if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
                         {
-                            primaryResetAfterCopy->addChild(
-                                new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                                    m_testCtx,
-                                    prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
-                                        clearOpStr[clearOpIdx],
-                                    GraphicBasicTestInstance::ParametersGraphic(
-                                        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
-                                        (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
-                                        query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                    sixRepeats));
-                            secondaryResetAfterCopy->addChild(
-                                new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                                    m_testCtx,
-                                    prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
-                                        clearOpStr[clearOpIdx],
-                                    GraphicBasicTestInstance::ParametersGraphic(
-                                        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
-                                        (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
-                                        query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                    sixRepeats));
+                            addChilds(primaryResetAfterCopy,
+                                      prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                          clearOpStr[clearOpIdx],
+                                      GraphicBasicTestInstance::ParametersGraphic(
+                                          VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                          (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY,
+                                          copyType[copyTypeIdx], query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                      PRIMARY);
+                            addChilds(secondaryResetAfterCopy,
+                                      prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                          clearOpStr[clearOpIdx],
+                                      GraphicBasicTestInstance::ParametersGraphic(
+                                          VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                          (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY,
+                                          copyType[copyTypeIdx], query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                      SECONDARY);
                         }
                     }
 
-                    secondaryInherited->addChild(
-                        new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset),
-                            sixRepeats));
-                    secondaryInheritedHostQueryReset->addChild(
-                        new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset),
-                            sixRepeats));
-                    secondaryInheritedResetBeforeCopy->addChild(
-                        new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset),
-                            sixRepeats));
+                    addChilds(secondaryInherited, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                              GraphicBasicTestInstance::ParametersGraphic(
+                                  VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                  (VkPrimitiveTopology)topologyNdx, RESET_TYPE_NORMAL, copyType[copyTypeIdx],
+                                  query64Bits, false, dstOffset),
+                              SECONDARY_INHERITED);
+                    addChilds(secondaryInheritedHostQueryReset,
+                              prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                              GraphicBasicTestInstance::ParametersGraphic(
+                                  VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                  (VkPrimitiveTopology)topologyNdx, RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits,
+                                  false, dstOffset),
+                              SECONDARY_INHERITED);
+                    addChilds(secondaryInheritedResetBeforeCopy,
+                              prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                              GraphicBasicTestInstance::ParametersGraphic(
+                                  VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                  (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
+                                  query64Bits, false, dstOffset),
+                              SECONDARY_INHERITED);
                     if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
-                        secondaryInheritedResetAfterCopy->addChild(
-                            new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                                m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                                GraphicBasicTestInstance::ParametersGraphic(
-                                    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
-                                    (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
-                                    query64Bits, false, dstOffset),
-                                sixRepeats));
+                        addChilds(secondaryInheritedResetAfterCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_INVOCATIONS_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset),
+                                  SECONDARY_INHERITED);
                 }
             }
         }
@@ -7190,7 +8138,7 @@ void QueryPoolStatisticsTests::init(void)
 
         for (uint32_t copyTypeIdx = 0; copyTypeIdx < DE_LENGTH_OF_ARRAY(copyType); copyTypeIdx++)
         {
-            for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx < VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
+            for (int topologyNdx = VK_PRIMITIVE_TOPOLOGY_POINT_LIST; topologyNdx <= VK_PRIMITIVE_TOPOLOGY_PATCH_LIST;
                  ++topologyNdx)
             {
                 for (uint32_t i = 0; i < 4; ++i)
@@ -7204,41 +8152,40 @@ void QueryPoolStatisticsTests::init(void)
                         continue;
 
                     // Tests with no attachments for only primary command to reduce # of test cases.
-                    primary->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                        m_testCtx,
+                    addChilds(
+                        primary,
                         prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + "_with_no_color_attachments",
                         GraphicBasicTestInstance::ParametersGraphic(
                             VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
                             RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP, true),
-                        sixRepeats));
+                        PRIMARY);
 
-                    primaryHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                        m_testCtx,
+                    addChilds(
+                        primaryHostQueryReset,
                         prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + "_with_no_color_attachments",
                         GraphicBasicTestInstance::ParametersGraphic(
                             VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
                             RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP, true),
-                        sixRepeats));
+                        PRIMARY);
 
-                    primaryResetBeforeCopy->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                        m_testCtx,
+                    addChilds(
+                        primaryResetBeforeCopy,
                         prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + "_with_no_color_attachments",
                         GraphicBasicTestInstance::ParametersGraphic(VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
                                                                     (VkPrimitiveTopology)topologyNdx,
                                                                     RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
                                                                     query64Bits, false, dstOffset, CLEAR_NOOP, true),
-                        sixRepeats));
+                        PRIMARY);
 
                     if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
-                        primaryResetAfterCopy->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
-                                "_with_no_color_attachments",
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset, CLEAR_NOOP,
-                                true),
-                            sixRepeats));
+                        addChilds(primaryResetAfterCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      "_with_no_color_attachments",
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, CLEAR_NOOP, true),
+                                  PRIMARY);
 
                     /* Tests for clear operation within a statistics query activated.
                      * Nothing for secondary_inherited cases can be done since it violates the specification.
@@ -7250,114 +8197,110 @@ void QueryPoolStatisticsTests::init(void)
 
                     for (int clearOpIdx = 0; clearOpIdx < DE_LENGTH_OF_ARRAY(clearOp); ++clearOpIdx)
                     {
-                        primary->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
-                        secondary->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
+                        addChilds(primary,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_NORMAL, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  PRIMARY);
 
-                        primaryHostQueryReset->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
-                        secondaryHostQueryReset->addChild(
-                            new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                                m_testCtx,
-                                prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                                GraphicBasicTestInstance::ParametersGraphic(
-                                    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
-                                    (VkPrimitiveTopology)topologyNdx, RESET_TYPE_HOST, copyType[copyTypeIdx],
-                                    query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                sixRepeats));
+                        addChilds(secondary,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_NORMAL, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  SECONDARY);
 
-                        primaryResetBeforeCopy->addChild(new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                            m_testCtx,
-                            prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset,
-                                clearOp[clearOpIdx]),
-                            sixRepeats));
-                        secondaryResetBeforeCopy->addChild(
-                            new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                                m_testCtx,
-                                prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] + clearOpStr[clearOpIdx],
-                                GraphicBasicTestInstance::ParametersGraphic(
-                                    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
-                                    (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
-                                    query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                sixRepeats));
+                        addChilds(primaryHostQueryReset,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_HOST, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  PRIMARY);
+
+                        addChilds(secondaryHostQueryReset,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_HOST, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  SECONDARY);
+
+                        addChilds(primaryResetBeforeCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  PRIMARY);
+
+                        addChilds(secondaryResetBeforeCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                      clearOpStr[clearOpIdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                  SECONDARY);
 
                         if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
                         {
-                            primaryResetAfterCopy->addChild(
-                                new QueryPoolGraphicStatisticsTest<GeometryShaderTestInstance>(
-                                    m_testCtx,
-                                    prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
-                                        clearOpStr[clearOpIdx],
-                                    GraphicBasicTestInstance::ParametersGraphic(
-                                        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
-                                        (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
-                                        query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                    sixRepeats));
-                            secondaryResetAfterCopy->addChild(
-                                new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryTestInstance>(
-                                    m_testCtx,
-                                    prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
-                                        clearOpStr[clearOpIdx],
-                                    GraphicBasicTestInstance::ParametersGraphic(
-                                        VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
-                                        (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
-                                        query64Bits, false, dstOffset, clearOp[clearOpIdx]),
-                                    sixRepeats));
+                            addChilds(primaryResetAfterCopy,
+                                      prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                          clearOpStr[clearOpIdx],
+                                      GraphicBasicTestInstance::ParametersGraphic(
+                                          VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                          (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY,
+                                          copyType[copyTypeIdx], query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                      PRIMARY);
+
+                            addChilds(secondaryResetAfterCopy,
+                                      prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx] +
+                                          clearOpStr[clearOpIdx],
+                                      GraphicBasicTestInstance::ParametersGraphic(
+                                          VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                          (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY,
+                                          copyType[copyTypeIdx], query64Bits, false, dstOffset, clearOp[clearOpIdx]),
+                                      SECONDARY);
                         }
                     }
 
-                    secondaryInherited->addChild(
-                        new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset),
-                            sixRepeats));
-                    secondaryInheritedHostQueryReset->addChild(
-                        new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset),
-                            sixRepeats));
-                    secondaryInheritedResetBeforeCopy->addChild(
-                        new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                            m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                            GraphicBasicTestInstance::ParametersGraphic(
-                                VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
-                                RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset),
-                            sixRepeats));
+                    addChilds(secondaryInherited, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                              GraphicBasicTestInstance::ParametersGraphic(
+                                  VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
+                                  RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits, false, dstOffset),
+                              SECONDARY_INHERITED);
+
+                    addChilds(secondaryInheritedHostQueryReset,
+                              prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                              GraphicBasicTestInstance::ParametersGraphic(
+                                  VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
+                                  RESET_TYPE_HOST, copyType[copyTypeIdx], query64Bits, false, dstOffset),
+                              SECONDARY_INHERITED);
+
+                    addChilds(secondaryInheritedResetBeforeCopy,
+                              prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                              GraphicBasicTestInstance::ParametersGraphic(
+                                  VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT, (VkPrimitiveTopology)topologyNdx,
+                                  RESET_TYPE_BEFORE_COPY, copyType[copyTypeIdx], query64Bits, false, dstOffset),
+                              SECONDARY_INHERITED);
+
                     if (copyType[copyTypeIdx] == COPY_TYPE_CMD)
-                        secondaryInheritedResetAfterCopy->addChild(
-                            new QueryPoolGraphicStatisticsTest<GeometryShaderSecondaryInheritedTestInstance>(
-                                m_testCtx, prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
-                                GraphicBasicTestInstance::ParametersGraphic(
-                                    VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
-                                    (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
-                                    query64Bits, false, dstOffset),
-                                sixRepeats));
+                        addChilds(secondaryInheritedResetAfterCopy,
+                                  prefix + copyTypeStr[copyTypeIdx] + topology_name[topologyNdx],
+                                  GraphicBasicTestInstance::ParametersGraphic(
+                                      VK_QUERY_PIPELINE_STATISTIC_CLIPPING_PRIMITIVES_BIT,
+                                      (VkPrimitiveTopology)topologyNdx, RESET_TYPE_AFTER_COPY, copyType[copyTypeIdx],
+                                      query64Bits, false, dstOffset),
+                                  SECONDARY_INHERITED);
                 }
             }
         }
@@ -7383,6 +8326,13 @@ void QueryPoolStatisticsTests::init(void)
     //VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT
     for (uint32_t copyTypeIdx = 0; copyTypeIdx < DE_LENGTH_OF_ARRAY(copyType); copyTypeIdx++)
     {
+        const TessPrimitiveMode primModes[] = {TESS_PRIM_TRIANGLES, TESS_PRIM_ISOLINES, TESS_PRIM_QUADS};
+        const std::string primModeStrs[]    = {"_triangles", "_isolines", "_quads"};
+        const bool pointModes[]             = {false, true};
+        const std::string pointModeStrs[]   = {"", "_point_mode"};
+
+        const uint32_t patchSizes[] = {3, 2, 4};
+
         for (uint32_t i = 0; i < 4; ++i)
         {
             bool query64Bits   = (i & 1);
@@ -7392,6 +8342,40 @@ void QueryPoolStatisticsTests::init(void)
             // It makes no sense to use dstOffset with vkGetQueryPoolResults()
             if (copyType[copyTypeIdx] == COPY_TYPE_GET && dstOffset)
                 continue;
+
+            for (uint32_t primModeIdx = 0; primModeIdx < DE_LENGTH_OF_ARRAY(primModes); primModeIdx++)
+            {
+                for (uint32_t pointModeIdx = 0; pointModeIdx < DE_LENGTH_OF_ARRAY(pointModes); pointModeIdx++)
+                {
+                    // Skip point mode for isolines to reduce test count
+                    if (primModes[primModeIdx] == TESS_PRIM_ISOLINES && pointModes[pointModeIdx])
+                        continue;
+
+                    std::string tessModeStr = primModeStrs[primModeIdx] + pointModeStrs[pointModeIdx];
+
+                    // Add tessellation control shader patches test
+                    tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(
+                        m_testCtx, prefix + copyTypeStr[copyTypeIdx] + "tes_control_patches" + tessModeStr,
+                        GraphicBasicTestInstance::ParametersGraphic(
+                            VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_CONTROL_SHADER_PATCHES_BIT,
+                            VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits,
+                            false, dstOffset, CLEAR_NOOP, false, STRIDE_TYPE_VALID, true, patchSizes[primModeIdx], 4,
+                            primModes[primModeIdx], pointModes[pointModeIdx]),
+                        sixRepeats));
+
+                    // Add tessellation evaluation shader invocations test
+                    tesEvaluationShaderInvocations->addChild(
+                        new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(
+                            m_testCtx,
+                            prefix + copyTypeStr[copyTypeIdx] + "tes_evaluation_shader_invocations" + tessModeStr,
+                            GraphicBasicTestInstance::ParametersGraphic(
+                                VK_QUERY_PIPELINE_STATISTIC_TESSELLATION_EVALUATION_SHADER_INVOCATIONS_BIT,
+                                VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, RESET_TYPE_NORMAL, copyType[copyTypeIdx], query64Bits,
+                                false, dstOffset, CLEAR_NOOP, false, STRIDE_TYPE_VALID, true, patchSizes[primModeIdx],
+                                4, primModes[primModeIdx], pointModes[pointModeIdx]),
+                            sixRepeats));
+                }
+            }
 
             // Tests with no attachments for only primary command to reduce # of test cases.
             tesControlPatches->addChild(new QueryPoolGraphicStatisticsTest<TessellationShaderTestInstance>(

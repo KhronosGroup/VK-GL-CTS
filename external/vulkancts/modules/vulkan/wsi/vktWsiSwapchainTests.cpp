@@ -171,8 +171,8 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
 
     for (const auto &ext : supportedExtensions)
     {
-        if (strcmp(ext.extensionName, "VK_EXT_present_mode_fifo_latest_ready") == 0)
-            extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+        if (strcmp(ext.extensionName, "VK_KHR_present_mode_fifo_latest_ready") == 0)
+            extensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
     }
 
     const void *pNext                       = nullptr;
@@ -209,17 +209,6 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
-Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
-                                   const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                   const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
-                                   const uint32_t queueFamilyIndex, bool validationEnabled,
-                                   const VkAllocationCallbacks *pAllocator = nullptr)
-{
-    return createDeviceWithWsi(vkp, apiVersion, instance, vki, physicalDevice, supportedExtensions,
-                               additionalExtensions, vector<uint32_t>(1u, queueFamilyIndex), validationEnabled,
-                               pAllocator);
-}
-
 struct InstanceHelper
 {
     const vector<VkExtensionProperties> supportedExtensions;
@@ -242,26 +231,45 @@ struct InstanceHelper
     }
 };
 
+uint32_t findSecondQueueFamilyIndex(Context &context)
+{
+    if (context.getComputeQueueFamilyIndex() != -1)
+        return context.getComputeQueueFamilyIndex();
+    if (context.getTransferQueueFamilyIndex() != -1)
+        return context.getTransferQueueFamilyIndex();
+
+    TCU_THROW(NotSupportedError, "Required queueFamilyIndex is not supported");
+
+    return -1;
+}
+
 struct DeviceHelper
 {
     const VkPhysicalDevice physicalDevice;
     const uint32_t queueFamilyIndex;
+    const uint32_t secondQueueFamilyIndex;
     const Unique<VkDevice> device;
     const DeviceDriver vkd;
     const VkQueue queue;
+    const VkQueue secondQueue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance,
                  const vector<VkSurfaceKHR> &surface, const vector<string> &additionalExtensions = vector<string>(),
-                 const VkAllocationCallbacks *pAllocator = nullptr)
+                 const VkAllocationCallbacks *pAllocator = nullptr, bool requestSecondQueue = false)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
+        , secondQueueFamilyIndex(requestSecondQueue ? findSecondQueueFamilyIndex(context) :
+                                                      std::numeric_limits<uint32_t>::max())
         , device(createDeviceWithWsi(context.getPlatformInterface(), context.getUsedApiVersion(), instance, vki,
                                      physicalDevice, enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr),
-                                     additionalExtensions, queueFamilyIndex,
+                                     additionalExtensions,
+                                     requestSecondQueue ? vector<uint32_t>{queueFamilyIndex, secondQueueFamilyIndex} :
+                                                          vector<uint32_t>{queueFamilyIndex},
                                      context.getTestContext().getCommandLine().isValidationEnabled(), pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
+        , secondQueue(requestSecondQueue ? getDeviceQueue(vkd, *device, secondQueueFamilyIndex, 0) : VK_NULL_HANDLE)
     {
     }
 
@@ -848,10 +856,10 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
             createSurface(instHelper.vki, instHelper.instance, params.wsiType, native.getDisplay(), native.getWindow(),
                           context.getTestContext().getCommandLine(), failingAllocator.getCallbacks()));
         std::vector<std::string> additionalExtensions;
-        // If driver supports VK_PRESENT_MODE_FIFO_LATEST_READY_EXT and it will used, VK_EXT_present_mode_fifo_latest_ready must be enabled
-        if (context.isDeviceFunctionalitySupported("VK_EXT_present_mode_fifo_latest_ready"))
+        // If driver supports VK_PRESENT_MODE_FIFO_LATEST_READY_KHR and it will used, VK_KHR_present_mode_fifo_latest_ready must be enabled
+        if (context.isDeviceFunctionalitySupported("VK_KHR_present_mode_fifo_latest_ready"))
         {
-            additionalExtensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+            additionalExtensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
         }
         const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, additionalExtensions,
                                      failingAllocator.getCallbacks());
@@ -955,8 +963,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
-                                 vector<string>(1u, "VK_KHR_bind_memory2"));
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, {*surface},
+                                 vector<string>(1u, "VK_KHR_bind_memory2"), nullptr, true);
+
     const Extensions &deviceExtensions =
         enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr);
 
@@ -964,12 +973,12 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
     if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_swapchain", 69)))
         TCU_THROW(NotSupportedError, "Required extension revision is not supported");
 
-    const auto sharing_mode              = params.concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
-    const auto queueFamilyIndexCount     = params.concurrent ? 1u : 0u;
-    const uint32_t queueFamilyIndex1     = devHelper.queueFamilyIndex;
-    const uint32_t queueFamilyIndex2     = devHelper.queueFamilyIndex;
-    const uint32_t *pQueueFamilyIndices1 = params.concurrent ? &queueFamilyIndex1 : nullptr;
-    const uint32_t *pQueueFamilyIndices2 = params.concurrent ? &queueFamilyIndex2 : nullptr;
+    const auto sharing_mode               = params.concurrent ? VK_SHARING_MODE_CONCURRENT : VK_SHARING_MODE_EXCLUSIVE;
+    const auto queueFamilyIndexCount      = params.concurrent ? 2u : 0u;
+    const uint32_t queueFamilyIndices1[2] = {devHelper.queueFamilyIndex, devHelper.secondQueueFamilyIndex};
+    const uint32_t queueFamilyIndices2[2] = {devHelper.queueFamilyIndex, devHelper.secondQueueFamilyIndex};
+    const uint32_t *pQueueFamilyIndices1  = params.concurrent ? queueFamilyIndices1 : nullptr;
+    const uint32_t *pQueueFamilyIndices2  = params.concurrent ? queueFamilyIndices2 : nullptr;
 
     const VkSurfaceCapabilitiesKHR capabilities =
         getPhysicalDeviceSurfaceCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);

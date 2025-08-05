@@ -21,6 +21,7 @@ vk-main-2024-03-01/image/concurrent-copy.txt
 vk-main-2024-03-01/image/depth-stencil-separate-access.txt
 vk-main-2024-03-01/image/device-scope-access.txt
 vk-main-2024-03-01/image/format-reinterpret.txt
+vk-main-2024-03-01/image/general-layout.txt
 vk-main-2024-03-01/image/host-image-copy.txt
 vk-main-2024-03-01/image/load-store.txt
 vk-main-2024-03-01/image/load-store-multisample.txt

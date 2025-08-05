@@ -8,9 +8,13 @@ project(vk-video-samples-wrapper)
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
 include(FetchContent)
 include(src/cmake/FindVulkanSDK.cmake)
+set (VULKAN_SDK_MIN_MAJOR_VERSION 1)
+set (VULKAN_SDK_MIN_MINOR_VERSION 3)
+set (VULKAN_SDK_MIN_PATCH_VERSION 321)
+FIND_VULKAN_HEADERS(${VULKAN_SDK_MIN_MAJOR_VERSION} ${VULKAN_SDK_MIN_MINOR_VERSION} ${VULKAN_SDK_MIN_PATCH_VERSION})
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-    set(COMMON_COMPILE_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers  -Wno-string-conversion -Wno-conversion")
+    set(COMMON_COMPILE_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers  -Wno-string-conversion -Wno-conversion -Wno-sign-compare")
     set(COMMON_COMPILE_FLAGS "${COMMON_COMPILE_FLAGS} -fno-strict-aliasing -fno-builtin-memcmp")
 
 
@@ -174,4 +178,3 @@ message(STATUS "NV_VIDEO_ENCODER_LIBRARY: ${NV_VIDEO_ENCODER_LIBRARY}")
 message(STATUS "NV_VIDEO_ENCODER_LIBRARIES: ${NV_VIDEO_ENCODER_LIBRARIES}")
 message(STATUS "NV_VIDEO_PARSER_INCLUDE_DIRS: ${NV_VIDEO_PARSER_INCLUDE_DIRS}")
 message(STATUS "NV_VIDEO_PARSER_LIBRARY: ${NV_VIDEO_PARSER_LIBRARY}")
-

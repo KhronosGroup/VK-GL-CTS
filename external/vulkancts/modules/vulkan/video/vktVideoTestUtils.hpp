@@ -164,6 +164,7 @@ de::MovePtr<VkVideoEncodeAV1CapabilitiesKHR> getVideoCapabilitiesExtensionAV1E(v
 de::MovePtr<VkVideoEncodeCapabilitiesKHR> getVideoEncodeCapabilities(void *pNext);
 de::MovePtr<VkVideoCapabilitiesKHR> getVideoCapabilities(const InstanceInterface &vk, VkPhysicalDevice physicalDevice,
                                                          const VkVideoProfileInfoKHR *videoProfile, void *pNext);
+de::MovePtr<VkVideoEncodeIntraRefreshCapabilitiesKHR> getIntraRefreshCapabilities(void);
 
 de::MovePtr<VkVideoDecodeH264ProfileInfoKHR> getVideoProfileExtensionH264D(
     StdVideoH264ProfileIdc stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN,
@@ -284,16 +285,16 @@ de::MovePtr<StdVideoEncodeH264PictureInfo> getStdVideoEncodeH264PictureInfo(
     const StdVideoEncodeH264ReferenceListsInfo *pRefLists);
 
 de::MovePtr<VkVideoEncodeH264PictureInfoKHR> getVideoEncodeH264PictureInfo(
-    const StdVideoEncodeH264PictureInfo *pictureInfo,
-    const VkVideoEncodeH264NaluSliceInfoKHR *pNaluSliceEntries = nullptr);
+    const StdVideoEncodeH264PictureInfo *pictureInfo, uint32_t naluSliceEntryCount,
+    const VkVideoEncodeH264NaluSliceInfoKHR *pNaluSliceEntries);
 
 de::MovePtr<StdVideoEncodeH265PictureInfo> getStdVideoEncodeH265PictureInfo(
     StdVideoH265PictureType pictureType, int32_t PicOrderCntVal, const StdVideoEncodeH265ReferenceListsInfo *pRefLists,
     StdVideoH265ShortTermRefPicSet *pShortTermRefPicSet);
 
 de::MovePtr<VkVideoEncodeH265PictureInfoKHR> getVideoEncodeH265PictureInfo(
-    const StdVideoEncodeH265PictureInfo *pictureInfo,
-    const VkVideoEncodeH265NaluSliceSegmentInfoKHR *pNaluSliceSegmentInfo);
+    const StdVideoEncodeH265PictureInfo *pictureInfo, uint32_t naluSliceSegmentEntryCount,
+    const VkVideoEncodeH265NaluSliceSegmentInfoKHR *pNaluSliceSegmentEntries);
 
 de::MovePtr<VkVideoBeginCodingInfoKHR> getVideoBeginCodingInfo(
     VkVideoSessionKHR videoEncodeSession, VkVideoSessionParametersKHR videoEncodeSessionParameters,

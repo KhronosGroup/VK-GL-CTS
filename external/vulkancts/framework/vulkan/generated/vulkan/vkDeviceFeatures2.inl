@@ -4613,6 +4613,45 @@ tcu::TestStatus testPhysicalDeviceFeatureProvokingVertexFeaturesEXT (Context& co
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureVideoEncodeIntraRefreshFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR deviceVideoEncodeIntraRefreshFeaturesKHR[count];
+    const bool                                         isVideoEncodeIntraRefreshFeaturesKHR = checkExtension(properties, "VK_KHR_video_encode_intra_refresh");
+
+    if (!isVideoEncodeIntraRefreshFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceVideoEncodeIntraRefreshFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR));
+        deviceVideoEncodeIntraRefreshFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR;
+        deviceVideoEncodeIntraRefreshFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceVideoEncodeIntraRefreshFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceVideoEncodeIntraRefreshFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceVideoEncodeIntraRefreshFeaturesKHR[0].videoEncodeIntraRefresh != deviceVideoEncodeIntraRefreshFeaturesKHR[1].videoEncodeIntraRefresh)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureDescriptorBufferFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -5639,7 +5678,7 @@ tcu::TestStatus testPhysicalDeviceFeatureDynamicRenderingUnusedAttachmentsFeatur
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
-tcu::TestStatus testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT (Context& context)
+tcu::TestStatus testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
     const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
@@ -5649,31 +5688,31 @@ tcu::TestStatus testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT (Conte
     VkPhysicalDeviceFeatures2     extFeatures;
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-    VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT deviceSwapchainMaintenance1FeaturesEXT[count];
-    const bool                                       isSwapchainMaintenance1FeaturesEXT = checkExtension(properties, "VK_EXT_swapchain_maintenance1");
+    VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR deviceSwapchainMaintenance1FeaturesKHR[count];
+    const bool                                       isSwapchainMaintenance1FeaturesKHR = checkExtension(properties, "VK_KHR_swapchain_maintenance1") || checkExtension(properties, "VK_EXT_swapchain_maintenance1");
 
-    if (!isSwapchainMaintenance1FeaturesEXT)
+    if (!isSwapchainMaintenance1FeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
 
     for (int ndx = 0; ndx < count; ++ndx)
     {
-        deMemset(&deviceSwapchainMaintenance1FeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT));
-        deviceSwapchainMaintenance1FeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_EXT;
-        deviceSwapchainMaintenance1FeaturesEXT[ndx].pNext = nullptr;
+        deMemset(&deviceSwapchainMaintenance1FeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR));
+        deviceSwapchainMaintenance1FeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SWAPCHAIN_MAINTENANCE_1_FEATURES_KHR;
+        deviceSwapchainMaintenance1FeaturesKHR[ndx].pNext = nullptr;
 
         deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
         extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        extFeatures.pNext = &deviceSwapchainMaintenance1FeaturesEXT[ndx];
+        extFeatures.pNext = &deviceSwapchainMaintenance1FeaturesKHR[ndx];
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
     }
 
-    log << TestLog::Message << deviceSwapchainMaintenance1FeaturesEXT[0] << TestLog::EndMessage;
+    log << TestLog::Message << deviceSwapchainMaintenance1FeaturesKHR[0] << TestLog::EndMessage;
 
     if (
-        deviceSwapchainMaintenance1FeaturesEXT[0].swapchainMaintenance1 != deviceSwapchainMaintenance1FeaturesEXT[1].swapchainMaintenance1)
+        deviceSwapchainMaintenance1FeaturesKHR[0].swapchainMaintenance1 != deviceSwapchainMaintenance1FeaturesKHR[1].swapchainMaintenance1)
     {
-        TCU_FAIL("Mismatch between VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT");
+        TCU_FAIL("Mismatch between VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -6313,7 +6352,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT (
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
-tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT (Context& context)
+tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
     const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
@@ -6323,31 +6362,31 @@ tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT (
     VkPhysicalDeviceFeatures2     extFeatures;
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
-    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT devicePresentModeFifoLatestReadyFeaturesEXT[count];
-    const bool                                            isPresentModeFifoLatestReadyFeaturesEXT = checkExtension(properties, "VK_EXT_present_mode_fifo_latest_ready");
+    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR devicePresentModeFifoLatestReadyFeaturesKHR[count];
+    const bool                                            isPresentModeFifoLatestReadyFeaturesKHR = checkExtension(properties, "VK_KHR_present_mode_fifo_latest_ready") || checkExtension(properties, "VK_EXT_present_mode_fifo_latest_ready");
 
-    if (!isPresentModeFifoLatestReadyFeaturesEXT)
+    if (!isPresentModeFifoLatestReadyFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
 
     for (int ndx = 0; ndx < count; ++ndx)
     {
-        deMemset(&devicePresentModeFifoLatestReadyFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT));
-        devicePresentModeFifoLatestReadyFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_EXT;
-        devicePresentModeFifoLatestReadyFeaturesEXT[ndx].pNext = nullptr;
+        deMemset(&devicePresentModeFifoLatestReadyFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR));
+        devicePresentModeFifoLatestReadyFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR;
+        devicePresentModeFifoLatestReadyFeaturesKHR[ndx].pNext = nullptr;
 
         deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
         extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-        extFeatures.pNext = &devicePresentModeFifoLatestReadyFeaturesEXT[ndx];
+        extFeatures.pNext = &devicePresentModeFifoLatestReadyFeaturesKHR[ndx];
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
     }
 
-    log << TestLog::Message << devicePresentModeFifoLatestReadyFeaturesEXT[0] << TestLog::EndMessage;
+    log << TestLog::Message << devicePresentModeFifoLatestReadyFeaturesKHR[0] << TestLog::EndMessage;
 
     if (
-        devicePresentModeFifoLatestReadyFeaturesEXT[0].presentModeFifoLatestReady != devicePresentModeFifoLatestReadyFeaturesEXT[1].presentModeFifoLatestReady)
+        devicePresentModeFifoLatestReadyFeaturesKHR[0].presentModeFifoLatestReady != devicePresentModeFifoLatestReadyFeaturesKHR[1].presentModeFifoLatestReady)
     {
-        TCU_FAIL("Mismatch between VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT");
+        TCU_FAIL("Mismatch between VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -6402,7 +6441,7 @@ tcu::TestStatus testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR (Context& 
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceDepthClampZeroOneFeaturesKHR deviceDepthClampZeroOneFeaturesKHR[count];
-    const bool                                   isDepthClampZeroOneFeaturesKHR = checkExtension(properties, "VK_KHR_depth_clamp_zero_one");
+    const bool                                   isDepthClampZeroOneFeaturesKHR = checkExtension(properties, "VK_KHR_depth_clamp_zero_one") || checkExtension(properties, "VK_EXT_depth_clamp_zero_one");
 
     if (!isDepthClampZeroOneFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
@@ -6466,6 +6505,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderFloat8FeaturesEXT (Context& conte
         deviceShaderFloat8FeaturesEXT[0].shaderFloat8CooperativeMatrix != deviceShaderFloat8FeaturesEXT[1].shaderFloat8CooperativeMatrix)
     {
         TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFloat8FeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeaturePipelineCacheIncrementalModeFeaturesSEC (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC devicePipelineCacheIncrementalModeFeaturesSEC[count];
+    const bool                                              isPipelineCacheIncrementalModeFeaturesSEC = checkExtension(properties, "VK_SEC_pipeline_cache_incremental_mode");
+
+    if (!isPipelineCacheIncrementalModeFeaturesSEC)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&devicePipelineCacheIncrementalModeFeaturesSEC[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC));
+        devicePipelineCacheIncrementalModeFeaturesSEC[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC;
+        devicePipelineCacheIncrementalModeFeaturesSEC[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &devicePipelineCacheIncrementalModeFeaturesSEC[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << devicePipelineCacheIncrementalModeFeaturesSEC[0] << TestLog::EndMessage;
+
+    if (
+        devicePipelineCacheIncrementalModeFeaturesSEC[0].pipelineCacheIncrementalMode != devicePipelineCacheIncrementalModeFeaturesSEC[1].pipelineCacheIncrementalMode)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -6841,6 +6919,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "video_encode_av1_features_khr", testPhysicalDeviceFeatureVideoEncodeAV1FeaturesKHR);
 	addFunctionCase(testGroup, "ycbcr2_plane444_formats_features_ext", testPhysicalDeviceFeatureYcbcr2Plane444FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "provoking_vertex_features_ext", testPhysicalDeviceFeatureProvokingVertexFeaturesEXT);
+	addFunctionCase(testGroup, "video_encode_intra_refresh_features_khr", testPhysicalDeviceFeatureVideoEncodeIntraRefreshFeaturesKHR);
 	addFunctionCase(testGroup, "descriptor_buffer_features_ext", testPhysicalDeviceFeatureDescriptorBufferFeaturesEXT);
 	addFunctionCase(testGroup, "shader_integer_dot_product_features", testPhysicalDeviceFeatureShaderIntegerDotProductFeatures);
 	addFunctionCase(testGroup, "fragment_shader_barycentric_features_khr", testPhysicalDeviceFeatureFragmentShaderBarycentricFeaturesKHR);
@@ -6867,7 +6946,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "pipeline_library_group_handles_features_ext", testPhysicalDeviceFeaturePipelineLibraryGroupHandlesFeaturesEXT);
 	addFunctionCase(testGroup, "frame_boundary_features_ext", testPhysicalDeviceFeatureFrameBoundaryFeaturesEXT);
 	addFunctionCase(testGroup, "dynamic_rendering_unused_attachments_features_ext", testPhysicalDeviceFeatureDynamicRenderingUnusedAttachmentsFeaturesEXT);
-	addFunctionCase(testGroup, "swapchain_maintenance1_features_ext", testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesEXT);
+	addFunctionCase(testGroup, "swapchain_maintenance1_features_khr", testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesKHR);
 	addFunctionCase(testGroup, "depth_bias_control_features_ext", testPhysicalDeviceFeatureDepthBiasControlFeaturesEXT);
 	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR);
 	addFunctionCase(testGroup, "shader_object_features_ext", testPhysicalDeviceFeatureShaderObjectFeaturesEXT);
@@ -6884,10 +6963,11 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_bfloat16_features_khr", testPhysicalDeviceFeatureShaderBfloat16FeaturesKHR);
 	addFunctionCase(testGroup, "image_alignment_control_features_mesa", testPhysicalDeviceFeatureImageAlignmentControlFeaturesMESA);
 	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT);
-	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_ext", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesEXT);
+	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_khr", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR);
 	addFunctionCase(testGroup, "vertex_attribute_robustness_features_ext", testPhysicalDeviceFeatureVertexAttributeRobustnessFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR);
 	addFunctionCase(testGroup, "shader_float8_features_ext", testPhysicalDeviceFeatureShaderFloat8FeaturesEXT);
+	addFunctionCase(testGroup, "pipeline_cache_incremental_mode_features_sec", testPhysicalDeviceFeaturePipelineCacheIncrementalModeFeaturesSEC);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

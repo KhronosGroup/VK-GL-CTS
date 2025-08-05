@@ -22,6 +22,7 @@ vksc-default/image/extend-operands-spirv1p4.txt
 vksc-default/image/extended-usage-bit.txt
 vksc-default/image/extended-usage-bit-compatibility.txt
 vksc-default/image/format-reinterpret.txt
+vksc-default/image/general-layout.txt
 vksc-default/image/image-size.txt
 vksc-default/image/load-store.txt
 vksc-default/image/load-store-lod.txt

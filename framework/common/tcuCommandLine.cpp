@@ -99,6 +99,7 @@ DE_DECLARE_COMMAND_LINE_OPT(EGLDisplayType, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLWindowType, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(LogImages, bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogAllImages, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogDecompiledSpirv, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogEmptyLoginfo, bool);
@@ -233,8 +234,13 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<VKDeviceID>(nullptr, "deqp-vk-device-id", "Vulkan device ID (IDs start from 1)", "1")
         << Option<MaxCustomDevices>(nullptr, "deqp-max-custom-vk-devices", "Maximum number of custom devices", "5")
         << Option<VKDeviceGroupID>(nullptr, "deqp-vk-device-group-id", "Vulkan device Group ID (IDs start from 1)", "1")
-        << Option<LogImages>(nullptr, "deqp-log-images", "Enable or disable logging of result images", s_enableNames,
-                             "enable")
+        << Option<LogImages>(nullptr, "deqp-log-images",
+                             "When disabled, prevent any image from being logged into the test results file",
+                             s_enableNames, "enable")
+        << Option<LogAllImages>(nullptr, "deqp-log-all-images",
+                                "When enabled, log all images from image comparison routines as if "
+                                "COMPARE_LOG_EVERYTHING was used in the code",
+                                s_enableNames, "disable")
         << Option<LogShaderSources>(nullptr, "deqp-log-shader-sources", "Enable or disable logging of shader sources",
                                     s_enableNames, "enable")
         << Option<LogDecompiledSpirv>(nullptr, "deqp-log-decompiled-spirv",
@@ -1081,6 +1087,9 @@ bool CommandLine::parse(int argc, const char *const *argv)
 
     if (!m_cmdLine.getOption<opt::LogImages>())
         m_logFlags |= QP_TEST_LOG_EXCLUDE_IMAGES;
+
+    if (m_cmdLine.getOption<opt::LogImages>() && m_cmdLine.getOption<opt::LogAllImages>())
+        m_logFlags |= QP_TEST_LOG_ALL_IMAGES;
 
     if (!m_cmdLine.getOption<opt::LogShaderSources>())
         m_logFlags |= QP_TEST_LOG_EXCLUDE_SHADER_SOURCES;

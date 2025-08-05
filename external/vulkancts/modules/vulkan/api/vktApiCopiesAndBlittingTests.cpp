@@ -2920,11 +2920,41 @@ void CopyImageToBuffer::copyRegionToTextureLevel(tcu::ConstPixelBufferAccess src
     }
 }
 
+using TestTextureSp = de::SharedPtr<pipeline::TestTexture>;
+
+TestTextureSp makeCompressedTestTextureFromSrcImage(const TestParams &params)
+{
+    if (params.src.image.imageType == VK_IMAGE_TYPE_2D)
+    {
+        DE_ASSERT(params.src.image.extent.depth == 1u);
+
+        return TestTextureSp(new pipeline::TestTexture2DArray(mapVkCompressedFormat(params.src.image.format),
+                                                              params.src.image.extent.width,
+                                                              params.src.image.extent.height, params.arrayLayers));
+    }
+    else if (params.src.image.imageType == VK_IMAGE_TYPE_1D)
+    {
+        DE_ASSERT(params.src.image.extent.depth == 1u);
+        DE_ASSERT(params.src.image.extent.height == 1u);
+
+        return TestTextureSp(new pipeline::TestTexture1DArray(mapVkCompressedFormat(params.src.image.format),
+                                                              params.src.image.extent.width, params.arrayLayers));
+    }
+    else
+    {
+        return TestTextureSp(new pipeline::TestTexture3D(mapVkCompressedFormat(params.src.image.format),
+                                                         params.src.image.extent.width, params.src.image.extent.height,
+                                                         params.src.image.extent.depth));
+    }
+
+    return TestTextureSp();
+}
+
 // Copy levels from compressed mipmap images into a buffer.
 class CopyCompressedImageToBuffer final : public CopiesAndBlittingTestInstance
 {
 public:
-    CopyCompressedImageToBuffer(Context &context, TestParams testParams);
+    CopyCompressedImageToBuffer(Context &context, const TestParams &testParams);
 
     virtual tcu::TestStatus iterate(void) override;
 
@@ -2936,18 +2966,15 @@ private:
     }
 
     // Contains a randomly generated compressed texture pyramid.
-    using TestTexture2DSp = de::SharedPtr<pipeline::TestTexture2DArray>;
-    TestTexture2DSp m_texture;
+    TestTextureSp m_texture;
     de::MovePtr<ImageWithMemory> m_source;
     de::MovePtr<BufferWithMemory> m_sourceBuffer;
     de::MovePtr<BufferWithMemory> m_destination;
 };
 
-CopyCompressedImageToBuffer::CopyCompressedImageToBuffer(Context &context, TestParams testParams)
+CopyCompressedImageToBuffer::CopyCompressedImageToBuffer(Context &context, const TestParams &testParams)
     : CopiesAndBlittingTestInstance(context, testParams)
-    , m_texture(TestTexture2DSp(new pipeline::TestTexture2DArray(
-          mapVkCompressedFormat(testParams.src.image.format), testParams.src.image.extent.width,
-          testParams.src.image.extent.height, testParams.arrayLayers)))
+    , m_texture(makeCompressedTestTextureFromSrcImage(testParams))
 {
 }
 
@@ -3143,7 +3170,6 @@ private:
 void CopyCompressedImageToBufferTestCase::checkSupport(Context &context) const
 {
     DE_ASSERT(m_params.src.image.tiling == VK_IMAGE_TILING_OPTIMAL);
-    DE_ASSERT(m_params.src.image.imageType == vk::VK_IMAGE_TYPE_2D);
 
     checkExtensionSupport(context, m_params.extensionFlags);
 
@@ -13161,6 +13187,60 @@ void add1dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
 
         group->addChild(new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers", params));
     }
+
+    // those tests are performed for all queues, no need to repeat them
+    // when testGroupParams->queueSelection is set to TransferOnly
+    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+    {
+        VkExtent3D extents[] = {
+            // A power of 2 and a non-power.
+            {64, 1, 1},
+            {192, 1, 1},
+        };
+
+        uint32_t arrayLayers[] = {1, 2, 5};
+
+        auto getCaseName = [](VkFormat format, VkExtent3D extent, uint32_t numLayers, std::string queueName)
+        {
+            std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width);
+            if (numLayers > 1)
+                caseName.append("_" + std::to_string(numLayers) + "_layers");
+            caseName.append("_" + queueName);
+            return caseName;
+        };
+
+        for (const auto &extent : extents)
+            for (const auto numLayers : arrayLayers)
+            {
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_1D;
+                params.src.image.extent          = extent;
+                params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+                params.arrayLayers               = numLayers;
+
+                for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
+                {
+                    params.src.image.format = *format;
+                    {
+                        params.queueSelection = QueueSelectionOptions::Universal;
+                        group->addChild(new CopyCompressedImageToBufferTestCase(
+                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), params));
+                        params.queueSelection = QueueSelectionOptions::ComputeOnly;
+                        group->addChild(new CopyCompressedImageToBufferTestCase(
+                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), params));
+                        params.queueSelection = QueueSelectionOptions::TransferOnly;
+                        group->addChild(new CopyCompressedImageToBufferTestCase(
+                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "transfer"), params));
+                    }
+                }
+            }
+    }
 }
 
 void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
@@ -13714,6 +13794,61 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                     }
                 }
             }
+    }
+}
+
+void add3dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+
+    // those tests are performed for all queues, no need to repeat them
+    // when testGroupParams->queueSelection is set to TransferOnly
+    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+    {
+        VkExtent3D extents[] = {
+            // A power of 2 and a non-power.
+            {16, 16, 16},
+            {16, 8, 24},
+        };
+
+        auto getCaseName = [](VkFormat format, VkExtent3D extent, std::string queueName)
+        {
+            std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) +
+                                   "x" + std::to_string(extent.height) + "x" + std::to_string(extent.depth);
+            caseName.append("_" + queueName);
+            return caseName;
+        };
+
+        for (const auto &extent : extents)
+        {
+            TestParams params;
+            params.src.image.imageType       = VK_IMAGE_TYPE_3D;
+            params.src.image.extent          = extent;
+            params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
+            params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            params.allocationKind            = testGroupParams->allocationKind;
+            params.extensionFlags            = testGroupParams->extensionFlags;
+            params.queueSelection            = testGroupParams->queueSelection;
+            params.useSparseBinding          = testGroupParams->useSparseBinding;
+            params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+            params.arrayLayers               = 1u;
+
+            for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
+            {
+                params.src.image.format = *format;
+                {
+                    params.queueSelection = QueueSelectionOptions::Universal;
+                    group->addChild(new CopyCompressedImageToBufferTestCase(
+                        testCtx, getCaseName(*format, params.src.image.extent, "universal"), params));
+                    params.queueSelection = QueueSelectionOptions::ComputeOnly;
+                    group->addChild(new CopyCompressedImageToBufferTestCase(
+                        testCtx, getCaseName(*format, params.src.image.extent, "compute"), params));
+                    params.queueSelection = QueueSelectionOptions::TransferOnly;
+                    group->addChild(new CopyCompressedImageToBufferTestCase(
+                        testCtx, getCaseName(*format, params.src.image.extent, "transfer"), params));
+                }
+            }
+        }
     }
 }
 
@@ -15790,6 +15925,7 @@ void addImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGro
 {
     addTestGroup(group, "1d_images", add1dImageToBufferTests, testGroupParams);
     addTestGroup(group, "2d_images", add2dImageToBufferTests, testGroupParams);
+    addTestGroup(group, "3d_images", add3dImageToBufferTests, testGroupParams);
 }
 
 void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationKind allocationKind,

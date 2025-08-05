@@ -1103,7 +1103,7 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
     const tcu::Vec4 thresholdVec(threshold, threshold, threshold, 0.0f);
 
     if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, thresholdVec,
-                                    tcu::COMPARE_LOG_EVERYTHING))
+                                    tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Color result does not match reference image -- check log for details");
 
     return tcu::TestStatus::pass("Pass");

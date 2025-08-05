@@ -118,7 +118,7 @@ struct OperandType
         DE_ASSERT(!name.empty());
     }
 
-    bool operator==(const OperandType &other)
+    bool operator==(const OperandType &other) const
     {
         return (isVector == other.isVector && isSigned == other.isSigned && bitSize == other.bitSize);
     }
