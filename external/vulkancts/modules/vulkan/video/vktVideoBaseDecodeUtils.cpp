@@ -443,7 +443,8 @@ void VideoBaseDecoder::reinitializeFormatsForProfile(const VkVideoCoreProfile *p
 
     m_supportedVideoCodecs = util::getSupportedCodecs(
         *m_deviceContext, m_deviceContext->decodeQueueFamilyIdx(), VK_QUEUE_VIDEO_DECODE_BIT_KHR,
-        VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR | VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR);
+        VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR | VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR |
+            VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR | VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
     DE_ASSERT(m_supportedVideoCodecs != VK_VIDEO_CODEC_OPERATION_NONE_KHR);
 
     VK_CHECK(BitstreamBufferImpl::Create(m_deviceContext, m_deviceContext->decodeQueueFamilyIdx(), MAX_BUFFER_SIZE,
