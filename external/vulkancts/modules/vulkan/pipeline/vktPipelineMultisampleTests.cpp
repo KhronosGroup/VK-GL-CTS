@@ -1037,6 +1037,9 @@ bool checkFragmentShadingRateRequirements(Context &context, uint32_t sampleCount
     if (!context.getFragmentShadingRateFeatures().pipelineFragmentShadingRate)
         TCU_THROW(NotSupportedError, "pipelineFragmentShadingRate not supported");
 
+    if (!context.getFragmentShadingRateProperties().fragmentShadingRateWithConservativeRasterization)
+        TCU_THROW(NotSupportedError, "fragmentShadingRateWithConservativeRasterization not supported");
+
     // Fetch information about supported fragment shading rates
     uint32_t supportedFragmentShadingRateCount = 0;
     vki.getPhysicalDeviceFragmentShadingRatesKHR(physicalDevice, &supportedFragmentShadingRateCount, nullptr);
