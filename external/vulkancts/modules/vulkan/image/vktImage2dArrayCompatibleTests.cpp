@@ -413,7 +413,7 @@ void ArrayCompatibleTestCase::checkSupport(vkt::Context &context) const
 
     vk::VkImageFormatProperties imageFormatProperties;
     if (vki.getPhysicalDeviceImageFormatProperties(
-            physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, vk::VK_IMAGE_TYPE_2D, m_parameters.tiling,
+            physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, vk::VK_IMAGE_TYPE_3D, m_parameters.tiling,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT, &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
         TCU_THROW(NotSupportedError, "Image format not supported.");
