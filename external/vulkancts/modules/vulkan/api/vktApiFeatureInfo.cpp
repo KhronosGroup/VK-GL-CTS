@@ -3663,7 +3663,11 @@ namespace
 
 tcu::TestStatus deviceMandatoryFeatures(Context &context)
 {
-    bool result = checkBasicMandatoryFeatures(context);
+    std::vector<std::string> failMesages;
+    checkBasicMandatoryFeatures(context, failMesages);
+
+    tcu::TestLog &log           = context.getTestContext().getLog();
+    bool additionalChecksPassed = true;
 
 #if defined(CTS_USES_VULKAN)
     // for vulkan 1.4+ we need to check complex cases that were not generated in vkMandatoryFeatures.inl
@@ -3673,7 +3677,6 @@ tcu::TestStatus deviceMandatoryFeatures(Context &context)
         VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
         const auto &cmdLine             = context.getTestContext().getCommandLine();
         const auto &vulkan14Features    = context.getDeviceVulkan14Features();
-        tcu::TestLog &log               = context.getTestContext().getLog();
 
         if (!cmdLine.isComputeOnly() && (vulkan14Features.hostImageCopy == VK_FALSE))
         {
@@ -3696,16 +3699,31 @@ tcu::TestStatus deviceMandatoryFeatures(Context &context)
                     << "Implementation that has a VK_QUEUE_GRAPHICS_BIT queue must support "
                        "either the hostImageCopy feature or an additional queue that supports VK_QUEUE_TRANSFER_BIT"
                     << tcu::TestLog::EndMessage;
-                result = false;
+                additionalChecksPassed = false;
             }
         }
     }
 #endif // defined(CTS_USES_VULKAN)
 
-    if (result)
-        return tcu::TestStatus::pass("Passed");
+    if (additionalChecksPassed)
+    {
+        if (failMesages.empty())
+            return tcu::TestStatus::pass("Passed");
 
-    return tcu::TestStatus::fail("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
+        auto constructMessage = [](const std::string &failMesage)
+        { return std::string("Mandatory feature ") + failMesage + " not supported"; };
+
+        // if there is only one failure return the exact message
+        if (failMesages.size() == 1)
+            return tcu::TestStatus::fail(constructMessage(failMesages[0]));
+
+        // log all failures
+        for (const auto &fm : failMesages)
+            log << tcu::TestLog::Message << constructMessage(fm) << tcu::TestLog::EndMessage;
+    }
+
+    return tcu::TestStatus::fail(
+        "Not all mandatory features are supported, see log and vkspec.html#features-requirements");
 }
 
 VkFormatFeatureFlags getBaseRequiredOptimalTilingFeatures(VkFormat format)

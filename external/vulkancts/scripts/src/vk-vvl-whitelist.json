@@ -61,10 +61,10 @@
         {
             "groups": [
                 "dEQP-VK.image.mismatched_formats.image_read.*"
-             ],
+            ],
             "messages": [
                 "Undefined-Value-StorageImage-FormatMismatch-ImageView"
-             ],
+            ],
             "description": "Warning about mismatched format handling in storage images. This is intentional for testing purposes."
         },
         {
@@ -132,21 +132,21 @@
         },
         {
             "groups": [
-            "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.switch_from_descriptor_buffer_to_legacy"
-        ],
-        "messages": [
-            "VUID-vkCmdDispatch-None-08115"
-        ],
-        "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
-    },
-    {
-        "groups": [
-            "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.use_legacy_and_bind_descriptor_buffer"
-        ],
-        "messages": [
-            "VUID-vkCmdDispatch-None-08115"
-        ],
-        "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
-    }
+                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.switch_from_descriptor_buffer_to_legacy"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-None-08115"
+            ],
+            "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
+        },
+        {
+            "groups": [
+                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.use_legacy_and_bind_descriptor_buffer"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-None-08115"
+            ],
+            "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
+        }
     ]
 }

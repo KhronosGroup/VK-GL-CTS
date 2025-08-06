@@ -1036,17 +1036,17 @@ void recordCopyImageToBuffer(const DeviceInterface &vk, const VkCommandBuffer cm
     // Image read barrier
     {
         const VkImageMemoryBarrier barrier = {
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType			sType;
-            nullptr,                                // const void*				pNext;
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // VkAccessFlags			srcAccessMask;
-            VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags			dstAccessMask;
-            layout,                                 // VkImageLayout			oldLayout;
-            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout			newLayout;
-            VK_QUEUE_FAMILY_IGNORED,                // uint32_t				    srcQueueFamilyIndex;
-            VK_QUEUE_FAMILY_IGNORED,                // uint32_t				    dstQueueFamilyIndex;
-            srcImage,                               // VkImage					image;
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,   // VkAccessFlags srcAccessMask;
+            VK_ACCESS_TRANSFER_READ_BIT,            // VkAccessFlags dstAccessMask;
+            layout,                                 // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,   // VkImageLayout newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t     srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t     dstQueueFamilyIndex;
+            srcImage,                               // VkImage image;
             makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                      1u) // VkImageSubresourceRange	subresourceRange;
+                                      1u) // VkImageSubresourceRange subresourceRange;
         };
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                               (VkDependencyFlags)0, 0u, nullptr, 0u, nullptr, 1u, &barrier);

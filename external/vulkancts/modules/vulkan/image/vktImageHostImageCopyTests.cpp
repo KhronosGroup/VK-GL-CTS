@@ -3945,27 +3945,27 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
     }
     {
         VkImageCopy2 region = {
-            VK_STRUCTURE_TYPE_IMAGE_COPY_2, // VkStructureType				sType;
-            nullptr,                        // const void*					pNext;
-            subresourceLayers,              // VkImageSubresourceLayers	srcSubresource;
-            {0, 0, 0},                      // VkOffset3D					srcOffset;
-            subresourceLayers,              // VkImageSubresourceLayers	dstSubresource;
-            {0, 0, 0},                      // VkOffset3D					dstOffset;
-            imageSize                       // VkExtent3D					extent;
+            VK_STRUCTURE_TYPE_IMAGE_COPY_2, // VkStructureType sType;
+            nullptr,                        // const void* pNext;
+            subresourceLayers,              // VkImageSubresourceLayers srcSubresource;
+            {0, 0, 0},                      // VkOffset3D srcOffset;
+            subresourceLayers,              // VkImageSubresourceLayers dstSubresource;
+            {0, 0, 0},                      // VkOffset3D dstOffset;
+            imageSize                       // VkExtent3D extent;
         };
 
         VkImage srcImage = depthAndStencil ? **image : **image2;
 
         VkCopyImageToImageInfo imageToImageCopy = {
-            VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO, // VkStructureType			sType;
-            nullptr,                                    // const void*				pNext;
-            0u,                                         // VkHostImageCopyFlags	flags;
-            srcImage,                                   // VkImage					srcImage;
-            m_params.srcLayout,                         // VkImageLayout			srcImageLayout;
-            **image3,                                   // VkImage					dstImage;
-            m_params.dstLayout,                         // VkImageLayout			dstImageLayout;
-            1u,                                         // uint32_t				regionCount;
-            &region                                     // const VkImageCopy2*		pRegions;
+            VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO, // VkStructureType sType;
+            nullptr,                                    // const void* pNext;
+            0u,                                         // VkHostImageCopyFlags flags;
+            srcImage,                                   // VkImage srcImage;
+            m_params.srcLayout,                         // VkImageLayout srcImageLayout;
+            **image3,                                   // VkImage dstImage;
+            m_params.dstLayout,                         // VkImageLayout dstImageLayout;
+            1u,                                         // uint32_t regionCount;
+            &region                                     // const VkImageCopy2* pRegions;
         };
 
         vk.copyImageToImage(device, &imageToImageCopy);

@@ -51,79 +51,99 @@ from reg import Registry
 from base_generator import BaseGenerator, BaseGeneratorOptions, SetTargetApiName, SetOutputDirectory, SetMergedApiNames, OutputGenerator
 from vulkan_object import Queues, Struct, Member, Enum, EnumField, Extension
 
-EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
+# list of KHR and EXT extensions that are tested by CTS and that were not promoted to core
+# (core extensions are implicitly in that list because if they are core we know that tests
+# for them must be present in CTS - so we do not need to list them here)
+EXTENSIONS_TESTED_BY_CTS = """
+VK_EXT_attachment_feedback_loop_dynamic_state
+VK_EXT_attachment_feedback_loop_layout
+VK_EXT_border_color_swizzle
+VK_EXT_buffer_device_address
+VK_EXT_color_write_enable
+VK_EXT_conditional_rendering
 VK_EXT_conservative_rasterization
 VK_EXT_custom_border_color
+VK_EXT_depth_bias_control
+VK_EXT_depth_clamp_control
+VK_EXT_depth_clamp_zero_one
+VK_EXT_depth_clip_control
+VK_EXT_depth_clip_enable
+VK_EXT_descriptor_buffer
+VK_EXT_device_address_binding_report
+VK_EXT_device_fault
+VK_EXT_device_generated_commands
+VK_EXT_device_memory_report
+VK_EXT_dynamic_rendering_unused_attachments
 VK_EXT_extended_dynamic_state3
+VK_EXT_fragment_density_map
+VK_EXT_fragment_density_map2
 VK_EXT_fragment_density_map_offset
+VK_EXT_fragment_shader_interlock
+VK_EXT_frame_boundary
 VK_EXT_global_priority_query
+VK_EXT_graphics_pipeline_library
+VK_EXT_image_2d_view_of_3d
+VK_EXT_image_compression_control
+VK_EXT_image_compression_control_swapchain
+VK_EXT_image_view_min_lod
+VK_EXT_index_type_uint8
+VK_EXT_legacy_dithering
+VK_EXT_legacy_vertex_attributes
+VK_EXT_line_rasterization
+VK_EXT_memory_priority
 VK_EXT_mesh_shader
+VK_EXT_multi_draw
+VK_EXT_multisampled_render_to_single_sampled
+VK_EXT_mutable_descriptor_type
+VK_EXT_nested_command_buffer
+VK_EXT_non_seamless_cube_map
+VK_EXT_opacity_micromap
+VK_EXT_pageable_device_local_memory
+VK_EXT_pipeline_library_group_handles
+VK_EXT_present_mode_fifo_latest_ready
+VK_EXT_primitive_topology_list_restart
+VK_EXT_primitives_generated_query
+VK_EXT_provoking_vertex
+VK_EXT_rgba10x6_formats
+VK_EXT_robustness2
 VK_EXT_shader_atomic_float
 VK_EXT_shader_atomic_float2
+VK_EXT_shader_float8
 VK_EXT_shader_image_atomic_int64
+VK_EXT_shader_module_identifier
+VK_EXT_shader_object
+VK_EXT_shader_tile_image
+VK_EXT_subpass_merge_feedback
 VK_EXT_swapchain_maintenance1
-VK_KHR_8bit_storage
-VK_KHR_16bit_storage
+VK_EXT_transform_feedback
+VK_EXT_vertex_attribute_divisor
+VK_EXT_vertex_input_dynamic_state
+VK_EXT_ycbcr_image_arrays
+VK_EXT_zero_initialize_device_memory
 VK_KHR_acceleration_structure
 VK_KHR_android_surface
-VK_KHR_bind_memory2
-VK_KHR_buffer_device_address
 VK_KHR_calibrated_timestamps
 VK_KHR_compute_shader_derivatives
 VK_KHR_cooperative_matrix
-VK_KHR_copy_commands2
-VK_KHR_create_renderpass2
-VK_KHR_dedicated_allocation
 VK_KHR_deferred_host_operations
 VK_KHR_depth_clamp_zero_one
-VK_KHR_depth_stencil_resolve
-VK_KHR_descriptor_update_template
-VK_KHR_device_group
-VK_KHR_device_group_creation
 VK_KHR_display
 VK_KHR_display_swapchain
-VK_KHR_draw_indirect_count
-VK_KHR_driver_properties
-VK_KHR_dynamic_rendering
-VK_KHR_dynamic_rendering_local_read
-VK_KHR_external_fence
-VK_KHR_external_fence_capabilities
 VK_KHR_external_fence_fd
 VK_KHR_external_fence_win32
-VK_KHR_external_memory
-VK_KHR_external_memory_capabilities
 VK_KHR_external_memory_fd
 VK_KHR_external_memory_win32
-VK_KHR_external_semaphore
-VK_KHR_external_semaphore_capabilities
 VK_KHR_external_semaphore_fd
 VK_KHR_external_semaphore_win32
-VK_KHR_format_feature_flags2
 VK_KHR_fragment_shader_barycentric
 VK_KHR_fragment_shading_rate
 VK_KHR_get_display_properties2
-VK_KHR_get_memory_requirements2
-VK_KHR_get_physical_device_properties2
 VK_KHR_get_surface_capabilities2
-VK_KHR_global_priority
-VK_KHR_image_format_list
-VK_KHR_imageless_framebuffer
 VK_KHR_incremental_present
-VK_KHR_index_type_uint8
-VK_KHR_line_rasterization
-VK_KHR_load_store_op_none
-VK_KHR_maintenance1
-VK_KHR_maintenance2
-VK_KHR_maintenance3
-VK_KHR_maintenance4
-VK_KHR_maintenance5
-VK_KHR_maintenance6
 VK_KHR_maintenance7
 VK_KHR_maintenance8
 VK_KHR_maintenance9
-VK_KHR_map_memory2
 VK_KHR_mir_surface
-VK_KHR_multiview
 VK_KHR_object_refresh
 VK_KHR_performance_query
 VK_KHR_pipeline_binary
@@ -132,52 +152,30 @@ VK_KHR_pipeline_library
 VK_KHR_portability_enumeration
 VK_KHR_portability_subset
 VK_KHR_present_id
+VK_KHR_present_id2
 VK_KHR_present_mode_fifo_latest_ready
 VK_KHR_present_wait
-VK_KHR_push_descriptor
+VK_KHR_present_wait2
 VK_KHR_ray_query
 VK_KHR_ray_tracing_maintenance1
 VK_KHR_ray_tracing_pipeline
 VK_KHR_ray_tracing_position_fetch
-VK_KHR_relaxed_block_layout
 VK_KHR_robustness2
-VK_KHR_sampler_mirror_clamp_to_edge
-VK_KHR_sampler_ycbcr_conversion
-VK_KHR_separate_depth_stencil_layouts
-VK_KHR_shader_atomic_int64
 VK_KHR_shader_bfloat16
-VK_EXT_shader_float8
 VK_KHR_shader_clock
-VK_KHR_shader_draw_parameters
-VK_KHR_shader_expect_assume
-VK_KHR_shader_float16_int8
-VK_KHR_shader_float_controls
-VK_KHR_shader_float_controls2
-VK_KHR_shader_integer_dot_product
 VK_KHR_shader_maximal_reconvergence
-VK_KHR_shader_non_semantic_info
 VK_KHR_shader_quad_control
 VK_KHR_shader_relaxed_extended_instruction
-VK_KHR_shader_subgroup_extended_types
-VK_KHR_shader_subgroup_rotate
 VK_KHR_shader_subgroup_uniform_control_flow
-VK_KHR_shader_terminate_invocation
 VK_KHR_shader_untyped_pointers
 VK_KHR_shared_presentable_image
-VK_KHR_spirv_1_4
-VK_KHR_storage_buffer_storage_class
 VK_KHR_surface
-VK_KHR_surface_protected_capabilities
 VK_KHR_surface_maintenance1
+VK_KHR_surface_protected_capabilities
 VK_KHR_swapchain
 VK_KHR_swapchain_maintenance1
 VK_KHR_swapchain_mutable_format
-VK_KHR_synchronization2
-VK_KHR_timeline_semaphore
 VK_KHR_unified_image_layouts
-VK_KHR_uniform_buffer_standard_layout
-VK_KHR_variable_pointers
-VK_KHR_vertex_attribute_divisor
 VK_KHR_video_decode_av1
 VK_KHR_video_decode_h264
 VK_KHR_video_decode_h265
@@ -192,18 +190,13 @@ VK_KHR_video_encode_queue
 VK_KHR_video_maintenance1
 VK_KHR_video_maintenance2
 VK_KHR_video_queue
-VK_KHR_vulkan_memory_model
 VK_KHR_wayland_surface
 VK_KHR_win32_keyed_mutex
 VK_KHR_win32_surface
 VK_KHR_workgroup_memory_explicit_layout
 VK_KHR_xcb_surface
 VK_KHR_xlib_surface
-VK_KHR_zero_initialize_workgroup_memory
-VK_NV_shader_atomic_float16_vector
 """.splitlines()
-
-EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = [s for s in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON if not s.startswith('#')]
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -2418,218 +2411,71 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
         self.write(combineLines(stream, INL_HEADER))
 
 class MandatoryFeaturesGenerator(BaseGenerator):
+    @dataclass
+    class StructData:
+        names: list[str]
+        extensions: list[str]
+        structObject: None
+
     def __init__(self, _):
         BaseGenerator.__init__(self)
-        self.additionalExtensionData = {}
-
-    def structInAPI(self, name):
-        for c in self.vk.structs.values():
-            if c.name == name:
-                return True
-            for alias in c.aliases:
-                if alias == name:
-                    return True
-        return False
-
-    def prepareAdditionalExtensionData(self):
-        # read all files from extensions directory
-        for fileName in glob.glob(os.path.join(SCRIPTS_SRC_DIR, "extensions", "*.json")):
-            if "schema.json" in fileName:
-                continue
-            extensionName = os.path.basename(fileName)[:-5]
-            # note: there is no information about mandatory features in vulkan object yet
-            #if extensionName in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON:
-            #    continue
-            fileContent = readFile(fileName)
-            try:
-                self.additionalExtensionData[extensionName] = json.loads(fileContent)
-                with open(fileName, 'w') as file:
-                    file.write(json.dumps(self.additionalExtensionData[extensionName], indent=4))
-            except ValueError as err:
-                print("Error in %s: %s" % (os.path.basename(fileName), str(err)))
-                sys.exit(-1)
-
-        # note: there is no information about mandatory features in vulkan object yet
-        #additionalExtensionNames = [item[0] for item in self.additionalExtensionData]
-        #for ext in self.extensions:
-        #    if ext.name not in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON:
-        #        continue
-        #    if ext.name in additionalExtensionNames:
-        #        logging.error("Extension %s already defined as JSON!" % (ext.name))
-        #    if ext.promotedto is not None and 'VK_VERSION' not in ext.promotedto:
-        #        logging.error("Extension %s is promoted to %s" % (ext.name, ext.promotedto))
-        #        exit(-1)
-        #    mandatoryFeatures = {}
-        #    core = ""
-        #    mandatory_variants = ext.supported
-        #    if ext.promotedto is not None and 'VK_VERSION' in ext.promotedto:
-        #        p = ext.promotedto
-        #        major = int(p[-3])
-        #        minor = int(p[-1])
-        #        core = f'0.{major}.{minor}.0'
-        #        if "vulkan" in mandatory_variants and major == 1 and minor <= 2:
-        #            mandatory_variants = []
-        #    else:
-        #        if "vulkansc" not in mandatory_variants:
-        #            mandatory_variants = []
-        #    for requirement in ext.requirementsList:
-        #        featureStructName = None
-        #        featureStruct = None
-        #        for feature in requirement.features:
-        #            newFeatureStructName = feature.struct
-        #            if newFeatureStructName not in mandatoryFeatures.keys():
-        #                mandatoryFeatures[newFeatureStructName] = []
-        #            if newFeatureStructName != featureStructName:
-        #                featureStructName = newFeatureStructName
-        #                featureStruct = {'features': [], 'requirements': [], 'mandatory_variant': []}
-        #                mandatoryFeatures[featureStructName].append(featureStruct)
-        #            feature_names = feature.name.split(',')
-        #            featureStruct['features'].extend(feature_names)
-        #            featureStruct['requirements'].append(ext.name)
-        #            if requirement.depends is not None:
-        #                featureStruct['requirements'].append(requirement.depends)
-        #            if len(mandatory_variants) > 0:
-        #                featureStruct["mandatory_variant"] = mandatory_variants
-        #
-        #    for featureStructName in mandatoryFeatures.keys():
-        #        for featureStruct in mandatoryFeatures[featureStructName]:
-        #            featureStruct['features'] = list(dict.fromkeys(featureStruct['features']))
-        #            featureStruct['requirements'] = list(dict.fromkeys(featureStruct['requirements']))
-        #            featureStruct['mandatory_variant'] = list(dict.fromkeys(featureStruct['mandatory_variant']))
-        #            if len(featureStruct['mandatory_variant']) == 0:
-        #                featureStruct.pop('mandatory_variant')
-        #    data = {}
-        #    if ext.name.startswith("VK_KHR") or ext.name.startswith("VK_EXT"):
-        #        data['register_extension'] = {'type': ext.type, 'core': core}
-        #    if len(mandatoryFeatures) > 0:
-        #        data['mandatory_features'] = mandatoryFeatures
-        #
-        #    jsonFilePath = os.path.join(SCRIPTS_SRC_DIR, "extensions", ext.name + ".json")
-        #    with open(jsonFilePath, 'w') as file:
-        #        printAttributesToFile(data, file, indent=4)
-        #        logging.debug("File written to " + jsonFilePath)
-        #    api.additionalExtensionData.append((ext.name, data))
-        #
-        # Here we do the API version requirements
-        #for apiFeature in self.features:
-        #    if apiFeature.name not in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON:
-        #        continue
-        #    if apiFeature.name in additionalExtensionNames:
-        #        logging.error("API feature %s already defined as JSON!" % (ext.name))
-        #    mandatoryFeatures = {}
-        #    for requirement in apiFeature.requirementsList:
-        #        featureStructName = None
-        #        featureStruct = None
-        #        for feature in requirement.features:
-        #            newFeatureStructName = feature.struct
-        #            for ct in self.compositeTypes:
-        #                if newFeatureStructName in ct.aliasList:
-        #                    newFeatureStructName = ct.name
-        #            if newFeatureStructName not in mandatoryFeatures.keys():
-        #                mandatoryFeatures[newFeatureStructName] = []
-        #            if newFeatureStructName != featureStructName:
-        #                featureStructName = newFeatureStructName
-        #                featureStruct = {'features': [], 'requirements': []}
-        #                mandatoryFeatures[featureStructName].append(featureStruct)
-        #            featureStruct['features'].append(feature.name)
-        #            # if feature.name == "vulkanMemoryModel":
-        #            #     logging.debug("feature %s %s in %s" % (feature.name, featureStructName, apiFeature.name))
-        #            #     exit(-1)
-        #            dep = apiFeature.name
-        #            if 'VK_VERSION' in dep:
-        #                major = int(dep[-3])
-        #                minor = int(dep[-1])
-        #                featureStruct['requirements'].append(f"ApiVersion(0, {major}, {minor}, 0)")
-        #            else:
-        #                logging.error("requirement not valid in %s" % (apiFeature.name))
-        #                exit(-1)
-        #        if featureStructName is not None:
-        #            featureStruct['features'] = list(dict.fromkeys(featureStruct['features']))
-        #            featureStruct['requirements'] = list(dict.fromkeys(featureStruct['requirements']))
-        #    data = {'mandatory_features': mandatoryFeatures}
-        #    jsonFilePath = os.path.join(SCRIPTS_SRC_DIR, "extensions", apiFeature.name + ".json")
-        #    with open(jsonFilePath, 'w') as file:
-        #        printAttributesToFile(data, file, indent=4)
-        #        logging.debug("File written to " + jsonFilePath)
-        #    api.additionalExtensionData.append((apiFeature.name, data))
-
-        self.additionalExtensionData = sorted(self.additionalExtensionData.items(), key=lambda e: e[0])
-
-        #for ext in self.extensions:
-        #    if not ext.name.startswith("VK_KHR"):
-        #        continue
-        #    jsonFilePath = os.path.join(SCRIPTS_SRC_DIR, "extensions", ext.name + ".json")
-        #    if os.path.isfile(jsonFilePath):
-        #        logging.info("Extension %s has json %s", ext.name, jsonFilePath)
-        #    else:
-        #        logging.error("Extension %s is missing JSON!", ext.name)
-
+        self.usedFeatureStructs = []
+        self.uniqueFeatureStructs = []
 
     def generate(self):
-        self.prepareAdditionalExtensionData();
-        dictStructs = {}
-        dictData = []
-        extData = []
-        usedFeatureStructs = {}
-        for _, data in self.additionalExtensionData:
-            if 'mandatory_features' in data.keys():
-                # sort to have same results for py2 and py3
-                listStructFeatures = sorted(data['mandatory_features'].items(), key=lambda tup: tup[0])
-                for structure, featuresList in listStructFeatures:
-                    for featureData in featuresList:
-                        # allow for featureless VKSC only extensions
-                        if not 'features' in featureData.keys() or 'requirements' not in featureData.keys():
-                            continue
-                        requirements = featureData['requirements']
 
-                        mandatory_variant = ''
-                        try:
-                            mandatory_variant = featureData['mandatory_variant']
-                        except KeyError:
-                            mandatory_variant = ''
+        if self.targetApiName == 'vulkan':
+            # check if any of he extensions in EXTENSIONS_TESTED_BY_CTS
+            # could be removed from the list because they are part of core
+            for extName in EXTENSIONS_TESTED_BY_CTS:
+                if extName in self.vk.extensions:
+                    ext = self.vk.extensions[extName]
+                    if ext.promotedTo and 'VK_VERSION' in ext.promotedTo:
+                        print(f'  {extName} is in core, it can be removed from EXTENSIONS_TESTED_BY_CTS list')
+            # check if there is no duplicates in EXTENSIONS_TESTED_BY_CTS
+            if len(EXTENSIONS_TESTED_BY_CTS) != len(set(EXTENSIONS_TESTED_BY_CTS)):
+                print(f'  Remove duplicates from EXTENSIONS_TESTED_BY_CTS list')
 
-                        dictData.append( [ structure, featureData['features'], requirements, mandatory_variant] )
+        # iterate over all extensions and vulkan versions to
+        # find all feature structures that have mandatory fields
+        self.addFeatureStructs(self.vk.extensions.values())
+        if self.targetApiName == 'vulkan':
+            self.addFeatureStructs(self.vk.versions.values())
 
-                        if structure == 'VkPhysicalDeviceFeatures':
-                            continue
+        # sort structures by name
+        self.usedFeatureStructs = sorted(self.usedFeatureStructs)
 
-                        # if structure is not in dict construct name of variable and add is as a first item
-                        if (structure not in dictStructs):
-                            dictStructs[structure] = ([structure[2:3].lower() + structure[3:]], mandatory_variant)
-                        # add first requirement if it is unique
-                        if requirements and (requirements[0] not in dictStructs[structure][0]):
-                            dictStructs[structure][0].append(requirements[0])
-
-                        usedFeatureStructs[structure] = []
-
-                        if requirements:
-                            for req in requirements:
-                                if '.' in req:
-                                    req = req.split('.')[0]
-                                    reqStruct = 'Vk' + req[0].upper() + req[1:]
-                                    usedFeatureStructs[reqStruct] = []
-
-            if 'mandatory_extensions' in data:
-                mandatoryExtensions = []
-                for mandatoryExt in data['mandatory_extensions']:
-                    if 'extension' in mandatoryExt:
-                        extName = mandatoryExt.pop('extension')
-                        mandatoryExtensions.append((extName, mandatoryExt))
-
-                for extension, extensionData in mandatoryExtensions:
-                    # requirements are actually mandatory.
-                    if 'requirements' not in extensionData:
-                        continue
-
-                    requirements = extensionData['requirements']
-                    mandatory_variant = '' if 'mandatory_variant' not in extensionData else extensionData['mandatory_variant']
-                    extData.append((extension, requirements, mandatory_variant))
-
-                    for req in requirements:
-                        if '.' in req:
-                            req = req.split('.')[0]
-                            reqStruct = 'Vk' + req[0].upper() + req[1:]
-                            usedFeatureStructs[reqStruct] = []
+        # extract needed data for each structure name
+        structs = self.vk.structs
+        for structName in self.usedFeatureStructs:
+            # try to find structure object in vk.structs
+            s = structs[structName] if structName in structs else None
+            if s is None:
+                # try to check if it was promoted to core, KHR or EXT
+                structBareName = re.sub(r'[A-Z]+$', '', structName)
+                for postfix in ['', 'KHR', 'EXT']:
+                    searchedName = structBareName + postfix
+                    if searchedName in structs:
+                        s = structs[searchedName]
+                        break
+            if s is None:
+                # handle promotions with changed names
+                if structName == 'VkPhysicalDeviceVariablePointerFeaturesKHR':
+                    s = structs['VkPhysicalDeviceVariablePointersFeatures']
+                if structName == 'VkPhysicalDeviceExternalSciBufFeaturesNV':
+                    s = structs['VkPhysicalDeviceExternalMemorySciBufFeaturesNV']
+                assert s, f'Error: {structName} was not found, more logic to find it should be added'
+            # check if struct is not already in uniqueFeatureStructs list
+            structProcessedPreviously = False
+            for ufs in self.uniqueFeatureStructs:
+                structProcessedPreviously = (ufs.names[0] == s.name)
+                if structProcessedPreviously:
+                    break
+            # if struct was already processed, skip it
+            if structProcessedPreviously:
+                continue
+            names = [s.name] + s.aliases
+            self.uniqueFeatureStructs.append(self.StructData(names, s.extensions, s))
 
         self.write(INL_HEADER)
         self.write('bool canUseFeaturesStruct (const vector<VkExtensionProperties>& deviceExtensions, uint32_t usedApiVersion,\n'
@@ -2642,7 +2488,7 @@ class MandatoryFeaturesGenerator(BaseGenerator):
                    '\treturn extensionPromotedFrom && isExtensionStructSupported(deviceExtensions, RequiredExtension(extensionPromotedFrom));\n'
                    '}\n'
                    '\n'
-                   'bool checkBasicMandatoryFeatures(const vkt::Context& context)\n{\n'
+                   'void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::string>& failMesages)\n{\n'
                    '\tif (!context.isInstanceFunctionalitySupported("VK_KHR_get_physical_device_properties2"))\n'
                    '\t\tTCU_THROW(NotSupportedError, "Extension VK_KHR_get_physical_device_properties2 is not present");\n'
                    '\n'
@@ -2651,181 +2497,147 @@ class MandatoryFeaturesGenerator(BaseGenerator):
                    '\tconst vector<VkExtensionProperties>\tdeviceExtensions\t= enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);\n'
                    '\tconst uint32_t\t\t\t\t\t\tusedApiVersion\t\t= context.getUsedApiVersion();\n'
                    '\n'
-                   '\ttcu::TestLog& log = context.getTestContext().getLog();\n'
-                   '\tvk::VkPhysicalDeviceFeatures2 coreFeatures;\n'
-                   '\tdeMemset(&coreFeatures, 0, sizeof(coreFeatures));\n'
-                   '\tcoreFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n'
-                   '\tvoid** nextPtr = &coreFeatures.pNext;\n')
+                   '\tvk::VkPhysicalDeviceFeatures2 coreFeatures = initVulkanStructure();\n'
+                   '\tconst auto addFeatures = makeStructChainAdder(&coreFeatures);\n')
 
-        # Find the extensions that added the required feature structs.
-        class StructFoundContinue(Exception):
-            pass
+        # add feature structs to chain if required extension(/vk version) is supported
+        for fs in self.uniqueFeatureStructs:
 
-        for usedStruct in usedFeatureStructs:
-            compType = None
-            if usedStruct in self.vk.structs:
-                compType = self.vk.structs[usedStruct]
+            names = ', '.join(fs.names)
+            extensions = ', '.join(fs.extensions)
+            self.write(f'\t// {names} for ext [{extensions}]')
+            typeName = fs.names[0]
+            varName = self.getVarNameFromType(typeName)
+
+            condition = ''
+            if len(fs.extensions) > 0:
+                assert len(fs.extensions) < 3
+                extensionParams = '"' + '", "'.join(fs.extensions) + '"'
+                condition = f'canUseFeaturesStruct(deviceExtensions, usedApiVersion, {extensionParams})'
             else:
-                for struct in self.vk.structs.values():
-                    if usedStruct in struct.aliases:
-                        compType = struct
-            if compType is None:
-                continue
-            ufs = usedFeatureStructs[usedStruct]
-            if len(compType.extensions) == 0:
-                continue
-            for ext in compType.extensions:
-                if ext not in ufs:
-                    ufs.append(ext)
+                # use different condition for blob feature structures
+                version = fs.structObject.version.name[-3:].replace('_', ', ')
+                condition = f'context.contextSupports(vk::ApiVersion(0, {version}, 0))'
 
-        structList = sorted(usedFeatureStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
-        apiStructs = list( filter(lambda x : self.structInAPI(x[0]), structList)) # remove items not defined in current API
-        varVariants = {} # Some variables are going to be declared only for specific variants.
+            self.write(f'\tvk::{typeName} {varName} = initVulkanStructure();\n'
+                       f'\tif ({condition})\n'
+                       f'\t\taddFeatures(&{varName});\n')
 
-        for structName, extensions in apiStructs:
-            mandatoryVariantList = []
-            if structName in dictStructs:
-                mandatoryVariantList = dictStructs[structName][1]
-            self.write('\t// ' + structName + ' for ext [' + ', '.join(extensions) + '] in APIs [' + ', '.join(mandatoryVariantList) + ']\n')
-            # The variable name will be the structure name without the Vk prefix and starting in lowercase.
-            newVar = structName[2].lower() + structName[3:]
+        self.write('\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);\n')
 
-            metaCondition = ''
-            if structName in dictStructs:
-                if len(mandatoryVariantList) > 0:
-                    mandatoryVariant = mandatoryVariantList[0]
-                    metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
-                    self.write('#if ' + metaCondition)
-                    varVariants[newVar] = mandatoryVariant
+        skippedExtensions = []
+        for ext in self.vk.extensions.values():
+            # KHR and EXT extensions that are not core need to be cross check with
+            # EXTENSIONS_TESTED_BY_CTS, we can check mandatory features only
+            # for extensions that are tested in the CTS
+            if ext.featureRequirement and ('KHR' in ext.name or 'EXT' in ext.name) and \
+               (not ext.promotedTo or 'VK_VERSION' not in ext.promotedTo) and \
+               (ext.name not in EXTENSIONS_TESTED_BY_CTS):
+               skippedExtensions.append(ext.name)
+               continue
+            # generate check
+            for fr in ext.featureRequirement:
+                self.checkRequirement(ext.name, fr, f'isExtensionStructSupported(deviceExtensions, RequiredExtension("{ext.name}"))')
 
-            self.write('\tvk::' + structName + ' ' + newVar + ';\n'
-                       '\tdeMemset(&' + newVar + ', 0, sizeof(' + newVar + '));\n')
-            if len(extensions) > 0:
-                assert len(extensions) < 3
-                extensionParams = [f'"{e}"' for e in extensions]
-                extensionParams = ', '.join(extensionParams)
-                self.write(f'\tif (canUseFeaturesStruct(deviceExtensions, usedApiVersion, {extensionParams}))')
-            elif self.targetApiName == "vulkan" and structName in dictStructs:
-                #reqs = v[0][1:]
-                reqs = dictStructs[structName][0][1:]
-                cond = 'if ( '
-                i = 0
-                for req in reqs:
-                    if i > 0:
-                        cond = cond + ' || '
-                    if (req.startswith("ApiVersion")):
-                        cond = cond + 'context.contextSupports(vk::' + req + ')'
-                        i += 1
-                cond = cond + ' )'
-                self.write('\t' + cond)
+        if skippedExtensions:
+            print("  Not testing mandatory features for extensions that aren't on EXTENSIONS_TESTED_BY_CTS list:")
+            for extName in skippedExtensions:
+                print(f'    {extName}')
+            print("  If any of the above extensions should be tested, add them to the list.")
 
-            self.write('\t{\n'
-                       '\t\t' + newVar + '.sType = getStructureType<' + structName + '>();\n'
-                       '\t\t*nextPtr = &' + newVar + ';\n'
-                       '\t\tnextPtr  = &' + newVar + '.pNext;\n'
-                       '\t}')
+        if self.targetApiName == 'vulkan':
+            for ver in self.vk.versions.values():
+                for fr in ver.featureRequirement:
+                    verStr = ver.name[-3:].replace('_', ', ')
+                    self.checkRequirement(ver.name, fr, f'context.contextSupports(vk::ApiVersion(0, {verStr}, 0))')
 
-            if len(metaCondition) > 0:
-                self.write('#endif // ' + metaCondition)
-
-            self.write('\r')
-
-        self.write('\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);\n'
-                   '\tbool result = true;\n')
-
-        for v in dictData:
-            self.write('\t// ' + v[0] + ' in APIs [' + ', '.join(v[3]) + ']')
-            if not self.structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
-                continue
-            structType = v[0]
-            structName = 'coreFeatures.features'
-            metaCondition = ''
-            if len(v) == 4 and v[3] != '':
-                # for x in v[3].split('_'):
-                metaCondition = metaCondition + ' || defined(CTS_USES_' + v[3][0].upper() + ')'
-                self.write('#if ' + metaCondition[4:])
-            if v[0] != 'VkPhysicalDeviceFeatures' :
-                structName = dictStructs[v[0]][0][0]
-            if len(v[2]) > 0 :
-                condition = 'if ( '
-                for i, req in enumerate(v[2]) :
-                    if (req.startswith("ApiVersion")):
-                        condition = condition + 'context.contextSupports(vk::' + req + ')'
-                    elif '.' in req:
-                        condition = condition + req
-                    else:
-                        condition = condition + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
-                    if i+1 < len(v[2]) :
-                        condition = condition + ' && '
-                condition = condition + ' )'
-                self.write('\t' + condition)
-            self.write('\t{')
-            # Don't need to support an AND case since that would just be another line in the .txt
-            reqMetaCondition = ''
-            if len(v[1]) == 1:
-                # If the req struct type has a mandatory variant we need to add an #ifdef block, unless we're already inside one.
-                if len(metaCondition) == 0 and structName in varVariants:
-                    reqMetaCondition = 'defined(CTS_USES_' + varVariants[structName].upper() + ')'
-                    self.write('#if ' + reqMetaCondition)
-                self.write('\t\tif ( ' + structName + '.' + v[1][0] + ' == VK_FALSE )')
-            else:
-                condition = 'if ( '
-                for i, feature in enumerate(v[1]):
-                    if i != 0:
-                        condition = condition + ' && '
-                        # Here we do the "or"
-                    features2 = feature.split(',')
-                    condition2 = ""
-                    for i2, feature2 in enumerate(features2):
-                        if i2 != 0:
-                            condition2 = condition2 + ' || '
-                        condition2 = condition2 + structName + '.' + feature2 + ' == VK_FALSE'
-                    condition = condition + '( ' + condition2 + ' )'
-                condition = condition + ' )'
-                self.write('\t\t' + condition)
-            featureSet = " or ".join(v[1])
-            self.write('\t\t{\n'
-                       '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + featureSet + ' not supported" << tcu::TestLog::EndMessage;\n'
-                       '\t\t\tresult = false;\n'
-                       '\t\t}')
-            if reqMetaCondition != '':
-                self.write('#endif // ' + reqMetaCondition)
-            self.write('\t}')
-            self.write('\r' if metaCondition == '' else '#endif // ' + metaCondition[4:] + '\n')
-
-        last_extension = None
-        for extension, requirements, mandatory_variant in extData:
-            if last_extension != extension:
-                self.write('\t// ' + extension + '\n')
-                last_extension = extension
-            metaCondition = ''
-            if mandatory_variant != '':
-                metaCondition = metaCondition + ' || defined(CTS_USES_' + mandatory_variant[0].upper() + ')'
-                self.write('#if ' + metaCondition[4:])
-            if len(requirements) > 0 :
-                condition = 'if ( '
-                for i, req in enumerate(requirements) :
-                    if (req.startswith("ApiVersion")):
-                        condition = condition + 'context.contextSupports(vk::' + req + ')'
-                    elif '.' in req:
-                        condition = condition + req
-                    else:
-                        condition = condition + 'isExtensionStructSupported(deviceExtensions, RequiredExtension("' + req + '"))'
-                    if i+1 < len(requirements) :
-                        condition = condition + ' && '
-                condition = condition + ' )'
-                self.write('\t' + condition)
-            self.write('\t{\n'
-                       '\t\tif (!(isExtensionStructSupported(deviceExtensions, RequiredExtension("' + extension + '")) || isCoreDeviceExtension(usedApiVersion, "' + extension + '")))\n'
-                       '\t\t{\n'
-                       '\t\t\tlog << tcu::TestLog::Message << "Mandatory extension ' + extension + ' not supported" << tcu::TestLog::EndMessage;\n'
-                       '\t\t\tresult = false;\n'
-                       '\t\t}\n'
-                       '\t}')
-            if metaCondition != '':
-                self.write('#endif // ' + metaCondition[4:] + '\n')
-        self.write('\treturn result;')
         self.write('}\n')
+
+    def addFeatureStructs(self, objectList):
+        # generic code that handles list of Extension or Version objects
+        for obj in objectList:
+            for fr in obj.featureRequirement:
+                self.addSingleFeatureStruct(fr.struct)
+                # check if dependency is also a feature structure
+                if fr.depends is not None:
+                    separatedChecks = fr.depends.replace('+', ',').replace('(', '').replace(')', '').split(',')
+                    for definedCheck in separatedChecks:
+                        if '::' in definedCheck:
+                            structName, _ = definedCheck.split('::')
+                            self.addSingleFeatureStruct(structName)
+
+    def addSingleFeatureStruct(self, structName):
+        # skip VkPhysicalDeviceFeatures as it is always present
+        if structName == 'VkPhysicalDeviceFeatures':
+            return
+        # skip structures that are already in usedFeatureStructs
+        if structName in self.usedFeatureStructs:
+            return
+        self.usedFeatureStructs.append(structName)
+
+    def checkRequirement(self, objectName, fr, initialCondition):
+        # objectName is either extension name or vulkan version name
+        varName = self.getVarNameFromType(fr.struct)
+        structCondition = initialCondition
+        fieldCondition = ''
+        fieldMessage = ''
+        # check if multiple fields are specified
+        if ',' in fr.field:
+            fieldSet = fr.field.split(',')
+            fieldCondition = '(' + ') && ('.join([f'{varName}.{fs} == VK_FALSE' for fs in fieldSet]) + ')'
+            fieldMessage = ' or '.join(fieldSet)
+        else:
+            fieldCondition = f'{varName}.{fr.field} == VK_FALSE'
+            fieldMessage = fr.field
+        # small number of feature bits are mandatory but under additional conditions
+        if fr.depends is not None:
+            #print (f'{objectName} - {fr.struct}::{fr.field} depends: {fr.depends}')
+            # we convert dependency string from specification to C++ code
+            additionalCondition = fr.depends.replace(',', ' || ').replace('+', ' && ')
+            # each individula part of dependency is converted separately
+            separatedChecks = fr.depends.replace('+', ',').replace('(', '').replace(')', '').split(',')
+            for definedCheck in separatedChecks:
+                cppCheck = ''
+                if definedCheck.startswith('VK_VERSION'):
+                    # handle vulkan version
+                    version = definedCheck[-3:].replace('_', ', ')
+                    cppCheck = f'context.contextSupports(vk::ApiVersion(0, {version}, 0))'
+                elif definedCheck.startswith('VK_'):
+                    # handle extension
+                    cppCheck = f'isExtensionStructSupported(deviceExtensions, RequiredExtension("{definedCheck}"))'
+                elif '::' in definedCheck:
+                    # handle other structure field
+                    # note: assuming structure is part of chain, if not then logic that
+                    # checks this before calling getPhysicalDeviceFeatures2 should be added
+                    structName, fieldName = definedCheck.split('::')
+                    structVarName = self.getVarNameFromType(structName)
+                    cppCheck = f'{structVarName}.{fieldName}'
+                else:
+                    assert False, f'Error: unknown dependency {definedCheck} for {objectName}'
+                # replace defined check with cpp check so that we perserve potential parentheses
+                additionalCondition = additionalCondition.replace(definedCheck, cppCheck)
+            # add additional conditions to structCondition
+            if ',' in fr.depends:
+                additionalCondition = '(' + additionalCondition + ')'
+            structCondition += ' && ' + additionalCondition
+        # write code that checks if mandatory feature is supported
+        self.write(f'\t// {fr.struct}\n'
+                    f'\tif ( {structCondition} )\n'
+                    '\t{\n'
+                    f'\t\tif ( {fieldCondition} )\n'
+                    f'\t\t\tfailMesages.push_back("{fieldMessage}");\n'
+                    '\t}\n')
+
+    def getVarNameFromType(self, structName):
+        if structName == 'VkPhysicalDeviceFeatures':
+            return 'coreFeatures.features'
+        # dependencies in spec may use older structure names, in generated code
+        # we generate variable name always from most recent structure name
+        for fs in self.uniqueFeatureStructs:
+            if structName in fs.names:
+                s = fs.names[0]
+                return s[2].lower() + s[3:]
+        assert False, f'Error: {structName} not found in uniqueFeatureStructs'
 
 class ExtensionListGenerator(BaseGenerator):
     def __init__(self, _):

@@ -2572,17 +2572,17 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
         allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     vk::beginCommandBuffer(vk, *cmdBuffer);
     VkImageMemoryBarrier imageMemoryBarrier = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType			sType;
-        nullptr,                                // const void*				pNext;
-        0u,                                     // VkAccessFlags			srcAccessMask;
-        0u,                                     // VkAccessFlags			dstAccessMask;
-        VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout			oldLayout;
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // VkImageLayout			newLayout;
-        VK_QUEUE_FAMILY_IGNORED,                // uint32_t				srcQueueFamilyIndex;
-        VK_QUEUE_FAMILY_IGNORED,                // uint32_t				dstQueueFamilyIndex;
-        images[imageIndex],                     // VkImage					image;
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+        nullptr,                                // const void* pNext;
+        0u,                                     // VkAccessFlags srcAccessMask;
+        0u,                                     // VkAccessFlags dstAccessMask;
+        VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // VkImageLayout newLayout;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t dstQueueFamilyIndex;
+        images[imageIndex],                     // VkImage image;
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                  1u) // VkImageSubresourceRange	subresourceRange;
+                                  1u) // VkImageSubresourceRange subresourceRange;
     };
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u,
                           nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
