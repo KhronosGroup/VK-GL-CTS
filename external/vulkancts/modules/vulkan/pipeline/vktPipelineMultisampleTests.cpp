@@ -2037,6 +2037,11 @@ void SampleMaskWithConservativeTest::checkSupport(Context &context) const
     if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
         TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
+    if (m_useFragmentShadingRate &&
+        !context.getFragmentShadingRateProperties().fragmentShadingRateWithConservativeRasterization)
+        TCU_THROW(NotSupportedError,
+                  "fragmentShadingRateWithConservativeRasterization not supported with conservative rasterization");
+
     context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
 
     const auto &conservativeRasterizationProperties = context.getConservativeRasterizationPropertiesEXT();
