@@ -327,6 +327,30 @@ DrawBufferInfo::DrawBufferInfo(bool render, const IVec2 &size, const BlendState 
 {
 }
 
+float getUnsignedFixedPointComponent(const float component, const int bits)
+{
+    // When converting the float to a normalized fixed-point integer value, it should be rounded
+    // to the nearest integer. However, if the value is exactly between two integers, it could
+    // be rounded to either one. To avoid this scenario, it is better to shift such a value to a
+    // small extent.
+    if (bits <= 1)
+    {
+        return component;
+    }
+
+    auto range       = static_cast<float>((1 << bits) - 1);
+    float fixedValue = component * range;
+    float eps        = 0.05f / range;
+    // If the fractional part of the fixed value is close enough to 0.5, a small bias is applied
+    // to the component value.
+    if (abs(0.5f + floor(fixedValue) - fixedValue) < eps)
+    {
+        float bias = (component > 0.5f ? -1.0f : 1.0f) * eps;
+        return component + bias;
+    }
+    return component;
+}
+
 void clearRenderbuffer(const glw::Functions &gl, const tcu::TextureFormat &format, int renderbufferNdx,
                        int renderbufferCount, tcu::TextureLevel &refRenderbuffer)
 {
@@ -398,10 +422,11 @@ void clearRenderbuffer(const glw::Functions &gl, const tcu::TextureFormat &forma
 
     case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
     {
-        const float red   = info.valueMax.x() * redScale;
-        const float green = info.valueMax.y() * greenScale;
-        const float blue  = info.valueMax.z() * blueScale;
-        const float alpha = info.valueMax.w() * alphaScale;
+        const tcu::IVec4 formatBits = tcu::getTextureFormatBitDepth(format);
+        const float red             = getUnsignedFixedPointComponent(info.valueMax.x() * redScale, formatBits.x());
+        const float green           = getUnsignedFixedPointComponent(info.valueMax.y() * greenScale, formatBits.y());
+        const float blue            = getUnsignedFixedPointComponent(info.valueMax.z() * blueScale, formatBits.z());
+        const float alpha           = getUnsignedFixedPointComponent(info.valueMax.w() * alphaScale, formatBits.w());
         const Vec4 color(red, green, blue, alpha);
 
         tcu::clear(refRenderbuffer, color);

@@ -44,11 +44,153 @@ DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "frame
                        "SC" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = """
+VK_EXT_conservative_rasterization
+VK_EXT_custom_border_color
+VK_EXT_extended_dynamic_state3
+VK_EXT_fragment_density_map_offset
+VK_EXT_mesh_shader
+VK_EXT_shader_atomic_float
+VK_EXT_shader_atomic_float2
+VK_EXT_shader_image_atomic_int64
+VK_KHR_8bit_storage
+VK_KHR_16bit_storage
+# VK_KHR_acceleration_structure
+VK_KHR_android_surface
+VK_KHR_bind_memory2
+# VK_KHR_buffer_device_address
+VK_KHR_calibrated_timestamps
+VK_KHR_compute_shader_derivatives
 VK_KHR_cooperative_matrix
+VK_KHR_copy_commands2
+VK_KHR_create_renderpass2
+VK_KHR_dedicated_allocation
+VK_KHR_deferred_host_operations
+VK_KHR_depth_clamp_zero_one
+VK_KHR_depth_stencil_resolve
+VK_KHR_descriptor_update_template
+VK_KHR_device_group
+VK_KHR_device_group_creation
+VK_KHR_display
+VK_KHR_display_swapchain
+VK_KHR_draw_indirect_count
+VK_KHR_driver_properties
+# VK_KHR_dynamic_rendering
+# VK_KHR_dynamic_rendering_local_read
+VK_KHR_external_fence
+VK_KHR_external_fence_capabilities
+VK_KHR_external_fence_fd
+VK_KHR_external_fence_win32
+VK_KHR_external_memory
+VK_KHR_external_memory_capabilities
+VK_KHR_external_memory_fd
+VK_KHR_external_memory_win32
+VK_KHR_external_semaphore
+VK_KHR_external_semaphore_capabilities
+VK_KHR_external_semaphore_fd
+VK_KHR_external_semaphore_win32
+VK_KHR_format_feature_flags2
+# VK_KHR_fragment_shader_barycentric
+# VK_KHR_fragment_shading_rate
+VK_KHR_get_display_properties2
+VK_KHR_get_memory_requirements2
+VK_KHR_get_physical_device_properties2
+VK_KHR_get_surface_capabilities2
+# VK_KHR_global_priority
+VK_KHR_image_format_list
+VK_KHR_imageless_framebuffer
+VK_KHR_incremental_present
+VK_KHR_index_type_uint8
+VK_KHR_line_rasterization
+VK_KHR_load_store_op_none
+VK_KHR_maintenance1
+VK_KHR_maintenance2
+VK_KHR_maintenance3
+VK_KHR_maintenance4
+VK_KHR_maintenance5
+VK_KHR_maintenance6
+VK_KHR_maintenance7
+VK_KHR_maintenance8
+VK_KHR_maintenance9
+VK_KHR_map_memory2
+VK_KHR_mir_surface
+VK_KHR_multiview
+VK_KHR_object_refresh
+VK_KHR_performance_query
+VK_KHR_pipeline_executable_properties
+VK_KHR_pipeline_library
+VK_KHR_portability_enumeration
+VK_KHR_portability_subset
+VK_KHR_present_id
+VK_KHR_present_id2
+VK_KHR_present_mode_fifo_latest_ready
+VK_KHR_present_wait
+VK_KHR_present_wait2
+VK_KHR_push_descriptor
+VK_KHR_ray_query
+VK_KHR_ray_tracing_maintenance1
+VK_KHR_ray_tracing_pipeline
+VK_KHR_ray_tracing_position_fetch
+VK_KHR_relaxed_block_layout
+VK_KHR_robustness2
+VK_KHR_sampler_mirror_clamp_to_edge
+VK_KHR_sampler_ycbcr_conversion
+VK_KHR_separate_depth_stencil_layouts
+VK_KHR_shader_atomic_int64
 VK_KHR_shader_bfloat16
+VK_EXT_shader_float8
+VK_KHR_shader_clock
+VK_KHR_shader_draw_parameters
+VK_KHR_shader_expect_assume
+VK_KHR_shader_float16_int8
+VK_KHR_shader_float_controls
+VK_KHR_shader_float_controls2
+VK_KHR_shader_integer_dot_product
+VK_KHR_shader_maximal_reconvergence
+VK_KHR_shader_non_semantic_info
+VK_KHR_shader_quad_control
+VK_KHR_shader_relaxed_extended_instruction
+VK_KHR_shader_subgroup_extended_types
+VK_KHR_shader_subgroup_rotate
+VK_KHR_shader_subgroup_uniform_control_flow
+VK_KHR_shader_terminate_invocation
+VK_KHR_shared_presentable_image
+VK_KHR_spirv_1_4
+VK_KHR_storage_buffer_storage_class
+VK_KHR_surface
+VK_KHR_surface_protected_capabilities
+VK_KHR_surface_maintenance1
+VK_KHR_swapchain
+VK_KHR_swapchain_mutable_format
+VK_KHR_synchronization2
+VK_KHR_timeline_semaphore
+VK_KHR_unified_image_layouts
+VK_KHR_uniform_buffer_standard_layout
+VK_KHR_variable_pointers
+VK_KHR_vertex_attribute_divisor
+VK_KHR_video_decode_av1
+VK_KHR_video_decode_h264
+VK_KHR_video_decode_h265
+VK_KHR_video_decode_queue
+VK_KHR_video_decode_vp9
 VK_KHR_video_encode_av1
+VK_KHR_video_encode_h264
+VK_KHR_video_encode_h265
+VK_KHR_video_encode_intra_refresh
 VK_KHR_video_encode_quantization_map
-""".split()
+VK_KHR_video_encode_queue
+# VK_KHR_video_maintenance1
+VK_KHR_video_maintenance2
+VK_KHR_video_queue
+VK_KHR_vulkan_memory_model
+VK_KHR_wayland_surface
+VK_KHR_win32_keyed_mutex
+VK_KHR_win32_surface
+# VK_KHR_workgroup_memory_explicit_layout
+VK_KHR_xcb_surface
+VK_KHR_xlib_surface
+VK_KHR_zero_initialize_workgroup_memory
+VK_NV_shader_atomic_float16_vector
+""".splitlines()
 
 EXTENSIONS_TO_READ_FROM_XML_NOT_JSON = [s for s in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON if not s.startswith('#')]
 
@@ -137,6 +279,9 @@ PLATFORM_TYPES = [
     (["NvSciSyncFence"], ["NvSciSyncFence"], "int"),
     (["NvSciBufAttrList"], ["NvSciBufAttrList"], "int"),
     (["NvSciSyncAttrList"], ["NvSciSyncAttrList"], "int"),
+
+    # VK_OHOS_surface
+    (["OHNativeWindow"], ["OHNativeWindow"], "void*"),
 ]
 
 PLATFORM_TYPE_NAMESPACE = "pt"
@@ -191,16 +336,81 @@ def printAttributesToFile(obj, file, indent=0):
         else:
             file.write(f"{indent_str}{repr(obj)}\n")
 
-# Converts the dependecies expression into an Abstract Syntax Tree that uses boolean operators
+def transformSingleDependsConditionToCpp(depPart, api, checkVersionString, checkExtensionString, extension, depends):
+    ret = None
+    if 'VK_VERSION' in depPart:
+        # when dependency is vulkan version then replace it with proper condition
+        ret = checkVersionString % (depPart[-3], depPart[-1])
+    else:
+        # when dependency is extension check if it was promoted
+        for dExt in api.extensions:
+            if depPart == dExt.name:
+                depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
+                isSupportedCheck = checkExtensionString % (depExtVector, depPart)
+                ret = isSupportedCheck
+                # This check is just heuristics. In theory we should check if the promotion is actually checked properly
+                # in the dependency
+                if dExt.promotedto is not None and dExt.promotedto not in depends:
+                     p = dExt.promotedto
+                     # check if dependency was promoted to vulkan version or other extension
+                     if 'VK_VERSION' in p:
+                         ret = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
+                     else:
+                         ret = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
+        # for SC when extension was not found try checking also not supported
+        # extensions and see if this extension is part of core
+        if ret is None and api.apiName == "vulkansc":
+            for dExt in api.notSupportedExtensions:
+                if depPart == dExt.name:
+                    p = dExt.promotedto
+                    if p is None:
+                        break
+                    if int(p[-1]) > 2:
+                        break
+                    ret = "true"
+        if ret is None:
+            ret = "false /* UNSUPPORTED CONDITION: " + depPart + "*/"
+        if ret is None:
+            assert False, f"{depPart} not found: {extension} : {depends}"
+    return ret
+
+def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString, extension):
+    tree = parseDependsEpression(depends)
+    condition = generateCppDependencyAST(tree, api, checkVersionString, checkExtensionString, extension, depends)
+    return condition
+
+# Converts the dependencies expression into an Abstract Syntax Tree that uses boolean operators
 def parseDependsEpression(string):
     try:
         # Parse the input string into an abstract syntax tree (AST)
-        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or '), mode='eval')
+        tree = ast.parse(string.replace('+', ' and ').replace(',', ' or ').replace('::', '__'), mode='eval')
         expression = tree.body
         return expression
     except SyntaxError as e:
-        print(f"Syntax error in the input string: {e}")
-        return None
+        print(f"Syntax error in the input string: {e} \"" + string + "\"")
+        sys.exit(-1)
+
+def generateCppDependencyAST(node, api, checkVersionString, checkExtensionString, extension, depends):
+    if isinstance(node, ast.BoolOp):
+        parts = [
+            generateCppDependencyAST(v, api, checkVersionString, checkExtensionString, extension, depends)
+            for v in node.values
+        ]
+        op = "&&" if isinstance(node.op, ast.And) else "||"
+        # Parenthesize each part, then join with the operator, and wrap the whole
+        joined = f" {op} ".join(f"{p}" for p in parts)
+        return f"({joined})"
+
+    elif isinstance(node, ast.Name):
+        return transformSingleDependsConditionToCpp(
+            node.id, api, checkVersionString, checkExtensionString, extension, depends
+        )
+
+    elif isinstance(node, ast.Constant):
+        return node.value
+
+    else:
+        raise NotImplementedError(f"Unsupported AST node: {node!r}")
 
 # Checks the dependencies AST against the passed extensions
 def checkDependencyAST(node, extensions):
@@ -443,12 +653,13 @@ class API:
         self.bitmasks = []               # list of Bitmask objects
         self.enums = []                  # list of Enum objects - each contains individual enum definition (including extension enums)
         self.compositeTypes = []         # list of Composite objects - each contains individual structure/union definition (including extension structures)
+        self.tempCompositeTypesAliases = []  # list of Composite Aliases to be added to the compositeTypes at the end of the parsing
         self.functions = []              # list of Function objects - each contains individual command definition (including extension functions)
         self.features = []               # list of Feature objects
         self.extensions = []             # list of Extension objects - each contains individual, supported extension definition
         self.notSupportedExtensions = [] # list of Extension objects - it contains NOT supported extensions; this is filled and needed only for SC
         self.basicCTypes = []            # list of basic C types e.g. 'void', 'int8_t'
-        self.tempAliasesList = []        # list of aliases for enums that could not be added because enum is defined later than its alias; this is needed for SC
+        self.tempEnumAliasesList = []        # list of aliases for enums that could not be added because enum is defined later than its alias; this is needed for SC
 
         # read all files from extensions directory
         additionalExtensionData = {}
@@ -611,8 +822,8 @@ class API:
             p = promotedto
             major = int(p[-3])
             minor = int(p[-1])
-            # if self.apiName == "vulkansc" and "vulkan" in supportedList and major == 1 and minor <= 2 and extensionName in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON:
-            #     isExtensionSupported = True
+            if self.apiName == "vulkansc" and "vulkan" in supportedList and major == 1 and minor <= 2 and extensionName in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON:
+                isExtensionSupported = True
         targetExtensionList = self.extensions if isExtensionSupported else self.notSupportedExtensions
         partiallyPromoted = False
         # before reading extension data first read extension
@@ -719,7 +930,7 @@ class API:
                                         requirement.get("bitpos"),
                                         requirement.get("dir"))
                                 elif not self.addAliasToEnumerator(e, requirementName, alias):
-                                    self.tempAliasesList.append((e, requirementName, alias))
+                                    self.tempEnumAliasesList.append((e, requirementName, alias))
                                 break
                 elif requirement.tag == "type":
                     typeList.append(requirementName)
@@ -802,10 +1013,10 @@ class API:
             # in majoriti of cases it follows directly aliased structure but in some cases there
             # is a unrelated structure definition in between - to handle this traverse in reverse order
             if alias is not None:
-                for ct in reversed(self.compositeTypes):
-                    if alias == ct.name or alias in ct.aliasList:
-                        ct.aliasList.append(name)
-                        break
+                if alias is not None:
+                    self.tempCompositeTypesAliases.append([name, alias])
+                    # go to next node
+                    return
                 # go to next node
                 return
             # read structure members
@@ -974,12 +1185,12 @@ class API:
                                 # we might not be able to add alias as we might be missing what we are aliasing
                                 # this will happen when aliased enum is added later then definition of alias
                                 logging.debug("Adding alias %s to enum %s for extension %s in API %s" % (enumerator.name, matchedEnum.name, ext.name, apiName))
-                                self.tempAliasesList.append((matchedEnum, enumerator.name, enumerator.alias))
+                                self.tempEnumAliasesList.append((matchedEnum, enumerator.name, enumerator.alias))
                 else:
                     logging.warning("Skipping requirement in extension %s because dependencies are not met: %s" % (ext.name, requirement.depends))
 
         # add aliases to enumerators that were defined after alias definition
-        for enum, name, alias in self.tempAliasesList:
+        for enum, name, alias in self.tempEnumAliasesList:
             if not self.addAliasToEnumerator(enum, name, alias):
                 # if enumerator that should be aliased was not found then try to insert it without alias
                 # (this happens for vulkansc as in xml enumerator might be defined in extension that is
@@ -1026,7 +1237,13 @@ class API:
                     continue
                 if tryToFindEnumValueInNotSupportedVersions(alias):
                     continue
-        self.tempAliasesList = None
+        self.tempEnumAliasesList = None
+
+        for alias in self.tempCompositeTypesAliases:
+            for ct in reversed(self.compositeTypes):
+                if alias[1] == ct.name or alias in ct.aliasList:
+                    ct.aliasList.append(alias[0])
+                    break
 
         if self.apiName == "vulkan":
             def removeExtensionFromApi(extName, structureNameList, commandNameList):
@@ -1304,6 +1521,9 @@ class API:
                 continue
             if ext.name in additionalExtensionNames:
                 logging.error("Extension %s already defined as JSON!" % (ext.name))
+            if ext.promotedto is not None and 'VK_VERSION' not in ext.promotedto:
+                logging.error("Extension %s is promoted to %s" % (ext.name, ext.promotedto))
+                exit(-1)
             mandatoryFeatures = {}
             core = ""
             mandatory_variants = ext.supported
@@ -1314,21 +1534,22 @@ class API:
                 core = f'0.{major}.{minor}.0'
                 if "vulkan" in mandatory_variants and major == 1 and minor <= 2:
                     mandatory_variants = []
+            else:
+                if "vulkansc" not in mandatory_variants:
+                    mandatory_variants = []
             for requirement in ext.requirementsList:
                 featureStructName = None
                 featureStruct = None
                 for feature in requirement.features:
                     newFeatureStructName = feature.struct
-                    for ct in self.compositeTypes:
-                        if newFeatureStructName in ct.aliasList:
-                            newFeatureStructName = ct.name
                     if newFeatureStructName not in mandatoryFeatures.keys():
                         mandatoryFeatures[newFeatureStructName] = []
                     if newFeatureStructName != featureStructName:
                         featureStructName = newFeatureStructName
                         featureStruct = {'features': [], 'requirements': [], 'mandatory_variant': []}
                         mandatoryFeatures[featureStructName].append(featureStruct)
-                    featureStruct['features'].append(feature.name)
+                    feature_names = feature.name.split(',')
+                    featureStruct['features'].extend(feature_names)
                     featureStruct['requirements'].append(ext.name)
                     if requirement.depends is not None:
                         featureStruct['requirements'].append(requirement.depends)
@@ -1421,6 +1642,15 @@ class API:
 
         self.additionalExtensionData = sorted(self.additionalExtensionData, key=lambda e: e[0])
 
+        for ext in self.extensions:
+            if not ext.name.startswith("VK_KHR"):
+                continue
+            jsonFilePath = os.path.join(SCRIPTS_SRC_DIR, "extensions", ext.name + ".json")
+            if os.path.isfile(jsonFilePath):
+                logging.info("Extension %s has json %s", ext.name, jsonFilePath)
+            else:
+                logging.error("Extension %s is missing JSON!", ext.name)
+
 def prefixName (prefix, name):
     name = re.sub(r'([a-z0-9])([A-Z])', r'\1_\2', name[2:])
     name = re.sub(r'([a-zA-Z])([0-9])', r'\1_\2', name)
@@ -1470,6 +1700,13 @@ def writeHandleType (api, filename):
         yield ""
 
     writeInlFile(filename, INL_HEADER, genHandlesBlock())
+
+def stripExtensionSuffix(extensionName):
+    for p in EXTENSION_POSTFIXES:
+        if extensionName.endswith(p):
+            s = extensionName[:-len(p)]
+            return s, '_'+p
+    return extensionName, None
 
 def getEnumValuePrefixAndPostfix (enum):
     prefix = enum.name[0]
@@ -2479,6 +2716,10 @@ def writeTypeUtil (api, filename):
             "StdVideoEncodeAV1OperatingPointInfoFlags",
             "StdVideoEncodeAV1PictureInfoFlags",
             "StdVideoEncodeAV1ReferenceInfoFlags",
+            "StdVideoVP9ColorConfigFlags",
+            "StdVideoVP9LoopFilterFlags",
+            "StdVideoVP9SegmentationFlags",
+            "StdVideoDecodeVP9PictureInfoFlags",
             "VkClusterAccelerationStructureGeometryIndexAndGeometryFlagsNV",
             "VkClusterAccelerationStructureBuildTriangleClusterInfoNV",
         ])
@@ -2560,12 +2801,13 @@ def writeSupportedExtensions(api, filename):
         for version in map:
             result.append("    if (coreVersion >= " + str(version) + ")")
             result.append("    {")
-            for extension in map[version]:
+            for extension in sorted(map[version], key=lambda e: e.name):
                 result.append('        dst.push_back("' + extension.name + '");')
             result.append("    }")
 
         if not map:
             result.append("    DE_UNREF(coreVersion);")
+            result.append("    DE_UNREF(dst);")
 
         return result
 
@@ -2604,7 +2846,7 @@ def writeSupportedExtensions(api, filename):
                 logging.debug("Skipping unregistered extension " + extensionName)
                 continue
             # save array containing 'device' or 'instance' string followed by the optional vulkan version in which this extension is core;
-            # note that register_extension section is also required for partialy promoted extensions like VK_EXT_extended_dynamic_state2
+            # note that register_extension section is also required for partially promoted extensions like VK_EXT_extended_dynamic_state2
             # but those extensions should not fill 'core' tag
             match = re.match(r"(\d).(\d).(\d).(\d)", data['register_extension']['core'])
             if match is None:
@@ -2692,7 +2934,7 @@ def writeExtensionFunctions (api, filename):
                 condition = None
                 if requirement.depends is not None:
                     try:
-                        condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")')
+                        condition = transformDependsToCondition(requirement.depends, api, 'checkVersion(%s, %s, apiVersion)', 'extensionIsSupported(%s, "%s")', ext.name)
                     except Exception as e:
                         if api.apiName != "vulkansc":
                             raise e
@@ -3204,112 +3446,6 @@ def constructPromotionCheckerFunString(defs, FeatureOrProperty):
              "\t\treturn {};\n"
              "\treturn it->second;\n}")
 
-def writeFeaturesVariant(dfDefs, filename):
-    types = []
-
-    extendVariant = \
-        "template<class Variant, class... Types> struct extend_variant;\n" \
-        "template<class... X, class... Types>\n" \
-        "    struct extend_variant<std::variant<X...>, Types...> {\n" \
-        "        typedef std::variant<X..., Types...> type;\n" \
-        "};"
-
-    variantIndex = \
-        "template <class X, class Variant> struct variant_index;\n" \
-        "template <class X, class... Types> struct variant_index<X, std::variant<X, Types...>>\n" \
-        "    : std::integral_constant<std::size_t, 0> { };\n" \
-        "template <class X, class Y, class... Types> struct variant_index<X, std::variant<Y, Types...>>\n" \
-        "    : std::integral_constant<std::size_t, 1 + variant_index<X, std::variant<Types...>>::value> { };\n" \
-        "template <class X> struct variant_index<X, std::variant<>> : std::integral_constant<std::size_t, 0> { };\n" \
-        "template <typename X, typename Variant>\n" \
-        "    constexpr std::size_t variant_index_v = variant_index<X, Variant>::value;"
-
-    feature2sType = []
-    f2st0 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceFeatures> = VK_STRUCTURE_TYPE_MAX_ENUM;"
-    f2st1 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceFeatures2> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n" \
-            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan11Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES;"
-    f2st2 = "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan12Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES;"
-    f2st3 = "#if defined(VK_API_VERSION_1_3) && !defined(CTS_USES_VULKANSC)\n" \
-            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan13Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES;\n" \
-            "#endif"
-    f2st4 = "#if defined(VK_API_VERSION_1_4) && !defined(CTS_USES_VULKANSC)\n" \
-            "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkan14Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES;\n" \
-            "#endif"
-    f2stsc10 = "#ifdef CTS_USES_VULKANSC\n" \
-               "template <> inline constexpr VkStructureType feature2sType<VkFaultCallbackInfo> = VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO;\n" \
-               "template <> inline constexpr VkStructureType feature2sType<VkPhysicalDeviceVulkanSC10Features> = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES;\n" \
-               "template <> inline constexpr VkStructureType feature2sType<VkDeviceObjectReservationCreateInfo> = VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO;\n" \
-               "#endif"
-
-    feature2sType.append("template <class> VkStructureType feature2sType;")
-    feature2sType.append(f2st0)
-    feature2sType.append(f2st1)
-    feature2sType.append(f2st2)
-    feature2sType.append(f2st3)
-    feature2sType.append(f2st4)
-    feature2sType.append(f2stsc10)
-
-    getFeatureSType = \
-        "template <class X> VkStructureType getFeatureSType() {\n" \
-        "if constexpr (variant_index_v<X, ImplementedFeaturesVariant> < std::variant_size_v<ImplementedFeaturesVariant>)\n" \
-        "    return vk::makeFeatureDesc<X>().sType;\n" \
-        "else\n" \
-        "    return feature2sType<X>;\n" \
-        "}"
-
-    hasPnextOfVoidPtr = \
-        "template<class, class = void>\n" \
-        "    struct hasPnextOfVoidPtr : std::false_type {};\n" \
-        "template<class X>\n" \
-        "    struct hasPnextOfVoidPtr<X, std::void_t<decltype(std::declval<X>().pNext)>>\n" \
-        "        : std::integral_constant<bool,\n" \
-        "              std::is_same<decltype(std::declval<X>().pNext), void*>::value ||\n" \
-        "              std::is_same<decltype(std::declval<X>().pNext), const void*>::value> {};"
-
-    implementedVariantBegin = "typedef std::variant<"
-    for idx, (sType, sVerSuffix, sExtSuffix, extStruct, _, extNameDef, specVersionDef) in enumerate(dfDefs):
-        types.append("    {0}{1}".format((", " if idx else ""), extStruct))
-    implementedVariantEnd = "> ImplementedFeaturesVariant;"
-    v10 = "    VkPhysicalDeviceFeatures"
-    v11 = "#ifdef VK_API_VERSION_1_1\n" \
-          "    , VkPhysicalDeviceFeatures2\n" \
-          "    , VkPhysicalDeviceVulkan11Features\n" \
-          "#endif"
-    v12 = "#ifdef VK_API_VERSION_1_2\n" \
-          "    , VkPhysicalDeviceVulkan12Features\n" \
-          "#endif"
-    v13 = "#if defined(VK_API_VERSION_1_3) && !defined(CTS_USES_VULKANSC)\n" \
-          "    , VkPhysicalDeviceVulkan13Features\n" \
-          "#endif"
-    v14 = "#if defined(VK_API_VERSION_1_4) && !defined(CTS_USES_VULKANSC)\n" \
-          "    , VkPhysicalDeviceVulkan14Features\n" \
-          "#endif"
-    vsc10 = "#ifdef CTS_USES_VULKANSC\n" \
-            "    , VkFaultCallbackInfo\n" \
-            "    , VkPhysicalDeviceVulkanSC10Features\n" \
-            "    , VkDeviceObjectReservationCreateInfo\n" \
-            "#endif"
-    fullVariant = []
-    fullVariant.append("typedef typename extend_variant<ImplementedFeaturesVariant,")
-    fullVariant.append(v10)
-    fullVariant.append(v11)
-    fullVariant.append(v12)
-    fullVariant.append(v13)
-    fullVariant.append(v14)
-    fullVariant.append(vsc10)
-    fullVariant.append(">::type FullFeaturesVariant;")
-    stream = []
-    stream.append(extendVariant)
-    stream.append(variantIndex)
-    stream.append(implementedVariantBegin)
-    stream.extend(types)
-    stream.append(implementedVariantEnd)
-    stream.extend(fullVariant)
-    stream.extend(feature2sType)
-    stream.append(getFeatureSType)
-    stream.append(hasPnextOfVoidPtr)
-    writeInlFile(filename, INL_HEADER, stream)
-
 def writeDeviceFeatures(api, dfDefs, filename):
     # find VkPhysicalDeviceVulkan[1-9][0-9]Features blob structurs
     # and construct dictionary with all of their attributes
@@ -3736,6 +3872,35 @@ def writeDevicePropertiesContextDefs(dfDefs, filename):
     pattern = "const vk::{0}&\tContext::get{1}\t(void) const {{ return m_device->get{1}();\t}}"
     genericDeviceFeaturesOrPropertiesWriter(dfDefs, pattern, filename)
 
+
+def findMandatoryFeaturesDuplicatedStructs(apiStructs):
+    # Sanitize
+    # apiStructs: {structName: [ext1, ext2, ...]}
+    groups = collections.defaultdict(list)
+
+    for struct, exts in apiStructs:          # <- no .items()
+        key = tuple(sorted(set(exts)))       # normalize
+        groups[key].append(struct)
+
+    dupes = {k: v for k, v in groups.items() if len(v) > 1}
+
+    for exts, structs in dupes.items():
+        logging.error("Structs %s share extensions %s",
+                      ", ".join(structs), ", ".join(exts))
+
+
+def findStructNameList(structName, api):
+    for compType in api.compositeTypes:
+        nameList = [compType.name] + compType.aliasList
+        if structName in nameList:
+            return nameList
+    return []
+
+
+def getVarNameFromType(s):
+    return s[2].lower() + s[3:]
+
+
 def writeMandatoryFeatures(api, filename):
 
     def structInAPI(name):
@@ -3746,12 +3911,28 @@ def writeMandatoryFeatures(api, filename):
                 if alias == name:
                     return True
         return False
+
+    def getMainAliasForStruct(name):
+        for ct in api.compositeTypes:
+            if name in ct.aliasList:
+                return ct.name
+        return name
+
+    def isSupportedByCurrentApi(variants):
+        if len(variants) == 0:
+            return True
+        for variant in variants:
+            if variant.lower() == api.apiName.lower():
+                return True
+        return False
+
     stream = []
 
     dictStructs = {}
     dictData = []
     extData = []
     usedFeatureStructs = {}
+    debugStruct = "sicalDeviceMultiviewFeat"
     for _, data in api.additionalExtensionData:
         if 'mandatory_features' in data.keys():
             # sort to have same results for py2 and py3
@@ -3774,21 +3955,25 @@ def writeMandatoryFeatures(api, filename):
                     if structure == 'VkPhysicalDeviceFeatures':
                         continue
 
-                    # if structure is not in dict construct name of variable and add is as a first item
-                    if (structure not in dictStructs):
-                        dictStructs[structure] = ([structure[2:3].lower() + structure[3:]], mandatory_variant)
-                    # add first requirement if it is unique
-                    if requirements and (requirements[0] not in dictStructs[structure][0]):
-                        dictStructs[structure][0].append(requirements[0])
+                    nameList = findStructNameList(structure, api)
+                    if len(nameList) == 0:
+                        continue
+                    referenceStructName = nameList[0]
+                    usedFeatureStructs[referenceStructName] = set()
 
-                    usedFeatureStructs[structure] = []
+                    # if structure is not in dict construct name of variable and add is as a first item
+                    if (referenceStructName not in dictStructs):
+                        dictStructs[referenceStructName] = ([referenceStructName[2:3].lower() + referenceStructName[3:]], mandatory_variant)
+                    # add first requirement if it is unique
+                    if requirements and (requirements[0] not in dictStructs[referenceStructName][0]):
+                        dictStructs[referenceStructName][0].append(requirements[0])
 
                     if requirements:
                         for req in requirements:
                             if '.' in req:
                                 req = req.split('.')[0]
                                 reqStruct = 'Vk' + req[0].upper() + req[1:]
-                                usedFeatureStructs[reqStruct] = []
+                                usedFeatureStructs[reqStruct] = set()
 
         if 'mandatory_extensions' in data:
             mandatoryExtensions = []
@@ -3810,7 +3995,9 @@ def writeMandatoryFeatures(api, filename):
                     if '.' in req:
                         req = req.split('.')[0]
                         reqStruct = 'Vk' + req[0].upper() + req[1:]
-                        usedFeatureStructs[reqStruct] = []
+                        if stripExtensionSuffix(reqStruct) in usedFeatureStructs:
+                            logging.error("")
+                        usedFeatureStructs[reqStruct] = set()
 
     stream.extend(['bool canUseFeaturesStruct (const vector<VkExtensionProperties>& deviceExtensions, uint32_t usedApiVersion,',
                    '\t\t\t\tconst char* extension, const char* extensionPromotedFrom = nullptr)',
@@ -3843,42 +4030,42 @@ def writeMandatoryFeatures(api, filename):
         pass
 
     for usedStruct in usedFeatureStructs:
-        for compType in api.compositeTypes:
-            nameList = [compType.name] + compType.aliasList
-            try:
-                if usedStruct in nameList:
-                    # Found the official name list for the struct.
-                    for extension in api.extensions:
-                        for requirement in extension.requirementsList:
-                            for extensionStructure in requirement.newTypes:
-                                if extensionStructure.name in nameList:
-                                    # Found extension for the struct.
-                                    ufs = usedFeatureStructs[usedStruct]
-                                    if extension.promotedto and 'VK_VERSION' not in extension.promotedto:
-                                        ufs.append(extension.promotedto)
-                                    ufs.append(extension.name)
-                                    if extension.promotedFrom:
-                                        ufs.append(extension.promotedFrom[0])
-                                    raise StructFoundContinue
-            except StructFoundContinue:
-                continue
+        nameList = findStructNameList(usedStruct, api)
+        try:
+            if usedStruct in nameList:
+                # Found the official name list for the struct.
+                for extension in api.extensions:
+                    for requirement in extension.requirementsList:
+                        for extensionStructure in requirement.newTypes:
+                            if extensionStructure.name in nameList:
+                                # Found extension for the struct.
+                                ufs = usedFeatureStructs[usedStruct]
+                                if extension.promotedto and 'VK_VERSION' not in extension.promotedto:
+                                    ufs.add(extension.promotedto)
+                                ufs.add(extension.name)
+                                if extension.promotedFrom:
+                                    ufs.add(extension.promotedFrom[0])
+                                raise StructFoundContinue
+        except StructFoundContinue:
+            continue
 
-    structList = sorted(usedFeatureStructs.items(), key=lambda tup: tup[0]) # sort to have same results for py2 and py3
-    apiStructs = list( filter(lambda x : structInAPI(x[0]), structList)) # remove items not defined in current API
-    varVariants = {} # Some variables are going to be declared only for specific variants.
+    structList = sorted(usedFeatureStructs.items(), key=lambda tup: tup[0])  # sort to have same results for py2 and py3
+    apiStructs = list(filter(lambda x: structInAPI(x[0]), structList))  # remove items not defined in current API
+
+    findMandatoryFeaturesDuplicatedStructs(apiStructs)
 
     for structName, extensions in apiStructs:
-        # The variable name will be the structure name without the Vk prefix and starting in lowercase.
-        newVar = structName[2].lower() + structName[3:]
-
-        metaCondition = ''
+        extensions = sorted(extensions)
+        mandatoryVariantList = []
         if structName in dictStructs:
             mandatoryVariantList = dictStructs[structName][1]
-            if len(mandatoryVariantList) > 0:
-                mandatoryVariant = mandatoryVariantList[0]
-                metaCondition = 'defined(CTS_USES_' + mandatoryVariant.upper() + ')'
-                stream.append('#if ' + metaCondition)
-                varVariants[newVar] = mandatoryVariant
+        nameList = findStructNameList(structName, api)
+        stream.append('\t// ' + ','.join(nameList) + ' for ext [' + ', '.join(extensions) + '] in APIs [' + ', '.join(mandatoryVariantList) + ']\n')
+        newStructName = nameList[0]
+        newVar = getVarNameFromType(newStructName)
+
+        if not isSupportedByCurrentApi(mandatoryVariantList):
+            continue
 
         stream.extend(['\tvk::' + structName + ' ' + newVar + ';',
                     '\tdeMemset(&' + newVar + ', 0, sizeof(' + newVar + '));',
@@ -3908,9 +4095,6 @@ def writeMandatoryFeatures(api, filename):
                        '\t\tnextPtr  = &' + newVar + '.pNext;',
                        '\t}'])
 
-        if len(metaCondition) > 0:
-            stream.append('#endif // ' + metaCondition)
-
         stream.append('')
 
     stream.extend(['\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);',
@@ -3918,17 +4102,19 @@ def writeMandatoryFeatures(api, filename):
                    ''])
 
     for v in dictData:
+        stream.append('\t// ' + v[0] + ' in APIs [' + ', '.join(v[3]) + ']')
         if not structInAPI(v[0]): # remove items not defined in current API ( important for Vulkan SC )
+            continue
+        if not isSupportedByCurrentApi(v[3]):
             continue
         structType = v[0]
         structName = 'coreFeatures.features'
-        metaCondition = ''
-        if len(v) == 4 and v[3] != '':
-            # for x in v[3].split('_'):
-            metaCondition = metaCondition + ' || defined(CTS_USES_' + v[3][0].upper() + ')'
-            stream.extend(['#if ' + metaCondition[4:]])
         if v[0] != 'VkPhysicalDeviceFeatures' :
-            structName = dictStructs[v[0]][0][0]
+            structName = v[0] #dictStructs[v[0]][0][0]
+            nameList = findStructNameList(structName, api)
+            #structName = getMainAliasForStruct(structName)
+            structName = nameList[0]
+            structName = getVarNameFromType(structName)
         if len(v[2]) > 0 :
             condition = 'if ( '
             for i, req in enumerate(v[2]) :
@@ -3944,12 +4130,7 @@ def writeMandatoryFeatures(api, filename):
             stream.append('\t' + condition)
         stream.append('\t{')
         # Don't need to support an AND case since that would just be another line in the .txt
-        reqMetaCondition = ''
         if len(v[1]) == 1:
-            # If the req struct type has a mandatory variant we need to add an #ifdef block, unless we're already inside one.
-            if len(metaCondition) == 0 and structName in varVariants:
-                reqMetaCondition = 'defined(CTS_USES_' + varVariants[structName].upper() + ')'
-                stream.append('#if ' + reqMetaCondition)
             stream.append('\t\tif ( ' + structName + '.' + v[1][0] + ' == VK_FALSE )')
         else:
             condition = 'if ( '
@@ -3971,20 +4152,16 @@ def writeMandatoryFeatures(api, filename):
                        '\t\t\tlog << tcu::TestLog::Message << "Mandatory feature ' + featureSet + ' not supported" << tcu::TestLog::EndMessage;',
                        '\t\t\tresult = false;',
                        '\t\t}'])
-        if reqMetaCondition != '':
-            stream.append('#endif // ' + reqMetaCondition)
         stream.append('\t}')
-        if metaCondition != '':
-            stream.extend(['#endif // ' + metaCondition[4:],
-                          ''])
-        else:
-            stream.extend([''])
+        stream.extend([''])
 
+    last_extension = None
     for extension, requirements, mandatory_variant in extData:
-        metaCondition = ''
-        if mandatory_variant != '':
-            metaCondition = metaCondition + ' || defined(CTS_USES_' + mandatory_variant[0].upper() + ')'
-            stream.extend(['#if ' + metaCondition[4:]])
+        if last_extension != extension:
+            stream.append('\t// ' + extension + '\n')
+            last_extension = extension
+        if not isSupportedByCurrentApi(mandatory_variant):
+            continue
         if len(requirements) > 0 :
             condition = 'if ( '
             for i, req in enumerate(requirements) :
@@ -4005,11 +4182,7 @@ def writeMandatoryFeatures(api, filename):
                        '\t\t\tresult = false;',
                        '\t\t}',
                        '\t}'])
-        if metaCondition != '':
-            stream.extend(['#endif // ' + metaCondition[4:],
-                          ''])
-        else:
-            stream.append('')
+        stream.append('')
 
     stream.append('\treturn result;')
     stream.append('}\n')
@@ -4042,7 +4215,7 @@ def writeExtensionList(api, filename, extensionType):
                         except KeyError:
                             mandatory_variant = ''
                         # VKSC only
-                        if 'vulkansc' in mandatory_variant:
+                        if 'vulkansc' in mandatory_variant and len(mandatory_variant) == 1:
                             is_sc_only = True
         if is_sc_only:
             continue
@@ -4059,58 +4232,6 @@ def writeExtensionList(api, filename, extensionType):
     stream.append('};\n')
     writeInlFile(filename, INL_HEADER, stream)
 
-def transformDependsToCondition(depends, api, checkVersionString, checkExtensionString):
-    depList = re.split(r'(\W+)', depends)
-    for idx, depPart in enumerate(depList):
-        if ',' in depPart:
-            depList[idx] = depList[idx].replace(',', ' || ')
-        elif '+' in depPart:
-            depList[idx] = depList[idx].replace('+', ' && ')
-        elif 'VK_' in depPart:
-            if 'VK_VERSION' in depPart:
-                if idx > 0 and ' || ' in depList[idx-1]:
-                    # some vk.xml entries include "promoted to" version preceded by logical OR operator in the extension "depends" attribute
-                    # script don't rely on this optional information and will find "promoted to" versions for all dependencies of all extensions in the below code
-                    # accordingly the one from vk.xml is ignored to avoid redundant isCompatibile() checks
-                    depList[idx-1] = depList[idx-1].replace(' || ', '')
-                    depList[idx] = ''
-                    continue
-                # when dependency is vulkan version then replace it with proper condition
-                depList[idx] = checkVersionString % (depPart[-3], depPart[-1])
-            else:
-                # when dependency is extension check if it was promoted
-                extNotFound = True
-                for dExt in api.extensions:
-                    if depPart == dExt.name:
-                        depExtVector = 'vDEP' if dExt.type == 'device' else 'vIEP'
-                        isSupportedCheck = checkExtensionString % (depExtVector, depPart)
-                        if dExt.promotedto is not None:
-                            p = dExt.promotedto
-                            # check if dependency was promoted to vulkan version or other extension
-                            if 'VK_VERSION' in p:
-                                depList[idx] = f'({checkVersionString % (p[-3], p[-1])} || {isSupportedCheck})'
-                            else:
-                                depList[idx] = f'({checkExtensionString % (depExtVector, depPart)} || {isSupportedCheck})'
-                        else:
-                            depList[idx] = isSupportedCheck
-                        extNotFound = False
-                        break
-                # for SC when extension was not found try checking also not supported
-                # extensions and see if this extension is part of core
-                if extNotFound and api.apiName == "vulkansc":
-                    for dExt in api.notSupportedExtensions:
-                        if depPart == dExt.name:
-                            p = dExt.promotedto
-                            if p is None:
-                                break
-                            if int(p[-1]) > 2:
-                                break
-                            extNotFound = False
-                            depList[idx] = "true"
-                if extNotFound:
-                    assert False, f"{depPart} from dependencies ({depends}) not found"
-    return ''.join(depList)
-
 def writeApiExtensionDependencyInfo(api, filename):
 
     def genHelperFunctions():
@@ -4118,7 +4239,7 @@ def writeApiExtensionDependencyInfo(api, filename):
         yield 'using ExtPropVect = std::vector<vk::VkExtensionProperties>;'
         yield 'using IsSupportedFun = bool (*)(const tcu::UVec2&, const ExtPropVect&, const ExtPropVect&);'
         yield 'using DependencyCheckVect = std::vector<std::pair<const char*, IsSupportedFun> >;\n'
-        yield 'bool isCompatibile(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
+        yield 'bool isCompatible(uint32_t major, uint32_t minor, const tcu::UVec2& testedApiVersion)'
         yield '{'
         yield '\t// return true when tested api version is greater'
         yield '\t// or equal to version represented by two uints'
@@ -4154,7 +4275,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             # check if extension was promoted; for SC we need to check vulkan version as sc10 is based on vk12
             if ext.promotedto is not None and 'VK_VERSION' in ext.promotedto:
                 p = ext.promotedto
-                yield f'\tif (isCompatibile({p[-3]}, {p[-1]}, v))'
+                yield f'\tif (isCompatible({p[-3]}, {p[-1]}, v))'
                 yield '\t\treturn true;\n'
             else:
                 yield '\tDE_UNREF(v);'
@@ -4164,7 +4285,7 @@ def writeApiExtensionDependencyInfo(api, filename):
             yield f'\n\tif (!isSupported({extVector}, "{ext.name}"))'
             yield '\t\treturn true;\n'
             # replace dependent extensions/versions with proper conditions
-            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatibile(%s, %s, v)', 'isSupported(%s, "%s")')
+            finalCondition = transformDependsToCondition(ext.depends, api, 'isCompatible(%s, %s, v)', 'isSupported(%s, "%s")', ext.name)
             yield f'\t// depends attribute in xml: {ext.depends}'
             yield f'\treturn {finalCondition};'
             yield '}\n'
@@ -4714,7 +4835,6 @@ if __name__ == "__main__":
 
     dfd = generateDeviceFeaturesOrPropertiesDefs(api, 'Features')
     writeDeviceFeatures                         (api, dfd, os.path.join(outputPath, "vkDeviceFeatures.inl"))
-    writeFeaturesVariant                        (dfd, os.path.join(outputPath, "vkDeviceFeaturesVariantDecl.inl"))
     writeDeviceFeaturesDefaultDeviceDefs        (dfd, os.path.join(outputPath, "vkDeviceFeaturesForDefaultDeviceDefs.inl"))
     writeDeviceFeaturesContextDecl              (dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDecl.inl"))
     writeDeviceFeaturesContextDefs              (dfd, os.path.join(outputPath, "vkDeviceFeaturesForContextDefs.inl"))

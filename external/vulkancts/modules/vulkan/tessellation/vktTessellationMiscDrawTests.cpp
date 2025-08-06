@@ -25,6 +25,7 @@
 #include "vktTessellationMiscDrawTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTessellationUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuImageIO.hpp"
@@ -1102,7 +1103,7 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
     const tcu::Vec4 thresholdVec(threshold, threshold, threshold, 0.0f);
 
     if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, thresholdVec,
-                                    tcu::COMPARE_LOG_EVERYTHING))
+                                    tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Color result does not match reference image -- check log for details");
 
     return tcu::TestStatus::pass("Pass");
@@ -1320,7 +1321,7 @@ void TessInstancedDrawTestCase::initPrograms(vk::SourceCollections &programColle
     if (m_params.primitiveType == TESSPRIMITIVETYPE_TRIANGLES)
     {
         tessEvel << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * gl_in[1].gl_Position "
-                 << "+ u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
+                 << "+ u * (1 - v) * gl_in[2].gl_Position;\n";
     }
     else // m_params.primitiveType == TESSPRIMITIVETYPE_QUADS
     {
@@ -2078,6 +2079,17 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
                     }
             }
         }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        const auto testName = std::string("tess_factor_barrier_bug");
+        const auto dataDir  = "tessellation";
+        const std::vector<std::string> requirements{"Features.tessellationShader",
+                                                    "Features.vertexPipelineStoresAndAtomics"};
+        group->addChild(
+            cts_amber::createAmberTestCase(testCtx, testName.c_str(), dataDir, testName + ".amber", requirements));
+    }
+#endif // CTS_USES_VULKANSC
 
     return group.release();
 }

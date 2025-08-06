@@ -75,6 +75,7 @@ std::ostream& operator<< (std::ostream& s, NvSciSyncObj					v) { return s << tcu
 std::ostream& operator<< (std::ostream& s, NvSciSyncFence				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciBufAttrList				v) { return s << tcu::toHex(v.internal); }
 std::ostream& operator<< (std::ostream& s, NvSciSyncAttrList			v) { return s << tcu::toHex(v.internal); }
+std::ostream& operator<< (std::ostream& s, OHNativeWindow				v) { return s << tcu::toHex(v.internal); }
 }
 
 const char* getAttachmentLoadOpName (VkAttachmentLoadOp value)
@@ -207,6 +208,15 @@ tcu::Format::Bitfield<32> getFramebufferCreateFlagsStr (VkFramebufferCreateFlags
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT,	"VK_FRAMEBUFFER_CREATE_IMAGELESS_BIT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2268,7 +2278,7 @@ tcu::Format::Bitfield<32> getHostImageCopyFlagsStr (VkHostImageCopyFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
 	{
-		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY,	"VK_HOST_IMAGE_COPY_MEMCPY"),
+		tcu::Format::BitDesc(VK_HOST_IMAGE_COPY_MEMCPY_BIT,	"VK_HOST_IMAGE_COPY_MEMCPY_BIT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -2456,6 +2466,46 @@ tcu::Format::Bitfield<32> getSurfaceTransformFlagsKHRStr (VkSurfaceTransformFlag
 		tcu::Format::BitDesc(VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR,						"VK_SURFACE_TRANSFORM_INHERIT_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+const char* getDebugReportObjectTypeEXTName (VkDebugReportObjectTypeEXT value)
+{
+	switch (value)
+	{
+		case VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_UNKNOWN_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_INSTANCE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_PHYSICAL_DEVICE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT:						return "VK_DEBUG_REPORT_OBJECT_TYPE_QUEUE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_SEMAPHORE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_BUFFER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT:						return "VK_DEBUG_REPORT_OBJECT_TYPE_FENCE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_DEVICE_MEMORY_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT:						return "VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_EVENT_EXT:						return "VK_DEBUG_REPORT_OBJECT_TYPE_EVENT_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_QUERY_POOL_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_QUERY_POOL_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_VIEW_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_BUFFER_VIEW_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_IMAGE_VIEW_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_SHADER_MODULE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_CACHE_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_CACHE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_LAYOUT_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_RENDER_PASS_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_PIPELINE_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_LAYOUT_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT:					return "VK_DEBUG_REPORT_OBJECT_TYPE_SAMPLER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_POOL_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_DESCRIPTOR_SET_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_FRAMEBUFFER_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_COMMAND_POOL_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_SURFACE_KHR_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_SWAPCHAIN_KHR_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT_EXT:	return "VK_DEBUG_REPORT_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_KHR_EXT:				return "VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_KHR_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_MODE_KHR_EXT:			return "VK_DEBUG_REPORT_OBJECT_TYPE_DISPLAY_MODE_KHR_EXT";
+		case VK_DEBUG_REPORT_OBJECT_TYPE_VALIDATION_CACHE_EXT_EXT:		return "VK_DEBUG_REPORT_OBJECT_TYPE_VALIDATION_CACHE_EXT_EXT";
+		default:														return nullptr;
+	}
 }
 
 const char* getValidationFeatureEnableEXTName (VkValidationFeatureEnableEXT value)
@@ -2883,11 +2933,6 @@ const char* getDriverIdName (VkDriverId value)
 	}
 }
 
-tcu::Format::Bitfield<32> getQueryPoolCreateFlagsStr (VkQueryPoolCreateFlags value)
-{
-	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
-}
-
 tcu::Format::Bitfield<32> getPipelineDepthStencilStateCreateFlagsStr (VkPipelineDepthStencilStateCreateFlags value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
@@ -3066,6 +3111,31 @@ tcu::Format::Bitfield<32> getIndirectCommandsInputModeFlagsEXTStr (VkIndirectCom
 tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLoadingFlagsLUNARG value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorCreateFlagsARMStr (VkTensorCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorUsageFlagsARMStr (VkTensorUsageFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getTensorViewCreateFlagsARMStr (VkTensorViewCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getDataGraphPipelineSessionCreateFlagsARMStr (VkDataGraphPipelineSessionCreateFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<64> getDataGraphPipelineDispatchFlagsARMStr (VkDataGraphPipelineDispatchFlagsARM value)
+{
+	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)
@@ -3308,12 +3378,12 @@ tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT v
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getPresentScalingFlagsEXTStr (VkPresentScalingFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentScalingFlagsKHRStr (VkPresentScalingFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
-tcu::Format::Bitfield<32> getPresentGravityFlagsEXTStr (VkPresentGravityFlagsEXT value)
+tcu::Format::Bitfield<32> getPresentGravityFlagsKHRStr (VkPresentGravityFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
@@ -3331,6 +3401,11 @@ tcu::Format::Bitfield<32> getTileShadingRenderPassFlagsQCOMStr (VkTileShadingRen
 tcu::Format::Bitfield<64> getPhysicalDeviceSchedulingControlsFlagsARMStr (VkPhysicalDeviceSchedulingControlsFlagsARM value)
 {
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getSurfaceCreateFlagsOHOSStr (VkSurfaceCreateFlagsOHOS value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getVideoCodecOperationFlagsKHRStr (VkVideoCodecOperationFlagsKHR value)
@@ -3419,6 +3494,11 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlFlagsKHRStr (VkVideoEncodeRat
 }
 
 tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncodeRateControlModeFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeIntraRefreshModeFlagsKHRStr (VkVideoEncodeIntraRefreshModeFlagsKHR value)
 {
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }

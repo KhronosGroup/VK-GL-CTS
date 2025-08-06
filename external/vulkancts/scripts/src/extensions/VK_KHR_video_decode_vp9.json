@@ -4,13 +4,13 @@
         "core": ""
     },
     "mandatory_features": {
-        "VkPhysicalDeviceDepthClampZeroOneFeaturesEXT": [
+        "VkPhysicalDeviceVideoDecodeVP9FeaturesKHR": [
             {
                 "features": [
-                    "depthClampZeroOne"
+                    "videoDecodeVP9"
                 ],
                 "requirements": [
-                    "VK_EXT_depth_clamp_zero_one"
+                    "VK_KHR_video_decode_vp9"
                 ]
             }
         ]

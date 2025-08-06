@@ -376,6 +376,7 @@ IVec2 RandomizedRenderGrid::getOrigin(void) const
 
     DE_ASSERT(currentOrigin.x() >= 0 && (currentOrigin.x() + m_cellSize.x()) <= m_targetSize.x());
     DE_ASSERT(currentOrigin.y() >= 0 && (currentOrigin.y() + m_cellSize.y()) <= m_targetSize.y());
+    DE_UNREF(m_targetSize); // For release builds.
 
     return currentOrigin;
 }
@@ -1117,6 +1118,16 @@ void copyImageData(vector<ArrayBuffer<uint8_t>> &dstImageData, const ImageInfo &
 
     DE_ASSERT(srcTexelBlockSize == dstTexelBlockSize);
     DE_UNREF(dstTexelBlockSize);
+
+    const IVec3 srcSize = getLevelSize(srcImageInfo.getTarget(), srcImageInfo.getSize(), srcLevel);
+    const IVec3 dstSize = getLevelSize(dstImageInfo.getTarget(), dstImageInfo.getSize(), dstLevel);
+    if (copySize == srcSize && copySize == dstSize && srcLevelData.size() == dstLevelData.size() &&
+        dstPos == IVec3(0, 0, 0) && srcPos == IVec3(0, 0, 0))
+    {
+        // Entire layer copy case
+        deMemcpy(dstLevelData.getPtr(), srcLevelData.getPtr(), srcLevelData.size());
+        return;
+    }
 
     DE_ASSERT((copySize.x() % srcTexelBlockPixelSize.x()) == 0);
     DE_ASSERT((copySize.y() % srcTexelBlockPixelSize.y()) == 0);
@@ -2174,6 +2185,14 @@ void generateCopies(vector<Copy> &copies, const ImageInfo &srcInfo, const ImageI
         const int copyBlockWidth  = de::max((2 * (maxCopyBlockSize.x() / 4)) - 1, 1);
         const int copyBlockHeight = de::max((2 * (maxCopyBlockSize.y() / 4)) - 1, 1);
         const int copyBlockDepth  = de::max((2 * (maxCopyBlockSize.z() / 4)) - 1, 1);
+
+        // Copy entire image level
+        if (!srcIsCube && !dstIsCube && srcSize == dstSize)
+        {
+            const IVec3 srcPos(0, 0, 0);
+            const IVec3 dstPos(0, 0, 0);
+            copies.push_back(Copy(srcPos, srcLevel, dstPos, dstLevel, srcSize, dstSize));
+        }
 
         // Copy NPOT block to (0,0,0) from other corner on src
         {

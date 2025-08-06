@@ -84,6 +84,9 @@ constexpr VkComponentMapping ComponentMappingIdentity = {
     VK_COMPONENT_SWIZZLE_IDENTITY,
 };
 
+constexpr VkFormat k2PlaneFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+constexpr VkFormat k3PlaneFormat = VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM;
+
 template <typename T>
 inline uint32_t u32(const T &value)
 {
@@ -193,7 +196,8 @@ enum class TestVariant : uint32_t
     ROBUST_NULL_DESCRIPTOR,      // robustness2 with null descriptor
     CAPTURE_REPLAY,              // capture and replay capability with descriptor buffers
     MUTABLE_DESCRIPTOR_TYPE,     // use VK_EXT_mutable_descriptor_type
-    YCBCR_SAMPLER,               // use VK_KHR_sampler_ycbcr_conversion
+    YCBCR_SAMPLER_2PLANES,       // use VK_KHR_sampler_ycbcr_conversion with a 2-plane format
+    YCBCR_SAMPLER_3PLANES,       // use VK_KHR_sampler_ycbcr_conversion with a 3-plane format
 };
 
 // Optional; Used to add variations for a specific test case.
@@ -383,6 +387,11 @@ struct TestParams
         return stage == VK_SHADER_STAGE_COMPUTE_BIT;
     }
 
+    bool isComputeQueue() const
+    {
+        return (queue == VK_QUEUE_COMPUTE_BIT);
+    }
+
     bool isGraphics() const
     {
         return (stage & VK_SHADER_STAGE_ALL_GRAPHICS) != 0;
@@ -444,6 +453,20 @@ struct TestParams
         default:
             return false;
         }
+    }
+
+    bool isYCbCrSamplerVariant() const
+    {
+        return (variant == TestVariant::YCBCR_SAMPLER_2PLANES || variant == TestVariant::YCBCR_SAMPLER_3PLANES);
+    }
+
+    VkFormat getYCbCrImageFormat() const
+    {
+        if (variant == TestVariant::YCBCR_SAMPLER_2PLANES)
+            return k2PlaneFormat;
+        if (variant == TestVariant::YCBCR_SAMPLER_3PLANES)
+            return k3PlaneFormat;
+        return VK_FORMAT_UNDEFINED;
     }
 
     // Update the hash field. Must be called after changing the value of any other parameters.
@@ -791,6 +814,9 @@ std::string getCaseNameUpdateHash(TestParams &params, uint32_t baseHash)
         str << "_commands_2";
     }
 
+    if (params.variant == TestVariant::YCBCR_SAMPLER_3PLANES)
+        str << "_3planes";
+
     params.updateHash(baseHash ^ deStringHash(str.str().c_str()));
 
     return str.str();
@@ -838,11 +864,28 @@ tcu::UVec2 getExpectedData_G8_B8R8(uint32_t hash, uint32_t set, uint32_t binding
     return tcu::UVec2((data >> 16) & 0xff, data & 0xffff);
 }
 
+// The returned vector contains G8 in x, B8 in y and R8 in z (as defined by VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM).
+tcu::UVec3 getExpectedData_G8_B8_R8(uint32_t hash, uint32_t set, uint32_t binding, uint32_t arrayIndex = 0)
+{
+    // Hash the input data to achieve "randomness" of components.
+    const uint32_t data = deUint32Hash(getExpectedData(hash, set, binding, arrayIndex));
+
+    return tcu::UVec3(((data >> 24) & 0xFF), ((data >> 16) & 0xFF), ((data)&0xFF));
+}
+
 // Convert G8_B8R8_UNORM to float components.
 tcu::Vec4 toVec4_G8_B8R8(const tcu::UVec2 &input)
 {
     return tcu::Vec4(float(((input.y() >> 8) & 0xff)) / 255.0f, float(input.x()) / 255.0f,
                      float((input.y() & 0xff)) / 255.0f, 1.0f);
+}
+
+// Convert G8_B8_R8_UNORM to float components.
+tcu::Vec4 toVec4_G8_B8_R8(const tcu::UVec3 &input)
+{
+    const tcu::Vec3 div(255.0f, 255.0f, 255.0f);
+    const auto gbr = input.asFloat() / div;
+    return tcu::Vec4(gbr.z(), gbr.x(), gbr.y(), 1.0f);
 }
 
 // Used by shaders.
@@ -877,7 +920,7 @@ std::string glslDeclareBinding(VkDescriptorType type, uint32_t set, uint32_t bin
         imagePrefix = "u";
         imageFormat = "r32ui";
     }
-    else if (format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+    else if (format == k2PlaneFormat || format == k3PlaneFormat)
     {
         imagePrefix = "";
         imageFormat = "rgba8";
@@ -981,9 +1024,9 @@ std::string glslGlobalDeclarations(const TestParams &params, const std::vector<S
                                                                                           ConstUniformBufferDwords;
 
         VkFormat format;
-        if ((params.variant == TestVariant::YCBCR_SAMPLER) && (sb.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER))
+        if (params.isYCbCrSamplerVariant() && (sb.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER))
         {
-            format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+            format = params.getYCbCrImageFormat();
         }
         else
         {
@@ -1080,7 +1123,7 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
         (params.variant == TestVariant::PUSH_DESCRIPTOR) || (params.variant == TestVariant::PUSH_TEMPLATE) ||
         (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
         (params.variant == TestVariant::MUTABLE_DESCRIPTOR_TYPE) || (params.variant == TestVariant::CAPTURE_REPLAY) ||
-        (params.variant == TestVariant::YCBCR_SAMPLER))
+        (params.isYCbCrSamplerVariant()))
     {
         // Read at least one value from a descriptor and compare it.
         // For buffers, verify every element.
@@ -1185,16 +1228,31 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                 }
                 else if (sb.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                 {
-                    if (params.variant == TestVariant::YCBCR_SAMPLER)
+                    if (params.isYCbCrSamplerVariant())
                     {
-                        const auto ycbcrData         = getExpectedData_G8_B8R8(params.hash, sb.set, sb.binding,
-                                                                               sb.inputAttachmentIndex + arrayIndex);
-                        const auto expectedDataFloat = toVec4_G8_B8R8(ycbcrData);
+                        tcu::Vec4 expectedDataFloat(0.0f);
+
+                        if (params.variant == TestVariant::YCBCR_SAMPLER_2PLANES)
+                        {
+                            const auto ycbcrData = getExpectedData_G8_B8R8(params.hash, sb.set, sb.binding,
+                                                                           sb.inputAttachmentIndex + arrayIndex);
+                            expectedDataFloat    = toVec4_G8_B8R8(ycbcrData);
+                        }
+                        else if (params.variant == TestVariant::YCBCR_SAMPLER_3PLANES)
+                        {
+                            const auto ycbcrData = getExpectedData_G8_B8_R8(params.hash, sb.set, sb.binding,
+                                                                            sb.inputAttachmentIndex + arrayIndex);
+                            expectedDataFloat    = toVec4_G8_B8_R8(ycbcrData);
+                        }
+                        else
+                            DE_ASSERT(false);
 
                         // No border color with ycbcr samplers. 0.005 tolerance is a bit more than 1/255.
                         str << "\t{\n"
                             << "    vec4 color = textureLod(" << glslResourceName(sb.set, sb.binding) << subscript
                             << ", vec2(0, 0), 0);\n"
+                            << "    debugPrintfEXT(\"color=(%f, %f, %f, %f)\\n\", color.r, color.g, color.b, "
+                               "color.a);\n"
                             << "    if ((abs(" << expectedDataFloat.x() << " - color.r) < 0.005) &&\n"
                             << "        (abs(" << expectedDataFloat.y() << " - color.g) < 0.005) &&\n"
                             << "        (abs(" << expectedDataFloat.z() << " - color.b) < 0.005) &&\n"
@@ -1481,7 +1539,7 @@ private:
 void DescriptorBufferTestCase::delayedInit()
 {
     if ((m_params.variant == TestVariant::SINGLE) || (m_params.variant == TestVariant::CAPTURE_REPLAY) ||
-        (m_params.variant == TestVariant::YCBCR_SAMPLER))
+        (m_params.isYCbCrSamplerVariant()))
     {
         // Creates a single set with a single binding, unless additional helper resources are required.
         {
@@ -1826,7 +1884,8 @@ void DescriptorBufferTestCase::initPrograms(vk::SourceCollections &programs,
     //
     // Compute shaders still declare a "result" variable to help unify the verification logic.
     std::string extentionDeclarations = std::string(glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_460)) + "\n" +
-                                        (m_params.isRayTracing() ? "#extension GL_EXT_ray_tracing : require\n" : "");
+                                        (m_params.isRayTracing() ? "#extension GL_EXT_ray_tracing : require\n" : "") +
+                                        "#extension GL_EXT_debug_printf : enable\n";
 
     if (m_params.isGraphics())
     {
@@ -2478,8 +2537,7 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
     }
 
-    if ((m_params.variant == TestVariant::YCBCR_SAMPLER) &&
-        !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
+    if (m_params.isYCbCrSamplerVariant() && !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
     {
         TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
     }
@@ -2945,7 +3003,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         extensions.push_back("VK_EXT_mutable_descriptor_type");
         addToChainVulkanStructure(&nextPtr, mutableDescTypeFeatures);
     }
-    else if (m_params.variant == TestVariant::YCBCR_SAMPLER)
+    else if (m_params.isYCbCrSamplerVariant())
     {
         extensions.push_back("VK_KHR_sampler_ycbcr_conversion");
         addToChainVulkanStructure(&nextPtr, samplerYcbcrConvFeatures);
@@ -3056,7 +3114,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     {
         DE_ASSERT(mutableDescTypeFeatures.mutableDescriptorType);
     }
-    else if (params.variant == TestVariant::YCBCR_SAMPLER)
+    else if (params.isYCbCrSamplerVariant())
     {
         DE_ASSERT(samplerYcbcrConvFeatures.samplerYcbcrConversion);
     }
@@ -3090,9 +3148,9 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
 
     m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 
-    if (params.variant == TestVariant::YCBCR_SAMPLER)
+    if (params.isYCbCrSamplerVariant())
     {
-        m_imageColorFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+        m_imageColorFormat = params.getYCbCrImageFormat();
 
         VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = initVulkanStructure();
         imageFormatInfo.format                           = m_imageColorFormat;
@@ -3983,12 +4041,25 @@ void DescriptorBufferTestInstance::createGraphicsPipeline()
         subpass.preserveAttachmentCount = 0;
         subpass.pPreserveAttachments    = nullptr;
 
+        // This is needed for the finalLayout transition to transfer_src_optimal.
+        const VkSubpassDependency subpassDep = {
+            0u,
+            VK_SUBPASS_EXTERNAL,
+            VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            0u,
+        };
+
         VkRenderPassCreateInfo createInfo = initVulkanStructure();
         // No explicit dependencies
         createInfo.attachmentCount = u32(attachments.size());
         createInfo.pAttachments    = attachments.data();
         createInfo.subpassCount    = 1;
         createInfo.pSubpasses      = &subpass;
+        createInfo.dependencyCount = 1u;
+        createInfo.pDependencies   = &subpassDep;
 
         m_renderPass = createRenderPass(*m_deviceInterface, *m_device, &createInfo);
     }
@@ -4181,7 +4252,7 @@ void DescriptorBufferTestInstance::createBufferForBinding(ResourceHolder &resour
     DE_ASSERT(!bufferResource.alloc);
     bufferResource.alloc = allocate(memReqs, MemoryRequirement::HostVisible, &allocFlagsInfo);
 
-    if (isCaptureDescriptor(descriptorType))
+    if (!isResultBuffer && isCaptureDescriptor(descriptorType))
     {
         VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
 
@@ -4325,7 +4396,7 @@ void DescriptorBufferTestInstance::createImageForBinding(ResourceHolder &resourc
 
             if (resources.samplerYcbcrConversion)
             {
-                DE_ASSERT(m_params.variant == TestVariant::YCBCR_SAMPLER);
+                DE_ASSERT(m_params.isYCbCrSamplerVariant());
 
                 samplerYcbcrConvInfo.conversion = *resources.samplerYcbcrConversion;
 
@@ -4544,13 +4615,22 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 {
                     stagingBuffer.size = sizeof(uint32_t) * numPixels;
                 }
-                else if (m_imageColorFormat == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+                else if (m_imageColorFormat == k2PlaneFormat)
                 {
                     DE_ASSERT((m_renderArea.extent.width % 2) == 0);
                     DE_ASSERT((m_renderArea.extent.height % 2) == 0);
 
                     stagingBuffer.size = 1 * numPixels;      // g8
                     stagingBuffer.size += 2 * numPixels / 4; // b8r8
+                }
+                else if (m_imageColorFormat == k3PlaneFormat)
+                {
+                    DE_ASSERT((m_renderArea.extent.width % 2) == 0);
+                    DE_ASSERT((m_renderArea.extent.height % 2) == 0);
+
+                    stagingBuffer.size = 1 * numPixels;      // g8
+                    stagingBuffer.size += 1 * numPixels / 4; // b8
+                    stagingBuffer.size += 1 * numPixels / 4; // r8
                 }
                 else
                 {
@@ -4587,7 +4667,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
 
                     std::fill(pBufferData, pBufferData + numPixels, expectedData);
                 }
-                else if (m_imageColorFormat == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+                else if (m_imageColorFormat == k2PlaneFormat)
                 {
                     auto pPlane0 = static_cast<uint8_t *>(stagingBuffer.alloc->getHostPtr());
                     auto pPlane1 = static_cast<uint16_t *>(offsetPtr(pPlane0, numPixels));
@@ -4596,6 +4676,19 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
 
                     std::fill(pPlane0, pPlane0 + numPixels, expectedData.x());
                     std::fill(pPlane1, pPlane1 + numPixels / 4, expectedData.y());
+                }
+                else if (m_imageColorFormat == k3PlaneFormat)
+                {
+                    auto pPlane0 = static_cast<uint8_t *>(stagingBuffer.alloc->getHostPtr());
+                    auto pPlane1 = static_cast<uint8_t *>(offsetPtr(pPlane0, numPixels));
+                    auto pPlane2 = static_cast<uint8_t *>(offsetPtr(pPlane1, numPixels / 4));
+
+                    const auto expectedData =
+                        getExpectedData_G8_B8_R8(m_params.hash, setIndex, binding.binding, arrayIndex);
+
+                    std::fill(pPlane0, pPlane0 + numPixels, expectedData.x());
+                    std::fill(pPlane1, pPlane1 + numPixels / 4, expectedData.y());
+                    std::fill(pPlane2, pPlane2 + numPixels / 4, expectedData.z());
                 }
                 else
                 {
@@ -5198,7 +5291,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                     auto &resources         = **m_resources[binding.perBindingResourceIndex[arrayIndex]];
                     auto &captureReplayData = resources.captureReplay.samplerData;
 
-                    if (m_params.variant == TestVariant::YCBCR_SAMPLER)
+                    if (m_params.isYCbCrSamplerVariant())
                     {
                         VkSamplerYcbcrConversionCreateInfo convCreateInfo = initVulkanStructure();
                         convCreateInfo.format                             = m_imageColorFormat;
@@ -5238,7 +5331,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
 
                     const void **nextPtr = &createInfo.pNext;
 
-                    if (m_params.variant == TestVariant::YCBCR_SAMPLER)
+                    if (m_params.isYCbCrSamplerVariant())
                     {
                         createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
                         createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -5299,7 +5392,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
     }
 
     if ((m_params.variant == TestVariant::EMBEDDED_IMMUTABLE_SAMPLERS) ||
-        (m_params.subcase == SubCase::IMMUTABLE_SAMPLERS) || (m_params.variant == TestVariant::YCBCR_SAMPLER))
+        (m_params.subcase == SubCase::IMMUTABLE_SAMPLERS) || m_params.isYCbCrSamplerVariant())
     {
         // Patch immutable sampler pointers, now that all memory has been allocated and pointers won't move.
 
@@ -5424,11 +5517,17 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                                   m_params.isRayTracing() ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR :
                                   m_params.isGraphics()   ? VK_PIPELINE_STAGE_2_VERTEX_SHADER_BIT :
                                                             VK_PIPELINE_STAGE_2_NONE;
+
+        // This is needed for render pass attachments only.
+        const auto otherDstStageUp =
+            (m_params.isComputeQueue() ? VK_PIPELINE_STAGE_2_NONE : VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT);
+
         const auto dstStageMaskUp =
-            m_params.isCompute()    ? VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
-            m_params.isRayTracing() ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR :
-            m_params.isGraphics()   ? VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT :
-                                      VK_PIPELINE_STAGE_2_NONE;
+            ((m_params.isCompute()    ? VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT :
+              m_params.isRayTracing() ? VK_PIPELINE_STAGE_2_RAY_TRACING_SHADER_BIT_KHR :
+              m_params.isGraphics()   ? VK_PIPELINE_STAGE_2_VERTEX_INPUT_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT :
+                                        VK_PIPELINE_STAGE_2_NONE) |
+             otherDstStageUp);
 
         beginCommandBuffer(vk, *cmdBuf);
 
@@ -5532,7 +5631,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                                                     1, // region count
                                                     &region);
                         }
-                        else if (m_imageColorFormat == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+                        else if (m_imageColorFormat == k2PlaneFormat)
                         {
                             std::vector<VkBufferImageCopy> regions(2);
 
@@ -5554,17 +5653,52 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, u32(regions.size()),
                                                     regions.data());
                         }
+                        else if (m_imageColorFormat == k3PlaneFormat)
+                        {
+                            std::vector<VkBufferImageCopy> regions(3);
+
+                            regions[0].bufferOffset = 0;
+                            regions[0].imageSubresource =
+                                makeImageSubresourceLayers(VK_IMAGE_ASPECT_PLANE_0_BIT, 0, 0, 1);
+                            regions[0].imageOffset = makeOffset3D(0, 0, 0);
+                            regions[0].imageExtent =
+                                makeExtent3D(m_renderArea.extent.width, m_renderArea.extent.height, 1);
+
+                            regions[1].bufferOffset = m_renderArea.extent.width * m_renderArea.extent.height;
+                            regions[1].imageSubresource =
+                                makeImageSubresourceLayers(VK_IMAGE_ASPECT_PLANE_1_BIT, 0, 0, 1);
+                            regions[1].imageOffset = makeOffset3D(0, 0, 0);
+                            regions[1].imageExtent =
+                                makeExtent3D(m_renderArea.extent.width / 2, m_renderArea.extent.height / 2, 1);
+
+                            regions[2].bufferOffset =
+                                m_renderArea.extent.width * m_renderArea.extent.height +
+                                (m_renderArea.extent.width / 2) * (m_renderArea.extent.height / 2);
+                            regions[2].imageSubresource =
+                                makeImageSubresourceLayers(VK_IMAGE_ASPECT_PLANE_2_BIT, 0, 0, 1);
+                            regions[2].imageOffset = makeOffset3D(0, 0, 0);
+                            regions[2].imageExtent =
+                                makeExtent3D(m_renderArea.extent.width / 2, m_renderArea.extent.height / 2, 1);
+
+                            vk.cmdCopyBufferToImage(*cmdBuf, *srcBuffer.buffer, *dstImage.image,
+                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, u32(regions.size()),
+                                                    regions.data());
+                        }
                         else
                         {
                             DE_ASSERT(0);
                         }
 
                         {
+                            // This is needed for render pass attachments only.
+                            const auto otherDstAccess =
+                                (m_params.isComputeQueue() ? VK_ACCESS_2_NONE : VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT);
+
                             VkImageMemoryBarrier2 barrier = initVulkanStructure();
                             barrier.srcStageMask          = VK_PIPELINE_STAGE_2_TRANSFER_BIT;
                             barrier.srcAccessMask         = VK_ACCESS_2_TRANSFER_WRITE_BIT;
                             barrier.dstStageMask          = dstStageMaskUp; // beginning of the shader pipeline
-                            barrier.dstAccessMask         = VK_ACCESS_2_SHADER_READ_BIT;
+                            barrier.dstAccessMask         = (VK_ACCESS_2_SHADER_READ_BIT | otherDstAccess);
                             barrier.oldLayout             = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
                             barrier.newLayout             = dstImage.layout;
                             barrier.srcQueueFamilyIndex   = VK_QUEUE_FAMILY_IGNORED;
@@ -6824,7 +6958,7 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                 }
 
                 TestParams params{};
-                params.variant            = TestVariant::YCBCR_SAMPLER;
+                params.variant            = TestVariant::YCBCR_SAMPLER_2PLANES;
                 params.subcase            = SubCase::NONE;
                 params.stage              = *pStage;
                 params.queue              = *pQueue;
@@ -6832,6 +6966,17 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                 params.bufferBindingCount = 1;
                 params.setsPerBuffer      = 1;
                 params.resourceResidency  = resourceResidency;
+
+                subGroup->addChild(
+                    new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
+
+                params.subcase = SubCase::YCBCR_SAMPLER_ARRAY;
+
+                subGroup->addChild(
+                    new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
+
+                params.variant = TestVariant::YCBCR_SAMPLER_3PLANES;
+                params.subcase = SubCase::NONE;
 
                 subGroup->addChild(
                     new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));

@@ -796,6 +796,8 @@ public:
         nvVideoH264PicParameters h264PicParams;
         nvVideoH265PicParameters h265PicParams;
         VkParserAv1PictureData av1PicParams;
+        VkParserVp9PictureData vp9PicParams;
+        VkVideoDecodeVP9PictureInfoKHR vp9VkPicInfo;
 
         NvVkDecodeFrameDataSlot frameDataSlot;
         VkVideoBeginCodingInfoKHR decodeBeginInfo{};
@@ -865,8 +867,8 @@ public:
     // VkParserVideoDecodeClient callbacks
     // Returns max number of reference frames (always at least 2 for MPEG-2)
     int32_t BeginSequence(const VkParserSequenceInfo *pnvsi) override;
-    // Returns a new INvidiaVulkanPicture interface
-    bool AllocPictureBuffer(VkPicIf **ppNvidiaVulkanPicture, uint32_t width, uint32_t height) override;
+    // Returns a new VkPicIf
+    bool AllocPictureBuffer(VkPicIf **ppPicBuf) override;
     // Called when a picture is ready to be decoded
     bool DecodePicture(VkParserPictureData *pNvidiaVulkanParserPictureData) override;
     // Called when the stream parameters have changed

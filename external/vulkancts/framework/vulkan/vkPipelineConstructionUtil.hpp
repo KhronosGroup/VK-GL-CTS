@@ -202,6 +202,12 @@ public:
     RenderPassWrapper() = default;
     RenderPassWrapper(const DeviceInterface &vk, VkDevice device, const VkRenderPassCreateInfo2 *pCreateInfo,
                       bool dynamicRendering);
+#ifndef CTS_USES_VULKANSC
+    RenderPassWrapper(const DeviceInterface &vk, VkDevice device, const VkRenderPassCreateInfo *pCreateInfo,
+                      const VkAttachmentFeedbackLoopInfoEXT *attachmentFeedbackLoopInfo);
+#endif
+    RenderPassWrapper(const DeviceInterface &vk, VkDevice device, const VkRenderPassCreateInfo *pCreateInfo,
+                      bool dynamicRendering);
     RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
                       const VkRenderPassCreateInfo *pCreateInfo);
     RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, VkDevice device,
@@ -279,6 +285,8 @@ private:
     vk::Move<vk::VkFramebuffer> m_framebuffer;
 
 #ifndef CTS_USES_VULKANSC
+    vk::VkAttachmentFeedbackLoopInfoEXT m_attachmentFeedbackLoopInfo = {};
+
     struct Subpass
     {
         struct Attachment

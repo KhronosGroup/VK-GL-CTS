@@ -111,9 +111,11 @@ struct SpecializationInfo
     }
 };
 
-template <VkShaderStageFlagBits>
+// XXX TODO Rename "BFloat*" after the original change is merged
+template <VkShaderStageFlagBits, typename FloatTy>
 class BFloat16ConstantCaseT;
 
+template <typename FloatTy>
 class BFloat16ConstantCase : public TestCase
 {
 protected:
@@ -133,24 +135,33 @@ public:
             TCU_THROW(NotSupportedError, "16-bit floats not supported for storage buffers");
         }
 
-        if constexpr (std::is_same_v<BFloat16, tcu::BrainFloat16>)
+        if constexpr (std::is_same_v<FloatTy, tcu::BrainFloat16>)
         {
             if (context.getShaderBfloat16Features().shaderBFloat16Type != VK_TRUE)
             {
                 TCU_THROW(NotSupportedError, "Brain float not supported by device");
             }
         }
+        if constexpr (std::is_same_v<FloatTy, tcu::FloatE5M2> || std::is_same_v<FloatTy, tcu::FloatE4M3>)
+        {
+            if (!context.getShaderFloat8FeaturesEXT().shaderFloat8)
+            {
+                TCU_THROW(NotSupportedError, "shaderFloat8 not supported by device");
+            }
+        }
     }
 };
 
+template <typename FloatTy>
 class BFloat16ComputeInstance;
 
+template <typename FloatTy>
 class BFloat16ConstantInstance : public TestInstance
 {
 public:
-    using BFloat16Vec4 = std::array<BFloat16, 4>;
-    static_assert(sizeof(BFloat16) == sizeof(BFloat16::StorageType), "???");
-    static_assert(sizeof(BFloat16Vec4) == sizeof(BFloat16::StorageType) * 4u, "???");
+    using FloatTyVec4 = std::array<FloatTy, 4>;
+    static_assert(sizeof(FloatTy) == sizeof(typename FloatTy::StorageType), "???");
+    static_assert(sizeof(FloatTyVec4) == sizeof(typename FloatTy::StorageType) * 4u, "???");
 
     BFloat16ConstantInstance(Context &context, const Params &params, VkShaderStageFlags shaderStages)
         : TestInstance(context)
@@ -171,7 +182,7 @@ public:
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
         const std::vector<uint32_t> queueIndices{queueIndex};
         const uint32_t ioCount              = 1024u;
-        const VkDeviceSize ioBytesSize      = ioCount * sizeof(BFloat16Vec4);
+        const VkDeviceSize ioBytesSize      = ioCount * sizeof(FloatTyVec4);
         const VkBufferCreateInfo ioBufferCI = makeBufferCreateInfo(ioBytesSize, usage, queueIndices);
         bf16::makeMovePtr(m_inBufferX, di, dev, allocator, ioBufferCI, MemoryRequirement::HostVisible);
         bf16::makeMovePtr(m_inBufferY, di, dev, allocator, ioBufferCI, MemoryRequirement::HostVisible);
@@ -267,15 +278,17 @@ protected:
     Move<VkPipeline> m_pipeline;
 };
 
-class BFloat16ComputeInstance : public BFloat16ConstantInstance
+template <typename FloatTy>
+class BFloat16ComputeInstance : public BFloat16ConstantInstance<FloatTy>
 {
 public:
-    using ReferenceSet = std::pair<std::array<BFloat16, 20>, uint32_t>;
+    using Super        = BFloat16ConstantInstance<FloatTy>;
+    using ReferenceSet = std::pair<std::array<FloatTy, 20>, uint32_t>;
     BFloat16ComputeInstance(Context &context, const Params &params)
-        : BFloat16ConstantInstance(context, params, VK_SHADER_STAGE_COMPUTE_BIT)
+        : Super(context, params, VK_SHADER_STAGE_COMPUTE_BIT)
         , m_referenceSet(prepareReferenceSet())
     {
-        initCommonMembers();
+        Super::initCommonMembers();
     }
     virtual auto prepareShaders() const -> std::vector<Move<VkShaderModule>> override;
     virtual auto preparePipeline() const -> Move<VkPipeline> override;
@@ -284,15 +297,16 @@ public:
     auto verifyResult() const -> bool;
 
 private:
-    auto asLocalSize(const BFloat16 &value) const -> uint32_t;
+    auto asLocalSize(const FloatTy &value) const -> uint32_t;
     const ReferenceSet m_referenceSet;
 };
 
-class BFloat16GraphicsInstance : public BFloat16ConstantInstance
+template <typename FloatTy>
+class BFloat16GraphicsInstance : public BFloat16ConstantInstance<FloatTy>
 {
 public:
-    using Vertices = std::vector<BFloat16>;
-    using Super    = BFloat16ConstantInstance;
+    using Vertices = std::vector<FloatTy>;
+    using Super    = BFloat16ConstantInstance<FloatTy>;
     BFloat16GraphicsInstance(Context &context, const Params &params, VkShaderStageFlags shaderStages,
                              VkPrimitiveTopology topology)
         : Super(context, params, shaderStages)
@@ -325,68 +339,72 @@ private:
     bool m_initialized;
 };
 
-class BFloat16VertexInstance : public BFloat16GraphicsInstance
+template <typename FloatTy>
+class BFloat16VertexInstance : public BFloat16GraphicsInstance<FloatTy>
 {
 public:
-    using Super = BFloat16GraphicsInstance;
+    using Super = BFloat16GraphicsInstance<FloatTy>;
     BFloat16VertexInstance(Context &context, const Params &params)
         : Super(context, params, VK_SHADER_STAGE_VERTEX_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
     {
-        initCommonMembers();
+        Super::initCommonMembers();
     }
     virtual bool verifyResult() const override;
     virtual auto preparePipeline() const -> Move<VkPipeline> override;
     virtual auto prepareVertexBuffer() const -> de::MovePtr<BufferWithMemory> override;
 };
 
-class BFloat16FragmentInstance : public BFloat16GraphicsInstance
+template <typename FloatTy>
+class BFloat16FragmentInstance : public BFloat16GraphicsInstance<FloatTy>
 {
 public:
-    using Super = BFloat16GraphicsInstance;
+    using Super = BFloat16GraphicsInstance<FloatTy>;
     BFloat16FragmentInstance(Context &context, const Params &params)
         : Super(context, params, VK_SHADER_STAGE_FRAGMENT_BIT, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN)
     {
-        initCommonMembers();
+        Super::initCommonMembers();
     }
     virtual bool verifyResult() const override;
     virtual auto preparePipeline() const -> Move<VkPipeline> override;
     virtual auto prepareVertexBuffer() const -> de::MovePtr<BufferWithMemory> override;
 };
 
-template <>
-class BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT> : public BFloat16ConstantCase
+template <typename FloatTy>
+class BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT, FloatTy> : public BFloat16ConstantCase<FloatTy>
 {
-    using BFloat16ConstantCase::BFloat16ConstantCase;
+    using BFloat16ConstantCase<FloatTy>::BFloat16ConstantCase;
     virtual void initPrograms(SourceCollections &programCollection) const override;
     virtual TestInstance *createInstance(Context &context) const override
     {
-        return new BFloat16ComputeInstance(context, m_params);
+        return new BFloat16ComputeInstance<FloatTy>(context, BFloat16ConstantCase<FloatTy>::m_params);
     }
 };
 
-template <>
-class BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT> : public BFloat16ConstantCase
+template <typename FloatTy>
+class BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT, FloatTy> : public BFloat16ConstantCase<FloatTy>
 {
-    using BFloat16ConstantCase::BFloat16ConstantCase;
+    using BFloat16ConstantCase<FloatTy>::BFloat16ConstantCase;
     virtual void initPrograms(SourceCollections &programCollection) const override;
     virtual TestInstance *createInstance(Context &context) const override
     {
-        return new BFloat16VertexInstance(context, m_params);
+        return new BFloat16VertexInstance<FloatTy>(context, BFloat16ConstantCase<FloatTy>::m_params);
     }
 };
 
-template <>
-class BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT> : public BFloat16ConstantCase
+template <typename FloatTy>
+class BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT, FloatTy> : public BFloat16ConstantCase<FloatTy>
 {
-    using BFloat16ConstantCase::BFloat16ConstantCase;
+    using BFloat16ConstantCase<FloatTy>::BFloat16ConstantCase;
     virtual void initPrograms(SourceCollections &programCollection) const override;
     virtual TestInstance *createInstance(Context &context) const override
     {
-        return new BFloat16FragmentInstance(context, m_params);
+        return new BFloat16FragmentInstance<FloatTy>(context, BFloat16ConstantCase<FloatTy>::m_params);
     }
 };
 
-void BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT>::initPrograms(SourceCollections &programCollection) const
+template <typename FloatTy>
+void BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT, FloatTy>::initPrograms(
+    SourceCollections &programCollection) const
 {
     const tcu::StringTemplate glslCodeTemplate(R"(
 #version 450
@@ -407,6 +425,8 @@ layout(constant_id = 8)  const ${FLOAT_TYPE} c8 = ${FLOAT_TYPE}(0.0);
 layout(constant_id = 9)  const ${FLOAT_TYPE} c9 = ${FLOAT_TYPE}(0.0);
 layout(constant_id = 10) const ${FLOAT_TYPE} c10 = ${FLOAT_TYPE}(0.0);
 layout(constant_id = 11) const float c11 = 0.0;
+const ${FLOAT_TYPE} c12 = ${FLOAT_TYPE}(c11);
+const float c13 = float(c12);
 void main() {
     z[0].x = ${FLOAT_TYPE}(float(gl_WorkGroupSize.x));
     z[0].y = ${FLOAT_TYPE}(c1);
@@ -419,19 +439,21 @@ void main() {
     z[2].x = ${FLOAT_TYPE}(c8);
     z[2].y = ${FLOAT_TYPE}(c9);
     z[2].z = ${FLOAT_TYPE}(c10);
-    z[2].w = ${FLOAT_TYPE}(c11);
+    z[2].w = ${FLOAT_TYPE}(c13);
 }
     )");
 
-    const std::map<std::string, std::string> substs{{"EXTENSION", bf16::getExtensionName<BFloat16>()},
-                                                    {"FLOAT_TYPE", bf16::getVecTypeName<BFloat16, 1>()},
-                                                    {"VEC4", bf16::getVecTypeName<BFloat16, 4>()}};
+    const std::map<std::string, std::string> substs{{"EXTENSION", bf16::getExtensionName<FloatTy>()},
+                                                    {"FLOAT_TYPE", bf16::getVecTypeName<FloatTy, 1>()},
+                                                    {"VEC4", bf16::getVecTypeName<FloatTy, 4>()}};
 
     const std::string glslCode = glslCodeTemplate.specialize(substs);
     programCollection.glslSources.add("test") << glu::ComputeSource(glslCode);
 }
 
-void BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT>::initPrograms(SourceCollections &programCollection) const
+template <typename FloatTy>
+void BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT, FloatTy>::initPrograms(
+    SourceCollections &programCollection) const
 {
     const tcu::StringTemplate vertCodeTemplate(R"(
 #version 450
@@ -473,9 +495,9 @@ void main() {
 }
     )");
 
-    const std::map<std::string, std::string> substs{{"EXTENSION", bf16::getExtensionName<BFloat16>()},
-                                                    {"FLOAT_TYPE", bf16::getVecTypeName<BFloat16, 1>()},
-                                                    {"VEC4", bf16::getVecTypeName<BFloat16, 4>()}};
+    const std::map<std::string, std::string> substs{{"EXTENSION", bf16::getExtensionName<FloatTy>()},
+                                                    {"FLOAT_TYPE", bf16::getVecTypeName<FloatTy, 1>()},
+                                                    {"VEC4", bf16::getVecTypeName<FloatTy, 4>()}};
     const std::string vertCode = vertCodeTemplate.specialize(substs);
 
     const std::string fragCode(R"(
@@ -490,7 +512,9 @@ void main() {
     programCollection.glslSources.add("frag") << glu::FragmentSource(fragCode);
 }
 
-void BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT>::initPrograms(SourceCollections &programCollection) const
+template <typename FloatTy>
+void BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT, FloatTy>::initPrograms(
+    SourceCollections &programCollection) const
 {
     const tcu::StringTemplate fragCodeTemplate(R"(
 #version 450
@@ -536,9 +560,9 @@ void main() {
 }
     )");
 
-    const std::map<std::string, std::string> substs{{"EXTENSION", bf16::getExtensionName<BFloat16>()},
-                                                    {"FLOAT_TYPE", bf16::getVecTypeName<BFloat16, 1>()},
-                                                    {"VEC4", bf16::getVecTypeName<BFloat16, 4>()}};
+    const std::map<std::string, std::string> substs{{"EXTENSION", bf16::getExtensionName<FloatTy>()},
+                                                    {"FLOAT_TYPE", bf16::getVecTypeName<FloatTy, 1>()},
+                                                    {"VEC4", bf16::getVecTypeName<FloatTy, 4>()}};
     const std::string fragCode = fragCodeTemplate.specialize(substs);
 
     const std::string vertCode(R"(
@@ -554,36 +578,40 @@ void main() {
 }
 
 // BFloat16ComputeInstance
-auto BFloat16ComputeInstance::prepareShaders() const -> std::vector<Move<VkShaderModule>>
+template <typename FloatTy>
+auto BFloat16ComputeInstance<FloatTy>::prepareShaders() const -> std::vector<Move<VkShaderModule>>
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
     std::vector<Move<VkShaderModule>> modules;
 
-    auto module = createShaderModule(di, dev, m_context.getBinaryCollection().get("test"), VkSamplerCreateFlags(0));
+    auto module =
+        createShaderModule(di, dev, this->m_context.getBinaryCollection().get("test"), VkSamplerCreateFlags(0));
     modules.emplace_back(std::move(module));
 
     return modules;
 }
 
-auto BFloat16ComputeInstance::asLocalSize(const BFloat16 &value) const -> uint32_t
+template <typename FloatTy>
+auto BFloat16ComputeInstance<FloatTy>::asLocalSize(const FloatTy &value) const -> uint32_t
 {
     return static_cast<uint32_t>(std::abs(value.asFloat()) + 1.0f);
 }
 
-auto BFloat16ComputeInstance::prepareReferenceSet() const -> ReferenceSet
+template <typename FloatTy>
+auto BFloat16ComputeInstance<FloatTy>::prepareReferenceSet() const -> ReferenceSet
 {
     ReferenceSet data{};
-    de::Random rnd(m_params.seed);
-    for (BFloat16 &ref : data.first)
+    de::Random rnd(this->m_params.seed);
+    for (FloatTy &ref : data.first)
     {
         const float in  = float(int(rnd.getUint32() % 15u) - 7) / 2.f;
-        ref             = BFloat16(in);
+        ref             = FloatTy(in);
         const float out = ref.asFloat();
         const bool same = in == out;
         DE_MULTI_UNREF(in, out, same);
     }
-    for (const BFloat16 &ref : data.first)
+    for (const FloatTy &ref : data.first)
     {
         if (ref.isZero())
             ++data.second;
@@ -591,10 +619,11 @@ auto BFloat16ComputeInstance::prepareReferenceSet() const -> ReferenceSet
     return data;
 }
 
-Move<VkPipeline> BFloat16ComputeInstance::preparePipeline() const
+template <typename FloatTy>
+Move<VkPipeline> BFloat16ComputeInstance<FloatTy>::preparePipeline() const
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
 
     SpecializationInfo i;
     i.addEntry(asLocalSize(m_referenceSet.first[0])); // local_size_x
@@ -612,22 +641,24 @@ Move<VkPipeline> BFloat16ComputeInstance::preparePipeline() const
 
     const vk::VkSpecializationInfo si = i.get();
 
-    return makeComputePipeline(di, dev, *m_pipelineLayout, VkPipelineCreateFlags(0), nullptr, *m_shaders[0],
+    return makeComputePipeline(di, dev, *this->m_pipelineLayout, VkPipelineCreateFlags(0), nullptr, *this->m_shaders[0],
                                VkPipelineShaderStageCreateFlags(0), &si, VK_NULL_HANDLE, 0u);
 }
 
-auto BFloat16ComputeInstance::verifyResult() const -> bool
+template <typename FloatTy>
+auto BFloat16ComputeInstance<FloatTy>::verifyResult() const -> bool
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
 
-    invalidateAlloc(di, dev, m_outBufferZ->getAllocation());
-    const BFloat16Vec4 *result = reinterpret_cast<BFloat16Vec4 *>(m_outBufferZ->getAllocation().getHostPtr());
+    invalidateAlloc(di, dev, this->m_outBufferZ->getAllocation());
+    const typename Super::FloatTyVec4 *result =
+        reinterpret_cast<typename Super::FloatTyVec4 *>(this->m_outBufferZ->getAllocation().getHostPtr());
 
-    const BFloat16Vec4 reference[]{
-        {BFloat16(float(asLocalSize(m_referenceSet.first[0]))), m_referenceSet.first[1],
-         BFloat16(float(asLocalSize(m_referenceSet.first[2]))), m_referenceSet.first[3]},
-        {BFloat16(float(asLocalSize(m_referenceSet.first[4]))), m_referenceSet.first[5], m_referenceSet.first[6],
+    const typename Super::FloatTyVec4 reference[]{
+        {FloatTy(float(asLocalSize(m_referenceSet.first[0]))), m_referenceSet.first[1],
+         FloatTy(float(asLocalSize(m_referenceSet.first[2]))), m_referenceSet.first[3]},
+        {FloatTy(float(asLocalSize(m_referenceSet.first[4]))), m_referenceSet.first[5], m_referenceSet.first[6],
          m_referenceSet.first[7]},
         {m_referenceSet.first[8], m_referenceSet.first[9], m_referenceSet.first[10], m_referenceSet.first[11]}};
 
@@ -645,19 +676,20 @@ auto BFloat16ComputeInstance::verifyResult() const -> bool
     return true;
 }
 
-tcu::TestStatus BFloat16ComputeInstance::iterate()
+template <typename FloatTy>
+tcu::TestStatus BFloat16ComputeInstance<FloatTy>::iterate()
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkQueue queue       = m_context.getUniversalQueue();
-    const VkDevice dev        = m_context.getDevice();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkQueue queue       = this->m_context.getUniversalQueue();
+    const VkDevice dev        = this->m_context.getDevice();
 
-    beginCommandBuffer(di, *m_cmd);
-    di.cmdBindPipeline(*m_cmd, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipeline);
-    di.cmdBindDescriptorSets(*m_cmd, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u, 1u,
-                             bf16::fwd_as_ptr(*m_descriptorSet), 0u, nullptr);
-    di.cmdDispatch(*m_cmd, 1u, 1u, 1u);
-    endCommandBuffer(di, *m_cmd);
-    submitCommandsAndWait(di, dev, queue, *m_cmd);
+    beginCommandBuffer(di, *this->m_cmd);
+    di.cmdBindPipeline(*this->m_cmd, VK_PIPELINE_BIND_POINT_COMPUTE, *this->m_pipeline);
+    di.cmdBindDescriptorSets(*this->m_cmd, VK_PIPELINE_BIND_POINT_COMPUTE, *this->m_pipelineLayout, 0u, 1u,
+                             bf16::fwd_as_ptr(*this->m_descriptorSet), 0u, nullptr);
+    di.cmdDispatch(*this->m_cmd, 1u, 1u, 1u);
+    endCommandBuffer(di, *this->m_cmd);
+    submitCommandsAndWait(di, dev, queue, *this->m_cmd);
 
     const bool res = verifyResult();
 
@@ -665,23 +697,24 @@ tcu::TestStatus BFloat16ComputeInstance::iterate()
 }
 
 // BFloat16GraphicsInstance
-void BFloat16GraphicsInstance::initCommonMembers()
+template <typename FloatTy>
+void BFloat16GraphicsInstance<FloatTy>::initCommonMembers()
 {
     if (m_initialized)
         return;
 
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
-    const uint32_t queueIndex = m_context.getUniversalQueueFamilyIndex();
-    Allocator &allocator      = m_context.getDefaultAllocator();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
+    const uint32_t queueIndex = this->m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator      = this->m_context.getDefaultAllocator();
 
     const vk::VkImageCreateInfo ici{
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
         nullptr,                                                               // const void *pNext;
         0,                                                                     // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
-        m_params.format,                                                       // VkFormat format;
-        {m_params.width, m_params.height, 1u},                                 // VkExtent3D extent;
+        this->m_params.format,                                                 // VkFormat format;
+        {this->m_params.width, this->m_params.height, 1u},                     // VkExtent3D extent;
         1u,                                                                    // uint32_t mipLevels;
         1u,                                                                    // uint32_t arrayLayers;
         VK_SAMPLE_COUNT_1_BIT,                                                 // VkSampleCountFlagBits samples;
@@ -695,25 +728,26 @@ void BFloat16GraphicsInstance::initCommonMembers()
     bf16::makeMovePtr(m_image, di, dev, allocator, ici, MemoryRequirement::Any);
 
     const vk::VkImageSubresourceRange range{VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
-    m_imageView = makeImageView(di, dev, **m_image, VK_IMAGE_VIEW_TYPE_2D, m_params.format, range);
+    m_imageView = makeImageView(di, dev, **m_image, VK_IMAGE_VIEW_TYPE_2D, this->m_params.format, range);
 
-    m_renderPass = makeRenderPass(di, dev, m_params.format);
+    m_renderPass = makeRenderPass(di, dev, this->m_params.format);
 
-    m_framebuffer = makeFramebuffer(di, dev, *m_renderPass, *m_imageView, m_params.width, m_params.height);
+    m_framebuffer = makeFramebuffer(di, dev, *m_renderPass, *m_imageView, this->m_params.width, this->m_params.height);
 
     Super::initCommonMembers();
 
     m_initialized = true;
 }
 
-auto BFloat16GraphicsInstance::prepareShaders() const -> std::vector<Move<VkShaderModule>>
+template <typename FloatTy>
+auto BFloat16GraphicsInstance<FloatTy>::prepareShaders() const -> std::vector<Move<VkShaderModule>>
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
     std::vector<Move<VkShaderModule>> modules;
 
-    auto vert = createShaderModule(di, dev, m_context.getBinaryCollection().get("vert"), VkSamplerCreateFlags(0));
-    auto frag = createShaderModule(di, dev, m_context.getBinaryCollection().get("frag"), VkSamplerCreateFlags(0));
+    auto vert = createShaderModule(di, dev, this->m_context.getBinaryCollection().get("vert"), VkSamplerCreateFlags(0));
+    auto frag = createShaderModule(di, dev, this->m_context.getBinaryCollection().get("frag"), VkSamplerCreateFlags(0));
 
     modules.emplace_back(std::move(vert));
     modules.emplace_back(std::move(frag));
@@ -721,7 +755,8 @@ auto BFloat16GraphicsInstance::prepareShaders() const -> std::vector<Move<VkShad
     return modules;
 }
 
-auto BFloat16GraphicsInstance::prepareVertices(VkPrimitiveTopology topology) const -> Vertices
+template <typename FloatTy>
+auto BFloat16GraphicsInstance<FloatTy>::prepareVertices(VkPrimitiveTopology topology) const -> Vertices
 {
     DE_UNREF(topology);
     DE_ASSERT(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN == topology);
@@ -740,78 +775,83 @@ auto BFloat16GraphicsInstance::prepareVertices(VkPrimitiveTopology topology) con
     return result;
 }
 
-void BFloat16GraphicsInstance::prepareBuffers()
+template <typename FloatTy>
+void BFloat16GraphicsInstance<FloatTy>::prepareBuffers()
 {
     Super::prepareBuffers();
 
     m_vertexBuffer = prepareVertexBuffer();
 
     {
-        const DeviceInterface &di = m_context.getDeviceInterface();
-        const uint32_t queueIndex = m_context.getUniversalQueueFamilyIndex();
-        const VkDevice dev        = m_context.getDevice();
-        Allocator &allocator      = m_context.getDefaultAllocator();
-        const VkDeviceSize size   = mapVkFormat(m_params.format).getPixelSize() * m_params.width * m_params.height;
+        const DeviceInterface &di = this->m_context.getDeviceInterface();
+        const uint32_t queueIndex = this->m_context.getUniversalQueueFamilyIndex();
+        const VkDevice dev        = this->m_context.getDevice();
+        Allocator &allocator      = this->m_context.getDefaultAllocator();
+        const VkDeviceSize size =
+            mapVkFormat(this->m_params.format).getPixelSize() * this->m_params.width * this->m_params.height;
         const VkBufferUsageFlags usage =
             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
-        const std::vector<uint32_t> queueFamilyIndices{queueIndex};
-        const VkBufferCreateInfo bci = makeBufferCreateInfo(size, usage, queueFamilyIndices);
+        const VkBufferCreateInfo bci = makeBufferCreateInfo(size, usage, std::vector<uint32_t>{queueIndex});
 
-        bf16::makeMovePtr(m_resultBuffer, di, dev, allocator, bci, MemoryRequirement::HostVisible);
+        bf16::makeMovePtr(this->m_resultBuffer, di, dev, allocator, bci, MemoryRequirement::HostVisible);
     }
 }
 
-auto BFloat16GraphicsInstance::getVertexCount() const -> uint32_t
+template <typename FloatTy>
+auto BFloat16GraphicsInstance<FloatTy>::getVertexCount() const -> uint32_t
 {
     return m_vertexBuffer ? uint32_t(m_vertexBuffer->getBufferSize() / sizeof(tcu::Vec4)) : 0u;
 }
 
-void BFloat16GraphicsInstance::copyImageToResultBuffer()
+template <typename FloatTy>
+void BFloat16GraphicsInstance<FloatTy>::copyImageToResultBuffer()
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const uint32_t queueIndex = m_context.getUniversalQueueFamilyIndex();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const uint32_t queueIndex = this->m_context.getUniversalQueueFamilyIndex();
 
     const auto range   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const auto iBefore = makeImageMemoryBarrier(
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_image, range, queueIndex, queueIndex);
-    const auto bBefore = makeBufferMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, **m_resultBuffer, 0u,
-                                                 VK_WHOLE_SIZE, queueIndex, queueIndex);
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **this->m_image, range, queueIndex, queueIndex);
+    const auto bBefore = makeBufferMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, **this->m_resultBuffer,
+                                                 0u, VK_WHOLE_SIZE, queueIndex, queueIndex);
     const auto iAfter =
         makeImageMemoryBarrier(VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
-                               VK_IMAGE_LAYOUT_GENERAL, **m_image, range, queueIndex, queueIndex);
-    const auto bAfter = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE, **m_resultBuffer, 0u,
-                                                VK_WHOLE_SIZE, queueIndex, queueIndex);
+                               VK_IMAGE_LAYOUT_GENERAL, **this->m_image, range, queueIndex, queueIndex);
+    const auto bAfter = makeBufferMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE, **this->m_resultBuffer,
+                                                0u, VK_WHOLE_SIZE, queueIndex, queueIndex);
 
-    const auto bicRegion = makeBufferImageCopy({m_params.width, m_params.height, 1u},
+    const auto bicRegion = makeBufferImageCopy({this->m_params.width, this->m_params.height, 1u},
                                                makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
-    di.cmdPipelineBarrier(*m_cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    di.cmdPipelineBarrier(*this->m_cmd, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                           VK_DEPENDENCY_BY_REGION_BIT, 0u, nullptr, 1u, &bBefore, 1u, &iBefore);
-    di.cmdCopyImageToBuffer(*m_cmd, **m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_resultBuffer, 1u, &bicRegion);
-    di.cmdPipelineBarrier(*m_cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+    di.cmdCopyImageToBuffer(*this->m_cmd, **this->m_image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **this->m_resultBuffer,
+                            1u, &bicRegion);
+    di.cmdPipelineBarrier(*this->m_cmd, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
                           VK_DEPENDENCY_BY_REGION_BIT, 0u, nullptr, 1u, &bAfter, 1u, &iAfter);
 }
 
-auto BFloat16GraphicsInstance::iterate() -> tcu::TestStatus
+template <typename FloatTy>
+auto BFloat16GraphicsInstance<FloatTy>::iterate() -> tcu::TestStatus
 {
-    const DeviceInterface &di   = m_context.getDeviceInterface();
-    const VkQueue queue         = m_context.getUniversalQueue();
-    const VkDevice dev          = m_context.getDevice();
+    const DeviceInterface &di   = this->m_context.getDeviceInterface();
+    const VkQueue queue         = this->m_context.getUniversalQueue();
+    const VkDevice dev          = this->m_context.getDevice();
     const VkBuffer vertexbuffer = **m_vertexBuffer;
-    const uint32_t vertexCount  = getVertexCount();
+    const uint32_t vertexCount  = this->getVertexCount();
 
-    beginCommandBuffer(di, *m_cmd);
-    di.cmdBindPipeline(*m_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
-    di.cmdBindDescriptorSets(*m_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
-                             bf16::fwd_as_ptr(*m_descriptorSet), 0u, nullptr);
-    di.cmdBindVertexBuffers(*m_cmd, 0u, 1u, &vertexbuffer, bf16::fwd_as_ptr<VkDeviceSize>(0));
-    beginRenderPass(di, *m_cmd, *m_renderPass, *m_framebuffer, makeRect2D(m_params.width, m_params.height), 1u,
-                    bf16::fwd_as_ptr<VkClearValue>({}));
-    di.cmdDraw(*m_cmd, vertexCount, 1u, 0u, 0u);
-    endRenderPass(di, *m_cmd);
+    beginCommandBuffer(di, *this->m_cmd);
+    di.cmdBindPipeline(*this->m_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *this->m_pipeline);
+    di.cmdBindDescriptorSets(*this->m_cmd, VK_PIPELINE_BIND_POINT_GRAPHICS, *this->m_pipelineLayout, 0u, 1u,
+                             bf16::fwd_as_ptr(*this->m_descriptorSet), 0u, nullptr);
+    di.cmdBindVertexBuffers(*this->m_cmd, 0u, 1u, &vertexbuffer, bf16::fwd_as_ptr<VkDeviceSize>(0));
+    beginRenderPass(di, *this->m_cmd, *this->m_renderPass, *this->m_framebuffer,
+                    makeRect2D(this->m_params.width, this->m_params.height), 1u, bf16::fwd_as_ptr<VkClearValue>({}));
+    di.cmdDraw(*this->m_cmd, vertexCount, 1u, 0u, 0u);
+    endRenderPass(di, *this->m_cmd);
     copyImageToResultBuffer();
-    endCommandBuffer(di, *m_cmd);
-    submitCommandsAndWait(di, dev, queue, *m_cmd);
+    endCommandBuffer(di, *this->m_cmd);
+    submitCommandsAndWait(di, dev, queue, *this->m_cmd);
 
     const bool res = verifyResult();
 
@@ -819,28 +859,29 @@ auto BFloat16GraphicsInstance::iterate() -> tcu::TestStatus
 }
 
 // BFloat16VertexInstance
-auto BFloat16VertexInstance::preparePipeline() const -> Move<VkPipeline>
+template <typename FloatTy>
+auto BFloat16VertexInstance<FloatTy>::preparePipeline() const -> Move<VkPipeline>
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
-    DE_ASSERT(*m_renderPass != VK_NULL_HANDLE);
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
+    DE_ASSERT(*this->m_renderPass != VK_NULL_HANDLE);
 
     SpecializationInfo i;
 
-    i.addEntry(m_vertices[0].asFloat());  // c0
-    i.addEntry(m_vertices[1]);            // c1
-    i.addEntry(m_vertices[2].asFloat());  // c2
-    i.addEntry(m_vertices[3]);            // c3
-    i.addEntry(m_vertices[4].asFloat());  // c4
-    i.addEntry(m_vertices[5]);            // c5
-    i.addEntry(m_vertices[6]);            // c6
-    i.addEntry(m_vertices[7].asFloat());  // c7
-    i.addEntry(m_vertices[8]);            // c8
-    i.addEntry(m_vertices[9]);            // c9
-    i.addEntry(m_vertices[10]);           // c10
-    i.addEntry(m_vertices[11].asFloat()); // c11
-    i.addEntry(m_vertices[12]);           // c12
-    i.addEntry(m_vertices[13]);           // c13
+    i.addEntry(this->m_vertices[0].asFloat());  // c0
+    i.addEntry(this->m_vertices[1]);            // c1
+    i.addEntry(this->m_vertices[2].asFloat());  // c2
+    i.addEntry(this->m_vertices[3]);            // c3
+    i.addEntry(this->m_vertices[4].asFloat());  // c4
+    i.addEntry(this->m_vertices[5]);            // c5
+    i.addEntry(this->m_vertices[6]);            // c6
+    i.addEntry(this->m_vertices[7].asFloat());  // c7
+    i.addEntry(this->m_vertices[8]);            // c8
+    i.addEntry(this->m_vertices[9]);            // c9
+    i.addEntry(this->m_vertices[10]);           // c10
+    i.addEntry(this->m_vertices[11].asFloat()); // c11
+    i.addEntry(this->m_vertices[12]);           // c12
+    i.addEntry(this->m_vertices[13]);           // c13
 
     const vk::VkSpecializationInfo si = i.get();
 
@@ -849,7 +890,7 @@ auto BFloat16VertexInstance::preparePipeline() const -> Move<VkPipeline>
         nullptr,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        *m_shaders[0],                                       // VkShaderModule                      module
+        *this->m_shaders[0],                                 // VkShaderModule                      module
         "main",                                              // const char*                         pName
         &si                                                  // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -858,7 +899,7 @@ auto BFloat16VertexInstance::preparePipeline() const -> Move<VkPipeline>
         nullptr,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits               stage
-        *m_shaders[1],                                       // VkShaderModule                      module
+        *this->m_shaders[1],                                 // VkShaderModule                      module
         "main",                                              // const char*                         pName
         nullptr                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -866,28 +907,29 @@ auto BFloat16VertexInstance::preparePipeline() const -> Move<VkPipeline>
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
         nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
-        m_topology, // VkPrimitiveTopology                        topology
-        VK_FALSE    // VkBool32                                   primitiveRestartEnable
+        this->m_topology, // VkPrimitiveTopology                        topology
+        VK_FALSE          // VkBool32                                   primitiveRestartEnable
     };
 
-    return makeGraphicsPipeline(di, dev, VK_NULL_HANDLE, *m_pipelineLayout, VkPipelineCreateFlags(0),
-                                {vertShaderCreateInfo, fragShaderCreateInfo}, *m_renderPass,
-                                {makeViewport(m_params.width, m_params.height)},
-                                {makeRect2D(m_params.width, m_params.height)}, 0u, nullptr, nullptr, nullptr, nullptr,
-                                nullptr, nullptr, nullptr, &inputAssemblyCreateInfo);
+    return makeGraphicsPipeline(di, dev, VK_NULL_HANDLE, *this->m_pipelineLayout, VkPipelineCreateFlags(0),
+                                {vertShaderCreateInfo, fragShaderCreateInfo}, *this->m_renderPass,
+                                {makeViewport(this->m_params.width, this->m_params.height)},
+                                {makeRect2D(this->m_params.width, this->m_params.height)}, 0u, nullptr, nullptr,
+                                nullptr, nullptr, nullptr, nullptr, nullptr, &inputAssemblyCreateInfo);
 }
 
-auto BFloat16VertexInstance::prepareVertexBuffer() const -> de::MovePtr<BufferWithMemory>
+template <typename FloatTy>
+auto BFloat16VertexInstance<FloatTy>::prepareVertexBuffer() const -> de::MovePtr<BufferWithMemory>
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const uint32_t queueIndex = m_context.getUniversalQueueFamilyIndex();
-    const VkDevice dev        = m_context.getDevice();
-    Allocator &allocator      = m_context.getDefaultAllocator();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const uint32_t queueIndex = this->m_context.getUniversalQueueFamilyIndex();
+    const VkDevice dev        = this->m_context.getDevice();
+    Allocator &allocator      = this->m_context.getDefaultAllocator();
 
-    const uint32_t vertexCount = uint32_t(m_vertices.size() / 2);
+    const uint32_t vertexCount = uint32_t(this->m_vertices.size() / 2);
     const VkDeviceSize size    = mapVkFormat(VK_FORMAT_R32G32B32A32_SFLOAT).getPixelSize() * vertexCount;
-    const std::vector<uint32_t> queueFamilyIndices{queueIndex};
-    const VkBufferCreateInfo bci = makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, queueFamilyIndices);
+    const VkBufferCreateInfo bci =
+        makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, std::vector<uint32_t>{queueIndex});
 
     de::MovePtr<BufferWithMemory> vertexBuffer;
     bf16::makeMovePtr(vertexBuffer, di, dev, allocator, bci, MemoryRequirement::HostVisible);
@@ -898,35 +940,37 @@ auto BFloat16VertexInstance::prepareVertexBuffer() const -> de::MovePtr<BufferWi
     return vertexBuffer;
 }
 
-bool BFloat16VertexInstance::verifyResult() const
+template <typename FloatTy>
+bool BFloat16VertexInstance<FloatTy>::verifyResult() const
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
     const tcu::Vec4 white     = tcu::Vec4(1, 1, 1, 1);
 
-    invalidateAlloc(di, dev, m_outBufferZ->getAllocation());
-    invalidateAlloc(di, dev, m_resultBuffer->getAllocation());
+    invalidateAlloc(di, dev, this->m_outBufferZ->getAllocation());
+    invalidateAlloc(di, dev, this->m_resultBuffer->getAllocation());
 
-    const BFloat16Vec4 *outBufferZ = reinterpret_cast<BFloat16Vec4 *>(m_outBufferZ->getAllocation().getHostPtr());
-    const tcu::ConstPixelBufferAccess resultBuffer(mapVkFormat(m_params.format), int(m_params.width),
-                                                   int(m_params.height), 1,
-                                                   m_resultBuffer->getAllocation().getHostPtr());
+    const typename Super::FloatTyVec4 *outBufferZ =
+        reinterpret_cast<typename Super::FloatTyVec4 *>(this->m_outBufferZ->getAllocation().getHostPtr());
+    const tcu::ConstPixelBufferAccess resultBuffer(mapVkFormat(this->m_params.format), int(this->m_params.width),
+                                                   int(this->m_params.height), 1,
+                                                   this->m_resultBuffer->getAllocation().getHostPtr());
 
     auto barycentrumColor = [&](const tcu::Vec2 &a, const tcu::Vec2 &b, const tcu::Vec2 &c) -> tcu::Vec4
     {
         const float fx        = (a.x() + b.x() + c.x()) / 3.0f;
         const float fy        = (a.y() + b.y() + c.y()) / 3.0f;
-        const int ix          = int(((fx + 1.0f) / 2.0f) * float(m_params.width));
-        const int iy          = int(((fy + 1.0f) / 2.0f) * float(m_params.height));
+        const int ix          = int(((fx + 1.0f) / 2.0f) * float(this->m_params.width));
+        const int iy          = int(((fy + 1.0f) / 2.0f) * float(this->m_params.height));
         const tcu::Vec4 color = resultBuffer.getPixel(ix, iy);
         return color;
     };
 
     uint32_t triangles = 0;
 
-    for (uint32_t i = 0u; i < uint32_t(m_vertices.size()); ++i)
+    for (uint32_t i = 0u; i < uint32_t(this->m_vertices.size()); ++i)
     {
-        const float ref = m_vertices[i].asFloat();
+        const float ref = this->m_vertices[i].asFloat();
         const float out = outBufferZ[i][1].asFloat();
         if (ref != out)
             return false;
@@ -935,41 +979,42 @@ bool BFloat16VertexInstance::verifyResult() const
         {
             ++triangles;
 
-            const tcu::Vec2 a(m_vertices[0u].asFloat(), m_vertices[1u].asFloat());
-            const tcu::Vec2 b(m_vertices[i - 1u].asFloat(), m_vertices[i].asFloat());
-            const tcu::Vec2 c(m_vertices[i - 3u].asFloat(), m_vertices[i - 2u].asFloat());
+            const tcu::Vec2 a(this->m_vertices[0u].asFloat(), this->m_vertices[1u].asFloat());
+            const tcu::Vec2 b(this->m_vertices[i - 1u].asFloat(), this->m_vertices[i].asFloat());
+            const tcu::Vec2 c(this->m_vertices[i - 3u].asFloat(), this->m_vertices[i - 2u].asFloat());
 
             if (white != barycentrumColor(a, b, c))
                 return false;
         }
     }
 
-    return ((getVertexCount() - 2u) == triangles);
+    return ((this->getVertexCount() - 2u) == triangles);
 }
 
 // BFloat16FragmentInstance
-auto BFloat16FragmentInstance::preparePipeline() const -> Move<VkPipeline>
+template <typename FloatTy>
+auto BFloat16FragmentInstance<FloatTy>::preparePipeline() const -> Move<VkPipeline>
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
-    DE_ASSERT(*m_renderPass != VK_NULL_HANDLE);
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
+    DE_ASSERT(*this->m_renderPass != VK_NULL_HANDLE);
 
     SpecializationInfo i;
 
-    i.addEntry(m_vertices[0].asFloat());  // c0
-    i.addEntry(m_vertices[1]);            // c1
-    i.addEntry(m_vertices[2].asFloat());  // c2
-    i.addEntry(m_vertices[3]);            // c3
-    i.addEntry(m_vertices[4].asFloat());  // c4
-    i.addEntry(m_vertices[5]);            // c5
-    i.addEntry(m_vertices[6]);            // c6
-    i.addEntry(m_vertices[7].asFloat());  // c7
-    i.addEntry(m_vertices[8]);            // c8
-    i.addEntry(m_vertices[9]);            // c9
-    i.addEntry(m_vertices[10]);           // c10
-    i.addEntry(m_vertices[11].asFloat()); // c11
-    i.addEntry(m_vertices[12]);           // c12
-    i.addEntry(m_vertices[13]);           // c13
+    i.addEntry(this->m_vertices[0].asFloat());  // c0
+    i.addEntry(this->m_vertices[1]);            // c1
+    i.addEntry(this->m_vertices[2].asFloat());  // c2
+    i.addEntry(this->m_vertices[3]);            // c3
+    i.addEntry(this->m_vertices[4].asFloat());  // c4
+    i.addEntry(this->m_vertices[5]);            // c5
+    i.addEntry(this->m_vertices[6]);            // c6
+    i.addEntry(this->m_vertices[7].asFloat());  // c7
+    i.addEntry(this->m_vertices[8]);            // c8
+    i.addEntry(this->m_vertices[9]);            // c9
+    i.addEntry(this->m_vertices[10]);           // c10
+    i.addEntry(this->m_vertices[11].asFloat()); // c11
+    i.addEntry(this->m_vertices[12]);           // c12
+    i.addEntry(this->m_vertices[13]);           // c13
 
     const vk::VkSpecializationInfo si = i.get();
 
@@ -978,7 +1023,7 @@ auto BFloat16FragmentInstance::preparePipeline() const -> Move<VkPipeline>
         nullptr,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_VERTEX_BIT,                          // VkShaderStageFlagBits               stage
-        *m_shaders[0],                                       // VkShaderModule                      module
+        *this->m_shaders[0],                                 // VkShaderModule                      module
         "main",                                              // const char*                         pName
         nullptr                                              // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -987,7 +1032,7 @@ auto BFloat16FragmentInstance::preparePipeline() const -> Move<VkPipeline>
         nullptr,                                             // const void*                         pNext
         0u,                                                  // VkPipelineShaderStageCreateFlags    flags
         VK_SHADER_STAGE_FRAGMENT_BIT,                        // VkShaderStageFlagBits               stage
-        *m_shaders[1],                                       // VkShaderModule                      module
+        *this->m_shaders[1],                                 // VkShaderModule                      module
         "main",                                              // const char*                         pName
         &si                                                  // const VkSpecializationInfo*         pSpecializationInfo
     };
@@ -995,38 +1040,39 @@ auto BFloat16FragmentInstance::preparePipeline() const -> Move<VkPipeline>
         VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
         nullptr,                                                     // const void*                                pNext
         0u,                                                          // VkPipelineInputAssemblyStateCreateFlags    flags
-        m_topology, // VkPrimitiveTopology                        topology
-        VK_FALSE    // VkBool32                                   primitiveRestartEnable
+        this->m_topology, // VkPrimitiveTopology                        topology
+        VK_FALSE          // VkBool32                                   primitiveRestartEnable
     };
 
-    return makeGraphicsPipeline(di, dev, VK_NULL_HANDLE, *m_pipelineLayout, VkPipelineCreateFlags(0),
-                                {vertShaderCreateInfo, fragShaderCreateInfo}, *m_renderPass,
-                                {makeViewport(m_params.width, m_params.height)},
-                                {makeRect2D(m_params.width, m_params.height)}, 0u, nullptr, nullptr, nullptr, nullptr,
-                                nullptr, nullptr, nullptr, &inputAssemblyCreateInfo);
+    return makeGraphicsPipeline(di, dev, VK_NULL_HANDLE, *this->m_pipelineLayout, VkPipelineCreateFlags(0),
+                                {vertShaderCreateInfo, fragShaderCreateInfo}, *this->m_renderPass,
+                                {makeViewport(this->m_params.width, this->m_params.height)},
+                                {makeRect2D(this->m_params.width, this->m_params.height)}, 0u, nullptr, nullptr,
+                                nullptr, nullptr, nullptr, nullptr, nullptr, &inputAssemblyCreateInfo);
 }
 
-auto BFloat16FragmentInstance::prepareVertexBuffer() const -> de::MovePtr<BufferWithMemory>
+template <typename FloatTy>
+auto BFloat16FragmentInstance<FloatTy>::prepareVertexBuffer() const -> de::MovePtr<BufferWithMemory>
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const uint32_t queueIndex = m_context.getUniversalQueueFamilyIndex();
-    const VkDevice dev        = m_context.getDevice();
-    Allocator &allocator      = m_context.getDefaultAllocator();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const uint32_t queueIndex = this->m_context.getUniversalQueueFamilyIndex();
+    const VkDevice dev        = this->m_context.getDevice();
+    Allocator &allocator      = this->m_context.getDefaultAllocator();
 
-    const uint32_t vertexCount = uint32_t(m_vertices.size() / 2);
+    const uint32_t vertexCount = uint32_t(this->m_vertices.size() / 2);
     const VkDeviceSize size    = mapVkFormat(VK_FORMAT_R32G32B32A32_SFLOAT).getPixelSize() * vertexCount;
-    const std::vector<uint32_t> queueFamilyIndices{queueIndex};
-    const VkBufferCreateInfo bci = makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, queueFamilyIndices);
+    const VkBufferCreateInfo bci =
+        makeBufferCreateInfo(size, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT, std::vector<uint32_t>{queueIndex});
 
     de::MovePtr<BufferWithMemory> vertexBuffer;
     bf16::makeMovePtr(vertexBuffer, di, dev, allocator, bci, MemoryRequirement::HostVisible);
 
     std::vector<tcu::Vec4> vertexData(vertexCount);
-    for (uint32_t i = 0u; i < uint32_t(m_vertices.size()); ++i)
+    for (uint32_t i = 0u; i < uint32_t(this->m_vertices.size()); ++i)
     {
         if (i % 2u)
         {
-            const tcu::Vec4 v(m_vertices[i - 1u].asFloat(), m_vertices[i].asFloat(), 0.0f, 1.0f);
+            const tcu::Vec4 v(this->m_vertices[i - 1u].asFloat(), this->m_vertices[i].asFloat(), 0.0f, 1.0f);
             vertexData[i / 2u] = v;
         }
     }
@@ -1037,34 +1083,36 @@ auto BFloat16FragmentInstance::prepareVertexBuffer() const -> de::MovePtr<Buffer
     return vertexBuffer;
 }
 
-bool BFloat16FragmentInstance::verifyResult() const
+template <typename FloatTy>
+bool BFloat16FragmentInstance<FloatTy>::verifyResult() const
 {
-    const DeviceInterface &di = m_context.getDeviceInterface();
-    const VkDevice dev        = m_context.getDevice();
+    const DeviceInterface &di = this->m_context.getDeviceInterface();
+    const VkDevice dev        = this->m_context.getDevice();
 
-    invalidateAlloc(di, dev, m_outBufferZ->getAllocation());
-    invalidateAlloc(di, dev, m_resultBuffer->getAllocation());
+    invalidateAlloc(di, dev, this->m_outBufferZ->getAllocation());
+    invalidateAlloc(di, dev, this->m_resultBuffer->getAllocation());
 
-    const BFloat16Vec4 *outBufferZ = reinterpret_cast<BFloat16Vec4 *>(m_outBufferZ->getAllocation().getHostPtr());
-    const tcu::ConstPixelBufferAccess resultBuffer(mapVkFormat(m_params.format), int(m_params.width),
-                                                   int(m_params.height), 1,
-                                                   m_resultBuffer->getAllocation().getHostPtr());
+    const typename Super::FloatTyVec4 *outBufferZ =
+        reinterpret_cast<typename Super::FloatTyVec4 *>(this->m_outBufferZ->getAllocation().getHostPtr());
+    const tcu::ConstPixelBufferAccess resultBuffer(mapVkFormat(this->m_params.format), int(this->m_params.width),
+                                                   int(this->m_params.height), 1,
+                                                   this->m_resultBuffer->getAllocation().getHostPtr());
 
     auto barycentrumColor = [&](const tcu::Vec2 &a, const tcu::Vec2 &b, const tcu::Vec2 &c) -> tcu::Vec4
     {
         const float fx        = (a.x() + b.x() + c.x()) / 3.0f;
         const float fy        = (a.y() + b.y() + c.y()) / 3.0f;
-        const int ix          = int(((fx + 1.0f) / 2.0f) * float(m_params.width));
-        const int iy          = int(((fy + 1.0f) / 2.0f) * float(m_params.height));
+        const int ix          = int(((fx + 1.0f) / 2.0f) * float(this->m_params.width));
+        const int iy          = int(((fy + 1.0f) / 2.0f) * float(this->m_params.height));
         const tcu::Vec4 color = resultBuffer.getPixel(ix, iy);
         return color;
     };
 
     uint32_t triangles = 0;
 
-    for (uint32_t i = 0u; i < uint32_t(m_vertices.size()); ++i)
+    for (uint32_t i = 0u; i < uint32_t(this->m_vertices.size()); ++i)
     {
-        const float ref = m_vertices[i].asFloat();
+        const float ref = this->m_vertices[i].asFloat();
         const float out = outBufferZ[i][1].asFloat();
         if (ref != out)
             return false;
@@ -1073,9 +1121,9 @@ bool BFloat16FragmentInstance::verifyResult() const
         {
             ++triangles;
 
-            const tcu::Vec2 a(m_vertices[0u].asFloat(), m_vertices[1u].asFloat());
-            const tcu::Vec2 b(m_vertices[i - 1u].asFloat(), m_vertices[i].asFloat());
-            const tcu::Vec2 c(m_vertices[i - 3u].asFloat(), m_vertices[i - 2u].asFloat());
+            const tcu::Vec2 a(this->m_vertices[0u].asFloat(), this->m_vertices[1u].asFloat());
+            const tcu::Vec2 b(this->m_vertices[i - 1u].asFloat(), this->m_vertices[i].asFloat());
+            const tcu::Vec2 c(this->m_vertices[i - 3u].asFloat(), this->m_vertices[i - 2u].asFloat());
 
             const float d = float(triangles);
 
@@ -1084,7 +1132,7 @@ bool BFloat16FragmentInstance::verifyResult() const
         }
     }
 
-    return ((getVertexCount() - 2u) == triangles);
+    return ((this->getVertexCount() - 2u) == triangles);
 }
 
 template <typename TestClass>
@@ -1097,10 +1145,18 @@ TestCase *createTest(tcu::TestContext &ctx, const std::string &name, const Param
 
 void createBFloat16ConstantTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *bfloat16)
 {
+    // XXX TODO change test grouping after rebase
     std::tuple<const std::string, vkt::TestCase *(&)(tcu::TestContext &, const std::string &, const Params &)> ooo[]{
-        {"compute", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT>>},
-        {"vertex", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT>>},
-        {"fragment", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT>>}};
+        {"computebf16", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT, BFloat16>>},
+        {"vertexbf16", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT, BFloat16>>},
+        {"fragmentbf16", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT, BFloat16>>},
+        {"computefe5m2", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT, tcu::FloatE5M2>>},
+        {"vertexfe5m2", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT, tcu::FloatE5M2>>},
+        {"fragmentfe5m2", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT, tcu::FloatE5M2>>},
+        {"computefe4m3", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_COMPUTE_BIT, tcu::FloatE4M3>>},
+        {"vertexfe4m3", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_VERTEX_BIT, tcu::FloatE4M3>>},
+        {"fragmentfe4m3", createTest<BFloat16ConstantCaseT<VK_SHADER_STAGE_FRAGMENT_BIT, tcu::FloatE4M3>>},
+    };
 
     de::MovePtr<tcu::TestCaseGroup> constant(
         new tcu::TestCaseGroup(testCtx, "constant", "Tests of constant_id for bfloat16 type"));

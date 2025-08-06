@@ -111,6 +111,7 @@ struct CaseDef
     VkFormat colorFormat;
     VkFormat depthStencilFormat; //! A depth/stencil format, or UNDEFINED if not used
     AllocationKind allocationKind;
+    bool maintenance9;
 };
 
 template <typename T>
@@ -921,11 +922,12 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
     const ShaderWrapper vertexModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
     const ShaderWrapper fragmentModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
+    const VkImageLayout initialLayout = (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D && !caseDef.maintenance9) ?
+                                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+                                            VK_IMAGE_LAYOUT_UNDEFINED;
     RenderPassWrapper renderPass(makeRenderPass(vk, device, caseDef.pipelineConstructionType, caseDef.colorFormat,
                                                 caseDef.depthStencilFormat, static_cast<uint32_t>(numSlices),
-                                                (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D) ?
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
-                                                    VK_IMAGE_LAYOUT_UNDEFINED));
+                                                initialLayout));
     const PipelineLayoutWrapper pipelineLayout(caseDef.pipelineConstructionType, vk, device);
     vector<GraphicsPipelineWrapper> pipelines;
 
@@ -972,7 +974,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
     // Prepare color image upfront for rendering to individual slices.  3D slices aren't separate subresources, so they shouldn't be transitioned
     // during each subpass like array layers.
-    if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D)
+    if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D && !caseDef.maintenance9)
     {
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -1092,17 +1094,19 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
         // Copy colorImage -> host visible colorBuffer
         {
+            const uint32_t layers = caseDef.maintenance9 ? imageSize.z() : imageSize.w();
+
             const VkImageMemoryBarrier imageBarriers[] = {{
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType sType;
-                nullptr,                                    // const void* pNext;
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags outputMask;
-                VK_ACCESS_TRANSFER_READ_BIT,                // VkAccessFlags inputMask;
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout oldLayout;
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,       // VkImageLayout newLayout;
-                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t srcQueueFamilyIndex;
-                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t destQueueFamilyIndex;
-                *colorImage,                                // VkImage image;
-                makeColorSubresourceRange(0, imageSize.w()) // VkImageSubresourceRange subresourceRange;
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
+                nullptr,                                  // const void* pNext;
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags outputMask;
+                VK_ACCESS_TRANSFER_READ_BIT,              // VkAccessFlags inputMask;
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout oldLayout;
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // VkImageLayout newLayout;
+                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t destQueueFamilyIndex;
+                *colorImage,                              // VkImage image;
+                makeColorSubresourceRange(0, layers)      // VkImageSubresourceRange subresourceRange;
             }};
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1238,6 +1242,9 @@ void checkSupportAttachmentSize(Context &context, const CaseDef caseDef)
 
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           caseDef.pipelineConstructionType);
+
+    if (caseDef.maintenance9)
+        context.requireDeviceFunctionality("VK_KHR_maintenance9");
 }
 
 //! A test that can exercise very big color and depth/stencil attachment sizes.
@@ -1808,17 +1815,29 @@ void addTestCasesWithFunctions(tcu::TestCaseGroup *group, PipelineConstructionTy
                     for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
                         for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(format); ++formatNdx)
                         {
-                            const CaseDef caseDef{
+                            CaseDef caseDef{
                                 pipelineConstructionType,        // PipelineConstructionType pipelineConstructionType;
                                 testCase[caseNdx].viewType,      // VkImageViewType imageType;
                                 *sizeIter,                       // IVec4 imageSizeHint;
                                 format[formatNdx],               // VkFormat colorFormat;
                                 depthStencilFormat[dsFormatNdx], // VkFormat depthStencilFormat;
-                                allocationKind                   // AllocationKind allocationKind;
+                                allocationKind,                  // AllocationKind allocationKind;
+                                false                            // bool maintenance9
                             };
                             addFunctionCaseWithPrograms(
                                 smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]),
                                 checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+
+                            if (testCase[caseNdx].viewType == VK_IMAGE_VIEW_TYPE_3D)
+                            {
+                                caseDef.maintenance9 = true;
+
+                                addFunctionCaseWithPrograms(
+                                    smallGroup.get(),
+                                    getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]) +
+                                        "_2d_compatible",
+                                    checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+                            }
                         }
                 }
                 else // All huge cases go into a separate group
@@ -1838,7 +1857,8 @@ void addTestCasesWithFunctions(tcu::TestCaseGroup *group, PipelineConstructionTy
                                 *sizeIter,                       // IVec4 imageSizeHint;
                                 colorFormat,                     // VkFormat colorFormat;
                                 depthStencilFormat[dsFormatNdx], // VkFormat depthStencilFormat;
-                                allocationKind                   // AllocationKind allocationKind;
+                                allocationKind,                  // AllocationKind allocationKind;
+                                false                            // bool maintenance9
                             };
                             addFunctionCaseWithPrograms(
                                 sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]),
@@ -1865,7 +1885,8 @@ void addTestCasesWithFunctions(tcu::TestCaseGroup *group, PipelineConstructionTy
                         testCase[caseNdx].baselineSize,  // IVec4 imageSizeHint;
                         format[formatNdx],               // VkFormat colorFormat;
                         depthStencilFormat[dsFormatNdx], // VkFormat depthStencilFormat;
-                        allocationKind                   // AllocationKind allocationKind;
+                        allocationKind,                  // AllocationKind allocationKind;
+                        false                            // bool maintenance9
                     };
                     addFunctionCaseWithPrograms(
                         mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]),

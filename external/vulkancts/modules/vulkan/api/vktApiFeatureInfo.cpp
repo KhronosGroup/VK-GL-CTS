@@ -56,6 +56,7 @@
 #include <string>
 #include <limits>
 #include <optional>
+#include <cstring>
 
 namespace vkt
 {
@@ -1211,6 +1212,12 @@ tcu::TestStatus validateLimits14(Context &context)
         {PN(checkAlways), PN(limits.subTexelPrecisionBits), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
         {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[0]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[1]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[0]), LIM_MAX_FLOAT(-15360.0f)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[1]), LIM_MIN_FLOAT(15359.0f)},
+        {PN(checkAlways), PN(limits.maxFramebufferWidth), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxFramebufferHeight), LIM_MIN_UINT32(7680)},
         {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.timestampComputeAndGraphics), LIM_MIN_UINT32(1)},
         {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
@@ -1662,20 +1669,20 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     const VkBool32 checkAlways            = VK_TRUE;
     const InstanceInterface &vk           = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorPropertiesKHR =
+    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertexAttributeDivisorPropertiesEXT =
         vk::initVulkanStructure();
-    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesKHR);
+    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
 
     vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
     FeatureLimitTableItem featureLimitTable[] = {
-        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesKHR.maxVertexAttribDivisor),
+        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),
          LIM_MIN_UINT32((1 << 16) - 1)},
     };
 
-    log << TestLog::Message << vertexAttributeDivisorPropertiesKHR << TestLog::EndMessage;
+    log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
         limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -4606,7 +4613,9 @@ bool isRequiredImageParameterCombination(const VkPhysicalDeviceFeatures &deviceF
 
 VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLimits &deviceLimits, bool hasVulkan12,
                                                         const VkPhysicalDeviceVulkan12Properties &vulkan12Properties,
-                                                        const VkFormat format, const VkImageUsageFlags usageFlags)
+                                                        const VkPhysicalDeviceFeatures &deviceFeatures,
+                                                        const VkImageCreateFlags createFlags, const VkFormat format,
+                                                        const VkImageUsageFlags usageFlags)
 {
     if (isCompressedFormat(format))
         return VK_SAMPLE_COUNT_1_BIT;
@@ -4674,6 +4683,17 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
 
         if (hasStencilComp)
             sampleCounts &= deviceLimits.framebufferStencilSampleCounts;
+    }
+
+    if ((createFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) != 0)
+    {
+        const VkSampleCountFlags sparseSampleCounts =
+            VK_SAMPLE_COUNT_1_BIT | (deviceFeatures.sparseResidency2Samples ? VK_SAMPLE_COUNT_2_BIT : 0) |
+            (deviceFeatures.sparseResidency4Samples ? VK_SAMPLE_COUNT_4_BIT : 0) |
+            (deviceFeatures.sparseResidency8Samples ? VK_SAMPLE_COUNT_8_BIT : 0) |
+            (deviceFeatures.sparseResidency16Samples ? VK_SAMPLE_COUNT_16_BIT : 0);
+
+        sampleCounts &= sparseSampleCounts;
     }
 
     // If there is no usage flag set that would have corresponding device limit,
@@ -4811,8 +4831,9 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
                     (supportedFeatures &
                      (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)))
                 {
-                    const VkSampleCountFlags requiredSampleCounts = getRequiredOptimalTilingSampleCounts(
-                        deviceLimits, hasVulkan12, vulkan12Properties, format, curUsageFlags);
+                    const VkSampleCountFlags requiredSampleCounts =
+                        getRequiredOptimalTilingSampleCounts(deviceLimits, hasVulkan12, vulkan12Properties,
+                                                             deviceFeatures, curCreateFlags, format, curUsageFlags);
                     results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts,
                                   "Required sample counts not supported");
                 }
@@ -8239,6 +8260,150 @@ tcu::TestStatus testMandatoryExtensions(Context &context)
 
 } // namespace android
 
+enum FormatPropsPNextFlagBits
+{
+    PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST   = 2,
+    PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2 = 1,
+    PNEXT_FORMAT_PROPERTIES_3                   = 4,
+#ifndef CTS_USES_VULKANSC
+    PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY = 8,
+#endif // CTS_USES_VULKANSC
+};
+
+using FormatPropsPNextFlags = uint32_t;
+
+struct FormatPropsPNextParams
+{
+    VkFormat format;
+    FormatPropsPNextFlags pNextFlags;
+};
+
+class FormatPropsTest : public vkt::TestInstance
+{
+public:
+    FormatPropsTest(Context &context, const FormatPropsPNextParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~FormatPropsTest(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const FormatPropsPNextParams m_params;
+};
+
+class FormatPropsCase : public vkt::TestCase
+{
+public:
+    FormatPropsCase(tcu::TestContext &testCtx, const std::string &name, const FormatPropsPNextParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~FormatPropsCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new FormatPropsTest(context, m_params);
+    }
+
+protected:
+    const FormatPropsPNextParams m_params;
+};
+
+void FormatPropsCase::checkSupport(Context &context) const
+{
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+
+    if ((m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST) ||
+        (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2))
+        context.requireDeviceFunctionality("VK_EXT_image_drm_format_modifier");
+
+    if ((m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2) ||
+        (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3))
+        context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.pNextFlags & PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY)
+        context.requireDeviceFunctionality("VK_EXT_multisampled_render_to_single_sampled");
+#endif // CTS_USES_VULKANSC
+}
+
+tcu::TestStatus FormatPropsTest::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+
+    VkFormatProperties2 basicProps = initVulkanStructure();
+
+    ctx.vki.getPhysicalDeviceFormatProperties2(ctx.physicalDevice, m_params.format, &basicProps);
+
+    VkFormatProperties2 retryProps = initVulkanStructure();
+    const auto addProperties       = makeStructChainAdder(&retryProps);
+
+    VkDrmFormatModifierPropertiesListEXT drmModProps   = initVulkanStructure();
+    VkDrmFormatModifierPropertiesList2EXT drmModProps2 = initVulkanStructure();
+    VkFormatProperties3 props3                         = initVulkanStructure();
+#ifndef CTS_USES_VULKANSC
+    VkSubpassResolvePerformanceQueryEXT subpassResolveProps = initVulkanStructure();
+#endif // CTS_USES_VULKANSC
+
+    if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST)
+        addProperties(&drmModProps);
+
+    if (m_params.pNextFlags & PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2)
+        addProperties(&drmModProps2);
+
+    if (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3)
+        addProperties(&props3);
+
+#ifndef CTS_USES_VULKANSC
+    if (m_params.pNextFlags & PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY)
+        addProperties(&subpassResolveProps);
+#endif // CTS_USES_VULKANSC
+
+    ctx.vki.getPhysicalDeviceFormatProperties2(ctx.physicalDevice, m_params.format, &retryProps);
+
+    if (basicProps.formatProperties.bufferFeatures != retryProps.formatProperties.bufferFeatures)
+        TCU_FAIL("Mismatch in bufferFeatures");
+
+    if (basicProps.formatProperties.linearTilingFeatures != retryProps.formatProperties.linearTilingFeatures)
+        TCU_FAIL("Mismatch in linearTilingFeatures");
+
+    if (basicProps.formatProperties.optimalTilingFeatures != retryProps.formatProperties.optimalTilingFeatures)
+        TCU_FAIL("Mismatch in optimalTilingFeatures");
+
+    if (m_params.pNextFlags & PNEXT_FORMAT_PROPERTIES_3)
+    {
+        const auto basicBufferFeatures2 =
+            static_cast<VkFormatFeatureFlags2>(basicProps.formatProperties.bufferFeatures);
+        const auto basicLinearTilingFeatures2 =
+            static_cast<VkFormatFeatureFlags2>(basicProps.formatProperties.linearTilingFeatures);
+        const auto basicOptimalTilingFeatures2 =
+            static_cast<VkFormatFeatureFlags2>(basicProps.formatProperties.optimalTilingFeatures);
+
+        if ((basicBufferFeatures2 & props3.bufferFeatures) != basicBufferFeatures2)
+            TCU_FAIL("Mismatch in bufferFeatures from VkFormatProperties3");
+
+        if ((basicLinearTilingFeatures2 & props3.linearTilingFeatures) != basicLinearTilingFeatures2)
+            TCU_FAIL("Mismatch in linearTilingFeatures from VkFormatProperties3");
+
+        if ((basicOptimalTilingFeatures2 & props3.optimalTilingFeatures) != basicOptimalTilingFeatures2)
+            TCU_FAIL("Mismatch in optimalTilingFeatures from VkFormatProperties3");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+std::string getFormatSimpleName(VkFormat format)
+{
+    static size_t prefixLen    = std::strlen("VK_FORMAT_");
+    const std::string fullName = getFormatName(format);
+    return de::toLower(fullName.substr(prefixLen));
+}
+
 } // namespace
 
 static inline void addFunctionCaseInNewSubgroup(tcu::TestContext &testCtx, tcu::TestCaseGroup *group,
@@ -8297,6 +8462,72 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
                                      deviceQueueFamilyProperties2);
         addFunctionCaseInNewSubgroup(testCtx, extendedPropertiesTests.get(), "memory_properties",
                                      deviceMemoryProperties2);
+
+        {
+            de::MovePtr<tcu::TestCaseGroup> formatPropertiesPNextGroup(
+                new tcu::TestCaseGroup(testCtx, "pnext_format_properties"));
+
+            // Test all the basic formats that do not require extensions.
+            const VkFormat lastFomat = VK_FORMAT_ASTC_12x12_SRGB_BLOCK;
+            VkFormat testFormat      = VK_FORMAT_UNDEFINED;
+
+            const struct
+            {
+                FormatPropsPNextFlags pNextFlags;
+                const char *flagsCaseName;
+            } flagsCases[] = {
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST), "drm_format_mod_1"},
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2), "drm_format_mod_2"},
+                {(PNEXT_FORMAT_PROPERTIES_3), "format_props_3"},
+#ifndef CTS_USES_VULKANSC
+                {(PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY), "subpass_resolve_query"},
+#endif // CTS_USES_VULKANSC
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST | PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2),
+                 "drm_format_mod_1_and_2"},
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST | PNEXT_FORMAT_PROPERTIES_3),
+                 "drm_format_mod_1_and_format_props_3"},
+#ifndef CTS_USES_VULKANSC
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST | PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY),
+                 "drm_format_mod_1_and_subpass_resolve_query"},
+#endif // CTS_USES_VULKANSC
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2 | PNEXT_FORMAT_PROPERTIES_3),
+                 "drm_format_mod_2_and_format_props_3"},
+#ifndef CTS_USES_VULKANSC
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2 | PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY),
+                 "drm_format_mod_2_and_subpass_resolve_query"},
+                {(PNEXT_FORMAT_PROPERTIES_3 | PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY),
+                 "format_props_3_and_subpass_resolve_query"},
+#endif // CTS_USES_VULKANSC
+                {(PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST | PNEXT_DRM_FORMAT_MODIFIER_PROPERTIES_LIST_2 |
+                  PNEXT_FORMAT_PROPERTIES_3
+#ifndef CTS_USES_VULKANSC
+                  | PNEXT_SUBPASS_RESOLVE_PERFORMANCE_QUERY
+#endif // CTS_USES_VULKANSC
+                  ),
+                 "all_format_props"},
+            };
+
+            for (;;)
+            {
+                // Pick the next format.
+                testFormat = static_cast<VkFormat>(static_cast<int>(testFormat) + 1);
+                if (testFormat > lastFomat)
+                    break;
+
+                const std::string formatName = getFormatSimpleName(testFormat);
+                de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
+
+                for (const auto &flagsCase : flagsCases)
+                {
+                    const FormatPropsPNextParams params{testFormat, flagsCase.pNextFlags};
+                    formatGroup->addChild(new FormatPropsCase(testCtx, flagsCase.flagsCaseName, params));
+                }
+
+                formatPropertiesPNextGroup->addChild(formatGroup.release());
+            }
+
+            extendedPropertiesTests->addChild(formatPropertiesPNextGroup.release());
+        }
 
         infoTests->addChild(extendedPropertiesTests.release());
     }

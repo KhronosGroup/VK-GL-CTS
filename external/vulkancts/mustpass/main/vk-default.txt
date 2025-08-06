@@ -19,6 +19,7 @@ vk-default/fragment-shading-rate.txt
 vk-default/geometry.txt
 vk-default/glsl.txt
 vk-default/graphicsfuzz.txt
+vk-default/image/2d-array-compatible.txt
 vk-default/image/astc-decode-mode.txt
 vk-default/image/atomic-operations.txt
 vk-default/image/concurrent-copy.txt
@@ -29,6 +30,7 @@ vk-default/image/extend-operands-spirv1p4.txt
 vk-default/image/extended-usage-bit.txt
 vk-default/image/extended-usage-bit-compatibility.txt
 vk-default/image/format-reinterpret.txt
+vk-default/image/general-layout.txt
 vk-default/image/host-image-copy.txt
 vk-default/image/image-size.txt
 vk-default/image/load-store.txt
@@ -56,6 +58,7 @@ vk-default/mesh-shader.txt
 vk-default/multiview.txt
 vk-default/pipeline/fast-linked-library.txt
 vk-default/pipeline/monolithic.txt
+vk-default/pipeline/no-queues.txt
 vk-default/pipeline/pipeline-library.txt
 vk-default/pipeline/shader-object-linked-binary.txt
 vk-default/pipeline/shader-object-linked-spirv.txt

@@ -25,6 +25,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineBlendTests.hpp"
+#include "vktPipelineDualBlendTests.hpp"
+#include "vktPipelineBlendTestsCommon.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -63,6 +65,7 @@ namespace pipeline
 {
 
 using namespace vk;
+using namespace blending_common;
 
 namespace
 {
@@ -79,16 +82,6 @@ bool mustIncludeRGBDynamicMask(VkFormat format)
     return (format == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32);
 }
 
-bool isSupportedBlendFormat(const InstanceInterface &instanceInterface, VkPhysicalDevice device, VkFormat format)
-{
-    VkFormatProperties formatProps;
-
-    instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
-
-    return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) &&
-           (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT);
-}
-
 class BlendStateUniqueRandomIterator : public UniqueRandomIterator<VkPipelineColorBlendAttachmentState>
 {
 public:
@@ -99,8 +92,8 @@ public:
     VkPipelineColorBlendAttachmentState getIndexedValue(uint32_t index);
 
 private:
-    const static VkBlendFactor m_blendFactors[];
-    const static VkBlendOp m_blendOps[];
+    const static inline std::vector<VkBlendFactor> &m_blendFactors = getBlendFactors();
+    const static inline std::vector<VkBlendOp> &m_blendOps         = getBlendOps();
 
     // Pre-calculated constants
     const static uint32_t m_blendFactorsLength;
@@ -123,8 +116,8 @@ public:
     VkPipelineColorBlendAttachmentState getIndexedValue(uint32_t index);
 
 private:
-    const static VkBlendFactor m_blendFactors[];
-    const static VkBlendOp m_blendOps[];
+    const static inline std::vector<VkBlendFactor> m_blendFactors = getBlendWithDualSourceFactors();
+    const static inline std::vector<VkBlendOp> m_blendOps         = getBlendOps();
 
     // Pre-calculated constants
     const static uint32_t m_blendFactorsLength;
@@ -220,7 +213,6 @@ private:
     std::vector<Vertex4RGBA> m_vertices;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
 
-    PipelineConstructionType m_pipelineConstructionType;
     PipelineLayoutWrapper m_pipelineLayout;
     GraphicsPipelineWrapper m_graphicsPipelines[BlendTest::QUAD_COUNT];
 
@@ -232,7 +224,7 @@ private:
 class DualSourceBlendTestInstance : public vkt::TestInstance
 {
 public:
-    DualSourceBlendTestInstance(Context &context, const PipelineConstructionType m_pipelineConstructionType,
+    DualSourceBlendTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType,
                                 const VkFormat colorFormat,
                                 const VkPipelineColorBlendAttachmentState blendStates[DualSourceBlendTest::QUAD_COUNT]);
     virtual ~DualSourceBlendTestInstance(void);
@@ -260,7 +252,6 @@ private:
     std::vector<Vertex4RGBARGBA> m_vertices;
     de::MovePtr<Allocation> m_vertexBufferAlloc;
 
-    PipelineConstructionType m_pipelineConstructionType;
     PipelineLayoutWrapper m_pipelineLayout;
     GraphicsPipelineWrapper m_graphicsPipelines[DualSourceBlendTest::QUAD_COUNT];
 
@@ -270,32 +261,11 @@ private:
 
 // BlendStateUniqueRandomIterator
 
-const VkBlendFactor BlendStateUniqueRandomIterator::m_blendFactors[] = {
-    VK_BLEND_FACTOR_ZERO,
-    VK_BLEND_FACTOR_ONE,
-    VK_BLEND_FACTOR_SRC_COLOR,
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
-    VK_BLEND_FACTOR_DST_COLOR,
-    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
-    VK_BLEND_FACTOR_SRC_ALPHA,
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-    VK_BLEND_FACTOR_DST_ALPHA,
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-    VK_BLEND_FACTOR_CONSTANT_COLOR,
-    VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
-    VK_BLEND_FACTOR_CONSTANT_ALPHA,
-    VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
-    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
-};
-
-const VkBlendOp BlendStateUniqueRandomIterator::m_blendOps[] = {
-    VK_BLEND_OP_ADD, VK_BLEND_OP_SUBTRACT, VK_BLEND_OP_REVERSE_SUBTRACT, VK_BLEND_OP_MIN, VK_BLEND_OP_MAX};
-
-const uint32_t BlendStateUniqueRandomIterator::m_blendFactorsLength  = DE_LENGTH_OF_ARRAY(m_blendFactors);
+const uint32_t BlendStateUniqueRandomIterator::m_blendFactorsLength  = uint32_t(m_blendFactors.size());
 const uint32_t BlendStateUniqueRandomIterator::m_blendFactorsLength2 = m_blendFactorsLength * m_blendFactorsLength;
 const uint32_t BlendStateUniqueRandomIterator::m_blendFactorsLength3 = m_blendFactorsLength2 * m_blendFactorsLength;
 const uint32_t BlendStateUniqueRandomIterator::m_blendFactorsLength4 = m_blendFactorsLength3 * m_blendFactorsLength;
-const uint32_t BlendStateUniqueRandomIterator::m_blendOpsLength      = DE_LENGTH_OF_ARRAY(m_blendOps);
+const uint32_t BlendStateUniqueRandomIterator::m_blendOpsLength      = uint32_t(m_blendOps.size());
 const uint32_t BlendStateUniqueRandomIterator::m_totalBlendStates =
     m_blendFactorsLength4 * m_blendOpsLength * m_blendOpsLength;
 
@@ -344,38 +314,14 @@ VkPipelineColorBlendAttachmentState BlendStateUniqueRandomIterator::getIndexedVa
 
 // BlendStateUniqueRandomIteratorDualSource
 
-const VkBlendFactor BlendStateUniqueRandomIteratorDualSource::m_blendFactors[] = {
-    VK_BLEND_FACTOR_ZERO,
-    VK_BLEND_FACTOR_ONE,
-    VK_BLEND_FACTOR_SRC_COLOR,
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR,
-    VK_BLEND_FACTOR_DST_COLOR,
-    VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR,
-    VK_BLEND_FACTOR_SRC_ALPHA,
-    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
-    VK_BLEND_FACTOR_DST_ALPHA,
-    VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA,
-    VK_BLEND_FACTOR_CONSTANT_COLOR,
-    VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR,
-    VK_BLEND_FACTOR_CONSTANT_ALPHA,
-    VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA,
-    VK_BLEND_FACTOR_SRC_ALPHA_SATURATE,
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR,
-    VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA,
-    VK_BLEND_FACTOR_SRC1_COLOR,
-    VK_BLEND_FACTOR_SRC1_ALPHA};
-
-const VkBlendOp BlendStateUniqueRandomIteratorDualSource::m_blendOps[] = {
-    VK_BLEND_OP_ADD, VK_BLEND_OP_SUBTRACT, VK_BLEND_OP_REVERSE_SUBTRACT, VK_BLEND_OP_MIN, VK_BLEND_OP_MAX};
-
-const uint32_t BlendStateUniqueRandomIteratorDualSource::m_blendFactorsLength = DE_LENGTH_OF_ARRAY(m_blendFactors);
+const uint32_t BlendStateUniqueRandomIteratorDualSource::m_blendFactorsLength = uint32_t(m_blendFactors.size());
 const uint32_t BlendStateUniqueRandomIteratorDualSource::m_blendFactorsLength2 =
     m_blendFactorsLength * m_blendFactorsLength;
 const uint32_t BlendStateUniqueRandomIteratorDualSource::m_blendFactorsLength3 =
     m_blendFactorsLength2 * m_blendFactorsLength;
 const uint32_t BlendStateUniqueRandomIteratorDualSource::m_blendFactorsLength4 =
     m_blendFactorsLength3 * m_blendFactorsLength;
-const uint32_t BlendStateUniqueRandomIteratorDualSource::m_blendOpsLength = DE_LENGTH_OF_ARRAY(m_blendOps);
+const uint32_t BlendStateUniqueRandomIteratorDualSource::m_blendOpsLength = uint32_t(m_blendOps.size());
 const uint32_t BlendStateUniqueRandomIteratorDualSource::m_totalBlendStates =
     m_blendFactorsLength4 * m_blendOpsLength * m_blendOpsLength;
 
@@ -552,20 +498,6 @@ DualSourceBlendTest::~DualSourceBlendTest(void)
 {
 }
 
-bool isSrc1BlendFactor(vk::VkBlendFactor blendFactor)
-{
-    switch (blendFactor)
-    {
-    case vk::VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR:
-    case vk::VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA:
-    case vk::VK_BLEND_FACTOR_SRC1_ALPHA:
-    case vk::VK_BLEND_FACTOR_SRC1_COLOR:
-        return true;
-    default:
-        return false;
-    }
-}
-
 TestInstance *DualSourceBlendTest::createInstance(Context &context) const
 {
     return new DualSourceBlendTestInstance(context, m_pipelineConstructionType, m_colorFormat, m_blendStates);
@@ -648,7 +580,6 @@ BlendTestInstance::BlendTestInstance(Context &context, const PipelineConstructio
     : vkt::TestInstance(context)
     , m_renderSize(32, 32)
     , m_colorFormat(colorFormat)
-    , m_pipelineConstructionType(pipelineConstructionType)
     , m_graphicsPipelines{{context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                            context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType},
                           {context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
@@ -1138,8 +1069,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
 
     // Render reference image
     {
-        const bool altMasks =
-            (isConstructionTypeShaderObject(m_pipelineConstructionType) && mustIncludeRGBDynamicMask(m_colorFormat));
+        const bool altMasks = mustIncludeRGBDynamicMask(m_colorFormat);
         const VkColorComponentFlags *colorWriteMasks =
             (altMasks ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
 
@@ -1239,7 +1169,6 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance(
     : vkt::TestInstance(context)
     , m_renderSize(32, 32)
     , m_colorFormat(colorFormat)
-    , m_pipelineConstructionType(pipelineConstructionType)
     , m_graphicsPipelines{{context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                            context.getDevice(), context.getDeviceExtensions(), pipelineConstructionType},
                           {context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
@@ -1544,8 +1473,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
         tcu::Vec4 discardColor8  = access8.getPixel(0, 0);
         tcu::Vec4 discardColor64 = access64.getPixel(0, 0);
 
-        const bool altMasks =
-            (isConstructionTypeShaderObject(m_pipelineConstructionType) && mustIncludeRGBDynamicMask(m_colorFormat));
+        const bool altMasks = mustIncludeRGBDynamicMask(m_colorFormat);
         const VkColorComponentFlags *colorWriteMasks =
             (altMasks ? DualSourceBlendTest::s_altColorWriteMasks : DualSourceBlendTest::s_colorWriteMasks);
 
@@ -2039,48 +1967,6 @@ tcu::TestStatus ClampTestInstance::iterate(void)
 
 } // namespace
 
-std::string getBlendStateName(const VkPipelineColorBlendAttachmentState &blendState)
-{
-    const char *shortBlendFactorNames[] = {
-        "z",     // VK_BLEND_ZERO
-        "o",     // VK_BLEND_ONE
-        "sc",    // VK_BLEND_SRC_COLOR
-        "1msc",  // VK_BLEND_ONE_MINUS_SRC_COLOR
-        "dc",    // VK_BLEND_DEST_COLOR
-        "1mdc",  // VK_BLEND_ONE_MINUS_DEST_COLOR
-        "sa",    // VK_BLEND_SRC_ALPHA
-        "1msa",  // VK_BLEND_ONE_MINUS_SRC_ALPHA
-        "da",    // VK_BLEND_DEST_ALPHA
-        "1mda",  // VK_BLEND_ONE_MINUS_DEST_ALPHA
-        "cc",    // VK_BLEND_CONSTANT_COLOR
-        "1mcc",  // VK_BLEND_ONE_MINUS_CONSTANT_COLOR
-        "ca",    // VK_BLEND_CONSTANT_ALPHA
-        "1mca",  // VK_BLEND_ONE_MINUS_CONSTANT_ALPHA
-        "sas",   // VK_BLEND_SRC_ALPHA_SATURATE
-        "1ms1c", // VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR
-        "1ms1a", // VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA
-        "s1c",   // VK_BLEND_FACTOR_SRC1_COLOR
-        "s1a"    // VK_BLEND_FACTOR_SRC1_ALPHA
-    };
-
-    const char *blendOpNames[] = {
-        "add",  // VK_BLEND_OP_ADD
-        "sub",  // VK_BLEND_OP_SUBTRACT
-        "rsub", // VK_BLEND_OP_REVERSE_SUBTRACT
-        "min",  // VK_BLEND_OP_MIN
-        "max",  // VK_BLEND_OP_MAX
-    };
-
-    std::ostringstream shortName;
-
-    shortName << "color_" << shortBlendFactorNames[blendState.srcColorBlendFactor] << "_"
-              << shortBlendFactorNames[blendState.dstColorBlendFactor] << "_" << blendOpNames[blendState.colorBlendOp];
-    shortName << "_alpha_" << shortBlendFactorNames[blendState.srcAlphaBlendFactor] << "_"
-              << shortBlendFactorNames[blendState.dstAlphaBlendFactor] << "_" << blendOpNames[blendState.alphaBlendOp];
-
-    return shortName.str();
-}
-
 std::string getBlendStateSetName(const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT])
 {
     std::ostringstream name;
@@ -2096,15 +1982,6 @@ std::string getBlendStateSetName(const VkPipelineColorBlendAttachmentState blend
     return name.str();
 }
 
-std::string getFormatCaseName(VkFormat format)
-{
-    const std::string fullName = getFormatName(format);
-
-    DE_ASSERT(de::beginsWith(fullName, "VK_FORMAT_"));
-
-    return de::toLower(fullName.substr(10));
-}
-
 tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
 {
     const bool isESO = vk::isConstructionTypeShaderObject(pipelineConstructionType);
@@ -2112,52 +1989,6 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
         (!isESO || pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
 
     const uint32_t blendStatesPerFormat = 100 * BlendTest::QUAD_COUNT;
-
-    // Formats that are dEQP-compatible, non-integer and uncompressed
-    const VkFormat blendFormats[] = {
-        VK_FORMAT_R4G4_UNORM_PACK8,
-        VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-        VK_FORMAT_R5G6B5_UNORM_PACK16,
-        VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-        VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-        VK_FORMAT_R8_UNORM,
-        VK_FORMAT_R8_SNORM,
-        VK_FORMAT_R8_SRGB,
-        VK_FORMAT_R8G8_UNORM,
-        VK_FORMAT_R8G8_SNORM,
-        VK_FORMAT_R8G8_SRGB,
-        VK_FORMAT_R8G8B8_UNORM,
-        VK_FORMAT_R8G8B8_SNORM,
-        VK_FORMAT_R8G8B8_SRGB,
-        VK_FORMAT_R8G8B8A8_UNORM,
-        VK_FORMAT_R8G8B8A8_SNORM,
-        VK_FORMAT_R8G8B8A8_SRGB,
-        VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-        VK_FORMAT_R16_UNORM,
-        VK_FORMAT_R16_SNORM,
-        VK_FORMAT_R16_SFLOAT,
-        VK_FORMAT_R16G16_UNORM,
-        VK_FORMAT_R16G16_SNORM,
-        VK_FORMAT_R16G16_SFLOAT,
-        VK_FORMAT_R16G16B16_UNORM,
-        VK_FORMAT_R16G16B16_SNORM,
-        VK_FORMAT_R16G16B16_SFLOAT,
-        VK_FORMAT_R16G16B16A16_UNORM,
-        VK_FORMAT_R16G16B16A16_SNORM,
-        VK_FORMAT_R16G16B16A16_SFLOAT,
-        VK_FORMAT_R32_SFLOAT,
-        VK_FORMAT_R32G32_SFLOAT,
-        VK_FORMAT_R32G32B32_SFLOAT,
-        VK_FORMAT_R32G32B32A32_SFLOAT,
-        VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-        VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-        VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-        VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-        VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
-        VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
-        VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-    };
 
     const std::pair<const char *, bool> shaderOutputTypes[]{
         {"output_variable", false},
@@ -2180,9 +2011,8 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
 
     if (genFormatTests)
     {
-        for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(blendFormats); formatNdx++)
+        for (const VkFormat format : getBlendFormats())
         {
-            const VkFormat format           = blendFormats[formatNdx];
             const bool needsAltMasksDynamic = mustIncludeRGBDynamicMask(format);
 
             // Blend tests
@@ -2204,8 +2034,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                 {
                     VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
                     const VkColorComponentFlags *colorWriteMasks =
-                        (isESO && needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks :
-                                                         BlendTest::s_colorWriteMasks);
+                        (needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
 
                     for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                     {
@@ -2246,8 +2075,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                         VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
                         bool isDualSourceBlendTest = false;
                         const VkColorComponentFlags *colorWriteMasks =
-                            (isESO && needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks :
-                                                             BlendTest::s_colorWriteMasks);
+                            (needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
 
                         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                         {
@@ -2326,6 +2154,9 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
     if (genFormatTests)
     {
         dualSourceBlendTests->addChild(dualSourceFormatTests.release());
+#ifndef CTS_USES_VULKANSC
+        addDualBlendMultiAttachmentTests(testCtx, dualSourceBlendTests.operator->(), pipelineConstructionType);
+#endif
         blendTests->addChild(dualSourceBlendTests.release());
     }
 

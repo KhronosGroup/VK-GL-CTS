@@ -115,12 +115,16 @@ set(GLCTS_GL_SRCS
 	gl4cSparseTextureClampTests.hpp
 	gl4cSpirvExtensionsTests.cpp
 	gl4cSpirvExtensionsTests.hpp
+	gl4cClearTexImageAndSubImageTests.hpp
+	gl4cClearTexImageAndSubImageTests.cpp
 	gl4cPostDepthCoverageTests.cpp
 	gl4cPostDepthCoverageTests.hpp
 	gl4cIndirectParametersTests.cpp
 	gl4cIndirectParametersTests.hpp
 	gl4cLimitsTests.cpp
 	gl4cLimitsTests.hpp
+	gl4cTextureQueryLevelsTests.hpp
+	gl4cTextureQueryLevelsTests.cpp
 	gl4cGlSpirvTests.cpp
 	gl4cGlSpirvTests.hpp
 	gl4cTextureQueryLodTests.hpp

@@ -6808,3 +6808,17 @@ KHR-GL44.texture_buffer.texture_buffer_active_uniform_validation_compute_shader
 KHR-GL44.texture_buffer.texture_buffer_buffer_parameters
 KHR-GL44.texture_buffer.texture_buffer_precision
 KHR-GL44.texture_buffer_size_clamping.*
+KHR-GL44.clear_tex_image.*
+KHR-GL44.texture_query_levels.sampler1D_test
+KHR-GL44.texture_query_levels.sampler2D_test
+KHR-GL44.texture_query_levels.sampler3D_test
+KHR-GL44.texture_query_levels.samplerCube_test
+KHR-GL44.texture_query_levels.sampler1DArray_test
+KHR-GL44.texture_query_levels.sampler2DArray_test
+KHR-GL44.texture_query_levels.samplerCubeArray_test
+KHR-GL44.texture_query_levels.sampler1DShadow_test
+KHR-GL44.texture_query_levels.sampler2DShadow_test
+KHR-GL44.texture_query_levels.samplerCubeShadow_test
+KHR-GL44.texture_query_levels.sampler1DArrayShadow_test
+KHR-GL44.texture_query_levels.sampler2DArrayShadow_test
+KHR-GL44.texture_query_levels.samplerCubeArrayShadow_test
