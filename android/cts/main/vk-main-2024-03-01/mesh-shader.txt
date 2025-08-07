@@ -90,6 +90,8 @@ dEQP-VK.mesh_shader.ext.misc.clip_plane_provoking_last
 dEQP-VK.mesh_shader.ext.misc.clip_plane_provoking_last_multiview
 dEQP-VK.mesh_shader.ext.misc.emit_in_control_flow
 dEQP-VK.mesh_shader.ext.misc.emit_in_control_flow_bad_emit_last
+dEQP-VK.mesh_shader.ext.misc.group_memory_barrier_in_task_primitive_payload
+dEQP-VK.mesh_shader.ext.misc.memory_barrier_shared_in_task_primitive_payload
 dEQP-VK.mesh_shader.ext.misc.multiple_outputs_vertices
 dEQP-VK.mesh_shader.ext.misc.single_point_default_size
 dEQP-VK.mesh_shader.ext.pipeline.builtin.fast_lib.clip_distance

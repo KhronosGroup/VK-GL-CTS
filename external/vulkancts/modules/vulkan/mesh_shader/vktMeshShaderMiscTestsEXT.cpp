@@ -1744,13 +1744,15 @@ enum class MemoryBarrierType
 struct MemoryBarrierParams : public MiscTestParams
 {
     MemoryBarrierParams(const tcu::Maybe<tcu::UVec3> &taskCount_, const tcu::UVec3 &meshCount_, uint32_t width_,
-                        uint32_t height_, MemoryBarrierType memBarrierType_)
+                        uint32_t height_, MemoryBarrierType memBarrierType_, bool usePrimitiveTypePayload_)
         : MiscTestParams(taskCount_, meshCount_, width_, height_)
         , memBarrierType(memBarrierType_)
+        , usePrimitiveTypePayload(usePrimitiveTypePayload_)
     {
     }
 
     MemoryBarrierType memBarrierType;
+    bool usePrimitiveTypePayload = false;
 
     std::string glslFunc() const
     {
@@ -1853,10 +1855,14 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
 
     const bool taskShader = params->needsTaskShader();
 
-    const std::string taskDataDecl = "struct TaskData { float blue; }; taskPayloadSharedEXT TaskData td;\n\n";
+    const std::string taskDataDecl = params->usePrimitiveTypePayload ?
+                                         "taskPayloadSharedEXT float blue;\n\n" :
+                                         "struct TaskData { float blue; }; taskPayloadSharedEXT TaskData td;\n\n";
     const auto barrierFunc         = params->glslFunc();
 
-    const std::string taskAction = "td.blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n";
+    const std::string taskAction = params->usePrimitiveTypePayload ?
+                                       "blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n" :
+                                       "td.blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n";
     const std::string meshAction = "vertPrim = uvec2(1u, 1u);\n";
     const std::string action     = (taskShader ? taskAction : meshAction);
 
@@ -1920,7 +1926,7 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
         replacements["LOCAL_SIZE"] = "1";
         replacements["BODY"]       = meshAction;
         replacements["GLOBALS"]    = taskDataDecl;
-        replacements["BLUE"]       = "td.blue";
+        replacements["BLUE"]       = params->usePrimitiveTypePayload ? "blue" : "td.blue";
 
         const auto meshStr = meshTemplate.specialize(replacements);
 
@@ -6217,10 +6223,24 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
                     /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
                     /*width*/ 1u,
                     /*height*/ 1u,
-                    /*memBarrierType*/ barrierCase.memBarrierType));
+                    /*memBarrierType*/ barrierCase.memBarrierType,
+                    /*usePrimitiveTypePayload*/ false));
 
                 const std::string shader = (useTaskShader ? "task" : "mesh");
                 const std::string name   = barrierCase.caseName + "_in_" + shader;
+
+                miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
+            }
+            {
+                std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
+                    /*taskCount*/ tcu::just(tcu::UVec3(1u, 1u, 1u)),
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 1u,
+                    /*height*/ 1u,
+                    /*memBarrierType*/ barrierCase.memBarrierType,
+                    /*usePrimitiveTypePayload*/ true));
+
+                const std::string name = barrierCase.caseName + "_in_task_primitive_payload";
 
                 miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
             }
