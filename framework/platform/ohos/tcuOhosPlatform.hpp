@@ -26,7 +26,10 @@ namespace tcu
 {
 namespace OHOS_ROSEN
 {
-    class OhosPlatform : public tcu::Platform, private eglu::Platform, private glu::Platform, public vk::Platform
+    class OhosPlatform : public tcu::Platform, 
+        private eglu::Platform, 
+        private glu::Platform, 
+        public vk::Platform
     {
         public:
                                     OhosPlatform        (void);
@@ -36,10 +39,10 @@ namespace OHOS_ROSEN
             const vk::Platform&		getVulkanPlatform	(void) const { return static_cast<const vk::Platform&>(*this); }
 
 	        vk::wsi::Display*	createWsiDisplay	(vk::wsi::Type wsiType) const;
-	        vk::Library*		createLibrary		(void) const;
+	        vk::Library*		createLibrary		(const char *libraryPath) const;
 	        bool				hasDisplay			(vk::wsi::Type wsiType) const;
 	        void				describePlatform	(std::ostream& dst) const;
-	        void				getMemoryLimits		(vk::PlatformMemoryLimits& limits) const;
+	        void				getMemoryLimits		(tcu::PlatformMemoryLimits& limits) const;
         private:
         };
 

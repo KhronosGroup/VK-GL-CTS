@@ -66,7 +66,7 @@ public:
 
     // NativeDisplay&                getOhosDisplay            (void)            { return *this;}
     const eglw::Library&        getLibrary                (void) const    { return m_library;    }
-    const eglw::EGLAttrib*        getPlatformAttributes    (void) const    { return DE_NULL; }
+    const eglw::EGLAttrib*        getPlatformAttributes    (void) const    { return nullptr; }
 
 private:
     OhosLibrary                        m_library;

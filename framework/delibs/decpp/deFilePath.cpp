@@ -251,7 +251,7 @@ static void createDirectoryImpl(const char *path)
     if (!CreateDirectory(path, nullptr))
         throw std::runtime_error("Failed to create directory");
 #elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_OSX) || (DE_OS == DE_OS_IOS) || (DE_OS == DE_OS_ANDROID) || \
-    (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA)
+    (DE_OS == DE_OS_SYMBIAN) || (DE_OS == DE_OS_QNX) || (DE_OS == DE_OS_FUCHSIA) || (DE_OS == DE_OS_OHOS)
     if (mkdir(path, 0777) != 0)
         throw std::runtime_error("Failed to create directory");
 #else

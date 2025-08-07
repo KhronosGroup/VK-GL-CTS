@@ -65,7 +65,7 @@ if (DE_DEBUG EQUAL 1)
 	add_definitions(-DPNG_DEBUG)
 endif ()
 
-if (DE_OS_IS_UNIX OR DE_OS_IS_QNX)
+if (DE_OS_IS_UNIX OR DE_OS_IS_QNX OR DE_OS_IS_OHOS)
 	# for snprintf()
 	add_definitions(-D_XOPEN_SOURCE=600)
 endif ()

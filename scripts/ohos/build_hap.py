@@ -382,10 +382,19 @@ def buildNativeLibrary (config, abiName):
         log(config, 'sdkjoinpath=%s' % sdkpath)
 
         args = ['-DDEQP_TARGET=ohos',
-                '-DCMAKE_C_FLAGS=-Werror',
-                '-DCMAKE_CXX_FLAGS=-Werror',      
+                '-DDEQP_TARGET_TOOLCHAIN=ohos',
+                # '-DCMAKE_C_FLAGS=-Werror',
+                # '-DCMAKE_CXX_FLAGS=-Werror', 
+                # '-DCMAKE_C_FLAGS="-mfloat-abi=softfp -mfpu=neon-vfpv4"',
+                # '-DCMAKE_CXX_FLAGS="-mfloat-abi=softfp -mfpu=neon-vfpv4"',
+                
+                '-DDE_OS=DE_OS_OHOS',
+                '-D_XOPEN_SOURCE=600',
+                '-DOHOS_ARCH=%s' % abiName,
                 '-DOHOS_ABI=%s' % abiName,
                 '-DCMAKE_TOOLCHAIN_FILE=%s' % sdkpath]
+                
+                # '-DCMAKE_TOOLCHAIN_FILE=%s' % sdkpath]
 
         if config.angle is None:
             # Find any previous builds that may have embedded ANGLE libs and clear the CMake cache
@@ -414,7 +423,8 @@ def buildNativeLibrary (config, abiName):
 
     # [wshi] TODO: there is no deqp target in default
     #build(buildConfig, config.cmakeGenerator, ["deqp"])
-    build(buildConfig, config.cmakeGenerator, [])
+    log(config, "buildNativeLibrary : %s" % buildConfig)
+    build(buildConfig, config.cmakeGenerator)
 
 def executeSteps (config, steps):
     for step in steps:
@@ -671,7 +681,7 @@ class AddDataToHap (BuildStep):
         srcDataPath = resolvePath(config, self.srcDataPath)
         dstDataPath = resolvePath(config, self.dstDataPath)
 
-        log(config, "AddAssetsToAPK srcPath=%s, dstPath=%s, buildPath=%s " % (srcPath, dstPath, buildPath))
+        log(config, "AddDataToHap srcPath=%s, dstPath=%s, buildPath=%s " % (srcPath, dstPath, buildPath))
 
         if os.path.exists(dstDataPath):
             shutil.rmtree(dstDataPath)
@@ -684,8 +694,10 @@ class AddNativeLibsToHap (BuildStep):
     def __init__ (self, package, abis):
         self.package = package
         self.abis = abis
-        self.srcPath = AddDataToHap(self.package, "").getOutputs()[0]
-        self.dstPath = [BuildRoot(), self.package.getAppDirName(), "tmp", "with-native-libs.apk"]
+
+        self.srcPath = [BuildRoot(), self.package.getAppDirName()]
+        self.dstPath = [BuildRoot(), self.package.getAppDirName(), "happroject", "entry", "libs"]
+
 
     def getInputs (self):
         paths = [self.srcPath]
@@ -699,32 +711,35 @@ class AddNativeLibsToHap (BuildStep):
     def update (self, config):
         srcPath = resolvePath(config, self.srcPath)
         dstPath = resolvePath(config, self.getOutputs()[0])
-        pkgPath = resolvePath(config, [BuildRoot(), self.package.getAppDirName()])
+        pkgPath = resolvePath(config, [BuildRoot(), self.package.getAppDirName(), "happroject", "entry", "libs"])
         libFiles = []
+
+        log(config, "AddNativeLibsToHap srcPath=%s, dstPath=%s, pkgPath=%s " % (srcPath, dstPath, pkgPath))
 
         # Create right directory structure first
         for abi in self.abis:
             libSrcPath = resolvePath(config, [NativeBuildPath(abi), "libdeqp.so"])
-            libRelPath = os.path.join("lib", abi, "libdeqp.so")
+            libRelPath = os.path.join(abi, "libdeqp.so")
             libAbsPath = os.path.join(pkgPath, libRelPath)
 
             if not os.path.exists(os.path.dirname(libAbsPath)):
                 os.makedirs(os.path.dirname(libAbsPath))
 
+            log(config, "AddNativeLibsToHap copyfile libSrcPath=%s, libAbsPath=%s" % (libSrcPath, libAbsPath))
             shutil.copyfile(libSrcPath, libAbsPath)
             libFiles.append(libRelPath)
 
-            if config.layers:
-                # Need to copy everything in the layer folder
-                layersGlob = os.path.join(config.layers, abi, "*")
-                libVkLayers = glob.glob(layersGlob)
-                for layer in libVkLayers:
-                    layerFilename = os.path.basename(layer)
-                    layerRelPath = os.path.join("lib", abi, layerFilename)
-                    layerAbsPath = os.path.join(pkgPath, layerRelPath)
-                    shutil.copyfile(layer, layerAbsPath)
-                    libFiles.append(layerRelPath)
-                    log(config, "Adding layer binary: %s" % (layer,))
+            # if config.layers:
+            #     # Need to copy everything in the layer folder
+            #     layersGlob = os.path.join(config.layers, abi, "*")
+            #     libVkLayers = glob.glob(layersGlob)
+            #     for layer in libVkLayers:
+            #         layerFilename = os.path.basename(layer)
+            #         layerRelPath = os.path.join("lib", abi, layerFilename)
+            #         layerAbsPath = os.path.join(pkgPath, layerRelPath)
+            #         shutil.copyfile(layer, layerAbsPath)
+            #         libFiles.append(layerRelPath)
+            #         log(config, "Adding layer binary: %s" % (layer,))
 
             # if config.angle:
             #     angleGlob = os.path.join(config.angle, abi, "lib*_angle.so")
@@ -737,8 +752,8 @@ class AddNativeLibsToHap (BuildStep):
             #         libFiles.append(libRelPath)
             #         log(config, "Adding ANGLE binary: %s" % (lib,))
 
-        shutil.copyfile(srcPath, dstPath)
-        addFilesToHap(config, dstPath, pkgPath, libFiles)
+        # shutil.copyfile(srcPath, dstPath)
+        # addFilesToHap(config, dstPath, pkgPath, libFiles)
 
 class SignHap (BuildStep):
     def __init__ (self, package):
@@ -774,7 +789,7 @@ class SignHap (BuildStep):
             "-jar", hapSignToolPath, "sign-app",  "-keyAlias", "oh-app1-key-v1",
             "-signAlg", "SHA256withECDSA", "-mode", "localSign", "-appCertFile",
             "app1.cer", "-profileFile", "app1-profile.p7b", "-inFile", unsignHapPath,
-            "-keystoreFile", "OpenHarmony.p12", "-outFile", "app1-signed.hap", "-keyPwd", "123456",
+            "-keystoreFile", "OpenHarmony.p12", "-outFile", "deqpCts.hap", "-keyPwd", "123456",
             "-keystorePwd", "123456"
         ]
 
@@ -782,7 +797,7 @@ class SignHap (BuildStep):
         popWorkingDir()
 
 def getBuildRootRelativeHapPath (package):
-    return os.path.join(package.getAppDirName(), package.getAppName() + ".apk")
+    return os.path.join(package.getAppDirName(), "happroject", "autosign", package.getAppName() + ".hap")
 
 class AlignAPK (BuildStep):
     def __init__ (self, package):
@@ -846,7 +861,7 @@ def getBuildStepsForPackage (abis, package, libraries = []):
 
     # Add native libs to APK
     # [wshi] TODO: copy libs to build dir
-    #steps.append(AddNativeLibsToAPK(package, abis))
+    steps.append(AddNativeLibsToHap(package, abis))
 
     # [wshi] TODO: build hap 
     steps.append(BuildBaseHap(package, libraries))
@@ -862,7 +877,7 @@ def getBuildStepsForPackage (abis, package, libraries = []):
 
 def getPackageAndLibrariesForTarget (target):
     # [wshi] TODO: apkpacakge: cpy lib & rawfile
-    deqpPackage = PackageDescription("", "dEQP")
+    deqpPackage = PackageDescription("", "deqpCts")
     ctsPackage = PackageDescription("openglcts", "Khronos-CTS", hasResources = False)
 
     if target == 'deqp':
@@ -890,7 +905,7 @@ def getDefaultBuildRoot ():
     return os.path.join(tempfile.gettempdir(), "deqp-ohos-build")
 
 def parseArgs ():
-    nativeBuildTypes = ['Release', 'Debug']
+    nativeBuildTypes = ['Release', 'Debug', 'MinSizeRel', 'RelWithAsserts', 'RelWithDebInfo']
     defaultSDKPath = findSDK()
     defaultCLTPath = findCLT()
     defaultBuildRoot = getDefaultBuildRoot()

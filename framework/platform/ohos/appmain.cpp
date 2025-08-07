@@ -24,39 +24,37 @@
 #include "tcuTestSessionExecutor.hpp"
 #include "deUniquePtr.hpp"
 
-#include "external/openglcts/modules/common/glcConfigPackage.hpp"
-#include "external/openglcts/modules/common/glcTestPackage.hpp"
-#include "external/openglcts/modules/gles2/es2cTestPackage.hpp"
-#include "external/openglcts/modules/gles3/es3cTestPackage.hpp"
-#include "external/openglcts/modules/gles32/es32cTestPackage.hpp"
-#include "external/openglcts/modules/gles31/es31cTestPackage.hpp"
+#include "common/glcConfigPackage.hpp"
+#include "common/glcTestPackage.hpp"
+#include "gles2/es2cTestPackage.hpp"
+#include "gles3/es3cTestPackage.hpp"
+#include "gles32/es32cTestPackage.hpp"
+#include "gles31/es31cTestPackage.hpp"
 
-#include "modules/gles2/tes2TestPackage.hpp"
-#include "modules/gles3/tes3TestPackage.hpp"
-#include "modules/gles31/tes31TestPackage.hpp"
+#include "gles2/tes2TestPackage.hpp"
+#include "gles3/tes3TestPackage.hpp"
+#include "gles31/tes31TestPackage.hpp"
 
 #include "ohos_context_i.h"
 
 #include "tcuTestContext.hpp"
 #include "tcuOhosPlatform.hpp"
 
-#include "hilog/log.h"
+// #undef LOG_TAG
+// #define LOG_TAG "vkglcts"
 
-#undef LOG_TAG
-#define LOG_TAG "vkglcts"
+// #undef LOG_DOMAIN
+// #define  LOG_DOMAIN    0xD001560
 
-#undef LOG_DOMAIN
-#define  LOG_DOMAIN    0xD001560
+// #define LOGD(...) ((void)HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
 
-#define LOGD(...) ((void)HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+// #define LOGI(...) ((void)HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
 
-#define LOGI(...) ((void)HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+// #define LOGW(...) ((void)HiLogPrint(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
 
-#define LOGW(...) ((void)HiLogPrint(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+// #define LOGE(...) ((void)HiLogPrint(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
 
-#define LOGE(...) ((void)HiLogPrint(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-#define LOGF(...) ((void)HiLogPrint(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+// #define LOGF(...) ((void)HiLogPrint(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
 
 tcu::Platform *createPlatform(void);
 
@@ -161,6 +159,8 @@ bool GetCasePath(tcu::TestNode *node, std::vector<tcu::TestNode *> &casePath, st
 
 static int isInit = 0;
 
+
+
 typedef struct TestRunStatus
 {
 	int		numExecuted;		//!< Total number of cases executed.
@@ -172,15 +172,17 @@ typedef struct TestRunStatus
 	bool	isComplete;			//!< Is run complete.
 } TestRunStatus_t;
 
+__attribute__((visibility("default"))) TestRunStatus_t main1(int argc, char **argv);
+
 TestRunStatus_t main1(int argc, char **argv)
 {
-    LOGI("start test main--- \n");
+    printf("start test main--- \n");
     int exitStatus = EXIT_SUCCESS;
     TestRunStatus_t runResult;
 
 #if (DE_OS != DE_OS_WIN32)
     // Set stdout to line-buffered mode (will be fully buffered by default if stdout is pipe).
-    setvbuf(stdout, DE_NULL, _IOLBF, 4 * 1024);
+    setvbuf(stdout, nullptr, _IOLBF, 4 * 1024);
 #endif
 
     try
@@ -212,7 +214,7 @@ TestRunStatus_t main1(int argc, char **argv)
         }
 
         tcu::TestRunStatus trs = app->getResult();
-        LOGI("finish test main--- pass:%{public}d, fail:%{public}d, all:%{public}d\n", 
+        printf("finish test main--- pass:%{public}d, fail:%{public}d, all:%{public}d\n", 
             trs.numPassed, trs.numFailed, trs.numExecuted);
         
         runResult.isComplete = trs.isComplete;
@@ -223,14 +225,14 @@ TestRunStatus_t main1(int argc, char **argv)
         runResult.numWarnings = trs.numWarnings;
         runResult.numWaived = trs.numWaived;
         runResult.isComplete = trs.isComplete;
-        LOGI("before return--- pass:%{public}d, fail:%{public}d, all:%{public}d\n", 
+        printf("before return--- pass:%{public}d, fail:%{public}d, all:%{public}d\n", 
             runResult.numPassed, runResult.numFailed, runResult.numExecuted);
         return runResult;
         
     }
     catch (const std::exception &e)
     {
-        LOGE("catch error : %s", e.what());
+        printf("catch error : %s", e.what());
         tcu::die("%s", e.what());
     }
 

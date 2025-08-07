@@ -21,7 +21,15 @@
 # OHOS
 message("*** Using OHOS")
 set(DEQP_TARGET_NAME	"OHOS")
-# set(DEQP_SUPPORT_GLES1	ON)
+set(CMAKE_POSITION_INDEPENDENT_CODE ON)
+
+if (OHOS_ARCH STREQUAL "armeabi-v7a")
+	set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -mfloat-abi=softfp -D__ARM_PCS_VFP=1")
+	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -mfloat-abi=softfp -D__ARM_PCS_VFP=1")
+endif ()
+
+set(CMAKE_C_VISIBILITY_PRESET hidden)
+set(CMAKE_CXX_VISIBILITY_PRESET hidden)
 
 # [wshi] TODO: 
 # For static linking

@@ -483,6 +483,49 @@ elseif (DE_OS_IS_IOS)
 	target_link_libraries(deqp tcutil-platform xscore ${DEQP_MODULE_LIBRARIES})
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_TARGETED_DEVICE_FAMILY "1,2")
 	set_target_properties(deqp PROPERTIES XCODE_ATTRIBUTE_CODE_SIGN_IDENTITY "iPhone Developer: ${DEQP_IOS_CODE_SIGN_IDENTITY}")
+elseif (DE_OS_IS_OHOS)
+	include_directories(
+		framework/platform/ohos
+		framework/platform/ohos/context
+		framework/platform/ohos/display
+		framework/platform/ohos/rosen_context
+		framework/delibs/debase
+		framework/delibs/decpp
+		framework/delibs/deutil
+		framework/common
+		framework/qphelper
+		framework/egl
+		framework/egl/wrapper
+		framework/opengl
+		framework/opengl/wrapper
+		framework/openglcts/modules
+		modules
+		external/openglcts/modules
+		external/openglcts/modules/common
+		external/vulkancts/framework/vulkan
+		build/external/vulkancts/framework/vulkan
+	)
+	set(DEQP_SRCS
+		framework/platform/ohos/appmain.cpp
+		framework/platform/ohos/tcuOhosPlatform.cpp
+		framework/platform/ohos/display/window/tcuOhosWindowFactory.cpp
+		framework/platform/ohos/display/window/tcuOhosNativeWindow.cpp
+		framework/platform/ohos/display/tcuOhosNativeDisplay.cpp
+		framework/platform/ohos/display/tcuOhosEglDisplayFactory.cpp
+		framework/platform/ohos/display/pixmap/tcuOhosPixmapFactory.cpp
+		framework/platform/ohos/display/pixmap/tcuOhosNativePixmap.cpp
+		framework/platform/ohos/context/tcuOhosNativeContext.cpp
+		framework/platform/ohos/context/tcuOhosEglContextFactory.cpp
+		framework/platform/ohos/rosen_context/ohos_context_i_app.cpp
+	)
+
+	set(DEQP_LIBS
+		tcutil-platform
+		${DEQP_MODULE_LIBRARIES}
+	)
+
+	add_library(deqp SHARED ${DEQP_SRCS})
+	target_link_libraries(deqp ${DEQP_LIBS})
 endif ()
 
 if (DE_OS_IS_FUCHSIA)
