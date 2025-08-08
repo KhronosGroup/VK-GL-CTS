@@ -1276,10 +1276,14 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
+    vk::VkImageCreateFlags depthCreateFlags = 0u;
+    if (m_params.sampleLocationsEnable)
+        depthCreateFlags |= vk::VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+
     const vk::VkImageCreateInfo depthCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
         nullptr,                                 // const void*                pNext
-        0u,                                      // VkImageCreateFlags        flags
+        depthCreateFlags,                        // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         depthStencilAttachmentFormat,            // VkFormat                    format
         {32, 32, 1},                             // VkExtent3D                extent
@@ -1867,10 +1871,10 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         const auto depthBuffer =
             readDepthAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage, depthStencilAttachmentFormat,
                                 tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
-        const auto depthAccess   = depthBuffer->getAccess();
-        const auto stencilBuffer = readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
-                                                         depthStencilAttachmentFormat, tcu::UVec2(width, height),
-                                                         vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+        const auto depthAccess = depthBuffer->getAccess();
+        const auto stencilBuffer =
+            readStencilAttachment(vk, device, queue, queueFamilyIndex, alloc, **depthImage,
+                                  depthStencilAttachmentFormat, tcu::UVec2(width, height), vk::VK_IMAGE_LAYOUT_GENERAL);
         const auto stencilAccess = stencilBuffer->getAccess();
 
         const float depthEpsilon = 0.02f;

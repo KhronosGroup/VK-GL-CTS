@@ -102,26 +102,26 @@ void createParser(VkVideoCodecOperationFlagBitsKHR codecOperation, std::shared_p
     {
     case VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR:
     {
-        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME,
-                               VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION};
+        stdExtensionVersion = vk::VkExtensionProperties{VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_EXTENSION_NAME,
+                                                        VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION};
         break;
     }
     case VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR:
     {
-        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME,
-                               VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION};
+        stdExtensionVersion = vk::VkExtensionProperties{VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_EXTENSION_NAME,
+                                                        VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION};
         break;
     }
     case VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR:
     {
-        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME,
-                               VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION};
+        stdExtensionVersion = vk::VkExtensionProperties{VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_EXTENSION_NAME,
+                                                        VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION};
         break;
     }
     case VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
     {
-        stdExtensionVersion = {VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME,
-                               VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION};
+        stdExtensionVersion = vk::VkExtensionProperties{VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_EXTENSION_NAME,
+                                                        VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION};
         break;
     }
     default:

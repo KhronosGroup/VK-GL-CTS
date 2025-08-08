@@ -1230,7 +1230,7 @@ void createPerSubpassData(Context &context, const TestParams &params, WorkingDat
                                depthStencilImageUsageFlags, samples.numDepthStencilSamples);
 
         VkImageCreateFlags depthImageCreateFlags = (VkImageCreateFlags)0u;
-        if (params.useProgrammableSampleLocations)
+        if (params.useProgrammableSampleLocations && isDepthFormat(params.depthStencilFormat))
             depthImageCreateFlags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
         subpassData.depthStencilImage =
             makeImage(vk, device, params.depthStencilFormat, wd.renderSize, samples.numDepthStencilSamples,
