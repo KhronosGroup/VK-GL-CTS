@@ -13,7 +13,7 @@ export default class EntryAbility extends UIAbility {
   }
 
   onDestroy(): void {
-    console.log('ccnto on destory');
+    console.log('vkglcts4oh on destory');
   }
 
   onWindowStageCreate(windowStage: window.WindowStage): void {
@@ -27,8 +27,8 @@ export default class EntryAbility extends UIAbility {
       }
       hilog.info(0x0000, 'testTag', 'Succeeded in loading the content.');
     });
-    hilog.info(0x0000, 'ccnto' ,this.context.filesDir);
-    hilog.info(0x0000, 'ccnto' ,this.context.resourceDir);
+    hilog.info(0x0000, 'vkglcts4oh' ,this.context.filesDir);
+    hilog.info(0x0000, 'vkglcts4oh' ,this.context.resourceDir);
     EntryAbility.resmgr = this.context.resourceManager;
     EntryAbility.filesDir = this.context.filesDir;
   }
@@ -39,10 +39,10 @@ export default class EntryAbility extends UIAbility {
   }
 
   onForeground(): void {
-    console.log("ccnto onForeground");
+    console.log("vkglcts4oh onForeground");
   }
 
   onBackground(): void {
-    console.log("ccnto onBackground");
+    console.log("vkglcts4oh onBackground");
   }
 };

@@ -44,14 +44,12 @@ using tcu::TextureLevel;
 OhosDisplayFactory::OhosDisplayFactory (void) 
     : eglu::NativeDisplayFactory("ROSEN", "Rosen Display", OhosDisplay::CAPABILITIES)
 {
-    //TODO: 增加window，pixmap factory
     m_nativeWindowRegistry.registerFactory(new OhosWindowFactory());
     m_nativePixmapRegistry.registerFactory(new OhosPixmapFactory());
 }
 
 NativeDisplay* OhosDisplayFactory::createDisplay (const eglw::EGLAttrib* attribList) const
 {
-    //TODO: create Rosen display
     DE_UNREF(attribList);
     return new OhosDisplay();
 }

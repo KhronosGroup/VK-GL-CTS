@@ -18,9 +18,24 @@
 
 #include <string>
 #include <stdio.h>
+#include <time.h>
+#include <unistd.h>
 
-#define GLOBAL_RESMGR (0xFFEE)
-static const char *TAG = "[vkglcts]";
+#include <algorithm>
+#include <cstring>
+#include <functional>
+#include <iostream>
+#include <queue>
+#include <string>
+#include <vector>
+#include <hilog/log.h>
+
+#define APP_LOG_DOMAIN 0x0001
+#define APP_LOG_TAG "vkglcts"
+#define LOGI(...) ((void)OH_LOG_Print(LOG_APP, LOG_INFO, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
+#define LOGD(...) ((void)OH_LOG_Print(LOG_APP, LOG_DEBUG, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
+#define LOGW(...) ((void)OH_LOG_Print(LOG_APP, LOG_WARN, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
+#define LOGE(...) ((void)OH_LOG_Print(LOG_APP, LOG_ERROR, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
 
 constexpr int32_t RGB_565 = 2;
 constexpr int32_t RGBA_8888 = 3;
@@ -53,12 +68,5 @@ constexpr int32_t ARGS_ONE = 1;
 constexpr int32_t ARGS_TWO = 2;
 constexpr int32_t ONLY_CALLBACK_MAX_PARA = 1;
 constexpr int32_t ONLY_CALLBACK_MIN_PARA = 0;
-#include <hilog/log.h>
-#define APP_LOG_DOMAIN 0x0001
-#define APP_LOG_TAG "ccnto"
-#define LOGI(...) ((void)OH_LOG_Print(LOG_APP, LOG_INFO, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
-#define LOGD(...) ((void)OH_LOG_Print(LOG_APP, LOG_DEBUG, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
-#define LOGW(...) ((void)OH_LOG_Print(LOG_APP, LOG_WARN, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
-#define LOGE(...) ((void)OH_LOG_Print(LOG_APP, LOG_ERROR, APP_LOG_DOMAIN, APP_LOG_TAG, __VA_ARGS__))
 
 #endif // _PLUGIN_COMMON_H_

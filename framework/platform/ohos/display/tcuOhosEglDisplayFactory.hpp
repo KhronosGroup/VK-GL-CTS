@@ -28,7 +28,7 @@ namespace egl
 class OhosDisplayFactory : public eglu::NativeDisplayFactory
 {
 public:
-                        OhosDisplayFactory     (void);
+    OhosDisplayFactory     (void);
     eglu::NativeDisplay*        createDisplay        (const eglw::EGLAttrib* attribList) const;
 
 };

@@ -39,22 +39,7 @@
 
 #include "tcuTestContext.hpp"
 #include "tcuOhosPlatform.hpp"
-
-// #undef LOG_TAG
-// #define LOG_TAG "vkglcts"
-
-// #undef LOG_DOMAIN
-// #define  LOG_DOMAIN    0xD001560
-
-// #define LOGD(...) ((void)HiLogPrint(LOG_CORE, LOG_DEBUG, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-// #define LOGI(...) ((void)HiLogPrint(LOG_CORE, LOG_INFO, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-// #define LOGW(...) ((void)HiLogPrint(LOG_CORE, LOG_WARN, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-// #define LOGE(...) ((void)HiLogPrint(LOG_CORE, LOG_ERROR, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
-
-// #define LOGF(...) ((void)HiLogPrint(LOG_CORE, LOG_FATAL, LOG_DOMAIN, LOG_TAG, __VA_ARGS__))
+#include "appmain.h"
 
 tcu::Platform *createPlatform(void);
 
@@ -95,16 +80,7 @@ void RegistPackage()
 {
 
     tcu::TestPackageRegistry *registry = tcu::TestPackageRegistry::getSingleton();
-    // registry->registerPackage("CTS-Configs", createConfigPackage);
 
-    // TODO: 判断当前上下文EGL环境是哪个?
-    /*
-KHR-GLES2
-KHR-GLES3
-KHR-GLES31
-KHR-GLESEXT
-KHR-GLES32
-    */
     // OHOS::Rosen::RosenContext::GetInstance().GetGlesVer() == 3.2
     registry->registerPackage("KHR-GLES31", createES31Package);
     registry->registerPackage("KHR-GLES2", createES2Package);
@@ -159,22 +135,7 @@ bool GetCasePath(tcu::TestNode *node, std::vector<tcu::TestNode *> &casePath, st
 
 static int isInit = 0;
 
-
-
-typedef struct TestRunStatus
-{
-	int		numExecuted;		//!< Total number of cases executed.
-	int		numPassed;			//!< Number of cases passed.
-	int		numFailed;			//!< Number of cases failed.
-	int		numNotSupported;	//!< Number of cases not supported.
-	int		numWarnings;		//!< Number of QualityWarning / CompatibilityWarning results.
-	int		numWaived;			//!< Number of waived tests.
-	bool	isComplete;			//!< Is run complete.
-} TestRunStatus_t;
-
-__attribute__((visibility("default"))) TestRunStatus_t main1(int argc, char **argv);
-
-TestRunStatus_t main1(int argc, char **argv)
+TestRunStatus_t runTest(int argc, char **argv)
 {
     printf("start test main--- \n");
     int exitStatus = EXIT_SUCCESS;
@@ -214,7 +175,7 @@ TestRunStatus_t main1(int argc, char **argv)
         }
 
         tcu::TestRunStatus trs = app->getResult();
-        printf("finish test main--- pass:%{public}d, fail:%{public}d, all:%{public}d\n", 
+        printf("finish test main--- pass:%d, fail:%d, all:%d\n", 
             trs.numPassed, trs.numFailed, trs.numExecuted);
         
         runResult.isComplete = trs.isComplete;
@@ -225,7 +186,7 @@ TestRunStatus_t main1(int argc, char **argv)
         runResult.numWarnings = trs.numWarnings;
         runResult.numWaived = trs.numWaived;
         runResult.isComplete = trs.isComplete;
-        printf("before return--- pass:%{public}d, fail:%{public}d, all:%{public}d\n", 
+        printf("before return--- pass:%d, fail:%d, all:%d\n", 
             runResult.numPassed, runResult.numFailed, runResult.numExecuted);
         return runResult;
         

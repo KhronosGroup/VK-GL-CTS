@@ -23,8 +23,6 @@
 #include "glwFunctions.hpp"
 #include "tcuRenderTarget.hpp"
 
-// #include "tcuOhosNativeDisplay.hpp"
-
 namespace tcu
 {
 namespace OHOS_ROSEN
@@ -36,7 +34,6 @@ class OhosContextFactory : public glu::ContextFactory
 {
 public:
     OhosContextFactory (void);
-    // virtual ~OhosContextFactory (void) {};
     virtual glu::RenderContext*	createContext (const glu::RenderConfig& config, 
         const tcu::CommandLine& cmdLine, const glu::RenderContext* sharedContext) const;
 };

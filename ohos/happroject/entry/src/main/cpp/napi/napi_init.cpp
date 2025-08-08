@@ -21,11 +21,7 @@
  */
 static napi_value Init(napi_env env, napi_value exports)
 {
-    LOGE("Init");
-    // napi_property_descriptor desc[] ={
-    //     DECLARE_NAPI_FUNCTION("getContext", PluginManager::GetContext),
-    // };
-    // NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
+    LOGI("Init");
 
     bool ret = PluginManager::GetInstance()->Export(env, exports);
     if (!ret) {

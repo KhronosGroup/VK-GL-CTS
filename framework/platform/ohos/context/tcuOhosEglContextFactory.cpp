@@ -35,8 +35,5 @@ OhosContextFactory::OhosContextFactory ()
 glu::RenderContext* OhosContextFactory::createContext (const glu::RenderConfig&  config, 
     const tcu::CommandLine& cmdline, const glu::RenderContext* sharedContext) const
 {
-    printf("---- cc h ----%p\n",sharedContext);
-    //TODO:
-    // printf("%d \n", sharedContext->getDefaultFramebuffer());
 	return new OhosRendContext(config, cmdline);
 }

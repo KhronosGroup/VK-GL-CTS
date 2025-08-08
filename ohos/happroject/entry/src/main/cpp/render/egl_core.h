@@ -19,7 +19,7 @@
 #include <GLES3/gl3.h>
 #include <EGL/egl.h>
 #include <EGL/eglext.h>
-#include "cc_common.h"
+#include "plugin_common.h"
 #include <string>
 #include "app_context.h"
 #include "ohos_context_i.h"
@@ -34,33 +34,29 @@ class EGLCore {
 public:
     EGLCore(std::string &id) : id_(id) {
         OHOS::OhosContextI::SetInstance(&appContext);
-        CLOGE("ccnto set app context instance finish");
+        LOGE("vkglcts4oh set app context instance finish");
         if (pipe(pipefd_stdout) == -1) {
-            CLOGE("create pipe failed");
+            LOGE("create pipe failed");
             return;
         } else {
             dup2(pipefd_stdout[1], STDOUT_FILENO);
             close(pipefd_stdout[1]);
-            //                 fcntl(pipefd[0], F_SETFL, O_NONBLOCK);
         }
         if (pipe(pipefd_stderr) == -1) {
-            CLOGE("create pipe failed");
+            LOGE("create pipe failed");
             return;
         } else {
             dup2(pipefd_stderr[1], STDERR_FILENO);
             close(pipefd_stderr[1]);
-            //                 fcntl(pipefd[0], F_SETFL, O_NONBLOCK);
         }
         pthread_t tid;
         pthread_create(&tid, NULL, stdout_to_hilog, pipefd_stdout);
         pthread_create(&tid, NULL, stdout_to_hilog, pipefd_stderr);
-        CLOGE("pipefd_stdout ok");
+        LOGE("pipefd_stdout ok");
     }
     std::string DoTest() {
-        CLOGE("start do test");
-        // std::string logFile = "--deqp-log-filename=/data/storage/el2/base/haps/entry/files/TestResults.qpa";
+        LOGE("start do test");
         std::string logFile = "--deqp-log-filename=" + testDir + "/TestResults.qpa";
-        //         std::string glCase = "-n=KHR-GLES2.texture_3d.filtering.formats.rgba8_nearest_mipmap_linear";
         std::string glCase = "-n=" + testCase;
         std::string archiveDir = "--deqp-archive-dir=" + testDir;
         char *argv_[10];
@@ -71,13 +67,13 @@ public:
         argv_[p++] = strdup(archiveDir.c_str());
         argv_[p] = NULL;
 
-        TestRunStatus_t ret = main1(p, argv_);
-        CLOGE("Test run totals:");
-        CLOGE("  passed: %{public}d/%{public}d", ret.numPassed, ret.numExecuted);
-        CLOGE("  failed: %{public}d/%{public}d", ret.numFailed, ret.numExecuted);
-        CLOGE("  not support: %{public}d/%{public}d", ret.numNotSupported, ret.numExecuted);
-        CLOGE("  warning: %{public}d/%{public}d", ret.numWarnings, ret.numExecuted);
-        CLOGE("end do test");
+        TestRunStatus_t ret = runTest(p, argv_);
+        LOGE("Test run totals:");
+        LOGE("  passed: %{public}d/%{public}d", ret.numPassed, ret.numExecuted);
+        LOGE("  failed: %{public}d/%{public}d", ret.numFailed, ret.numExecuted);
+        LOGE("  not support: %{public}d/%{public}d", ret.numNotSupported, ret.numExecuted);
+        LOGE("  warning: %{public}d/%{public}d", ret.numWarnings, ret.numExecuted);
+        LOGE("end do test");
         char buffer[1024];
         std::snprintf(buffer, sizeof(buffer), "Test run totals:\n"
                                          "  passed: %d/%d\n"
@@ -90,10 +86,10 @@ public:
         return std::string(buffer);
     }
     ~EGLCore() {
-        CLOGE("!!!   EGLCore deinit");
+        LOGE("!!!   EGLCore deinit");
         if (mEGLDisplay != EGL_NO_DISPLAY) {
             if (!eglMakeCurrent(mEGLDisplay, mEGLSurface, mEGLSurface, mEGLContext)) {
-                CLOGE("EGLCore::eglMakeCurrent error = %{public}d", eglGetError());
+                LOGE("EGLCore::eglMakeCurrent error = %{public}d", eglGetError());
                 return;
             }
             eglMakeCurrent(mEGLDisplay, EGL_NO_SURFACE, EGL_NO_SURFACE, EGL_NO_CONTEXT);
@@ -109,14 +105,11 @@ public:
     }
     void GLContextInit(void *window, int w, int h);
     std::string StartTest(const std::string &filesDir, const std::string &caseName);
-    // void DrawTriangle();
     void UpdateScreen();
     void OnKeyEvent(uint32_t keyCode, uint32_t updown);
     void OnTouch(int id, int x, int y, int type);
     void OnWindowCommand(uint16_t command);
     void SetXSize(int w, int h);
-
-    //     void FreshUpdateResult();
 
 public:
     std::string id_;

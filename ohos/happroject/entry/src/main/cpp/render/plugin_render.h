@@ -40,11 +40,6 @@ public:
 
     // Exposed to JS developers by NAPI
     static napi_value NapiThreadsafeFunc(napi_env env, napi_callback_info info);
-    static napi_value NapiStartTest(napi_env env, napi_callback_info info);
-    static napi_value NapiRegisterCallback(napi_env env, napi_callback_info info);
-    static napi_value NapiUpdateScreen(napi_env env, napi_callback_info info);
-    static napi_value NapiKeyEvent(napi_env env, napi_callback_info info);
-    static napi_value NapiWindowCommand(napi_env env, napi_callback_info info);
 
     // Callback, called by ACE XComponent
     void OnSurfaceCreated(OH_NativeXComponent* component, void* window);

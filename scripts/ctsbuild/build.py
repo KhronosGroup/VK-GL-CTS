@@ -36,7 +36,6 @@ def initBuildDir (config, generator):
     # Generator args
     cfgArgs += generator.getGenerateArgs(config.getBuildType())
 
-    initializeLogger(True)
     if not os.path.exists(config.buildDir):
         os.makedirs(config.buildDir)
 

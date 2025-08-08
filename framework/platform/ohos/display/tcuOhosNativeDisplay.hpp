@@ -64,7 +64,6 @@ public:
     eglw::EGLNativeDisplayType    getPlatformExtension    (void);
     eglw::EGLNativeDisplayType    getLegacyNative            (void);
 
-    // NativeDisplay&                getOhosDisplay            (void)            { return *this;}
     const eglw::Library&        getLibrary                (void) const    { return m_library;    }
     const eglw::EGLAttrib*        getPlatformAttributes    (void) const    { return nullptr; }
 

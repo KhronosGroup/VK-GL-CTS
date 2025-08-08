@@ -1,17 +1,13 @@
 #include <stdio.h>
 
 #include "app_context.h"
-#include "cc_common.h"
+#include "plugin_common.h"
 
 namespace OHOS {
     void AppContext::HiLog(const char *format, ...) {
         char buffer[1024 * 10];
         va_list args;
 
-//         va_start(args, format);
-//         vsprintf(buffer, format, args);
-//         va_end(args);
-//        CLOGE("%{public}s", buffer);
     }
     bool AppContext::InitEgl() {
         if (eglInited_) {
@@ -247,9 +243,6 @@ namespace OHOS {
         case RCI_SURFACE_TYPE::NONE:
             break;
         case RCI_SURFACE_TYPE::WINDOW:
-            // surfaceAttribs.push_back(EGL_GL_COLORSPACE_KHR);
-            // TODO: EGL_GL_COLORSPACE_LINEAR_KHR, EGL_GL_COLORSPACE_SRGB_KHR
-            // surfaceAttribs.push_back(EGL_GL_COLORSPACE_LINEAR_KHR);
             surfaceAttribs.push_back(EGL_NONE);
 
             eglSurface_ = eglCreateWindowSurface(eglDisplay_, config_, nativeWindow_, &surfaceAttribs[0]);
@@ -344,10 +337,3 @@ namespace OHOS {
     }
     void AppContext::DestoryWindow(uint64_t windowId) { HiLog("windowId:%lu\n", windowId); }
 } // namespace OHOS
-
-// int main(int argc, char **argv) {
-//     OHOS::AppContext appContext;
-//     OHOS::OhosContextI::SetInstance((void *)&appContext);
-//     main1(argc, argv);
-//     return 0;
-// }

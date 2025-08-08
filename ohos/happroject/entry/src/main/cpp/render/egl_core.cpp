@@ -51,64 +51,17 @@ void EGLCore::SetXSize(int w, int h) {
 void EGLCore::GLContextInit(void *window, int w, int h) {
     static uint32_t createcount = 0;
     createcount++;
-    CLOGD("EGLCore::GLContextInit %{public}d, w = %{public}d, h = %{public}d", createcount, w, h);
+    LOGD("EGLCore::GLContextInit %{public}d, w = %{public}d, h = %{public}d", createcount, w, h);
     width_ = w;
     height_ = h;
 
     mEglWindow = reinterpret_cast<EGLNativeWindowType>(window);
-
-    // // 1. create sharedcontext
-    // mEGLDisplay = eglGetDisplay(EGL_DEFAULT_DISPLAY);
-    // if (mEGLDisplay == EGL_NO_DISPLAY) {
-    //     LOGE("EGLCore::unable to get EGL display.");
-    //     return;
-    // }
-    // // CLOGD("EGLCore::mEGLDisplay = %{public}p", mEGLDisplay);
-
-    // EGLint eglMajVers, eglMinVers;
-    // if (!eglInitialize(mEGLDisplay, &eglMajVers, &eglMinVers)) {
-    //     mEGLDisplay = EGL_NO_DISPLAY;
-    //     LOGE("EGLCore::unable to initialize display");
-    //     return;
-    // }
-    // // CLOGD("EGLCore::eglInitialize, version = %d.%d", eglMajVers, eglMinVers);
-
-    // mEGLConfig = getConfig(3, mEGLDisplay);
-    // if (mEGLConfig == nullptr) {
-    //     LOGE("EGLCore::GLContextInit config ERROR");
-    //     return;
-    // }
-    // // CLOGD("EGLCore::mEGLConfig = %{public}p", mEGLConfig);
-
-    // // 2. Create EGL Surface from Native Window
-    // EGLint winAttribs[] = {EGL_GL_COLORSPACE_KHR, EGL_GL_COLORSPACE_LINEAR_KHR, EGL_NONE};
-    // //     EGLint winAttribs[] = {EGL_GL_COLORSPACE_KHR, EGL_GL_COLORSPACE_SRGB_KHR, EGL_NONE};
-    // if (mEglWindow) {
-    //     mEGLSurface = eglCreateWindowSurface(mEGLDisplay, mEGLConfig, mEglWindow, winAttribs);
-    //     if (mEGLSurface == nullptr) {
-    //         LOGE("EGLCore::eglCreateContext eglSurface is null");
-    //         return;
-    //     }
-    // }
-    // // CLOGD("EGLCore::mEGLSurface = %{public}p", mEGLSurface);
-
-    // // 3. Create EGLContext from
-    // int attrib3_list[] = {EGL_CONTEXT_CLIENT_VERSION, 2, EGL_NONE};
-
-    // mEGLContext = eglCreateContext(mEGLDisplay, mEGLConfig, mSharedEGLContext, attrib3_list);
-    // // CLOGD("EGLCore::mEGLContext = %{public}p", mEGLContext);
-    // if (!eglMakeCurrent(mEGLDisplay, mEGLSurface, mEGLSurface, mEGLContext)) {
-    //     LOGE("EGLCore::eglMakeCurrent error = %{public}d", eglGetError());
-    // }
-    // // CLOGD("EGLCore::eglMakeCurrent success");
-    // appContext.eglSurface_ = mEGLSurface;
-    // appContext.eglContext_ = mEGLContext;
     appContext.nativeWindow_ = mEglWindow;
     bInited = true;
 }
 
 std::string EGLCore::StartTest(const std::string &filesDir, const std::string &caseName) {
-    CLOGE("do connect !!!");
+    LOGE("do connect !!!");
     testDir = filesDir;
     testCase = caseName;
 
@@ -132,9 +85,9 @@ void *stdout_to_hilog(void *arg) { // 把vk-gl-cts的log打到hilog
     char line[1024];
     while (true) {
         if (fgets(line, sizeof(line), pipe_read) != NULL) {
-            CLOGE(" - %{public}s", line);
+            LOGE(" - %{public}s", line);
         } else {
-            CLOGE("stdout_to_hilog exit");
+            LOGE("stdout_to_hilog exit");
             break;
         }
     }

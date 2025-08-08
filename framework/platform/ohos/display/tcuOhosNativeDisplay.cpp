@@ -41,26 +41,22 @@ using tcu::TextureLevel;
 OhosDisplay::OhosDisplay (void) 
     : NativeDisplay(eglu::NativeDisplay::CAPABILITY_GET_DISPLAY_LEGACY)
 {
-    //TODO: create display
     printf("OhosDisplay::OhosDisplay\n");
 }
 
 void* OhosDisplay::getPlatformNative (void) {
-    //TODO: 获取rosen display
     printf("OhosDisplay::getPlatformNative\n");
     return this;
 }
 
 eglw::EGLNativeDisplayType OhosDisplay::getPlatformExtension (void)    
 {
-    //TODO: 获取rosen display
     printf("OhosDisplay::getPlatformExtension\n");
     return reinterpret_cast<eglw::EGLNativeDisplayType>(this); 
 }
 
 eglw::EGLNativeDisplayType OhosDisplay::getLegacyNative (void)    
-{ 
-    //TODO: 获取rosen display
+{
     printf("OhosDisplay::getLegacyNative\n");
     return EGL_DEFAULT_DISPLAY; 
 }

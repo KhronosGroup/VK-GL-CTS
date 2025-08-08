@@ -13,4 +13,20 @@
  * limitations under the License.
  */
 
- int main1(int argc, char **argv);
+ #ifndef _APP_MAIN_H_
+ #define _APP_MAIN_H_
+
+typedef struct RunStatus
+{
+	int		numExecuted;		//!< Total number of cases executed.
+	int		numPassed;			//!< Number of cases passed.
+	int		numFailed;			//!< Number of cases failed.
+	int		numNotSupported;	//!< Number of cases not supported.
+	int		numWarnings;		//!< Number of QualityWarning / CompatibilityWarning results.
+	int		numWaived;			//!< Number of waived tests.
+	bool	isComplete;			//!< Is run complete.
+} TestRunStatus_t;
+
+ __attribute__((visibility("default"))) TestRunStatus_t runTest(int argc, char **argv);
+
+ #endif

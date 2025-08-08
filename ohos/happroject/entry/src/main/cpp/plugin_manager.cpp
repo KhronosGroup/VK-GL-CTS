@@ -97,7 +97,7 @@ void VsyncCallback(long long timestamp, void *data) {
 }
 
 void PluginManager::DoVsync(){
-//     CLOGE("cxunmz OnVsync");
+//     LOGE("cxunmz OnVsync");
     {
         std::lock_guard<std::mutex> lock(mutex_);
         std::vector<std::string> remove;
@@ -126,7 +126,7 @@ void PluginManager::OnVsync() {
 }
 
 PluginManager::PluginManager() {
-    vsync_ = OH_NativeVSync_Create("cc", 2);
+    vsync_ = OH_NativeVSync_Create("vkglcts", 2);
     OH_NativeVSync_RequestFrame(vsync_, VsyncCallback, this);
 }
 

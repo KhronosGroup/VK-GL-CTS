@@ -69,7 +69,6 @@ namespace OHOS {
 
 } // namespace OHOS
 
-
 typedef struct TestRunStatus
 {
 	int		numExecuted;		//!< Total number of cases executed.
@@ -81,5 +80,5 @@ typedef struct TestRunStatus
 	bool	isComplete;			//!< Is run complete.
 } TestRunStatus_t;
 
-TestRunStatus_t main1(int argc, char **argv);
+TestRunStatus_t runTest(int argc, char **argv);
 #endif

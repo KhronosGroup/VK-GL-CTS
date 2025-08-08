@@ -13,21 +13,20 @@
  * limitations under the License.
  */
 
- #include <stdio.h>
- #include "ohos_context_i.h"
- using namespace OHOS;
- 
- OhosContextI *g_instance = nullptr;
- 
- void OhosContextI::SetInstance(void *instance) {
-    printf("iapp: setinstance\n");
-     g_instance = static_cast<OhosContextI *>(instance);
- }
- 
- OhosContextI &OhosContextI::GetInstance() {
-    printf("iapp getinstance\n");
-    return *g_instance;
- }
+#include <stdio.h>
+#include "ohos_context_i.h"
+using namespace OHOS;
 
- void OhosContextI::HiLog(const char *format, ...) {
+OhosContextI *g_instance = nullptr;
+
+void OhosContextI::SetInstance(void *instance) {
+   // printf("iapp: setinstance\n");
+   g_instance = static_cast<OhosContextI *>(instance);
 }
+ 
+OhosContextI &OhosContextI::GetInstance() {
+   // printf("iapp getinstance\n");
+   return *g_instance;
+}
+
+void OhosContextI::HiLog(const char *format, ...) {}
