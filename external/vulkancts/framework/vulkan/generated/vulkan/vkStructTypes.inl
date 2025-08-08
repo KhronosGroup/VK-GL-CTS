@@ -11387,6 +11387,13 @@ struct VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
 	VkBool32		pipelineCacheIncrementalMode;
 };
 
+struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderUntypedPointers;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;
