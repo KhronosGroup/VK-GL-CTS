@@ -3591,15 +3591,6 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     const bool hasDepth                 = tcu::hasDepthComponent(mapVkFormat(m_params.dst.image.format).order);
     const bool hasStencil               = tcu::hasStencilComponent(mapVkFormat(m_params.dst.image.format).order);
 
-    // As copying depth/stencil requires queue that supports graphics operations we need to throw NotSupported for compute only implementations
-    {
-        const bool isComputeOnly = m_context.getTestContext().getCommandLine().isComputeOnly();
-        if (isComputeOnly)
-        {
-            TCU_THROW(NotSupportedError, "Universal queue does not support graphics operations.");
-        }
-    }
-
     if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, testParams.dst.image.format))
     {
         TCU_THROW(NotSupportedError, "Image format not supported.");
@@ -3824,9 +3815,13 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
                                                }};
 
     // Copy from buffer to depth/stencil image
+    VkQueue queue                               = VK_NULL_HANDLE;
+    VkCommandBuffer commandBuffer               = VK_NULL_HANDLE;
+    VkCommandPool commandPool                   = VK_NULL_HANDLE;
+    std::tie(queue, commandBuffer, commandPool) = activeExecutionCtx();
 
-    beginCommandBuffer(vk, *m_universalCmdBuffer);
-    vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    beginCommandBuffer(vk, commandBuffer);
+    vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 
     if (!(m_params.extensionFlags & COPY_COMMANDS_2))
@@ -3834,7 +3829,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
         if (m_params.singleCommand)
         {
             // Issue a single copy command with regions defined by the test.
-            vk.cmdCopyBufferToImage(*m_universalCmdBuffer, m_source.get(), m_destination.get(),
+            vk.cmdCopyBufferToImage(commandBuffer, m_source.get(), m_destination.get(),
                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, (uint32_t)m_params.regions.size(),
                                     bufferImageCopies.data());
         }
@@ -3844,11 +3839,10 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
             for (uint32_t i = 0; i < bufferImageCopies.size(); i++)
             {
                 if (i > 0)
-                    vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
-                                          1, &imageBarrier);
+                    vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 
-                vk.cmdCopyBufferToImage(*m_universalCmdBuffer, m_source.get(), m_destination.get(),
+                vk.cmdCopyBufferToImage(commandBuffer, m_source.get(), m_destination.get(),
                                         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1, &bufferImageCopies[i]);
             }
         }
@@ -3869,7 +3863,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
                 (uint32_t)m_params.regions.size(),                 // uint32_t regionCount;
                 bufferImageCopies2KHR.data()                       // const VkBufferImageCopy2KHR* pRegions;
             };
-            vk.cmdCopyBufferToImage2(*m_universalCmdBuffer, &copyBufferToImageInfo2KHR);
+            vk.cmdCopyBufferToImage2(commandBuffer, &copyBufferToImageInfo2KHR);
         }
         else
         {
@@ -3877,9 +3871,8 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
             for (uint32_t i = 0; i < bufferImageCopies2KHR.size(); i++)
             {
                 if (i > 0)
-                    vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
-                                          1, &imageBarrier);
+                    vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 
                 const VkCopyBufferToImageInfo2KHR copyBufferToImageInfo2KHR = {
                     VK_STRUCTURE_TYPE_COPY_BUFFER_TO_IMAGE_INFO_2_KHR, // VkStructureType sType;
@@ -3891,16 +3884,16 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
                     &bufferImageCopies2KHR[i]                          // const VkBufferImageCopy2KHR* pRegions;
                 };
                 // Issue a single copy command with regions defined by the test.
-                vk.cmdCopyBufferToImage2(*m_universalCmdBuffer, &copyBufferToImageInfo2KHR);
+                vk.cmdCopyBufferToImage2(commandBuffer, &copyBufferToImageInfo2KHR);
             }
         }
     }
 
-    endCommandBuffer(vk, *m_universalCmdBuffer);
+    endCommandBuffer(vk, commandBuffer);
 
-    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, &m_sparseSemaphore);
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, commandBuffer, &m_sparseSemaphore);
 
-    m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
+    m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
     de::MovePtr<tcu::TextureLevel> resultLevel = readImage(*m_destination, m_params.dst.image);
 
@@ -13876,7 +13869,7 @@ void add3dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
     }
 }
 
-void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, AllocationKind allocationKind, uint32_t extensionFlags)
+void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
 {
     tcu::TestContext &testCtx = group->getTestContext();
 
@@ -13983,8 +13976,9 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, AllocationKind allo
             params.dst.image.extent          = defaultExtent;
             params.dst.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
-            params.allocationKind            = allocationKind;
-            params.extensionFlags            = extensionFlags;
+            params.allocationKind            = testGroupParams->allocationKind;
+            params.extensionFlags            = testGroupParams->extensionFlags;
+            params.queueSelection            = testGroupParams->queueSelection;
 
             if (hasDepth && hasStencil)
             {
@@ -17874,7 +17868,7 @@ void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocat
     addTestGroup(group, "image_to_image", addImageToImageTests, universalGroupParams);
     addTestGroup(group, "image_to_buffer", addImageToBufferTests, universalGroupParams);
     addTestGroup(group, "buffer_to_image", addBufferToImageTests, universalGroupParams);
-    addTestGroup(group, "buffer_to_depthstencil", addBufferToDepthStencilTests, allocationKind, extensionFlags);
+    addTestGroup(group, "buffer_to_depthstencil", addBufferToDepthStencilTests, universalGroupParams);
     addTestGroup(group, "buffer_to_buffer", addBufferToBufferTests, universalGroupParams);
     addTestGroup(group, "blit_image", addBlittingImageTests, allocationKind, extensionFlags);
     addTestGroup(group, "resolve_image", addResolveImageTests, allocationKind, extensionFlags);
@@ -17902,8 +17896,6 @@ void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocat
 
     if (extensionFlags == COPY_COMMANDS_2)
     {
-        addTestGroup(group, "image_to_image_transfer_queue", addImageToImageTests, transferOnlyGroup);
-        addTestGroup(group, "buffer_to_image_transfer_queue", addBufferToImageTests, transferOnlyGroup);
         addTestGroup(group, "buffer_to_buffer_transfer_queue", addBufferToBufferTests, transferOnlyGroup);
 
         TestGroupParamsPtr transferWithSecondaryBuffer(new TestGroupParams{
