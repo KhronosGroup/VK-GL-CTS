@@ -8614,4 +8614,20 @@ tcu::TestCaseGroup *createDynamicRenderingTests(tcu::TestContext &testCtx, const
     return dynamicRenderingGroup.release();
 }
 
+void createChildren(tcu::TestCaseGroup *group)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+
+    group->addChild(createRenderPassTests(testCtx, "renderpass1"));
+    group->addChild(createRenderPass2Tests(testCtx, "renderpass2"));
+#ifndef CTS_USES_VULKANSC
+    group->addChild(createDynamicRenderingTests(testCtx, "dynamic_rendering"));
+#endif
+}
+
+tcu::TestCaseGroup *createRenderPassesTests(tcu::TestContext &testCtx, const std::string &name)
+{
+    return createTestGroup(testCtx, name, createChildren);
+}
+
 } // namespace vkt

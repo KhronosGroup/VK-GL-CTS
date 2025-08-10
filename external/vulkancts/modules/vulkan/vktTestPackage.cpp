@@ -1300,9 +1300,7 @@ void TestPackage::init(void)
     addRootChild("binding_model", m_caseListFilter, BindingModel::createTests);
     addRootChild("spirv_assembly", m_caseListFilter, SpirVAssembly::createTests);
     addRootChild("glsl", m_caseListFilter, createGlslTests);
-    addRootChild("renderpass", m_caseListFilter, createRenderPassTests);
-    addRootChild("renderpass2", m_caseListFilter, createRenderPass2Tests);
-    addRootChild("dynamic_rendering", m_caseListFilter, createDynamicRenderingTests);
+    addRootChild("renderpasses", m_caseListFilter, createRenderPassesTests);
     addRootChild("ubo", m_caseListFilter, ubo::createTests);
     addRootChild("dynamic_state", m_caseListFilter, DynamicState::createTests);
     addRootChild("ssbo", m_caseListFilter, ssbo::createTests);
@@ -1369,8 +1367,7 @@ void TestPackageSC::init(void)
     addRootChild("binding_model", m_caseListFilter, BindingModel::createTests);
     addRootChild("spirv_assembly", m_caseListFilter, SpirVAssembly::createTests);
     addRootChild("glsl", m_caseListFilter, createGlslTests);
-    addRootChild("renderpass", m_caseListFilter, createRenderPassTests);
-    addRootChild("renderpass2", m_caseListFilter, createRenderPass2Tests);
+    addRootChild("renderpasses", m_caseListFilter, createRenderPassesTests);
     addRootChild("ubo", m_caseListFilter, ubo::createTests);
     addRootChild("dynamic_state", m_caseListFilter, DynamicState::createTests);
     addRootChild("ssbo", m_caseListFilter, ssbo::createTests);
