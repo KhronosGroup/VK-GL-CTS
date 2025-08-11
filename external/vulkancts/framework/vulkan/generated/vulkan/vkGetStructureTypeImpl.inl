@@ -5468,3 +5468,8 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderUntypedPointer
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
+}
+

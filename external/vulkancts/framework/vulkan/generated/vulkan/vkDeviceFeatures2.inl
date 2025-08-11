@@ -6546,6 +6546,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderUntypedPointersFeaturesKHR (Conte
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureTextureCompressionASTC3DFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT deviceTextureCompressionASTC3DFeaturesEXT[count];
+    const bool                                          isTextureCompressionASTC3DFeaturesEXT = checkExtension(properties, "VK_EXT_texture_compression_astc_3d");
+
+    if (!isTextureCompressionASTC3DFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceTextureCompressionASTC3DFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT));
+        deviceTextureCompressionASTC3DFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
+        deviceTextureCompressionASTC3DFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceTextureCompressionASTC3DFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceTextureCompressionASTC3DFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceTextureCompressionASTC3DFeaturesEXT[0].textureCompressionASTC_3D != deviceTextureCompressionASTC3DFeaturesEXT[1].textureCompressionASTC_3D)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -6966,6 +7005,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_float8_features_ext", testPhysicalDeviceFeatureShaderFloat8FeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_cache_incremental_mode_features_sec", testPhysicalDeviceFeaturePipelineCacheIncrementalModeFeaturesSEC);
 	addFunctionCase(testGroup, "shader_untyped_pointers_features_khr", testPhysicalDeviceFeatureShaderUntypedPointersFeaturesKHR);
+	addFunctionCase(testGroup, "texture_compression_astc_3d_features_ext", testPhysicalDeviceFeatureTextureCompressionASTC3DFeaturesEXT);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

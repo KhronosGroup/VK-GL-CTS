@@ -11394,6 +11394,13 @@ struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
 	VkBool32		shaderUntypedPointers;
 };
 
+struct VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		textureCompressionASTC_3D;
+};
+
 struct StdVideoH264SpsVuiFlags
 {
 	uint32_t	aspect_ratio_info_present_flag:1;

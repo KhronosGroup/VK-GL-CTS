@@ -78,6 +78,7 @@ const VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					getTexelBufferAlignme
 const VkPhysicalDeviceDepthBiasControlFeaturesEXT&						getDepthBiasControlFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDepthBiasControlFeaturesEXT>();					}
 const VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&					getDeviceMemoryReportFeaturesEXT					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceDeviceMemoryReportFeaturesEXT>();					}
 const VkPhysicalDeviceCustomBorderColorFeaturesEXT&						getCustomBorderColorFeaturesEXT						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCustomBorderColorFeaturesEXT>();					}
+const VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT&				getTextureCompressionASTC3DFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT>();			}
 const VkPhysicalDevicePresentBarrierFeaturesNV&							getPresentBarrierFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentBarrierFeaturesNV>();						}
 const VkPhysicalDevicePresentIdFeaturesKHR&								getPresentIdFeatures								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentIdFeaturesKHR>();							}
 const VkPhysicalDevicePrivateDataFeatures&								getPrivateDataFeatures								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePrivateDataFeatures>();							}

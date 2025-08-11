@@ -78,6 +78,7 @@ const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					Context::getTexel
 const vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT&						Context::getDepthBiasControlFeaturesEXT						(void) const { return m_device->getDepthBiasControlFeaturesEXT();					}
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&					Context::getDeviceMemoryReportFeaturesEXT					(void) const { return m_device->getDeviceMemoryReportFeaturesEXT();					}
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&						Context::getCustomBorderColorFeaturesEXT					(void) const { return m_device->getCustomBorderColorFeaturesEXT();					}
+const vk::VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT&				Context::getTextureCompressionASTC3DFeaturesEXT				(void) const { return m_device->getTextureCompressionASTC3DFeaturesEXT();			}
 const vk::VkPhysicalDevicePresentBarrierFeaturesNV&							Context::getPresentBarrierFeatures							(void) const { return m_device->getPresentBarrierFeatures();						}
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&								Context::getPresentIdFeatures								(void) const { return m_device->getPresentIdFeatures();								}
 const vk::VkPhysicalDevicePrivateDataFeatures&								Context::getPrivateDataFeatures								(void) const { return m_device->getPrivateDataFeatures();							}

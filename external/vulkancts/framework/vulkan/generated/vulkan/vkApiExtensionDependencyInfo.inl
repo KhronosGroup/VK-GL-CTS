@@ -4603,6 +4603,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_acquire_drm_display"),
 	std::make_tuple(1, 0, "VK_EXT_robustness2"),
 	std::make_tuple(1, 0, "VK_EXT_custom_border_color"),
+	std::make_tuple(1, 0, "VK_EXT_texture_compression_astc_3d"),
 	std::make_tuple(1, 0, "VK_GOOGLE_user_type"),
 	std::make_tuple(1, 0, "VK_KHR_pipeline_library"),
 	std::make_tuple(1, 0, "VK_NV_present_barrier"),

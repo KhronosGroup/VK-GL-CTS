@@ -1042,6 +1042,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_texture_compression_astc_3d")
+	{
+		return;
+	}
 	if (extName == "VK_GOOGLE_user_type")
 	{
 		return;
@@ -3063,6 +3067,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_texture_compression_astc_3d")
+	{
+		return;
+	}
 	if (extName == "VK_GOOGLE_user_type")
 	{
 		return;
@@ -4487,6 +4495,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_device_memory_report",
 	"VK_EXT_robustness2",
 	"VK_EXT_custom_border_color",
+	"VK_EXT_texture_compression_astc_3d",
 	"VK_GOOGLE_user_type",
 	"VK_KHR_pipeline_library",
 	"VK_NV_present_barrier",

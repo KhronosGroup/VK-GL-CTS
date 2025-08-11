@@ -78,6 +78,7 @@ const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					getTexelBufferAli
 const vk::VkPhysicalDeviceDepthBiasControlFeaturesEXT&						getDepthBiasControlFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceDeviceMemoryReportFeaturesEXT&					getDeviceMemoryReportFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorFeaturesEXT&						getCustomBorderColorFeaturesEXT						(void) const;
+const vk::VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT&				getTextureCompressionASTC3DFeaturesEXT				(void) const;
 const vk::VkPhysicalDevicePresentBarrierFeaturesNV&							getPresentBarrierFeatures							(void) const;
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&								getPresentIdFeatures								(void) const;
 const vk::VkPhysicalDevicePrivateDataFeatures&								getPrivateDataFeatures								(void) const;
