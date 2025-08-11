@@ -926,13 +926,14 @@ struct EncodeTestParam
 class TestDefinition
 {
 public:
-    static MovePtr<TestDefinition> create(EncodeTestParam params, bool generalLayout)
+    static MovePtr<TestDefinition> create(EncodeTestParam params, bool layeredSrc, bool generalLayout)
     {
-        return MovePtr<TestDefinition>(new TestDefinition(params, generalLayout));
+        return MovePtr<TestDefinition>(new TestDefinition(params, layeredSrc, generalLayout));
     }
 
-    TestDefinition(EncodeTestParam params, bool generalLayout)
+    TestDefinition(EncodeTestParam params, bool layeredSrc, bool generalLayout)
         : m_params(params)
+        , m_isLayeredSrc(layeredSrc)
         , m_generalLayout(generalLayout)
         , m_info(clipInfo(params.clip))
     {
@@ -944,6 +945,11 @@ public:
     TestType getTestType() const
     {
         return m_params.type;
+    }
+
+    bool isLayered() const
+    {
+        return m_isLayeredSrc;
     }
 
     bool usesGeneralLayout() const
@@ -1225,6 +1231,7 @@ public:
 
 private:
     EncodeTestParam m_params;
+    bool m_isLayeredSrc;
     bool m_generalLayout;
     const ClipInfo *m_info{};
     VkVideoCoreProfile m_profile;
@@ -1563,6 +1570,7 @@ private:
     uint32_t m_gopFrameCount;
     uint32_t m_dpbSlots;
     VkExtent2D m_codedExtent;
+    bool m_layeredSrc;
 
     // Feature flags
     bool m_queryStatus;
@@ -1659,6 +1667,7 @@ private:
     std::vector<std::unique_ptr<const Move<VkImageView>>> m_imageViewVector;
     std::vector<std::unique_ptr<const VkVideoPictureResourceInfoKHR>> m_imagePictureResourceVector;
     void prepareInputImages(void);
+    VkExtent2D currentCodedExtent(uint32_t frame);
 
     // Session headers
     std::vector<std::vector<uint8_t>> m_headersData;
@@ -1832,6 +1841,9 @@ void VideoEncodeTestInstance::initializeTestParameters()
     m_gopFrameCount = m_testDefinition->gopFrameCount();
     m_dpbSlots      = m_testDefinition->gopReferenceFrameCount();
     m_codedExtent   = {m_testDefinition->getClipWidth(), m_testDefinition->getClipHeight()};
+
+    // Set whether it uses src image array
+    m_layeredSrc = m_testDefinition->isLayered();
 
     // Set up feature flags
     m_queryStatus              = m_testDefinition->hasOption(Option::UseStatusQueries);
@@ -2471,48 +2483,65 @@ void VideoEncodeTestInstance::prepareDPBResources(void)
     }
 }
 
+VkExtent2D VideoEncodeTestInstance::currentCodedExtent(uint32_t frame)
+{
+    VkExtent2D currentCodedExtent = m_codedExtent;
+
+    // For resolution_change_dpb tests, it changes from frame 2.
+    if (m_resolutionChange && (frame > 1))
+    {
+        currentCodedExtent.width /= 2;
+        currentCodedExtent.height /= 2;
+    }
+
+    if (currentCodedExtent.width > m_videoCapabilities->maxCodedExtent.width ||
+        currentCodedExtent.height > m_videoCapabilities->maxCodedExtent.height)
+    {
+        TCU_THROW(NotSupportedError, "Required dimensions exceed maxCodedExtent");
+    }
+
+    if (currentCodedExtent.width < m_videoCapabilities->minCodedExtent.width ||
+        currentCodedExtent.height < m_videoCapabilities->minCodedExtent.height)
+    {
+        TCU_THROW(NotSupportedError, "Required dimensions are smaller than minCodedExtent");
+    }
+
+    return currentCodedExtent;
+}
+
 void VideoEncodeTestInstance::prepareInputImages(void)
 {
     const VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR;
 
-    for (uint32_t i = 0; i < m_gopCount; ++i)
+    uint32_t framesToProcess = m_gopCount * m_gopFrameCount;
+
+    for (uint32_t i = 0; i < (m_layeredSrc ? 1 : framesToProcess); ++i)
     {
-        for (uint32_t j = 0; j < m_gopFrameCount; ++j)
+        VkExtent2D codedExtent = currentCodedExtent(i);
+
+        const VkImageCreateInfo imageCreateInfo = makeImageCreateInfo(
+            m_imageFormat, codedExtent,
+            m_resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0,
+            &m_transferQueueFamilyIndex, imageUsage,
+            m_resourcesWithoutProfiles ? nullptr : m_videoEncodeProfileList.get(), m_layeredSrc ? framesToProcess : 1);
+
+        std::unique_ptr<const ImageWithMemory> image(new ImageWithMemory(
+            *m_videoDeviceDriver, m_videoEncodeDevice, getAllocator(), imageCreateInfo, MemoryRequirement::Any));
+
+        m_imageVector.push_back(std::move(image));
+
+        for (uint32_t j = 0; j < (m_layeredSrc ? framesToProcess : 1); ++j)
         {
-            VkExtent2D currentCodedExtent = m_codedExtent;
-            if (m_resolutionChange && i == 1)
-            {
-                currentCodedExtent.width /= 2;
-                currentCodedExtent.height /= 2;
-            }
+            codedExtent = m_layeredSrc ? currentCodedExtent(j) : codedExtent;
 
-            if (currentCodedExtent.width > m_videoCapabilities->maxCodedExtent.width ||
-                currentCodedExtent.height > m_videoCapabilities->maxCodedExtent.height)
-            {
-                TCU_THROW(NotSupportedError, "Required dimensions exceed maxCodedExtent");
-            }
-
-            if (currentCodedExtent.width < m_videoCapabilities->minCodedExtent.width ||
-                currentCodedExtent.height < m_videoCapabilities->minCodedExtent.height)
-            {
-                TCU_THROW(NotSupportedError, "Required dimensions are smaller than minCodedExtent");
-            }
-
-            const VkImageCreateInfo imageCreateInfo =
-                makeImageCreateInfo(m_imageFormat, currentCodedExtent,
-                                    m_resourcesWithoutProfiles ? VK_IMAGE_CREATE_VIDEO_PROFILE_INDEPENDENT_BIT_KHR : 0,
-                                    &m_transferQueueFamilyIndex, imageUsage,
-                                    m_resourcesWithoutProfiles ? nullptr : m_videoEncodeProfileList.get());
-
-            std::unique_ptr<const ImageWithMemory> image(new ImageWithMemory(
-                *m_videoDeviceDriver, m_videoEncodeDevice, getAllocator(), imageCreateInfo, MemoryRequirement::Any));
             std::unique_ptr<const Move<VkImageView>> imageView(new Move<VkImageView>(
-                makeImageView(*m_videoDeviceDriver, m_videoEncodeDevice, image->get(), VK_IMAGE_VIEW_TYPE_2D,
-                              m_imageFormat, makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1))));
-            std::unique_ptr<const VkVideoPictureResourceInfoKHR> imagePictureResource(
-                new VkVideoPictureResourceInfoKHR(makeVideoPictureResource(currentCodedExtent, 0, **imageView)));
+                makeImageView(*m_videoDeviceDriver, m_videoEncodeDevice, m_imageVector[m_layeredSrc ? 0 : i]->get(),
+                              m_layeredSrc ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D, m_imageFormat,
+                              makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, m_layeredSrc ? j : 0, 1))));
 
-            m_imageVector.push_back(std::move(image));
+            std::unique_ptr<const VkVideoPictureResourceInfoKHR> imagePictureResource(
+                new VkVideoPictureResourceInfoKHR(makeVideoPictureResource(codedExtent, 0, **imageView)));
+
             m_imageViewVector.push_back(std::move(imageView));
             m_imagePictureResourceVector.push_back(std::move(imagePictureResource));
         }
@@ -2581,7 +2610,8 @@ void VideoEncodeTestInstance::loadVideoFrames(void)
         }
 
         vkt::ycbcr::uploadImage(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueueFamilyIndex, getAllocator(),
-                                *(*m_imageVector[i]), *multiPlaneImageData, 0, VK_IMAGE_LAYOUT_GENERAL);
+                                m_layeredSrc ? m_imageVector[0]->get() : m_imageVector[i]->get(), *multiPlaneImageData,
+                                0, VK_IMAGE_LAYOUT_GENERAL, m_layeredSrc ? i : 0);
 
         m_inVector.push_back(std::move(in));
     }
@@ -3713,23 +3743,27 @@ tcu::TestCaseGroup *createVideoEncodeTests(tcu::TestContext &testCtx)
     MovePtr<tcu::TestCaseGroup> h264Group(new tcu::TestCaseGroup(testCtx, "h264", "H.264 video codec"));
     MovePtr<tcu::TestCaseGroup> h265Group(new tcu::TestCaseGroup(testCtx, "h265", "H.265 video codec"));
 
-    for (bool generalLayout : {true, false})
+    for (bool layeredSrc : {true, false})
     {
-        for (const auto &encodeTest : g_EncodeTests)
+        for (bool generalLayout : {true, false})
         {
-            auto defn = TestDefinition::create(encodeTest, generalLayout);
-
-            std::string testName = std::string(getTestName(defn->getTestType())) +
-                                   std::string(generalLayout ? "_general_layout" : "_video_layout");
-            auto testCodec = getTestCodec(defn->getTestType());
-
-            if (testCodec == TEST_CODEC_H264)
-                h264Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
-            else if (testCodec == TEST_CODEC_H265)
-                h265Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
-            else
+            for (const auto &encodeTest : g_EncodeTests)
             {
-                TCU_THROW(InternalError, "Unknown Video Codec");
+                auto defn = TestDefinition::create(encodeTest, layeredSrc, generalLayout);
+
+                std::string testName = std::string(getTestName(defn->getTestType())) +
+                                       std::string(layeredSrc ? "_layered_src" : "_separated_src") +
+                                       std::string(generalLayout ? "_general_layout" : "_video_layout");
+                auto testCodec = getTestCodec(defn->getTestType());
+
+                if (testCodec == TEST_CODEC_H264)
+                    h264Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
+                else if (testCodec == TEST_CODEC_H265)
+                    h265Group->addChild(new VideoEncodeTestCase(testCtx, testName.c_str(), defn));
+                else
+                {
+                    TCU_THROW(InternalError, "Unknown Video Codec");
+                }
             }
         }
     }
