@@ -1325,6 +1325,18 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceShaderTerminateInvocationFeatures.pNext;
 	}
 
+	// VkPhysicalDeviceShaderUntypedPointersFeaturesKHR for ext [VK_KHR_shader_untyped_pointers] in APIs []
+
+	vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR physicalDeviceShaderUntypedPointersFeaturesKHR;
+	deMemset(&physicalDeviceShaderUntypedPointersFeaturesKHR, 0, sizeof(physicalDeviceShaderUntypedPointersFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_untyped_pointers"))
+	{
+		physicalDeviceShaderUntypedPointersFeaturesKHR.sType = getStructureType<VkPhysicalDeviceShaderUntypedPointersFeaturesKHR>();
+		*nextPtr = &physicalDeviceShaderUntypedPointersFeaturesKHR;
+		nextPtr  = &physicalDeviceShaderUntypedPointersFeaturesKHR.pNext;
+	}
+
 	// VkPhysicalDeviceSubgroupSizeControlFeatures,VkPhysicalDeviceSubgroupSizeControlFeaturesEXT for ext [VK_EXT_subgroup_size_control] in APIs []
 
 	vk::VkPhysicalDeviceSubgroupSizeControlFeatures physicalDeviceSubgroupSizeControlFeatures;
@@ -3262,6 +3274,16 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		if ( physicalDeviceShaderTerminateInvocationFeatures.shaderTerminateInvocation == VK_FALSE )
 		{
 			log << tcu::TestLog::Message << "Mandatory feature shaderTerminateInvocation not supported" << tcu::TestLog::EndMessage;
+			result = false;
+		}
+	}
+
+	// VkPhysicalDeviceShaderUntypedPointersFeaturesKHR in APIs []
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_untyped_pointers")) )
+	{
+		if ( physicalDeviceShaderUntypedPointersFeaturesKHR.shaderUntypedPointers == VK_FALSE )
+		{
+			log << tcu::TestLog::Message << "Mandatory feature shaderUntypedPointers not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}

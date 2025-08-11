@@ -188,6 +188,31 @@ bool isVulkanMemoryModelFeaturesSupported(const Context &context,
     return true;
 }
 
+bool isShaderAtomicInt64FeatureSupported(const Context &context,
+                                         const vk::VkPhysicalDeviceShaderAtomicInt64Features &toCheck,
+                                         const char **missingFeature)
+{
+    const VkPhysicalDeviceShaderAtomicInt64Features &extensionFeatures = context.getShaderAtomicInt64Features();
+
+    IS_AVAIL("ShaderAtomicInt64.", shaderBufferInt64Atomics);
+
+    return true;
+}
+
+bool isShaderAtomicFloatFeaturesSupported(const Context &context,
+                                          const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT &toCheck,
+                                          const char **missingFeature)
+{
+    const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT &extensionFeatures = context.getShaderAtomicFloatFeaturesEXT();
+
+    IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat32Atomics);
+    IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat32AtomicAdd);
+    IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat64Atomics);
+    IS_AVAIL("ShaderAtomicFloat.", shaderBufferFloat64AtomicAdd);
+
+    return true;
+}
+
 #ifndef CTS_USES_VULKANSC
 bool isIntegerDotProductFeaturesSupported(const Context &context,
                                           const vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR &toCheck,
@@ -197,6 +222,47 @@ bool isIntegerDotProductFeaturesSupported(const Context &context,
         context.getShaderIntegerDotProductFeatures();
 
     IS_AVAIL("ShaderIntegerDotProduct.", shaderIntegerDotProduct);
+
+    return true;
+}
+
+bool isWorkgroupMemoryExplicitLayoutSupported(
+    const Context &context, const vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR &toCheck,
+    const char **missingFeature)
+{
+    const VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR &extensionFeatures =
+        context.getWorkgroupMemoryExplicitLayoutFeatures();
+
+    IS_AVAIL("WorkgroupMemoryExplicitLayout.", workgroupMemoryExplicitLayout);
+    IS_AVAIL("WorkgroupMemoryExplicitLayout.", workgroupMemoryExplicitLayout8BitAccess);
+    IS_AVAIL("WorkgroupMemoryExplicitLayout.", workgroupMemoryExplicitLayout16BitAccess);
+
+    return true;
+}
+
+bool isShaderAtomicFloat2FeaturesSupported(const Context &context,
+                                           const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT &toCheck,
+                                           const char **missingFeature)
+{
+    const VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT &extensionFeatures = context.getShaderAtomicFloat2FeaturesEXT();
+
+    IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat16Atomics);
+    IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat16AtomicAdd);
+    IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat16AtomicMinMax);
+    IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat32AtomicMinMax);
+    IS_AVAIL("ShaderAtomicFloat2.", shaderBufferFloat64AtomicMinMax);
+
+    return true;
+}
+
+bool isShaderUntypedPointersFeaturesSupported(const Context &context,
+                                              const vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR &toCheck,
+                                              const char **missingFeature)
+{
+    const VkPhysicalDeviceShaderUntypedPointersFeaturesKHR &extensionFeatures =
+        context.getShaderUntypedPointersFeatures();
+
+    IS_AVAIL("ShaderUntypedPointers.", shaderUntypedPointers);
 
     return true;
 }
@@ -213,6 +279,16 @@ bool isFloatControls2FeaturesSupported(const Context &context,
     return true;
 }
 
+bool isCooperativeMatrixFeaturesSupported(const Context &context,
+                                          const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR &toCheck,
+                                          const char **missingFeature)
+{
+    const VkPhysicalDeviceCooperativeMatrixFeaturesKHR &extensionFeatures = context.getCooperativeMatrixFeatures();
+
+    IS_AVAIL("CooperativeMatrix.", cooperativeMatrix);
+
+    return true;
+}
 bool isMaintenance8FeaturesSupported(const Context &context, const vk::VkPhysicalDeviceMaintenance8FeaturesKHR &toCheck,
                                      const char **missingFeature)
 {
@@ -333,11 +409,29 @@ bool isVulkanFeaturesSupported(const Context &context, const VulkanFeatures &req
     if (!isFloatControlsFeaturesSupported(context, requested.floatControlsProperties, missingFeature))
         return false;
 
+    if (!isShaderAtomicInt64FeatureSupported(context, requested.extShaderAtomicInt64, missingFeature))
+        return false;
+
+    if (!isShaderAtomicFloatFeaturesSupported(context, requested.extShaderAtomicFloat, missingFeature))
+        return false;
+
 #ifndef CTS_USES_VULKANSC
     if (!isIntegerDotProductFeaturesSupported(context, requested.extIntegerDotProduct, missingFeature))
         return false;
 
+    if (!isWorkgroupMemoryExplicitLayoutSupported(context, requested.extWorkgroupMemoryExplicitLayout, missingFeature))
+        return false;
+
+    if (!isShaderAtomicFloat2FeaturesSupported(context, requested.extShaderAtomicFloat2, missingFeature))
+        return false;
+
+    if (!isShaderUntypedPointersFeaturesSupported(context, requested.extShaderUntypedPointers, missingFeature))
+        return false;
+
     if (!isFloatControls2FeaturesSupported(context, requested.extFloatControls2, missingFeature))
+        return false;
+
+    if (!isCooperativeMatrixFeaturesSupported(context, requested.extCooperativeMatrix, missingFeature))
         return false;
 
     if (!isMaintenance8FeaturesSupported(context, requested.extMaintenance8, missingFeature))
@@ -424,6 +518,18 @@ std::vector<int64_t> getInt64s(de::Random &rnd, const uint32_t count)
     return data;
 }
 
+std::vector<uint64_t> getUint64s(de::Random &rnd, const uint32_t count)
+{
+    std::vector<uint64_t> data;
+
+    data.reserve(count);
+
+    for (uint32_t numNdx = static_cast<uint32_t>(data.size()); numNdx < count; ++numNdx)
+        data.push_back(rnd.getUint64());
+
+    return data;
+}
+
 // Generate and return 32-bit integers.
 //
 // Expected count to be at least 16.
@@ -459,6 +565,18 @@ std::vector<int32_t> getInt32s(de::Random &rnd, const uint32_t count)
     return data;
 }
 
+std::vector<uint32_t> getUint32s(de::Random &rnd, uint32_t count)
+{
+    std::vector<uint32_t> data;
+
+    data.reserve(count);
+
+    for (uint32_t numNdx = static_cast<uint32_t>(data.size()); numNdx < count; ++numNdx)
+        data.push_back(rnd.getUint32());
+
+    return data;
+}
+
 // Generate and return 16-bit integers.
 //
 // Expected count to be at least 8.
@@ -486,6 +604,18 @@ std::vector<int16_t> getInt16s(de::Random &rnd, const uint32_t count)
     return data;
 }
 
+std::vector<uint16_t> getUint16s(de::Random &rnd, uint32_t count)
+{
+    std::vector<uint16_t> data;
+
+    data.reserve(count);
+
+    for (uint32_t numNdx = static_cast<uint32_t>(data.size()); numNdx < count; ++numNdx)
+        data.push_back(rnd.getUint16());
+
+    return data;
+}
+
 // Generate and return 8-bit integers.
 //
 // Expected count to be at least 8.
@@ -509,6 +639,18 @@ std::vector<int8_t> getInt8s(de::Random &rnd, const uint32_t count)
 
     for (uint32_t numNdx = static_cast<uint32_t>(data.size()); numNdx < count; ++numNdx)
         data.push_back(static_cast<int8_t>(rnd.getUint8()));
+
+    return data;
+}
+
+std::vector<uint8_t> getUint8s(de::Random &rnd, uint32_t count)
+{
+    std::vector<uint8_t> data;
+
+    data.reserve(count);
+
+    for (uint32_t numNdx = static_cast<uint32_t>(data.size()); numNdx < count; ++numNdx)
+        data.push_back(rnd.getUint8());
 
     return data;
 }
