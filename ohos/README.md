@@ -42,18 +42,23 @@ Run the script of build files in scripts folder:
 * --clt: Command-Line-Tools
 * --sdk: OpenHarmony Public SDK
 
-After complete the build, the "app1-signed".hap will be find in "ohosbuild\happroject\autosign\app1-signed.hap"
+After complete the build, the "deqpCts".hap will be find in "ohosbuild\happroject\autosign\deqpCts.hap"
 
 
 Test
 ---------------------
 1. Install the hap
 ```
-hdc install app1-signed.hap
+hdc install deqpCts.hap
 ```
 
 2. Run the case
 ![screenshot](./figures/Screenshot.jpeg)
+
+**Notice**
+The default project is just for OpenHarmony, If it needs to build for HarmonyOS, after build, it should using HarmonyOS Native Project,
+and then copy the "libs" and "cpp", "ets", "resources" directories to the HarmonyOS Native Project. After that it can build and run on
+HarmonyOS devices.
 
 
 

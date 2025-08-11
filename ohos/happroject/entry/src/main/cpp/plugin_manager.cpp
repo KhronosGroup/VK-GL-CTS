@@ -29,75 +29,12 @@ enum ContextType {
 
 PluginManager PluginManager::manager_;
 
-// napi_value PluginManager::GetContext(napi_env env, napi_callback_info info)
-// {
-//     napi_status status;
-//     napi_value exports;
-//     size_t argc = 1;
-//     napi_value args[1];
-//     NAPI_CALL(env, napi_get_cb_info(env, info, &argc, args, nullptr, nullptr));
-
-//     if (argc != 1) {
-//         napi_throw_type_error(env, NULL, "Wrong number of arguments");
-//         return nullptr;
-//     }
-
-//     napi_valuetype valuetype;
-//     status = napi_typeof(env, args[0], &valuetype);
-//     if (status != napi_ok) {
-//         return nullptr;
-//     }
-//     if (valuetype != napi_number) {
-//         napi_throw_type_error(env, NULL, "Wrong arguments");
-//         return nullptr;
-//     }
-
-//     int64_t value;
-//     NAPI_CALL(env, napi_get_value_int64(env, args[0], &value));
-
-//     NAPI_CALL(env, napi_create_object(env, &exports));
-
-//     switch (value) {
-//         case APP_LIFECYCLE:
-//             {
-//                 /**** AppInit 对应 app.ets中的应用生命周期 onCreate, onShow, onHide, onDestroy ******/
-//                 LOGD("GetContext APP_LIFECYCLE");
-//                 /**** Register App Lifecycle  ******/
-//                 napi_property_descriptor desc[] = {
-//                     DECLARE_NAPI_FUNCTION("onCreate", PluginManager::NapiOnCreate),
-//                     DECLARE_NAPI_FUNCTION("onShow", PluginManager::NapiOnShow),
-//                     DECLARE_NAPI_FUNCTION("onHide", PluginManager::NapiOnHide),
-//                     DECLARE_NAPI_FUNCTION("onDestroy", PluginManager::NapiOnDestroy),
-//                 };
-//                 NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
-//             }
-
-//             break;
-//         case JS_PAGE_LIFECYCLE:
-//             {
-//                 /****************  声明式开发范式 JS Page 生命周期注册 ****************************/
-//                 LOGD("GetContext JS_PAGE_LIFECYCLE");
-//                 napi_property_descriptor desc[] = {
-//                     DECLARE_NAPI_FUNCTION("onPageShow", PluginManager::NapiOnPageShow),
-//                     DECLARE_NAPI_FUNCTION("onPageHide", PluginManager::NapiOnPageHide),
-//                 };
-//                 NAPI_CALL(env, napi_define_properties(env, exports, sizeof(desc) / sizeof(desc[0]), desc));
-
-//             }
-//             break;
-//         default:
-//             LOGE("unknown type");
-//     }
-//     return exports;
-// }
-
 void VsyncCallback(long long timestamp, void *data) {
     PluginManager *pm = (PluginManager *)data;
     pm->OnVsync();
 }
 
 void PluginManager::DoVsync(){
-//     LOGE("cxunmz OnVsync");
     {
         std::lock_guard<std::mutex> lock(mutex_);
         std::vector<std::string> remove;
@@ -157,7 +94,6 @@ bool PluginManager::Export(napi_env env, napi_value exports) {
         LOGE("Export false 3");
         return false;
     }
-    // SwapMainId(idStr);
 
     std::string id(idStr);
     auto context = PluginManager::GetInstance();

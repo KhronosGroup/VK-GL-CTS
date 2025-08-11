@@ -44,7 +44,6 @@ using tcu::TextureLevel;
 OhosWindow::OhosWindow (OhosDisplay& display, const WindowParams& params)
     : NativeWindow    (CAPABILITIES)
 {
-    //TODO: 创建rosen window
     if (display.getPlatformNative() != nullptr) {
         printf("OhosWindow params: width=%d, height=%d\n", params.width, params.height);
     }
@@ -52,36 +51,31 @@ OhosWindow::OhosWindow (OhosDisplay& display, const WindowParams& params)
 }
 
 eglw::EGLNativeWindowType OhosWindow::getLegacyNative (void)
-{ 
-    //TODO: 创建rosen window
+{
     printf("OhosWindow::getLegacyNative\n");
     return nullptr; 
 }
 
 void* OhosWindow::getPlatformExtension (void)
-{ 
-    //TODO: 创建rosen window
+{
     printf("OhosWindow::getPlatformExtension\n");
     return nullptr; 
 }
 
 void* OhosWindow::getPlatformNative (void)
-{ 
-    //TODO: 创建rosen window
+{
     printf("OhosWindow::getPlatformNative\n");
     return nullptr; 
 }
 
 IVec2 OhosWindow::getSurfaceSize (void) const
 {
-    //TODO: 设置surface
     IVec2 ret;
     return ret;
 }
 
 void OhosWindow::setSurfaceSize (IVec2 size)
 {
-    //TODO: 设置size
     printf("setSurfaceSize IVec2: %d\n", size.x());
 }
 

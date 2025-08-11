@@ -74,7 +74,7 @@ void EGLCore::OnKeyEvent(uint32_t keyCode, uint32_t updown) {}
 void EGLCore::OnTouch(int id, int x, int y, int type) {}
 
 void EGLCore::OnWindowCommand(uint16_t command) {}
-void *stdout_to_hilog(void *arg) { // 把vk-gl-cts的log打到hilog
+void *stdout_to_hilog(void *arg) {
     int *pipefd = (int *)arg;
     FILE *pipe_read = fdopen(pipefd[0], "r");
     if (!pipe_read) {

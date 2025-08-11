@@ -49,11 +49,6 @@ public:
         , m_driver(m_library)
     {
     }
-	// VulkanLibrary (void)
-	// 	: m_library	("libvulkan.so")
-	// 	, m_driver	(m_library)
-	// {
-	// }
 
 	const vk::PlatformInterface& getPlatformInterface		(void) const
 	{
@@ -70,51 +65,6 @@ private:
 	const vk::PlatformDriver			m_driver;
 };
 
-// class VulkanWindowOhos : public vk::wsi::OhosWindowInterface
-// {
-// public:
-// 	VulkanWindowOhos (uint64_t windowId)
-//         : vk::wsi::OhosWindowInterface	(vk::pt::OhosNativeWindowPtr(OHOS::OhosContextI::GetInstance().GetNativeWindow(windowId)))
-// 		, windowId_(windowId)
-// 	{
-// 	}
-
-// 	void setVisible(bool visible)
-// 	{
-// 		DE_UNREF(visible);
-// 	}
-
-// 	void resize(const UVec2& newSize)
-// 	{
-// 		DE_UNREF(newSize);
-// 	}
-
-// 	~VulkanWindowOhos (void)
-// 	{
-// 		OHOS::OhosContextI::GetInstance().DestoryWindow(windowId_);
-// 	}
-
-// private:
-// 	uint64_t windowId_;
-// };
-// class VulkanDisplayOhos : public vk::wsi::Display
-// {
-// public:
-// 	VulkanDisplayOhos ()
-// 	{
-// 	}
-
-// 	vk::wsi::Window* createWindow (const Maybe<UVec2>& initialSize) const
-// 	{
-// 		const deUint32		height		= !initialSize ? (deUint32)300 : initialSize->y();
-// 		const deUint32		width		= !initialSize ? (deUint32)400 : initialSize->x();
-// 		printf("%d,%d\n",width,height);
-// 		uint64_t i = OHOS::OhosContextI::GetInstance().CreateWindow(0,0,width,height);
-// 		return new VulkanWindowOhos(i);//cxunmz
-// 	}
-
-// private:
-// };
 
 vk::wsi::Display* OhosPlatform::createWsiDisplay(vk::wsi::Type wsiType) const
 {
@@ -133,7 +83,6 @@ bool OhosPlatform::hasDisplay(vk::wsi::Type wsiType) const
 {
     // if (wsiType == vk::wsi::TYPE_OHOS)
 	// 	return true;
-
 	return false;
 }
 

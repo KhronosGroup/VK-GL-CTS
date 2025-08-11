@@ -22,7 +22,6 @@ add_library(entry SHARED
 
 target_link_directories(entry PUBLIC ${CMAKE_CURRENT_SOURCE_DIR}/../../../libs/${OHOS_ARCH})
 
-#libvk_app_context.z.so libglcts_app.z.so 
 target_link_libraries(entry PUBLIC libEGL.so
     libGLESv3.so libace_napi.z.so libhilog_ndk.z.so
     libace_ndk.z.so libace_napi.z.so libuv.so libnative_vsync.so
