@@ -220,10 +220,11 @@ void BorderSwizzleCase::checkSupport(Context &context) const
     }
     else if (m_params.isOpaqueBlack())
     {
-        if (m_params.textureFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16)
+        if (m_params.textureFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16 ||
+            m_params.textureFormat == VK_FORMAT_R4G4B4A4_UNORM_PACK16)
         {
             const auto &m10Props = context.getMaintenance10Properties();
-            if (m10Props.rgba4OpaqueBlackSwizzled &&
+            if (!m10Props.rgba4OpaqueBlackSwizzled &&
                 (m_params.disableCustomBorderColorFeatures || !borderColorFeatures.customBorderColors))
                 TCU_THROW(NotSupportedError,
                           "VK_FORMAT_B4G4R4A4_UNORM_PACK16 needs rgba4OpaqueBlackSwizzled set to false");
@@ -1582,7 +1583,8 @@ tcu::TestCaseGroup *createSamplerBorderSwizzleTests(tcu::TestContext &testCtx,
 
                             gatherGroup->addChild(new BorderSwizzleCase(testCtx, swizzleHint.name, params));
 
-                            if (format == VK_FORMAT_B4G4R4A4_UNORM_PACK16 &&
+                            if ((format == VK_FORMAT_B4G4R4A4_UNORM_PACK16 ||
+                                 format == VK_FORMAT_R4G4B4A4_UNORM_PACK16) &&
                                 params.borderColor == VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK)
                             {
                                 params.disableCustomBorderColorFeatures = true;
