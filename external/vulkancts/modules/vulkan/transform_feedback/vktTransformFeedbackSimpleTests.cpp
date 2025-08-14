@@ -166,8 +166,19 @@ struct TestParameters
             TEST_TYPE_LINES_TRIANGLES,
         };
 
-        const auto itr = nonFullPipelineTestTypesWithGeomShaders.find(testType);
-        return (itr != nonFullPipelineTestTypesWithGeomShaders.end() || requiresFullPipeline());
+        // These are only supported with the geometryShader feature, even if
+        // they are used without a geometry shader.
+        static const std::set<VkPrimitiveTopology> geomShaderTopologies{
+            VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
+            VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
+        };
+
+        const auto itrType     = nonFullPipelineTestTypesWithGeomShaders.find(testType);
+        const auto itrTopology = geomShaderTopologies.find(primTopology);
+        return (itrType != nonFullPipelineTestTypesWithGeomShaders.end() || itrTopology != geomShaderTopologies.end() ||
+                requiresFullPipeline());
     }
 
     bool usingTessGeom(void) const
