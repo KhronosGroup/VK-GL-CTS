@@ -118,6 +118,7 @@ const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&					getExtendedDynam
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&						getColorWriteEnableFeaturesEXT						(void) const;
 const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&				getPrimitivesGeneratedQueryFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				getRayTracingMaintenance1Features					(void) const;
+const vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR&					getShaderUntypedPointersFeatures					(void) const;
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&						getImageViewMinLodFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&								getMultiDrawFeaturesEXT								(void) const;
 const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&						getImage2DViewOf3DFeaturesEXT						(void) const;
@@ -154,6 +155,7 @@ const vk::VkPhysicalDevicePipelineProtectedAccessFeatures&					getPipelineProtec
 const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				getExternalFormatResolveFeaturesANDROID				(void) const;
 const vk::VkPhysicalDeviceMaintenance5Features&								getMaintenance5Features								(void) const;
 const vk::VkPhysicalDeviceAntiLagFeaturesAMD&								getAntiLagFeaturesAMD								(void) const;
+const vk::VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX&					getDenseGeometryFormatFeaturesAMDX					(void) const;
 const vk::VkPhysicalDevicePresentId2FeaturesKHR&							getPresentId2Features								(void) const;
 const vk::VkPhysicalDevicePresentWait2FeaturesKHR&							getPresentWait2Features								(void) const;
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				getRayTracingPositionFetchFeatures					(void) const;

@@ -1283,6 +1283,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
 		return;
@@ -1462,6 +1466,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_AMD_anti_lag")
+	{
+		return;
+	}
+	if (extName == "VK_AMDX_dense_geometry_format")
 	{
 		return;
 	}
@@ -3367,6 +3375,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		}
 		return;
 	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
 		return;
@@ -3679,6 +3691,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_AMD_anti_lag")
 	{
 		functions.push_back("vkAntiLagUpdateAMD");
+		return;
+	}
+	if (extName == "VK_AMDX_dense_geometry_format")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_present_id2")
@@ -4529,6 +4545,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_color_write_enable",
 	"VK_EXT_primitives_generated_query",
 	"VK_KHR_ray_tracing_maintenance1",
+	"VK_KHR_shader_untyped_pointers",
 	"VK_EXT_global_priority_query",
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
@@ -4571,6 +4588,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_AMD_anti_lag",
+	"VK_AMDX_dense_geometry_format",
 	"VK_KHR_present_id2",
 	"VK_KHR_present_wait2",
 	"VK_KHR_ray_tracing_position_fetch",

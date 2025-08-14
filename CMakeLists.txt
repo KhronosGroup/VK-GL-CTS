@@ -149,9 +149,7 @@ include_directories(external/renderdoc/src)
 
 # Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-   # Some of the parsing / codec code is used from here.
-   add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
-   # Video encoder library
+   # Video parser and encoder library
    add_subdirectory(external/vulkan-video-samples EXCLUDE_FROM_ALL)
    # YUV Video generator library
    add_subdirectory(external/video_generator EXCLUDE_FROM_ALL)

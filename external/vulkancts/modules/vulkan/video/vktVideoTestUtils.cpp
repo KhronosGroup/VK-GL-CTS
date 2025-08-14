@@ -682,6 +682,16 @@ de::MovePtr<VkVideoCapabilitiesKHR> getVideoCapabilities(const InstanceInterface
     return result;
 }
 
+de::MovePtr<VkVideoEncodeIntraRefreshCapabilitiesKHR> getIntraRefreshCapabilities(void)
+{
+    VkVideoEncodeIntraRefreshCapabilitiesKHR intraRefreshCapabilities = {};
+    intraRefreshCapabilities.sType = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR;
+    intraRefreshCapabilities.pNext = VK_NULL_HANDLE;
+
+    return de::MovePtr<VkVideoEncodeIntraRefreshCapabilitiesKHR>(
+        new VkVideoEncodeIntraRefreshCapabilitiesKHR(intraRefreshCapabilities));
+}
+
 de::MovePtr<VkVideoDecodeH264ProfileInfoKHR> getVideoProfileExtensionH264D(
     StdVideoH264ProfileIdc stdProfileIdc, VkVideoDecodeH264PictureLayoutFlagBitsKHR pictureLayout)
 {
@@ -1418,6 +1428,9 @@ de::MovePtr<StdVideoH265ShortTermRefPicSet> getStdVideoH265ShortTermRefPicSet(St
     {
     case STD_VIDEO_H265_PICTURE_TYPE_P:
         strps.num_negative_pics = 1;
+        // For where frameIdx == 3, 6, 9, 12 in the h265.i_p_b_13 test, need to set 2.
+        if (consecutiveBFrameCount)
+            strps.delta_poc_s0_minus1[0] = (frameIdxMod == 0) ? 2 : 0;
         break;
 
     case STD_VIDEO_H265_PICTURE_TYPE_B:
@@ -2117,12 +2130,13 @@ de::MovePtr<StdVideoEncodeH265PictureInfo> getStdVideoEncodeH265PictureInfo(
 }
 
 de::MovePtr<VkVideoEncodeH264PictureInfoKHR> getVideoEncodeH264PictureInfo(
-    const StdVideoEncodeH264PictureInfo *pictureInfo, const VkVideoEncodeH264NaluSliceInfoKHR *pNaluSliceEntries)
+    const StdVideoEncodeH264PictureInfo *pictureInfo, uint32_t naluSliceEntryCount,
+    const VkVideoEncodeH264NaluSliceInfoKHR *pNaluSliceEntries)
 {
     const VkVideoEncodeH264PictureInfoKHR videoEncodeH264PictureInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H264_PICTURE_INFO_KHR, //  VkStructureType sType;
         nullptr,                                              //  const void* pNext;
-        1u,                                                   //  uint32_t naluSliceEntryCount;
+        naluSliceEntryCount,                                  //  uint32_t naluSliceEntryCount;
         pNaluSliceEntries, //  const VkVideoEncodeH264NaluSliceInfoKHR* pNaluSliceEntries;
         pictureInfo,       //  const StdVideoEncodeH264PictureInfo* pStdPictureInfo;
         false,             //  VkBool32 generatePrefixNalu;
@@ -2134,15 +2148,15 @@ de::MovePtr<VkVideoEncodeH264PictureInfoKHR> getVideoEncodeH264PictureInfo(
 }
 
 de::MovePtr<VkVideoEncodeH265PictureInfoKHR> getVideoEncodeH265PictureInfo(
-    const StdVideoEncodeH265PictureInfo *pictureInfo,
-    const VkVideoEncodeH265NaluSliceSegmentInfoKHR *pNaluSliceSegmentInfo)
+    const StdVideoEncodeH265PictureInfo *pictureInfo, uint32_t naluSliceSegmentEntryCount,
+    const VkVideoEncodeH265NaluSliceSegmentInfoKHR *pNaluSliceSegmentEntries)
 {
     const VkVideoEncodeH265PictureInfoKHR videoEncodeH265PictureInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_H265_PICTURE_INFO_KHR, //  VkStructureType sType;
         nullptr,                                              //  const void* pNext;
-        1u,                                                   //  uint32_t naluSliceSegmentEntryCount;
-        pNaluSliceSegmentInfo, //  const VkVideoEncodeH265NaluSliceSegmentInfoKHR* pNaluSliceSegmentEntries;
-        pictureInfo,           //  const StdVideoEncodeH265PictureInfo* pStdPictureInfo;
+        naluSliceSegmentEntryCount,                           //  uint32_t naluSliceSegmentEntryCount;
+        pNaluSliceSegmentEntries, //  const VkVideoEncodeH265NaluSliceSegmentInfoKHR* pNaluSliceSegmentEntries;
+        pictureInfo,              //  const StdVideoEncodeH265PictureInfo* pStdPictureInfo;
     };
 
     return de::MovePtr<VkVideoEncodeH265PictureInfoKHR>(

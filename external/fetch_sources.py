@@ -352,7 +352,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "dad857284bf63d027ac9d6a97e9a1689831bab0d",
+        "72cd1f587fe55c80873fe6430d667056048a5113",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
@@ -370,18 +370,10 @@ PACKAGES = [
         "git@github.com:open-source-parsers/jsoncpp.git",
         "9059f5cad030ba11d37818847443a53918c327b1",
         "jsoncpp"),
-    # NOTE: The samples application is not well suited to external
-    # integration, this fork contains the small fixes needed for use
-    # by the CTS.
-    GitRepo(
-        "https://github.com/Igalia/vk_video_samples.git",
-        "git@github.com:Igalia/vk_video_samples.git",
-        "435807a3f875d83aa00f5b4b0702dc156ba3ffa9",
-        "nvidia-video-samples"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "c29c26e8a25749855aea5905500e6c2b29fadae5",
+        "v0.3.1",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(
@@ -405,6 +397,8 @@ def parseArgs ():
                         help="Select protocol to checkout git repositories.")
     parser.add_argument('--force', dest='force', action='store_true', default=False,
                         help="Pass --force to git fetch and checkout commands")
+    parser.add_argument('--include-vvl', dest='include_vvl', action='store_true', default=False,
+                        help='Download the Vulkan Validation Layers')
     parser.add_argument("-v", "--verbose",
                         dest="verbose",
                         action="store_true",
@@ -417,7 +411,7 @@ def parseArgs ():
                 if sys.version_info < versionItem:
                     parser.error("For --insecure minimum required python version is " +
                                 versionsForInsecureStr)
-                break;
+                break
 
     return args
 
@@ -451,6 +445,7 @@ if __name__ == "__main__":
             if args.clean:
                 pkg.clean()
             else:
-                pkg.update(args.protocol, args.force)
+                if pkg.baseDir != 'vulkan-validationlayers' or args.include_vvl:
+                    pkg.update(args.protocol, args.force)
     except KeyboardInterrupt:
         sys.exit("") # Returns 1.

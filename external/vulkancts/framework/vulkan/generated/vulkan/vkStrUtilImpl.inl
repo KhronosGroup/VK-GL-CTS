@@ -1451,7 +1451,7 @@ const char* getResultName (VkResult value)
 		case VK_ERROR_VIDEO_PICTURE_LAYOUT_NOT_SUPPORTED_KHR:		return "VK_ERROR_VIDEO_PICTURE_LAYOUT_NOT_SUPPORTED_KHR";
 		case VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR:				return "VK_ERROR_IMAGE_USAGE_NOT_SUPPORTED_KHR";
 		case VK_ERROR_INVALID_SHADER_NV:							return "VK_ERROR_INVALID_SHADER_NV";
-		case VK_ERROR_VALIDATION_FAILED_EXT:						return "VK_ERROR_VALIDATION_FAILED_EXT";
+		case VK_ERROR_VALIDATION_FAILED:							return "VK_ERROR_VALIDATION_FAILED";
 		case VK_ERROR_INCOMPATIBLE_DISPLAY_KHR:						return "VK_ERROR_INCOMPATIBLE_DISPLAY_KHR";
 		case VK_ERROR_OUT_OF_DATE_KHR:								return "VK_ERROR_OUT_OF_DATE_KHR";
 		case VK_ERROR_NATIVE_WINDOW_IN_USE_KHR:						return "VK_ERROR_NATIVE_WINDOW_IN_USE_KHR";
@@ -2289,6 +2289,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GLOBAL_PRIORITY_QUERY_FEATURES";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES:									return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT";
@@ -2417,6 +2418,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD";
 		case VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD:														return "VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD";
 		case VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD:											return "VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX";
+		case VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DENSE_GEOMETRY_FORMAT_TRIANGLES_DATA_AMDX:		return "VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DENSE_GEOMETRY_FORMAT_TRIANGLES_DATA_AMDX";
 		case VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_ID_2_KHR:									return "VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_ID_2_KHR";
 		case VK_STRUCTURE_TYPE_PRESENT_ID_2_KHR:														return "VK_STRUCTURE_TYPE_PRESENT_ID_2_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR";
@@ -3252,6 +3255,7 @@ tcu::Format::Bitfield<32> getBuildAccelerationStructureFlagsKHRStr (VkBuildAccel
 		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_BIT_EXT,	"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_OPACITY_MICROMAP_DATA_UPDATE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISPLACEMENT_MICROMAP_UPDATE_BIT_NV,		"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISPLACEMENT_MICROMAP_UPDATE_BIT_NV"),
 		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_BIT_KHR,						"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_CLUSTER_OPACITY_MICROMAPS_BIT_NV,		"VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_CLUSTER_OPACITY_MICROMAPS_BIT_NV"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -3304,12 +3308,13 @@ const char* getGeometryTypeKHRName (VkGeometryTypeKHR value)
 {
 	switch (value)
 	{
-		case VK_GEOMETRY_TYPE_TRIANGLES_KHR:			return "VK_GEOMETRY_TYPE_TRIANGLES_KHR";
-		case VK_GEOMETRY_TYPE_AABBS_KHR:				return "VK_GEOMETRY_TYPE_AABBS_KHR";
-		case VK_GEOMETRY_TYPE_INSTANCES_KHR:			return "VK_GEOMETRY_TYPE_INSTANCES_KHR";
-		case VK_GEOMETRY_TYPE_SPHERES_NV:				return "VK_GEOMETRY_TYPE_SPHERES_NV";
-		case VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV:	return "VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV";
-		default:										return nullptr;
+		case VK_GEOMETRY_TYPE_TRIANGLES_KHR:						return "VK_GEOMETRY_TYPE_TRIANGLES_KHR";
+		case VK_GEOMETRY_TYPE_AABBS_KHR:							return "VK_GEOMETRY_TYPE_AABBS_KHR";
+		case VK_GEOMETRY_TYPE_INSTANCES_KHR:						return "VK_GEOMETRY_TYPE_INSTANCES_KHR";
+		case VK_GEOMETRY_TYPE_SPHERES_NV:							return "VK_GEOMETRY_TYPE_SPHERES_NV";
+		case VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV:				return "VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV";
+		case VK_GEOMETRY_TYPE_DENSE_GEOMETRY_FORMAT_TRIANGLES_AMDX:	return "VK_GEOMETRY_TYPE_DENSE_GEOMETRY_FORMAT_TRIANGLES_AMDX";
+		default:													return nullptr;
 	}
 }
 
@@ -4177,6 +4182,7 @@ tcu::Format::Bitfield<64> getBufferUsageFlags2Str (VkBufferUsageFlags2 value)
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_TILE_MEMORY_BIT_QCOM,									"VK_BUFFER_USAGE_2_TILE_MEMORY_BIT_QCOM"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_DATA_GRAPH_FOREIGN_DESCRIPTOR_BIT_ARM,					"VK_BUFFER_USAGE_2_DATA_GRAPH_FOREIGN_DESCRIPTOR_BIT_ARM"),
 		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT,								"VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT"),
+		tcu::Format::BitDesc(VK_BUFFER_USAGE_2_COMPRESSED_DATA_DGF1_BIT_AMDX,							"VK_BUFFER_USAGE_2_COMPRESSED_DATA_DGF1_BIT_AMDX"),
 	};
 	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -4341,6 +4347,15 @@ const char* getPhysicalDeviceLayeredApiKHRName (VkPhysicalDeviceLayeredApiKHR va
 		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR:		return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGL_KHR";
 		case VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR:	return "VK_PHYSICAL_DEVICE_LAYERED_API_OPENGLES_KHR";
 		default:											return nullptr;
+	}
+}
+
+const char* getCompressedTriangleFormatAMDXName (VkCompressedTriangleFormatAMDX value)
+{
+	switch (value)
+	{
+		case VK_COMPRESSED_TRIANGLE_FORMAT_DGF1_AMDX:	return "VK_COMPRESSED_TRIANGLE_FORMAT_DGF1_AMDX";
+		default:										return nullptr;
 	}
 }
 
@@ -21304,6 +21319,32 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVertexAttribute
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX& value)
+{
+	s << "VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdenseGeometryFormat = " << value.denseGeometryFormat << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX& value)
+{
+	s << "VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcompressedData = " << value.compressedData << '\n';
+	s << "\tdataSize = " << value.dataSize << '\n';
+	s << "\tnumTriangles = " << value.numTriangles << '\n';
+	s << "\tnumVertices = " << value.numVertices << '\n';
+	s << "\tmaxPrimitiveIndex = " << value.maxPrimitiveIndex << '\n';
+	s << "\tmaxGeometryIndex = " << value.maxGeometryIndex << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDepthClampZeroOneFeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceDepthClampZeroOneFeaturesKHR = {\n";
@@ -22120,6 +22161,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePipelineCacheIn
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tpipelineCacheIncrementalMode = " << value.pipelineCacheIncrementalMode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderUntypedPointersFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderUntypedPointersFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderUntypedPointers = " << value.shaderUntypedPointers << '\n';
 	s << '}';
 	return s;
 }

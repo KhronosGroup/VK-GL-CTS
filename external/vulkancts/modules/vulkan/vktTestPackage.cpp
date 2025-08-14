@@ -488,7 +488,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
         if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
         {
-            runTestsInSubprocess(m_context->getTestContext());
+            runTestsInSubprocess(testCase->getTestContext());
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests
             m_testsForSubprocess.clear();
@@ -601,8 +601,15 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
 
         // Collect and report any debug messages
 #ifndef CTS_USES_VULKANSC
-    if (validContext && m_context->hasDebugReportRecorder())
-        collectAndReportDebugMessages(m_context->getDebugReportRecorder(), *m_context);
+    if (validContext && m_context->hasDebugReportRecorders())
+    {
+        const auto recorders = m_context->getDebugReportRecorders();
+        for (const auto &r : recorders)
+        {
+            if (r != nullptr)
+                collectAndReportDebugMessages(*r, *m_context);
+        }
+    }
 #endif // CTS_USES_VULKANSC
 
     if (testCase != nullptr)
@@ -729,7 +736,7 @@ void TestCaseExecutor::logUnusedShaders(tcu::TestCase *testCase)
 
             message = std::string("Unused shaders: ") + message;
 
-            m_context->getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
+            testCase->getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
         }
     }
 }
@@ -777,7 +784,7 @@ void TestCaseExecutor::deinitTestPackage(tcu::TestContext &testCtx)
         // Tests are finished. Next tests ( if any ) will come from other test package and test executor
         if (!testCtx.getCommandLine().quietMode())
             restoreStandardOutput();
-        m_context->getTestContext().getLog().supressLogging(false);
+        testCtx.getLog().supressLogging(false);
     }
     m_resourceInterface->resetPipelineCaches();
 #else

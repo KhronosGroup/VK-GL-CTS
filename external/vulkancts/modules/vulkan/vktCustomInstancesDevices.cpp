@@ -115,6 +115,10 @@ CustomInstance::CustomInstance(Context &context, Move<VkInstance> instance)
                                     context.getTestContext().getCommandLine(), context.getResourceInterface()))
 #endif // CTS_USES_VULKANSC
 {
+#ifndef CTS_USES_VULKANSC
+    if (m_recorder)
+        m_context->addExternalDebugReportRecorder(m_recorder.get());
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance::CustomInstance()
@@ -138,6 +142,10 @@ CustomInstance::CustomInstance(CustomInstance &&other) : CustomInstance()
 CustomInstance::~CustomInstance()
 {
     collectMessages();
+#ifndef CTS_USES_VULKANSC
+    if (m_recorder)
+        m_context->removeExternalDebugReportRecorder(m_recorder.get());
+#endif // CTS_USES_VULKANSC
 }
 
 CustomInstance &CustomInstance::operator=(CustomInstance &&other)
@@ -833,6 +841,7 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     const bool requireMaintenance2 = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_MAINTENANCE_2) != 0;
     const bool requireVP9Decode    = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_DECODE_VP9) != 0; // requireVP9Decode
     const bool requireQuantizationMap     = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP) != 0;
+    const bool requireIntraRefresh        = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH) != 0;
     const bool requireYCBCRorNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
     const bool requireSync2orNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
     const bool requireTimelineSemOrNotSupported =
@@ -976,6 +985,10 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_decode_vp9"))
             deviceExtensions.push_back("VK_KHR_video_decode_vp9");
 
+    if (requireIntraRefresh)
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_encode_intra_refresh"))
+            deviceExtensions.push_back("VK_KHR_video_encode_intra_refresh");
+
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
             deviceExtensions.push_back("VK_KHR_timeline_semaphore");
@@ -1015,6 +1028,12 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         false,                                                               //  VkBool32 videoDecodeVP9;
     };
 
+    vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR intraRefreshFeatures = {
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR, //  VkStructureType sType;
+        nullptr,                                                                       //  void* pNext;
+        false, //  VkBool32 videoEncodeIntraRefresh;
+    };
+
     vk::VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, // VkStructureType sType;
         nullptr,                                                           // void* pNext;
@@ -1045,6 +1064,9 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     if (requireVP9Decode)
         appendStructurePtrToVulkanChain((const void **)&features2.pNext, &decodeVP9Features);
 
+    if (requireIntraRefresh)
+        appendStructurePtrToVulkanChain((const void **)&features2.pNext, &intraRefreshFeatures);
+
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
             appendStructurePtrToVulkanChain((const void **)&features2.pNext, &timelineSemaphoreFeatures);
@@ -1068,6 +1090,9 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
 
     if (requireVP9Decode && decodeVP9Features.videoDecodeVP9 == false)
         TCU_THROW(NotSupportedError, "videoDecodeVP9 feature is required");
+
+    if (requireIntraRefresh && intraRefreshFeatures.videoEncodeIntraRefresh == false)
+        TCU_THROW(NotSupportedError, "videoEncodeIntraRefresh feature is required");
 
     features2.features.robustBufferAccess = false;
 

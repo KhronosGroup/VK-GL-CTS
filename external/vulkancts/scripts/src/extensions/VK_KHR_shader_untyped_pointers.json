@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceShaderUntypedPointersFeaturesKHR": [
+            {
+                "features": [
+                    "shaderUntypedPointers"
+                ],
+                "requirements": [
+                    "VK_KHR_shader_untyped_pointers"
+                ]
+            }
+        ]
+    }
+}

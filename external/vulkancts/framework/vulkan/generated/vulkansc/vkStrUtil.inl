@@ -61,6 +61,7 @@ const char*	getPipelineRobustnessBufferBehaviorName	(VkPipelineRobustnessBufferB
 const char*	getPipelineRobustnessImageBehaviorName	(VkPipelineRobustnessImageBehavior value);
 const char*	getColorSpaceKHRName					(VkColorSpaceKHR value);
 const char*	getPresentModeKHRName					(VkPresentModeKHR value);
+const char*	getDebugReportObjectTypeEXTName			(VkDebugReportObjectTypeEXT value);
 const char*	getValidationFeatureEnableEXTName		(VkValidationFeatureEnableEXT value);
 const char*	getValidationFeatureDisableEXTName		(VkValidationFeatureDisableEXT value);
 const char*	getDisplayPowerStateEXTName				(VkDisplayPowerStateEXT value);
@@ -136,6 +137,7 @@ inline tcu::Format::Enum<VkPipelineRobustnessBufferBehavior>	getPipelineRobustne
 inline tcu::Format::Enum<VkPipelineRobustnessImageBehavior>		getPipelineRobustnessImageBehaviorStr	(VkPipelineRobustnessImageBehavior value)	{ return tcu::Format::Enum<VkPipelineRobustnessImageBehavior>(getPipelineRobustnessImageBehaviorName, value);	}
 inline tcu::Format::Enum<VkColorSpaceKHR>						getColorSpaceKHRStr						(VkColorSpaceKHR value)						{ return tcu::Format::Enum<VkColorSpaceKHR>(getColorSpaceKHRName, value);										}
 inline tcu::Format::Enum<VkPresentModeKHR>						getPresentModeKHRStr					(VkPresentModeKHR value)					{ return tcu::Format::Enum<VkPresentModeKHR>(getPresentModeKHRName, value);										}
+inline tcu::Format::Enum<VkDebugReportObjectTypeEXT>			getDebugReportObjectTypeEXTStr			(VkDebugReportObjectTypeEXT value)			{ return tcu::Format::Enum<VkDebugReportObjectTypeEXT>(getDebugReportObjectTypeEXTName, value);					}
 inline tcu::Format::Enum<VkValidationFeatureEnableEXT>			getValidationFeatureEnableEXTStr		(VkValidationFeatureEnableEXT value)		{ return tcu::Format::Enum<VkValidationFeatureEnableEXT>(getValidationFeatureEnableEXTName, value);				}
 inline tcu::Format::Enum<VkValidationFeatureDisableEXT>			getValidationFeatureDisableEXTStr		(VkValidationFeatureDisableEXT value)		{ return tcu::Format::Enum<VkValidationFeatureDisableEXT>(getValidationFeatureDisableEXTName, value);			}
 inline tcu::Format::Enum<VkDisplayPowerStateEXT>				getDisplayPowerStateEXTStr				(VkDisplayPowerStateEXT value)				{ return tcu::Format::Enum<VkDisplayPowerStateEXT>(getDisplayPowerStateEXTName, value);							}
@@ -211,6 +213,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessBufferBeha
 inline std::ostream&	operator<<	(std::ostream& s, VkPipelineRobustnessImageBehavior value)	{ return s << getPipelineRobustnessImageBehaviorStr(value);		}
 inline std::ostream&	operator<<	(std::ostream& s, VkColorSpaceKHR value)					{ return s << getColorSpaceKHRStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkPresentModeKHR value)					{ return s << getPresentModeKHRStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkDebugReportObjectTypeEXT value)			{ return s << getDebugReportObjectTypeEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationFeatureEnableEXT value)		{ return s << getValidationFeatureEnableEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkValidationFeatureDisableEXT value)		{ return s << getValidationFeatureDisableEXTStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkDisplayPowerStateEXT value)				{ return s << getDisplayPowerStateEXTStr(value);				}

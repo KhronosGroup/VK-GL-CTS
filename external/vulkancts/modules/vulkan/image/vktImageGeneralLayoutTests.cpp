@@ -446,46 +446,46 @@ tcu::TestStatus AstcSampleTestInstance::iterate(void)
         if (m_parameters.testType == TEST_TYPE_HOST_COPY_INTO_IMAGE)
         {
             const VkMemoryToImageCopy memoryRegion{
-                VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY, // VkStructureType			sType;
-                nullptr,                                // const void*				pNext;
-                generatedData2.data(),                  // const void*				pHostPointer;
-                0u,                                     // uint32_t					memoryRowLength;
-                0u,                                     // uint32_t					memoryImageHeight;
-                subresourceLayers,                      // VkImageSubresourceLayers	imageSubresource;
-                {0, 0, 0},                              // VkOffset3D				imageOffset;
-                imageExtent,                            // VkExtent3D				imageExtent;
+                VK_STRUCTURE_TYPE_MEMORY_TO_IMAGE_COPY, // VkStructureType sType;
+                nullptr,                                // const void* pNext;
+                generatedData2.data(),                  // const void* pHostPointer;
+                0u,                                     // uint32_t memoryRowLength;
+                0u,                                     // uint32_t memoryImageHeight;
+                subresourceLayers,                      // VkImageSubresourceLayers imageSubresource;
+                {0, 0, 0},                              // VkOffset3D imageOffset;
+                imageExtent,                            // VkExtent3D imageExtent;
             };
             const VkCopyMemoryToImageInfo copyMemoryToImageInfo{
-                VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO, // VkStructureType				sType;
-                nullptr,                                     // const void*					pNext;
-                0u,                                          // VkHostImageCopyFlags		    flags;
-                *sampledImage,                               // VkImage						dstImage;
-                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout				dstImageLayout;
-                1u,                                          // uint32_t					    regionCount;
-                &memoryRegion,                               // const VkMemoryToImageCopy*	pRegions;
+                VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                0u,                                          // VkHostImageCopyFlags     flags;
+                *sampledImage,                               // VkImage dstImage;
+                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout dstImageLayout;
+                1u,                                          // uint32_t     regionCount;
+                &memoryRegion,                               // const VkMemoryToImageCopy* pRegions;
             };
             vk.copyMemoryToImage(device, &copyMemoryToImageInfo);
         }
         else
         {
             const VkImageToMemoryCopy memoryRegion{
-                VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY, // VkStructureType			sType;
-                nullptr,                                // const void*				pNext;
-                generatedData2.data(),                  // void*					pHostPointer;
-                0u,                                     // uint32_t					memoryRowLength;
-                0u,                                     // uint32_t					memoryImageHeight;
-                subresourceLayers,                      // VkImageSubresourceLayers	imageSubresource;
-                {0, 0, 0},                              // VkOffset3D				imageOffset;
-                imageExtent,                            // VkExtent3D				imageExtent;
+                VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY, // VkStructureType sType;
+                nullptr,                                // const void* pNext;
+                generatedData2.data(),                  // void* pHostPointer;
+                0u,                                     // uint32_t memoryRowLength;
+                0u,                                     // uint32_t memoryImageHeight;
+                subresourceLayers,                      // VkImageSubresourceLayers imageSubresource;
+                {0, 0, 0},                              // VkOffset3D imageOffset;
+                imageExtent,                            // VkExtent3D imageExtent;
             };
             const VkCopyImageToMemoryInfo copyImageToMemoryInfo{
-                VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO, // VkStructureType				sType;
-                nullptr,                                     // const void*					pNext;
-                0u,                                          // VkHostImageCopyFlags		    flags;
-                *sampledImage,                               // VkImage						srcImage;
-                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout				srcImageLayout;
-                1u,                                          // uint32_t					    regionCount;
-                &memoryRegion,                               // const VkImageToMemoryCopy*	pRegions;
+                VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                0u,                                          // VkHostImageCopyFlags     flags;
+                *sampledImage,                               // VkImage srcImage;
+                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout srcImageLayout;
+                1u,                                          // uint32_t     regionCount;
+                &memoryRegion,                               // const VkImageToMemoryCopy* pRegions;
             };
             vk.copyImageToMemory(device, &copyImageToMemoryInfo);
         }
@@ -763,8 +763,8 @@ tcu::TestStatus MemoryBarrierTestInstance::iterate(void)
     const auto sampler = makeSampler(vk, device);
 
     const vk::VkAttachmentDescription2 colorAttachmentDescription = {
-        VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, // VkStructureType					sType;
-        nullptr,                                    // const void*						pNext;
+        VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2, // VkStructureType sType;
+        nullptr,                                    // const void* pNext;
         (VkAttachmentDescriptionFlags)0u,           // VkAttachmentDescriptionFlags    flags
         imageCreateInfo.format,                     // VkFormat                        format
         VK_SAMPLE_COUNT_1_BIT,                      // VkSampleCountFlagBits           samples
@@ -777,19 +777,19 @@ tcu::TestStatus MemoryBarrierTestInstance::iterate(void)
     };
 
     const vk::VkAttachmentReference2 colorAttachmentRef = {
-        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, // VkStructureType		sType;
-        nullptr,                                  // const void*			pNext;
+        VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2, // VkStructureType sType;
+        nullptr,                                  // const void* pNext;
         0u,                                       // uint32_t         attachment
         VK_IMAGE_LAYOUT_GENERAL,                  // VkImageLayout    layout
         VK_IMAGE_ASPECT_COLOR_BIT                 // VkImageAspectFlags aspectMask;
     };
 
     const VkSubpassDescription2 subpassDescription = {
-        VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2, // VkStructureType					sType;
-        nullptr,                                 // const void*						pNext;
+        VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2, // VkStructureType sType;
+        nullptr,                                 // const void* pNext;
         (VkSubpassDescriptionFlags)0u,           // VkSubpassDescriptionFlags       flags
         VK_PIPELINE_BIND_POINT_GRAPHICS,         // VkPipelineBindPoint             pipelineBindPoint
-        0u,                                      // uint32_t						viewMask;
+        0u,                                      // uint32_t viewMask;
         0u,                                      // uint32_t                        inputAttachmentCount
         nullptr,                                 // const VkAttachmentReference*    pInputAttachments
         1u,                                      // uint32_t                        colorAttachmentCount
@@ -805,15 +805,15 @@ tcu::TestStatus MemoryBarrierTestInstance::iterate(void)
                            VK_PIPELINE_STAGE_2_FRAGMENT_SHADER_BIT, m_parameters.readAccess);
 
     VkSubpassDependency2 dependency = {
-        VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2, // VkStructureType			sType;
-        &memoryBarrier,                         // const void*				pNext;
-        0u,                                     // uint32_t				srcSubpass;
-        0u,                                     // uint32_t				dstSubpass;
-        0u,                                     // VkPipelineStageFlags	srcStageMask;
-        0u,                                     // VkPipelineStageFlags	dstStageMask;
-        0u,                                     // VkAccessFlags		srcAccessMask;
-        0u,                                     // VkAccessFlags		dstAccessMask;
-        VK_DEPENDENCY_BY_REGION_BIT,            // VkDependencyFlags	dependencyFlags;
+        VK_STRUCTURE_TYPE_SUBPASS_DEPENDENCY_2, // VkStructureType sType;
+        &memoryBarrier,                         // const void* pNext;
+        0u,                                     // uint32_t srcSubpass;
+        0u,                                     // uint32_t dstSubpass;
+        0u,                                     // VkPipelineStageFlags srcStageMask;
+        0u,                                     // VkPipelineStageFlags dstStageMask;
+        0u,                                     // VkAccessFlags srcAccessMask;
+        0u,                                     // VkAccessFlags dstAccessMask;
+        VK_DEPENDENCY_BY_REGION_BIT,            // VkDependencyFlags dependencyFlags;
         0                                       //int32_t viewOffset;
     };
 
@@ -1260,26 +1260,26 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
 
     const VkAttachmentDescription attachmentDescs[] = {
         {
-            0u,                               // VkAttachmentDescriptionFlags	flags;
-            format,                           // VkFormat						format;
-            VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits			samples;
-            VK_ATTACHMENT_LOAD_OP_LOAD,       // VkAttachmentLoadOp				loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp			storeOp;
-            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp				stencilLoadOp;
-            VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp			stencilStoreOp;
-            VK_IMAGE_LAYOUT_GENERAL,          // VkImageLayout					initialLayout;
-            VK_IMAGE_LAYOUT_GENERAL           // VkImageLayout					finalLayout;
+            0u,                               // VkAttachmentDescriptionFlags flags;
+            format,                           // VkFormat format;
+            VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits samples;
+            VK_ATTACHMENT_LOAD_OP_LOAD,       // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
+            VK_IMAGE_LAYOUT_GENERAL,          // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_GENERAL           // VkImageLayout finalLayout;
         },
         {
-            0u,                               // VkAttachmentDescriptionFlags	flags;
-            format,                           // VkFormat						format;
-            VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits			samples;
-            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp				loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp			storeOp;
-            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp				stencilLoadOp;
-            VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp			stencilStoreOp;
-            VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout					initialLayout;
-            VK_IMAGE_LAYOUT_GENERAL           // VkImageLayout					finalLayout;
+            0u,                               // VkAttachmentDescriptionFlags flags;
+            format,                           // VkFormat format;
+            VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits samples;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
+            VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_GENERAL           // VkImageLayout finalLayout;
         }};
 
     const VkAttachmentReference attachmentRefs[] = {
@@ -1288,29 +1288,29 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
     };
 
     const VkSubpassDescription subpass1 = {
-        0u,                              // VkSubpassDescriptionFlags		flags;
-        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint				pipelineBindPoint;
-        1u,                              // uint32_t						inputAttachmentCount;
-        &attachmentRefs[0],              // const VkAttachmentReference*	pInputAttachments;
-        1u,                              // uint32_t						colorAttachmentCount;
-        &attachmentRefs[1],              // const VkAttachmentReference*	pColorAttachments;
-        nullptr,                         // const VkAttachmentReference*	pResolveAttachments;
-        nullptr,                         // const VkAttachmentReference*	pDepthStencilAttachment;
-        0u,                              // uint32_t						preserveAttachmentCount;
-        nullptr                          // const uint32_t*					pPreserveAttachments;
+        0u,                              // VkSubpassDescriptionFlags flags;
+        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
+        1u,                              // uint32_t inputAttachmentCount;
+        &attachmentRefs[0],              // const VkAttachmentReference* pInputAttachments;
+        1u,                              // uint32_t colorAttachmentCount;
+        &attachmentRefs[1],              // const VkAttachmentReference* pColorAttachments;
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        0u,                              // uint32_t preserveAttachmentCount;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkSubpassDescription subpass2 = {
-        0u,                              // VkSubpassDescriptionFlags		flags;
-        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint				pipelineBindPoint;
-        1u,                              // uint32_t						inputAttachmentCount;
-        &attachmentRefs[1],              // const VkAttachmentReference*	pInputAttachments;
-        1u,                              // uint32_t						colorAttachmentCount;
-        &attachmentRefs[0],              // const VkAttachmentReference*	pColorAttachments;
-        nullptr,                         // const VkAttachmentReference*	pResolveAttachments;
-        nullptr,                         // const VkAttachmentReference*	pDepthStencilAttachment;
-        0u,                              // uint32_t						preserveAttachmentCount;
-        nullptr                          // const uint32_t*					pPreserveAttachments;
+        0u,                              // VkSubpassDescriptionFlags flags;
+        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
+        1u,                              // uint32_t inputAttachmentCount;
+        &attachmentRefs[1],              // const VkAttachmentReference* pInputAttachments;
+        1u,                              // uint32_t colorAttachmentCount;
+        &attachmentRefs[0],              // const VkAttachmentReference* pColorAttachments;
+        nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+        nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
+        0u,                              // uint32_t preserveAttachmentCount;
+        nullptr                          // const uint32_t* pPreserveAttachments;
     };
 
     const VkSubpassDependency dependencies[3] = {
@@ -1345,15 +1345,15 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
     VkSubpassDescription subpasses[] = {subpass1, subpass2};
 
     const VkRenderPassCreateInfo renderPassCreateInfo = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType				    sType;
-        nullptr,                                   // const void*					    pNext;
-        0u,                                        // VkRenderPassCreateFlags		    flags;
-        2u,                                        // uint32_t						    attachmentCount;
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType     sType;
+        nullptr,                                   // const void*     pNext;
+        0u,                                        // VkRenderPassCreateFlags     flags;
+        2u,                                        // uint32_t     attachmentCount;
         attachmentDescs,                           // const VkAttachmentDescription*    pAttachments;
-        2u,                                        // uint32_t						    subpassCount;
-        subpasses,                                 // const VkSubpassDescription*	    pSubpasses;
-        3u,                                        // uint32_t						    dependencyCount;
-        dependencies                               // const VkSubpassDependency*	    pDependencies;
+        2u,                                        // uint32_t     subpassCount;
+        subpasses,                                 // const VkSubpassDescription*     pSubpasses;
+        3u,                                        // uint32_t     dependencyCount;
+        dependencies                               // const VkSubpassDependency*     pDependencies;
     };
 
     const vk::Move<vk::VkRenderPass> renderPass = createRenderPass(vk, device, &renderPassCreateInfo);
@@ -1420,30 +1420,30 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
     uint32_t inputIndices[] = {1, 0};
 
     VkRenderingInputAttachmentIndexInfo inputAttachmentIndexInfo = {
-        VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO, // VkStructureType	sType;
-        nullptr,                                                 // const void*		pNext;
-        2u,                                                      // uint32_t		colorAttachmentCount;
-        inputIndices,                                            // const uint32_t*	pColorAttachmentInputIndices;
-        nullptr,                                                 // const uint32_t*	pDepthInputAttachmentIndex;
-        nullptr,                                                 // const uint32_t*	pStencilInputAttachmentIndex;
+        VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO, // VkStructureType sType;
+        nullptr,                                                 // const void* pNext;
+        2u,                                                      // uint32_t colorAttachmentCount;
+        inputIndices,                                            // const uint32_t* pColorAttachmentInputIndices;
+        nullptr,                                                 // const uint32_t* pDepthInputAttachmentIndex;
+        nullptr,                                                 // const uint32_t* pStencilInputAttachmentIndex;
     };
     VkRenderingAttachmentLocationInfo renderingAttachmentLocationInfo = {
-        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO, // VkStructureType	sType;
-        &inputAttachmentIndexInfo,                            // const void*		pNext;
-        2u,                                                   // uint32_t		    colorAttachmentCount;
-        locations                                             // const uint32_t*	pColorAttachmentLocations;
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO, // VkStructureType sType;
+        &inputAttachmentIndexInfo,                            // const void* pNext;
+        2u,                                                   // uint32_t     colorAttachmentCount;
+        locations                                             // const uint32_t* pColorAttachmentLocations;
     };
 
     VkFormat formats[] = {format, format};
 
     VkPipelineRenderingCreateInfo pipelineRendering = {
-        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType	sType;
-        &renderingAttachmentLocationInfo,                 // const void*		pNext;
-        0u,                                               // uint32_t		    viewMask;
-        2u,                                               // uint32_t		    colorAttachmentCount;
-        formats,                                          // const VkFormat*	pColorAttachmentFormats;
-        VK_FORMAT_UNDEFINED,                              // VkFormat		    depthAttachmentFormat;
-        VK_FORMAT_UNDEFINED                               // VkFormat		    stencilAttachmentFormat;
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType sType;
+        &renderingAttachmentLocationInfo,                 // const void* pNext;
+        0u,                                               // uint32_t     viewMask;
+        2u,                                               // uint32_t     colorAttachmentCount;
+        formats,                                          // const VkFormat* pColorAttachmentFormats;
+        VK_FORMAT_UNDEFINED,                              // VkFormat     depthAttachmentFormat;
+        VK_FORMAT_UNDEFINED                               // VkFormat     stencilAttachmentFormat;
     };
 
     if (m_parameters.dynamicRendering)
@@ -1455,36 +1455,36 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
 
     VkPipelineColorBlendAttachmentState colorBlendAttachments[] = {
         {
-            VK_FALSE,                            // VkBool32				blendEnable;
-            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor			srcColorBlendFactor;
-            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstColorBlendFactor;
-            VK_BLEND_OP_ADD,                     // VkBlendOp				colorBlendOp;
-            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor			srcAlphaBlendFactor;
-            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstAlphaBlendFactor;
-            VK_BLEND_OP_ADD,                     // VkBlendOp				alphaBlendOp;
+            VK_FALSE,                            // VkBool32 blendEnable;
+            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor srcColorBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor dstColorBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp colorBlendOp;
+            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor srcAlphaBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor dstAlphaBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp alphaBlendOp;
             VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
-                VK_COLOR_COMPONENT_A_BIT // VkColorComponentFlags	colorWriteMask;
+                VK_COLOR_COMPONENT_A_BIT // VkColorComponentFlags colorWriteMask;
         },
         {
-            VK_FALSE,                            // VkBool32				blendEnable;
-            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor			srcColorBlendFactor;
-            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstColorBlendFactor;
-            VK_BLEND_OP_ADD,                     // VkBlendOp				colorBlendOp;
-            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor			srcAlphaBlendFactor;
-            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor			dstAlphaBlendFactor;
-            VK_BLEND_OP_ADD,                     // VkBlendOp				alphaBlendOp;
-            0u                                   // VkColorComponentFlags	colorWriteMask;
+            VK_FALSE,                            // VkBool32 blendEnable;
+            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor srcColorBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor dstColorBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp colorBlendOp;
+            VK_BLEND_FACTOR_ONE,                 // VkBlendFactor srcAlphaBlendFactor;
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // VkBlendFactor dstAlphaBlendFactor;
+            VK_BLEND_OP_ADD,                     // VkBlendOp alphaBlendOp;
+            0u                                   // VkColorComponentFlags colorWriteMask;
         }};
 
     VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType							sType;
-        nullptr,                                                  // const void*								pNext;
-        0u,                                                       // VkPipelineColorBlendStateCreateFlags		flags;
-        VK_FALSE,                                                 // VkBool32									logicOpEnable;
-        VK_LOGIC_OP_CLEAR,                                        // VkLogicOp									logicOp;
-        m_parameters.dynamicRendering ? 2u : 1u,                  // uint32_t									attachmentCount;
-        colorBlendAttachments,   // const VkPipelineColorBlendAttachmentState*	pAttachments;
-        {0.0f, 0.0f, 0.0f, 0.0f} // float										blendConstants[4];
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+        VK_FALSE,                                                 // VkBool32 logicOpEnable;
+        VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
+        m_parameters.dynamicRendering ? 2u : 1u,                  // uint32_t attachmentCount;
+        colorBlendAttachments,   // const VkPipelineColorBlendAttachmentState* pAttachments;
+        {0.0f, 0.0f, 0.0f, 0.0f} // float blendConstants[4];
     };
 
     vk::Move<VkPipeline> pipeline1 = makeGraphicsPipeline(
@@ -1530,41 +1530,41 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
         VkRenderingAttachmentInfo renderingAttachmentInfos[2] = {
             {
-                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType			sType;
-                nullptr,                                     // const void*				pNext;
-                *imageView2,                                 // VkImageView				imageView;
-                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout			imageLayout;
-                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits	resolveMode;
-                VK_NULL_HANDLE,                              // VkImageView				resolveImageView;
-                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout			resolveImageLayout;
-                VK_ATTACHMENT_LOAD_OP_DONT_CARE,             // VkAttachmentLoadOp		loadOp;
-                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp		storeOp;
-                clearValue                                   // VkClearValue		    clearValue;
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                *imageView2,                                 // VkImageView imageView;
+                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout imageLayout;
+                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
+                VK_NULL_HANDLE,                              // VkImageView resolveImageView;
+                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE,             // VkAttachmentLoadOp loadOp;
+                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
+                clearValue                                   // VkClearValue     clearValue;
             },
             {
-                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType			sType;
-                nullptr,                                     // const void*				pNext;
-                *imageView1,                                 // VkImageView				imageView;
-                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout			imageLayout;
-                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits	resolveMode;
-                VK_NULL_HANDLE,                              // VkImageView				resolveImageView;
-                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout			resolveImageLayout;
-                VK_ATTACHMENT_LOAD_OP_LOAD,                  // VkAttachmentLoadOp		loadOp;
-                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp		storeOp;
-                clearValue                                   // VkClearValue	        clearValue;
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                *imageView1,                                 // VkImageView imageView;
+                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout imageLayout;
+                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
+                VK_NULL_HANDLE,                              // VkImageView resolveImageView;
+                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
+                VK_ATTACHMENT_LOAD_OP_LOAD,                  // VkAttachmentLoadOp loadOp;
+                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
+                clearValue                                   // VkClearValue         clearValue;
             }};
 
         VkRenderingInfo renderingInfo = {
-            VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType						sType;
-            nullptr,                          // const void*							pNext;
-            0u,                               // VkRenderingFlags					flags;
-            scissors[0],                      // VkRect2D							renderArea;
-            1u,                               // uint32_t							layerCount;
-            0u,                               // uint32_t							viewMask;
-            2u,                               // uint32_t							colorAttachmentCount;
-            renderingAttachmentInfos,         // const VkRenderingAttachmentInfo*	pColorAttachments;
-            nullptr,                          // const VkRenderingAttachmentInfo*	pDepthAttachment;
-            nullptr,                          // const VkRenderingAttachmentInfo*	pStencilAttachment;
+            VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType sType;
+            nullptr,                          // const void* pNext;
+            0u,                               // VkRenderingFlags flags;
+            scissors[0],                      // VkRect2D renderArea;
+            1u,                               // uint32_t layerCount;
+            0u,                               // uint32_t viewMask;
+            2u,                               // uint32_t colorAttachmentCount;
+            renderingAttachmentInfos,         // const VkRenderingAttachmentInfo* pColorAttachments;
+            nullptr,                          // const VkRenderingAttachmentInfo* pDepthAttachment;
+            nullptr,                          // const VkRenderingAttachmentInfo* pStencilAttachment;
         };
         vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
 #endif
@@ -1572,13 +1572,13 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
     else
     {
         const VkRenderPassBeginInfo renderPassBeginInfo = {
-            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType		sType;
-            nullptr,                                  // const void*			pNext;
-            *renderPass,                              // VkRenderPass		    renderPass;
-            *framebuffer,                             // VkFramebuffer		    framebuffer;
-            makeRect2D(imageExtent),                  // VkRect2D			    renderArea;
-            0u,                                       // uint32_t			    clearValueCount;
-            nullptr                                   // const VkClearValue*	pClearValues;
+            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
+            nullptr,                                  // const void* pNext;
+            *renderPass,                              // VkRenderPass     renderPass;
+            *framebuffer,                             // VkFramebuffer     framebuffer;
+            makeRect2D(imageExtent),                  // VkRect2D     renderArea;
+            0u,                                       // uint32_t     clearValueCount;
+            nullptr                                   // const VkClearValue* pClearValues;
         };
 
         vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);
@@ -1600,41 +1600,41 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
 
         VkRenderingAttachmentInfo renderingAttachmentInfos[2] = {
             {
-                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType			sType;
-                nullptr,                                     // const void*				pNext;
-                *imageView1,                                 // VkImageView				imageView;
-                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout			imageLayout;
-                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits	resolveMode;
-                VK_NULL_HANDLE,                              // VkImageView				resolveImageView;
-                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout			resolveImageLayout;
-                VK_ATTACHMENT_LOAD_OP_DONT_CARE,             // VkAttachmentLoadOp		loadOp;
-                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp		storeOp;
-                clearValue                                   // VkClearValue			clearValue;
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                *imageView1,                                 // VkImageView imageView;
+                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout imageLayout;
+                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
+                VK_NULL_HANDLE,                              // VkImageView resolveImageView;
+                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE,             // VkAttachmentLoadOp loadOp;
+                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
+                clearValue                                   // VkClearValue clearValue;
             },
             {
-                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType			sType;
-                nullptr,                                     // const void*				pNext;
-                *imageView2,                                 // VkImageView				imageView;
-                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout			imageLayout;
-                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits	resolveMode;
-                VK_NULL_HANDLE,                              // VkImageView				resolveImageView;
-                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout			resolveImageLayout;
-                VK_ATTACHMENT_LOAD_OP_LOAD,                  // VkAttachmentLoadOp		loadOp;
-                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp		storeOp;
-                clearValue                                   // VkClearValue			clearValue;
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType sType;
+                nullptr,                                     // const void* pNext;
+                *imageView2,                                 // VkImageView imageView;
+                VK_IMAGE_LAYOUT_GENERAL,                     // VkImageLayout imageLayout;
+                VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits resolveMode;
+                VK_NULL_HANDLE,                              // VkImageView resolveImageView;
+                VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout resolveImageLayout;
+                VK_ATTACHMENT_LOAD_OP_LOAD,                  // VkAttachmentLoadOp loadOp;
+                VK_ATTACHMENT_STORE_OP_STORE,                // VkAttachmentStoreOp storeOp;
+                clearValue                                   // VkClearValue clearValue;
             }};
 
         VkRenderingInfo renderingInfo = {
-            VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType					sType;
-            nullptr,                          // const void*						pNext;
-            0u,                               // VkRenderingFlags					flags;
-            scissors[0],                      // VkRect2D							renderArea;
-            1u,                               // uint32_t							layerCount;
-            0u,                               // uint32_t							viewMask;
-            2u,                               // uint32_t							colorAttachmentCount;
-            renderingAttachmentInfos,         // const VkRenderingAttachmentInfo*	pColorAttachments;
-            nullptr,                          // const VkRenderingAttachmentInfo*	pDepthAttachment;
-            nullptr,                          // const VkRenderingAttachmentInfo*	pStencilAttachment;
+            VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType sType;
+            nullptr,                          // const void* pNext;
+            0u,                               // VkRenderingFlags flags;
+            scissors[0],                      // VkRect2D renderArea;
+            1u,                               // uint32_t layerCount;
+            0u,                               // uint32_t viewMask;
+            2u,                               // uint32_t colorAttachmentCount;
+            renderingAttachmentInfos,         // const VkRenderingAttachmentInfo* pColorAttachments;
+            nullptr,                          // const VkRenderingAttachmentInfo* pDepthAttachment;
+            nullptr,                          // const VkRenderingAttachmentInfo* pStencilAttachment;
         };
 
         VkMemoryBarrier memoryBarrier = makeMemoryBarrier(0u, 0u);
@@ -1890,42 +1890,42 @@ tcu::TestStatus MsaaTestInstance::iterate(void)
         const VkSampleCountFlagBits sampleCount = isMSAA ? VK_SAMPLE_COUNT_4_BIT : VK_SAMPLE_COUNT_1_BIT;
 
         const VkAttachmentDescription attachmentDesc = {
-            0u,                               // VkAttachmentDescriptionFlags	flags;
-            format,                           // VkFormat						format;
-            sampleCount,                      // VkSampleCountFlagBits			samples;
-            VK_ATTACHMENT_LOAD_OP_CLEAR,      // VkAttachmentLoadOp				loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp			storeOp;
-            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp				stencilLoadOp;
-            VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp			stencilStoreOp;
-            VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout					initialLayout;
-            VK_IMAGE_LAYOUT_GENERAL           // VkImageLayout					finalLayout;
+            0u,                               // VkAttachmentDescriptionFlags flags;
+            format,                           // VkFormat format;
+            sampleCount,                      // VkSampleCountFlagBits samples;
+            VK_ATTACHMENT_LOAD_OP_CLEAR,      // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp storeOp;
+            VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
+            VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
+            VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_GENERAL           // VkImageLayout finalLayout;
         };
 
         const VkAttachmentReference attachmentRef = {0, VK_IMAGE_LAYOUT_GENERAL};
 
         const VkSubpassDescription subpass = {
-            0u,                              // VkSubpassDescriptionFlags		flags;
-            VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint				pipelineBindPoint;
-            0u,                              // uint32_t						inputAttachmentCount;
-            nullptr,                         // const VkAttachmentReference*	pInputAttachments;
-            1u,                              // uint32_t						colorAttachmentCount;
-            &attachmentRef,                  // const VkAttachmentReference*	pColorAttachments;
-            nullptr,                         // const VkAttachmentReference*	pResolveAttachments;
-            nullptr,                         // const VkAttachmentReference*	pDepthStencilAttachment;
-            0u,                              // uint32_t						preserveAttachmentCount;
-            nullptr                          // const uint32_t*					pPreserveAttachments;
+            0u,                              // VkSubpassDescriptionFlags flags;
+            VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
+            0u,                              // uint32_t inputAttachmentCount;
+            nullptr,                         // const VkAttachmentReference* pInputAttachments;
+            1u,                              // uint32_t colorAttachmentCount;
+            &attachmentRef,                  // const VkAttachmentReference* pColorAttachments;
+            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
+            0u,                              // uint32_t preserveAttachmentCount;
+            nullptr                          // const uint32_t* pPreserveAttachments;
         };
 
         const VkRenderPassCreateInfo renderPassCreateInfo = {
-            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType				    sType;
-            nullptr,                                   // const void*					    pNext;
-            0u,                                        // VkRenderPassCreateFlags		    flags;
-            1u,                                        // uint32_t						    attachmentCount;
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType     sType;
+            nullptr,                                   // const void*     pNext;
+            0u,                                        // VkRenderPassCreateFlags     flags;
+            1u,                                        // uint32_t     attachmentCount;
             &attachmentDesc,                           // const VkAttachmentDescription*    pAttachments;
-            1u,                                        // uint32_t						    subpassCount;
-            &subpass,                                  // const VkSubpassDescription*	    pSubpasses;
-            0u,                                        // uint32_t						    dependencyCount;
-            nullptr                                    // const VkSubpassDependency*	    pDependencies;
+            1u,                                        // uint32_t     subpassCount;
+            &subpass,                                  // const VkSubpassDescription*     pSubpasses;
+            0u,                                        // uint32_t     dependencyCount;
+            nullptr                                    // const VkSubpassDependency*     pDependencies;
         };
 
         renderPasses.push_back(createRenderPass(vk, device, &renderPassCreateInfo));
@@ -1977,13 +1977,13 @@ tcu::TestStatus MsaaTestInstance::iterate(void)
         VkClearValue clearValue = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
 
         const VkRenderPassBeginInfo renderPassBeginInfo = {
-            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType		sType;
-            nullptr,                                  // const void*			pNext;
-            *renderPasses[i],                         // VkRenderPass		    renderPass;
-            *framebuffers[i],                         // VkFramebuffer		    framebuffer;
-            scissors[0],                              // VkRect2D			    renderArea;
-            1u,                                       // uint32_t			    clearValueCount;
-            &clearValue                               // const VkClearValue*	pClearValues;
+            VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, // VkStructureType sType;
+            nullptr,                                  // const void* pNext;
+            *renderPasses[i],                         // VkRenderPass     renderPass;
+            *framebuffers[i],                         // VkFramebuffer     framebuffer;
+            scissors[0],                              // VkRect2D     renderArea;
+            1u,                                       // uint32_t     clearValueCount;
+            &clearValue                               // const VkClearValue* pClearValues;
         };
 
         vk.cmdBeginRenderPass(*cmdBuffer, &renderPassBeginInfo, VK_SUBPASS_CONTENTS_INLINE);

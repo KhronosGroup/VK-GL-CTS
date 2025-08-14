@@ -3678,6 +3678,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 case VK_COMPONENT_TYPE_FLOAT16_KHR:
                     inputA = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
                     break;
+#ifndef CTS_USES_VULKANSC
+                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                {
+                    float temp = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
+                    inputA     = BFloat16(temp).asDouble();
+                    break;
+                }
+#endif //CTS_USES_VULKANSC
                 default:
                     TCU_THROW(InternalError, "Unexpected type");
                 }
@@ -3725,6 +3733,14 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     inputAConverted = tcu::FloatE4M3(inputAConverted).asDouble();
                     break;
                 }
+#ifndef CTS_USES_VULKANSC
+                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                {
+                    float temp = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                    output     = BFloat16(temp).asDouble();
+                    break;
+                }
+#endif //CTS_USES_VULKANSC
                 default:
                     TCU_THROW(InternalError, "Unexpected type");
                 }
@@ -5526,6 +5542,9 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         VK_COMPONENT_TYPE_SINT16_KHR,    VK_COMPONENT_TYPE_SINT32_KHR,  VK_COMPONENT_TYPE_UINT8_KHR,
         VK_COMPONENT_TYPE_UINT16_KHR,    VK_COMPONENT_TYPE_UINT32_KHR,  VK_COMPONENT_TYPE_FLOAT_E5M2_NV,
         VK_COMPONENT_TYPE_FLOAT_E4M3_NV,
+#ifndef CTS_USES_VULKANSC
+        VK_COMPONENT_TYPE_BFLOAT16_KHR,
+#endif //CTS_USES_VULKANSC
     };
 
     // Types tested for load/store from/into multicomponent types

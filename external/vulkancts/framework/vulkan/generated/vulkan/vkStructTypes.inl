@@ -10757,6 +10757,26 @@ struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
 	VkBool32		vertexAttributeRobustness;
 };
 
+struct VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		denseGeometryFormat;
+};
+
+struct VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceOrHostAddressConstKHR	compressedData;
+	VkDeviceSize					dataSize;
+	uint32_t						numTriangles;
+	uint32_t						numVertices;
+	uint32_t						maxPrimitiveIndex;
+	uint32_t						maxGeometryIndex;
+	VkCompressedTriangleFormatAMDX	format;
+};
+
 struct VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
 {
 	VkStructureType	sType;
@@ -11365,6 +11385,13 @@ struct VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		pipelineCacheIncrementalMode;
+};
+
+struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderUntypedPointers;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -13339,6 +13366,8 @@ typedef VkPhysicalDeviceShaderIntegerDotProductProperties VkPhysicalDeviceShader
 
 typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
 
+typedef VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR VkPhysicalDeviceFragmentShaderBarycentricFeaturesNV;
+
 typedef VkFormatProperties3 VkFormatProperties3KHR;
 
 typedef VkPipelineRenderingCreateInfo VkPipelineRenderingCreateInfoKHR;
@@ -13414,6 +13443,10 @@ typedef VkPhysicalDeviceDynamicRenderingLocalReadFeatures VkPhysicalDeviceDynami
 typedef VkRenderingAttachmentLocationInfo VkRenderingAttachmentLocationInfoKHR;
 
 typedef VkRenderingInputAttachmentIndexInfo VkRenderingInputAttachmentIndexInfoKHR;
+
+typedef VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT;
+
+typedef VkPhysicalDeviceDepthClampZeroOneFeaturesKHR VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;
 
 typedef VkOHSurfaceCreateInfoOHOS VkSurfaceCreateInfoOHOS;
 

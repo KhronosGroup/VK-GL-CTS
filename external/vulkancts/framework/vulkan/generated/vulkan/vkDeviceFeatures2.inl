@@ -6322,7 +6322,7 @@ tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR (
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR devicePresentModeFifoLatestReadyFeaturesKHR[count];
-    const bool                                            isPresentModeFifoLatestReadyFeaturesKHR = checkExtension(properties, "VK_KHR_present_mode_fifo_latest_ready");
+    const bool                                            isPresentModeFifoLatestReadyFeaturesKHR = checkExtension(properties, "VK_KHR_present_mode_fifo_latest_ready") || checkExtension(properties, "VK_EXT_present_mode_fifo_latest_ready");
 
     if (!isPresentModeFifoLatestReadyFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
@@ -6400,7 +6400,7 @@ tcu::TestStatus testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR (Context& 
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceDepthClampZeroOneFeaturesKHR deviceDepthClampZeroOneFeaturesKHR[count];
-    const bool                                   isDepthClampZeroOneFeaturesKHR = checkExtension(properties, "VK_KHR_depth_clamp_zero_one");
+    const bool                                   isDepthClampZeroOneFeaturesKHR = checkExtension(properties, "VK_KHR_depth_clamp_zero_one") || checkExtension(properties, "VK_EXT_depth_clamp_zero_one");
 
     if (!isDepthClampZeroOneFeaturesKHR)
         return tcu::TestStatus::pass("Querying not supported");
@@ -6503,6 +6503,45 @@ tcu::TestStatus testPhysicalDeviceFeaturePipelineCacheIncrementalModeFeaturesSEC
         devicePipelineCacheIncrementalModeFeaturesSEC[0].pipelineCacheIncrementalMode != devicePipelineCacheIncrementalModeFeaturesSEC[1].pipelineCacheIncrementalMode)
     {
         TCU_FAIL("Mismatch between VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureShaderUntypedPointersFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderUntypedPointersFeaturesKHR deviceShaderUntypedPointersFeaturesKHR[count];
+    const bool                                       isShaderUntypedPointersFeaturesKHR = checkExtension(properties, "VK_KHR_shader_untyped_pointers");
+
+    if (!isShaderUntypedPointersFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderUntypedPointersFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderUntypedPointersFeaturesKHR));
+        deviceShaderUntypedPointersFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR;
+        deviceShaderUntypedPointersFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderUntypedPointersFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderUntypedPointersFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderUntypedPointersFeaturesKHR[0].shaderUntypedPointers != deviceShaderUntypedPointersFeaturesKHR[1].shaderUntypedPointers)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderUntypedPointersFeaturesKHR");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -6926,6 +6965,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR);
 	addFunctionCase(testGroup, "shader_float8_features_ext", testPhysicalDeviceFeatureShaderFloat8FeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_cache_incremental_mode_features_sec", testPhysicalDeviceFeaturePipelineCacheIncrementalModeFeaturesSEC);
+	addFunctionCase(testGroup, "shader_untyped_pointers_features_khr", testPhysicalDeviceFeatureShaderUntypedPointersFeaturesKHR);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

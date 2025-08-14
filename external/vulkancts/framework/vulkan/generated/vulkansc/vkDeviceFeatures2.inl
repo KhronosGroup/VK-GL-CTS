@@ -14,7 +14,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVariablePointersFeatures (Context& cont
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceVariablePointersFeatures deviceVariablePointersFeatures[count];
-    const bool                               isVariablePointersFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                               isVariablePointersFeatures = checkExtension(properties, "VK_KHR_variable_pointers") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!isVariablePointersFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -54,7 +54,7 @@ tcu::TestStatus testPhysicalDeviceFeatureMultiviewFeatures (Context& context)
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceMultiviewFeatures deviceMultiviewFeatures[count];
-    const bool                        isMultiviewFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                        isMultiviewFeatures = checkExtension(properties, "VK_KHR_multiview") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!isMultiviewFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -95,7 +95,7 @@ tcu::TestStatus testPhysicalDeviceFeature16BitStorageFeatures (Context& context)
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDevice16BitStorageFeatures device16BitStorageFeatures[count];
-    const bool                           is16BitStorageFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                           is16BitStorageFeatures = checkExtension(properties, "VK_KHR_16bit_storage") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!is16BitStorageFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -137,7 +137,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures deviceShaderSubgroupExtendedTypesFeatures[count];
-    const bool                                          isShaderSubgroupExtendedTypesFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                          isShaderSubgroupExtendedTypesFeatures = checkExtension(properties, "VK_KHR_shader_subgroup_extended_types") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isShaderSubgroupExtendedTypesFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -176,7 +176,7 @@ tcu::TestStatus testPhysicalDeviceFeatureSamplerYcbcrConversionFeatures (Context
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceSamplerYcbcrConversionFeatures deviceSamplerYcbcrConversionFeatures[count];
-    const bool                                     isSamplerYcbcrConversionFeatures = context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
+    const bool                                     isSamplerYcbcrConversionFeatures = checkExtension(properties, "VK_KHR_sampler_ycbcr_conversion") || context.contextSupports(vk::ApiVersion(1, 1, 1, 0));
 
     if (!isSamplerYcbcrConversionFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -332,7 +332,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderFloat16Int8Features (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceShaderFloat16Int8Features deviceShaderFloat16Int8Features[count];
-    const bool                                isShaderFloat16Int8Features = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isShaderFloat16Int8Features = checkExtension(properties, "VK_KHR_shader_float16_int8") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isShaderFloat16Int8Features)
         return tcu::TestStatus::pass("Querying not supported");
@@ -508,7 +508,7 @@ tcu::TestStatus testPhysicalDeviceFeatureTimelineSemaphoreFeatures (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceTimelineSemaphoreFeatures deviceTimelineSemaphoreFeatures[count];
-    const bool                                isTimelineSemaphoreFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isTimelineSemaphoreFeatures = checkExtension(properties, "VK_KHR_timeline_semaphore") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isTimelineSemaphoreFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -547,7 +547,7 @@ tcu::TestStatus testPhysicalDeviceFeature8BitStorageFeatures (Context& context)
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDevice8BitStorageFeatures device8BitStorageFeatures[count];
-    const bool                          is8BitStorageFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                          is8BitStorageFeatures = checkExtension(properties, "VK_KHR_8bit_storage") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!is8BitStorageFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -588,7 +588,7 @@ tcu::TestStatus testPhysicalDeviceFeatureVulkanMemoryModelFeatures (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceVulkanMemoryModelFeatures deviceVulkanMemoryModelFeatures[count];
-    const bool                                isVulkanMemoryModelFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isVulkanMemoryModelFeatures = checkExtension(properties, "VK_KHR_vulkan_memory_model") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isVulkanMemoryModelFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -629,7 +629,7 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderAtomicInt64Features (Context& con
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceShaderAtomicInt64Features deviceShaderAtomicInt64Features[count];
-    const bool                                isShaderAtomicInt64Features = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                isShaderAtomicInt64Features = checkExtension(properties, "VK_KHR_shader_atomic_int64") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isShaderAtomicInt64Features)
         return tcu::TestStatus::pass("Querying not supported");
@@ -837,7 +837,7 @@ tcu::TestStatus testPhysicalDeviceFeatureUniformBufferStandardLayoutFeatures (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceUniformBufferStandardLayoutFeatures deviceUniformBufferStandardLayoutFeatures[count];
-    const bool                                          isUniformBufferStandardLayoutFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                          isUniformBufferStandardLayoutFeatures = checkExtension(properties, "VK_KHR_uniform_buffer_standard_layout") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isUniformBufferStandardLayoutFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -915,7 +915,7 @@ tcu::TestStatus testPhysicalDeviceFeatureBufferDeviceAddressFeatures (Context& c
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceBufferDeviceAddressFeatures deviceBufferDeviceAddressFeatures[count];
-    const bool                                  isBufferDeviceAddressFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                  isBufferDeviceAddressFeatures = checkExtension(properties, "VK_KHR_buffer_device_address") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isBufferDeviceAddressFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -956,7 +956,7 @@ tcu::TestStatus testPhysicalDeviceFeatureImagelessFramebufferFeatures (Context& 
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceImagelessFramebufferFeatures deviceImagelessFramebufferFeatures[count];
-    const bool                                   isImagelessFramebufferFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                   isImagelessFramebufferFeatures = checkExtension(properties, "VK_KHR_imageless_framebuffer") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isImagelessFramebufferFeatures)
         return tcu::TestStatus::pass("Querying not supported");
@@ -1194,7 +1194,7 @@ tcu::TestStatus testPhysicalDeviceFeatureSeparateDepthStencilLayoutsFeatures (Co
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures deviceSeparateDepthStencilLayoutsFeatures[count];
-    const bool                                          isSeparateDepthStencilLayoutsFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                          isSeparateDepthStencilLayoutsFeatures = checkExtension(properties, "VK_KHR_separate_depth_stencil_layouts") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isSeparateDepthStencilLayoutsFeatures)
         return tcu::TestStatus::pass("Querying not supported");
