@@ -167,6 +167,17 @@ public:
     }
 #endif
 
+    // Set useFraction0 to true to force a test group to run in fraction zero.
+    // Must be applied to the bottom-level group.
+    void setUseFraction0(bool u)
+    {
+        m_useFraction0 = u;
+    }
+    bool getUseFraction0() const
+    {
+        return m_useFraction0;
+    }
+
 protected:
     TestContext &m_testCtx;
     std::string m_name;
@@ -178,6 +189,7 @@ private:
     const TestNodeType m_nodeType;
     std::vector<TestNode *> m_children;
     bool m_duplicateCheck;
+    bool m_useFraction0{false};
 };
 
 /*--------------------------------------------------------------------*//*!

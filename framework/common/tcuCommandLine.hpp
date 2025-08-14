@@ -134,7 +134,7 @@ public:
     bool checkTestCaseName(const char *caseName) const;
 
     //! Check if test group passes the case fraction filter.
-    bool checkCaseFraction(int i, const std::string &testCaseName) const;
+    bool checkCaseFraction(int i, const std::string &testCaseName, bool useFraction0) const;
 
     //! Check if test case runner is of supplied type
     bool checkRunnerType(tcu::TestRunnerType type) const

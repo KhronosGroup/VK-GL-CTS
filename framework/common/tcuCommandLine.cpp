@@ -1566,10 +1566,25 @@ bool CaseListFilter::checkTestCaseName(const char *caseName) const
     return result;
 }
 
-bool CaseListFilter::checkCaseFraction(int i, const std::string &testCaseName) const
+bool CaseListFilter::checkCaseFraction(int i, const std::string &testCaseName, bool useFraction0) const
 {
-    return m_caseFraction.size() != 2 || ((i % m_caseFraction[1]) == m_caseFraction[0]) ||
-           (m_caseFractionMandatoryTests.get() != nullptr && m_caseFractionMandatoryTests->matches(testCaseName));
+    // If the fraction is not set, run the test
+    if (m_caseFraction.size() != 2)
+        return true;
+
+    // If the test is mandatory, run it.
+    if (m_caseFractionMandatoryTests.get() != nullptr && m_caseFractionMandatoryTests->matches(testCaseName))
+        return true;
+
+    // If this test must run in fraction zero, and this is fraction zero, run it.
+    if (useFraction0 && m_caseFraction[0] == 0)
+        return true;
+
+    // Split according to group index
+    if (!useFraction0 && (i % m_caseFraction[1]) == m_caseFraction[0])
+        return true;
+
+    return false;
 }
 
 CaseListFilter::CaseListFilter(void) : m_caseTree(nullptr), m_runnerType(tcu::RUNNERTYPE_ANY)
