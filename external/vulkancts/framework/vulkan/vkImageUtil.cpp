@@ -5942,7 +5942,8 @@ ImageWithBuffer::ImageWithBuffer(const DeviceInterface &vkd, const VkDevice devi
     }
 
     // Color attachment view.
-    imageView = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, ssr);
+    subresourceRange = ssr;
+    imageView        = makeImageView(vkd, device, (*image).get(), viewType, imageFormat, subresourceRange);
 
     // Verification buffer.
     const auto tcuFormat = mapVkFormat(imageFormat);
@@ -5984,6 +5985,11 @@ Allocation &ImageWithBuffer::getImageAllocation() const
 Allocation &ImageWithBuffer::getBufferAllocation() const
 {
     return (*buffer).getAllocation();
+}
+
+const VkImageSubresourceRange &ImageWithBuffer::getImageSubresourceRange() const
+{
+    return subresourceRange;
 }
 
 #ifndef CTS_USES_VULKANSC

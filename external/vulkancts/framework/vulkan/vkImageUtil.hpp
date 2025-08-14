@@ -190,6 +190,7 @@ struct PlanarFormatDescription
 class ImageWithBuffer
 {
     std::unique_ptr<ImageWithMemory> image;
+    vk::VkImageSubresourceRange subresourceRange;
     Move<vk::VkImageView> imageView;
     std::unique_ptr<BufferWithMemory> buffer;
     VkDeviceSize size;
@@ -209,6 +210,7 @@ public:
     VkDeviceSize getBufferSize() const;
     Allocation &getImageAllocation() const;
     Allocation &getBufferAllocation() const;
+    const VkImageSubresourceRange &getImageSubresourceRange() const;
 };
 
 bool isYCbCrFormat(VkFormat format);

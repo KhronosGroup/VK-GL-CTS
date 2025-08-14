@@ -60,6 +60,9 @@ struct GroupParams
 
     // Choose pipeline construction type.
     vk::PipelineConstructionType pipelineConstructionType;
+
+    // Render size
+    uint32_t renderSize = 16u;
 };
 
 typedef de::SharedPtr<GroupParams> SharedGroupParams;
