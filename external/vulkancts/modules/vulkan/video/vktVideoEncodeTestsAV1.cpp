@@ -788,7 +788,7 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
     switch (m_definition.gop.gop)
     {
     case GOP_IDR_P_B:
-        params.push_back("30");
+        params.push_back(de::toString(m_definition.gop.gopFrameCount));
         break;
     default:
         params.push_back("0");
@@ -843,8 +843,12 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
     params.push_back("--consecutiveBFrameCount");
     params.push_back(de::toString(m_definition.gop.consecutiveBFrames));
 
-    params.push_back("--gopFrameCount");
-    params.push_back(de::toString(m_definition.gop.frameCount));
+    if (!m_definition.gop.open)
+    {
+        params.push_back("--gopFrameCount");
+        params.push_back(de::toString(m_definition.gop.gopFrameCount));
+        params.push_back("--closedGop");
+    }
 
     params.push_back("--qpI");
     params.push_back(de::toString(m_definition.quantization.qIndex));
@@ -864,7 +868,7 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
     if (m_definition.loopRestore.lr == LR_ON)
         params.push_back("--lr");
 
-    if (m_definition.loopRestore.lr == LR_ON)
+    if (m_definition.cdef.cdef == CDEF_ON)
         params.push_back("--cdef");
 
     switch (m_definition.dpbMode.mode)
@@ -1165,8 +1169,8 @@ static const std::vector<ChromaSubsamplingDef> subsamplingTests = {
 
 static const std::vector<GOPDef> gopTests = {
     {15, GOP_I, false, 1, 0, "i"},
-    {15, GOP_I_P, false, 2, 0, "i_p"},
-    {15, GOP_I_P, true, 2, 0, "i_p_open"},
+    {15, GOP_I_P, false, 15, 0, "i_p"},
+    {15, GOP_I_P, true, 15, 0, "i_p_open"},
     {15, GOP_I_P_B, false, 13, 3, "i_p_b3_13"},
     {15, GOP_IDR_P_B, false, 13, 3, "idr_p_b3_13"},
 };
