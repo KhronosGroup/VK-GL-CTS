@@ -1147,8 +1147,8 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
                 {
                     for (VkDeviceSize sampleIdx = 0; sampleIdx < planeSize; sampleIdx++)
                     {
-                        uint16_t sample                 = samples[sampleIdx];
-                        downloadedFrame.luma[sampleIdx] = roru16(sample, 4);
+                        uint16_t sample          = samples[sampleIdx];
+                        outputSamples[sampleIdx] = roru16(sample, 4);
                     }
                 }
             }
@@ -1641,8 +1641,8 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
         }
     }
 
-    bool allTestsPassed  = true;
-    int totalFramesCheck = 0;
+    bool allTestsPassed     = true;
+    size_t totalFramesCheck = 0;
     for (const auto &res : results)
     {
         if (!res.incorrectFrames.empty())

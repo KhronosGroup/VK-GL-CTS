@@ -1851,7 +1851,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         {
             DE_ASSERT(!"GetImageResourcesByIndex has failed");
         }
-        for (int32_t resId = 0; resId < pPicParams->numGopReferenceSlots; resId++)
+        for (uint32_t resId = 0; resId < pPicParams->numGopReferenceSlots; resId++)
         {
             const VkImageSubresourceRange dpbSubresourceRange = makeImageSubresourceRange(
                 VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, isLayeredDpb ? pGopReferenceImagesIndexes[resId] : 0, 1);
@@ -1866,7 +1866,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 
         if (getVideoLogPrintEnable())
         {
-            for (int32_t resId = 0; resId < pPicParams->numGopReferenceSlots; resId++)
+            for (uint32_t resId = 0; resId < pPicParams->numGopReferenceSlots; resId++)
             {
                 tcu::print(";;; DPB %d: %d x %d\n", resId, pPicParams->pictureResources[resId].codedExtent.width,
                            pPicParams->pictureResources[resId].codedExtent.height);
