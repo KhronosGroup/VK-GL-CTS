@@ -1119,8 +1119,8 @@ tcu::TestStatus HostImageCopyTestInstance::iterate(void)
                 if (data[i] != ((uint8_t *)resultBuffer.getDataPtr())[i])
                 {
                     log << tcu::TestLog::Message << "At byte " << i << " data from vkCopyImageToMemoryEXT() is "
-                        << data[i] << ", but data from vkCmdCopyImageToBuffer() (after padding) is "
-                        << ((uint8_t *)resultBuffer.getDataPtr())[i] << tcu::TestLog::EndMessage;
+                        << (int)data[i] << ", but data from vkCmdCopyImageToBuffer() (after padding) is "
+                        << (int)((uint8_t *)resultBuffer.getDataPtr())[i] << tcu::TestLog::EndMessage;
 
                     const auto fbExtent = tcu::IVec3(imageSize.width, imageSize.height, imageSize.depth);
                     const auto testColorAccess =
@@ -1658,8 +1658,8 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         {
             if (data[i] != ((uint8_t *)outputPtr)[i])
             {
-                log << tcu::TestLog::Message << "At byte " << i << " data from vkCopyImageToMemoryEXT() is " << data[i]
-                    << ", but data from vkCmdCopyImageToBuffer() is " << ((uint8_t *)outputPtr)[i]
+                log << tcu::TestLog::Message << "At byte " << i << " data from vkCopyImageToMemoryEXT() is "
+                    << (int)data[i] << ", but data from vkCmdCopyImageToBuffer() is " << (int)((uint8_t *)outputPtr)[i]
                     << tcu::TestLog::EndMessage;
                 break;
             }
@@ -3283,7 +3283,7 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
             if (testData[i] != outputData[i])
             {
                 log << tcu::TestLog::Message << "At byte " << i << " generated data is " << testData[i]
-                    << ", but output data is " << outputData[i] << tcu::TestLog::EndMessage;
+                    << ", but output data is " << (int)outputData[i] << tcu::TestLog::EndMessage;
 
                 const auto fbExtent =
                     tcu::IVec3(createInfo.extent.width, createInfo.extent.height, createInfo.extent.depth);
