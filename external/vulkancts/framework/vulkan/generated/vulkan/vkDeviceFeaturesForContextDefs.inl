@@ -223,6 +223,7 @@ const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						Context::getPresentMet
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				Context::getFragmentDensityMapOffsetFeaturesEXT				(void) const { return m_device->getFragmentDensityMapOffsetFeaturesEXT();			}
 const vk::VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&			Context::getZeroInitializeDeviceMemoryFeaturesEXT			(void) const { return m_device->getZeroInitializeDeviceMemoryFeaturesEXT();			}
 const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR&			Context::getPresentModeFifoLatestReadyFeatures				(void) const { return m_device->getPresentModeFifoLatestReadyFeatures();			}
+const vk::VkPhysicalDeviceCustomResolveFeaturesEXT&							Context::getCustomResolveFeaturesEXT						(void) const { return m_device->getCustomResolveFeaturesEXT();						}
 const vk::VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC&			Context::getPipelineCacheIncrementalModeFeaturesSEC			(void) const { return m_device->getPipelineCacheIncrementalModeFeaturesSEC();		}
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							Context::getProtectedMemoryFeatures							(void) const { return m_device->getProtectedMemoryFeatures();						}
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						Context::getShaderDrawParametersFeatures					(void) const { return m_device->getShaderDrawParametersFeatures();					}

@@ -1497,6 +1497,9 @@ std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT&
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDepthClipControlFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBeginCustomResolveInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCustomResolveFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCustomResolveCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkGeneratedCommandsPipelineInfoEXT& value);

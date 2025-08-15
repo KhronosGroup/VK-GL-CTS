@@ -3867,6 +3867,45 @@ tcu::TestStatus testPhysicalDeviceFeatureZeroInitializeDeviceMemoryFeaturesEXT (
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureCustomResolveFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceCustomResolveFeaturesEXT deviceCustomResolveFeaturesEXT[count];
+    const bool                               isCustomResolveFeaturesEXT = checkExtension(properties, "VK_EXT_custom_resolve");
+
+    if (!isCustomResolveFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceCustomResolveFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceCustomResolveFeaturesEXT));
+        deviceCustomResolveFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_RESOLVE_FEATURES_EXT;
+        deviceCustomResolveFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceCustomResolveFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceCustomResolveFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceCustomResolveFeaturesEXT[0].customResolve != deviceCustomResolveFeaturesEXT[1].customResolve)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceCustomResolveFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureDeviceGeneratedCommandsFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -6859,6 +6898,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "mutable_descriptor_type_features_ext", testPhysicalDeviceFeatureMutableDescriptorTypeFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clip_control_features_ext", testPhysicalDeviceFeatureDepthClipControlFeaturesEXT);
 	addFunctionCase(testGroup, "zero_initialize_device_memory_features_ext", testPhysicalDeviceFeatureZeroInitializeDeviceMemoryFeaturesEXT);
+	addFunctionCase(testGroup, "custom_resolve_features_ext", testPhysicalDeviceFeatureCustomResolveFeaturesEXT);
 	addFunctionCase(testGroup, "device_generated_commands_features_ext", testPhysicalDeviceFeatureDeviceGeneratedCommandsFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_control_features_ext", testPhysicalDeviceFeatureDepthClampControlFeaturesEXT);
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);

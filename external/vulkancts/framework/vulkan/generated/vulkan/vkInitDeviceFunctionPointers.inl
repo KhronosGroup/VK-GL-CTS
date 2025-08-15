@@ -254,6 +254,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.cmdEndQuery = (CmdEndQueryFunc) GET_PROC_ADDR("vkCmdEndQuery");
 m_vk.cmdBeginConditionalRenderingEXT = (CmdBeginConditionalRenderingEXTFunc) GET_PROC_ADDR("vkCmdBeginConditionalRenderingEXT");
 m_vk.cmdEndConditionalRenderingEXT = (CmdEndConditionalRenderingEXTFunc) GET_PROC_ADDR("vkCmdEndConditionalRenderingEXT");
+m_vk.cmdBeginCustomResolveEXT = (CmdBeginCustomResolveEXTFunc) GET_PROC_ADDR("vkCmdBeginCustomResolveEXT");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))
     m_vk.cmdResetQueryPool = (CmdResetQueryPoolFunc) GET_PROC_ADDR("vkCmdResetQueryPool");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 0, 0))

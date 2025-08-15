@@ -154,6 +154,7 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginQueryFunc)															(VkCom
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndQueryFunc)															(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginConditionalRenderingEXTFunc)										(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdEndConditionalRenderingEXTFunc)											(VkCommandBuffer commandBuffer);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginCustomResolveEXTFunc)												(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdResetQueryPoolFunc)														(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdWriteTimestampFunc)														(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyQueryPoolResultsFunc)												(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags);

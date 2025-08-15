@@ -1796,6 +1796,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_custom_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_SEC_pipeline_cache_incremental_mode")
 	{
 		return;
@@ -4168,6 +4172,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_custom_resolve")
+	{
+		functions.push_back("vkCmdBeginCustomResolveEXT");
+		return;
+	}
 	if (extName == "VK_SEC_pipeline_cache_incremental_mode")
 	{
 		return;
@@ -4648,5 +4657,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
 	"VK_KHR_present_mode_fifo_latest_ready",
+	"VK_EXT_custom_resolve",
 	"VK_SEC_pipeline_cache_incremental_mode",
 };

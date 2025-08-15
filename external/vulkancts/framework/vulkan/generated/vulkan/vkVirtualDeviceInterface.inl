@@ -135,6 +135,7 @@ virtual void				cmdBeginQuery											(VkCommandBuffer commandBuffer, VkQueryP
 virtual void				cmdEndQuery												(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query) const = 0;
 virtual void				cmdBeginConditionalRenderingEXT							(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const = 0;
 virtual void				cmdEndConditionalRenderingEXT							(VkCommandBuffer commandBuffer) const = 0;
+virtual void				cmdBeginCustomResolveEXT								(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo) const = 0;
 virtual void				cmdResetQueryPool										(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const = 0;
 virtual void				cmdWriteTimestamp										(VkCommandBuffer commandBuffer, VkPipelineStageFlagBits pipelineStage, VkQueryPool queryPool, uint32_t query) const = 0;
 virtual void				cmdCopyQueryPoolResults									(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize stride, VkQueryResultFlags flags) const = 0;

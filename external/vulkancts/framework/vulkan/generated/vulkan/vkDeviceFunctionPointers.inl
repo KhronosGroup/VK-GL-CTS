@@ -135,6 +135,7 @@ CmdBeginQueryFunc											cmdBeginQuery;
 CmdEndQueryFunc												cmdEndQuery;
 CmdBeginConditionalRenderingEXTFunc							cmdBeginConditionalRenderingEXT;
 CmdEndConditionalRenderingEXTFunc							cmdEndConditionalRenderingEXT;
+CmdBeginCustomResolveEXTFunc								cmdBeginCustomResolveEXT;
 CmdResetQueryPoolFunc										cmdResetQueryPool;
 CmdWriteTimestampFunc										cmdWriteTimestamp;
 CmdCopyQueryPoolResultsFunc									cmdCopyQueryPoolResults;

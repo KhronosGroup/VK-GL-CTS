@@ -223,6 +223,7 @@ const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeat
 const vk::VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT&				getFragmentDensityMapOffsetFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&			getZeroInitializeDeviceMemoryFeaturesEXT			(void) const;
 const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR&			getPresentModeFifoLatestReadyFeatures				(void) const;
+const vk::VkPhysicalDeviceCustomResolveFeaturesEXT&							getCustomResolveFeaturesEXT							(void) const;
 const vk::VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC&			getPipelineCacheIncrementalModeFeaturesSEC			(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryFeatures&							getProtectedMemoryFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

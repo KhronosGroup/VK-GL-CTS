@@ -701,6 +701,12 @@ void DeviceDriver::cmdEndConditionalRenderingEXT (VkCommandBuffer commandBuffer)
     m_vk.cmdEndConditionalRenderingEXT(commandBuffer);
 }
 
+void DeviceDriver::cmdBeginCustomResolveEXT (VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBeginCustomResolveEXT(commandBuffer, pBeginCustomResolveInfo);
+}
+
 void DeviceDriver::cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount) const
 {
     m_vk.cmdResetQueryPool(commandBuffer, queryPool, firstQuery, queryCount);

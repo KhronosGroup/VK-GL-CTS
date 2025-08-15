@@ -1383,6 +1383,12 @@ VKAPI_ATTR void VKAPI_CALL cmdEndConditionalRenderingEXT (VkCommandBuffer comman
 	DE_UNREF(commandBuffer);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBeginCustomResolveEXT (VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pBeginCustomResolveInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdResetQueryPool (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount)
 {
 	DE_UNREF(commandBuffer);
@@ -4879,6 +4885,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndQuery,												cmdEndQuery),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginConditionalRenderingEXT,							cmdBeginConditionalRenderingEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdEndConditionalRenderingEXT,								cmdEndConditionalRenderingEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginCustomResolveEXT,									cmdBeginCustomResolveEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdResetQueryPool,											cmdResetQueryPool),
 	VK_NULL_FUNC_ENTRY(vkCmdWriteTimestamp,											cmdWriteTimestamp),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyQueryPoolResults,									cmdCopyQueryPoolResults),

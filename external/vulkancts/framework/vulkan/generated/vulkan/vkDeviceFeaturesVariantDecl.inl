@@ -237,6 +237,7 @@ typedef std::variant<
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
     , VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT
     , VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR
+    , VkPhysicalDeviceCustomResolveFeaturesEXT
     , VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
     , VkPhysicalDeviceProtectedMemoryFeatures
     , VkPhysicalDeviceShaderDrawParametersFeatures

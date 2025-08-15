@@ -4038,6 +4038,18 @@ bool check_VK_KHR_present_mode_fifo_latest_ready(const tcu::UVec2& v, const ExtP
 	return isSupported(vDEP, "VK_KHR_swapchain");
 }
 
+bool check_VK_EXT_custom_resolve(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_custom_resolve"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_dynamic_rendering
+	return (isCompatible(1, 3, v) || isSupported(vDEP, "VK_KHR_dynamic_rendering"));
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_KHR_swapchain",										&check_VK_KHR_swapchain),
@@ -4331,6 +4343,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_fragment_density_map_offset",					&check_VK_EXT_fragment_density_map_offset),
 	std::make_pair("VK_EXT_zero_initialize_device_memory",					&check_VK_EXT_zero_initialize_device_memory),
 	std::make_pair("VK_KHR_present_mode_fifo_latest_ready",					&check_VK_KHR_present_mode_fifo_latest_ready),
+	std::make_pair("VK_EXT_custom_resolve",									&check_VK_EXT_custom_resolve),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4762,5 +4775,6 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_fragment_density_map_offset"),
 	std::make_tuple(1, 0, "VK_EXT_zero_initialize_device_memory"),
 	std::make_tuple(1, 0, "VK_KHR_present_mode_fifo_latest_ready"),
+	std::make_tuple(1, 0, "VK_EXT_custom_resolve"),
 	std::make_tuple(1, 0, "VK_SEC_pipeline_cache_incremental_mode"),
 };

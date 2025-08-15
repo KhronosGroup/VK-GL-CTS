@@ -2928,6 +2928,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceZeroInitializeDevice
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkBeginCustomResolveInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BEGIN_CUSTOM_RESOLVE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCustomResolveFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_RESOLVE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCustomResolveCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_FEATURES_EXT;

@@ -6826,6 +6826,30 @@ struct VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT
 	VkBool32		zeroInitializeDeviceMemory;
 };
 
+struct VkBeginCustomResolveInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+};
+
+struct VkPhysicalDeviceCustomResolveFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		customResolve;
+};
+
+struct VkCustomResolveCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		customResolve;
+	uint32_t		colorAttachmentCount;
+	const VkFormat*	pColorAttachmentFormats;
+	VkFormat		depthAttachmentFormat;
+	VkFormat		stencilAttachmentFormat;
+};
+
 struct VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT
 {
 	VkStructureType	sType;

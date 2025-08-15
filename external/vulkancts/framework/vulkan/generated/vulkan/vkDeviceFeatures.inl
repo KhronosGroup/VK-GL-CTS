@@ -315,6 +315,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceLegacyVertexAttributesFeatur
 template<> void initFeatureFromBlob<VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT>(VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClipControlFeaturesEXT>(VkPhysicalDeviceDepthClipControlFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>(VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCustomResolveFeaturesEXT>(VkPhysicalDeviceCustomResolveFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT>(VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDepthClampControlFeaturesEXT>(VkPhysicalDeviceDepthClampControlFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>(VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -638,6 +639,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentMeteringFeaturesNV
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ZERO_INITIALIZE_DEVICE_MEMORY_FEATURES_EXT, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_EXTENSION_NAME, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR, VK_KHR_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME, VK_KHR_PRESENT_MODE_FIFO_LATEST_READY_SPEC_VERSION}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCustomResolveFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_RESOLVE_FEATURES_EXT, VK_EXT_CUSTOM_RESOLVE_EXTENSION_NAME, VK_EXT_CUSTOM_RESOLVE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC, VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE_EXTENSION_NAME, VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE_SPEC_VERSION}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceProtectedMemoryFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_FEATURES, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDrawParametersFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0}; }
@@ -864,6 +866,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_EXTENSION_NAME, VK_EXT_FRAGMENT_DENSITY_MAP_OFFSET_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT>, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_EXTENSION_NAME, VK_EXT_ZERO_INITIALIZE_DEVICE_MEMORY_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>, VK_KHR_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME, VK_KHR_PRESENT_MODE_FIFO_LATEST_READY_SPEC_VERSION },
+	{ createFeatureStructWrapper<VkPhysicalDeviceCustomResolveFeaturesEXT>, VK_EXT_CUSTOM_RESOLVE_EXTENSION_NAME, VK_EXT_CUSTOM_RESOLVE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC>, VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE_EXTENSION_NAME, VK_SEC_PIPELINE_CACHE_INCREMENTAL_MODE_SPEC_VERSION },
 	{ createFeatureStructWrapper<VkPhysicalDeviceProtectedMemoryFeatures>, DECL_PROTECTED_MEMORY_EXTENSION_NAME, 0 },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDrawParametersFeatures>, DECL_SHADER_DRAW_PARAMETERS_EXTENSION_NAME, 0 },
@@ -885,7 +888,8 @@ const std::string getPreviousFeatureExtName (const std::string &name)
 		{ "VK_KHR_depth_clamp_zero_one", "VK_EXT_depth_clamp_zero_one" },
 		{ "VK_KHR_robustness2", "VK_EXT_robustness2" },
 		{ "VK_EXT_fragment_density_map_offset", "VK_QCOM_fragment_density_map_offset" },
-		{ "VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready" }
+		{ "VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready" },
+		{ "VK_EXT_custom_resolve", "VK_QCOM_render_pass_shader_resolve" }
 	};
 
 	auto it = previousExtensionsMap.find(name);
