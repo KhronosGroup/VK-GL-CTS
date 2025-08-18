@@ -430,6 +430,12 @@ vk::Move<vk::VkPipeline> createPipeline(const vk::DeviceInterface &vkd, vk::VkDe
     const std::vector<vk::VkViewport> viewports(1, vk::makeViewport(tcu::UVec2(width, height)));
     const std::vector<vk::VkRect2D> scissors(1, vk::makeRect2D(tcu::UVec2(width, height)));
 
+    // VUID-vkCmdDraw-None-08608
+    const vk::VkDynamicState dynamicStates[]                          = {vk::VK_DYNAMIC_STATE_SCISSOR};
+    const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, nullptr, 0u, DE_LENGTH_OF_ARRAY(dynamicStates),
+        dynamicStates};
+
     return vk::makeGraphicsPipeline(
         vkd,                  // const DeviceInterface&                        vk
         device,               // const VkDevice                                device
@@ -445,7 +451,12 @@ vk::Move<vk::VkPipeline> createPipeline(const vk::DeviceInterface &vkd, vk::VkDe
         vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                     topology
         0u,                                      // const uint32_t                                subpass
         0u,                                      // const uint32_t                                patchControlPoints
-        &vertexInputState); // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+        &vertexInputState,        // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+        nullptr,                  // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                  // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        nullptr,                  // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+        nullptr,                  // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+        &dynamicStateCreateInfo); // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
 }
 
 vk::Move<vk::VkPipelineLayout> createPipelineLayout(const vk::DeviceInterface &vkd, vk::VkDevice device)
@@ -873,6 +884,9 @@ void IncrementalPresentTestInstance::render(void)
         VK_CHECK_WSI(m_vkd.queuePresentKHR(m_queue, &presentInfo));
         VK_CHECK_WSI(result);
     }
+
+    // VUID-vkAcquireNextImageKHR-semaphore-01779
+    VK_CHECK(m_vkd.queueWaitIdle(m_queue));
 
     {
         m_freeAcquireSemaphore          = m_acquireSemaphores[imageIndex];

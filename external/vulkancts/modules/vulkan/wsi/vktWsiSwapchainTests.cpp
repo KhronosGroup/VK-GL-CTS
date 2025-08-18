@@ -602,7 +602,13 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    //  VUID-VkSwapchainCreateInfoKHR-imageUsage-parameter
+    vector<string> additionalExtensions;
+    if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
+    const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
+                                           additionalExtensions);
+
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
     const VkSurfaceCapabilitiesKHR capabilities(
@@ -710,7 +716,11 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const vector<string> extraExts(1u, "VK_EXT_private_data");
+    // VUID-VkSwapchainCreateInfoKHR-imageUsage-parameter
+    vector<string> extraExts;
+    extraExts.push_back("VK_EXT_private_data");
+    if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        extraExts.push_back("VK_EXT_attachment_feedback_loop_layout");
     const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, extraExts);
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
@@ -860,6 +870,12 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
         if (context.isDeviceFunctionalitySupported("VK_KHR_present_mode_fifo_latest_ready"))
         {
             additionalExtensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
+        }
+        // VUID-VkSwapchainCreateInfoKHR-imageUsage-parameter
+        // If driver supports VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT and it will used, VK_EXT_attachment_feedback_loop_layout must be enabled
+        if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        {
+            additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
         }
         const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, additionalExtensions,
                                      failingAllocator.getCallbacks());
