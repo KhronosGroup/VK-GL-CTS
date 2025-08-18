@@ -157,6 +157,16 @@
                 "UNASSIGNED-vkCmdBindPipeline-Pipeline-Rebind"
             ],
             "description": "Test intentionally rebinds the same pipeline after setting dynamic state that is actually static in the pipeline"
+        },
+        {
+            "groups": [
+                "dEQP-VK.ray_query.advanced.null_as.vert.*",
+                "dEQP-VK.ray_query.advanced.null_as.frag.*"
+             ],
+            "messages": [
+                "Undefined-Value-ShaderInputNotProduced"
+             ],
+            "description": "Warning about not saving data in attachments by fragment shader. Fixing this is not necessary for the test to work, and implementing it would make the test case unnecessarily complicated."
         }
     ]
 }
