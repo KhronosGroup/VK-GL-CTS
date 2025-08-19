@@ -8245,7 +8245,7 @@ tcu::TestStatus DynamicFSRInstance::iterate(void)
     const tcu::Vec4 threshold(compThreshold, compThreshold, compThreshold, 0.0f);
 
     if (!tcu::floatThresholdCompare(log, "Expanded Result (4 horizontal pixels per original pixel)", "", refAccess,
-                                    resAccess, threshold, tcu::COMPARE_LOG_EVERYTHING))
+                                    resAccess, threshold, tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Unexpected results in expanded color buffer; check log for details --");
 
     return tcu::TestStatus::pass("Pass");
