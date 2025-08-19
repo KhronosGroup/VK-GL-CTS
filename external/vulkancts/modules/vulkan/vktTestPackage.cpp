@@ -944,13 +944,33 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
 
         // brave ( but working ) assumption that each CTS parameter starts with "--deqp"
 
-        std::string paramStr("--deqp");
+        const std::string paramStr("--deqp");
         std::vector<std::string> skipElements = {
             "--deqp-case",           "--deqp-stdin-caselist", "--deqp-log-filename",  "--deqp-pipeline-compiler",
             "--deqp-pipeline-dir",   "--deqp-pipeline-args",  "--deqp-pipeline-file", "--deqp-pipeline-logfile",
             "--deqp-pipeline-prefix"};
+        const std::string replaceElements[]{"-n ", "-n\t", "-f ", "-f\t"};
 
         std::size_t pos = 0;
+
+        while (pos != std::string::npos)
+        {
+            for (const std::string &replaceElement : replaceElements)
+            {
+                if (std::size_t repl = originalCmdLine.find(replaceElement, pos); repl != std::string::npos)
+                {
+                    originalCmdLine.replace(repl, replaceElement.length(), skipElements.at(0));
+                    pos = repl;
+                    break;
+                }
+                else
+                {
+                    pos = std::string::npos;
+                }
+            }
+        }
+
+        pos = 0;
         std::vector<std::size_t> argPos;
         while ((pos = originalCmdLine.find(paramStr, pos)) != std::string::npos)
             argPos.push_back(pos++);
@@ -1013,6 +1033,7 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
     std::string subProcessExitCodeInfo;
     {
         deProcess *process = deProcess_create();
+
         if (deProcess_start(process, newCmdLine.c_str(), ".") != true)
         {
             std::string err = deProcess_getLastError(process);
