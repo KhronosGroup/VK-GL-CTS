@@ -168,7 +168,7 @@ void IdentityGeometryShaderTestCase::initPrograms(vk::SourceCollections &program
         std::ostringstream src;
         src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
             << "#extension GL_EXT_tessellation_shader : require\n"
-            << "layout(vertices = 4) out;\n"
+            << "layout(vertices = " << (m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 3 : 4) << ") out;\n"
             << "\n"
             << "layout(set = 0, binding = 0, std430) readonly restrict buffer TessLevels {\n"
             << "    float inner0;\n"
