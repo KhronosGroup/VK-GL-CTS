@@ -1081,25 +1081,25 @@ void CoopMtxOpConstantNullCase::initDeviceCapabilities(DevCaps &caps)
     if (0u == configurationCount)
         TCU_THROW(NotSupportedError, "No configurations to perform test");
 
-//    if (!(caps.addFeature(&VkPhysicalDeviceVulkan12Features::vulkanMemoryModel)))
-//        TCU_THROW(NotSupportedError, "vulkanMemoryModel is not supported");
+    if (!(caps.addFeature(&VkPhysicalDeviceVulkan12Features::vulkanMemoryModel)))
+        TCU_THROW(NotSupportedError, "vulkanMemoryModel is not supported");
 
     if (has16BitTypes(m_configurations))
     {
         if (!caps.addFeature(&VkPhysicalDevice16BitStorageFeatures::storageBuffer16BitAccess))
             TCU_THROW(NotSupportedError, "storageBuffer16BitAccess not supported");
 
-//        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::shaderFloat16))
-//            TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
+        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::shaderFloat16))
+            TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
     }
 
     if (hasInt8BitTypes(m_configurations))
     {
-//        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::shaderInt8))
-//            TCU_THROW(NotSupportedError, "shaderInt8 not supported");
+        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::shaderInt8))
+            TCU_THROW(NotSupportedError, "shaderInt8 not supported");
 
-//        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::storageBuffer8BitAccess))
-//            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
+        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::storageBuffer8BitAccess))
+            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
     }
 
     if (hasFloat8BitTypes(m_configurations))
@@ -1110,8 +1110,8 @@ void CoopMtxOpConstantNullCase::initDeviceCapabilities(DevCaps &caps)
         if (!caps.addFeature(&VkPhysicalDeviceShaderFloat8FeaturesEXT::shaderFloat8))
             TCU_THROW(NotSupportedError, "shaderFloat8 not supported");
 
-//        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::storageBuffer8BitAccess))
-//            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
+        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::storageBuffer8BitAccess))
+            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
 
         caps.addExtension("VK_EXT_shader_float8");
     }

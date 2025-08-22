@@ -138,6 +138,16 @@ MAKE_FEATURE_DECL(VkPhysicalDeviceFeatures)
 INIT_FEATURE_DECL(VkPhysicalDeviceFeatures)
 MAKE_FEATURE_DECL(VkPhysicalDeviceFeatures2)
 INIT_FEATURE_DECL(VkPhysicalDeviceFeatures2)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan11Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan11Features)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan12Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan12Features)
+#ifndef CTS_USES_VULKANSC
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan13Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan13Features)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan14Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan14Features)
+#endif
 
 #ifdef CTS_USES_VULKANSC
 MAKE_FEATURE_DECL(VkFaultCallbackInfo)
