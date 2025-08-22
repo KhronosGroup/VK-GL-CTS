@@ -232,21 +232,27 @@ enum Flags
     TEST_STENCIL_WRITE = 1u << 3,
     TEST_STENCIL_CLEAR = 1u << 4,
     TEST_ALL           = 1u << 5,
-    TEST_PRECISE_BIT   = 1u << 6
+    TEST_PRECISE_BIT   = 1u << 6,
+    TEST_MULTI_PASS    = 1u << 7,
 };
 
 class OcclusionQueryTestInstance : public TestInstance
 {
 public:
-    OcclusionQueryTestInstance(Context &context, const tcu::IVec2 renderSize, const bool preciseBitEnabled,
-                               const bool scissorTestEnabled, const bool depthTestEnabled,
-                               const bool stencilTestEnabled, const bool depthWriteEnabled,
+    OcclusionQueryTestInstance(Context &context, const tcu::IVec2 renderSize,
+                               const bool multiRenderPass,
+                               const bool preciseBitEnabled,
+                               const bool scissorTestEnabled,
+                               const bool depthTestEnabled,
+                               const bool stencilTestEnabled,
+                               const bool depthWriteEnabled,
                                const bool stencilWriteEnabled);
 
     tcu::TestStatus iterate(void);
 
 private:
     const tcu::IVec2 m_renderSize;
+    const bool m_multiRenderPass;
     const bool m_preciseBitEnabled;
     const bool m_scissorTestEnabled;
     const bool m_depthClearTestEnabled;
@@ -256,13 +262,16 @@ private:
 };
 
 OcclusionQueryTestInstance::OcclusionQueryTestInstance(Context &context, const tcu::IVec2 renderSize,
-                                                       const bool preciseBitEnabled, const bool scissorTestEnabled,
+                                                       const bool multiRenderPass,
+                                                       const bool preciseBitEnabled,
+                                                       const bool scissorTestEnabled,
                                                        const bool depthClearTestEnabled,
                                                        const bool stencilClearTestEnabled,
                                                        const bool depthWriteTestEnabled,
                                                        const bool stencilWriteTestEnabled)
     : TestInstance(context)
     , m_renderSize(renderSize)
+    , m_multiRenderPass(multiRenderPass)
     , m_preciseBitEnabled(preciseBitEnabled)
     , m_scissorTestEnabled(scissorTestEnabled)
     , m_depthClearTestEnabled(depthClearTestEnabled)
@@ -435,6 +444,8 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
         const float clearDepth                = 0.5f;
         const uint32_t clearStencil           = 1u;
         const VkDeviceSize vertexBufferOffset = 0ull;
+        const VkQueryControlFlags queryFlags  = m_preciseBitEnabled ? VK_QUERY_CONTROL_PRECISE_BIT : 0;
+        const uint32_t numRenderPasses        = m_multiRenderPass ? 2 : 1;
 
         const VkRect2D renderArea = {
             makeOffset2D(0, 0),
@@ -445,50 +456,66 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
 
         vk.cmdResetQueryPool(*cmdBuffer, queryPool, 0, queryCount);
 
-        // Will clear the attachments with specified depth and stencil values.
-        beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor, clearDepth, clearStencil);
+        if (m_multiRenderPass)
+            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, queryFlags);
 
-        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+        for (uint32_t i = 0; i < numRenderPasses; ++i) {
 
-        // Mask half of the attachment image with value that will pass the stencil test.
-        if (m_depthClearTestEnabled)
-            commandClearDepthAttachment(vk, *cmdBuffer, makeOffset2D(0, m_renderSize.y() / 2),
-                                        makeExtent2D(m_renderSize.x(), m_renderSize.y() / 2), 1u);
+            // Will clear the attachments with specified depth and stencil values.
+            beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor, clearDepth, clearStencil);
 
-        // Mask half of the attachment image with value that will pass the stencil test.
-        if (m_stencilClearTestEnabled)
-            commandClearStencilAttachment(vk, *cmdBuffer, makeOffset2D(m_renderSize.x() / 2, 0),
-                                          makeExtent2D(m_renderSize.x() / 2, m_renderSize.y()), 0u);
-
-        if (m_depthWriteTestEnabled)
-        {
-            vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &dOccluderVertexBuffer.get(), &vertexBufferOffset);
-            vk.cmdDraw(*cmdBuffer, numDepthOccVertices, 1u, 0u, 0u);
-        }
-
-        if (m_stencilWriteTestEnabled)
-        {
-            vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineStencilWrite);
-            vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &sOccluderVertexBuffer.get(), &vertexBufferOffset);
-            vk.cmdDraw(*cmdBuffer, numStencilOccVertices, 1u, 0u, 0u);
             vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+
+            // Mask half of the attachment image with value that will pass the stencil test.
+            if (m_depthClearTestEnabled)
+                commandClearDepthAttachment(vk, *cmdBuffer, makeOffset2D(0, m_renderSize.y() / 2),
+                                            makeExtent2D(m_renderSize.x(), m_renderSize.y() / 2), 1u);
+
+            // Mask half of the attachment image with value that will pass the stencil test.
+            if (m_stencilClearTestEnabled)
+                commandClearStencilAttachment(vk, *cmdBuffer, makeOffset2D(m_renderSize.x() / 2, 0),
+                                              makeExtent2D(m_renderSize.x() / 2, m_renderSize.y()), 0u);
+
+            if (m_depthWriteTestEnabled)
+            {
+                vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &dOccluderVertexBuffer.get(), &vertexBufferOffset);
+                vk.cmdDraw(*cmdBuffer, numDepthOccVertices, 1u, 0u, 0u);
+            }
+
+            if (m_stencilWriteTestEnabled)
+            {
+                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineStencilWrite);
+                vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &sOccluderVertexBuffer.get(), &vertexBufferOffset);
+                vk.cmdDraw(*cmdBuffer, numStencilOccVertices, 1u, 0u, 0u);
+                vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+            }
+
+            vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+
+            if (!m_multiRenderPass)
+                vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, queryFlags);
+
+            vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
+
+            if (!m_multiRenderPass)
+                vk.cmdEndQuery(cmdBuffer.get(), queryPool, 0);
+
+            endRenderPass(vk, *cmdBuffer);
+
+            if (i + 1 < numRenderPasses)
+            {
+                VkMemoryBarrier barrier;
+                barrier.sType = VK_STRUCTURE_TYPE_MEMORY_BARRIER;
+                barrier.pNext = nullptr;
+                barrier.srcAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                barrier.dstAccessMask = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+                const VkPipelineStageFlags stages = VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT;
+                vk.cmdPipelineBarrier(*cmdBuffer, stages, stages, 0, 1, &barrier, 0, nullptr, 0, nullptr);
+            }
         }
 
-        vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-
-        if (m_preciseBitEnabled)
-        {
-            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, VK_QUERY_CONTROL_PRECISE_BIT);
-        }
-        else
-        {
-            vk.cmdBeginQuery(cmdBuffer.get(), queryPool, 0, 0);
-        }
-
-        vk.cmdDraw(*cmdBuffer, numVertices, 1u, 0u, 0u);
-        vk.cmdEndQuery(cmdBuffer.get(), queryPool, 0);
-
-        endRenderPass(vk, *cmdBuffer);
+        if (m_multiRenderPass)
+            vk.cmdEndQuery(cmdBuffer.get(), queryPool, 0);
 
         copyImageToBuffer(vk, *cmdBuffer, *colorImage, *colorBuffer, m_renderSize,
                           VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
@@ -552,6 +579,9 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             {
                 expResult -= occluderWriteSize;
             }
+
+            if (m_multiRenderPass)
+                expResult *= 2;
         }
 
         VK_CHECK(vk.getQueryPoolResults(device, queryPool, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
@@ -600,6 +630,7 @@ public:
     virtual void checkSupport(Context &context) const;
 
 private:
+    const bool m_multiRenderPass;
     const bool m_preciseBitEnabled;
     const bool m_scissorTestEnabled;
     const bool m_depthClearTestEnabled;
@@ -613,6 +644,7 @@ private:
 OcclusionQueryTest::OcclusionQueryTest(tcu::TestContext &testCtx, const std::string name, const uint32_t flags,
                                        const int renderWidth, const int renderHeight)
     : TestCase(testCtx, name)
+    , m_multiRenderPass(flags & TEST_MULTI_PASS)
     , m_preciseBitEnabled(flags & TEST_PRECISE_BIT)
     , m_scissorTestEnabled(flags & TEST_SCISSOR)
     , m_depthClearTestEnabled(flags & TEST_DEPTH_CLEAR || flags & TEST_ALL)
@@ -667,9 +699,15 @@ void OcclusionQueryTest::initPrograms(SourceCollections &programCollection) cons
 
 TestInstance *OcclusionQueryTest::createInstance(Context &context) const
 {
-    return new OcclusionQueryTestInstance(context, tcu::IVec2(m_renderWidth, m_renderHeight), m_preciseBitEnabled,
-                                          m_scissorTestEnabled, m_depthClearTestEnabled, m_stencilClearTestEnabled,
-                                          m_depthWriteTestEnabled, m_stencilWriteTestEnabled);
+    return new OcclusionQueryTestInstance(context,
+                                          tcu::IVec2(m_renderWidth, m_renderHeight),
+                                          m_multiRenderPass,
+                                          m_preciseBitEnabled,
+                                          m_scissorTestEnabled,
+                                          m_depthClearTestEnabled,
+                                          m_stencilClearTestEnabled,
+                                          m_depthWriteTestEnabled,
+                                          m_stencilWriteTestEnabled);
 }
 
 void OcclusionQueryTest::checkSupport(Context &context) const
@@ -761,6 +799,18 @@ tcu::TestCaseGroup *createOcclusionQueryTests(tcu::TestContext &testCtx)
         for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
             testGroup->addChild(new OcclusionQueryTest(testCtx, "precise" + cases[i].caseName,
                                                        cases[i].flags | TEST_PRECISE_BIT, 32, 32));
+
+        // Precise tests with the query spanning multiple render passes
+        for (int i = 0; i < DE_LENGTH_OF_ARRAY(cases); ++i)
+        {
+            // Depth/stencil write issue other draws outside of the one getting counted.
+            // When doing a multi-render-pass query, we can't disable it around those draws, so the test doesn't work as intended.
+            // Skip those tests.
+            if (cases[i].flags & (TEST_DEPTH_WRITE | TEST_STENCIL_WRITE | TEST_ALL))
+                continue;
+            testGroup->addChild(new OcclusionQueryTest(testCtx, "precise_multi_render_pass" + cases[i].caseName,
+                                                       cases[i].flags | TEST_PRECISE_BIT | TEST_MULTI_PASS, 32, 32));
+        }
     }
 
     return testGroup.release();
