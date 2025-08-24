@@ -13205,59 +13205,48 @@ void add1dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         group->addChild(new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers", params));
     }
 
-    // those tests are performed for all queues, no need to repeat them
-    // when testGroupParams->queueSelection is set to TransferOnly
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+    VkExtent3D extents[] = {
+        // Most miplevels will be multiples of four. All power-of-2 edge sizes. Never a weird mip level with extents smaller than the blockwidth.
+        {64, 64, 1},
+        // Odd mip edge multiples, two lowest miplevels on the y-axis will have widths of 3 and 1 respectively, less than the compression blocksize, and potentially tricky.
+        {64, 192, 1},
+    };
+
+    uint32_t arrayLayers[] = {1, 2, 5};
+
+    auto getCaseName = [](VkFormat format, VkExtent3D extent, uint32_t numLayers)
     {
-        VkExtent3D extents[] = {
-            // A power of 2 and a non-power.
-            {64, 1, 1},
-            {192, 1, 1},
-        };
+        std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) + "x" +
+                               std::to_string(extent.height);
+        if (numLayers > 1)
+            caseName.append("_" + std::to_string(numLayers) + "_layers");
+        return caseName;
+    };
 
-        uint32_t arrayLayers[] = {1, 2, 5};
-
-        auto getCaseName = [](VkFormat format, VkExtent3D extent, uint32_t numLayers, std::string queueName)
+    for (const auto &extent : extents)
+        for (const auto numLayers : arrayLayers)
         {
-            std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width);
-            if (numLayers > 1)
-                caseName.append("_" + std::to_string(numLayers) + "_layers");
-            caseName.append("_" + queueName);
-            return caseName;
-        };
+            TestParams params;
+            params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+            params.src.image.extent          = extent;
+            params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
+            params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+            params.allocationKind            = testGroupParams->allocationKind;
+            params.extensionFlags            = testGroupParams->extensionFlags;
+            params.queueSelection            = testGroupParams->queueSelection;
+            params.useSparseBinding          = testGroupParams->useSparseBinding;
+            params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+            params.arrayLayers               = numLayers;
 
-        for (const auto &extent : extents)
-            for (const auto numLayers : arrayLayers)
+            for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
             {
-                TestParams params;
-                params.src.image.imageType       = VK_IMAGE_TYPE_1D;
-                params.src.image.extent          = extent;
-                params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                params.allocationKind            = testGroupParams->allocationKind;
-                params.extensionFlags            = testGroupParams->extensionFlags;
-                params.queueSelection            = testGroupParams->queueSelection;
-                params.useSparseBinding          = testGroupParams->useSparseBinding;
-                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-                params.arrayLayers               = numLayers;
-
-                for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
+                params.src.image.format = *format;
                 {
-                    params.src.image.format = *format;
-                    {
-                        params.queueSelection = QueueSelectionOptions::Universal;
-                        group->addChild(new CopyCompressedImageToBufferTestCase(
-                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), params));
-                        params.queueSelection = QueueSelectionOptions::ComputeOnly;
-                        group->addChild(new CopyCompressedImageToBufferTestCase(
-                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), params));
-                        params.queueSelection = QueueSelectionOptions::TransferOnly;
-                        group->addChild(new CopyCompressedImageToBufferTestCase(
-                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "transfer"), params));
-                    }
+                    group->addChild(new CopyCompressedImageToBufferTestCase(
+                        testCtx, getCaseName(*format, params.src.image.extent, numLayers), params));
                 }
             }
-    }
+        }
 }
 
 void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
@@ -13757,89 +13746,29 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             }
         }
 
-    // those tests are performed for all queues, no need to repeat them
-    // when testGroupParams->queueSelection is set to TransferOnly
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+    VkExtent3D extents[] = {
+        // Most miplevels will be multiples of four. All power-of-2 edge sizes. Never a weird mip level with extents smaller than the blockwidth.
+        {64, 64, 1},
+        // Odd mip edge multiples, two lowest miplevels on the y-axis will have widths of 3 and 1 respectively, less than the compression blocksize, and potentially tricky.
+        {64, 192, 1},
+    };
+
+    uint32_t arrayLayers[] = {1, 2, 5};
+
+    auto getCaseName = [](VkFormat format, VkExtent3D extent, uint32_t numLayers)
     {
-        VkExtent3D extents[] = {
-            // Most miplevels will be multiples of four. All power-of-2 edge sizes. Never a weird mip level with extents smaller than the blockwidth.
-            {64, 64, 1},
-            // Odd mip edge multiples, two lowest miplevels on the y-axis will have widths of 3 and 1 respectively, less than the compression blocksize, and potentially tricky.
-            {64, 192, 1},
-        };
+        std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) + "x" +
+                               std::to_string(extent.height);
+        if (numLayers > 1)
+            caseName.append("_" + std::to_string(numLayers) + "_layers");
+        return caseName;
+    };
 
-        uint32_t arrayLayers[] = {1, 2, 5};
-
-        auto getCaseName = [](VkFormat format, VkExtent3D extent, uint32_t numLayers, std::string queueName)
-        {
-            std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) +
-                                   "x" + std::to_string(extent.height);
-            if (numLayers > 1)
-                caseName.append("_" + std::to_string(numLayers) + "_layers");
-            caseName.append("_" + queueName);
-            return caseName;
-        };
-
-        for (const auto &extent : extents)
-            for (const auto numLayers : arrayLayers)
-            {
-                TestParams params;
-                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
-                params.src.image.extent          = extent;
-                params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
-                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
-                params.allocationKind            = testGroupParams->allocationKind;
-                params.extensionFlags            = testGroupParams->extensionFlags;
-                params.queueSelection            = testGroupParams->queueSelection;
-                params.useSparseBinding          = testGroupParams->useSparseBinding;
-                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-                params.arrayLayers               = numLayers;
-
-                for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
-                {
-                    params.src.image.format = *format;
-                    {
-                        params.queueSelection = QueueSelectionOptions::Universal;
-                        group->addChild(new CopyCompressedImageToBufferTestCase(
-                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "universal"), params));
-                        params.queueSelection = QueueSelectionOptions::ComputeOnly;
-                        group->addChild(new CopyCompressedImageToBufferTestCase(
-                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "compute"), params));
-                        params.queueSelection = QueueSelectionOptions::TransferOnly;
-                        group->addChild(new CopyCompressedImageToBufferTestCase(
-                            testCtx, getCaseName(*format, params.src.image.extent, numLayers, "transfer"), params));
-                    }
-                }
-            }
-    }
-}
-
-void add3dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
-{
-    tcu::TestContext &testCtx = group->getTestContext();
-
-    // those tests are performed for all queues, no need to repeat them
-    // when testGroupParams->queueSelection is set to TransferOnly
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
-    {
-        VkExtent3D extents[] = {
-            // A power of 2 and a non-power.
-            {16, 16, 16},
-            {16, 8, 24},
-        };
-
-        auto getCaseName = [](VkFormat format, VkExtent3D extent, std::string queueName)
-        {
-            std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) +
-                                   "x" + std::to_string(extent.height) + "x" + std::to_string(extent.depth);
-            caseName.append("_" + queueName);
-            return caseName;
-        };
-
-        for (const auto &extent : extents)
+    for (const auto &extent : extents)
+        for (const auto numLayers : arrayLayers)
         {
             TestParams params;
-            params.src.image.imageType       = VK_IMAGE_TYPE_3D;
+            params.src.image.imageType       = VK_IMAGE_TYPE_2D;
             params.src.image.extent          = extent;
             params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
             params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
@@ -13848,22 +13777,56 @@ void add3dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             params.queueSelection            = testGroupParams->queueSelection;
             params.useSparseBinding          = testGroupParams->useSparseBinding;
             params.useGeneralLayout          = testGroupParams->useGeneralLayout;
-            params.arrayLayers               = 1u;
+            params.arrayLayers               = numLayers;
 
             for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
             {
                 params.src.image.format = *format;
                 {
-                    params.queueSelection = QueueSelectionOptions::Universal;
                     group->addChild(new CopyCompressedImageToBufferTestCase(
-                        testCtx, getCaseName(*format, params.src.image.extent, "universal"), params));
-                    params.queueSelection = QueueSelectionOptions::ComputeOnly;
-                    group->addChild(new CopyCompressedImageToBufferTestCase(
-                        testCtx, getCaseName(*format, params.src.image.extent, "compute"), params));
-                    params.queueSelection = QueueSelectionOptions::TransferOnly;
-                    group->addChild(new CopyCompressedImageToBufferTestCase(
-                        testCtx, getCaseName(*format, params.src.image.extent, "transfer"), params));
+                        testCtx, getCaseName(*format, params.src.image.extent, numLayers), params));
                 }
+            }
+        }
+}
+
+void add3dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+
+    VkExtent3D extents[] = {
+        // A power of 2 and a non-power.
+        {16, 16, 16},
+        {16, 8, 24},
+    };
+
+    auto getCaseName = [](VkFormat format, VkExtent3D extent)
+    {
+        std::string caseName = "mip_copies_" + getFormatCaseName(format) + "_" + std::to_string(extent.width) + "x" +
+                               std::to_string(extent.height) + "x" + std::to_string(extent.depth);
+        return caseName;
+    };
+
+    for (const auto &extent : extents)
+    {
+        TestParams params;
+        params.src.image.imageType       = VK_IMAGE_TYPE_3D;
+        params.src.image.extent          = extent;
+        params.src.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
+        params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+        params.allocationKind            = testGroupParams->allocationKind;
+        params.extensionFlags            = testGroupParams->extensionFlags;
+        params.queueSelection            = testGroupParams->queueSelection;
+        params.useSparseBinding          = testGroupParams->useSparseBinding;
+        params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+        params.arrayLayers               = 1u;
+
+        for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
+        {
+            params.src.image.format = *format;
+            {
+                group->addChild(new CopyCompressedImageToBufferTestCase(
+                    testCtx, getCaseName(*format, params.src.image.extent), params));
             }
         }
     }
