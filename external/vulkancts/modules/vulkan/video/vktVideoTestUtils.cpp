@@ -2326,7 +2326,7 @@ void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, 
     // Create directory if it doesn't exist
     de::FilePath filePath(fileName);
     std::string dirName = filePath.getDirName();
-    if (!dirName.empty())
+    if (!dirName.empty() && !de::FilePath(dirName).exists())
     {
         de::createDirectoryAndParents(dirName.c_str());
     }
