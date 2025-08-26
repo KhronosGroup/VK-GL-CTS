@@ -195,6 +195,7 @@ enum class TestVariant : uint32_t
     PUSH_TEMPLATE,               // use push descriptor template and descriptor buffer at the same time
     ROBUST_BUFFER_ACCESS,        // robust buffer access
     ROBUST_NULL_DESCRIPTOR,      // robustness2 with null descriptor
+    ROBUST_NULL_DESCRIPTOR_SIZE, // robustness2 with size queries on null descriptors
     CAPTURE_REPLAY,              // capture and replay capability with descriptor buffers
     INVALIDATION_RULES,          // verify set invalidation rules based on pipeline compatibility
     MUTABLE_DESCRIPTOR_TYPE,     // use VK_EXT_mutable_descriptor_type
@@ -450,6 +451,7 @@ struct TestParams
         {
         case TestVariant::SINGLE:
         case TestVariant::ROBUST_NULL_DESCRIPTOR:
+        case TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE:
         case TestVariant::CAPTURE_REPLAY:
             return isAccelerationStructure();
         default:
@@ -770,7 +772,7 @@ std::string getCaseNameUpdateHash(TestParams &params, uint32_t baseHash)
     str << toString(params.queue) << "_" << toString(params.stage);
 
     if ((params.variant == TestVariant::SINGLE) || (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
-        (params.variant == TestVariant::CAPTURE_REPLAY))
+        (params.variant == TestVariant::CAPTURE_REPLAY) || (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
     {
         str << "_" << toString(params.descriptor);
 
@@ -1125,7 +1127,7 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
         (params.variant == TestVariant::PUSH_DESCRIPTOR) || (params.variant == TestVariant::PUSH_TEMPLATE) ||
         (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
         (params.variant == TestVariant::MUTABLE_DESCRIPTOR_TYPE) || (params.variant == TestVariant::CAPTURE_REPLAY) ||
-        (params.isYCbCrSamplerVariant()))
+        (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE) || (params.isYCbCrSamplerVariant()))
     {
         // Read at least one value from a descriptor and compare it.
         // For buffers, verify every element.
@@ -1180,16 +1182,18 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
 
             const bool isNullDescriptor =
                 (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) && (sb.type == params.descriptor);
+            const bool isQuerySizeNullTexelBuffer =
+                (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE) && (sb.type == params.descriptor);
             const bool isCustomBorderColor = (params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR);
 
             for (uint32_t arrayIndex = 0; arrayIndex < sb.count; ++arrayIndex)
             {
                 // Input attachment index increases with array index.
-                const auto expectedData =
-                    glslFormat(isNullDescriptor ? 0 :
-                                                  getExpectedData(params.hash, sb.set, sb.binding,
-                                                                  sb.inputAttachmentIndex + arrayIndex));
-                const auto expectedBorderColor = isNullDescriptor    ? "uvec4(0)" :
+                const auto expectedData = glslFormat(
+                    (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                        0 :
+                        getExpectedData(params.hash, sb.set, sb.binding, sb.inputAttachmentIndex + arrayIndex));
+                const auto expectedBorderColor = (isNullDescriptor || isQuerySizeNullTexelBuffer) ? "uvec4(0)" :
                                                  isCustomBorderColor ? "uvec4(2, 0, 0, 1)" :
                                                                        "uvec4(0, 0, 0, 1)";
                 const auto bindingArgs =
@@ -1277,24 +1281,47 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                 else if ((sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ||
                          (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER))
                 {
-                    const auto loadOp =
-                        (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ? "texelFetch" : "imageLoad";
-                    const auto loopData = isNullDescriptor ? expectedData : "(" + expectedData + " + i)";
+                    if (isQuerySizeNullTexelBuffer)
+                    {
+                        // Test size query on NULL texel buffer - should return 0
+                        // Use textureSize() for uniform texel buffers, imageSize() for storage texel buffers
+                        const auto sizeOp =
+                            (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ? "textureSize" : "imageSize";
+                        str << "    uint bufferSize = uint(" << sizeOp << "(" << glslResourceName(sb.set, sb.binding)
+                            << subscript << "));\n"
+                            << "    if (bufferSize == 0u) " << glslResultBlock("\t", bindingArgs) << "\n";
+                    }
+                    else
+                    {
+                        const auto loadOp =
+                            (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ? "texelFetch" : "imageLoad";
+                        const auto loopData = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                                  expectedData :
+                                                  "(" + expectedData + " + i)";
 
-                    str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
-                        << "; i += " << glslFormat(loopIncrement) << ") {\n"
-                        << "        uint value = " << loadOp << "(" << glslResourceName(sb.set, sb.binding) << subscript
-                        << ", int(i)).r;\n"
-                        << "        if (value == " << loopData << ") " << glslResultBlock("\t\t", bindingArgs, "i")
-                        << "    }\n";
+                        str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
+                            << "; i += " << glslFormat(loopIncrement) << ") {\n"
+                            << "        uint value = " << loadOp << "(" << glslResourceName(sb.set, sb.binding)
+                            << subscript << ", int(i)).r;\n"
+                            << "        if (value == " << loopData << ") " << glslResultBlock("\t\t", bindingArgs, "i")
+                            << "    }\n";
+                    }
                 }
                 else if ((sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) ||
                          (sb.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
                 {
-                    const auto loopData0 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 0)";
-                    const auto loopData1 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 1)";
-                    const auto loopData2 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 2)";
-                    const auto loopData3 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 3)";
+                    const auto loopData0 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 0)";
+                    const auto loopData1 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 1)";
+                    const auto loopData2 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 2)";
+                    const auto loopData3 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 3)";
 
                     str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
                         << "; i += " << glslFormat(loopIncrement) << ") {\n"
@@ -1309,7 +1336,8 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                 }
                 else if (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
                 {
-                    const auto loopData = isNullDescriptor ? expectedData : "(" + expectedData + " + i)";
+                    const auto loopData =
+                        (isNullDescriptor || isQuerySizeNullTexelBuffer) ? expectedData : "(" + expectedData + " + i)";
 
                     str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
                         << "; i += " << glslFormat(loopIncrement) << ") {\n"
@@ -1541,7 +1569,7 @@ private:
 void DescriptorBufferTestCase::delayedInit()
 {
     if ((m_params.variant == TestVariant::SINGLE) || (m_params.variant == TestVariant::CAPTURE_REPLAY) ||
-        (m_params.isYCbCrSamplerVariant()))
+        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE) || (m_params.isYCbCrSamplerVariant()))
     {
         // Creates a single set with a single binding, unless additional helper resources are required.
         {
@@ -1887,6 +1915,10 @@ void DescriptorBufferTestCase::initPrograms(vk::SourceCollections &programs,
     // Compute shaders still declare a "result" variable to help unify the verification logic.
     std::string extentionDeclarations = std::string(glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_460)) + "\n" +
                                         (m_params.isRayTracing() ? "#extension GL_EXT_ray_tracing : require\n" : "") +
+                                        ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE &&
+                                          m_params.descriptor == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ?
+                                             "#extension GL_EXT_samplerless_texture_functions : require\n" :
+                                             "") +
                                         "#extension GL_EXT_debug_printf : enable\n";
 
     if (m_params.isGraphics())
@@ -2452,7 +2484,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
     }
 
     if ((m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS) ||
-        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR))
+        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
     {
         if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2") ||
             context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
@@ -2464,7 +2497,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
 
             context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
-            if ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) &&
+            if (((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+                 (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)) &&
                 (robustness2Features.nullDescriptor == VK_FALSE))
             {
                 TCU_THROW(NotSupportedError, "robustness2 nullDescriptor is not supported");
@@ -2472,7 +2506,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
 
             DE_ASSERT(features2.features.robustBufferAccess);
         }
-        else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR)
+        else if ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+                 (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
         {
             TCU_THROW(NotSupportedError, "VK_EXT_robustness2 and VK_KHR_robustness2 are not supported");
         }
@@ -2982,7 +3017,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
             extensions.push_back("VK_KHR_push_descriptor");
     }
     else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
-             m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
+             m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS ||
+             m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)
     {
         if (context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
         {
@@ -3047,7 +3083,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         robustness2Features.robustImageAccess2  = VK_FALSE;
     }
 
-    if (m_params.variant != TestVariant::ROBUST_NULL_DESCRIPTOR)
+    if ((m_params.variant != TestVariant::ROBUST_NULL_DESCRIPTOR) &&
+        (m_params.variant != TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
     {
         robustness2Features.nullDescriptor = VK_FALSE;
     }
@@ -4427,7 +4464,8 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
         (m_descriptorBufferProperties.combinedImageSamplerDescriptorSingleArray == VK_FALSE);
 
     const bool isRobustBufferAccess = (m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS);
-    const bool isNullDescriptor     = (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) &&
+    const bool isNullDescriptor     = ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+                                   (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)) &&
                                   (binding.descriptorType == m_params.descriptor) && binding.isTestableDescriptor();
 
     for (uint32_t arrayIndex = 0; arrayIndex < arrayCount; ++arrayIndex)
@@ -5885,11 +5923,21 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                     {
                         expected += ConstChecksPerBuffer * 4 * sb.count;
                     }
-                    else if ((sb.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) ||
-                             (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) ||
-                             (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER))
+                    else if (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
                     {
                         expected += ConstChecksPerBuffer * sb.count;
+                    }
+                    else if ((sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) ||
+                             (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER))
+                    {
+                        if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)
+                        {
+                            expected += sb.count; // Only 1 size query per texel buffer
+                        }
+                        else
+                        {
+                            expected += ConstChecksPerBuffer * sb.count;
+                        }
                     }
                     // Samplers are tested implicitly via sampled images
                     else if (sb.type != VK_DESCRIPTOR_TYPE_SAMPLER)
@@ -7480,8 +7528,10 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
         MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "robust"));
         MovePtr<tcu::TestCaseGroup> subGroupBuffer(new tcu::TestCaseGroup(testCtx, "buffer_access"));
         MovePtr<tcu::TestCaseGroup> subGroupNullDescriptor(new tcu::TestCaseGroup(testCtx, "null_descriptor"));
-        const uint32_t subGroupBufferHash         = baseSeed ^ deStringHash(subGroupBuffer->getName());
-        const uint32_t subGroupNullDescriptorHash = baseSeed ^ deStringHash(subGroupNullDescriptor->getName());
+        MovePtr<tcu::TestCaseGroup> subGroupNullDescriptorSize(new tcu::TestCaseGroup(testCtx, "null_descriptor_size"));
+        const uint32_t subGroupBufferHash             = baseSeed ^ deStringHash(subGroupBuffer->getName());
+        const uint32_t subGroupNullDescriptorHash     = baseSeed ^ deStringHash(subGroupNullDescriptor->getName());
+        const uint32_t subGroupNullDescriptorSizeHash = baseSeed ^ deStringHash(subGroupNullDescriptorSize->getName());
 
         // Robust buffer access:
         // This test will fill the buffers with zeros and always expect to read zero values back (in and out of bounds).
@@ -7536,8 +7586,45 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                 }
             }
 
+        // Robustness tests with QuerySize of NULL, only for texel buffers:
+        // For texel buffers with null handles, textureSize() and imageSize() queries are expected to return 0.
+        // This tests size dimensions returning zero, not data reads
+        //
+        const VkDescriptorType texelBufferDescriptors[] = {
+            VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+        };
+
+        for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
+            for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
+            {
+                if ((*pQueue == VK_QUEUE_COMPUTE_BIT) && (*pStage != VK_SHADER_STAGE_COMPUTE_BIT))
+                {
+                    // Compute queue can only use compute shaders.
+                    continue;
+                }
+
+                for (auto pDescriptor = texelBufferDescriptors; pDescriptor < DE_ARRAY_END(texelBufferDescriptors);
+                     ++pDescriptor)
+                {
+                    TestParams params{};
+                    params.variant            = TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE;
+                    params.stage              = *pStage;
+                    params.queue              = *pQueue;
+                    params.descriptor         = *pDescriptor;
+                    params.bufferBindingCount = 1;
+                    params.setsPerBuffer      = 1;
+                    params.useMaintenance5    = false;
+                    params.resourceResidency  = resourceResidency;
+
+                    subGroupNullDescriptorSize->addChild(new DescriptorBufferTestCase(
+                        testCtx, getCaseNameUpdateHash(params, subGroupNullDescriptorSizeHash), params));
+                }
+            }
+
         subGroup->addChild(subGroupBuffer.release());
         subGroup->addChild(subGroupNullDescriptor.release());
+        subGroup->addChild(subGroupNullDescriptorSize.release());
         topGroup->addChild(subGroup.release());
     }
 
