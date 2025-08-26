@@ -209,48 +209,48 @@ typedef struct dpbH264Entry
         return (used_for_reference != 0);
     }
 
-    StdVideoDecodeH264ReferenceInfoFlags getPictureFlag(bool currentPictureIsProgressive)
+    StdVideoDecodeH264ReferenceInfoFlags getPictureFlag(bool currentPictureIsProgressive, bool videoLogEnabled)
     {
         StdVideoDecodeH264ReferenceInfoFlags picFlags = StdVideoDecodeH264ReferenceInfoFlags();
-        if (videoLoggingEnabled())
+        if (videoLogEnabled)
             std::cout << "\t\t Flags: ";
 
         if (used_for_reference)
         {
-            if (videoLoggingEnabled())
+            if (videoLogEnabled)
                 std::cout << "FRAME_IS_REFERENCE ";
             // picFlags.is_reference = true;
         }
 
         if (is_long_term)
         {
-            if (videoLoggingEnabled())
+            if (videoLogEnabled)
                 std::cout << "IS_LONG_TERM ";
             picFlags.used_for_long_term_reference = true;
         }
         if (is_non_existing)
         {
-            if (videoLoggingEnabled())
+            if (videoLogEnabled)
                 std::cout << "IS_NON_EXISTING ";
             picFlags.is_non_existing = true;
         }
 
         if (is_field_ref)
         {
-            if (videoLoggingEnabled())
+            if (videoLogEnabled)
                 std::cout << "IS_FIELD ";
             // picFlags.field_pic_flag = true;
         }
 
         if (!currentPictureIsProgressive && (used_for_reference & topFieldMask))
         {
-            if (videoLoggingEnabled())
+            if (videoLogEnabled)
                 std::cout << "TOP_FIELD_IS_REF ";
             picFlags.top_field_flag = true;
         }
         if (!currentPictureIsProgressive && (used_for_reference & bottomFieldMask))
         {
-            if (videoLoggingEnabled())
+            if (videoLogEnabled)
                 std::cout << "BOTTOM_FIELD_IS_REF ";
             picFlags.bottom_field_flag = true;
         }
@@ -259,7 +259,8 @@ typedef struct dpbH264Entry
     }
 
     void setH264PictureData(nvVideoDecodeH264DpbSlotInfo *pDpbRefList, VkVideoReferenceSlotInfoKHR *pReferenceSlots,
-                            uint32_t dpbEntryIdx, uint32_t dpbSlotIndex, bool currentPictureIsProgressive)
+                            uint32_t dpbEntryIdx, uint32_t dpbSlotIndex, bool currentPictureIsProgressive,
+                            bool videoLogEnabled)
     {
         DE_ASSERT(dpbEntryIdx <= H26X_MAX_DPB_SLOTS && dpbSlotIndex <= H26X_MAX_DPB_SLOTS);
 
@@ -270,21 +271,21 @@ typedef struct dpbH264Entry
 
         StdVideoDecodeH264ReferenceInfo *pRefPicInfo = &pDpbRefList[dpbEntryIdx].stdReferenceInfo;
         pRefPicInfo->FrameNum                        = FrameIdx;
-        if (videoLoggingEnabled())
+        if (videoLogEnabled)
         {
             std::cout << "\tdpbEntryIdx: " << dpbEntryIdx << "dpbSlotIndex: " << dpbSlotIndex
                       << " FrameIdx: " << (int32_t)FrameIdx;
         }
-        pRefPicInfo->flags          = getPictureFlag(currentPictureIsProgressive);
+        pRefPicInfo->flags          = getPictureFlag(currentPictureIsProgressive, videoLogEnabled);
         pRefPicInfo->PicOrderCnt[0] = FieldOrderCnt[0];
         pRefPicInfo->PicOrderCnt[1] = FieldOrderCnt[1];
-        if (videoLoggingEnabled())
+        if (videoLogEnabled)
             std::cout << " fieldOrderCnt[0]: " << pRefPicInfo->PicOrderCnt[0]
                       << " fieldOrderCnt[1]: " << pRefPicInfo->PicOrderCnt[1] << std::endl;
     }
 
     void setH265PictureData(nvVideoDecodeH265DpbSlotInfo *pDpbSlotInfo, VkVideoReferenceSlotInfoKHR *pReferenceSlots,
-                            uint32_t dpbEntryIdx, uint32_t dpbSlotIndex)
+                            uint32_t dpbEntryIdx, uint32_t dpbSlotIndex, bool videoLogEnabled)
     {
         DE_ASSERT(dpbEntryIdx <= H26X_MAX_DPB_SLOTS && dpbSlotIndex <= H26X_MAX_DPB_SLOTS);
 
@@ -299,7 +300,7 @@ typedef struct dpbH264Entry
         pRefPicInfo->PicOrderCntVal                     = PicOrderCnt;
         pRefPicInfo->flags.used_for_long_term_reference = is_long_term;
 
-        if (videoLoggingEnabled())
+        if (videoLogEnabled)
         {
             std::cout << "\tdpbIndex: " << dpbSlotIndex << " picOrderCntValList: " << PicOrderCnt;
 
@@ -424,6 +425,7 @@ VideoBaseDecoder::VideoBaseDecoder(Parameters &&params)
     , m_outOfOrderDecoding(params.outOfOrderDecoding)
     , m_alwaysRecreateDPB(params.alwaysRecreateDPB)
     , m_intraOnlyDecodingNoSetupRef(params.intraOnlyDecodingNoSetupRef)
+    , m_videoLogPrintEnable(params.context->context->getTestContext().getCommandLine().getVideoLogPrint())
 {
     std::fill(m_pictureToDpbSlotMap.begin(), m_pictureToDpbSlotMap.end(), -1);
     reinitializeFormatsForProfile(params.profile);
@@ -533,7 +535,7 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
 
     uint32_t maxDpbSlotCount = pVideoFormat->maxNumDpbSlots;
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         std::cout << std::dec << "Sequence/GOP Information" << std::endl
                   << "\tCodec        : " << util::getVideoCodecString(pVideoFormat->codec) << std::endl
@@ -814,7 +816,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd)
 
     vkPicBuffBase *pVkPicBuff = GetPic(pd->pCurrPic);
     const int32_t picIdx      = pVkPicBuff ? pVkPicBuff->m_picIdx : -1;
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
         tcu::print("VulkanVideoParser::DecodePicture picIdx=%d progressive=%d\n", picIdx, pd->progressive_frame);
 
     DE_ASSERT(picIdx < MAX_FRM_CNT);
@@ -1027,7 +1029,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         pCurrFrameDecParams->pStdPps = pin->pStdPps;
         pCurrFrameDecParams->pStdSps = pin->pStdSps;
         pCurrFrameDecParams->pStdVps = pin->pStdVps;
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
         {
             std::cout << "\n\tCurrent h.265 Picture VPS update : " << pin->pStdVps->GetUpdateSequenceCount()
                       << std::endl;
@@ -1073,7 +1075,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         pStdPictureInfo->NumDeltaPocsOfRefRpsIdx = pin->NumDeltaPocsOfRefRpsIdx;
         pStdPictureInfo->PicOrderCntVal          = pin->CurrPicOrderCntVal;
 
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
             std::cout << "\tnumPocStCurrBefore: " << (int32_t)pin->NumPocStCurrBefore
                       << " numPocStCurrAfter: " << (int32_t)pin->NumPocStCurrAfter
                       << " numPocLtCurr: " << (int32_t)pin->NumPocLtCurr << std::endl;
@@ -1119,7 +1121,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
             pCurrFrameDecParams->decodeFrameInfo.referenceSlotCount = 0;
         }
 
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
         {
             for (int32_t i = 0; i < H26X_MAX_DPB_SLOTS; i++)
             {
@@ -1203,7 +1205,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         pStd->pGlobalMotion = &p->globalMotion;
         pStd->pFilmGrain    = &p->filmGrain;
 
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
         {
             const char *frameTypeStr = getdVideoAV1FrameTypeName(p->std_info.frame_type);
             printf(";;;; ======= AV1 begin frame %d (%dx%d) (frame type: %s) (show frame? %s) =======\n",
@@ -1273,7 +1275,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
                 //hdr.delta_frame_id_minus_1[dpbSlot] = pin->delta_frame_id_minus_1[pin->ref_frame_idx[i]];
             }
 
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
             {
                 printf("%d referenceNameSlotIndex: ", m_nCurrentPictureID);
                 for (int i = 0; i < STD_VIDEO_AV1_REFS_PER_FRAME; i++)
@@ -1321,7 +1323,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
                 }
             }
 
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
             {
                 printf(";;; pReferenceSlots (%d): ", referenceIndex);
                 for (size_t i = 0; i < referenceIndex; i++)
@@ -1359,7 +1361,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
             setupReferenceSlot.slotIndex = dpbSlot;
             DE_ASSERT(!pd->ref_pic_flag || (setupReferenceSlot.slotIndex >= 0));
 
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
             {
                 printf("SlotsInUse: ");
                 uint32_t slotsInUse = m_dpb.getSlotInUseMask();
@@ -1423,7 +1425,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
             pCurrFrameDecParams->decodeFrameInfo.referenceSlotCount = 0;
         }
 
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
         {
             printf(";;; tiling: %d tiles %d cols %d rows\n", p->khr_info.tileCount, p->tileInfo.TileCols,
                    p->tileInfo.TileRows);
@@ -1479,7 +1481,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         pStd->pLoopFilter   = &p->stdLoopFilter;
         pStd->pColorConfig  = &p->stdColorConfig;
 
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
         {
             const char *frameTypeStr = getdVideoVP9FrameTypeName(p->stdPictureInfo.frame_type);
             printf(";;;; ======= VP9 begin frame %d (%dx%d) (frame type: %s show_frame=%d) =======\n",
@@ -1545,7 +1547,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
                 activeReferences.insert(dpbSlot);
             }
 
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
             {
                 printf("%d referenceNameSlotIndex: ", m_nCurrentPictureID);
                 for (int i = 0; i < VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR; i++)
@@ -1607,7 +1609,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
 
             DE_ASSERT(!pd->ref_pic_flag || (dpbSlot >= 0));
 
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
             {
                 printf("SlotsInUse: ");
                 uint32_t slotsInUse = m_dpb.getSlotInUseMask();
@@ -1862,7 +1864,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
             cachedParameters->imageBarriers.push_back(dpbBarrier);
         }
 
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
         {
             for (int32_t resId = 0; resId < pPicParams->numGopReferenceSlots; resId++)
             {
@@ -2164,7 +2166,7 @@ void VideoBaseDecoder::SubmitQueue(de::MovePtr<CachedDecodeParameters> &cachedPa
     VK_CHECK(vk.queueSubmit(m_deviceContext->decodeQueue, 1, &submitInfo,
                             cachedParameters->frameSynchronizationInfo.frameCompleteFence));
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         std::cout << ";;; submit frame:"
                   << " PicIdx=" << cachedParameters->pictureParams.currPicIdx
@@ -2188,7 +2190,7 @@ void VideoBaseDecoder::QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &c
                                              cachedParameters->frameSynchronizationInfo.startQueryId, 1,
                                              sizeof(decodeStatus), &decodeStatus, sizeof(decodeStatus),
                                              VK_QUERY_RESULT_WITH_STATUS_BIT_KHR | VK_QUERY_RESULT_WAIT_BIT);
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         std::cout << ";;; QueryDecodeResults:"
                   << " PicIdx=" << cachedParameters->pictureParams.currPicIdx << " status=" << decodeStatus
@@ -2203,7 +2205,7 @@ void VideoBaseDecoder::QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &c
 
 void VideoBaseDecoder::decodeFramesOutOfOrder()
 {
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         tcu::print(";;; Begin out of order decoding\n");
     }
@@ -2219,7 +2221,7 @@ void VideoBaseDecoder::decodeFramesOutOfOrder()
     }
     DE_ASSERT(m_cachedDecodeParams.size() > 1);
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         tcu::print(";;; record order: ");
         for (int recordOrderIdx : ordering)
@@ -2269,7 +2271,7 @@ bool VideoBaseDecoder::DisplayPicture(VkPicIf *pNvidiaVulkanPicture, int64_t /*l
     DE_ASSERT(picIdx != -1);
     DE_ASSERT(m_videoFrameBuffer != nullptr);
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         std::cout << ";;; DisplayPicture: " << picIdx << std::endl;
     }
@@ -2327,7 +2329,7 @@ VkDeviceSize VideoBaseDecoder::GetBitstreamBuffer(VkDeviceSize newSize, VkDevice
     newBitstreamBuffer->MemsetData(0x0, bytesToCopy, newSize - bytesToCopy);
 
     bitstreamBuffer = newBitstreamBuffer;
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         std::cout << "Allocated bitstream buffer with size " << newSize << " B, " << newSize / 1024 << " KB, "
                   << newSize / 1024 / 1024 << " MB" << std::endl;
@@ -2402,7 +2404,7 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
     DE_ASSERT(numUsedRef <= m_maxNumDpbSlots);
     DE_ASSERT(numUsedRef <= num_ref_frames);
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         std::cout << " =>>> ********************* picIdx: " << (int32_t)GetPicIdx(pd->pCurrPic)
                   << " *************************" << std::endl;
@@ -2571,12 +2573,12 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
             }
             DE_ASSERT((dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots));
             refOnlyDpbIn[dpbIdx].setH264PictureData(pDpbRefList, pReferenceSlots, dpbIdx, dpbSlot,
-                                                    pd->progressive_frame);
+                                                    pd->progressive_frame, getVideoLogPrintEnable());
             pGopReferenceImagesIndexes[dpbIdx] = picIdx;
         }
     }
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         uint32_t slotInUseMask   = m_dpb.getSlotInUseMask();
         uint32_t slotsInUseCount = 0;
@@ -2640,7 +2642,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
     memset(&refOnlyDpbIn, 0, m_maxNumDpbSlots * sizeof(refOnlyDpbIn[0]));
     uint32_t refDpbUsedAndValidMask = 0;
     uint32_t numUsedRef             = 0;
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
         std::cout << "Ref frames data: " << std::endl;
     for (int32_t inIdx = 0; inIdx < H26X_MAX_DPB_SLOTS; inIdx++)
     {
@@ -2664,7 +2666,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
         pGopReferenceImagesIndexes[inIdx] = -1;
     }
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
         std::cout << "Total Ref frames: " << numUsedRef << std::endl;
 
     DE_ASSERT(numUsedRef <= m_maxNumDpbSlots);
@@ -2756,11 +2758,12 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
             dpbSlot = refOnlyDpbIn[dpbIdx].dpbSlot;
         }
         DE_ASSERT((dpbSlot >= 0) && (dpbSlot < H26X_MAX_DPB_SLOTS));
-        refOnlyDpbIn[dpbIdx].setH265PictureData(pDpbSlotInfo, pReferenceSlots, dpbIdx, dpbSlot);
+        refOnlyDpbIn[dpbIdx].setH265PictureData(pDpbSlotInfo, pReferenceSlots, dpbIdx, dpbSlot,
+                                                getVideoLogPrintEnable());
         pGopReferenceImagesIndexes[dpbIdx] = GetPicIdx(refOnlyDpbIn[dpbIdx].m_picBuff);
     }
 
-    if (videoLoggingEnabled())
+    if (getVideoLogPrintEnable())
     {
         std::cout << "frmListToDpb:" << std::endl;
         for (int8_t dpbResIdx = 0; dpbResIdx < H26X_MAX_DPB_SLOTS; dpbResIdx++)
@@ -2785,7 +2788,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
         uint8_t idx = (uint8_t)pin->RefPicSetStCurrBefore[i];
         if (idx < H26X_MAX_DPB_SLOTS)
         {
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
                 std::cout << "\trefPicSetStCurrBefore[" << i << "] is " << (int32_t)idx << " -> "
                           << (int32_t)frmListToDpb[idx] << std::endl;
             pStdPictureInfo->RefPicSetStCurrBefore[numPocStCurrBefore++] = frmListToDpb[idx] & 0xf;
@@ -2812,7 +2815,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
         uint8_t idx = (uint8_t)pin->RefPicSetStCurrAfter[i];
         if (idx < H26X_MAX_DPB_SLOTS)
         {
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
                 std::cout << "\trefPicSetStCurrAfter[" << i << "] is " << (int32_t)idx << " -> "
                           << (int32_t)frmListToDpb[idx] << std::endl;
             pStdPictureInfo->RefPicSetStCurrAfter[numPocStCurrAfter++] = frmListToDpb[idx] & 0xf;
@@ -2837,7 +2840,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
         uint8_t idx = (uint8_t)pin->RefPicSetLtCurr[i];
         if (idx < H26X_MAX_DPB_SLOTS)
         {
-            if (videoLoggingEnabled())
+            if (getVideoLogPrintEnable())
                 std::cout << "\trefPicSetLtCurr[" << i << "] is " << (int32_t)idx << " -> "
                           << (int32_t)frmListToDpb[idx] << std::endl;
             pStdPictureInfo->RefPicSetLtCurr[numPocLtCurr++] = frmListToDpb[idx] & 0xf;
@@ -2850,7 +2853,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
 
     for (int32_t i = 0; i < 8; i++)
     {
-        if (videoLoggingEnabled())
+        if (getVideoLogPrintEnable())
             std::cout << "\tlist indx " << i << ": "
                       << " refPicSetStCurrBefore: " << (int32_t)pStdPictureInfo->RefPicSetStCurrBefore[i]
                       << " refPicSetStCurrAfter: " << (int32_t)pStdPictureInfo->RefPicSetStCurrAfter[i]

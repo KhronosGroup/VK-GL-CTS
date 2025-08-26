@@ -1029,6 +1029,18 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)
     default: ''
 
+  --deqp-vk-video-log-print=[enable|disable]
+    Print log messages of vulkan video tests to stdout
+    default: 'disable'
+
+  --deqp-vk-video-decode-dump=[disable|single|separate]
+    Dump mode for output of vulkan video decoding tests
+    default: 'disable'
+
+  --deqp-vk-video-encode-dump=[disable|yuv|bitstream|all]
+    Dump mode for output of vulkan video encoding tests
+    default: 'disable'
+
 Full list of parameters for the `vksc-server` application:
 
   --port

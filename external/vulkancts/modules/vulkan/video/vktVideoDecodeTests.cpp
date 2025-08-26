@@ -55,22 +55,12 @@ namespace vkt
 namespace video
 {
 #ifdef DE_BUILD_VIDEO
-// Set this to 1 to have the decoded YCbCr frames written to the
-// filesystem in the YV12 format.
-// Check the relevant sections to change the file name and so on...
-static constexpr bool debug_WriteOutFramesToSingleFile = false;
-// Default behaviour is to write all decoded frames to one
-// file. Setting this to 1 will output each frame to its own file.
-static constexpr bool debug_WriteOutFramesToSeparateFiles = false;
 // If true, the dumped frames will contain the results of decoding
 // with filmgrain as expected. When false, `apply_grain` is forced to
 // zero, resulting in dumped frames having no post-processing
 // applied. This is useful for debugging the filmgrain process. Only
 // AV1 has been considered so far.
-static constexpr bool debug_WriteOutFilmGrain = true;
-
-static_assert(!(debug_WriteOutFramesToSingleFile && debug_WriteOutFramesToSeparateFiles));
-
+static constexpr bool debug_WriteOutFilmGrain    = true;
 static constexpr double kFilmgrainPSNRLowerBound = 28.0;
 static constexpr double kFilmgrainPSNRUpperBound = 34.0;
 
@@ -1011,7 +1001,7 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
     const VkImageSubresourceRange imageSubresourceRange =
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, frame.imageLayerIndex, 1);
 
-    if (videoLoggingEnabled())
+    if (devctx.context->getTestContext().getCommandLine().getVideoLogPrint())
     {
         tcu::print(";;; getDecodedImage layer=%d arrayLayers=%d\n", frame.imageLayerIndex,
                    frame.outputImageView->GetImageResource()->GetImageCreateInfo().arrayLayers);
@@ -1389,8 +1379,9 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 
     bool hasSeparateOutputImages     = !processor->m_decoder->dpbAndOutputCoincide() || filmGrainPresent;
     bool intraOnlyDecodingNoSetupRef = m_testDefinition->hasOption(DecoderOption::IntraOnlyDecodingNoSetupRef);
+    tcu::VideoDecodeOutput dumpMode  = m_context.getTestContext().getCommandLine().getVideoDumpDecodeOutput();
 
-    std::FILE *debug_OutputFileHandle;
+    std::FILE *debug_OutputFileHandle = nullptr;
 
     auto openTemporaryFile = [](const std::string &basename, std::FILE **handle)
     {
@@ -1399,7 +1390,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
         DE_ASSERT(*handle != nullptr);
     };
 
-    if (debug_WriteOutFramesToSingleFile)
+    if (dumpMode == tcu::DUMP_DEC_TO_SINGLE)
     {
         openTemporaryFile("output.yuv", &debug_OutputFileHandle);
     }
@@ -1419,7 +1410,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
                                 "invalid bitstream");
         }
 
-        if (debug_WriteOutFramesToSeparateFiles)
+        if (dumpMode == tcu::DUMP_DEC_TO_SEPARATE_FILES)
         {
             std::stringstream oss;
             oss << "output" << frame.displayOrder << "_" << frame.displayWidth << "_" << frame.displayHeight << ".yuv";
@@ -1451,7 +1442,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
                 getDecodedImage(m_deviceContext, downloadedFrameWithoutFilmGrainLayout, frameWithoutFilmgGrain);
         }
 
-        if (debug_WriteOutFramesToSingleFile || debug_WriteOutFramesToSeparateFiles)
+        if (dumpMode == tcu::DUMP_DEC_TO_SINGLE || dumpMode == tcu::DUMP_DEC_TO_SEPARATE_FILES)
         {
             DownloadedFrame &frameToWriteOut =
                 debug_WriteOutFilmGrain ? downloadedFrame : downloadedFrameWithoutFilmGrain;
@@ -1461,7 +1452,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
             fflush(debug_OutputFileHandle);
         }
 
-        if (debug_WriteOutFramesToSeparateFiles)
+        if (dumpMode == tcu::DUMP_DEC_TO_SEPARATE_FILES)
         {
             std::fclose(debug_OutputFileHandle);
         }
@@ -1504,7 +1495,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
         }
     }
 
-    if (debug_WriteOutFramesToSingleFile)
+    if (dumpMode == tcu::DUMP_DEC_TO_SINGLE)
     {
         fclose(debug_OutputFileHandle);
     }
@@ -1620,7 +1611,7 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
                                 "Expected more frames from the bitstream. Most likely an internal CTS bug, or maybe an "
                                 "invalid bitstream");
 
-            if (videoLoggingEnabled())
+            if (m_context.getTestContext().getCommandLine().getVideoLogPrint())
             {
                 std::cout << "Frame decoded: picIdx" << static_cast<uint32_t>(frame.pictureIndex) << " "
                           << frame.displayWidth << "x" << frame.displayHeight << " "

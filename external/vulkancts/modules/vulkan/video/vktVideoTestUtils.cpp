@@ -50,10 +50,6 @@
 #include "video_generator.h"
 #endif
 
-#ifndef STREAM_DUMP_DEBUG
-#define STREAM_DUMP_DEBUG 0
-#endif
-
 using namespace vk;
 using namespace std;
 
@@ -64,18 +60,6 @@ namespace video
 
 using namespace vk;
 using namespace std;
-
-bool videoLoggingEnabled()
-{
-    static int debuggingEnabled = -1; // -1 means it hasn't been checked yet
-    if (debuggingEnabled == -1)
-    {
-        const char *s    = getenv("CTS_DEBUG_VIDEO");
-        debuggingEnabled = s != nullptr;
-    }
-
-    return debuggingEnabled > 0;
-}
 
 void cmdPipelineImageMemoryBarrier2(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
                                     const VkImageMemoryBarrier2KHR *pImageMemoryBarriers,
@@ -380,6 +364,8 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
         tcu::TestStatus::fail("Unable to validate the encoded content, the decode operation is not supported.");
     };
 
+    tcu::VideoEncodeOutput dumpOutput = m_context.getTestContext().getCommandLine().getVideoDumpEncodeOutput();
+
     VideoDevice::VideoDeviceFlags videoDeviceFlags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
     const VkPhysicalDevice physicalDevice          = m_context.getPhysicalDevice();
     const VkDevice videoDevice =
@@ -445,12 +431,13 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
                 vkt::ycbcr::YCbCrContent<uint8_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
             psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
                                           expectedOutputExtent.height);
-#if STREAM_DUMP_DEBUG
-            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
-            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint8_t>::save(*inputFrame, refFileName);
-#endif
+            if (dumpOutput & tcu::DUMP_ENC_YUV)
+            {
+                const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
+                const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint8_t>::save(*inputFrame, refFileName);
+            }
         }
         else
         {
@@ -460,16 +447,17 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
                 vkt::ycbcr::YCbCrContent<uint16_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
             psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
                                           expectedOutputExtent.height);
-#if STREAM_DUMP_DEBUG
-            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint16_t>::save(*out, outputFileName);
-            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint16_t>::save(*inputFrame, refFileName);
-#endif
+            if (dumpOutput & tcu::DUMP_ENC_YUV)
+            {
+                const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint16_t>::save(*out, outputFileName);
+                const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint16_t>::save(*inputFrame, refFileName);
+            }
         }
-#if STREAM_DUMP_DEBUG
-        cout << "Current PSNR: " << psnr << endl;
-#endif
+
+        if (m_context.getTestContext().getCommandLine().getVideoLogPrint())
+            cout << "Current PSNR: " << psnr << endl;
 
         string failMessage;
 
@@ -2580,6 +2568,8 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
     auto &vkif = devCtx.context->getInstanceInterface();
     DE_ASSERT(pVideoCapabilities->sType == VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR);
 
+    bool videoLogPrintEnabled = devCtx.context->getTestContext().getCommandLine().getVideoLogPrint();
+
     VkVideoDecodeCapabilitiesKHR *pVideoDecodeCapabilities{};
     VkVideoDecodeH264CapabilitiesKHR *pH264DecodeCapabilities{};
     VkVideoDecodeH265CapabilitiesKHR *pH265DecodeCapabilities{};
@@ -2652,7 +2642,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
         return result;
     }
 
-    if (videoLoggingEnabled())
+    if (videoLogPrintEnabled)
     {
         if (pVideoCapabilities->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR)
             tcu::print("\tseparate reference images\n");
@@ -2680,7 +2670,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
 
     if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevelIdc: " << pH264DecodeCapabilities->maxLevelIdc << std::endl;
@@ -2701,7 +2691,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
     }
     else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevelIdc: " << pH265DecodeCapabilities->maxLevelIdc << std::endl;
@@ -2717,7 +2707,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
     }
     else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevel: " << pAV1DecodeCapabilities->maxLevel << std::endl;
@@ -2733,7 +2723,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
     }
     else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevel: " << pVP9DecodeCapabilities->maxLevel << std::endl;

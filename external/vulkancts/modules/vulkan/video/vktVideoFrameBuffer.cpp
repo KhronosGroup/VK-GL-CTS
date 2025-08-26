@@ -404,13 +404,15 @@ public:
     {
         DE_ASSERT((uint32_t)picId < m_perFrameDecodeImageSet.size());
 
+        bool videoLogPrintEnabled = m_vkDevCtx.context->getTestContext().getCommandLine().getVideoLogPrint();
+
         m_perFrameDecodeImageSet[picId].m_displayOrder = m_frameNumInDisplayOrder++;
         m_perFrameDecodeImageSet[picId].m_timestamp    = pDispInfo->timestamp;
         m_perFrameDecodeImageSet[picId].AddRef();
 
         m_displayFrames.push((uint8_t)picId);
 
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << std::dec << ";;; framebuffer: queue picture for display: " << (uint32_t)picId << " "
                       << m_perFrameDecodeImageSet[picId].decodeSuperResWidth << " x "
@@ -579,6 +581,8 @@ int32_t VkVideoFrameBuffer::QueuePictureForDecode(
 {
     DE_ASSERT((uint32_t)picId < m_perFrameDecodeImageSet.size());
 
+    bool videoLogPrintEnabled = m_vkDevCtx.context->getTestContext().getCommandLine().getVideoLogPrint();
+
     m_perFrameDecodeImageSet[picId].m_picDispInfo = *pDecodePictureInfo;
     m_perFrameDecodeImageSet[picId].m_decodeOrder = m_frameNumInDecodeOrder++;
     m_perFrameDecodeImageSet[picId].stdPps        = const_cast<VkVideoRefCountBase *>(pReferencedObjectsInfo->pStdPps);
@@ -587,7 +591,7 @@ int32_t VkVideoFrameBuffer::QueuePictureForDecode(
     m_perFrameDecodeImageSet[picId].bitstreamData =
         const_cast<VkVideoRefCountBase *>(pReferencedObjectsInfo->pBitstreamData);
 
-    if (videoLoggingEnabled())
+    if (videoLogPrintEnabled)
     {
         static int counter = 0;
         tcu::print(";;; %d queue decode: %d: decoderOrder=%d displayOrder=%d completeFence=%d consumerDoneFence=%d "

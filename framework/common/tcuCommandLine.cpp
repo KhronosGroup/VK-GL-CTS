@@ -145,6 +145,9 @@ DE_DECLARE_COMMAND_LINE_OPT(VkLibraryPath, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ApplicationParametersInputFile, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(QuietStdout, bool);
 DE_DECLARE_COMMAND_LINE_OPT(ComputeOnly, bool);
+DE_DECLARE_COMMAND_LINE_OPT(VideoLogPrint, bool);
+DE_DECLARE_COMMAND_LINE_OPT(VideoDecodeOutputDump, VideoDecodeOutput);
+DE_DECLARE_COMMAND_LINE_OPT(VideoEncodeOutputDump, VideoEncodeOutput);
 
 static void parseIntList(const char *src, std::vector<int> *dst)
 {
@@ -186,6 +189,19 @@ void registerOptions(de::cmdline::Parser &parser)
         {"any", tcu::RUNNERTYPE_ANY},
         {"none", tcu::RUNNERTYPE_NONE},
         {"amber", tcu::RUNNERTYPE_AMBER},
+    };
+
+    static const NamedValue<VideoDecodeOutput> s_videoDecodeDump[] = {
+        {"disable", DUMP_DEC_DISABLE},
+        {"single", DUMP_DEC_TO_SINGLE},
+        {"separate", DUMP_DEC_TO_SEPARATE_FILES},
+    };
+
+    static const NamedValue<VideoEncodeOutput> s_videoEncodeDump[] = {
+        {"disable", DUMP_ENC_DISABLE},
+        {"yuv", DUMP_ENC_YUV},
+        {"bitstream", DUMP_ENC_BITSTREAM},
+        {"all", DUMP_ENC_ALL},
     };
 
     parser
@@ -326,7 +342,14 @@ void registerOptions(de::cmdline::Parser &parser)
                                                   "File that provides a default set of application parameters")
         << Option<ComputeOnly>(nullptr, "deqp-compute-only",
                                "Perform tests for devices implementing compute-only functionality", s_enableNames,
-                               "disable");
+                               "disable")
+        << Option<VideoLogPrint>(nullptr, "deqp-vk-video-log-print", "Print log messages of vulkan video tests",
+                                 s_enableNames, "disable")
+        << Option<VideoDecodeOutputDump>(nullptr, "deqp-vk-video-decode-dump",
+                                         "Dump the output of vulkan video decoding tests", s_videoDecodeDump, "disable")
+        << Option<VideoEncodeOutputDump>(nullptr, "deqp-vk-video-encode-dump",
+                                         "Dump the output of vulkan video encoding tests", s_videoEncodeDump,
+                                         "disable");
 }
 
 void registerLegacyOptions(de::cmdline::Parser &parser)
@@ -1464,6 +1487,21 @@ const char *CommandLine::getPipelineCompilerFilePrefix(void) const
         return m_cmdLine.getOption<opt::PipelineCompilerFilePrefix>().c_str();
     else
         return nullptr;
+}
+
+bool CommandLine::getVideoLogPrint(void) const
+{
+    return m_cmdLine.getOption<opt::VideoLogPrint>();
+}
+
+VideoDecodeOutput CommandLine::getVideoDumpDecodeOutput(void) const
+{
+    return m_cmdLine.getOption<opt::VideoDecodeOutputDump>();
+}
+
+VideoEncodeOutput CommandLine::getVideoDumpEncodeOutput(void) const
+{
+    return m_cmdLine.getOption<opt::VideoEncodeOutputDump>();
 }
 
 const char *CommandLine::getVkLibraryPath(void) const

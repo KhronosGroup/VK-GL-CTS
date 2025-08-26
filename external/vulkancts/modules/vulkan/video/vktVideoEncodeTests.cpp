@@ -23,6 +23,7 @@
  */
 /*--------------------------------------------------------------------*/
 
+#include "tcuCommandLine.hpp"
 #include "vktVideoTestUtils.hpp"
 #include "vktVideoEncodeTests.hpp"
 #include "vktVideoTestUtils.hpp"
@@ -65,10 +66,6 @@
 
 #ifndef VK_MAX_NUM_IMAGE_PLANES_KHR
 #define VK_MAX_NUM_IMAGE_PLANES_KHR 4
-#endif
-
-#ifndef STREAM_DUMP_DEBUG
-#define STREAM_DUMP_DEBUG 0
 #endif
 
 namespace vkt
@@ -1706,6 +1703,9 @@ private:
     // Verify Encoded Bitstream
     tcu::TestStatus verifyEncodedBitstream(const BufferWithMemory &encodeBuffer, VkDeviceSize encodeBufferSize);
 
+    // Dump output of encoding tests.
+    tcu::VideoEncodeOutput m_dumpOutput;
+
     // Intra refresh capabilities and parameters
     bool m_useIntraRefresh;
     VkVideoEncodeIntraRefreshModeFlagBitsKHR m_intraRefreshMode;
@@ -1803,7 +1803,6 @@ bool VideoEncodeTestInstance::checkQueryResultSupport(void)
     return false;
 }
 
-#if STREAM_DUMP_DEBUG
 bool saveBufferAsFile(const BufferWithMemory &buffer, VkDeviceSize bufferSize, const string &outputFileName)
 {
     auto &bufferAlloc  = buffer.getAllocation();
@@ -1821,8 +1820,6 @@ bool saveBufferAsFile(const BufferWithMemory &buffer, VkDeviceSize bufferSize, c
 
     return true;
 }
-
-#endif
 
 void VideoEncodeTestInstance::initializeTestParameters()
 {
@@ -1883,6 +1880,9 @@ void VideoEncodeTestInstance::initializeTestParameters()
 
     // Set up quality level
     m_qualityLevel = 0;
+
+    // Dump mode for debugging
+    m_dumpOutput = m_context.getTestContext().getCommandLine().getVideoDumpEncodeOutput();
 
     // Initialize intra refresh parameters
     if (m_testDefinition->hasOption(Option::IntraRefreshPicturePartition))
@@ -2574,10 +2574,11 @@ void VideoEncodeTestInstance::loadVideoFrames(void)
         de::MovePtr<std::vector<uint8_t>> in =
             vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(multiPlaneImageData.get());
 
-#if STREAM_DUMP_DEBUG
-        std::string filename = "in_" + std::to_string(gopIdx) + ".yuv";
-        vkt::ycbcr::YCbCrContent<uint8_t>::save(*in, filename);
-#endif
+        if (m_dumpOutput & tcu::DUMP_ENC_YUV)
+        {
+            std::string filename = "in_" + std::to_string(i) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint8_t>::save(*in, filename);
+        }
 
         vkt::ycbcr::uploadImage(*m_videoDeviceDriver, m_videoEncodeDevice, m_transferQueueFamilyIndex, getAllocator(),
                                 *(*m_imageVector[i]), *multiPlaneImageData, 0, VK_IMAGE_LAYOUT_GENERAL);
@@ -3151,15 +3152,20 @@ void VideoEncodeTestInstance::handleSwapOrderSubmission(Move<VkQueryPool> &encod
 tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWithMemory &encodeBuffer,
                                                                 VkDeviceSize encodeBufferSize)
 {
-#if STREAM_DUMP_DEBUG
-    if (m_testDefinition->getProfile()->IsH264())
-        saveBufferAsFile(encodeBuffer, encodeBufferSize, "out.h264");
-    else if (m_testDefinition->getProfile()->IsH265())
-        saveBufferAsFile(encodeBuffer, encodeBufferSize, "out.h265");
-#endif
+    if (m_dumpOutput & tcu::DUMP_ENC_BITSTREAM)
+    {
+        auto outputFileName = string("out_") + getTestName(m_testDefinition->getTestType());
 
-        // Vulkan video is not supported on android platform
-        // all external libraries, helper functions and test instances has been excluded
+        if (m_testDefinition->getProfile()->IsH264())
+            outputFileName += ".h264";
+        else if (m_testDefinition->getProfile()->IsH265())
+            outputFileName += ".h265";
+
+        saveBufferAsFile(encodeBuffer, encodeBufferSize, outputFileName);
+    }
+
+    // Vulkan video is not supported on android platform
+    // all external libraries, helper functions and test instances has been excluded
 #ifdef DE_BUILD_VIDEO
     DeviceContext deviceContext(&m_context, &m_videoDevice, m_physicalDevice, m_videoEncodeDevice, m_decodeQueue,
                                 m_encodeQueue, m_transferQueue);
@@ -3227,10 +3233,12 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
         de::MovePtr<std::vector<uint8_t>> out =
             vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
 
-#if STREAM_DUMP_DEBUG
-        const string outputFileName = "out_" + std::to_string(NALIdx) + ".yuv";
-        vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
-#endif
+        if (m_dumpOutput & tcu::DUMP_ENC_YUV)
+        {
+            const string outputFileName = "out_" + std::to_string(NALIdx) + ".yuv";
+            vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
+        }
+
         // Quantization maps verification
         if (m_useDeltaMap || m_useEmphasisMap)
         {

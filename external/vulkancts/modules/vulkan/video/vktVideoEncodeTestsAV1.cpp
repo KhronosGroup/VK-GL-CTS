@@ -41,10 +41,6 @@
 
 #include "ycbcr/vktYCbCrUtil.hpp"
 
-#ifndef STREAM_DUMP_DEBUG
-#define STREAM_DUMP_DEBUG 0
-#endif
-
 namespace vkt
 {
 namespace video
@@ -418,7 +414,9 @@ VkVideoComponentBitDepthFlagBitsKHR getBitDepth(enum BitDepth bitDepth)
 
 tcu::TestStatus VideoTestInstance::iterate(void)
 {
-    tcu::TestStatus status = tcu::TestStatus::fail("Unable to encode any frames");
+    tcu::TestStatus status            = tcu::TestStatus::fail("Unable to encode any frames");
+    tcu::VideoEncodeOutput dumpOutput = m_context.getTestContext().getCommandLine().getVideoDumpEncodeOutput();
+
 #ifdef DE_BUILD_VIDEO
     int64_t frameNumEncoded = 0;
 
@@ -455,9 +453,9 @@ tcu::TestStatus VideoTestInstance::iterate(void)
     DE_UNREF(m_expectedOutputExtent);
     status = tcu::TestStatus::fail("Vulkan video is not supported on this platform");
 #endif
-#if STREAM_DUMP_DEBUG == 0
-    removeClip(m_outputClipFilename);
-#endif
+
+    if (!(dumpOutput & tcu::DUMP_ENC_BITSTREAM))
+        removeClip(m_outputClipFilename);
 
     return status;
 }
@@ -510,12 +508,17 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
     {
         args.push_back(param.c_str());
     }
-#if STREAM_DUMP_DEBUG
-    std::cerr << "TEST ARGS: ";
-    for (auto &arg : args)
-        std::cerr << arg << " ";
-    std::cerr << endl;
-#endif
+
+    if (m_testCtx.getCommandLine().getVideoLogPrint())
+    {
+        args.push_back("--verbose");
+
+        std::cerr << "TEST ARGS: ";
+        for (auto &arg : args)
+            std::cerr << arg << " ";
+        std::cerr << endl;
+    }
+
     if (!checkClipFileExists(inputClipName))
     {
 #ifdef DE_BUILD_VIDEO
