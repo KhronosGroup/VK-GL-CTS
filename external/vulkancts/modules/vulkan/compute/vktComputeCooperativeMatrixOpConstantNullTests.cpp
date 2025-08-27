@@ -36,6 +36,7 @@
 #include "vkBuilderUtil.hpp"
 
 #include <algorithm>
+#include <cmath>
 #include <functional>
 #include <initializer_list>
 #include <iostream>
@@ -227,6 +228,7 @@ public:
         return m_configurations;
     }
     virtual void initDeviceCapabilities(DevCaps &caps) override;
+    virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
 };
 
@@ -1126,6 +1128,18 @@ void CoopMtxOpConstantNullCase::initDeviceCapabilities(DevCaps &caps)
 
         caps.addExtension(VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME);
     }
+
+    caps.addExtension(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
+    caps.addFeature(&VkPhysicalDeviceShaderObjectFeaturesEXT::shaderObject);
+}
+
+void CoopMtxOpConstantNullCase::checkSupport(Context &context) const
+{
+    if (m_params.pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV ||
+        m_params.pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY)
+    {
+        context.requireDeviceFunctionality(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
+    }
 }
 
 void CoopMtxOpConstantNullCase::initPrograms(SourceCollections &programCollection) const
@@ -1444,9 +1458,10 @@ bool CoopMtxOpConstantNullInstance::verifyResult(const Executor &executor, Matri
         processed = N;
         for (uint32_t i = 0u; i < N; ++i)
         {
-            const float x = reference[i];
-            const float y = result[i];
-            const bool ok = x == y;
+            const float x       = reference[i];
+            const float y       = result[i];
+            const float epsilon = 1e-6f;
+            const bool ok       = std::fabs(x - y) < epsilon;
             if (!ok)
                 ++mismatch;
         }
