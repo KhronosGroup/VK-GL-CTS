@@ -1,5 +1,5 @@
-#ifndef _GL4CTEXTUREFILTERMINMAXTESTS_HPP
-#define _GL4CTEXTUREFILTERMINMAXTESTS_HPP
+#ifndef _GL3CTEXTUREFILTERMINMAXTESTS_HPP
+#define _GL3CTEXTUREFILTERMINMAXTESTS_HPP
 /*-------------------------------------------------------------------------
  * OpenGL Conformance Test Suite
  * -----------------------------
@@ -25,7 +25,7 @@
 
 /**
  */ /*!
- * \file  gl4cTextureFilterMinmaxTests.hpp
+ * \file  gl3cTextureFilterMinmaxTests.hpp
  * \brief Conformance tests for the ARB_texture_filter_minmax functionality.
  */ /*-------------------------------------------------------------------*/
 
@@ -39,7 +39,7 @@
 #include <string>
 #include <vector>
 
-namespace gl4cts
+namespace gl3cts
 {
 class TextureFilterMinmaxUtils
 {
@@ -338,6 +338,6 @@ private:
     TextureFilterMinmax &operator=(const TextureFilterMinmax &other);
 };
 
-} // namespace gl4cts
+} // namespace gl3cts
 
-#endif // _GL4CTEXTUREFILTERMINMAXTESTS_HPP
+#endif // _GL3CTEXTUREFILTERMINMAXTESTS_HPP

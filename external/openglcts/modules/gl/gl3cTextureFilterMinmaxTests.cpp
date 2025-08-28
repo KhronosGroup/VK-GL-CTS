@@ -23,11 +23,11 @@
 
 /**
  */ /*!
- * \file  gl4cTextureFilterMinmaxTests.cpp
+ * \file  gl3cTextureFilterMinmaxTests.cpp
  * \brief Conformance tests for the ARB_texture_filter_minmax functionality.
  */ /*-------------------------------------------------------------------*/
 
-#include "gl4cTextureFilterMinmaxTests.hpp"
+#include "gl3cTextureFilterMinmaxTests.hpp"
 #include "gluContextInfo.hpp"
 #include "gluDefs.hpp"
 #include "gluDrawUtil.hpp"
@@ -46,7 +46,7 @@
 #include <map>
 #include <vector>
 
-namespace gl4cts
+namespace gl3cts
 {
 
 static const int TEXTURE_FILTER_MINMAX_SIZE               = 32;
@@ -101,7 +101,7 @@ TextureFilterMinmaxUtils::SupportedTextureType::SupportedTextureType(glw::GLenum
                                                                      const std::string &shaderSamplerType)
     : m_type(type)
 {
-    m_vertexShader = "#version 450 core\n"
+    m_vertexShader = "#version 330 core\n"
                      "in highp vec2 position;\n"
                      "in <texcoord_type> inTexcoord;\n"
                      "out <texcoord_type> texcoord;\n"
@@ -111,7 +111,7 @@ TextureFilterMinmaxUtils::SupportedTextureType::SupportedTextureType(glw::GLenum
                      "    gl_Position = vec4(position, 0.0, 1.0);\n"
                      "}\n";
 
-    m_fragmentShader = "#version 450 core\n"
+    m_fragmentShader = "#version 330 core\n"
                        "uniform <sampler_type> sampler;\n"
                        "in <texcoord_type> texcoord;\n"
                        "out vec4 color;\n"
@@ -831,4 +831,4 @@ void TextureFilterMinmax::init()
     addChild(new TextureFilterMinmaxMipmapMinificationFilteringTestCase(m_context));
     addChild(new TextureFilterMinmaxSupportTestCase(m_context));
 }
-} // namespace gl4cts
+} // namespace gl3cts
