@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "description": "The whitelist includes cases where certain validation errors or warnings are permitted. The message outlines the validation error/warning that is allowed, while the description provides a justification for why these errors/warnings are deemed acceptable.",
+    "description": "The whitelist includes cases where certain validation errors or warnings are permitted. The message outlines the validation error/warning that is allowed, while the description provides a justification for why these errors/warnings are deemed acceptable",
     "whitelist": [
         {
             "groups": [
@@ -10,7 +10,7 @@
             "messages": [
                 "Undefined-Value-ShaderInputNotProduced-DynamicRendering"
             ],
-            "description": "Warning about attachments not being written in FS, however, this behavior is intentional."
+            "description": "Warning about attachments not being written in FS, however, this behavior is intentional"
         },
         {
             "groups": [
@@ -19,7 +19,7 @@
             "messages": [
                 "Undefined-Layer-Written"
             ],
-            "description": "Warning when writing to gl_Layer while FramebufferCreateInfo::layer is set to 1. In these cases, tests are designed to write exclusively to layer 0. However, VVL does not recognize this distinction and incorrectly assumes that gl_Layer should not be used when there's only a single layer."
+            "description": "Warning when writing to gl_Layer while FramebufferCreateInfo::layer is set to 1. In these cases, tests are designed to write exclusively to layer 0. However, VVL does not recognize this distinction and incorrectly assumes that gl_Layer should not be used when there's only a single layer"
         },
         {
             "groups": [
@@ -28,7 +28,7 @@
             "messages": [
                 "VUID-vkCmdDispatch-None-08114"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline, is declared in pipeline layout and not written to descriptor set. Producing this error is intentional."
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline, is declared in pipeline layout and not written to descriptor set. Producing this error is intentional"
         },
         {
             "groups": [
@@ -37,7 +37,7 @@
             "messages": [
                 "VUID-vkCmdDispatch-format-07753"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional."
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional"
         },
         {
             "groups": [
@@ -47,7 +47,7 @@
             "messages": [
                 "VUID-RuntimeSpirv-samples-08725"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional."
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional"
         },
         {
             "groups": [
@@ -56,7 +56,7 @@
             "messages": [
                 "VUID-vkCmdDispatch-None-08114"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline was destroyed before copying to destination set. Producing this error is intentional."
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline was destroyed before copying to destination set. Producing this error is intentional"
         },
         {
             "groups": [
@@ -65,7 +65,7 @@
             "messages": [
                 "Undefined-Value-StorageImage-FormatMismatch-ImageView"
             ],
-            "description": "Warning about mismatched format handling in storage images. This is intentional for testing purposes."
+            "description": "Warning about mismatched format handling in storage images. This is intentional for testing purposes"
         },
         {
             "groups": [
@@ -74,7 +74,7 @@
             "messages": [
                 "If multiviewMeshShader is VK_TRUE then multiview also needs to be VK_TRUE"
             ],
-            "description": "Warning about not enabled VkPhysicalDeviceMultiviewFeaturesKHR::multiview feature, however, this behavior is intentional."
+            "description": "Warning about not enabled VkPhysicalDeviceMultiviewFeaturesKHR::multiview feature, however, this behavior is intentional"
         },
         {
             "groups": [
@@ -83,7 +83,7 @@
             "messages": [
                 "vkCreateGraphicsPipelines(): pCreateInfos[0].pMultisampleState is NULL, but pipeline is being created with fragment shader that uses samples"
             ],
-            "description": "Warning about null at pMultisampleState  with pipeline that uses samples, however, this behavior is intentional."
+            "description": "Warning about null at pMultisampleState  with pipeline that uses samples, however, this behavior is intentional"
         },
         {
             "groups": [
@@ -92,7 +92,7 @@
             "messages": [
                 "VUID-VkGraphicsPipelineCreateInfo-renderpass-06631"
             ],
-            "description": "Warning about null pMultisampleState when alphaToOne feature is disabled but VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT is not dynamic, this behavior is intentional."
+            "description": "Warning about null pMultisampleState when alphaToOne feature is disabled but VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT is not dynamic, this behavior is intentional"
         },
         {
             "groups": [
@@ -101,7 +101,7 @@
             "messages": [
                 "VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853"
             ],
-            "description": "Warning about sample count mismatch between static pipeline (4 samples) and renderpass (1 sample) for 'to_one' sample transitions, however, this behavior is intentional."
+            "description": "Warning about sample count mismatch between static pipeline (4 samples) and renderpass (1 sample) for 'to_one' sample transitions, however, this behavior is intentional"
         },
         {
             "groups": [
@@ -132,7 +132,8 @@
         },
         {
             "groups": [
-                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.switch_from_descriptor_buffer_to_legacy"
+                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.switch_from_descriptor_buffer_to_legacy",
+                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.use_legacy_and_bind_descriptor_buffer"
             ],
             "messages": [
                 "VUID-vkCmdDispatch-None-08115"
@@ -141,12 +142,21 @@
         },
         {
             "groups": [
-                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.use_legacy_and_bind_descriptor_buffer"
+                "dEQP-VK.ycbcr.query.lod.*"
             ],
             "messages": [
-                "VUID-vkCmdDispatch-None-08115"
+                "VUID-RuntimeSpirv-None-10716"
             ],
-            "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
+            "description": "These tests query lod levels on ycbcr images with ycbcr conversion, which intentionally validates the rule of using nothing except image sample and sparse sample operations on them"
+        },
+        {
+            "groups": [
+                "dEQP-VK.dynamic_state.*.general_state.double_static_bind"
+            ],
+            "messages": [
+                "UNASSIGNED-vkCmdBindPipeline-Pipeline-Rebind"
+            ],
+            "description": "Test intentionally rebinds the same pipeline after setting dynamic state that is actually static in the pipeline"
         }
     ]
 }
