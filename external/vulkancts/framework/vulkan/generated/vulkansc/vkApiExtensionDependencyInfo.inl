@@ -890,6 +890,20 @@ bool check_VK_KHR_uniform_buffer_standard_layout(const tcu::UVec2& v, const ExtP
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_KHR_buffer_device_address(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	if (isCompatible(1, 2, v))
+		return true;
+
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_buffer_device_address"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_device_group),VK_VERSION_1_1
+	return ((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") && isSupported(vDEP, "VK_KHR_device_group")) || isCompatible(1, 1, v));
+}
+
 bool check_VK_EXT_line_rasterization(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -1322,6 +1336,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_fragment_shader_interlock",				&check_VK_EXT_fragment_shader_interlock),
 	std::make_pair("VK_EXT_ycbcr_image_arrays",					&check_VK_EXT_ycbcr_image_arrays),
 	std::make_pair("VK_KHR_uniform_buffer_standard_layout",		&check_VK_KHR_uniform_buffer_standard_layout),
+	std::make_pair("VK_KHR_buffer_device_address",					&check_VK_KHR_buffer_device_address),
 	std::make_pair("VK_EXT_line_rasterization",					&check_VK_EXT_line_rasterization),
 	std::make_pair("VK_EXT_shader_atomic_float",					&check_VK_EXT_shader_atomic_float),
 	std::make_pair("VK_EXT_index_type_uint8",						&check_VK_EXT_index_type_uint8),
@@ -1451,6 +1466,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_ycbcr_image_arrays"),
 	std::make_tuple(1, 0, "VK_KHR_uniform_buffer_standard_layout"),
 	std::make_tuple(1, 0, "VK_EXT_headless_surface"),
+	std::make_tuple(1, 0, "VK_KHR_buffer_device_address"),
 	std::make_tuple(1, 0, "VK_EXT_line_rasterization"),
 	std::make_tuple(1, 0, "VK_EXT_shader_atomic_float"),
 	std::make_tuple(1, 0, "VK_EXT_index_type_uint8"),

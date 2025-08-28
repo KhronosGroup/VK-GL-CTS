@@ -1283,6 +1283,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
 		return;
@@ -3371,6 +3375,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		}
 		return;
 	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
 	{
 		return;
@@ -4537,6 +4545,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_color_write_enable",
 	"VK_EXT_primitives_generated_query",
 	"VK_KHR_ray_tracing_maintenance1",
+	"VK_KHR_shader_untyped_pointers",
 	"VK_EXT_global_priority_query",
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",

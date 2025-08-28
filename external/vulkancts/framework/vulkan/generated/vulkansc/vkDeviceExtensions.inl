@@ -8,6 +8,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_16bit_storage",
 	"VK_KHR_8bit_storage",
 	"VK_KHR_bind_memory2",
+	"VK_KHR_buffer_device_address",
 	"VK_KHR_calibrated_timestamps",
 	"VK_KHR_copy_commands2",
 	"VK_KHR_create_renderpass2",

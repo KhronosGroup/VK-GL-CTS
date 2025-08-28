@@ -3737,13 +3737,9 @@ tcu::TestStatus FDMOffsetBaseInstance::iterate()
 
     // Transform to Vulkan offsets.
     std::vector<VkOffset2D> fdmVkOffsets;
-    std::vector<VkOffset2D> badFdmVkOffsets;
 
     std::transform(begin(fdmOffsets), end(fdmOffsets), std::back_inserter(fdmVkOffsets),
                    [](const tcu::IVec2 &fdmOffset) { return makeOffset2D(fdmOffset.x(), fdmOffset.y()); });
-
-    std::transform(begin(fdmVkOffsets), end(fdmVkOffsets), std::back_inserter(badFdmVkOffsets),
-                   [](const VkOffset2D &offset) { return makeOffset2D(-offset.x, -offset.y); });
 
     const VkRenderPassBeginInfo rpBeginInfo = {
         VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr, *renderPass, *framebuffer, scissors.at(0u), 1u, &clearColor,
@@ -3758,12 +3754,6 @@ tcu::TestStatus FDMOffsetBaseInstance::iterate()
         nullptr,
         de::sizeU32(fdmVkOffsets),
         de::dataOrNull(fdmVkOffsets),
-    };
-    const VkRenderPassFragmentDensityMapOffsetEndInfoEXT badFdmOffsetEndInfo = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT,
-        nullptr,
-        de::sizeU32(badFdmVkOffsets),
-        de::dataOrNull(badFdmVkOffsets),
     };
     VkSubpassEndInfo subpassEndInfo = {
         VK_STRUCTURE_TYPE_SUBPASS_END_INFO,
@@ -3914,9 +3904,7 @@ tcu::TestStatus FDMOffsetBaseInstance::iterate()
                     {
                         recordBeginRenderPass(*secondary, VK_RENDERING_SUSPENDING_BIT);
                         recordRenderPassContents(*secondary, QuadPiece::FIRST);
-                        recordEndRenderPass(
-                            *secondary,
-                            (forceNoOffset ? nullptr : &badFdmOffsetEndInfo)); // Note bad offset end info here.
+                        recordEndRenderPass(*secondary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
                         recordBeginRenderPass(*secondary, VK_RENDERING_RESUMING_BIT);
                         recordRenderPassContents(*secondary, QuadPiece::SECOND);
                         recordEndRenderPass(*secondary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
@@ -3959,7 +3947,7 @@ tcu::TestStatus FDMOffsetBaseInstance::iterate()
 
                     recordBeginRenderPass(primary, VK_RENDERING_SUSPENDING_BIT);
                     vkd.cmdExecuteCommands(primary, 1u, &secondaries.front().get());
-                    recordEndRenderPass(primary, (forceNoOffset ? nullptr : &badFdmOffsetEndInfo));
+                    recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
                     recordBeginRenderPass(primary, VK_RENDERING_RESUMING_BIT);
                     vkd.cmdExecuteCommands(primary, 1u, &secondaries.back().get());
                     recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
@@ -3979,7 +3967,7 @@ tcu::TestStatus FDMOffsetBaseInstance::iterate()
             {
                 recordBeginRenderPass(primary, VK_RENDERING_SUSPENDING_BIT);
                 recordRenderPassContents(primary, QuadPiece::FIRST);
-                recordEndRenderPass(primary, (forceNoOffset ? nullptr : &badFdmOffsetEndInfo));
+                recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
                 recordBeginRenderPass(primary, VK_RENDERING_RESUMING_BIT);
                 recordRenderPassContents(primary, QuadPiece::SECOND);
                 recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));

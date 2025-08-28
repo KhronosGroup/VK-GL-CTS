@@ -48,16 +48,18 @@ VK_EXT_conservative_rasterization
 VK_EXT_custom_border_color
 VK_EXT_extended_dynamic_state3
 VK_EXT_fragment_density_map_offset
+VK_EXT_global_priority_query
 VK_EXT_mesh_shader
 VK_EXT_shader_atomic_float
 VK_EXT_shader_atomic_float2
 VK_EXT_shader_image_atomic_int64
+VK_EXT_swapchain_maintenance1
 VK_KHR_8bit_storage
 VK_KHR_16bit_storage
-# VK_KHR_acceleration_structure
+VK_KHR_acceleration_structure
 VK_KHR_android_surface
 VK_KHR_bind_memory2
-# VK_KHR_buffer_device_address
+VK_KHR_buffer_device_address
 VK_KHR_calibrated_timestamps
 VK_KHR_compute_shader_derivatives
 VK_KHR_cooperative_matrix
@@ -74,8 +76,8 @@ VK_KHR_display
 VK_KHR_display_swapchain
 VK_KHR_draw_indirect_count
 VK_KHR_driver_properties
-# VK_KHR_dynamic_rendering
-# VK_KHR_dynamic_rendering_local_read
+VK_KHR_dynamic_rendering
+VK_KHR_dynamic_rendering_local_read
 VK_KHR_external_fence
 VK_KHR_external_fence_capabilities
 VK_KHR_external_fence_fd
@@ -89,13 +91,13 @@ VK_KHR_external_semaphore_capabilities
 VK_KHR_external_semaphore_fd
 VK_KHR_external_semaphore_win32
 VK_KHR_format_feature_flags2
-# VK_KHR_fragment_shader_barycentric
-# VK_KHR_fragment_shading_rate
+VK_KHR_fragment_shader_barycentric
+VK_KHR_fragment_shading_rate
 VK_KHR_get_display_properties2
 VK_KHR_get_memory_requirements2
 VK_KHR_get_physical_device_properties2
 VK_KHR_get_surface_capabilities2
-# VK_KHR_global_priority
+VK_KHR_global_priority
 VK_KHR_image_format_list
 VK_KHR_imageless_framebuffer
 VK_KHR_incremental_present
@@ -116,6 +118,7 @@ VK_KHR_mir_surface
 VK_KHR_multiview
 VK_KHR_object_refresh
 VK_KHR_performance_query
+VK_KHR_pipeline_binary
 VK_KHR_pipeline_executable_properties
 VK_KHR_pipeline_library
 VK_KHR_portability_enumeration
@@ -153,6 +156,7 @@ VK_KHR_shader_subgroup_extended_types
 VK_KHR_shader_subgroup_rotate
 VK_KHR_shader_subgroup_uniform_control_flow
 VK_KHR_shader_terminate_invocation
+VK_KHR_shader_untyped_pointers
 VK_KHR_shared_presentable_image
 VK_KHR_spirv_1_4
 VK_KHR_storage_buffer_storage_class
@@ -160,6 +164,7 @@ VK_KHR_surface
 VK_KHR_surface_protected_capabilities
 VK_KHR_surface_maintenance1
 VK_KHR_swapchain
+VK_KHR_swapchain_maintenance1
 VK_KHR_swapchain_mutable_format
 VK_KHR_synchronization2
 VK_KHR_timeline_semaphore
@@ -178,14 +183,14 @@ VK_KHR_video_encode_h265
 VK_KHR_video_encode_intra_refresh
 VK_KHR_video_encode_quantization_map
 VK_KHR_video_encode_queue
-# VK_KHR_video_maintenance1
+VK_KHR_video_maintenance1
 VK_KHR_video_maintenance2
 VK_KHR_video_queue
 VK_KHR_vulkan_memory_model
 VK_KHR_wayland_surface
 VK_KHR_win32_keyed_mutex
 VK_KHR_win32_surface
-# VK_KHR_workgroup_memory_explicit_layout
+VK_KHR_workgroup_memory_explicit_layout
 VK_KHR_xcb_surface
 VK_KHR_xlib_surface
 VK_KHR_zero_initialize_workgroup_memory
@@ -669,6 +674,10 @@ class API:
             extensionName = os.path.basename(fileName)[:-5]
             if extensionName in EXTENSIONS_TO_READ_FROM_XML_NOT_JSON:
                 continue
+            else:
+                if extensionName.startswith("VK_KHR"):
+                    logging.error("Extension %s JSON generation has not been automated!", extensionName)
+                    exit(-1)
             fileContent = readFile(fileName)
             try:
                 additionalExtensionData[extensionName] = json.loads(fileContent)
@@ -1521,9 +1530,6 @@ class API:
                 continue
             if ext.name in additionalExtensionNames:
                 logging.error("Extension %s already defined as JSON!" % (ext.name))
-            if ext.promotedto is not None and 'VK_VERSION' not in ext.promotedto:
-                logging.error("Extension %s is promoted to %s" % (ext.name, ext.promotedto))
-                exit(-1)
             mandatoryFeatures = {}
             core = ""
             mandatory_variants = ext.supported

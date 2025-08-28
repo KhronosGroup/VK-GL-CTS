@@ -423,6 +423,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkCreateHeadlessSurfaceEXT");
 		return;
 	}
+	if (extName == "VK_KHR_buffer_device_address")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_line_rasterization")
 	{
 		return;
@@ -990,6 +994,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_buffer_device_address")
+	{
+		functions.push_back("vkGetBufferDeviceAddressKHR");
+		functions.push_back("vkGetBufferOpaqueCaptureAddressKHR");
+		functions.push_back("vkGetDeviceMemoryOpaqueCaptureAddressKHR");
+		return;
+	}
 	if (extName == "VK_EXT_line_rasterization")
 	{
 		functions.push_back("vkCmdSetLineStippleEXT");
@@ -1275,6 +1286,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_fragment_shader_interlock",
 	"VK_EXT_ycbcr_image_arrays",
 	"VK_KHR_uniform_buffer_standard_layout",
+	"VK_KHR_buffer_device_address",
 	"VK_EXT_line_rasterization",
 	"VK_EXT_shader_atomic_float",
 	"VK_EXT_index_type_uint8",

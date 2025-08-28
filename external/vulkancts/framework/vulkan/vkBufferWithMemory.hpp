@@ -54,13 +54,14 @@ public:
 
     BufferWithMemory(const vk::DeviceInterface &vk, const vk::VkDevice device, vk::Allocator &allocator,
                      const vk::VkBufferCreateInfo &bufferCreateInfo, vk::HostIntent hostIntent,
-                     const bool bindOnCreation = true)
+                     const bool bindOnCreation = true, VkMemoryAllocateFlags memAllocFlags = 0u)
 
         : m_vk(vk)
         , m_device(device)
         , m_buffer(createBuffer(vk, device, &bufferCreateInfo))
         , m_createSize(bufferCreateInfo.size)
-        , m_allocation(allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), hostIntent))
+        , m_allocation(
+              allocator.allocate(getBufferMemoryRequirements(vk, device, *m_buffer), hostIntent, memAllocFlags))
         , m_memoryBound(false)
     {
         if (bindOnCreation)

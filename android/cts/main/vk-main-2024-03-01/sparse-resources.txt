@@ -1,4 +1,9 @@
 dEQP-VK.sparse_resources.buffer.indirect_dispatch.sparse_residency
+dEQP-VK.sparse_resources.buffer.misc.null_address_read
+dEQP-VK.sparse_resources.buffer.misc.null_address_read_descriptors
+dEQP-VK.sparse_resources.buffer.misc.null_address_read_local_inv_idx
+dEQP-VK.sparse_resources.buffer.misc.null_address_read_local_inv_idx_descriptors
+dEQP-VK.sparse_resources.buffer.ssbo.read_write.sparse_residency_non_resident_strict
 dEQP-VK.sparse_resources.buffer.transfer.rebind.buffer_size_2_16
 dEQP-VK.sparse_resources.buffer.transfer.rebind.buffer_size_2_18
 dEQP-VK.sparse_resources.buffer.transfer.rebind.buffer_size_2_20

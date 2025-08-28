@@ -224,6 +224,10 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR, nullptr, true};
     vk::VkPhysicalDevicePresentWaitFeaturesKHR presentWaitFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR, nullptr, true};
+    vk::VkPhysicalDevicePresentId2FeaturesKHR presentId2Features = {
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR, nullptr, true};
+    vk::VkPhysicalDevicePresentWait2FeaturesKHR presentWait2Features = {
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR, nullptr, true};
 
     void *pNext = nullptr;
     for (size_t i = 0; i < extraExtensions.size(); ++i)
@@ -237,6 +241,16 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
         {
             presentWaitFeatures.pNext = pNext;
             pNext                     = &presentWaitFeatures;
+        }
+        else if (strcmp(extraExtensions[i], "VK_KHR_present_id2") == 0)
+        {
+            presentId2Features.pNext = pNext;
+            pNext                    = &presentId2Features;
+        }
+        else if (strcmp(extraExtensions[i], "VK_KHR_present_wait2") == 0)
+        {
+            presentWait2Features.pNext = pNext;
+            pNext                      = &presentWait2Features;
         }
     }
     physicalDeviceFeatures2.pNext = pNext;

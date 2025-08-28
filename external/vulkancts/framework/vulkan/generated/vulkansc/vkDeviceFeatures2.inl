@@ -915,7 +915,7 @@ tcu::TestStatus testPhysicalDeviceFeatureBufferDeviceAddressFeatures (Context& c
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceBufferDeviceAddressFeatures deviceBufferDeviceAddressFeatures[count];
-    const bool                                  isBufferDeviceAddressFeatures = context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
+    const bool                                  isBufferDeviceAddressFeatures = checkExtension(properties, "VK_KHR_buffer_device_address") || context.contextSupports(vk::ApiVersion(1, 1, 2, 0));
 
     if (!isBufferDeviceAddressFeatures)
         return tcu::TestStatus::pass("Querying not supported");

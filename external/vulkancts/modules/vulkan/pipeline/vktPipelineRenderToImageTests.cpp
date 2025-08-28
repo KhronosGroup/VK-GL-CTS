@@ -1506,11 +1506,11 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                 *colorImage,                              // VkImage                    image;
                 {
                     // VkImageSubresourceRange    subresourceRange;
-                    VK_IMAGE_ASPECT_COLOR_BIT,            // VkImageAspectFlags    aspectMask;
-                    0u,                                   // uint32_t              baseMipLevel;
-                    static_cast<uint32_t>(numMipLevels),  // uint32_t              levelCount;
-                    0u,                                   // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(imageSize.w()), // uint32_t              layerCount;
+                    VK_IMAGE_ASPECT_COLOR_BIT,           // VkImageAspectFlags    aspectMask;
+                    0u,                                  // uint32_t              baseMipLevel;
+                    static_cast<uint32_t>(numMipLevels), // uint32_t              levelCount;
+                    0u,                                  // uint32_t              baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS,           // uint32_t              layerCount;
                 },
             },
             {
@@ -1529,7 +1529,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                     0u,                                               // uint32_t              baseMipLevel;
                     static_cast<uint32_t>(numMipLevels),              // uint32_t              levelCount;
                     0u,                                               // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(numSlices),                 // uint32_t              layerCount;
+                    VK_REMAINING_ARRAY_LAYERS,                        // uint32_t              layerCount;
                 },
             }};
 
@@ -1576,11 +1576,11 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                 *colorImage,                              // VkImage                    image;
                 {
                     // VkImageSubresourceRange    subresourceRange;
-                    VK_IMAGE_ASPECT_COLOR_BIT,            // VkImageAspectFlags    aspectMask;
-                    0u,                                   // uint32_t              baseMipLevel;
-                    static_cast<uint32_t>(numMipLevels),  // uint32_t              levelCount;
-                    0u,                                   // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(imageSize.w()), // uint32_t              layerCount;
+                    VK_IMAGE_ASPECT_COLOR_BIT,           // VkImageAspectFlags    aspectMask;
+                    0u,                                  // uint32_t              baseMipLevel;
+                    static_cast<uint32_t>(numMipLevels), // uint32_t              levelCount;
+                    0u,                                  // uint32_t              baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS,           // uint32_t              layerCount;
                 },
             }};
 

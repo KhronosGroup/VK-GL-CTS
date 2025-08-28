@@ -118,6 +118,7 @@ const vk::VkPhysicalDeviceExtendedDynamicState2FeaturesEXT&					getExtendedDynam
 const vk::VkPhysicalDeviceColorWriteEnableFeaturesEXT&						getColorWriteEnableFeaturesEXT						(void) const;
 const vk::VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT&				getPrimitivesGeneratedQueryFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				getRayTracingMaintenance1Features					(void) const;
+const vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR&					getShaderUntypedPointersFeatures					(void) const;
 const vk::VkPhysicalDeviceImageViewMinLodFeaturesEXT&						getImageViewMinLodFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&								getMultiDrawFeaturesEXT								(void) const;
 const vk::VkPhysicalDeviceImage2DViewOf3DFeaturesEXT&						getImage2DViewOf3DFeaturesEXT						(void) const;

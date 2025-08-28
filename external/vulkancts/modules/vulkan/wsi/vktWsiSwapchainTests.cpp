@@ -2515,6 +2515,86 @@ tcu::TestStatus destroyOldSwapchainWithAcquiredImageTest(Context &context, Type 
     return tcu::TestStatus::pass("Destroying an old swapchain has no effect.");
 }
 
+tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
+{
+    const tcu::UVec2 desiredSize(256, 256);
+    const InstanceHelper instHelper(context, wsiType);
+    const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
+                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+
+    const auto &vk        = devHelper.vkd;
+    const VkDevice device = *devHelper.device;
+
+    // Create the first swapchain.
+    VkSwapchainCreateInfoKHR swapchainInfo =
+        getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
+    VkSwapchainKHR swapchain = VK_NULL_HANDLE;
+    VK_CHECK(vk.createSwapchainKHR(device, &swapchainInfo, nullptr, &swapchain));
+
+    uint32_t imageCount;
+    vk.getSwapchainImagesKHR(device, swapchain, &imageCount, nullptr);
+    std::vector<VkImage> images(imageCount);
+    vk.getSwapchainImagesKHR(device, swapchain, &imageCount, images.data());
+
+    Move<VkSemaphore> acquireSemaphore = createSemaphore(vk, device);
+    Move<VkSemaphore> submitSemaphore  = createSemaphore(vk, device);
+
+    uint32_t imageIndex;
+    vk.acquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(), *acquireSemaphore, VK_NULL_HANDLE,
+                           &imageIndex);
+
+    // Create a new swapchain replacing the old one.
+    swapchainInfo.oldSwapchain        = swapchain;
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
+    VK_CHECK(vk.createSwapchainKHR(device, &swapchainInfo, nullptr, &recreatedSwapchain));
+
+    const Unique<VkCommandPool> cmdPool(
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
+    const Move<vk::VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    vk::beginCommandBuffer(vk, *cmdBuffer);
+    VkImageMemoryBarrier imageMemoryBarrier = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType			sType;
+        nullptr,                                // const void*				pNext;
+        0u,                                     // VkAccessFlags			srcAccessMask;
+        0u,                                     // VkAccessFlags			dstAccessMask;
+        VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout			oldLayout;
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // VkImageLayout			newLayout;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t				srcQueueFamilyIndex;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t				dstQueueFamilyIndex;
+        images[imageIndex],                     // VkImage					image;
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
+                                  1u) // VkImageSubresourceRange	subresourceRange;
+    };
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u,
+                          nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
+    vk::endCommandBuffer(vk, *cmdBuffer);
+    const VkPipelineStageFlags waitDstStagemask = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+    const VkSubmitInfo submitInfo               = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                                   nullptr,
+                                                   1u,
+                                                   &*acquireSemaphore,
+                                                   &waitDstStagemask,
+                                                   1u,
+                                                   &*cmdBuffer,
+                                                   1u,
+                                                   &*submitSemaphore};
+    vk.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE);
+    const VkPresentInfoKHR presentInfo = {
+        VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr, 1u, &*submitSemaphore, 1u, &swapchain, &imageIndex, nullptr};
+    VkResult res = vk.queuePresentKHR(devHelper.queue, &presentInfo);
+    if (res != VK_SUBOPTIMAL_KHR && res != VK_ERROR_OUT_OF_DATE_KHR && res != VK_SUCCESS)
+        return tcu::TestStatus::fail("vkQueuePresentKHR with image from retired swapchain failed");
+
+    vk.queueWaitIdle(devHelper.queue);
+    vk.destroySwapchainKHR(device, recreatedSwapchain, nullptr);
+    vk.destroySwapchainKHR(device, swapchain, nullptr);
+
+    return tcu::TestStatus::pass("");
+}
+
 tcu::TestStatus acquireTooManyTest(Context &context, Type wsiType)
 {
     const tcu::UVec2 desiredSize(256, 256);
@@ -2684,6 +2764,8 @@ void populateDestroyGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
     addFunctionCase(testGroup, "old_swapchain", destroyOldSwapchainTest, wsiType);
     // Destroying an old swapchain after acquiring image
     addFunctionCase(testGroup, "old_swapchain_acquired_image", destroyOldSwapchainWithAcquiredImageTest, wsiType);
+    // Present image acquired before retiring swapchain
+    addFunctionCase(testGroup, "retired_swapchain_present", presentImageFromRetiredSwapchain, wsiType);
 }
 
 void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)

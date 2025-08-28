@@ -6,6 +6,12 @@ dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.ivec4.as_int_ivec3
 dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.ivec4.as_ivec2_int_int
 dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.ivec4.as_ivec2_ivec2
 dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.ivec4.as_ivec3_int
+dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.two_vec4.array_writes.as_float-2_float-2_float-2_float-2_float-2
+dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.two_vec4.array_writes.as_float_float-2_vec2-2_float
+dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.two_vec4.array_writes.as_float_vec3-2_float
+dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.two_vec4.array_writes.as_vec2-2_vec2_vec2
+dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.two_vec4.array_writes.as_vec2_vec2-2_vec2
+dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.two_vec4.array_writes.as_vec3-2_float_float
 dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.vec2.as_float_float
 dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.vec3.as_float_float_float
 dEQP-VKSC.glsl.440.linkage.varying.component.frag_out.vec3.as_float_vec2

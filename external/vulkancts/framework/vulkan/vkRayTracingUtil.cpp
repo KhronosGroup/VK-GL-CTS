@@ -200,7 +200,6 @@ struct GeometryBuilderParams
 template <typename V, typename I>
 RaytracedGeometryBase *buildRaytracedGeometry(const GeometryBuilderParams &params)
 {
-    DE_ASSERT(!params.usePadding);
     return new RaytracedGeometry<V, I>(params.geometryType, (params.usePadding ? 1u : 0u), params.minAlign);
 }
 

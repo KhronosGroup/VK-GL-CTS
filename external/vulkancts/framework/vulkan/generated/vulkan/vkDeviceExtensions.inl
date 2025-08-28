@@ -94,6 +94,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_shader_subgroup_rotate",
 	"VK_KHR_shader_subgroup_uniform_control_flow",
 	"VK_KHR_shader_terminate_invocation",
+	"VK_KHR_shader_untyped_pointers",
 	"VK_KHR_shared_presentable_image",
 	"VK_KHR_spirv_1_4",
 	"VK_KHR_storage_buffer_storage_class",

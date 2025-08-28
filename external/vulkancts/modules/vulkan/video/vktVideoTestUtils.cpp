@@ -44,6 +44,7 @@
 #include "vktVideoDecodeTests.hpp"
 
 #include "vkMd5Sum.hpp"
+#include "deFilePath.hpp"
 
 #ifdef DE_BUILD_VIDEO
 #include "video_generator.h"
@@ -2321,6 +2322,15 @@ void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, 
     video_generator gen;
     video_generator_settings cfg;
     uint32_t max_frames;
+
+    // Create directory if it doesn't exist
+    de::FilePath filePath(fileName);
+    std::string dirName = filePath.getDirName();
+    if (!dirName.empty() && !de::FilePath(dirName).exists())
+    {
+        de::createDirectoryAndParents(dirName.c_str());
+    }
+
     std::ofstream outFile(fileName, std::ios::binary | std::ios::out);
 
     if (!outFile.is_open())

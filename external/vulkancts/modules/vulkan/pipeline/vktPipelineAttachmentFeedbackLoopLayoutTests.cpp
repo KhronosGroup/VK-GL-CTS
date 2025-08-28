@@ -1445,15 +1445,18 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
                 VK_COLOR_COMPONENT_A_BIT // VkColorComponentFlags colorWriteMask;
         };
 
+        const uint32_t colorAttachmentCount = (m_imageAspectTestMode == IMAGE_ASPECT_TEST_COLOR) ? 1u : 0u;
         const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
             VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
             nullptr,                                                  // const void* pNext;
             0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
             false,                                                    // VkBool32 logicOpEnable;
             VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
-            1u,                                                       // uint32_t attachmentCount;
-            &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState* pAttachments;
-            {0.0f, 0.0f, 0.0f, 0.0f}    // float blendConstants[4];
+            colorAttachmentCount,                                     // uint32_t attachmentCount;
+            // VUID-VkGraphicsPipelineCreateInfo-renderPass-07609
+            colorAttachmentCount > 0 ? &colorBlendAttachmentState :
+                                       nullptr, // const VkPipelineColorBlendAttachmentState* pAttachments;
+            {0.0f, 0.0f, 0.0f, 0.0f}            // float blendConstants[4];
         };
 
         VkBool32 depthTestEnable =
@@ -1511,14 +1514,18 @@ void AttachmentFeedbackLoopLayoutDepthStencilImageSamplingInstance::setup(void)
                 m_imageFormat :
                 VK_FORMAT_UNDEFINED;
 
+        // VUID-VkGraphicsPipelineCreateInfo-renderPass-07609
+        const uint32_t renderingColorAttachmentCount = (m_imageAspectTestMode == IMAGE_ASPECT_TEST_COLOR) ? 1u : 0u;
+
         vk::VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO, // VkStructureType    sType
             nullptr,                                              // const void*        pNext
             0u,                                                   // uint32_t            viewMask
-            1u,                                                   // uint32_t            colorAttachmentCount
-            &colorAttachmentFormat,                               // const VkFormat*    pColorAttachmentFormats
-            depthAttachmentFormat,                                // VkFormat            depthAttachmentFormat
-            stencilAttachmentFormat,                              // VkFormat            stencilAttachmentFormat
+            renderingColorAttachmentCount,                        // uint32_t            colorAttachmentCount
+            renderingColorAttachmentCount > 0 ? &colorAttachmentFormat :
+                                                nullptr, // const VkFormat*    pColorAttachmentFormats
+            depthAttachmentFormat,                       // VkFormat            depthAttachmentFormat
+            stencilAttachmentFormat,                     // VkFormat            stencilAttachmentFormat
         };
 
         PipelineRenderingCreateInfoWrapper pipelineRenderingCreateInfoPtr(

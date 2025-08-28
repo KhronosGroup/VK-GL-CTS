@@ -65,11 +65,12 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDevice8BitStorageFeatures.pNext;
 	}
 
-	// VkPhysicalDeviceBufferDeviceAddressFeatures,VkPhysicalDeviceBufferDeviceAddressFeaturesKHR for ext [] in APIs []
+	// VkPhysicalDeviceBufferDeviceAddressFeatures,VkPhysicalDeviceBufferDeviceAddressFeaturesKHR for ext [VK_KHR_buffer_device_address] in APIs []
 
 	vk::VkPhysicalDeviceBufferDeviceAddressFeatures physicalDeviceBufferDeviceAddressFeatures;
 	deMemset(&physicalDeviceBufferDeviceAddressFeatures, 0, sizeof(physicalDeviceBufferDeviceAddressFeatures));
 
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_buffer_device_address"))
 	{
 		physicalDeviceBufferDeviceAddressFeatures.sType = getStructureType<VkPhysicalDeviceBufferDeviceAddressFeatures>();
 		*nextPtr = &physicalDeviceBufferDeviceAddressFeatures;
@@ -147,7 +148,19 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		nextPtr  = &physicalDeviceFragmentShaderInterlockFeaturesEXT.pNext;
 	}
 
-	// VkPhysicalDeviceGlobalPriorityQueryFeatures,VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR,VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT for ext [VK_EXT_global_priority, VK_KHR_global_priority] in APIs []
+	// VkPhysicalDeviceFragmentShadingRateFeaturesKHR for ext [VK_KHR_fragment_shading_rate] in APIs [vulkan, vulkansc]
+
+	vk::VkPhysicalDeviceFragmentShadingRateFeaturesKHR physicalDeviceFragmentShadingRateFeaturesKHR;
+	deMemset(&physicalDeviceFragmentShadingRateFeaturesKHR, 0, sizeof(physicalDeviceFragmentShadingRateFeaturesKHR));
+
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_fragment_shading_rate"))
+	{
+		physicalDeviceFragmentShadingRateFeaturesKHR.sType = getStructureType<VkPhysicalDeviceFragmentShadingRateFeaturesKHR>();
+		*nextPtr = &physicalDeviceFragmentShadingRateFeaturesKHR;
+		nextPtr  = &physicalDeviceFragmentShadingRateFeaturesKHR.pNext;
+	}
+
+	// VkPhysicalDeviceGlobalPriorityQueryFeatures,VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR,VkPhysicalDeviceGlobalPriorityQueryFeaturesEXT for ext [VK_EXT_global_priority, VK_KHR_global_priority] in APIs [vulkan, vulkansc]
 
 	vk::VkPhysicalDeviceGlobalPriorityQueryFeatures physicalDeviceGlobalPriorityQueryFeatures;
 	deMemset(&physicalDeviceGlobalPriorityQueryFeatures, 0, sizeof(physicalDeviceGlobalPriorityQueryFeatures));
@@ -1090,9 +1103,7 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	// VkPhysicalDeviceAccelerationStructureFeaturesKHR in APIs []
-	// VkPhysicalDeviceAccelerationStructureFeaturesKHR in APIs []
-	// VkPhysicalDeviceBufferDeviceAddressFeatures in APIs []
+	// VkPhysicalDeviceBufferDeviceAddressFeaturesKHR in APIs []
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_buffer_device_address")) )
 	{
 		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
@@ -1102,28 +1113,17 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	// VkPhysicalDeviceBufferDeviceAddressFeatures in APIs []
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_acceleration_structure")) )
+	// VkPhysicalDeviceFragmentShadingRateFeaturesKHR in APIs [vulkan, vulkansc]
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shading_rate")) )
 	{
-		if ( physicalDeviceBufferDeviceAddressFeatures.bufferDeviceAddress == VK_FALSE )
+		if ( physicalDeviceFragmentShadingRateFeaturesKHR.pipelineFragmentShadingRate == VK_FALSE )
 		{
-			log << tcu::TestLog::Message << "Mandatory feature bufferDeviceAddress not supported" << tcu::TestLog::EndMessage;
+			log << tcu::TestLog::Message << "Mandatory feature pipelineFragmentShadingRate not supported" << tcu::TestLog::EndMessage;
 			result = false;
 		}
 	}
 
-	// VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR in APIs []
-	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs []
-	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_global_priority_query")) )
-	{
-		if ( physicalDeviceGlobalPriorityQueryFeatures.globalPriorityQuery == VK_FALSE )
-		{
-			log << tcu::TestLog::Message << "Mandatory feature globalPriorityQuery not supported" << tcu::TestLog::EndMessage;
-			result = false;
-		}
-	}
-
-	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs []
+	// VkPhysicalDeviceGlobalPriorityQueryFeaturesKHR in APIs [vulkan, vulkansc]
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_global_priority")) )
 	{
 		if ( physicalDeviceGlobalPriorityQueryFeatures.globalPriorityQuery == VK_FALSE )
@@ -1253,8 +1253,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	// VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR in APIs []
-	// VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR in APIs []
 	// VkPhysicalDeviceSynchronization2FeaturesKHR in APIs [vulkan, vulkansc]
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_synchronization2")) )
 	{
@@ -1315,7 +1313,6 @@ bool checkBasicMandatoryFeatures(const vkt::Context& context)
 		}
 	}
 
-	// VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR in APIs []
 	// VkPhysicalDeviceCooperativeMatrix2FeaturesNV in APIs [vulkan]
 	// VkPhysicalDeviceCooperativeVectorFeaturesNV in APIs [vulkan]
 	// VkPhysicalDeviceDeviceGeneratedCommandsFeaturesNV in APIs [vulkan]

@@ -5987,6 +5987,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 }
 } // namespace
 
+extern void createCooperativeMatrixOpConstantNullTests(
+    tcu::TestContext &testCtx, tcu::TestCaseGroup *groupCooperativeMatrix,
+    vk::ComputePipelineConstructionType computePipelineConstructionType);
+
 tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,
                                                  vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
@@ -5997,6 +6001,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_B));
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_C));
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_Result));
+    createCooperativeMatrixOpConstantNullTests(testCtx, group.operator->(), computePipelineConstructionType);
 
     return group.release();
 }

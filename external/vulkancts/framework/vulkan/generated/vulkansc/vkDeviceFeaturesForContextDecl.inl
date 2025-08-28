@@ -29,6 +29,7 @@ const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&		getSeparateDepth
 const vk::VkPhysicalDeviceFragmentShaderInterlockFeaturesEXT&		getFragmentShaderInterlockFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceYcbcrImageArraysFeaturesEXT&				getYcbcrImageArraysFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceUniformBufferStandardLayoutFeatures&		getUniformBufferStandardLayoutFeatures		(void) const;
+const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&				getBufferDeviceAddressFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&				getShaderAtomicFloatFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceExtendedDynamicStateFeaturesEXT&			getExtendedDynamicStateFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&	getShaderDemoteToHelperInvocationFeatures	(void) const;
@@ -54,4 +55,3 @@ const vk::VkPhysicalDeviceShaderDrawParametersFeatures&				getShaderDrawParamete
 const vk::VkPhysicalDeviceHostQueryResetFeatures&					getHostQueryResetFeatures					(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingFeatures&				getDescriptorIndexingFeatures				(void) const;
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&				getScalarBlockLayoutFeatures				(void) const;
-const vk::VkPhysicalDeviceBufferDeviceAddressFeatures&				getBufferDeviceAddressFeatures				(void) const;

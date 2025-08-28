@@ -2820,6 +2820,18 @@ bool check_VK_KHR_ray_tracing_maintenance1(const tcu::UVec2& v, const ExtPropVec
 	return isSupported(vDEP, "VK_KHR_acceleration_structure");
 }
 
+bool check_VK_KHR_shader_untyped_pointers(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_shader_untyped_pointers"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2
+	return (isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2"));
+}
+
 bool check_VK_EXT_global_priority_query(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4243,6 +4255,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_color_write_enable",								&check_VK_EXT_color_write_enable),
 	std::make_pair("VK_EXT_primitives_generated_query",						&check_VK_EXT_primitives_generated_query),
 	std::make_pair("VK_KHR_ray_tracing_maintenance1",						&check_VK_KHR_ray_tracing_maintenance1),
+	std::make_pair("VK_KHR_shader_untyped_pointers",						&check_VK_KHR_shader_untyped_pointers),
 	std::make_pair("VK_EXT_global_priority_query",							&check_VK_EXT_global_priority_query),
 	std::make_pair("VK_EXT_image_view_min_lod",								&check_VK_EXT_image_view_min_lod),
 	std::make_pair("VK_EXT_multi_draw",										&check_VK_EXT_multi_draw),
@@ -4649,6 +4662,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_color_write_enable"),
 	std::make_tuple(1, 0, "VK_EXT_primitives_generated_query"),
 	std::make_tuple(1, 0, "VK_KHR_ray_tracing_maintenance1"),
+	std::make_tuple(1, 0, "VK_KHR_shader_untyped_pointers"),
 	std::make_tuple(1, 0, "VK_EXT_global_priority_query"),
 	std::make_tuple(1, 0, "VK_EXT_image_view_min_lod"),
 	std::make_tuple(1, 0, "VK_EXT_multi_draw"),

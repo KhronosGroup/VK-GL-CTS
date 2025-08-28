@@ -5463,3 +5463,8 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePipelineCacheIncreme
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderUntypedPointersFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR;
+}
+

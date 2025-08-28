@@ -1674,8 +1674,25 @@ bool GraphicBasicTestInstance::checkImage(void)
             VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, VK_SAMPLE_COUNT_1_BIT,
             VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
 
-        return Image::createAndAlloc(vk, device, colorImageCreateInfo, m_context.getDefaultAllocator(),
-                                     m_context.getUniversalQueueFamilyIndex());
+        de::SharedPtr<Image> image =
+            Image::createAndAlloc(vk, device, colorImageCreateInfo, m_context.getDefaultAllocator(),
+                                  m_context.getUniversalQueueFamilyIndex());
+
+        const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
+        const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolCreateInfo));
+        const Unique<VkCommandBuffer> cmdBuffer(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+        VkImageMemoryBarrier imageMemoryBarrier = makeImageMemoryBarrier(
+            VK_ACCESS_NONE, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+            image->object(), makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+
+        beginCommandBuffer(vk, *cmdBuffer);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                              nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
+        endCommandBuffer(vk, *cmdBuffer);
+        submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+        return image;
     };
 
     de::SharedPtr<Image> swapImage    = createCheckedImage();
