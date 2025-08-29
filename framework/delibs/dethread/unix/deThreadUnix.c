@@ -24,7 +24,7 @@
 #include "deThread.h"
 
 #if (DE_OS == DE_OS_UNIX || DE_OS == DE_OS_OSX || DE_OS == DE_OS_ANDROID || DE_OS == DE_OS_SYMBIAN || \
-     DE_OS == DE_OS_IOS || DE_OS == DE_OS_QNX || DE_OS == DE_OS_FUCHSIA)
+     DE_OS == DE_OS_IOS || DE_OS == DE_OS_QNX || DE_OS == DE_OS_FUCHSIA || DE_OS == DE_OS_OHOS)
 
 #include "deMemory.h"
 #include "deInt32.h"
@@ -36,7 +36,7 @@
 #include <unistd.h>
 #include <pthread.h>
 #include <sched.h>
-#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OHOS)
 #include <sys/syscall.h>
 #endif
 
@@ -161,7 +161,7 @@ void deYield(void)
     sched_yield();
 }
 
-#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OHOS)
 
 uint32_t deGetNumAvailableLogicalCores(void)
 {

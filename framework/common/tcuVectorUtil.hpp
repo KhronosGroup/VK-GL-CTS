@@ -39,7 +39,7 @@ namespace tcu
 static const float PI = 3.141592653589793238f;
 
 #if (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_QNX) || \
-    (DE_OS == DE_OS_WIN32 && DE_COMPILER == DE_COMPILER_CLANG)
+    (DE_OS == DE_OS_WIN32 && DE_COMPILER == DE_COMPILER_CLANG) || (DE_OS == DE_OS_OHOS)
 inline float abs(float f)
 {
     return deFloatAbs(f);
