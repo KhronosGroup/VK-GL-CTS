@@ -356,6 +356,13 @@ public:
 
             if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
+
+            //  VUID-vkCmdDraw-pNext-09461
+            const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR &vertexAttributeDivisorProperties =
+                context.getVertexAttributeDivisorProperties();
+
+            if (!vertexAttributeDivisorProperties.supportsNonZeroFirstInstance)
+                TCU_THROW(NotSupportedError, "Implementation does not support supportsNonZeroFirstInstance");
         }
 #ifndef CTS_USES_VULKANSC
         else if (m_params.testAttribDivisor == ATTRIBUTE_DIVISOR_KHR)
