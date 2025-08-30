@@ -43,6 +43,7 @@ static int testResultSeverity(qpTestResult testResult)
     case QP_TEST_RESULT_QUALITY_WARNING:
         return 30;
     case QP_TEST_RESULT_COMPATIBILITY_WARNING:
+    case QP_TEST_RESULT_CAPABILITY_WARNING:
         return 40;
     case QP_TEST_RESULT_TIMEOUT:
         return 50;
