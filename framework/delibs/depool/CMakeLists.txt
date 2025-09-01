@@ -27,7 +27,7 @@ set(DEPOOL_SRCS
 	dePoolTest.h
 	)
 
-if (DE_OS_IS_UNIX OR DE_OS_IS_QNX)
+if (DE_OS_IS_UNIX OR DE_OS_IS_QNX OR DE_OS_IS_OHOS)
 	# vsnprintf
 	add_definitions(-D_XOPEN_SOURCE=600)
 endif ()
