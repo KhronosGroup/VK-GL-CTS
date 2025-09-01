@@ -2018,7 +2018,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalTensorI
 std::ostream&	operator<<	(std::ostream& s, const VkExternalTensorPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalMemoryTensorCreateInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloat8FeaturesEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkOHSurfaceCreateInfoOHOS& value);
+std::ostream&	operator<<	(std::ostream& s, const VkSurfaceCreateInfoOHOS& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineConstantTensorSemiStructuredSparsityInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineConstantARM& value);

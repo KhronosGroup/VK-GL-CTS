@@ -5353,9 +5353,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderFloat8Features
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkOHSurfaceCreateInfoOHOS> (void)
+template<> VkStructureType getStructureType<VkSurfaceCreateInfoOHOS> (void)
 {
-	return VK_STRUCTURE_TYPE_OH_SURFACE_CREATE_INFO_OHOS;
+	return VK_STRUCTURE_TYPE_SURFACE_CREATE_INFO_OHOS;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphFeaturesARM> (void)

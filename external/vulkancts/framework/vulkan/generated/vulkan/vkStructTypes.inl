@@ -11186,7 +11186,7 @@ struct VkPhysicalDeviceShaderFloat8FeaturesEXT
 	VkBool32		shaderFloat8CooperativeMatrix;
 };
 
-struct VkOHSurfaceCreateInfoOHOS
+struct VkSurfaceCreateInfoOHOS
 {
 	VkStructureType				sType;
 	const void*					pNext;
@@ -13447,6 +13447,4 @@ typedef VkRenderingInputAttachmentIndexInfo VkRenderingInputAttachmentIndexInfoK
 typedef VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT;
 
 typedef VkPhysicalDeviceDepthClampZeroOneFeaturesKHR VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;
-
-typedef VkOHSurfaceCreateInfoOHOS VkSurfaceCreateInfoOHOS;
 

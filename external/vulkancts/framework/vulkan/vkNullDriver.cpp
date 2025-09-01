@@ -348,7 +348,7 @@ public:
     SurfaceKHR(VkInstance, const VkScreenSurfaceCreateInfoQNX *)
     {
     }
-    SurfaceKHR(VkInstance, const VkOHSurfaceCreateInfoOHOS *)
+    SurfaceKHR(VkInstance, const VkSurfaceCreateInfoOHOS *)
     {
     }
 #endif // CTS_USES_VULKANSC
