@@ -473,6 +473,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/ray_tracing/vktRayTracingWatertightnessTests.cpp",
         "external/vulkancts/modules/vulkan/reconvergence/vktReconvergenceTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingDepthStencilResolveTests.cpp",
+        "external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingLocalReadMaint10Tests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingLocalReadTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingRandomTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktDynamicRenderingTests.cpp",
