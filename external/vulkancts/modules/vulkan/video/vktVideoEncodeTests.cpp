@@ -2290,6 +2290,12 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
             processQuantizationMapImage(leftSideQp, rightSideQp);
             break;
         }
+        case VK_FORMAT_R16_SINT:
+        {
+            auto [leftSideQp, rightSideQp] = calculateMapValues(int16_t(qmIdx), QM_DELTA);
+            processQuantizationMapImage(leftSideQp, rightSideQp);
+            break;
+        }
         case VK_FORMAT_R32_SINT:
         {
             auto [leftSideQp, rightSideQp] = calculateMapValues(int32_t(qmIdx), QM_DELTA);
