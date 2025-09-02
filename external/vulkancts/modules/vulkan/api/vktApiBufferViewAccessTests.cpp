@@ -756,7 +756,7 @@ void BufferViewTestInstance::recordCommandBuffer(VkCommandBuffer cmdBuffer)
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &storeTransferImageBarrier);
 
-        copyImageToBuffer(vk, cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize, VkAccessFlags(256u),
+        copyImageToBuffer(vk, cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize, VK_ACCESS_SHADER_WRITE_BIT,
                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         endCommandBuffer(vk, cmdBuffer);
     }

@@ -76,6 +76,8 @@ class DefaultDevice;
 class Context
 {
 public:
+    // Constructor retained for compatibility with legacy code,
+    // only called in createServerVKSC() and VKSC pipeline compiler.
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
             vk::BinaryCollection &progCollection, de::SharedPtr<vk::ResourceInterface> resourceInterface);
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
@@ -182,8 +184,10 @@ public:
     }
 
 #ifndef CTS_USES_VULKANSC
-    bool hasDebugReportRecorder() const;
-    vk::DebugReportRecorder &getDebugReportRecorder() const;
+    bool hasDebugReportRecorders() const;
+    std::vector<vk::DebugReportRecorder *> getDebugReportRecorders() const;
+    void addExternalDebugReportRecorder(vk::DebugReportRecorder *);
+    void removeExternalDebugReportRecorder(vk::DebugReportRecorder *);
 #endif // CTS_USES_VULKANSC
 
     void checkPipelineConstructionRequirements(const vk::PipelineConstructionType pipelineConstructionType);
@@ -206,7 +210,8 @@ public:
 protected:
     tcu::TestContext &m_testCtx;
     const vk::PlatformInterface &m_platformInterface;
-    const de::SharedPtr<const ContextManager> m_contextManager;
+    const de::SharedPtr<const ContextManager> m_contextManagerPtr;
+    const de::WeakPtr<const ContextManager> m_contextManager;
     vk::BinaryCollection &m_progCollection;
 
     de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
@@ -225,6 +230,10 @@ class TestInstance;
 
 class TestCase : public tcu::TestCase
 {
+    friend class ContextManager;
+    de::WeakPtr<const ContextManager> m_contextManager;
+    void setContextManager(de::SharedPtr<const ContextManager>);
+
 public:
     TestCase(tcu::TestContext &testCtx, const std::string &name);
     virtual ~TestCase(void) = default;
@@ -248,6 +257,13 @@ public:
     // Override this function if test requires new custom instance.
     // Requirements for the new instance should be recorded to InstCaps.
     virtual void initInstanceCapabilities(InstCaps &caps);
+
+    // Returns the ContextManager on which the currently executing test was run.
+    // ContextManager acts as a Vulkan instance with a physical device and the
+    // currently executing test can use the information contained in it for the
+    // time when the logical device has not been created in methods that do not
+    // have access to Context, such as checkSupport() or delayedInit().
+    de::SharedPtr<const ContextManager> getContextManager() const;
 
     virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
@@ -316,7 +332,9 @@ protected:
     QueueCapabilities m_queueCaps;
 };
 
-inline TestCase::TestCase(tcu::TestContext &testCtx, const std::string &name) : tcu::TestCase(testCtx, name.c_str(), "")
+inline TestCase::TestCase(tcu::TestContext &testCtx, const std::string &name)
+    : tcu::TestCase(testCtx, name.c_str(), "")
+    , m_contextManager()
 {
 }
 
@@ -327,7 +345,8 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 #endif // CTS_USES_VULKANSC
 
 uint32_t findQueueFamilyIndexWithCaps(const vk::InstanceInterface &vkInstance, vk::VkPhysicalDevice physicalDevice,
-                                      vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u);
+                                      vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u,
+                                      uint32_t *availableCount = nullptr);
 
 } // namespace vkt
 

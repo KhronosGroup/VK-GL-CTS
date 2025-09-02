@@ -67,6 +67,11 @@ bool isIdentitySwizzle(const VkComponentMapping &mapping)
             (mapping.a == VK_COMPONENT_SWIZZLE_A || mapping.a == VK_COMPONENT_SWIZZLE_IDENTITY));
 }
 
+bool isOpaqueBlackBorder(const VkBorderColor &borderColor)
+{
+    return (borderColor == VK_BORDER_COLOR_INT_OPAQUE_BLACK || borderColor == VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK);
+}
+
 struct TestParams
 {
     PipelineConstructionType pipelineConstructionType;
@@ -89,7 +94,7 @@ struct TestParams
 
     bool isOpaqueBlack(void) const
     {
-        return (borderColor == VK_BORDER_COLOR_INT_OPAQUE_BLACK || borderColor == VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK);
+        return isOpaqueBlackBorder(borderColor);
     }
 
     bool isIdentity(void) const
@@ -198,6 +203,11 @@ void BorderSwizzleCase::checkSupport(Context &context) const
     {
         if (!borderColorFeatures.customBorderColors)
             TCU_THROW(NotSupportedError, "Custom border colors not supported");
+
+        if ((m_params.textureFormat == VK_FORMAT_R4G4B4A4_UNORM_PACK16 ||
+             m_params.textureFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16) &&
+            !borderColorFeatures.customBorderColorWithoutFormat)
+            TCU_THROW(NotSupportedError, "customBorderColorWithoutFormat feature is not supported");
 
         if (!identity)
         {
@@ -1492,6 +1502,11 @@ tcu::TestCaseGroup *createSamplerBorderSwizzleTests(tcu::TestContext &testCtx,
                     if (isIntBorder && formatType == FormatType::FLOAT)
                         continue;
                     else if (!isIntBorder && formatType != FormatType::FLOAT)
+                        continue;
+
+                    // Skip cases for formats that do not support opaque black border
+                    if ((format == VK_FORMAT_R4G4B4A4_UNORM_PACK16 || format == VK_FORMAT_B4G4R4A4_UNORM_PACK16) &&
+                        isOpaqueBlackBorder(borderColor.borderType))
                         continue;
 
                     for (int gatherIdx = -1; gatherIdx <= 3; ++gatherIdx)

@@ -245,6 +245,7 @@ private:
     de::DynamicLibrary *m_glLibrary;
     glw::Functions m_glFunctions;
     tcu::RenderTarget m_renderTarget;
+    eglw::EGLContext m_sharedEglContext;
 };
 
 Platform::Platform(void)
@@ -441,6 +442,7 @@ EglRenderContext::EglRenderContext(const glu::RenderConfig &config, const tcu::C
     const EglRenderContext *sharedEglRenderContext = dynamic_cast<const EglRenderContext *>(sharedContext);
     eglw::EGLContext sharedEglContext =
         sharedEglRenderContext ? sharedEglRenderContext->getEglContext() : EGL_NO_CONTEXT;
+    m_sharedEglContext = sharedEglContext;
 
     m_eglContext = m_egl.createContext(m_eglDisplay, egl_config, sharedEglContext, &context_attribs[0]);
     EGLU_CHECK_MSG(m_egl, "eglCreateContext()");
@@ -509,7 +511,10 @@ EglRenderContext::~EglRenderContext(void)
                 EGLU_CHECK_CALL(m_egl, destroyContext(m_eglDisplay, m_eglContext));
         }
 
-        EGLU_CHECK_CALL(m_egl, terminate(m_eglDisplay));
+        if (!m_sharedEglContext)
+        {
+            EGLU_CHECK_CALL(m_egl, terminate(m_eglDisplay));
+        }
     }
     catch (...)
     {

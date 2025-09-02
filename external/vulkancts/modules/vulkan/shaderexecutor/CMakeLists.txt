@@ -35,6 +35,7 @@ set(DEQP_VK_SHADEREXECUTOR_SRCS
 	vktShaderBFloat16Tests.cpp
 	vktShaderBFloat16DotTests.cpp
 	vktShaderBFloat16ConstantTests.cpp
+	vktShaderBFloat16ComboTests.cpp
 )
 
 PCH(DEQP_VK_SHADEREXECUTOR_SRCS ../pch.cpp)

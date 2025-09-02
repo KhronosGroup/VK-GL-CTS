@@ -1949,12 +1949,6 @@ tcu::TestNode::IterateResult MultisampleTextureDependenciesInvalidRenderbufferSt
 
     initInternals();
 
-    /* Retrieve GL_MAX_INTEGER_SAMPLES pname value */
-    glw::GLint gl_max_integer_samples_value = 0;
-
-    gl.getIntegerv(GL_MAX_INTEGER_SAMPLES, &gl_max_integer_samples_value);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "Could not retrieve GL_MAX_INTEGER_SAMPLES value.");
-
     /* Iterate through a set of valid integer internalformats */
     const glw::GLenum integer_internalformats[]  = {GL_RG8UI, GL_RGBA32I};
     const unsigned int n_integer_internalformats = sizeof(integer_internalformats) / sizeof(integer_internalformats[0]);
@@ -1964,8 +1958,13 @@ tcu::TestNode::IterateResult MultisampleTextureDependenciesInvalidRenderbufferSt
         glw::GLenum error_code           = GL_NO_ERROR;
         const glw::GLenum internalformat = integer_internalformats[n_internalformat];
 
+        /* Retrieve GL_SAMPLES pname value */
+        glw::GLint gl_max_internalformat_samples = 0;
+        gl.getInternalformativ(GL_TEXTURE_2D_MULTISAMPLE, internalformat, GL_SAMPLES, 1,
+                               &gl_max_internalformat_samples);
+
         /* Execute the test */
-        gl.renderbufferStorageMultisample(GL_RENDERBUFFER, gl_max_integer_samples_value + 1, internalformat,
+        gl.renderbufferStorageMultisample(GL_RENDERBUFFER, gl_max_internalformat_samples + 1, internalformat,
                                           1,  /* width */
                                           1); /* height */
 

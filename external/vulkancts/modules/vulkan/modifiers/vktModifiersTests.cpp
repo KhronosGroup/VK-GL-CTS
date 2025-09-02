@@ -355,14 +355,14 @@ tcu::TestStatus listModifiersCase(Context &context, VkFormat format)
             vki, context.getPhysicalDevice(), &format, 1u, VK_IMAGE_TYPE_2D,
             (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, drmFormatModifiers[m].drmFormatModifier,
-            VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM, imageProperties);
-
-        if (drmFormatModifiers[m].drmFormatModifierTilingFeatures == 0)
-            TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
+            VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT, imageProperties);
 
         if (!isCompatible)
             continue;
         noneCompatible = false;
+
+        if (drmFormatModifiers[m].drmFormatModifierTilingFeatures == 0)
+            TCU_FAIL(de::toString(format) + " does not support any DRM modifier tiling features");
 
         TCU_CHECK(imageProperties.imageFormatProperties.maxExtent.width >= 1 &&
                   imageProperties.imageFormatProperties.maxExtent.height >= 1);
@@ -532,7 +532,7 @@ tcu::TestStatus createImageListModifiersCase(Context &context, const VkFormat fo
             vki, context.getPhysicalDevice(), &format, 1u, VK_IMAGE_TYPE_2D,
             (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, modProps.drmFormatModifier,
-            VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM, imgFormatProperties);
+            VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT, imgFormatProperties);
         if (isCompatible)
             modifiers.push_back(modProps.drmFormatModifier);
         if (modProps.drmFormatModifierTilingFeatures == 0)
@@ -659,7 +659,7 @@ tcu::TestStatus createImageModifierExplicitCase(Context &context, const VkFormat
             vki, context.getPhysicalDevice(), &format, 1u, VK_IMAGE_TYPE_2D,
             (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT),
             VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT, modProps.drmFormatModifier,
-            VK_EXTERNAL_MEMORY_FEATURE_FLAG_BITS_MAX_ENUM, imgFormatProperties);
+            VK_EXTERNAL_MEMORY_FEATURE_EXPORTABLE_BIT | VK_EXTERNAL_MEMORY_FEATURE_IMPORTABLE_BIT, imgFormatProperties);
         if (isCompatible)
         {
             const ExplicitModifier modifier{

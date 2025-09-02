@@ -737,7 +737,10 @@ tcu::TestStatus TimestampTestInstance::verifyTimestamp(void)
                 return tcu::TestStatus::fail("Timestamp query not available");
             }
 
-            if (m_timestampValues[first] < m_timestampValues[second])
+            const bool canCompare = m_stages[first] == VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ||
+                                    m_stages[second] == VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT ||
+                                    m_stages[first] == m_stages[second];
+            if (canCompare && m_timestampValues[first] < m_timestampValues[second])
             {
                 return tcu::TestStatus::fail("Latter stage timestamp is smaller than the former stage timestamp.");
             }

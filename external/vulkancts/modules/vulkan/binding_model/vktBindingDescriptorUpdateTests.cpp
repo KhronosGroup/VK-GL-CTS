@@ -733,7 +733,8 @@ tcu::TestStatus SamplerlessDescriptorWriteTestInstance::queuePass(const QueueDat
 
         const tcu::IVec2 copySize{static_cast<int>(kFramebufferExtent.width),
                                   static_cast<int>(kFramebufferExtent.height)};
-        vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize);
+        vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), copySize,
+                              vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, attachmentLayout);
 
         vk::endCommandBuffer(vkd, cmdBuffer);
         vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);

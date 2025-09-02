@@ -133,6 +133,12 @@ VKAPI_ATTR VkResult VKAPI_CALL createAndroidSurfaceKHR (VkInstance instance, con
 	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL createSurfaceOHOS (VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSurface = allocateNonDispHandle<SurfaceKHR, VkSurfaceKHR>(instance, pCreateInfo, pAllocator)));
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL createDisplayPlaneSurfaceKHR (VkInstance instance, const VkDisplaySurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface)
 {
 	DE_UNREF(pAllocator);
@@ -359,6 +365,30 @@ VKAPI_ATTR VkResult VKAPI_CALL createExternalComputeQueueNV (VkDevice device, co
 {
 	DE_UNREF(pAllocator);
 	VK_NULL_RETURN((*pExternalQueue = allocateHandle<ExternalComputeQueueNV, VkExternalComputeQueueNV>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createTensorARM (VkDevice device, const VkTensorCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorARM* pTensor)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pTensor = allocateNonDispHandle<TensorARM, VkTensorARM>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createTensorViewARM (VkDevice device, const VkTensorViewCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkTensorViewARM* pView)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pView = allocateNonDispHandle<TensorViewARM, VkTensorViewARM>(device, pCreateInfo, pAllocator)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createDataGraphPipelinesARM (VkDevice device, VkDeferredOperationKHR deferredOperation, VkPipelineCache pipelineCache, uint32_t createInfoCount, const VkDataGraphPipelineCreateInfoARM* pCreateInfos, const VkAllocationCallbacks* pAllocator, VkPipeline* pPipelines)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((allocateNonDispHandleArray<Pipeline, VkPipeline>(device, deferredOperation, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines)));
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL createDataGraphPipelineSessionARM (VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDataGraphPipelineSessionARM* pSession)
+{
+	DE_UNREF(pAllocator);
+	VK_NULL_RETURN((*pSession = allocateNonDispHandle<DataGraphPipelineSessionARM, VkDataGraphPipelineSessionARM>(device, pCreateInfo, pAllocator)));
 }
 
 VKAPI_ATTR void VKAPI_CALL destroyInstance (VkInstance instance, const VkAllocationCallbacks* pAllocator)
@@ -639,6 +669,24 @@ VKAPI_ATTR void VKAPI_CALL destroyExternalComputeQueueNV (VkDevice device, VkExt
 {
 	DE_UNREF(device);
 	freeHandle<ExternalComputeQueueNV, VkExternalComputeQueueNV>(externalQueue, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyTensorARM (VkDevice device, VkTensorARM tensor, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<TensorARM, VkTensorARM>(tensor, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyTensorViewARM (VkDevice device, VkTensorViewARM tensorView, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<TensorViewARM, VkTensorViewARM>(tensorView, pAllocator);
+}
+
+VKAPI_ATTR void VKAPI_CALL destroyDataGraphPipelineSessionARM (VkDevice device, VkDataGraphPipelineSessionARM session, const VkAllocationCallbacks* pAllocator)
+{
+	DE_UNREF(device);
+	freeNonDispHandle<DataGraphPipelineSessionARM, VkDataGraphPipelineSessionARM>(session, pAllocator);
 }
 
 VKAPI_ATTR VkResult VKAPI_CALL enumerateInstanceVersion (uint32_t* pApiVersion)
@@ -3917,6 +3965,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getDrmDisplayEXT (VkPhysicalDevice physicalDevice
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL waitForPresent2KHR (VkDevice device, VkSwapchainKHR swapchain, const VkPresentWait2InfoKHR* pPresentWait2Info)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pPresentWait2Info);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL waitForPresentKHR (VkDevice device, VkSwapchainKHR swapchain, uint64_t presentId, uint64_t timeout)
 {
 	DE_UNREF(device);
@@ -4190,7 +4246,7 @@ VKAPI_ATTR void VKAPI_CALL cmdSetDepthBias2EXT (VkCommandBuffer commandBuffer, c
 	DE_UNREF(pDepthBiasInfo);
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesEXT (VkDevice device, const VkReleaseSwapchainImagesInfoEXT* pReleaseInfo)
+VKAPI_ATTR VkResult VKAPI_CALL releaseSwapchainImagesKHR (VkDevice device, const VkReleaseSwapchainImagesInfoKHR* pReleaseInfo)
 {
 	DE_UNREF(device);
 	DE_UNREF(pReleaseInfo);
@@ -4439,9 +4495,10 @@ VKAPI_ATTR void VKAPI_CALL cmdConvertCooperativeVectorMatrixNV (VkCommandBuffer 
 	DE_UNREF(pInfos);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdDispatchTileQCOM (VkCommandBuffer commandBuffer)
+VKAPI_ATTR void VKAPI_CALL cmdDispatchTileQCOM (VkCommandBuffer commandBuffer, const VkDispatchTileInfoQCOM* pDispatchTileInfo)
 {
 	DE_UNREF(commandBuffer);
+	DE_UNREF(pDispatchTileInfo);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdBeginPerTileExecutionQCOM (VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo)
@@ -4463,6 +4520,122 @@ VKAPI_ATTR void VKAPI_CALL getExternalComputeQueueDataNV (VkExternalComputeQueue
 	DE_UNREF(pData);
 }
 
+VKAPI_ATTR void VKAPI_CALL getTensorMemoryRequirementsARM (VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL bindTensorMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindTensorMemoryInfoARM* pBindInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(bindInfoCount);
+	DE_UNREF(pBindInfos);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getDeviceTensorMemoryRequirementsARM (VkDevice device, const VkDeviceTensorMemoryRequirementsARM* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyTensorARM (VkCommandBuffer commandBuffer,  const VkCopyTensorInfoARM* pCopyTensorInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyTensorInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getTensorOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getTensorViewOpaqueCaptureDescriptorDataARM (VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pData);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceExternalTensorPropertiesARM (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalTensorInfoARM* pExternalTensorInfo, VkExternalTensorPropertiesARM* pExternalTensorProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pExternalTensorInfo);
+	DE_UNREF(pExternalTensorProperties);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDataGraphPipelineSessionBindPointRequirementsARM (VkDevice device, const VkDataGraphPipelineSessionBindPointRequirementsInfoARM* pInfo, uint32_t* pBindPointRequirementCount, VkDataGraphPipelineSessionBindPointRequirementARM* pBindPointRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pBindPointRequirementCount);
+	DE_UNREF(pBindPointRequirements);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getDataGraphPipelineSessionMemoryRequirementsARM (VkDevice device, const VkDataGraphPipelineSessionMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pMemoryRequirements);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL bindDataGraphPipelineSessionMemoryARM (VkDevice device, uint32_t bindInfoCount, const VkBindDataGraphPipelineSessionMemoryInfoARM* pBindInfos)
+{
+	DE_UNREF(device);
+	DE_UNREF(bindInfoCount);
+	DE_UNREF(pBindInfos);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDispatchDataGraphARM (VkCommandBuffer commandBuffer, VkDataGraphPipelineSessionARM session, const VkDataGraphPipelineDispatchInfoARM* pInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(session);
+	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDataGraphPipelineAvailablePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t* pPropertiesCount, VkDataGraphPipelinePropertyARM* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(pPipelineInfo);
+	DE_UNREF(pPropertiesCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getDataGraphPipelinePropertiesARM (VkDevice device, const VkDataGraphPipelineInfoARM* pPipelineInfo, uint32_t propertiesCount, VkDataGraphPipelinePropertyQueryResultARM* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(pPipelineInfo);
+	DE_UNREF(propertiesCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceQueueFamilyDataGraphPropertiesARM (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pQueueFamilyDataGraphPropertyCount, VkQueueFamilyDataGraphPropertiesARM* pQueueFamilyDataGraphProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(pQueueFamilyDataGraphPropertyCount);
+	DE_UNREF(pQueueFamilyDataGraphProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR void VKAPI_CALL getPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceQueueFamilyDataGraphProcessingEngineInfoARM* pQueueFamilyDataGraphProcessingEngineInfo, VkQueueFamilyDataGraphProcessingEnginePropertiesARM* pQueueFamilyDataGraphProcessingEngineProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pQueueFamilyDataGraphProcessingEngineInfo);
+	DE_UNREF(pQueueFamilyDataGraphProcessingEngineProperties);
+}
+
 static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkCreateInstance,						createInstance),
@@ -4475,97 +4648,101 @@ static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 
 static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 {
-	VK_NULL_FUNC_ENTRY(vkDestroyInstance,													destroyInstance),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,											enumeratePhysicalDevices),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,										getPhysicalDeviceProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,							getPhysicalDeviceQueueFamilyProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,									getPhysicalDeviceMemoryProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,											getPhysicalDeviceFeatures),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,									getPhysicalDeviceFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,							getPhysicalDeviceImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkCreateDevice,														createDevice),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,									enumerateDeviceLayerProperties),
-	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,								enumerateDeviceExtensionProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,						getPhysicalDeviceSparseImageFormatProperties),
-	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,											createAndroidSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,								getPhysicalDeviceDisplayPropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,						getPhysicalDeviceDisplayPlanePropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,								getDisplayPlaneSupportedDisplaysKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayModePropertiesKHR,										getDisplayModePropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,												createDisplayModeKHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilitiesKHR,									getDisplayPlaneCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDisplayPlaneSurfaceKHR,										createDisplayPlaneSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkDestroySurfaceKHR,													destroySurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,								getPhysicalDeviceSurfaceSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR,							getPhysicalDeviceSurfaceCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormatsKHR,								getPhysicalDeviceSurfaceFormatsKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,							getPhysicalDeviceSurfacePresentModesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateViSurfaceNN,													createViSurfaceNN),
-	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,											createWaylandSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWaylandPresentationSupportKHR,					getPhysicalDeviceWaylandPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,												createWin32SurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,						getPhysicalDeviceWin32PresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateXlibSurfaceKHR,												createXlibSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXlibPresentationSupportKHR,						getPhysicalDeviceXlibPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateXcbSurfaceKHR,												createXcbSurfaceKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXcbPresentationSupportKHR,						getPhysicalDeviceXcbPresentationSupportKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateImagePipeSurfaceFUCHSIA,										createImagePipeSurfaceFUCHSIA),
-	VK_NULL_FUNC_ENTRY(vkCreateStreamDescriptorSurfaceGGP,									createStreamDescriptorSurfaceGGP),
-	VK_NULL_FUNC_ENTRY(vkCreateScreenSurfaceQNX,											createScreenSurfaceQNX),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceScreenPresentationSupportQNX,						getPhysicalDeviceScreenPresentationSupportQNX),
-	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,										createDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,										destroyDebugReportCallbackEXT),
-	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,												debugReportMessageEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,					getPhysicalDeviceExternalImageFormatPropertiesNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2,										getPhysicalDeviceFeatures2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2,										getPhysicalDeviceProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2,								getPhysicalDeviceFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2,							getPhysicalDeviceImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2,							getPhysicalDeviceQueueFamilyProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2,								getPhysicalDeviceMemoryProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2,						getPhysicalDeviceSparseImageFormatProperties2),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferProperties,							getPhysicalDeviceExternalBufferProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphoreProperties,						getPhysicalDeviceExternalSemaphoreProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,							getPhysicalDeviceExternalFenceProperties),
-	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,													releaseDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkAcquireXlibDisplayEXT,												acquireXlibDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkGetRandROutputDisplayEXT,											getRandROutputDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkAcquireWinrtDisplayNV,												acquireWinrtDisplayNV),
-	VK_NULL_FUNC_ENTRY(vkGetWinrtDisplayNV,													getWinrtDisplayNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,							getPhysicalDeviceSurfaceCapabilities2EXT),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,										enumeratePhysicalDeviceGroups),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,								getPhysicalDevicePresentRectanglesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,												createIOSSurfaceMVK),
-	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,												createMacOSSurfaceMVK),
-	VK_NULL_FUNC_ENTRY(vkCreateMetalSurfaceEXT,												createMetalSurfaceEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,							getPhysicalDeviceMultisamplePropertiesEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,							getPhysicalDeviceSurfaceCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,								getPhysicalDeviceSurfaceFormats2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayProperties2KHR,							getPhysicalDeviceDisplayProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,						getPhysicalDeviceDisplayPlaneProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,										getDisplayModeProperties2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,									getDisplayPlaneCapabilities2KHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsKHR,						getPhysicalDeviceCalibrateableTimeDomainsKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateDebugUtilsMessengerEXT,										createDebugUtilsMessengerEXT),
-	VK_NULL_FUNC_ENTRY(vkDestroyDebugUtilsMessengerEXT,										destroyDebugUtilsMessengerEXT),
-	VK_NULL_FUNC_ENTRY(vkSubmitDebugUtilsMessageEXT,										submitDebugUtilsMessageEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,					getPhysicalDeviceCooperativeMatrixPropertiesNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModes2EXT,							getPhysicalDeviceSurfacePresentModes2EXT),
-	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR,		enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR,				getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR),
-	VK_NULL_FUNC_ENTRY(vkCreateHeadlessSurfaceEXT,											createHeadlessSurfaceEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV,	getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceToolProperties,									getPhysicalDeviceToolProperties),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFragmentShadingRatesKHR,							getPhysicalDeviceFragmentShadingRatesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoCapabilitiesKHR,								getPhysicalDeviceVideoCapabilitiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoFormatPropertiesKHR,							getPhysicalDeviceVideoFormatPropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR,				getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkAcquireDrmDisplayEXT,												acquireDrmDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,													getDrmDisplayEXT),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,						getPhysicalDeviceOpticalFlowImageFormatsNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,					getPhysicalDeviceCooperativeMatrixPropertiesKHR),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV,	getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV),
-	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeVectorPropertiesNV,					getPhysicalDeviceCooperativeVectorPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkDestroyInstance,														destroyInstance),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,												enumeratePhysicalDevices),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties,											getPhysicalDeviceProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties,								getPhysicalDeviceQueueFamilyProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties,										getPhysicalDeviceMemoryProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures,												getPhysicalDeviceFeatures),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties,										getPhysicalDeviceFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties,								getPhysicalDeviceImageFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkCreateDevice,															createDevice),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,										enumerateDeviceLayerProperties),
+	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,									enumerateDeviceExtensionProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties,							getPhysicalDeviceSparseImageFormatProperties),
+	VK_NULL_FUNC_ENTRY(vkCreateAndroidSurfaceKHR,												createAndroidSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateSurfaceOHOS,														createSurfaceOHOS),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPropertiesKHR,									getPhysicalDeviceDisplayPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlanePropertiesKHR,							getPhysicalDeviceDisplayPlanePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneSupportedDisplaysKHR,									getDisplayPlaneSupportedDisplaysKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayModePropertiesKHR,											getDisplayModePropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,													createDisplayModeKHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilitiesKHR,										getDisplayPlaneCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDisplayPlaneSurfaceKHR,											createDisplayPlaneSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkDestroySurfaceKHR,														destroySurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,									getPhysicalDeviceSurfaceSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilitiesKHR,								getPhysicalDeviceSurfaceCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormatsKHR,									getPhysicalDeviceSurfaceFormatsKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,								getPhysicalDeviceSurfacePresentModesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateViSurfaceNN,														createViSurfaceNN),
+	VK_NULL_FUNC_ENTRY(vkCreateWaylandSurfaceKHR,												createWaylandSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWaylandPresentationSupportKHR,						getPhysicalDeviceWaylandPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateWin32SurfaceKHR,													createWin32SurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceWin32PresentationSupportKHR,							getPhysicalDeviceWin32PresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateXlibSurfaceKHR,													createXlibSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXlibPresentationSupportKHR,							getPhysicalDeviceXlibPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateXcbSurfaceKHR,													createXcbSurfaceKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceXcbPresentationSupportKHR,							getPhysicalDeviceXcbPresentationSupportKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateImagePipeSurfaceFUCHSIA,											createImagePipeSurfaceFUCHSIA),
+	VK_NULL_FUNC_ENTRY(vkCreateStreamDescriptorSurfaceGGP,										createStreamDescriptorSurfaceGGP),
+	VK_NULL_FUNC_ENTRY(vkCreateScreenSurfaceQNX,												createScreenSurfaceQNX),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceScreenPresentationSupportQNX,							getPhysicalDeviceScreenPresentationSupportQNX),
+	VK_NULL_FUNC_ENTRY(vkCreateDebugReportCallbackEXT,											createDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyDebugReportCallbackEXT,											destroyDebugReportCallbackEXT),
+	VK_NULL_FUNC_ENTRY(vkDebugReportMessageEXT,													debugReportMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalImageFormatPropertiesNV,						getPhysicalDeviceExternalImageFormatPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFeatures2,											getPhysicalDeviceFeatures2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceProperties2,											getPhysicalDeviceProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFormatProperties2,									getPhysicalDeviceFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceImageFormatProperties2,								getPhysicalDeviceImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyProperties2,								getPhysicalDeviceQueueFamilyProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMemoryProperties2,									getPhysicalDeviceMemoryProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSparseImageFormatProperties2,							getPhysicalDeviceSparseImageFormatProperties2),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalBufferProperties,								getPhysicalDeviceExternalBufferProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalSemaphoreProperties,							getPhysicalDeviceExternalSemaphoreProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalFenceProperties,								getPhysicalDeviceExternalFenceProperties),
+	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,														releaseDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkAcquireXlibDisplayEXT,													acquireXlibDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetRandROutputDisplayEXT,												getRandROutputDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkAcquireWinrtDisplayNV,													acquireWinrtDisplayNV),
+	VK_NULL_FUNC_ENTRY(vkGetWinrtDisplayNV,														getWinrtDisplayNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2EXT,								getPhysicalDeviceSurfaceCapabilities2EXT),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,											enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDevicePresentRectanglesKHR,									getPhysicalDevicePresentRectanglesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateIOSSurfaceMVK,													createIOSSurfaceMVK),
+	VK_NULL_FUNC_ENTRY(vkCreateMacOSSurfaceMVK,													createMacOSSurfaceMVK),
+	VK_NULL_FUNC_ENTRY(vkCreateMetalSurfaceEXT,													createMetalSurfaceEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceMultisamplePropertiesEXT,								getPhysicalDeviceMultisamplePropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceCapabilities2KHR,								getPhysicalDeviceSurfaceCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceFormats2KHR,									getPhysicalDeviceSurfaceFormats2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayProperties2KHR,								getPhysicalDeviceDisplayProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceDisplayPlaneProperties2KHR,							getPhysicalDeviceDisplayPlaneProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,											getDisplayModeProperties2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetDisplayPlaneCapabilities2KHR,										getDisplayPlaneCapabilities2KHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsKHR,							getPhysicalDeviceCalibrateableTimeDomainsKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateDebugUtilsMessengerEXT,											createDebugUtilsMessengerEXT),
+	VK_NULL_FUNC_ENTRY(vkDestroyDebugUtilsMessengerEXT,											destroyDebugUtilsMessengerEXT),
+	VK_NULL_FUNC_ENTRY(vkSubmitDebugUtilsMessageEXT,											submitDebugUtilsMessageEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,						getPhysicalDeviceCooperativeMatrixPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModes2EXT,								getPhysicalDeviceSurfacePresentModes2EXT),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR,			enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR,					getPhysicalDeviceQueueFamilyPerformanceQueryPassesKHR),
+	VK_NULL_FUNC_ENTRY(vkCreateHeadlessSurfaceEXT,												createHeadlessSurfaceEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV,		getPhysicalDeviceSupportedFramebufferMixedSamplesCombinationsNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceToolProperties,										getPhysicalDeviceToolProperties),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceFragmentShadingRatesKHR,								getPhysicalDeviceFragmentShadingRatesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoCapabilitiesKHR,									getPhysicalDeviceVideoCapabilitiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoFormatPropertiesKHR,								getPhysicalDeviceVideoFormatPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR,					getPhysicalDeviceVideoEncodeQualityLevelPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkAcquireDrmDisplayEXT,													acquireDrmDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,														getDrmDisplayEXT),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceOpticalFlowImageFormatsNV,							getPhysicalDeviceOpticalFlowImageFormatsNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,						getPhysicalDeviceCooperativeMatrixPropertiesKHR),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV,		getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeVectorPropertiesNV,						getPhysicalDeviceCooperativeVectorPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceExternalTensorPropertiesARM,							getPhysicalDeviceExternalTensorPropertiesARM),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM,					getPhysicalDeviceQueueFamilyDataGraphPropertiesARM),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM,	getPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM),
 };
 
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
@@ -5018,6 +5195,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSamplerOpaqueCaptureDescriptorDataEXT,					getSamplerOpaqueCaptureDescriptorDataEXT),
 	VK_NULL_FUNC_ENTRY(vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT,	getAccelerationStructureOpaqueCaptureDescriptorDataEXT),
 	VK_NULL_FUNC_ENTRY(vkSetDeviceMemoryPriorityEXT,								setDeviceMemoryPriorityEXT),
+	VK_NULL_FUNC_ENTRY(vkWaitForPresent2KHR,										waitForPresent2KHR),
 	VK_NULL_FUNC_ENTRY(vkWaitForPresentKHR,											waitForPresentKHR),
 	VK_NULL_FUNC_ENTRY(vkCreateBufferCollectionFUCHSIA,								createBufferCollectionFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkSetBufferCollectionBufferConstraintsFUCHSIA,				setBufferCollectionBufferConstraintsFUCHSIA),
@@ -5063,7 +5241,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdOpticalFlowExecuteNV,									cmdOpticalFlowExecuteNV),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceFaultInfoEXT,										getDeviceFaultInfoEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdSetDepthBias2EXT,										cmdSetDepthBias2EXT),
-	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesEXT,									releaseSwapchainImagesEXT),
+	VK_NULL_FUNC_ENTRY(vkReleaseSwapchainImagesKHR,									releaseSwapchainImagesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetDeviceImageSubresourceLayout,							getDeviceImageSubresourceLayout),
 	VK_NULL_FUNC_ENTRY(vkMapMemory2,												mapMemory2),
 	VK_NULL_FUNC_ENTRY(vkUnmapMemory2,												unmapMemory2),
@@ -5102,5 +5280,24 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndPerTileExecutionQCOM,								cmdEndPerTileExecutionQCOM),
 	VK_NULL_FUNC_ENTRY(vkCreateExternalComputeQueueNV,								createExternalComputeQueueNV),
 	VK_NULL_FUNC_ENTRY(vkDestroyExternalComputeQueueNV,								destroyExternalComputeQueueNV),
+	VK_NULL_FUNC_ENTRY(vkCreateTensorARM,											createTensorARM),
+	VK_NULL_FUNC_ENTRY(vkDestroyTensorARM,											destroyTensorARM),
+	VK_NULL_FUNC_ENTRY(vkCreateTensorViewARM,										createTensorViewARM),
+	VK_NULL_FUNC_ENTRY(vkDestroyTensorViewARM,										destroyTensorViewARM),
+	VK_NULL_FUNC_ENTRY(vkGetTensorMemoryRequirementsARM,							getTensorMemoryRequirementsARM),
+	VK_NULL_FUNC_ENTRY(vkBindTensorMemoryARM,										bindTensorMemoryARM),
+	VK_NULL_FUNC_ENTRY(vkGetDeviceTensorMemoryRequirementsARM,						getDeviceTensorMemoryRequirementsARM),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyTensorARM,											cmdCopyTensorARM),
+	VK_NULL_FUNC_ENTRY(vkGetTensorOpaqueCaptureDescriptorDataARM,					getTensorOpaqueCaptureDescriptorDataARM),
+	VK_NULL_FUNC_ENTRY(vkGetTensorViewOpaqueCaptureDescriptorDataARM,				getTensorViewOpaqueCaptureDescriptorDataARM),
+	VK_NULL_FUNC_ENTRY(vkCreateDataGraphPipelinesARM,								createDataGraphPipelinesARM),
+	VK_NULL_FUNC_ENTRY(vkCreateDataGraphPipelineSessionARM,							createDataGraphPipelineSessionARM),
+	VK_NULL_FUNC_ENTRY(vkGetDataGraphPipelineSessionBindPointRequirementsARM,		getDataGraphPipelineSessionBindPointRequirementsARM),
+	VK_NULL_FUNC_ENTRY(vkGetDataGraphPipelineSessionMemoryRequirementsARM,			getDataGraphPipelineSessionMemoryRequirementsARM),
+	VK_NULL_FUNC_ENTRY(vkBindDataGraphPipelineSessionMemoryARM,						bindDataGraphPipelineSessionMemoryARM),
+	VK_NULL_FUNC_ENTRY(vkDestroyDataGraphPipelineSessionARM,						destroyDataGraphPipelineSessionARM),
+	VK_NULL_FUNC_ENTRY(vkCmdDispatchDataGraphARM,									cmdDispatchDataGraphARM),
+	VK_NULL_FUNC_ENTRY(vkGetDataGraphPipelineAvailablePropertiesARM,				getDataGraphPipelineAvailablePropertiesARM),
+	VK_NULL_FUNC_ENTRY(vkGetDataGraphPipelinePropertiesARM,							getDataGraphPipelinePropertiesARM),
 };
 

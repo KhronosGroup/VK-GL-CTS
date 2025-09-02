@@ -7,24 +7,11 @@
         "VkPhysicalDeviceMeshShaderFeaturesEXT": [
             {
                 "features": [
+                    "taskShader",
                     "meshShader"
                 ],
                 "requirements": [
                     "VK_EXT_mesh_shader"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
-                ]
-            },
-            {
-                "features": [
-                    "taskShader"
-                ],
-                "requirements": [
-                    "VK_EXT_mesh_shader"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
                 ]
             }
         ],
@@ -34,10 +21,8 @@
                     "primitiveFragmentShadingRate"
                 ],
                 "requirements": [
-                    "physicalDeviceMeshShaderFeaturesEXT.primitiveFragmentShadingRateMeshShader"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
+                    "VK_EXT_mesh_shader",
+                    "VK_KHR_fragment_shading_rate+VkPhysicalDeviceMeshShaderFeaturesEXT::primitiveFragmentShadingRateMeshShader"
                 ]
             }
         ]

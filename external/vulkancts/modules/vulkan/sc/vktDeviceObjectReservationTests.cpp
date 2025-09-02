@@ -628,7 +628,7 @@ void createDescriptorPools(const DeviceInterface &vkd, const VkDevice device, ui
 {
     for (std::vector<DescriptorPoolSp>::iterator it = begin; it != end; ++it)
     {
-        const VkDescriptorPoolSize poolSizes              = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, 1u};
+        const VkDescriptorPoolSize poolSizes              = {VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, maxSets};
         const VkDescriptorPoolCreateInfo descriptorPoolCI = {
             VK_STRUCTURE_TYPE_DESCRIPTOR_POOL_CREATE_INFO,     // sType
             nullptr,                                           // pNext
@@ -695,16 +695,48 @@ void createCommandPools(const DeviceInterface &vkd, const VkDevice device, std::
     }
 }
 
-void createSamplerYcbcrConversions(const DeviceInterface &vkd, const VkDevice device,
+std::pair<VkFormat, VkChromaLocation> getSupportedYcbcrFormat(const InstanceInterface &vki,
+                                                              const VkPhysicalDevice physicalDevice)
+{
+    // List of common YCbCr formats to try, ordered by preference
+    const VkFormat candidateFormats[] = {
+        VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM, VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,  VK_FORMAT_G8B8G8R8_422_UNORM,
+        VK_FORMAT_B8G8R8G8_422_UNORM,        VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM, VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
+        VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
+    };
+
+    for (size_t i = 0; i < DE_LENGTH_OF_ARRAY(candidateFormats); ++i)
+    {
+        VkFormatProperties formatProperties;
+        vki.getPhysicalDeviceFormatProperties(physicalDevice, candidateFormats[i], &formatProperties);
+        // Check if format supports sampler YCbCr conversion
+        if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT)
+        {
+            return {candidateFormats[i], VK_CHROMA_LOCATION_MIDPOINT};
+        }
+        else if (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COSITED_CHROMA_SAMPLES_BIT)
+        {
+            return {candidateFormats[i], VK_CHROMA_LOCATION_COSITED_EVEN};
+        }
+    }
+
+    TCU_THROW(InternalError, "could not find supported ycbcr sampler format");
+}
+
+void createSamplerYcbcrConversions(const DeviceInterface &vkd, const VkDevice device, const InstanceInterface &vki,
+                                   const VkPhysicalDevice physicalDevice,
                                    std::vector<SamplerYcbcrConversionSp>::iterator begin,
                                    std::vector<SamplerYcbcrConversionSp>::iterator end)
 {
+    const std::pair<VkFormat, VkChromaLocation> supportedFormatAndLocation =
+        getSupportedYcbcrFormat(vki, physicalDevice);
+
     for (std::vector<SamplerYcbcrConversionSp>::iterator it = begin; it != end; ++it)
     {
         const VkSamplerYcbcrConversionCreateInfo ycbcrConversionCI = {
             VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO, // sType
             nullptr,                                                // pNext
-            VK_FORMAT_G8B8G8R8_422_UNORM,                           // format
+            supportedFormatAndLocation.first,                       // format
             VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,         // ycbcrModel
             VK_SAMPLER_YCBCR_RANGE_ITU_FULL,                        // ycbcrRange
             {
@@ -713,8 +745,8 @@ void createSamplerYcbcrConversions(const DeviceInterface &vkd, const VkDevice de
                 VK_COMPONENT_SWIZZLE_IDENTITY, // b
                 VK_COMPONENT_SWIZZLE_IDENTITY, // a
             },                                 // components
-            VK_CHROMA_LOCATION_MIDPOINT,       // xChromaOffset
-            VK_CHROMA_LOCATION_MIDPOINT,       // yChromaOffset
+            supportedFormatAndLocation.second, // xChromaOffset
+            supportedFormatAndLocation.second, // yChromaOffset
             VK_FILTER_NEAREST,                 // chromaFilter
             VK_FALSE,                          // forceExplicitReconstruction
         };
@@ -1677,12 +1709,14 @@ public:
         case TRC_SAMPLERYCBCRCONVERSION:
         {
             std::vector<SamplerYcbcrConversionSp> samplers(VERIFYMAXVALUES_OBJECT_COUNT);
-            createSamplerYcbcrConversions(vkd, device, begin(samplers), end(samplers));
-            std::fill(begin(samplers) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(samplers), SamplerYcbcrConversionSp());
-            createSamplerYcbcrConversions(vkd, device, begin(samplers) + VERIFYMAXVALUES_OBJECT_COUNT / 2,
+            createSamplerYcbcrConversions(vkd, device, instance.getDriver(), physicalDevice, begin(samplers),
                                           end(samplers));
+            std::fill(begin(samplers) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(samplers), SamplerYcbcrConversionSp());
+            createSamplerYcbcrConversions(vkd, device, instance.getDriver(), physicalDevice,
+                                          begin(samplers) + VERIFYMAXVALUES_OBJECT_COUNT / 2, end(samplers));
             std::fill(begin(samplers), end(samplers), SamplerYcbcrConversionSp());
-            createSamplerYcbcrConversions(vkd, device, begin(samplers), end(samplers));
+            createSamplerYcbcrConversions(vkd, device, instance.getDriver(), physicalDevice, begin(samplers),
+                                          end(samplers));
             break;
         }
             //            case TRC_SURFACE:

@@ -1710,6 +1710,16 @@ private:
         explicit DescriptorSetLayoutResult(LayoutSupported supported_) : supported(supported_), layout()
         {
         }
+
+        DescriptorSetLayoutResult() : supported(LayoutSupported::NO), layout()
+        {
+        }
+
+        DescriptorSetLayoutResult(DescriptorSetLayoutResult &&other) : DescriptorSetLayoutResult()
+        {
+            std::swap(supported, other.supported);
+            layout = other.layout;
+        }
     };
 
     DescriptorSetLayoutResult makeOrCheckDescriptorSetLayout(bool checkOnly, const DeviceInterface &vkd,

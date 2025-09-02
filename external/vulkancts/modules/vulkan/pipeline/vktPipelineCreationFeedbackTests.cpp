@@ -305,9 +305,11 @@ protected:
     RenderPassWrapper m_renderPass;
 
     GraphicsPipelinePtr m_pipeline[PIPELINE_NDX_COUNT];
-    VkPipelineCreationFeedbackEXT m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT];
-    bool m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT];
-    VkPipelineCreationFeedbackEXT m_pipelineStageCreationFeedbacks[PIPELINE_NDX_COUNT * VK_MAX_SHADER_STAGES];
+    VkPipelineCreationFeedbackEXT
+        m_pipelineCreationFeedback[static_cast<int>(VK_MAX_PIPELINE_PARTS) * static_cast<int>(PIPELINE_NDX_COUNT)];
+    bool m_pipelineCreationIsHeavy[static_cast<int>(VK_MAX_PIPELINE_PARTS) * static_cast<int>(PIPELINE_NDX_COUNT)];
+    VkPipelineCreationFeedbackEXT
+        m_pipelineStageCreationFeedbacks[static_cast<int>(PIPELINE_NDX_COUNT) * static_cast<int>(VK_MAX_SHADER_STAGES)];
 };
 
 void GraphicsTestCase::initPrograms(SourceCollections &programCollection) const
@@ -837,7 +839,8 @@ tcu::TestStatus GraphicsTestInstance::verifyTestResult(void)
     uint32_t step               = start + 1u;
 
     // Iterate ofer creation feedback for all pipeline parts - if monolithic pipeline is tested then skip (step over) feedback for parts
-    for (uint32_t creationFeedbackNdx = start; creationFeedbackNdx < VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT;
+    for (uint32_t creationFeedbackNdx = start;
+         creationFeedbackNdx < static_cast<uint32_t>(VK_MAX_PIPELINE_PARTS) * static_cast<uint32_t>(PIPELINE_NDX_COUNT);
          creationFeedbackNdx += step)
     {
         uint32_t pipelineCacheNdx  = creationFeedbackNdx / uint32_t(VK_MAX_PIPELINE_PARTS);

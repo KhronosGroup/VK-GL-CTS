@@ -925,7 +925,7 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
     if (eds2Features.extendedDynamicState2LogicOp)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT);
-    if (eds2Features.extendedDynamicState2PatchControlPoints)
+    if (eds2Features.extendedDynamicState2PatchControlPoints && !m_params.meshShader)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT);
     if (eds3Features.extendedDynamicState3TessellationDomainOrigin)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT);
@@ -1167,7 +1167,7 @@ void ShaderObjectStateInstance::setDynamicStates(const vk::DeviceInterface &vk, 
         vk.cmdSetSampleLocationsEXT(cmdBuffer, &sampleLocationsInfo);
     if (m_params.provokingVertex && hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_PROVOKING_VERTEX_MODE_EXT))
         vk.cmdSetProvokingVertexModeEXT(cmdBuffer, vk::VK_PROVOKING_VERTEX_MODE_FIRST_VERTEX_EXT);
-    if ((!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines))
+    if (!m_params.rasterizerDiscardEnable && m_params.lineRasterization && m_params.lines && !m_params.meshShader)
     {
         if (hasDynamicState(dynamicStates, vk::VK_DYNAMIC_STATE_LINE_RASTERIZATION_MODE_EXT))
             vk.cmdSetLineRasterizationModeEXT(cmdBuffer, vk::VK_LINE_RASTERIZATION_MODE_RECTANGULAR_EXT);
@@ -1276,10 +1276,14 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
+    vk::VkImageCreateFlags depthCreateFlags = 0u;
+    if (m_params.sampleLocationsEnable)
+        depthCreateFlags |= vk::VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+
     const vk::VkImageCreateInfo depthCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
         nullptr,                                 // const void*                pNext
-        0u,                                      // VkImageCreateFlags        flags
+        depthCreateFlags,                        // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         depthStencilAttachmentFormat,            // VkFormat                    format
         {32, 32, 1},                             // VkExtent3D                extent
@@ -3442,6 +3446,15 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
                 params.stippledLineEnable = linesTest.stippledLineEnable;
                 params.lineRasterization  = linesTest.lineRasterization;
                 linesGroup->addChild(new ShaderObjectStateCase(testCtx, linesTest.name, params));
+
+                params.rasterizerDiscardEnable            = true;
+                const std::string rasterizer_discard_name = std::string(linesTest.name) + "_rasterizer_discard";
+                linesGroup->addChild(new ShaderObjectStateCase(testCtx, rasterizer_discard_name.c_str(), params));
+
+                params.discardRectanglesEnable  = false;
+                params.lines                    = false;
+                const std::string topology_name = std::string(linesTest.name) + "_topology_triangles";
+                linesGroup->addChild(new ShaderObjectStateCase(testCtx, topology_name.c_str(), params));
             }
             shadersGroup->addChild(linesGroup.release());
             params.reset();

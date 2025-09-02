@@ -1328,9 +1328,15 @@ tcu::TestNode::IterateResult TessellationShaderTessellationgl_InvocationID_Patch
     gl.enable(GL_RASTERIZER_DISCARD);
     GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable(GL_RASTERIZER_DISCARD) failed.");
 
-    /* Enable GL_PRIMITIVE_RESTART_FIXED_INDEX mode for indiced draw calls. */
-    gl.enable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX) failed.");
+    glw::GLboolean is_primitive_restart_supported = GL_FALSE;
+
+    gl.getBooleanv(GL_PRIMITIVE_RESTART_FOR_PATCHES_SUPPORTED, &is_primitive_restart_supported);
+    if (is_primitive_restart_supported)
+    {
+        /* Enable GL_PRIMITIVE_RESTART_FIXED_INDEX mode for indiced draw calls. */
+        gl.enable(GL_PRIMITIVE_RESTART_FIXED_INDEX);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "glEnable(GL_PRIMITIVE_RESTART_FIXED_INDEX) failed.");
+    }
 
     /* Iterate through all test runs configured */
     for (_runs_const_iterator run_iterator = m_runs.begin(); run_iterator != m_runs.end(); run_iterator++)

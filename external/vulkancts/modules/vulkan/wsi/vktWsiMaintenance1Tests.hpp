@@ -4,8 +4,8 @@
  * Vulkan Conformance Tests
  * ------------------------
  *
- * Copyright (c) 2022 Google Inc.
- * Copyright (c) 2022 The Khronos Group Inc.
+ * Copyright (c) 2022,2025 Google Inc.
+ * Copyright (c) 2022,2025 The Khronos Group Inc.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -21,7 +21,8 @@
  *
  *//*!
  * \file
- * \brief VK_EXT_surface_maintenance1 and VK_EXT_swapchain_maintenance1 extension tests
+ * \brief VK_KHR_surface_maintenance1, VK_KHR_swapchain_maintenance1,
+ *        VK_EXT_surface_maintenance1, and VK_EXT_swapchain_maintenance1 extension tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"

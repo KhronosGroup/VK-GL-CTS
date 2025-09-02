@@ -155,6 +155,8 @@ set(GLCTS_COMMON_SRCS
 	glcShaderImageLoadStoreTests.hpp
 	glcShaderStorageBufferObjectTests.cpp
 	glcShaderStorageBufferObjectTests.hpp
+	glcNegativeTextureLookupFunctionsBiasTests.cpp
+	glcNegativeTextureLookupFunctionsBiasTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS

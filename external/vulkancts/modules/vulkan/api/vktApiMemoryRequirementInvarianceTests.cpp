@@ -763,7 +763,7 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
             *baseImage                                          // VkImage            image
         };
         std::vector<VkMemoryRequirements2> requirements2(
-            2,
+            4,
             {
                 VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, // VkStructureType        sType
                 nullptr,                                 // void*                pNext
@@ -794,6 +794,46 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
                 << tcu::TestLog::EndMessage;
         }
 
+        VkMemoryDedicatedRequirements dedicatedRequirements1 = initVulkanStructure();
+        requirements2[2].pNext                               = &dedicatedRequirements1;
+        dedicatedRequirements1.prefersDedicatedAllocation    = 2;
+        dedicatedRequirements1.requiresDedicatedAllocation   = 2;
+        vk.getBufferMemoryRequirements2(device, &bufferMemoryRequirementsInfo, &requirements2[2]);
+
+        if (!areRequirementsTheSame(requirements2[0], requirements2[2]))
+        {
+            success = false;
+            log << tcu::TestLog::Message
+                << "vkGetBufferMemoryRequirements2 and vkGetBufferMemoryRequirements2 with\n"
+                   "VkMemoryDedicatedRequirements report diferent memory requirements\n"
+                << tcu::TestLog::EndMessage;
+        }
+
+        VkMemoryDedicatedRequirements dedicatedRequirements2 = initVulkanStructure();
+        requirements2[3].pNext                               = &dedicatedRequirements2;
+        dedicatedRequirements2.prefersDedicatedAllocation    = 3;
+        dedicatedRequirements2.requiresDedicatedAllocation   = 3;
+        vk.getDeviceBufferMemoryRequirements(device, &bufferMemInfo, &requirements2[3]);
+
+        if (!areRequirementsTheSame(requirements2[0], requirements2[3]))
+        {
+            success = false;
+            log << tcu::TestLog::Message
+                << "vkGetBufferMemoryRequirements2 with VkMemoryDedicatedRequirements\n"
+                   "and vkGetDeviceBufferMemoryRequirements with VkMemoryDedicatedRequirements\n"
+                   "report diferent memory requirements\n"
+                << tcu::TestLog::EndMessage;
+        }
+        if (dedicatedRequirements1.prefersDedicatedAllocation != dedicatedRequirements2.prefersDedicatedAllocation ||
+            dedicatedRequirements1.requiresDedicatedAllocation != dedicatedRequirements2.requiresDedicatedAllocation)
+        {
+            success = false;
+            log << tcu::TestLog::Message
+                << "VkMemoryDedicatedRequirements with vkGetBufferMemoryRequirements2\n"
+                   " doesn't match VkMemoryDedicatedRequirements with vkGetDeviceBufferMemoryRequirements\n"
+                << tcu::TestLog::EndMessage;
+        }
+
         // Similarly, vkGetImageCreateInfoMemoryRequirementsKHR will report the same memory requirements as
         // vkGetImageMemoryRequirements2 would if called with a VkImage created with the supplied VkImageCreateInfo
         vk.getImageMemoryRequirements2(device, &imageMemoryRequirementsInfo, &requirements2[0]);
@@ -810,6 +850,43 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
                    "report diferent memory requirements\n"
                 << tcu::TestLog::EndMessage;
         }
+
+        dedicatedRequirements1.prefersDedicatedAllocation  = 2;
+        dedicatedRequirements1.requiresDedicatedAllocation = 2;
+        vk.getImageMemoryRequirements2(device, &imageMemoryRequirementsInfo, &requirements2[2]);
+
+        if (!areRequirementsTheSame(requirements2[0], requirements2[2]))
+        {
+            success = false;
+            log << tcu::TestLog::Message
+                << "vkGetImageMemoryRequirements2 and vkGetImageMemoryRequirements2 with\n"
+                   "VkMemoryDedicatedRequirements report diferent memory requirements\n"
+                << tcu::TestLog::EndMessage;
+        }
+
+        dedicatedRequirements2.prefersDedicatedAllocation  = 3;
+        dedicatedRequirements2.requiresDedicatedAllocation = 3;
+        vk.getDeviceImageMemoryRequirements(device, &imageMemInfo, &requirements2[3]);
+
+        if (!areRequirementsTheSame(requirements2[0], requirements2[3]))
+        {
+            success = false;
+            log << tcu::TestLog::Message
+                << "vkGetImageMemoryRequirements2 with VkMemoryDedicatedRequirements\n"
+                   "and vkGetDeviceImageMemoryRequirements with VkMemoryDedicatedRequirements\n"
+                   "report diferent memory requirements\n"
+                << tcu::TestLog::EndMessage;
+        }
+        if (dedicatedRequirements1.prefersDedicatedAllocation != dedicatedRequirements2.prefersDedicatedAllocation ||
+            dedicatedRequirements1.requiresDedicatedAllocation != dedicatedRequirements2.requiresDedicatedAllocation)
+        {
+            success = false;
+            log << tcu::TestLog::Message
+                << "VkMemoryDedicatedRequirements with vkGetImageMemoryRequirements2\n"
+                   " doesn't match VkMemoryDedicatedRequirements with vkGetDeviceImageMemoryRequirements\n"
+                << tcu::TestLog::EndMessage;
+        }
+
 #endif // CTS_USES_VULKANSC
     }
 

@@ -1447,3 +1447,7 @@ dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_slash
 dEQP-VK.reconvergence.maximal.fragment.demote_half_quad_top
 dEQP-VK.reconvergence.maximal.fragment.demote_invocation
 dEQP-VK.reconvergence.maximal.fragment.terminate_invocation
+dEQP-VK.reconvergence.terminate_invocation.bit_count
+dEQP-VK.reconvergence.terminate_invocation.oob_read
+dEQP-VK.reconvergence.terminate_invocation.quad_any
+dEQP-VK.reconvergence.terminate_invocation.terminate_helpers

@@ -42,7 +42,7 @@
 #include <iostream>
 #include <vector>
 
-#include "vkvideo_parser/VulkanBitstreamBuffer.h"
+#include "VkCodecUtils/VulkanBitstreamBuffer.h"
 
 #include "vktVideoTestUtils.hpp"
 

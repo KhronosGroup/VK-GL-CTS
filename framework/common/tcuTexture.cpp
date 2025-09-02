@@ -529,6 +529,9 @@ void floatToChannel(uint8_t *dst, float src, TextureFormat::ChannelType type)
     case TextureFormat::SIGNED_INT32:
         *((int32_t *)dst) = convertSatRte<int32_t>(src);
         break;
+    case TextureFormat::SIGNED_INT64:
+        *((int64_t *)dst) = convertSatRte<int32_t>(src); // Note we convert as 32-bits, but store as 64.
+        break;
     case TextureFormat::UNSIGNED_INT8:
         *((uint8_t *)dst) = convertSatRte<uint8_t>(src);
         break;
@@ -540,6 +543,9 @@ void floatToChannel(uint8_t *dst, float src, TextureFormat::ChannelType type)
         break;
     case TextureFormat::UNSIGNED_INT32:
         *((uint32_t *)dst) = convertSatRte<uint32_t>(src);
+        break;
+    case TextureFormat::UNSIGNED_INT64:
+        *((uint64_t *)dst) = convertSatRte<uint32_t>(src); // Note we convert as 32-bits, but store as 64.
         break;
     case TextureFormat::HALF_FLOAT:
         *((deFloat16 *)dst) = deFloat32To16(src);
@@ -768,24 +774,6 @@ inline uint32_t intToChannel(int32_t src, int bits)
     return (uint32_t)de::clamp(src, minVal, maxVal) & mask;
 }
 
-tcu::Vec4 unpackRGB999E5(uint32_t color)
-{
-    const int mBits = 9;
-    const int eBias = 15;
-
-    uint32_t exp = color >> 27;
-    uint32_t bs  = (color >> 18) & ((1 << 9) - 1);
-    uint32_t gs  = (color >> 9) & ((1 << 9) - 1);
-    uint32_t rs  = color & ((1 << 9) - 1);
-
-    float e = deFloatPow(2.0f, (float)((int)exp - eBias - mBits));
-    float r = (float)rs * e;
-    float g = (float)gs * e;
-    float b = (float)bs * e;
-
-    return tcu::Vec4(r, g, b, 1.0f);
-}
-
 bool isColorOrder(TextureFormat::ChannelOrder order)
 {
     DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
@@ -824,6 +812,24 @@ float getImageViewMinLod(ImageViewMinLod &l)
 }
 
 } // namespace
+
+tcu::Vec4 unpackRGB999E5(uint32_t color)
+{
+    const int mBits = 9;
+    const int eBias = 15;
+
+    uint32_t exp = color >> 27;
+    uint32_t bs  = (color >> 18) & ((1 << 9) - 1);
+    uint32_t gs  = (color >> 9) & ((1 << 9) - 1);
+    uint32_t rs  = color & ((1 << 9) - 1);
+
+    float e = deFloatPow(2.0f, (float)((int)exp - eBias - mBits));
+    float r = (float)rs * e;
+    float g = (float)gs * e;
+    float b = (float)bs * e;
+
+    return tcu::Vec4(r, g, b, 1.0f);
+}
 
 bool isValid(TextureFormat format)
 {

@@ -2039,8 +2039,8 @@ bool RectangleTest::isFormatValid(const PixelFormat &format, const PixelType &ty
 bool RectangleTest::isUnsizedFormat(GLenum format) const
 {
     GLenum formats[]   = {GL_RGBA, GL_RGB, GL_LUMINANCE, GL_LUMINANCE_ALPHA, GL_ALPHA};
-    GLenum *formatsEnd = formats + DE_LENGTH_OF_ARRAY(formats);
-    return (std::find(formats, formatsEnd, format) < formatsEnd);
+    GLenum *formatsEnd = formats + de::arrayLength(formats);
+    return (std::find(formats, formatsEnd, format) != formatsEnd);
 }
 
 bool RectangleTest::isSRGBFormat(const InternalFormat &internalFormat) const
@@ -2052,8 +2052,8 @@ bool RectangleTest::isSNORMFormat(const InternalFormat &internalFormat) const
 {
     GLenum formats[]   = {GL_R8_SNORM,  GL_RG8_SNORM,  GL_RGB8_SNORM,  GL_RGBA8_SNORM,
                           GL_R16_SNORM, GL_RG16_SNORM, GL_RGB16_SNORM, GL_RGBA16_SNORM};
-    GLenum *formatsEnd = formats + DE_LENGTH_OF_ARRAY(formats);
-    return (std::find(formats, formatsEnd, internalFormat.sizedFormat) < formatsEnd);
+    GLenum *formatsEnd = formats + de::arrayLength(formats);
+    return (std::find(formats, formatsEnd, internalFormat.sizedFormat) != formatsEnd);
 }
 
 bool RectangleTest::isCopyValid(const InternalFormat &copyInternalFormat, const InternalFormat &internalFormat) const

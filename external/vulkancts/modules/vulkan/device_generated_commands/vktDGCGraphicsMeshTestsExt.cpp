@@ -24,6 +24,8 @@
 
 #include "vktDGCGraphicsMeshTestsExt.hpp"
 #include "vktDGCGraphicsMeshConditionalTestsExt.hpp"
+#include "vktTestCaseUtil.hpp"
+#include "util/vktShaderObjectUtil.hpp"
 
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
@@ -1356,8 +1358,9 @@ tcu::TestStatus DGCMeshDrawInstance::iterate(void)
             for (const auto &stageShader : shaderMap)
                 ctx.vkd.cmdBindShadersEXT(recCmdBuffer, 1u, &stageShader.first, &stageShader.second);
 
-            bindShaderObjectState(ctx.vkd, getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
-                                  VK_PRIMITIVE_TOPOLOGY_LAST, 0u, nullptr, nullptr, nullptr, nullptr, nullptr);
+            vkt::shaderobjutil::bindShaderObjectState(
+                ctx.vkd, vkt::shaderobjutil::getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
+                VK_PRIMITIVE_TOPOLOGY_LAST, 0u, nullptr, nullptr, nullptr, nullptr, nullptr);
         }
         else
         {
@@ -2084,6 +2087,234 @@ tcu::TestStatus NoFragInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+struct ManySequencesParams
+{
+    uint32_t sequenceCount;
+    bool useTaskShader;
+
+    VkShaderStageFlags getShaderStages() const
+    {
+        VkShaderStageFlags stages = 0u;
+
+        if (useTaskShader)
+            stages |= VK_SHADER_STAGE_TASK_BIT_EXT;
+        stages |= VK_SHADER_STAGE_MESH_BIT_EXT;
+
+        return stages;
+    }
+
+    VkPipelineStageFlags getPipelineStages() const
+    {
+        VkPipelineStageFlags stages = 0u;
+
+        if (useTaskShader)
+            stages |= VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
+        stages |= VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT;
+
+        return stages;
+    }
+};
+
+static constexpr uint32_t kManySequencesWorkGroupSize = 64u;
+
+void manySequencesCheckSupport(Context &context, ManySequencesParams params)
+{
+    const auto stages = params.getShaderStages();
+    checkDGCExtSupport(context, stages);
+    context.requireDeviceFunctionality("VK_EXT_mesh_shader");
+}
+
+void manySequencesInitPrograms(SourceCollections &dst, ManySequencesParams params)
+{
+    const vk::ShaderBuildOptions shaderBuildOpt(dst.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    if (params.useTaskShader)
+    {
+        std::ostringstream task;
+        task << "#version 460\n"
+             << "#extension GL_EXT_mesh_shader : enable\n"
+             << "layout (local_size_x=" << kManySequencesWorkGroupSize << ", local_size_y=1, local_size_z=1) in;\n"
+             << "layout (set=0, binding=0, std430) buffer OutputBlock { uint values[]; } outputBuffer;\n"
+             << "layout (push_constant, std430) uniform PushConstantBlock { uint valueIndex; } pc;\n"
+             << "void main (void) {\n"
+             << "    atomicAdd(outputBuffer.values[pc.valueIndex], 1u);\n"
+             << "    EmitMeshTasksEXT(0, 0, 0);\n"
+             << "}\n";
+        dst.glslSources.add("task") << glu::TaskSource(task.str()) << shaderBuildOpt;
+    }
+
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "layout (local_size_x=" << kManySequencesWorkGroupSize << ", local_size_y=1, local_size_z=1) in;\n"
+         << "layout (points) out;\n"
+         << "layout (max_vertices=1, max_primitives=1) out;\n"
+         << "layout (set=0, binding=0, std430) buffer OutputBlock { uint values[]; } outputBuffer;\n"
+         << "layout (push_constant, std430) uniform PushConstantBlock { uint valueIndex; } pc;\n"
+         << "void main (void) {\n"
+         << "    atomicAdd(outputBuffer.values[pc.valueIndex], 1u);\n"
+         << "    SetMeshOutputsEXT(0, 0);\n"
+         << "}\n";
+    dst.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << shaderBuildOpt;
+}
+
+tcu::TestStatus manySequencesRun(Context &context, ManySequencesParams params)
+{
+    const auto ctx        = context.getContextCommonData();
+    const auto descType   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto stageFlags = params.getShaderStages();
+    const auto fbExtent   = tcu::IVec3(1, 1, 1);
+    const auto bindPoint  = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    // Output buffer.
+    const auto valueSize              = static_cast<VkDeviceSize>(sizeof(uint32_t));
+    const auto outputBufferSize       = params.sequenceCount * valueSize;
+    const auto outputBufferCreateInfo = makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory outputBuffer(ctx.vkd, ctx.device, ctx.allocator, outputBufferCreateInfo,
+                                  MemoryRequirement::HostVisible);
+    auto &outputBufferAlloc = outputBuffer.getAllocation();
+    void *outputBufferData  = outputBufferAlloc.getHostPtr();
+
+    deMemset(outputBufferData, 0, static_cast<size_t>(outputBufferSize));
+    flushAlloc(ctx.vkd, ctx.device, outputBufferAlloc);
+
+    // Descriptor set layout, pool and set preparation.
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, stageFlags);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto outputBufferDescInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, outputBufferSize);
+    setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                                 &outputBufferDescInfo);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    // Push constants
+    const auto pcSize  = DE_SIZEOF32(uint32_t);
+    const auto pcRange = makePushConstantRange(stageFlags, 0u, pcSize);
+
+    // Pipeline layout.
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+    // Shader.
+    const auto &binaries = context.getBinaryCollection();
+    const auto taskShader =
+        (params.useTaskShader ? createShaderModule(ctx.vkd, ctx.device, binaries.get("task")) : Move<VkShaderModule>());
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+
+    // Render pass and framebuffer.
+    const auto renderPass                               = makeRenderPass(ctx.vkd, ctx.device);
+    const VkFramebufferCreateInfo framebufferCreateInfo = {
+        VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, nullptr, 0u, *renderPass, 0u, nullptr, 1u, 1u, 1u,
+    };
+    const auto framebuffer = createFramebuffer(ctx.vkd, ctx.device, &framebufferCreateInfo);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *taskShader, *meshShader,
+                                               VK_NULL_HANDLE, *renderPass, viewports, scissors, 0u);
+
+    // Generated commands layout: push constant and dispatch.
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(0u, stageFlags, *pipelineLayout);
+    cmdsLayoutBuilder.addSequenceIndexToken(0u, pcRange);
+    cmdsLayoutBuilder.addDrawMeshTasksToken(cmdsLayoutBuilder.getStreamRange());
+    const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    // Generated indirect commands buffer contents.
+    // Increase the value index (indicated by the push constant) in each sequence, then dispatch one workgroup.
+    const auto genCmdsItemCount = (4u /*push constant + dispatch arguments*/ * params.sequenceCount);
+    std::vector<uint32_t> genCmdsData;
+    genCmdsData.reserve(genCmdsItemCount);
+    for (uint32_t i = 0u; i < params.sequenceCount; ++i)
+    {
+        genCmdsData.push_back(std::numeric_limits<uint32_t>::max()); // Placeholder value for the sequence index.
+        genCmdsData.push_back(1u);                                   // VkDrawMeshTasksIndirectCommandEXT::groupCountX
+        genCmdsData.push_back(1u);                                   // VkDrawMeshTasksIndirectCommandEXT::groupCountY
+        genCmdsData.push_back(1u);                                   // VkDrawMeshTasksIndirectCommandEXT::groupCountZ
+    }
+
+    // Generated indirect commands buffer.
+    const auto genCmdsBufferSize = de::dataSize(genCmdsData);
+    DGCBuffer genCmdsBuffer(ctx.vkd, ctx.device, ctx.allocator, genCmdsBufferSize);
+    auto &genCmdsBufferAlloc = genCmdsBuffer.getAllocation();
+    void *genCmdsBufferData  = genCmdsBufferAlloc.getHostPtr();
+
+    deMemcpy(genCmdsBufferData, de::dataOrNull(genCmdsData), de::dataSize(genCmdsData));
+    flushAlloc(ctx.vkd, ctx.device, genCmdsBufferAlloc);
+
+    // Preprocess buffer.
+    PreprocessBufferExt preprocessBuffer(ctx.vkd, ctx.device, ctx.allocator, VK_NULL_HANDLE, *cmdsLayout,
+                                         params.sequenceCount, 0u, *pipeline);
+
+    // Command pool and buffer.
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    // Main command buffer contents.
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u));
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+
+    {
+        const DGCGenCmdsInfo cmdsInfo(
+            stageFlags,                          // VkShaderStageFlags          shaderStages;
+            VK_NULL_HANDLE,                      // VkIndirectExecutionSetEXT   indirectExecutionSet;
+            *cmdsLayout,                         // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+            genCmdsBuffer.getDeviceAddress(),    // VkDeviceAddress             indirectAddress;
+            genCmdsBuffer.getSize(),             // VkDeviceSize                indirectAddressSize;
+            preprocessBuffer.getDeviceAddress(), // VkDeviceAddress             preprocessAddress;
+            preprocessBuffer.getSize(),          // VkDeviceSize                preprocessSize;
+            params.sequenceCount,                // uint32_t                    maxSequenceCount;
+            0ull,                                // VkDeviceAddress             sequenceCountAddress;
+            0u,                                  // uint32_t                    maxDrawCount;
+            *pipeline);
+        ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_FALSE, &cmdsInfo.get());
+    }
+
+    endRenderPass(ctx.vkd, cmdBuffer);
+
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify results.
+    std::vector<uint32_t> outputValues(params.sequenceCount, std::numeric_limits<uint32_t>::max());
+    invalidateAlloc(ctx.vkd, ctx.device, outputBufferAlloc);
+    deMemcpy(de::dataOrNull(outputValues), outputBufferData, de::dataSize(outputValues));
+
+    bool fail = false;
+    auto &log = context.getTestContext().getLog();
+
+    for (uint32_t i = 0; i < params.sequenceCount; ++i)
+    {
+        const auto &result = outputValues.at(i);
+        if (result != kManySequencesWorkGroupSize)
+        {
+            log << tcu::TestLog::Message << "Error at execution " << i << ": expected " << kManySequencesWorkGroupSize
+                << " but found " << result << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected values found in output buffer; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createDGCGraphicsMeshTestsExt(tcu::TestContext &testCtx)
@@ -2177,6 +2408,15 @@ tcu::TestCaseGroup *createDGCGraphicsMeshTestsExt(tcu::TestContext &testCtx)
                                           (useIES ? "_with_ies" : "") + (preprocess ? "_preprocess" : "");
                     miscGroup->addChild(new NoFragCase(testCtx, testName, params));
                 }
+
+    for (const bool hasTask : {false, true})
+        for (const auto sequenceCount : {64u, 1024u, 8192u, 131072u})
+        {
+            const auto testName = "many_sequences_" + std::to_string(sequenceCount) + (hasTask ? "_task" : "");
+            const ManySequencesParams params{sequenceCount, hasTask};
+            addFunctionCaseWithPrograms(miscGroup.get(), testName, manySequencesCheckSupport, manySequencesInitPrograms,
+                                        manySequencesRun, params);
+        }
 
     mainGroup->addChild(directGroup.release());
     mainGroup->addChild(indirectGroup.release());

@@ -42,8 +42,6 @@ namespace cts_amber
 
 using namespace vk;
 
-de::SharedPtr<Move<vk::VkDevice>> g_singletonDeviceDepthGroup;
-
 class DepthTestCase : public AmberTestCase
 {
     bool m_useCustomDevice;
@@ -55,66 +53,43 @@ public:
     {
     }
 
-    TestInstance *createInstance(Context &ctx) const
+    virtual std::string getInstanceCapabilitiesId() const override
     {
-        // Create a custom device to ensure that VK_EXT_depth_range_unrestricted is not enabled
-        if (!g_singletonDeviceDepthGroup && m_useCustomDevice)
+        if (m_useCustomDevice)
         {
-            const float queuePriority = 1.0f;
-
-            // Create a universal queue that supports graphics and compute
-            const VkDeviceQueueCreateInfo queueParams = {
-                VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // sType
-                nullptr,                                    // pNext
-                0u,                                         // flags
-                ctx.getUniversalQueueFamilyIndex(),         // queueFamilyIndex
-                1u,                                         // queueCount
-                &queuePriority                              // pQueuePriorities
-            };
-
-            // Unless some version of depth_clamp_zero_one is available then the test is not supported and
-            // this code is never run. Unfortunately we have to pass a supported extenion name to device
-            // creation, so we need to work out which one. Use the KHR if both are supported.
-            std::vector<std::string> devExts = ctx.getDeviceExtensions();
-            bool khrSupported = de::contains(devExts.begin(), devExts.end(), "VK_KHR_depth_clamp_zero_one");
-            const char *ext   = khrSupported ? "VK_KHR_depth_clamp_zero_one" : "VK_EXT_depth_clamp_zero_one";
-
-            VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
-
-            VkPhysicalDeviceDepthClampZeroOneFeaturesKHR clampParams = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR, // sType
-                nullptr,                                                             // pNext
-                VK_TRUE,                                                             // depthClampZeroOne
-            };
-
-            features2.pNext = &clampParams;
-
-            const auto &vki           = ctx.getInstanceInterface();
-            const auto physicalDevice = ctx.getPhysicalDevice();
-
-            ctx.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
-            vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-
-            const VkDeviceCreateInfo deviceCreateInfo = {
-                VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // sType
-                &features2,                           // pNext
-                (VkDeviceCreateFlags)0u,              // flags
-                1,                                    // queueRecordCount
-                &queueParams,                         // pRequestedQueues
-                0,                                    // layerCount
-                nullptr,                              // ppEnabledLayerNames
-                1,                                    // enabledExtensionCount
-                &ext,                                 // ppEnabledExtensionNames
-                nullptr,                              // pEnabledFeatures
-            };
-
-            const bool validation = ctx.getTestContext().getCommandLine().isValidationEnabled();
-            Move<VkDevice> device = createCustomDevice(validation, ctx.getPlatformInterface(), ctx.getInstance(), vki,
-                                                       physicalDevice, &deviceCreateInfo);
-
-            g_singletonDeviceDepthGroup = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+            return std::type_index(typeid(DepthTestCase)).name();
         }
-        return new AmberTestInstance(ctx, m_recipe, m_useCustomDevice ? g_singletonDeviceDepthGroup->get() : nullptr);
+        return AmberTestCase::getInstanceCapabilitiesId();
+    }
+
+    virtual void initInstanceCapabilities(InstCaps &caps) override
+    {
+        caps.addExtension("VK_KHR_get_physical_device_properties2");
+    }
+
+    virtual std::string getRequiredCapabilitiesId() const override
+    {
+        if (m_useCustomDevice)
+        {
+            return std::type_index(typeid(DepthTestCase)).name();
+        }
+        return AmberTestCase::getRequiredCapabilitiesId();
+    }
+
+    // Create a custom device to ensure that VK_EXT_depth_range_unrestricted is not enabled
+    virtual void initDeviceCapabilities(DevCaps &caps) override
+    {
+        if (!caps.addExtension("VK_KHR_depth_clamp_zero_one"))
+            caps.addExtension("VK_EXT_depth_clamp_zero_one");
+
+        caps.addFeature(&VkPhysicalDeviceDepthClampZeroOneFeaturesKHR::depthClampZeroOne);
+        caps.addFeature(&VkPhysicalDeviceFeatures::fragmentStoresAndAtomics);
+        caps.addFeature(&VkPhysicalDeviceFeatures::depthClamp);
+    }
+
+    TestInstance *createInstance(Context &ctx) const override
+    {
+        return new AmberTestInstance(ctx, m_recipe, m_useCustomDevice ? ctx.getDevice() : VK_NULL_HANDLE);
     }
 };
 
@@ -183,8 +158,6 @@ static void createTests(tcu::TestCaseGroup *g)
 
 static void cleanupGroup(tcu::TestCaseGroup *)
 {
-    // Destroy custom device object
-    g_singletonDeviceDepthGroup.clear();
 }
 
 tcu::TestCaseGroup *createAmberDepthGroup(tcu::TestContext &testCtx, const std::string &name)

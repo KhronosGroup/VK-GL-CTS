@@ -128,7 +128,8 @@ enum class UpdateCase
     NONE,
     VERTICES,
     INDICES,
-    TRANSFORM
+    TRANSFORM,
+    DEGENERATE,
 };
 
 static const uint32_t RTAS_DEFAULT_SIZE = 8u;
@@ -170,6 +171,7 @@ struct TestParams
     vk::VkAccelerationStructureBuildTypeKHR buildType; // are we making AS on CPU or GPU
     VkFormat vertexFormat;
     bool padVertices;
+    bool minAlign;
     VkIndexType indexType;
     BottomTestType bottomTestType; // what kind of geometry is stored in bottom AS
     InstanceCullFlags cullFlags;   // Flags for instances, if needed.
@@ -262,6 +264,44 @@ VkGeometryInstanceFlagsKHR getCullFlags(InstanceCullFlags flags)
     return cullFlags;
 }
 
+static uint32_t getMisalignBytes(VkFormat vertexFormat)
+{
+    uint32_t minAlign = ~0U;
+
+    switch (vertexFormat)
+    {
+    case VK_FORMAT_R8G8_SNORM:
+    case VK_FORMAT_R8G8B8_SNORM:
+    case VK_FORMAT_R8G8B8A8_SNORM:
+        minAlign = 1U;
+        break;
+    case VK_FORMAT_R16G16_SFLOAT:
+    case VK_FORMAT_R16G16B16A16_SFLOAT:
+    case VK_FORMAT_R16G16_SNORM:
+    case VK_FORMAT_R16G16B16A16_SNORM:
+        minAlign = 2U;
+        break;
+    case VK_FORMAT_R32G32_SFLOAT:
+    case VK_FORMAT_R32G32B32_SFLOAT:
+    case VK_FORMAT_R16G16B16_SNORM:
+    case VK_FORMAT_R16G16B16_SFLOAT:
+    case VK_FORMAT_R32G32B32A32_SFLOAT:
+    case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+        minAlign = 4U;
+        break;
+    case VK_FORMAT_R64G64_SFLOAT:
+    case VK_FORMAT_R64G64B64_SFLOAT:
+    case VK_FORMAT_R64G64B64A64_SFLOAT:
+        minAlign = 8U;
+        break;
+    default:
+        DE_ASSERT(false); // Unhandled format
+        break;
+    }
+
+    return minAlign;
+}
+
 class CheckerboardConfiguration : public TestConfiguration
 {
 public:
@@ -313,8 +353,15 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> CheckerboardConfigu
         de::SharedPtr<RaytracedGeometryBase> geometry;
         if (testParams.bottomTestType == BottomTestType::TRIANGLES)
         {
+            uint32_t minAlign = 0;
+
+            if (testParams.minAlign)
+            {
+                minAlign = getMisalignBytes(testParams.vertexFormat);
+            }
+
             geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat,
-                                             testParams.indexType, testParams.padVertices);
+                                             testParams.indexType, testParams.padVertices, minAlign);
             if (testParams.indexType == VK_INDEX_TYPE_NONE_KHR)
             {
                 if (instanceFlags == 0u)
@@ -775,8 +822,16 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> SingleTriangleConfi
     {
         bottomLevelAccelerationStructure->setGeometryCount(geometryCount);
 
+        uint32_t minAlign = 0;
+
+        if (testParams.minAlign)
+        {
+            minAlign = getMisalignBytes(testParams.vertexFormat);
+        }
+
         de::SharedPtr<RaytracedGeometryBase> geometry;
-        geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
+        geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType,
+                                         testParams.padVertices, minAlign);
 
         for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
             geometry->addVertex(*it);
@@ -885,6 +940,19 @@ bool SingleTriangleConfiguration::verifyImage(BufferWithMemory *resultBuffer, Co
         v1.z() = 0.0f;
         v2.z() = 0.0f;
     }
+    // XXX Hack
+    if (testParams.vertexFormat == VK_FORMAT_A2B10G10R10_UNORM_PACK32)
+    {
+        v0.x() = std::max(v0.x(), 0.0f);
+        v0.y() = std::max(v0.y(), 0.0f);
+        v0.z() = std::max(v0.z(), 0.0f);
+        v1.x() = std::max(v1.x(), 0.0f);
+        v1.y() = std::max(v1.y(), 0.0f);
+        v1.z() = std::max(v1.z(), 0.0f);
+        v2.x() = std::max(v2.x(), 0.0f);
+        v2.y() = std::max(v2.y(), 0.0f);
+        v2.z() = std::max(v2.z(), 0.0f);
+    }
     tcu::Vec3 abc = tcu::cross((v2 - v0), (v1 - v0));
 
     for (uint32_t j = 0; j < testParams.height; ++j)
@@ -901,7 +969,7 @@ bool SingleTriangleConfiguration::verifyImage(BufferWithMemory *resultBuffer, Co
         }
     }
     return tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result comparison", "", referenceAccess,
-                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
 }
 
 VkFormat SingleTriangleConfiguration::getResultImageFormat()
@@ -973,14 +1041,30 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> UpdateableASConfigu
         de::SharedPtr<RaytracedGeometryBase> geometry;
         geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
 
-        for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
-            geometry->addVertex(*it);
+        if (testParams.updateCase == UpdateCase::DEGENERATE)
+        {
+            // Make second triangle degenerate by collapsing vertices 3, 4, 5
+            std::vector<tcu::Vec3> modifiedVertices = vertices;
+            tcu::Vec3 centerPoint                   = (vertices[3] + vertices[4] + vertices[5]) / 3.0f;
+            modifiedVertices[3]                     = centerPoint;
+            modifiedVertices[4]                     = centerPoint;
+            modifiedVertices[5]                     = centerPoint;
+
+            for (auto it = begin(modifiedVertices), eit = end(modifiedVertices); it != eit; ++it)
+                geometry->addVertex(*it);
+        }
+        else
+        {
+            for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+                geometry->addVertex(*it);
+        }
 
         if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
         {
             for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
                 geometry->addIndex(*it);
         }
+
         bottomLevelAccelerationStructure->addGeometry(geometry);
 
         result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
@@ -1081,7 +1165,7 @@ bool UpdateableASConfiguration::verifyImage(BufferWithMemory *resultBuffer, Cont
         }
     }
     return tcu::floatThresholdCompare(context.getTestContext().getLog(), "Result comparison", "", referenceAccess,
-                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                      resultAccess, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
 }
 
 VkFormat UpdateableASConfiguration::getResultImageFormat()
@@ -3451,6 +3535,7 @@ struct QueryPoolResultsParams
     bool inVkBuffer;
     bool compacted;
     ResourceResidency accStructRes;
+    bool queryAvailablityBit;
 };
 
 typedef de::SharedPtr<const QueryPoolResultsParams> QueryPoolResultsParamsPtr;
@@ -3561,7 +3646,8 @@ public:
     TestStatus iterate(void) override;
     std::vector<ASInterfacePtr> makeCopyOfStructures(const std::vector<ASInterfacePtr> &structs,
                                                      const std::vector<VkDeviceSize> sizes);
-    std::vector<VkDeviceSize> getStructureSizes(const std::vector<VkAccelerationStructureKHR> &handles);
+    std::vector<VkDeviceSize> getStructureSizes(const std::vector<VkAccelerationStructureKHR> &handles,
+                                                bool &allBitsAvailable);
 };
 
 class QueryPoolResultsPointersInstance : public QueryPoolResultsInstance
@@ -3722,7 +3808,7 @@ auto QueryPoolResultsInstance::prepareTopAccStructure(const DeviceInterface &vk,
 }
 
 std::vector<VkDeviceSize> QueryPoolResultsSizeInstance::getStructureSizes(
-    const std::vector<VkAccelerationStructureKHR> &handles)
+    const std::vector<VkAccelerationStructureKHR> &handles, bool &allBitsAvailable)
 {
     const DeviceInterface &vk  = m_context.getDeviceInterface();
     const VkDevice device      = m_context.getDevice();
@@ -3823,17 +3909,83 @@ std::vector<VkDeviceSize> QueryPoolResultsSizeInstance::getStructureSizes(
         }
         else
         {
-            VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSize, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
-                                            sizeSizes.data(), sizeof(VkDeviceSize),
-                                            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
-            VK_CHECK(vk.getQueryPoolResults(device, *queryPoolSerial, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
-                                            serialSizes.data(), sizeof(VkDeviceSize),
-                                            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
-            if (m_params->compacted)
+            if (!m_params->queryAvailablityBit)
             {
                 VK_CHECK(vk.getQueryPoolResults(
-                    device, *queryPoolCompact, 0u, queryCount, queryCount * sizeof(VkDeviceSize), compactSizes.data(),
+                    device, *queryPoolSize, 0u, queryCount, queryCount * sizeof(VkDeviceSize), sizeSizes.data(),
                     sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+                VK_CHECK(vk.getQueryPoolResults(
+                    device, *queryPoolSerial, 0u, queryCount, queryCount * sizeof(VkDeviceSize), serialSizes.data(),
+                    sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+                if (m_params->compacted)
+                {
+                    VK_CHECK(vk.getQueryPoolResults(
+                        device, *queryPoolCompact, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
+                        compactSizes.data(), sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+                }
+            }
+            else
+            {
+                const uint32_t countWithAvailability = queryCount * 2u;
+                std::vector<VkDeviceSize> sizeSizesWithAvailability(countWithAvailability, 0);
+                std::vector<VkDeviceSize> serialSizesWithAvailability(countWithAvailability, 0);
+                std::vector<VkDeviceSize> compactSizesWithAvailability(countWithAvailability, 0);
+
+                size_t dataSize = countWithAvailability * sizeof(VkDeviceSize);
+                VkQueryResultFlags queryFlags =
+                    VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT;
+                VkDeviceSize stride = sizeof(VkDeviceSize) * 2u;
+
+                VkResult res;
+                do
+                {
+                    res = vk.getQueryPoolResults(device, *queryPoolSize, 0u, queryCount, dataSize,
+                                                 sizeSizesWithAvailability.data(), stride, queryFlags);
+                } while (res != VK_SUCCESS);
+                do
+                {
+                    res = vk.getQueryPoolResults(device, *queryPoolSerial, 0u, queryCount, dataSize,
+                                                 serialSizesWithAvailability.data(), stride, queryFlags);
+                } while (res != VK_SUCCESS);
+                if (m_params->compacted)
+                {
+                    do
+                    {
+                        res = vk.getQueryPoolResults(device, *queryPoolCompact, 0u, queryCount, dataSize,
+                                                     compactSizesWithAvailability.data(), stride, queryFlags);
+                    } while (res != VK_SUCCESS);
+                }
+
+                allBitsAvailable = true;
+                for (uint32_t i = 0; i < queryCount; ++i)
+                {
+                    sizeSizes[i]    = sizeSizesWithAvailability[i * 2];
+                    serialSizes[i]  = serialSizesWithAvailability[i * 2];
+                    compactSizes[i] = compactSizesWithAvailability[i * 2];
+
+                    tcu::TestLog &log = m_context.getTestContext().getLog();
+                    if (sizeSizesWithAvailability[i * 2 + 1] == 0)
+                    {
+                        allBitsAvailable = false;
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << " from query pool queryPoolSize is 0" << tcu::TestLog::EndMessage;
+                    }
+                    if (serialSizesWithAvailability[i * 2 + 1] == 0)
+                    {
+                        allBitsAvailable = false;
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << " from query pool queryPoolSerial is 0" << tcu::TestLog::EndMessage;
+                    }
+                    if (m_params->compacted && compactSizesWithAvailability[i * 2 + 1] == 0)
+                    {
+                        allBitsAvailable = false;
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << " from query pool queryPoolCompact is 0" << tcu::TestLog::EndMessage;
+                    }
+                }
             }
         }
     }
@@ -3922,7 +4074,8 @@ TestStatus QueryPoolResultsSizeInstance::iterate(void)
                    [](const BlasPtr &blas) { return *blas->getPtr(); });
 
     // only the first queryCount elements are results from ACCELERATION_STRUCTURE_SIZE queries.
-    const std::vector<VkDeviceSize> sourceSizes = getStructureSizes(handles);
+    bool allBitsAvailable1                      = false;
+    const std::vector<VkDeviceSize> sourceSizes = getStructureSizes(handles, allBitsAvailable1);
 
     std::vector<ASInterfacePtr> sourceStructures;
     sourceStructures.push_back(makeASInterfacePtr(tlas));
@@ -3933,9 +4086,13 @@ TestStatus QueryPoolResultsSizeInstance::iterate(void)
     std::transform(copies.begin(), copies.end(), handles.begin(),
                    [](const ASInterfacePtr &intf) { return intf->getPtr(); });
 
-    const std::vector<VkDeviceSize> copySizes = getStructureSizes(handles);
+    bool allBitsAvailable2                    = false;
+    const std::vector<VkDeviceSize> copySizes = getStructureSizes(handles, allBitsAvailable2);
 
     // verification
+    if (m_params->queryAvailablityBit && (!allBitsAvailable1 || !allBitsAvailable2))
+        return TestStatus::fail("Availability bits are 0");
+
     bool pass = true;
     for (uint32_t i = 0; pass && i < queryCount; ++i)
     {
@@ -3985,6 +4142,8 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
                                                MemoryRequirement::Coherent | MemoryRequirement::HostVisible);
     }
 
+    bool availabilityBitsSet = true;
+
     if (m_params->buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
     {
         beginCommandBuffer(vk, *cmdBuffer, 0);
@@ -4008,9 +4167,36 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
         }
         else
         {
-            VK_CHECK(vk.getQueryPoolResults(device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize),
-                                            pointerCounts.data(), sizeof(VkDeviceSize),
-                                            VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+            if (!m_params->queryAvailablityBit)
+            {
+                VK_CHECK(vk.getQueryPoolResults(
+                    device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize), pointerCounts.data(),
+                    sizeof(VkDeviceSize), VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT));
+            }
+            else
+            {
+                std::vector<VkDeviceSize> pointerCountsWithAvailability(queryCount * 2u, 123u);
+                VkResult res;
+                do
+                {
+                    res = vk.getQueryPoolResults(
+                        device, *queryPoolCounts, 0u, queryCount, queryCount * sizeof(VkDeviceSize) * 2u,
+                        pointerCountsWithAvailability.data(), sizeof(VkDeviceSize) * 2u,
+                        VK_QUERY_RESULT_64_BIT | VK_QUERY_RESULT_WAIT_BIT | VK_QUERY_RESULT_WITH_AVAILABILITY_BIT);
+                } while (res != VK_SUCCESS);
+                for (uint32_t i = 0; i < queryCount; ++i)
+                {
+                    pointerCounts[i] = pointerCountsWithAvailability[i * 2];
+                    if (pointerCountsWithAvailability[i * 2 + 1] == 0)
+                    {
+                        availabilityBitsSet = false;
+                        tcu::TestLog &log   = m_context.getTestContext().getLog();
+                        log << tcu::TestLog::Message
+                            << "vkGetQueryPoolResults() returned VK_SUCCESS but availability for query " << i
+                            << "  is 0" << tcu::TestLog::EndMessage;
+                    }
+                }
+            }
         }
     }
     else
@@ -4030,6 +4216,9 @@ TestStatus QueryPoolResultsPointersInstance::iterate(void)
     submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
     const SerialStorage::AccelerationStructureHeader *header = storage.getASHeader();
+
+    if (m_params->queryAvailablityBit && !availabilityBitsSet)
+        return TestStatus::fail("Availability bits are 0");
 
     bool pass = (header->handleCount == pointerCounts[0]); // must be the same as bottoms.size()
     for (uint32_t i = 1; pass && i < queryCount; ++i)
@@ -5112,20 +5301,19 @@ TestStatus ASUpdateInstance::iterate(void)
         cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                                  VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postBuildBarrier);
 
+        auto config = static_cast<UpdateableASConfiguration *>(m_data.testConfiguration.get());
+        const std::vector<tcu::Vec3> vertices = config->vertices;
+        const std::vector<uint32_t> indices   = config->indices;
+
         if (m_data.updateCase == UpdateCase::VERTICES)
         {
             for (auto &blas : bottomLevelAccelerationStructures)
             {
-
                 const std::vector<tcu::Vec3> verticesUpdate = {
                     tcu::Vec3(0.0f, 0.0f, -0.5f),  tcu::Vec3(0.5f, 0.0f, -0.5f),  tcu::Vec3(0.0f, 0.5f, -0.5f),
                     tcu::Vec3(0.0f, 0.0f, -0.5f),  tcu::Vec3(0.5f, 0.0f, -0.5f),  tcu::Vec3(0.0f, 0.5f, -0.5f),
                     tcu::Vec3(-0.8f, 0.8f, -0.5f), tcu::Vec3(-0.3f, 0.8f, -0.5f), tcu::Vec3(-0.8f, 0.3f, -0.5f),
                     tcu::Vec3(-0.8f, 0.8f, -0.5f), tcu::Vec3(-0.3f, 0.8f, -0.5f), tcu::Vec3(-0.8f, 0.3f, -0.5f),
-                };
-
-                const std::vector<uint32_t> indices = {
-                    0, 1, 2, 6, 8, 7,
                 };
 
                 de::SharedPtr<RaytracedGeometryBase> geometry;
@@ -5147,16 +5335,10 @@ TestStatus ASUpdateInstance::iterate(void)
         {
             for (auto &blas : bottomLevelAccelerationStructures)
             {
-
-                const std::vector<tcu::Vec3> vertices = {
-                    tcu::Vec3(0.0f, 0.0f, 0.0f),    tcu::Vec3(0.5f, 0.0f, 0.0f),    tcu::Vec3(0.0f, 0.5f, 0.0f),
-                    tcu::Vec3(0.0f, 0.0f, -0.5f),   tcu::Vec3(0.5f, 0.0f, -0.5f),   tcu::Vec3(0.0f, 0.5f, -0.5f),
-                    tcu::Vec3(-0.9f, -0.9f, 0.0f),  tcu::Vec3(-0.4f, -0.9f, 0.0f),  tcu::Vec3(-0.9f, -0.4f, 0.0f),
-                    tcu::Vec3(-0.9f, -0.9f, -0.5f), tcu::Vec3(-0.4f, -0.9f, -0.5f), tcu::Vec3(-0.9f, -0.4f, -0.5f),
-                };
                 const std::vector<uint32_t> indicesUpdate = {
                     3, 4, 5, 3, 10, 9,
                 };
+
                 de::SharedPtr<RaytracedGeometryBase> geometry;
                 geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
 
@@ -5178,6 +5360,40 @@ TestStatus ASUpdateInstance::iterate(void)
                 {{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, -0.5f}}};
             topLevelAccelerationStructure->updateInstanceMatrix(vkd, device, 0, translatedMatrix);
             topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+        }
+        else if (m_data.updateCase == UpdateCase::DEGENERATE)
+        {
+            for (auto &blas : bottomLevelAccelerationStructures)
+            {
+                // After update make first triangle degenerate
+                std::vector<tcu::Vec3> modifiedVertices = vertices;
+                tcu::Vec3 centerPoint = (config->vertices[0] + config->vertices[1] + config->vertices[2]) / 3.0f;
+                modifiedVertices[0]   = centerPoint;
+                modifiedVertices[1]   = centerPoint;
+                modifiedVertices[2]   = centerPoint;
+                // Restore second triangle
+                modifiedVertices[3] = config->vertices[3];
+                modifiedVertices[4] = config->vertices[4];
+                modifiedVertices[5] = config->vertices[5];
+
+                const std::vector<uint32_t> indicesUpdate = {
+                    0, 1, 2, 3, 4, 5,
+                };
+
+                de::SharedPtr<RaytracedGeometryBase> geometry;
+                geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
+
+                for (auto it = begin(modifiedVertices), eit = end(modifiedVertices); it != eit; ++it)
+                    geometry->addVertex(*it);
+
+                if (m_data.indexType != VK_INDEX_TYPE_NONE_KHR)
+                {
+                    for (auto it = begin(indicesUpdate), eit = end(indicesUpdate); it != eit; ++it)
+                        geometry->addIndex(*it);
+                }
+                blas->updateGeometry(0, geometry);
+                blas->build(vkd, device, *cmdBuffer, blas.get());
+            }
         }
 
         const TopLevelAccelerationStructure *topLevelRayTracedPtr = topLevelAccelerationStructure.get();
@@ -5400,6 +5616,7 @@ void addBasicBuildingTests(tcu::TestCaseGroup *group)
                                                 buildTypes[buildTypeNdx].buildType,
                                                 VK_FORMAT_R32G32B32_SFLOAT,
                                                 paddingType[paddingTypeIdx].padVertices,
+                                                false,
                                                 VK_INDEX_TYPE_NONE_KHR,
                                                 bottomTestTypes[bottomNdx].testType,
                                                 InstanceCullFlags::NONE,
@@ -5485,6 +5702,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
         VK_FORMAT_R64G64_SFLOAT,
         VK_FORMAT_R64G64B64_SFLOAT,
         VK_FORMAT_R64G64B64A64_SFLOAT,
+        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
     };
 
     struct
@@ -5500,11 +5718,9 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
     struct
     {
         bool padVertices;
+        bool minAlign;
         const char *name;
-    } paddingType[] = {
-        {false, "nopadding"},
-        {true, "padded"},
-    };
+    } paddingType[] = {{false, false, "nopadding"}, {true, false, "padded"}, {false, true, "minalign"}};
 
     for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
          ++structResidencyNdx)
@@ -5540,6 +5756,7 @@ void addVertexIndexFormatsTests(tcu::TestCaseGroup *group)
                             buildTypes[buildTypeNdx].buildType,
                             format,
                             paddingType[paddingIdx].padVertices,
+                            paddingType[paddingIdx].minAlign,
                             indexFormats[indexFormatNdx].indexType,
                             BottomTestType::TRIANGLES,
                             InstanceCullFlags::NONE,
@@ -5671,6 +5888,7 @@ void addOperationTestsImpl(tcu::TestCaseGroup *group, const uint32_t workerThrea
                             buildTypes[buildTypeNdx].buildType,
                             VK_FORMAT_R32G32B32_SFLOAT,
                             false,
+                            false,
                             VK_INDEX_TYPE_NONE_KHR,
                             bottomTestTypes[testTypeNdx].testType,
                             InstanceCullFlags::NONE,
@@ -5767,6 +5985,7 @@ void addFuncArgTests(tcu::TestCaseGroup *group)
             TestParams testParams{
                 buildTypes[buildTypeNdx].buildType,
                 VK_FORMAT_R32G32B32_SFLOAT,
+                false,
                 false,
                 VK_INDEX_TYPE_NONE_KHR,
                 BottomTestType::TRIANGLES,
@@ -5881,6 +6100,7 @@ void addInstanceTriangleCullingTests(tcu::TestCaseGroup *group)
                         TestParams testParams{
                             buildTypes[buildTypeIdx].buildType,
                             VK_FORMAT_R32G32B32_SFLOAT,
+                            false,
                             false,
                             indexFormats[indexFormatIdx].indexType,
                             BottomTestType::TRIANGLES,
@@ -6013,6 +6233,7 @@ void addEmptyAccelerationStructureTests(tcu::TestCaseGroup *group)
                         buildTypes[buildTypeIdx].buildType,
                         VK_FORMAT_R32G32B32_SFLOAT,
                         false,
+                        false,
                         indexFormats[indexFormatIdx].indexType,
                         BottomTestType::TRIANGLES,
                         InstanceCullFlags::NONE,
@@ -6108,6 +6329,7 @@ void addInstanceIndexTests(tcu::TestCaseGroup *group)
                     buildTypes[buildTypeIdx].buildType,
                     VK_FORMAT_R32G32B32_SFLOAT,
                     false,
+                    false,
                     VK_INDEX_TYPE_NONE_KHR,
                     bottomGeometryType,
                     InstanceCullFlags::NONE,
@@ -6193,6 +6415,7 @@ void addInstanceUpdateTests(tcu::TestCaseGroup *group)
                 TestParams testParams{
                     buildTypes[buildTypeIdx].buildType,
                     VK_FORMAT_R32G32B32_SFLOAT,
+                    false,
                     false,
                     VK_INDEX_TYPE_NONE_KHR,
                     BottomTestType::TRIANGLES,
@@ -6302,6 +6525,7 @@ void addInstanceRayCullMaskTests(tcu::TestCaseGroup *group)
                         buildTypes[buildTypeIdx].buildType,
                         VK_FORMAT_R32G32B32_SFLOAT,
                         false,
+                        false,
                         VK_INDEX_TYPE_NONE_KHR,
                         bottomGeometryType,
                         InstanceCullFlags::NONE,
@@ -6389,6 +6613,7 @@ void addGetDeviceAccelerationStructureCompabilityTests(tcu::TestCaseGroup *group
                     buildTypes[buildTypeIdx].buildType, // buildType        - are we making AS on CPU or GPU
                     VK_FORMAT_R32G32B32_SFLOAT,         // vertexFormat
                     false,                              // padVertices
+                    false,                              // minAlign
                     VK_INDEX_TYPE_NONE_KHR,             // indexType
                     BottomTestType::TRIANGLES, // bottomTestType    - what kind of geometry is stored in bottom AS
                     InstanceCullFlags::NONE,   // cullFlags        - Flags for instances, if needed.
@@ -6476,6 +6701,7 @@ void addUpdateHeaderBottomAddressTests(tcu::TestCaseGroup *group)
                     buildTypes[buildTypeIdx].buildType,              // buildType
                     VK_FORMAT_R32G32B32_SFLOAT,                      // vertexFormat
                     false,                                           // padVertices
+                    false,                                           // minAlign
                     VK_INDEX_TYPE_NONE_KHR,                          // indexType
                     BottomTestType::TRIANGLES,                       // bottomTestType
                     InstanceCullFlags::NONE,                         // cullFlags
@@ -6533,6 +6759,8 @@ void addQueryPoolResultsTests(TestCaseGroup *group)
 
     std::pair<bool, const char *> const buildWithCompacted[]{{false, "no_compacted"}, {true, "enable_compacted"}};
 
+    std::pair<bool, const char *> const availabilityTypes[]{{false, "none"}, {true, "availability_bit"}};
+
     auto &testContext = group->getTestContext();
 
     for (size_t structResidencyNdx = 0; structResidencyNdx < DE_LENGTH_OF_ARRAY(accStructBufferResTypes);
@@ -6556,16 +6784,33 @@ void addQueryPoolResultsTests(TestCaseGroup *group)
                             (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
                             continue;
 
-                        QueryPoolResultsParams p;
-                        p.buildType    = buildType.first;
-                        p.inVkBuffer   = storeType.first;
-                        p.queryType    = queryType.first;
-                        p.blasCount    = 5;
-                        p.compacted    = compacted.first;
-                        p.accStructRes = accStructBufferResTypes[structResidencyNdx].res;
+                        auto queryTypeGroup = makeMovePtr<TestCaseGroup>(testContext, queryType.second);
+                        for (const auto &availabilityType : availabilityTypes)
+                        {
+                            if (availabilityType.first)
+                            {
+                                if (storeType.first)
+                                    continue;
+                                if (queryType.first == QueryPoolResultsParams::Type::StructureSize &&
+                                    buildType.first == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
+                                    continue;
+                                if (buildType.first == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR)
+                                    continue;
+                            }
 
-                        storeTypeGroup->addChild(
-                            new QueryPoolResultsCase(testContext, queryType.second, makeSharedFrom(p)));
+                            QueryPoolResultsParams p;
+                            p.buildType           = buildType.first;
+                            p.inVkBuffer          = storeType.first;
+                            p.queryType           = queryType.first;
+                            p.blasCount           = 5;
+                            p.compacted           = compacted.first;
+                            p.accStructRes        = accStructBufferResTypes[structResidencyNdx].res;
+                            p.queryAvailablityBit = availabilityType.first;
+
+                            queryTypeGroup->addChild(
+                                new QueryPoolResultsCase(testContext, availabilityType.second, makeSharedFrom(p)));
+                        }
+                        storeTypeGroup->addChild(queryTypeGroup.release());
                     }
                     buildCompactedGroup->addChild(storeTypeGroup.release());
                 }
@@ -6657,6 +6902,16 @@ void addUpdateTests(TestCaseGroup *group)
         {UpdateCase::VERTICES, "vertices"},
         {UpdateCase::INDICES, "indices"},
         {UpdateCase::TRANSFORM, "transform"},
+        {UpdateCase::DEGENERATE, "degenerate"},
+    };
+
+    struct
+    {
+        OperationType operationType;
+        const char *name;
+    } operationTypes[] = {
+        {OP_NONE, "normal"},
+        {OP_COMPACT, "compact"},
     };
 
     auto &ctx = group->getTestContext();
@@ -6672,41 +6927,57 @@ void addUpdateTests(TestCaseGroup *group)
             de::MovePtr<tcu::TestCaseGroup> buildTypeGroup(
                 new tcu::TestCaseGroup(ctx, buildTypes[buildTypeIdx].name.c_str()));
 
-            for (int updateTypesIdx = 0; updateTypesIdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateTypesIdx)
+            for (int operationTypeIdx = 0; operationTypeIdx < DE_LENGTH_OF_ARRAY(operationTypes); ++operationTypeIdx)
             {
-                if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
-                    (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
-                    continue;
+                de::MovePtr<tcu::TestCaseGroup> operationTypeGroup(
+                    new tcu::TestCaseGroup(ctx, operationTypes[operationTypeIdx].name));
 
-                TestParams testParams{
-                    buildTypes[buildTypeIdx].buildType,
-                    VK_FORMAT_R32G32B32_SFLOAT,
-                    false,
-                    VK_INDEX_TYPE_UINT16,
-                    BottomTestType::TRIANGLES,
-                    InstanceCullFlags::NONE,
-                    false,
-                    false,
-                    false,
-                    TopTestType::IDENTICAL_INSTANCES,
-                    false,
-                    false,
-                    false,
-                    VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
-                    OT_TOP_ACCELERATION,
-                    OP_NONE,
-                    RTAS_DEFAULT_SIZE,
-                    RTAS_DEFAULT_SIZE,
-                    de::SharedPtr<TestConfiguration>(new UpdateableASConfiguration()),
-                    0u,
-                    EmptyAccelerationStructureCase::NOT_EMPTY,
-                    InstanceCustomIndexCase::NONE,
-                    false,
-                    0xFFu,
-                    updateTypes[updateTypesIdx].updateType,
-                    accStructBufferResTypes[structResidencyNdx].res,
-                };
-                buildTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, testParams));
+                for (int updateTypesIdx = 0; updateTypesIdx < DE_LENGTH_OF_ARRAY(updateTypes); ++updateTypesIdx)
+                {
+                    if ((buildTypes[buildTypeIdx].buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR) &&
+                        (accStructBufferResTypes[structResidencyNdx].res == ResourceResidency::SPARSE_BINDING))
+                        continue;
+
+                    // Base build flags for update
+                    VkBuildAccelerationStructureFlagsKHR buildFlags =
+                        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR;
+
+                    // Add compaction flag if needed
+                    if (operationTypes[operationTypeIdx].operationType == OP_COMPACT)
+                        buildFlags |= VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_COMPACTION_BIT_KHR;
+
+                    TestParams testParams{
+                        buildTypes[buildTypeIdx].buildType,
+                        VK_FORMAT_R32G32B32_SFLOAT,
+                        false,
+                        false,
+                        VK_INDEX_TYPE_UINT16,
+                        BottomTestType::TRIANGLES,
+                        InstanceCullFlags::NONE,
+                        false,
+                        false,
+                        false,
+                        TopTestType::IDENTICAL_INSTANCES,
+                        false,
+                        false,
+                        false,
+                        buildFlags,
+                        OT_TOP_ACCELERATION,
+                        operationTypes[operationTypeIdx].operationType,
+                        RTAS_DEFAULT_SIZE,
+                        RTAS_DEFAULT_SIZE,
+                        de::SharedPtr<TestConfiguration>(new UpdateableASConfiguration()),
+                        0u,
+                        EmptyAccelerationStructureCase::NOT_EMPTY,
+                        InstanceCustomIndexCase::NONE,
+                        false,
+                        0xFFu,
+                        updateTypes[updateTypesIdx].updateType,
+                        accStructBufferResTypes[structResidencyNdx].res,
+                    };
+                    operationTypeGroup->addChild(new ASUpdateCase(ctx, updateTypes[updateTypesIdx].name, testParams));
+                }
+                buildTypeGroup->addChild(operationTypeGroup.release());
             }
             structResidencyGroup->addChild(buildTypeGroup.release());
         }

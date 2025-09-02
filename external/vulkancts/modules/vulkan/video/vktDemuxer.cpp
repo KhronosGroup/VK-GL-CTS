@@ -50,6 +50,13 @@ std::shared_ptr<Demuxer> Demuxer::create(Params &&params)
         else
             TCU_THROW(InternalError, "unknown elementary stream framing");
     }
+    case vk::VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR:
+    {
+        if (params.framing == ElementaryStreamFraming::IVF)
+            return std::make_shared<DuckIVFDemuxer>(std::move(params));
+        else
+            TCU_THROW(InternalError, "unknown elementary stream framing");
+    }
     break;
     default:
         TCU_THROW(InternalError, "Unknown codec operation");

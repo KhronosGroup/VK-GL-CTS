@@ -38,6 +38,7 @@
 #include "vktTessellationGeometryPointSizeTests.hpp"
 #include "vktTessellationGeometryGridRenderTests.hpp"
 #include "vktTessellationMaxIOTests.hpp"
+#include "vktTessellationMatrixMultiplicationTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -76,6 +77,7 @@ void createChildren(tcu::TestCaseGroup *tessellationTests)
     tessellationTests->addChild(createUserDefinedIOTests(testCtx));
     tessellationTests->addChild(createGeometryInteractionTests(testCtx));
     tessellationTests->addChild(createTessIOTests(testCtx));
+    tessellationTests->addChild(createTessellationMatrixMultiplicationTests(testCtx));
 }
 
 } // namespace
