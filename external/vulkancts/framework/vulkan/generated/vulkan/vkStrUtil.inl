@@ -48,8 +48,8 @@ const char*	getDescriptorTypeName									(VkDescriptorType value);
 const char*	getDescriptorUpdateTemplateTypeName						(VkDescriptorUpdateTemplateType value);
 const char*	getDeviceAddressBindingTypeEXTName						(VkDeviceAddressBindingTypeEXT value);
 const char*	getDeviceEventTypeEXTName								(VkDeviceEventTypeEXT value);
-const char*	getDeviceFaultAddressTypeEXTName						(VkDeviceFaultAddressTypeEXT value);
-const char*	getDeviceFaultVendorBinaryHeaderVersionEXTName			(VkDeviceFaultVendorBinaryHeaderVersionEXT value);
+const char*	getDeviceFaultAddressTypeKHRName						(VkDeviceFaultAddressTypeKHR value);
+const char*	getDeviceFaultVendorBinaryHeaderVersionKHRName			(VkDeviceFaultVendorBinaryHeaderVersionKHR value);
 const char*	getDeviceMemoryReportEventTypeEXTName					(VkDeviceMemoryReportEventTypeEXT value);
 const char*	getDirectDriverLoadingModeLUNARGName					(VkDirectDriverLoadingModeLUNARG value);
 const char*	getDiscardRectangleModeEXTName							(VkDiscardRectangleModeEXT value);
@@ -236,8 +236,8 @@ inline tcu::Format::Enum<VkDescriptorType>									getDescriptorTypeStr									
 inline tcu::Format::Enum<VkDescriptorUpdateTemplateType>					getDescriptorUpdateTemplateTypeStr						(VkDescriptorUpdateTemplateType value)						{ return tcu::Format::Enum<VkDescriptorUpdateTemplateType>(getDescriptorUpdateTemplateTypeName, value);										}
 inline tcu::Format::Enum<VkDeviceAddressBindingTypeEXT>						getDeviceAddressBindingTypeEXTStr						(VkDeviceAddressBindingTypeEXT value)						{ return tcu::Format::Enum<VkDeviceAddressBindingTypeEXT>(getDeviceAddressBindingTypeEXTName, value);										}
 inline tcu::Format::Enum<VkDeviceEventTypeEXT>								getDeviceEventTypeEXTStr								(VkDeviceEventTypeEXT value)								{ return tcu::Format::Enum<VkDeviceEventTypeEXT>(getDeviceEventTypeEXTName, value);															}
-inline tcu::Format::Enum<VkDeviceFaultAddressTypeEXT>						getDeviceFaultAddressTypeEXTStr							(VkDeviceFaultAddressTypeEXT value)							{ return tcu::Format::Enum<VkDeviceFaultAddressTypeEXT>(getDeviceFaultAddressTypeEXTName, value);											}
-inline tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>			getDeviceFaultVendorBinaryHeaderVersionEXTStr			(VkDeviceFaultVendorBinaryHeaderVersionEXT value)			{ return tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionEXT>(getDeviceFaultVendorBinaryHeaderVersionEXTName, value);				}
+inline tcu::Format::Enum<VkDeviceFaultAddressTypeKHR>						getDeviceFaultAddressTypeKHRStr							(VkDeviceFaultAddressTypeKHR value)							{ return tcu::Format::Enum<VkDeviceFaultAddressTypeKHR>(getDeviceFaultAddressTypeKHRName, value);											}
+inline tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionKHR>			getDeviceFaultVendorBinaryHeaderVersionKHRStr			(VkDeviceFaultVendorBinaryHeaderVersionKHR value)			{ return tcu::Format::Enum<VkDeviceFaultVendorBinaryHeaderVersionKHR>(getDeviceFaultVendorBinaryHeaderVersionKHRName, value);				}
 inline tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>					getDeviceMemoryReportEventTypeEXTStr					(VkDeviceMemoryReportEventTypeEXT value)					{ return tcu::Format::Enum<VkDeviceMemoryReportEventTypeEXT>(getDeviceMemoryReportEventTypeEXTName, value);									}
 inline tcu::Format::Enum<VkDirectDriverLoadingModeLUNARG>					getDirectDriverLoadingModeLUNARGStr						(VkDirectDriverLoadingModeLUNARG value)						{ return tcu::Format::Enum<VkDirectDriverLoadingModeLUNARG>(getDirectDriverLoadingModeLUNARGName, value);									}
 inline tcu::Format::Enum<VkDiscardRectangleModeEXT>							getDiscardRectangleModeEXTStr							(VkDiscardRectangleModeEXT value)							{ return tcu::Format::Enum<VkDiscardRectangleModeEXT>(getDiscardRectangleModeEXTName, value);												}
@@ -387,8 +387,8 @@ inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorType value)							
 inline std::ostream&	operator<<	(std::ostream& s, VkDescriptorUpdateTemplateType value)						{ return s << getDescriptorUpdateTemplateTypeStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceAddressBindingTypeEXT value)						{ return s << getDeviceAddressBindingTypeEXTStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceEventTypeEXT value)								{ return s << getDeviceEventTypeEXTStr(value);								}
-inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultAddressTypeEXT value)						{ return s << getDeviceFaultAddressTypeEXTStr(value);						}
-inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultVendorBinaryHeaderVersionEXT value)			{ return s << getDeviceFaultVendorBinaryHeaderVersionEXTStr(value);			}
+inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultAddressTypeKHR value)						{ return s << getDeviceFaultAddressTypeKHRStr(value);						}
+inline std::ostream&	operator<<	(std::ostream& s, VkDeviceFaultVendorBinaryHeaderVersionKHR value)			{ return s << getDeviceFaultVendorBinaryHeaderVersionKHRStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkDeviceMemoryReportEventTypeEXT value)					{ return s << getDeviceMemoryReportEventTypeEXTStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkDirectDriverLoadingModeLUNARG value)					{ return s << getDirectDriverLoadingModeLUNARGStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkDiscardRectangleModeEXT value)							{ return s << getDiscardRectangleModeEXTStr(value);							}
@@ -528,6 +528,7 @@ tcu::Format::Bitfield<32>	getDescriptorPoolCreateFlagsStr								(VkDescriptorPo
 tcu::Format::Bitfield<32>	getDescriptorSetLayoutCreateFlagsStr						(VkDescriptorSetLayoutCreateFlags value);
 tcu::Format::Bitfield<32>	getDeviceAddressBindingFlagsEXTStr							(VkDeviceAddressBindingFlagsEXT value);
 tcu::Format::Bitfield<32>	getDeviceDiagnosticsConfigFlagsNVStr						(VkDeviceDiagnosticsConfigFlagsNV value);
+tcu::Format::Bitfield<32>	getDeviceFaultFlagsKHRStr									(VkDeviceFaultFlagsKHR value);
 tcu::Format::Bitfield<32>	getDeviceGroupPresentModeFlagsKHRStr						(VkDeviceGroupPresentModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getDeviceQueueCreateFlagsStr								(VkDeviceQueueCreateFlags value);
 tcu::Format::Bitfield<32>	getDisplayPlaneAlphaFlagsKHRStr								(VkDisplayPlaneAlphaFlagsKHR value);
@@ -882,11 +883,14 @@ std::ostream&	operator<<	(std::ostream& s, const VkDeviceCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceDeviceMemoryReportCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceDiagnosticsConfigCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceEventInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultAddressInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultAddressInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultCountsEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultDebugInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultInfoEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value);
-std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultShaderAbortMessageInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDeviceFaultVendorInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupBindSparseInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupCommandBufferBeginInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDeviceGroupDeviceCreateInfo& value);
@@ -1277,6 +1281,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalMemoryS
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalSemaphoreInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceExternalTensorInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFaultFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFaultFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFaultPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFeatures& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFeatures2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceFloatControlsProperties& value);
@@ -1445,12 +1451,14 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceScalarBlockLayo
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSchedulingControlsFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSchedulingControlsPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAbortFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicFloatFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderAtomicInt64Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderBfloat16FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderClockFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderConstantDataFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreBuiltinsPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderCoreProperties2AMD& value);

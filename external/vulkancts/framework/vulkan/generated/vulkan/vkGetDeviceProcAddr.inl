@@ -559,6 +559,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyDescriptorUpdateTemplateKHR",
 		"vkUpdateDescriptorSetWithTemplateKHR",
 
+		// "VK_KHR_device_fault
+		"vkGetDeviceFaultDebugInfoKHR",
+		"vkGetDeviceFaultReportsKHR",
+
 		// "VK_KHR_device_group
 		"vkAcquireNextImage2KHR",
 		"vkCmdDispatchBaseKHR",

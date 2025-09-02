@@ -66,6 +66,7 @@ const vk::VkPhysicalDeviceExternalFormatResolveFeaturesANDROID&				getExternalFo
 const vk::VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&						getExternalMemoryRDMAFeatures						(void) const;
 const vk::VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&			getExternalMemoryScreenBufferFeaturesQNX			(void) const;
 const vk::VkPhysicalDeviceFaultFeaturesEXT&									getFaultFeaturesEXT									(void) const;
+const vk::VkPhysicalDeviceFaultFeaturesKHR&									getFaultFeatures									(void) const;
 const vk::VkPhysicalDeviceFormatPackFeaturesARM&							getFormatPackFeaturesARM							(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&					getFragmentDensityMap2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapFeaturesEXT&					getFragmentDensityMapFeaturesEXT					(void) const;
@@ -165,12 +166,14 @@ const vk::VkPhysicalDeviceSamplerYcbcrConversionFeatures&					getSamplerYcbcrCon
 const vk::VkPhysicalDeviceScalarBlockLayoutFeatures&						getScalarBlockLayoutFeatures						(void) const;
 const vk::VkPhysicalDeviceSchedulingControlsFeaturesARM&					getSchedulingControlsFeaturesARM					(void) const;
 const vk::VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures&				getSeparateDepthStencilLayoutsFeatures				(void) const;
+const vk::VkPhysicalDeviceShaderAbortFeaturesKHR&							getShaderAbortFeatures								(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&				getShaderAtomicFloat16VectorFeaturesNV				(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&					getShaderAtomicFloat2FeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&						getShaderAtomicFloatFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceShaderAtomicInt64Features&						getShaderAtomicInt64Features						(void) const;
 const vk::VkPhysicalDeviceShaderBfloat16FeaturesKHR&						getShaderBfloat16Features							(void) const;
 const vk::VkPhysicalDeviceShaderClockFeaturesKHR&							getShaderClockFeatures								(void) const;
+const vk::VkPhysicalDeviceShaderConstantDataFeaturesKHR&					getShaderConstantDataFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&					getShaderCoreBuiltinsFeaturesARM					(void) const;
 const vk::VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures&			getShaderDemoteToHelperInvocationFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderDrawParametersFeatures&						getShaderDrawParametersFeatures						(void) const;

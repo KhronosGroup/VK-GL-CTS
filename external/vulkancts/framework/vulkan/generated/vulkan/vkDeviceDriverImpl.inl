@@ -2122,9 +2122,19 @@ void DeviceDriver::getDeviceBufferMemoryRequirements (VkDevice device, const VkD
     m_vk.getDeviceBufferMemoryRequirements(device, pInfo, pMemoryRequirements);
 }
 
+VkResult DeviceDriver::getDeviceFaultDebugInfoKHR (VkDevice device, VkDeviceFaultDebugInfoKHR* pDebugInfo) const
+{
+    return m_vk.getDeviceFaultDebugInfoKHR(device, pDebugInfo);
+}
+
 VkResult DeviceDriver::getDeviceFaultInfoEXT (VkDevice device, VkDeviceFaultCountsEXT* pFaultCounts, VkDeviceFaultInfoEXT* pFaultInfo) const
 {
     return m_vk.getDeviceFaultInfoEXT(device, pFaultCounts, pFaultInfo);
+}
+
+VkResult DeviceDriver::getDeviceFaultReportsKHR (VkDevice device, uint64_t timeout, uint32_t* pFaultCounts, VkDeviceFaultInfoKHR* pFaultInfo) const
+{
+    return m_vk.getDeviceFaultReportsKHR(device, timeout, pFaultCounts, pFaultInfo);
 }
 
 void DeviceDriver::getDeviceGroupPeerMemoryFeatures (VkDevice device, uint32_t heapIndex, uint32_t localDeviceIndex, uint32_t remoteDeviceIndex, VkPeerMemoryFeatureFlags* pPeerMemoryFeatures) const

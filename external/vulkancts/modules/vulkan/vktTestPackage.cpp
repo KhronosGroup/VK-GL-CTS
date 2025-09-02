@@ -1346,11 +1346,12 @@ void TestPackage::init(void)
     addRootChild("shader_object", m_caseListFilter, ShaderObject::createTests);
     addRootChild("dgc", m_caseListFilter, DGC::createTests);
     addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);
+    addRootChild("postmortem", m_caseListFilter, postmortem::createTests);
 }
 
 void ExperimentalTestPackage::init(void)
 {
-    addRootChild("postmortem", m_caseListFilter, postmortem::createTests);
+    addRootChild("postmortem", m_caseListFilter, postmortem::createTestsExperimental);
     addRootChild("reconvergence", m_caseListFilter, Reconvergence::createTestsExperimental);
 }
 

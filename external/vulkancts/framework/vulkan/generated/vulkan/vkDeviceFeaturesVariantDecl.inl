@@ -62,7 +62,9 @@ typedef std::variant<
     , VkPhysicalDeviceSubgroupSizeControlFeatures
     , VkPhysicalDeviceFragmentShadingRateFeaturesKHR
     , VkPhysicalDeviceCoherentMemoryFeaturesAMD
+    , VkPhysicalDeviceShaderConstantDataFeaturesKHR
     , VkPhysicalDeviceDynamicRenderingLocalReadFeatures
+    , VkPhysicalDeviceShaderAbortFeaturesKHR
     , VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT
     , VkPhysicalDeviceShaderQuadControlFeaturesKHR
     , VkPhysicalDeviceMemoryPriorityFeaturesEXT
@@ -116,7 +118,6 @@ typedef std::variant<
     , VkPhysicalDeviceImageCompressionControlFeaturesEXT
     , VkPhysicalDeviceAttachmentFeedbackLoopLayoutFeaturesEXT
     , VkPhysicalDevice4444FormatsFeaturesEXT
-    , VkPhysicalDeviceFaultFeaturesEXT
     , VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT
     , VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT
     , VkPhysicalDeviceAddressBindingReportFeaturesEXT
@@ -132,6 +133,8 @@ typedef std::variant<
     , VkPhysicalDeviceColorWriteEnableFeaturesEXT
     , VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
     , VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR
+    , VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
+    , VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE
     , VkPhysicalDeviceImageViewMinLodFeaturesEXT
     , VkPhysicalDeviceMultiDrawFeaturesEXT
     , VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
@@ -167,6 +170,7 @@ typedef std::variant<
     , VkPhysicalDeviceExternalFormatResolveFeaturesANDROID
     , VkPhysicalDeviceMaintenance5Features
     , VkPhysicalDeviceAntiLagFeaturesAMD
+    , VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX
     , VkPhysicalDevicePresentId2FeaturesKHR
     , VkPhysicalDevicePresentWait2FeaturesKHR
     , VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
@@ -207,7 +211,10 @@ typedef std::variant<
     , VkPhysicalDeviceMaintenance6Features
     , VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV
     , VkPhysicalDeviceTileMemoryHeapFeaturesQCOM
+<<<<<<< HEAD
     , VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR
+=======
+>>>>>>> 09948054f (Add VK_KHR_device_fault tests)
     , VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR
     , VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR
     , VkPhysicalDeviceRawAccessChainsFeaturesNV
@@ -221,6 +228,7 @@ typedef std::variant<
     , VkPhysicalDeviceClusterAccelerationStructureFeaturesNV
     , VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV
     , VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT
+    , VkPhysicalDeviceFaultFeaturesKHR
     , VkPhysicalDeviceMaintenance8FeaturesKHR
     , VkPhysicalDeviceImageAlignmentControlFeaturesMESA
     , VkPhysicalDeviceShaderFmaFeaturesKHR

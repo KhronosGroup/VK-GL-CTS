@@ -248,6 +248,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceExtendedSparseAddressSpaceP
 template<> void initPropertyFromBlob<VkPhysicalDeviceExternalComputeQueuePropertiesNV>(VkPhysicalDeviceExternalComputeQueuePropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID>(VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>(VkPhysicalDeviceExternalMemoryHostPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceFaultPropertiesKHR>(VkPhysicalDeviceFaultPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>(VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE>(VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT>(VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT&, const AllPropertiesBlobs&) {}
@@ -331,6 +332,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceExtendedSparseAddressSp
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceExternalComputeQueuePropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_COMPUTE_QUEUE_PROPERTIES_NV, VK_NV_EXTERNAL_COMPUTE_QUEUE_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_FORMAT_RESOLVE_PROPERTIES_ANDROID, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT, VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFaultPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_PROPERTIES_KHR, VK_KHR_DEVICE_FAULT_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFloatControlsProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES, VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_PROPERTIES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_PROPERTIES_VALVE, VK_VALVE_FRAGMENT_DENSITY_MAP_LAYERED_EXTENSION_NAME}; }
@@ -438,6 +440,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceExternalComputeQueuePropertiesNV>, VK_NV_EXTERNAL_COMPUTE_QUEUE_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceExternalFormatResolvePropertiesANDROID>, VK_ANDROID_EXTERNAL_FORMAT_RESOLVE_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceExternalMemoryHostPropertiesEXT>, VK_EXT_EXTERNAL_MEMORY_HOST_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceFaultPropertiesKHR>, VK_KHR_DEVICE_FAULT_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFloatControlsProperties>, VK_KHR_SHADER_FLOAT_CONTROLS_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentDensityMap2PropertiesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE>, VK_VALVE_FRAGMENT_DENSITY_MAP_LAYERED_EXTENSION_NAME },

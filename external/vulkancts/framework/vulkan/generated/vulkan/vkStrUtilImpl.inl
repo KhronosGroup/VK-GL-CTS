@@ -1431,27 +1431,27 @@ const char* getDeviceEventTypeEXTName (VkDeviceEventTypeEXT value)
 }
 
 
-const char* getDeviceFaultAddressTypeEXTName (VkDeviceFaultAddressTypeEXT value)
+const char* getDeviceFaultAddressTypeKHRName (VkDeviceFaultAddressTypeKHR value)
 {
 	switch (value)
 	{
-		case VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_EXT:				return "VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_EXT";
-		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_EXT";
-		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_EXT";
-		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_EXT";
-		case VK_DEVICE_FAULT_ADDRESS_TYPE_NONE_EXT:							return "VK_DEVICE_FAULT_ADDRESS_TYPE_NONE_EXT";
-		case VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_EXT:					return "VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_EXT";
-		case VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_EXT:				return "VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_EXT";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_KHR:				return "VK_DEVICE_FAULT_ADDRESS_TYPE_EXECUTE_INVALID_KHR";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_KHR:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_FAULT_KHR";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_KHR:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_INVALID_KHR";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_KHR:	return "VK_DEVICE_FAULT_ADDRESS_TYPE_INSTRUCTION_POINTER_UNKNOWN_KHR";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_NONE_KHR:							return "VK_DEVICE_FAULT_ADDRESS_TYPE_NONE_KHR";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_KHR:					return "VK_DEVICE_FAULT_ADDRESS_TYPE_READ_INVALID_KHR";
+		case VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_KHR:				return "VK_DEVICE_FAULT_ADDRESS_TYPE_WRITE_INVALID_KHR";
 		default:															return nullptr;
 	}
 }
 
 
-const char* getDeviceFaultVendorBinaryHeaderVersionEXTName (VkDeviceFaultVendorBinaryHeaderVersionEXT value)
+const char* getDeviceFaultVendorBinaryHeaderVersionKHRName (VkDeviceFaultVendorBinaryHeaderVersionKHR value)
 {
 	switch (value)
 	{
-		case VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT:	return "VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_EXT";
+		case VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_KHR:	return "VK_DEVICE_FAULT_VENDOR_BINARY_HEADER_VERSION_ONE_KHR";
 		default:													return nullptr;
 	}
 }
@@ -3261,7 +3261,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV:								return "VK_STRUCTURE_TYPE_DEVICE_DIAGNOSTICS_CONFIG_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT:													return "VK_STRUCTURE_TYPE_DEVICE_EVENT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT:													return "VK_STRUCTURE_TYPE_DEVICE_FAULT_COUNTS_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_FAULT_DEBUG_INFO_KHR:												return "VK_STRUCTURE_TYPE_DEVICE_FAULT_DEBUG_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT:													return "VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_EXT";
+		case VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_KHR:													return "VK_STRUCTURE_TYPE_DEVICE_FAULT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_DEVICE_FAULT_SHADER_ABORT_MESSAGE_INFO_KHR:								return "VK_STRUCTURE_TYPE_DEVICE_FAULT_SHADER_ABORT_MESSAGE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO:											return "VK_STRUCTURE_TYPE_DEVICE_GROUP_BIND_SPARSE_INFO";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO:									return "VK_STRUCTURE_TYPE_DEVICE_GROUP_COMMAND_BUFFER_BEGIN_INFO";
 		case VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO:											return "VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO";
@@ -3593,6 +3596,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_SEMAPHORE_INFO";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_TENSOR_INFO_ARM:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_TENSOR_INFO_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT:										return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_KHR:										return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_PROPERTIES_KHR:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2:												return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FLOAT_CONTROLS_PROPERTIES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FORMAT_PACK_FEATURES_ARM:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FORMAT_PACK_FEATURES_ARM";
@@ -3757,12 +3762,14 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ABORT_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ABORT_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CONSTANT_DATA_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CONSTANT_DATA_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_PROPERTIES_2_AMD";
@@ -4963,6 +4970,21 @@ tcu::Format::Bitfield<32> getDeviceDiagnosticsConfigFlagsNVStr (VkDeviceDiagnost
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV,		"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_RESOURCE_TRACKING_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV,		"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_DEBUG_INFO_BIT_NV"),
 		tcu::Format::BitDesc(VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV,	"VK_DEVICE_DIAGNOSTICS_CONFIG_ENABLE_SHADER_ERROR_REPORTING_BIT_NV"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getDeviceFaultFlagsKHRStr (VkDeviceFaultFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_DEVICE_LOST_KHR,			"VK_DEVICE_FAULT_FLAG_DEVICE_LOST_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_INSTRUCTION_ADDRESS_KHR,	"VK_DEVICE_FAULT_FLAG_INSTRUCTION_ADDRESS_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_MEMORY_ADDRESS_KHR,		"VK_DEVICE_FAULT_FLAG_MEMORY_ADDRESS_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_OVERFLOW_KHR,				"VK_DEVICE_FAULT_FLAG_OVERFLOW_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_TDR_KHR,					"VK_DEVICE_FAULT_FLAG_TDR_KHR"),
+		tcu::Format::BitDesc(VK_DEVICE_FAULT_FLAG_VENDOR_KHR,				"VK_DEVICE_FAULT_FLAG_VENDOR_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -9708,9 +9730,9 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceEventInfoEXT& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeviceFaultAddressInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultAddressInfoKHR& value)
 {
-	s << "VkDeviceFaultAddressInfoEXT = {\n";
+	s << "VkDeviceFaultAddressInfoKHR = {\n";
 	s << "\taddressType = " << value.addressType << '\n';
 	s << "\treportedAddress = " << value.reportedAddress << '\n';
 	s << "\taddressPrecision = " << value.addressPrecision << '\n';
@@ -9730,6 +9752,17 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultCountsEXT& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultDebugInfoKHR& value)
+{
+	s << "VkDeviceFaultDebugInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvendorBinarySize = " << value.vendorBinarySize << '\n';
+	s << "\tpVendorBinaryData = " << value.pVendorBinaryData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoEXT& value)
 {
 	s << "VkDeviceFaultInfoEXT = {\n";
@@ -9743,9 +9776,35 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoEXT& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultInfoKHR& value)
 {
-	s << "VkDeviceFaultVendorBinaryHeaderVersionOneEXT = {\n";
+	s << "VkDeviceFaultInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getDeviceFaultFlagsKHRStr(value.flags) << '\n';
+	s << "\tgroupId = " << value.groupId << '\n';
+	s << "\tdescription = " << (const char*)value.description << '\n';
+	s << "\tfaultAddress = " << value.faultAddress << '\n';
+	s << "\tinstructionAddress = " << value.instructionAddress << '\n';
+	s << "\tvendor = " << value.vendor << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultShaderAbortMessageInfoKHR& value)
+{
+	s << "VkDeviceFaultShaderAbortMessageInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmessageDataSize = " << value.messageDataSize << '\n';
+	s << "\tpMessageData = " << value.pMessageData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeaderVersionOneKHR& value)
+{
+	s << "VkDeviceFaultVendorBinaryHeaderVersionOneKHR = {\n";
 	s << "\theaderSize = " << value.headerSize << '\n';
 	s << "\theaderVersion = " << value.headerVersion << '\n';
 	s << "\tvendorID = " << value.vendorID << '\n';
@@ -9761,9 +9820,9 @@ std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorBinaryHeader
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorInfoEXT& value)
+std::ostream& operator<< (std::ostream& s, const VkDeviceFaultVendorInfoKHR& value)
 {
-	s << "VkDeviceFaultVendorInfoEXT = {\n";
+	s << "VkDeviceFaultVendorInfoKHR = {\n";
 	s << "\tdescription = " << (const char*)value.description << '\n';
 	s << "\tvendorFaultCode = " << value.vendorFaultCode << '\n';
 	s << "\tvendorFaultData = " << value.vendorFaultData << '\n';
@@ -14312,6 +14371,29 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultFeaturesEX
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceFaultFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdeviceFault = " << value.deviceFault << '\n';
+	s << "\tdeviceFaultVendorBinary = " << value.deviceFaultVendorBinary << '\n';
+	s << "\tdeviceFaultReportMasked = " << value.deviceFaultReportMasked << '\n';
+	s << "\tdeviceFaultDeviceLostOnMasked = " << value.deviceFaultDeviceLostOnMasked << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFaultPropertiesKHR& value)
+{
+	s << "VkPhysicalDeviceFaultPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxDeviceFaultCount = " << value.maxDeviceFaultCount << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceFeatures& value)
 {
 	s << "VkPhysicalDeviceFeatures = {\n";
@@ -16385,6 +16467,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceSeparateDepthSt
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAbortFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderAbortFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderAbort = " << value.shaderAbort << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV& value)
 {
 	s << "VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV = {\n";
@@ -16467,6 +16559,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderClockFeat
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tshaderSubgroupClock = " << value.shaderSubgroupClock << '\n';
 	s << "\tshaderDeviceClock = " << value.shaderDeviceClock << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderConstantDataFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceShaderConstantDataFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderConstantData = " << value.shaderConstantData << '\n';
 	s << '}';
 	return s;
 }

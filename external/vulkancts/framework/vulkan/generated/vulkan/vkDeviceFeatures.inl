@@ -298,6 +298,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceExternalFormatResolveFeature
 template<> void initFeatureFromBlob<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV>(VkPhysicalDeviceExternalMemoryRDMAFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>(VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFaultFeaturesEXT>(VkPhysicalDeviceFaultFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceFaultFeaturesKHR>(VkPhysicalDeviceFaultFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFormatPackFeaturesARM>(VkPhysicalDeviceFormatPackFeaturesARM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(VkPhysicalDeviceFragmentDensityMap2FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>(VkPhysicalDeviceFragmentDensityMapFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -377,11 +378,13 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceRenderPassStripedFeaturesARM
 template<> void initFeatureFromBlob<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>(VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRobustness2FeaturesKHR>(VkPhysicalDeviceRobustness2FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceSchedulingControlsFeaturesARM>(VkPhysicalDeviceSchedulingControlsFeaturesARM&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAbortFeaturesKHR>(VkPhysicalDeviceShaderAbortFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV>(VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT>(VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>(VkPhysicalDeviceShaderAtomicFloatFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderBfloat16FeaturesKHR>(VkPhysicalDeviceShaderBfloat16FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderClockFeaturesKHR>(VkPhysicalDeviceShaderClockFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderConstantDataFeaturesKHR>(VkPhysicalDeviceShaderConstantDataFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM>(VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>(VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderEnqueueFeaturesAMDX>(VkPhysicalDeviceShaderEnqueueFeaturesAMDX&, const AllFeaturesBlobs&) {}
@@ -490,6 +493,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExternalFormatResolveFeat
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_RDMA_FEATURES_NV, VK_NV_EXTERNAL_MEMORY_RDMA_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_SCREEN_BUFFER_FEATURES_QNX, VK_QNX_EXTERNAL_MEMORY_SCREEN_BUFFER_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFaultFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT, VK_EXT_DEVICE_FAULT_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFaultFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_KHR, VK_KHR_DEVICE_FAULT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFormatPackFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FORMAT_PACK_FEATURES_ARM, VK_ARM_FORMAT_PACK_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_2_FEATURES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_FEATURES_EXT, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME}; }
@@ -589,12 +593,14 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSamplerYcbcrConversionFea
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceScalarBlockLayoutFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCALAR_BLOCK_LAYOUT_FEATURES, VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSchedulingControlsFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SCHEDULING_CONTROLS_FEATURES_ARM, VK_ARM_SCHEDULING_CONTROLS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SEPARATE_DEPTH_STENCIL_LAYOUTS_FEATURES, VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderAbortFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ABORT_FEATURES_KHR, VK_KHR_SHADER_ABORT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT16_VECTOR_FEATURES_NV, VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_2_FEATURES_EXT, VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_FLOAT_FEATURES_EXT, VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderAtomicInt64Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_ATOMIC_INT64_FEATURES, VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderBfloat16FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_BFLOAT16_FEATURES_KHR, VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderClockFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CLOCK_FEATURES_KHR, VK_KHR_SHADER_CLOCK_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderConstantDataFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CONSTANT_DATA_FEATURES_KHR, VK_KHR_SHADER_CONSTANT_DATA_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_CORE_BUILTINS_FEATURES_ARM, VK_ARM_SHADER_CORE_BUILTINS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DEMOTE_TO_HELPER_INVOCATION_FEATURES, VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderDrawParametersFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES, DECL_CORE_FEATURES_NAME}; }
@@ -723,6 +729,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceExternalMemoryRDMAFeaturesNV>, VK_NV_EXTERNAL_MEMORY_RDMA_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceExternalMemoryScreenBufferFeaturesQNX>, VK_QNX_EXTERNAL_MEMORY_SCREEN_BUFFER_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFaultFeaturesEXT>, VK_EXT_DEVICE_FAULT_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceFaultFeaturesKHR>, VK_KHR_DEVICE_FAULT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFormatPackFeaturesARM>, VK_ARM_FORMAT_PACK_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>, VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME },
@@ -822,12 +829,14 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceScalarBlockLayoutFeatures>, VK_EXT_SCALAR_BLOCK_LAYOUT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceSchedulingControlsFeaturesARM>, VK_ARM_SCHEDULING_CONTROLS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures>, VK_KHR_SEPARATE_DEPTH_STENCIL_LAYOUTS_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderAbortFeaturesKHR>, VK_KHR_SHADER_ABORT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV>, VK_NV_SHADER_ATOMIC_FLOAT16_VECTOR_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT>, VK_EXT_SHADER_ATOMIC_FLOAT_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderAtomicFloatFeaturesEXT>, VK_EXT_SHADER_ATOMIC_FLOAT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderAtomicInt64Features>, VK_KHR_SHADER_ATOMIC_INT64_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderBfloat16FeaturesKHR>, VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderClockFeaturesKHR>, VK_KHR_SHADER_CLOCK_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderConstantDataFeaturesKHR>, VK_KHR_SHADER_CONSTANT_DATA_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM>, VK_ARM_SHADER_CORE_BUILTINS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDemoteToHelperInvocationFeatures>, VK_EXT_SHADER_DEMOTE_TO_HELPER_INVOCATION_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderDrawParametersFeatures>, DECL_CORE_FEATURES_NAME },

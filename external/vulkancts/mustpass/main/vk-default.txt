@@ -63,6 +63,7 @@ vk-default/pipeline/shader-object-linked-binary.txt
 vk-default/pipeline/shader-object-linked-spirv.txt
 vk-default/pipeline/shader-object-unlinked-binary.txt
 vk-default/pipeline/shader-object-unlinked-spirv.txt
+vk-default/postmortem.txt
 vk-default/protected-memory.txt
 vk-default/query-pool.txt
 vk-default/rasterization.txt

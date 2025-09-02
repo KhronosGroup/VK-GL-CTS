@@ -31,6 +31,7 @@ const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&		Context::getE
 const vk::VkPhysicalDeviceExternalComputeQueuePropertiesNV&				Context::getExternalComputeQueuePropertiesNV				(void) const { return m_device->getExternalComputeQueuePropertiesNV();				}
 const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&		Context::getExternalFormatResolvePropertiesANDROID			(void) const { return m_device->getExternalFormatResolvePropertiesANDROID();		}
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&				Context::getExternalMemoryHostPropertiesEXT					(void) const { return m_device->getExternalMemoryHostPropertiesEXT();				}
+const vk::VkPhysicalDeviceFaultPropertiesKHR&							Context::getFaultProperties									(void) const { return m_device->getFaultProperties();								}
 const vk::VkPhysicalDeviceFloatControlsProperties&						Context::getFloatControlsProperties							(void) const { return m_device->getFloatControlsProperties();						}
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&				Context::getFragmentDensityMap2PropertiesEXT				(void) const { return m_device->getFragmentDensityMap2PropertiesEXT();				}
 const vk::VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&		Context::getFragmentDensityMapLayeredPropertiesVALVE		(void) const { return m_device->getFragmentDensityMapLayeredPropertiesVALVE();		}

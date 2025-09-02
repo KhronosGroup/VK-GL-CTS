@@ -761,7 +761,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto ImageCompressionControlFeatures            = m_context.getImageCompressionControlFeaturesEXT();
     auto attachmentFeedbackLoopFeatures             = m_context.getAttachmentFeedbackLoopLayoutFeaturesEXT();
     auto f4444FormatsFeatures                       = m_context.get4444FormatsFeaturesEXT();
-    auto faultFeatures                              = m_context.getFaultFeaturesEXT();
+    auto faultFeatures                              = m_context.getFaultFeatures();
     auto rasterizationOrderAttachmentAccessFeatures = m_context.getRasterizationOrderAttachmentAccessFeaturesEXT();
     auto rgba10x6FormatsFeatures                    = m_context.getRGBA10X6FormatsFeaturesEXT();
     auto rayTracingPipelineFeatures                 = m_context.getRayTracingPipelineFeatures();

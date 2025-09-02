@@ -31,6 +31,7 @@ const vk::VkPhysicalDeviceExtendedSparseAddressSpacePropertiesNV&		getExtendedSp
 const vk::VkPhysicalDeviceExternalComputeQueuePropertiesNV&				getExternalComputeQueuePropertiesNV				(void) const;
 const vk::VkPhysicalDeviceExternalFormatResolvePropertiesANDROID&		getExternalFormatResolvePropertiesANDROID		(void) const;
 const vk::VkPhysicalDeviceExternalMemoryHostPropertiesEXT&				getExternalMemoryHostPropertiesEXT				(void) const;
+const vk::VkPhysicalDeviceFaultPropertiesKHR&							getFaultProperties								(void) const;
 const vk::VkPhysicalDeviceFloatControlsProperties&						getFloatControlsProperties						(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMap2PropertiesEXT&				getFragmentDensityMap2PropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceFragmentDensityMapLayeredPropertiesVALVE&		getFragmentDensityMapLayeredPropertiesVALVE		(void) const;

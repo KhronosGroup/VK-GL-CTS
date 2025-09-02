@@ -398,6 +398,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineTimestampTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexInputTests.cpp",
         "external/vulkancts/modules/vulkan/pipeline/vktPipelineVertexUtil.cpp",
+        "external/vulkancts/modules/vulkan/postmortem/vktPostmortemCoreDeviceFaultTests.cpp",
         "external/vulkancts/modules/vulkan/postmortem/vktPostmortemDeviceFaultTests.cpp",
         "external/vulkancts/modules/vulkan/postmortem/vktPostmortemDeviceLossTests.cpp",
         "external/vulkancts/modules/vulkan/postmortem/vktPostmortemShaderTimeoutTests.cpp",

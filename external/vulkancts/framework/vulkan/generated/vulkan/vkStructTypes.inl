@@ -2857,9 +2857,9 @@ struct VkDeviceEventInfoEXT
 	VkDeviceEventTypeEXT	deviceEvent;
 };
 
-struct VkDeviceFaultAddressInfoEXT
+struct VkDeviceFaultAddressInfoKHR
 {
-	VkDeviceFaultAddressTypeEXT	addressType;
+	VkDeviceFaultAddressTypeKHR	addressType;
 	VkDeviceAddress				reportedAddress;
 	VkDeviceSize				addressPrecision;
 };
@@ -2873,10 +2873,26 @@ struct VkDeviceFaultCountsEXT
 	VkDeviceSize	vendorBinarySize;
 };
 
-struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
+struct VkDeviceFaultDebugInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		vendorBinarySize;
+	void*			pVendorBinaryData;
+};
+
+struct VkDeviceFaultShaderAbortMessageInfoKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	size_t			messageDataSize;
+	void*			pMessageData;
+};
+
+struct VkDeviceFaultVendorBinaryHeaderVersionOneKHR
 {
 	uint32_t									headerSize;
-	VkDeviceFaultVendorBinaryHeaderVersionEXT	headerVersion;
+	VkDeviceFaultVendorBinaryHeaderVersionKHR	headerVersion;
 	uint32_t									vendorID;
 	uint32_t									deviceID;
 	uint32_t									driverVersion;
@@ -2888,7 +2904,7 @@ struct VkDeviceFaultVendorBinaryHeaderVersionOneEXT
 	uint32_t									apiVersion;
 };
 
-struct VkDeviceFaultVendorInfoEXT
+struct VkDeviceFaultVendorInfoKHR
 {
 	char		description[VK_MAX_DESCRIPTION_SIZE];
 	uint64_t	vendorFaultCode;
@@ -2900,9 +2916,21 @@ struct VkDeviceFaultInfoEXT
 	VkStructureType					sType;
 	void*							pNext;
 	char							description[VK_MAX_DESCRIPTION_SIZE];
-	VkDeviceFaultAddressInfoEXT*	pAddressInfos;
-	VkDeviceFaultVendorInfoEXT*		pVendorInfos;
+	VkDeviceFaultAddressInfoKHR*	pAddressInfos;
+	VkDeviceFaultVendorInfoKHR*		pVendorInfos;
 	void*							pVendorBinaryData;
+};
+
+struct VkDeviceFaultInfoKHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkDeviceFaultFlagsKHR		flags;
+	uint64_t					groupId;
+	char						description[VK_MAX_DESCRIPTION_SIZE];
+	VkDeviceFaultAddressInfoKHR	faultAddress;
+	VkDeviceFaultAddressInfoKHR	instructionAddress;
+	VkDeviceFaultVendorInfoKHR	vendor;
 };
 
 struct VkDeviceGroupBindSparseInfo
@@ -6419,6 +6447,23 @@ struct VkPhysicalDeviceFaultFeaturesEXT
 	VkBool32		deviceFaultVendorBinary;
 };
 
+struct VkPhysicalDeviceFaultFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		deviceFault;
+	VkBool32		deviceFaultVendorBinary;
+	VkBool32		deviceFaultReportMasked;
+	VkBool32		deviceFaultDeviceLostOnMasked;
+};
+
+struct VkPhysicalDeviceFaultPropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxDeviceFaultCount;
+};
+
 struct VkPhysicalDeviceFeatures
 {
 	VkBool32	robustBufferAccess;
@@ -7975,6 +8020,13 @@ struct VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
 	VkBool32		separateDepthStencilLayouts;
 };
 
+struct VkPhysicalDeviceShaderAbortFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderAbort;
+};
+
 struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
 {
 	VkStructureType	sType;
@@ -8041,6 +8093,13 @@ struct VkPhysicalDeviceShaderClockFeaturesKHR
 	void*			pNext;
 	VkBool32		shaderSubgroupClock;
 	VkBool32		shaderDeviceClock;
+};
+
+struct VkPhysicalDeviceShaderConstantDataFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderConstantData;
 };
 
 struct VkPhysicalDeviceShaderCoreBuiltinsFeaturesARM
@@ -13147,6 +13206,15 @@ typedef VkDescriptorUpdateTemplateEntry VkDescriptorUpdateTemplateEntryKHR;
 
 
 typedef VkDeviceBufferMemoryRequirements VkDeviceBufferMemoryRequirementsKHR;
+
+
+typedef VkDeviceFaultAddressInfoKHR VkDeviceFaultAddressInfoEXT;
+
+
+typedef VkDeviceFaultVendorBinaryHeaderVersionOneKHR VkDeviceFaultVendorBinaryHeaderVersionOneEXT;
+
+
+typedef VkDeviceFaultVendorInfoKHR VkDeviceFaultVendorInfoEXT;
 
 
 typedef VkDeviceGroupBindSparseInfo VkDeviceGroupBindSparseInfoKHR;
