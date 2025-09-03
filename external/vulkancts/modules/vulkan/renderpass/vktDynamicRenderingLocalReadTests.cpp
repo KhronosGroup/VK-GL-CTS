@@ -102,9 +102,38 @@ enum class TestType
     // Test interaction with VK_EXT_shader_object
     INTERACTION_WITH_SHADER_OBJECT,
 
+    // Test remapping a single attachment.
+    REMAP_SINGLE_ATTACHMENT_MONOLITHIC,
+    REMAP_SINGLE_ATTACHMENT_FAST_LIB,
+    REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT,
+
     // One subpass input attachment, where that input is also the color attachment
     FEEDBACK_LOOP,
 };
+
+bool isRemapSingle(TestType testType)
+{
+    return (testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC ||
+            testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB ||
+            testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT);
+}
+
+bool isInteractionWithShaderObjOrRemapSingle(TestType testType)
+{
+    return (testType == TestType::INTERACTION_WITH_SHADER_OBJECT || isRemapSingle(testType));
+}
+
+PipelineConstructionType getRemapSingleConstructionType(TestType testType)
+{
+    if (testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC)
+        return PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
+    if (testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
+        return PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY;
+    if (testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT)
+        return PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV;
+
+    return PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
+}
 
 // During test creation we dont know what is the maximal number of input attachments.
 // To be able to test maximal number of attachments we need to construct shaders for all possible
@@ -1473,23 +1502,26 @@ tcu::TestStatus MappingWithGraphicsPipelineLibraryTestInstance::iterate()
     return tcu::TestStatus::fail("Fail");
 }
 
-class MappingWithShaderObjectTestInstance : public vkt::TestInstance
+class MappingWithShaderObjectOrSingleAttachmentTestInstance : public vkt::TestInstance
 {
 public:
-    MappingWithShaderObjectTestInstance(Context &context, const TestType testType);
-    ~MappingWithShaderObjectTestInstance() = default;
+    MappingWithShaderObjectOrSingleAttachmentTestInstance(Context &context, const TestType testType);
+    ~MappingWithShaderObjectOrSingleAttachmentTestInstance() = default;
 
 protected:
     tcu::TestStatus iterate(void) override;
+    const TestType m_testType;
 };
 
-MappingWithShaderObjectTestInstance::MappingWithShaderObjectTestInstance(Context &context, const TestType testType)
+MappingWithShaderObjectOrSingleAttachmentTestInstance::MappingWithShaderObjectOrSingleAttachmentTestInstance(
+    Context &context, const TestType testType)
     : vkt::TestInstance(context)
+    , m_testType(testType)
 {
     DE_UNREF(testType);
 }
 
-tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
+tcu::TestStatus MappingWithShaderObjectOrSingleAttachmentTestInstance::iterate()
 {
     const auto &vki             = m_context.getInstanceInterface();
     const auto &vk              = m_context.getDeviceInterface();
@@ -1499,7 +1531,8 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     Allocator &allocator        = m_context.getDefaultAllocator();
 
     const auto imageSize(8u);
-    const auto imageCount(3u);
+    const auto maxImageCount = 3u;
+    const auto imageCount(isRemapSingle(m_testType) ? 1u : maxImageCount);
     const auto colorFormat(VK_FORMAT_R8G8B8A8_UNORM);
     const auto drawWidth(imageSize / 4);
     const auto extent(makeExtent3D(imageSize, imageSize, 1u));
@@ -1512,8 +1545,8 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     ImageWithBuffer imageWithBuffer(vk, device, allocator, extent, colorFormat, colorImageUsage, VK_IMAGE_TYPE_2D,
                                     isrrFull, 4u);
 
-    VkImageSubresourceRange isrr[imageCount];
-    Move<VkImageView> imageViews[imageCount];
+    VkImageSubresourceRange isrr[maxImageCount];
+    Move<VkImageView> imageViews[maxImageCount];
     for (uint32_t i = 0u; i < imageCount; i++)
     {
         isrr[i] = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, i, 1u);
@@ -1527,9 +1560,10 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     renderingAttachmentLocations.pColorAttachmentLocations            = colorAttachmentLocations[0];
 
     // use GraphicsPipelineWrapper for shader object
-    PipelineConstructionType pipelineType = PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
+    PipelineConstructionType pipelineType = getRemapSingleConstructionType(m_testType);
     const std::vector<VkViewport> viewport{makeViewport(imageSize, imageSize)};
     const std::vector<VkRect2D> scissor{makeRect2D(drawWidth, 0, drawWidth, imageSize)};
+    const std::vector<VkRect2D> emptyScissorList;
 
     VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
     VkPipelineColorBlendAttachmentState colorBlendState;
@@ -1550,18 +1584,47 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     ShaderWrapper fragShader(vk, device, bc.get("frag"));
     PipelineLayoutWrapper pipelineLayout(pipelineType, vk, device);
 
-    GraphicsPipelineWrapper pipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType);
-    pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-        .setDefaultRasterizationState()
-        .setDefaultDepthStencilState()
-        .setDefaultMultisampleState()
-        .setMonolithicPipelineLayout(pipelineLayout)
-        .setupVertexInputState(&vertexInputState)
-        .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {}, {},
-                                          {}, 0, nullptr, &renderingCreateInfo)
-        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
-        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo)
-        .buildPipeline();
+    const std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+    const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    using GraphicsPipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+    std::vector<GraphicsPipelineWrapperPtr> pipelines;
+
+    // With ESO we can remap at any moment and keep using the same shaders. Without it, pipeline attachment locations
+    // must match the locations specified with vkCmdSetRenderingAttachmentLocations, so we need different pipelines.
+    const bool isESO                                 = isConstructionTypeShaderObject(pipelineType);
+    const auto pipelineCount                         = (isESO ? 1u : 3u);
+    const auto pPipelineRenderingAttachmentLocations = (isESO ? nullptr : &renderingAttachmentLocations);
+
+    for (uint32_t i = 0u; i < pipelineCount; ++i)
+    {
+        pipelines.emplace_back(
+            new GraphicsPipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType));
+        auto &pipelineWrapper = *pipelines.back();
+
+        renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[i];
+
+        pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .setDynamicState(&dynamicStateInfo)
+            .setDefaultScissorsCount(0u)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewport, emptyScissorList, pipelineLayout, VK_NULL_HANDLE, 0u,
+                                              vertShader, 0, {}, {}, {}, 0, nullptr, &renderingCreateInfo)
+            .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+            .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, nullptr, VK_NULL_HANDLE, nullptr,
+                                      pPipelineRenderingAttachmentLocations)
+            .buildPipeline();
+    }
 
     const auto initialColorBarrier(makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                                           VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
@@ -1596,19 +1659,26 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
 
     // render fullscreen quad three times but use scissor to limit it to fragment of framebuffer
     vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
-    pipelineWrapper.bind(*cmdBuffer);
 
+    VkRect2D localScissor                                  = scissor.front();
+    renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[0];
+    pipelines.front()->bind(*cmdBuffer);
+    vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
     vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
-    VkRect2D localScissor(makeRect2D(2 * drawWidth, 0, drawWidth, imageSize));
+    localScissor                                           = makeRect2D(2 * drawWidth, 0, drawWidth, imageSize);
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[1];
+    if (pipelines.size() >= 2)
+        pipelines.at(1)->bind(*cmdBuffer);
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
     vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     localScissor.offset.x += drawWidth;
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[2];
+    if (pipelines.size() >= 3)
+        pipelines.at(2)->bind(*cmdBuffer);
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
     vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
@@ -1658,20 +1728,22 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
             break;
     }
 
-    if (testPassed)
-        return tcu::TestStatus::pass("Pass");
-
-    auto &log = m_context.getTestContext().getLog();
-    log << tcu::TestLog::ImageSet("Result", "");
-    for (uint32_t i = 0; i < imageCount; ++i)
+    if (!testPassed)
     {
-        tcu::PixelBufferAccess resultAccess(mapVkFormat(colorFormat), imageSize, imageSize, 1,
-                                            bufferPtr + i * 4 * imageSize * imageSize);
-        log << tcu::TestLog::Image("Image " + std::to_string(i), "", resultAccess);
-    }
-    log << tcu::TestLog::EndImageSet;
+        auto &log = m_context.getTestContext().getLog();
+        log << tcu::TestLog::ImageSet("Result", "");
+        for (uint32_t i = 0; i < imageCount; ++i)
+        {
+            tcu::PixelBufferAccess resultAccess(mapVkFormat(colorFormat), imageSize, imageSize, 1,
+                                                bufferPtr + i * 4 * imageSize * imageSize);
+            log << tcu::TestLog::Image("Image " + std::to_string(i), "", resultAccess);
+        }
+        log << tcu::TestLog::EndImageSet;
 
-    return tcu::TestStatus::fail("Fail");
+        TCU_FAIL("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 class FeedbackLoopTestInstance : public vkt::TestInstance
@@ -1886,10 +1958,15 @@ void LocalReadTestCase::checkSupport(Context &context) const
     }
     else if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
         context.requireDeviceFunctionality("VK_EXT_color_write_enable");
-    else if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
+    else if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY ||
+             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
         context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
-    else if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT)
+    else if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT ||
+             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT)
         context.requireDeviceFunctionality("VK_EXT_shader_object");
+    else if (m_testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC ||
+             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
     else if (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3)
     {
         context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
@@ -2447,7 +2524,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                             "}\n");
         glslSources.add("frag") << glu::FragmentSource(fragSrc);
     }
-    else if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT)
+    else if (isInteractionWithShaderObjOrRemapSingle(m_testType))
     {
         std::string fragSrc("#version 450\n"
                             "layout(location = 0) out vec4 outColor0;\n"
@@ -2500,8 +2577,8 @@ TestInstance *LocalReadTestCase::createInstance(Context &context) const
     if (m_testType == TestType::FEEDBACK_LOOP)
         return new FeedbackLoopTestInstance(context, m_testType);
 
-    if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT)
-        return new MappingWithShaderObjectTestInstance(context, m_testType);
+    if (isInteractionWithShaderObjOrRemapSingle(m_testType))
+        return new MappingWithShaderObjectOrSingleAttachmentTestInstance(context, m_testType);
 
     return new BasicLocalReadTestInstance(context, m_testType);
 }
@@ -2531,6 +2608,9 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
         {"interaction_with_graphics_pipeline_library", TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY},
         {"interaction_with_extended_dynamic_state3", TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3},
         {"interaction_with_shader_object", TestType::INTERACTION_WITH_SHADER_OBJECT},
+        {"remap_single_attachment_monolithic", TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC},
+        {"remap_single_attachment_fast_lib", TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB},
+        {"remap_single_attachment_shader_object", TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT},
         {"feedback_loop", TestType::FEEDBACK_LOOP},
     };
 
