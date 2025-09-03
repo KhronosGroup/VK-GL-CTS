@@ -1932,6 +1932,7 @@ struct GraphicsPipelineWrapper::InternalData
     const VkPipelineDynamicStateCreateInfo *pDynamicState;
     PipelineRepresentativeFragmentTestCreateInfoWrapper pRepresentativeFragmentTestState;
     PipelineRobustnessCreateInfoWrapper pPipelineRobustnessState;
+    PipelineCustomResolveCreateInfoWrapper pPipelineCustomResolve;
 
     TessellationDomainOriginStatePtr pTessellationDomainOrigin;
     bool useViewportState;
@@ -3330,7 +3331,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     const VkRenderPass renderPass, const uint32_t subpass, const VkPipelineColorBlendStateCreateInfo *colorBlendState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkPipelineCache partPipelineCache,
     PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo, PipelineBinaryInfoWrapper partBinaries)
+    RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo, PipelineBinaryInfoWrapper partBinaries,
+    PipelineCustomResolveCreateInfoWrapper customResolve)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -3340,6 +3342,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
                                  (PSS_VERTEX_INPUT_INTERFACE | PSS_PRE_RASTERIZATION_SHADERS | PSS_FRAGMENT_SHADER)));
     m_internalData->setupState |= PSS_FRAGMENT_OUTPUT_INTERFACE;
     m_internalData->pRenderingAttachmentLocation.ptr = renderingAttachmentLocationInfo.ptr;
+    m_internalData->pPipelineCustomResolve.ptr       = customResolve.ptr;
 
     // Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
     DE_UNREF(renderPass);
@@ -3377,6 +3380,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
         addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineCustomResolve.ptr);
 
         auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[3];
         auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[3];
@@ -3544,6 +3548,7 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo(VkShader
         shaderCreateInfo.pPushConstantRanges    = other.getPipelineLayout()->getPushConstantRanges();
     }
     shaderCreateInfo.pSpecializationInfo = shader.getSpecializationInfo();
+
     return shaderCreateInfo;
 }
 
@@ -4162,6 +4167,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
             addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
             addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
+            addToChain(&firstStructInChain, m_internalData->pPipelineCustomResolve.ptr);
             addToChain(&firstStructInChain, pNext);
         }
 

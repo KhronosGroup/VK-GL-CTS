@@ -59,6 +59,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktDynamicRenderingDepthStencilResolveTests.hpp
 	vktRenderPassNestedCommandBuffersTests.cpp
 	vktRenderPassNestedCommandBuffersTests.hpp
+	vktRenderPassCustomResolveTests.cpp
+	vktRenderPassCustomResolveTests.hpp
 	)
 
 PCH(DEQP_VK_RENDER_PASS_SRCS ../pch.cpp)

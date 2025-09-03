@@ -33,7 +33,6 @@
 #include "tcuTextureUtil.hpp"
 #include "tcuFloat.hpp"
 
-#include <string.h>
 #include <cmath>
 
 namespace tcu
@@ -1265,10 +1264,11 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
         }
     }
 
-    const bool allDepthOk = (!hasDepth || (maxDiff <= threshold));
-    bool compareOk        = allDepthOk && allStencilOk;
+    const bool allDepthOk    = (!hasDepth || (maxDiff <= threshold));
+    const bool compareOk     = allDepthOk && allStencilOk;
+    const bool logEverything = (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages());
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
+    if (!compareOk || logEverything)
     {
         if (!compareOk)
         {
@@ -1281,7 +1281,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc);
 
-        if (!allDepthOk)
+        if (!allDepthOk || (logEverything && hasDepth))
         {
             TextureLevel refDepthLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                        depth);
@@ -1305,7 +1305,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
                 << TestLog::Image("ErrorMaskDepth", "", errorMaskDepth);
         }
 
-        if (!allStencilOk)
+        if (!allStencilOk || (logEverything && hasStencil))
         {
             TextureLevel refStencilLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                          depth);

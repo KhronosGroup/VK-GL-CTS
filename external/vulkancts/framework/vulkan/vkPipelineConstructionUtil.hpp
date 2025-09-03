@@ -106,6 +106,7 @@ typedef PointerWrapper<VkPipelineBinaryInfoKHR> PipelineBinaryInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
 typedef VkShaderCreateFlagsEXT ShaderCreateFlags;
 typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
+typedef PointerWrapper<VkCustomResolveCreateInfoEXT> PipelineCustomResolveCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
@@ -118,6 +119,7 @@ typedef PointerWrapper<void> PipelineBinaryInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
 typedef uint32_t ShaderCreateFlags;
 typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineCustomResolveCreateInfoWrapper;
 #endif
 
 PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate);
@@ -644,7 +646,8 @@ public:
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo =
             RenderingAttachmentLocationInfoWrapper(),
-        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
+        PipelineBinaryInfoWrapper partBinaries               = PipelineBinaryInfoWrapper(),
+        PipelineCustomResolveCreateInfoWrapper customResolve = PipelineCustomResolveCreateInfoWrapper());
 
     // Build pipeline object out of provided state.
     void buildPipeline(
