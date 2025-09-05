@@ -229,6 +229,22 @@ void getLookupScaleBias(vk::VkFormat format, tcu::Vec4 &lookupScale, tcu::Vec4 &
             lookupScale = tcu::Vec4(0.5f, 0.5f, 1.0f, 1.0f);
             lookupBias  = tcu::Vec4(0.5f, 0.5f, 0.0f, 0.0f);
             break;
+#ifndef CTS_USES_VULKANSC
+        case VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
+        case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
+            // ASTC HDR blocks decompress to f16. Need to normalize f16 to 0..1 range
+            lookupScale = tcu::Vec4(1.0f / (65504 - (-65504)));
+            lookupBias  = 65504.0f * lookupScale;
+            break;
+#endif // CTS_USES_VULKANSC
 
         default:
             // else: All supported compressed formats are fine with no normalization.
@@ -959,6 +975,7 @@ void TestTexture::populateCompressedLevels(tcu::CompressedTexFormat format,
     // Generate random compressed data and update decompressed data
 
     de::Random random(123);
+    bool isAstcSFLOAT = tcu::isAstcSFLOATFormat(format);
 
     for (size_t levelNdx = 0; levelNdx < decompressedLevels.size(); levelNdx++)
     {
@@ -970,9 +987,10 @@ void TestTexture::populateCompressedLevels(tcu::CompressedTexFormat format,
         if (tcu::isAstcFormat(format))
         {
             // \todo [2016-01-20 pyry] Comparison doesn't currently handle invalid blocks correctly so we use only valid blocks
-            tcu::astc::generateRandomValidBlocks(compressedData,
-                                                 compressedLevel->getDataSize() / tcu::astc::BLOCK_SIZE_BYTES, format,
-                                                 tcu::TexDecompressionParams::ASTCMODE_LDR, random.getUint32());
+            tcu::astc::generateRandomValidBlocks(
+                compressedData, compressedLevel->getDataSize() / tcu::astc::BLOCK_SIZE_BYTES, format,
+                isAstcSFLOAT ? tcu::TexDecompressionParams::ASTCMODE_HDR : tcu::TexDecompressionParams::ASTCMODE_LDR,
+                random.getUint32());
         }
         else
         {
@@ -996,7 +1014,9 @@ void TestTexture::populateCompressedLevels(tcu::CompressedTexFormat format,
         m_compressedLevels.push_back(compressedLevel);
 
         // Store decompressed data
-        compressedLevel->decompress(level, tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR));
+        compressedLevel->decompress(level, tcu::TexDecompressionParams(isAstcSFLOAT ?
+                                                                           tcu::TexDecompressionParams::ASTCMODE_HDR :
+                                                                           tcu::TexDecompressionParams::ASTCMODE_LDR));
     }
 }
 

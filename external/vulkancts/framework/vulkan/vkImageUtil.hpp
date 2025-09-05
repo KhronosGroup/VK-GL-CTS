@@ -132,6 +132,7 @@ uint32_t getFormatComponentWidth(const VkFormat format, const uint32_t component
 uint32_t getBlockSizeInBytes(const VkFormat compressedFormat);
 uint32_t getBlockWidth(const VkFormat compressedFormat);
 uint32_t getBlockHeight(const VkFormat compressedFormat);
+uint32_t getBlockDepth(const VkFormat compressedFormat);
 
 bool hasSpirvFormat(VkFormat fmt);
 const std::string getSpirvFormat(VkFormat fmt);
@@ -214,6 +215,7 @@ bool isYCbCrFormat(VkFormat format);
 bool isYCbCrExtensionFormat(VkFormat format);
 bool isYCbCrConversionFormat(VkFormat format);
 bool isPvrtcFormat(VkFormat format);
+bool isAstc3DFormat(VkFormat format);
 PlanarFormatDescription getPlanarFormatDescription(VkFormat format);
 int getPlaneCount(VkFormat format);
 uint32_t getMipmapCount(VkFormat format, const vk::PlanarFormatDescription &formatDescription,

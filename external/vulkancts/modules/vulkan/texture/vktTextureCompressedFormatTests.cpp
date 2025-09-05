@@ -56,7 +56,7 @@ using tcu::Sampler;
 using tcu::TestLog;
 
 // Compressed formats
-static const struct
+static const struct format_list
 {
     const VkFormat format;
 } formats[] = {{VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK},   {VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK},
@@ -90,6 +90,25 @@ static const struct
                {VK_FORMAT_BC6H_UFLOAT_BLOCK},         {VK_FORMAT_BC6H_SFLOAT_BLOCK},
                {VK_FORMAT_BC7_UNORM_BLOCK},           {VK_FORMAT_BC7_SRGB_BLOCK}};
 
+#ifndef CTS_USES_VULKANSC
+format_list formats_astc_3d[] = {
+    {VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT},  {VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT},
+    {VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT}, {VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT},
+    {VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT},   {VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT},
+    {VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT},  {VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT},
+    {VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT}, {VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT},
+    {VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT},   {VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT},
+    {VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT},  {VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT},
+    {VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT}, {VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT},
+    {VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT},   {VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT},
+    {VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT},  {VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT},
+    {VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT}, {VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT},
+    {VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT},   {VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT},
+    {VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT},  {VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT},
+    {VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT}, {VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT},
+    {VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT},   {VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT},
+};
+#endif // CTS_USES_VULKANSC
 static const struct
 {
     const int width;
@@ -443,8 +462,34 @@ Compressed3DTestInstance::Compressed3DTestInstance(Context &context, const Param
 
     if (tcu::isAstcFormat(m_compressedFormat))
     {
-        if (!physicalFeatures.textureCompressionASTC_LDR)
-            throw tcu::NotSupportedError(std::string("Unsupported format: ") + getFormatName(testParameters.format));
+#ifndef CTS_USES_VULKANSC
+        if (tcu::isAstc3DFormat(m_compressedFormat))
+        {
+            context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
+
+            VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT astc_3d_features;
+            deMemset(&astc_3d_features, 0, sizeof(astc_3d_features));
+            astc_3d_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
+            astc_3d_features.pNext = nullptr;
+            astc_3d_features.textureCompressionASTC_3D = VK_FALSE;
+
+            VkPhysicalDeviceFeatures2 features2;
+            deMemset(&features2, 0, sizeof(features2));
+            features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+            features2.pNext = &astc_3d_features;
+            context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+            if (astc_3d_features.textureCompressionASTC_3D != VK_TRUE)
+                throw tcu::NotSupportedError(std::string("Unsupported format: ") +
+                                             getFormatName(testParameters.format));
+        }
+        else
+#endif // CTS_USES_VULKANSC
+        {
+            if (!physicalFeatures.textureCompressionASTC_LDR)
+                throw tcu::NotSupportedError(std::string("Unsupported format: ") +
+                                             getFormatName(testParameters.format));
+        }
     }
     else if (tcu::isEtcFormat(m_compressedFormat))
     {
@@ -599,6 +644,7 @@ void populate3DTextureCompressedFormatTests(tcu::TestCaseGroup *compressedTextur
     tcu::TestContext &testCtx = compressedTextureTests->getTestContext();
 
     for (int sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizeNdx)
+    {
         for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats); ++formatNdx)
             for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); ++backingNdx)
             {
@@ -621,6 +667,31 @@ void populate3DTextureCompressedFormatTests(tcu::TestCaseGroup *compressedTextur
                     testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(),
                     testParameters));
             }
+
+#ifndef CTS_USES_VULKANSC
+        for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(formats_astc_3d); ++formatNdx)
+            for (int backingNdx = 0; backingNdx < DE_LENGTH_OF_ARRAY(backingModes); ++backingNdx)
+            {
+                const string formatStr = de::toString(getFormatStr(formats_astc_3d[formatNdx].format));
+                const string nameBase  = de::toLower(formatStr.substr(10));
+
+                Compressed3DTestParameters testParameters;
+                testParameters.format      = formats_astc_3d[formatNdx].format;
+                testParameters.backingMode = backingModes[backingNdx].backingMode;
+                testParameters.width       = sizes[sizeNdx].width;
+                testParameters.height      = sizes[sizeNdx].height;
+                testParameters.depth       = sizes[sizeNdx].depth;
+                testParameters.minFilter   = tcu::Sampler::NEAREST;
+                testParameters.magFilter   = tcu::Sampler::NEAREST;
+                testParameters.aspectMask  = VK_IMAGE_ASPECT_COLOR_BIT;
+                testParameters.programs.push_back(PROGRAM_3D_FLOAT);
+
+                compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(
+                    testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(),
+                    testParameters));
+            }
+#endif // CTS_USES_VULKANSC
+    }
 }
 
 tcu::TestCaseGroup *createTextureCompressedFormatTests(tcu::TestContext &testCtx)
