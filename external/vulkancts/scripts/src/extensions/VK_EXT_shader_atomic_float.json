@@ -1,13 +1,42 @@
 {
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
     "mandatory_features": {
         "VkPhysicalDeviceShaderAtomicFloatFeaturesEXT": [
+            {
+                "features": [
+                    "shaderBufferFloat32Atomics",
+                    "shaderBufferFloat32AtomicAdd",
+                    "shaderBufferFloat64Atomics",
+                    "shaderBufferFloat64AtomicAdd",
+                    "shaderSharedFloat32Atomics",
+                    "shaderSharedFloat32AtomicAdd",
+                    "shaderSharedFloat64Atomics",
+                    "shaderSharedFloat64AtomicAdd",
+                    "shaderImageFloat32Atomics",
+                    "shaderImageFloat32AtomicAdd"
+                ],
+                "requirements": [
+                    "VK_EXT_shader_atomic_float"
+                ],
+                "mandatory_variant": [
+                    "vulkan",
+                    "vulkansc"
+                ]
+            },
             {
                 "features": [
                     "shaderImageFloat32Atomics"
                 ],
                 "requirements": [
                     "VK_EXT_shader_atomic_float",
-                    "physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32Atomics"
+                    "VkPhysicalDeviceShaderAtomicFloatFeaturesEXT::sparseImageFloat32Atomics"
+                ],
+                "mandatory_variant": [
+                    "vulkan",
+                    "vulkansc"
                 ]
             },
             {
@@ -16,7 +45,11 @@
                 ],
                 "requirements": [
                     "VK_EXT_shader_atomic_float",
-                    "physicalDeviceShaderAtomicFloatFeaturesEXT.sparseImageFloat32AtomicAdd"
+                    "VkPhysicalDeviceShaderAtomicFloatFeaturesEXT::sparseImageFloat32AtomicAdd"
+                ],
+                "mandatory_variant": [
+                    "vulkan",
+                    "vulkansc"
                 ]
             }
         ]

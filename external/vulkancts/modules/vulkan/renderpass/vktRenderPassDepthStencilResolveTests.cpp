@@ -311,8 +311,8 @@ bool DepthStencilResolveTest::isFeaturesSupported()
     instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
 
     // check if both modes are supported
-    VkResolveModeFlagBits depthResolveMode   = m_config.depthResolveMode;
-    VkResolveModeFlagBits stencilResolveMode = m_config.stencilResolveMode;
+    const auto &depthResolveMode   = m_config.depthResolveMode;
+    const auto &stencilResolveMode = m_config.stencilResolveMode;
 
     if ((depthResolveMode != VK_RESOLVE_MODE_NONE) &&
         !(depthResolveMode & dsResolveProperties.supportedDepthResolveModes))
@@ -322,18 +322,25 @@ bool DepthStencilResolveTest::isFeaturesSupported()
         !(stencilResolveMode & dsResolveProperties.supportedStencilResolveModes))
         TCU_THROW(NotSupportedError, "Stencil resolve mode not supported");
 
-    // check if the implementation supports setting the depth and stencil resolve
-    // modes to different values when one of those modes is VK_RESOLVE_MODE_NONE
-    if (dsResolveProperties.independentResolveNone)
+    // Check independent resolve support.
+    const auto tcuFormat  = mapVkFormat(m_config.format);
+    const auto hasDepth   = tcu::hasDepthComponent(tcuFormat.order);
+    const auto hasStencil = tcu::hasStencilComponent(tcuFormat.order);
+
+    if (hasDepth && hasStencil)
     {
-        if ((!dsResolveProperties.independentResolve) && (depthResolveMode != stencilResolveMode) &&
-            (depthResolveMode != VK_RESOLVE_MODE_NONE) && (stencilResolveMode != VK_RESOLVE_MODE_NONE))
-            TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
-    }
-    else if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
-    {
-        // when independentResolveNone and independentResolve are VK_FALSE then both modes must be the same
-        TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
+        if (depthResolveMode == stencilResolveMode)
+            ;
+        else if (depthResolveMode == VK_RESOLVE_MODE_NONE || stencilResolveMode == VK_RESOLVE_MODE_NONE)
+        {
+            if (!dsResolveProperties.independentResolveNone)
+                TCU_THROW(NotSupportedError, "independentResolveNone not supported");
+        }
+        else
+        {
+            if (!dsResolveProperties.independentResolve)
+                TCU_THROW(NotSupportedError, "independentResolve not supported");
+        }
     }
 
     // Check alternative format support if needed.
@@ -1467,17 +1474,13 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
     Allocator &memAlloc                   = m_context.getDefaultAllocator();
     const uint32_t queueFamilyIndex       = m_context.getUniversalQueueFamilyIndex();
 
-    const bool tryResolvingStencil    = (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT);
-    const uint32_t renderSize         = 16;
-    const VkExtent3D extent           = makeExtent3D(renderSize, renderSize, 1u);
-    const bool independentResolveNone = m_context.getDepthStencilResolveProperties().independentResolveNone;
+    const bool tryResolvingStencil = (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT);
+    const uint32_t renderSize      = 16;
+    const VkExtent3D extent        = makeExtent3D(renderSize, renderSize, 1u);
 
-    // When testing resolving non-existing depth aspect we set the depth resolve mode to
-    // SAMPLE_ZERO and set the stencil resolve mode to NONE if independentResolveNone is true
-    VkFormat testFormat                    = VK_FORMAT_S8_UINT;
-    VkResolveModeFlagBits depthResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-    VkResolveModeFlagBits stencilResolveMode =
-        independentResolveNone ? VK_RESOLVE_MODE_NONE : VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+    // When testing resolving non-existing depth aspect we set the depth resolve mode to SAMPLE_ZERO.
+    VkFormat testFormat                   = VK_FORMAT_S8_UINT;
+    VkResolveModeFlagBits usedResolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
 
     const VkImageAspectFlags imageAspect =
         tryResolvingStencil ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT;
@@ -1497,7 +1500,6 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
             depthFormat = VK_FORMAT_D32_SFLOAT;
 
         testFormat = depthFormat;
-        std::swap(depthResolveMode, stencilResolveMode);
     }
 
     // Create three images - one 4xMSAA and two single sampled
@@ -1579,19 +1581,19 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
     const auto vertModule     = createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
     const auto fragModule     = createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
 
-    // create first renderpass, framebuffer and pipeline that will be used to resolve non-existing aspect
+    // create renderpass, framebuffer and pipeline that will be used to resolve with writes enabled.
     VkImageView imageViewsRaw[] = {*multisampledImageView, singlesampledImageA.getImageView()};
-    const auto renderPassA      = createDepthPass(true, testFormat, imageAspect, depthResolveMode, stencilResolveMode);
+    const auto renderPassA      = createDepthPass(true, testFormat, imageAspect, usedResolveMode, usedResolveMode);
     const auto framebufferA     = makeFramebuffer(vk, device, *renderPassA, 2, imageViewsRaw, renderSize, renderSize);
     const auto pipelineA =
         makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
                              *fragModule, *renderPassA, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
                              &vertexInputState, 0, &multisampleState, &depthStencilState);
 
-    // create second renderpass, framebufer and pipeline that will resolve existing aspect (for verification)
+    // create renderpass, framebufer and pipeline that will be used to resolve with writes disabled and loads.
     depthStencilState.depthWriteEnable = false;
     imageViewsRaw[1]                   = singlesampledImageB.getImageView();
-    const auto renderPassB  = createDepthPass(false, testFormat, imageAspect, stencilResolveMode, depthResolveMode);
+    const auto renderPassB  = createDepthPass(false, testFormat, imageAspect, usedResolveMode, usedResolveMode);
     const auto framebufferB = makeFramebuffer(vk, device, *renderPassB, 2, imageViewsRaw, renderSize, renderSize);
     const auto pipelineB =
         makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
@@ -1614,7 +1616,6 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
                           VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT, 0u, 1u, &inbetweanMemoryBarrier, 0, 0, 0, 0);
 
     // resolve once again but this time we want existing aspect
-    // (renderPassB is actualy only needed for verification when independentResolveNone is true)
     beginRenderPass(vk, *cmdBuffer, *renderPassB, *framebufferB, rect);
     vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineB);
     vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
@@ -1645,7 +1646,7 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
 
     if (m_testType == MiscTestType::RESOLVE_STENCIL_ASPECT_THAT_IS_NOT_PRESENT)
     {
-        const float expectedA = independentResolveNone ? clearValues[1].depthStencil.depth : 0.60f;
+        const float expectedA = 0.60f;
         const float expectedB = 0.60f;
         const float epsilon   = 0.02f;
 
@@ -1654,9 +1655,7 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
         {
             for (uint32_t y = renderSize - 1; y > renderSize - 3; --y)
             {
-                // if independentResolveNone is available then check if image resolved in renderpassA contains clear values
-                // (we tried resolving non-existing aspect); if independentResolveNone is not available we resolved to sample 0
-                // and can expect value set in shader
+                // we resolved to sample 0 and can expect value set in shader
                 float value = outA.getPixDepth(x, y);
                 if (deFloatAbs(value - expectedA) > epsilon)
                 {
@@ -1682,7 +1681,7 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
     }
     else
     {
-        const int expectedA = independentResolveNone ? clearValues[1].depthStencil.stencil : 2;
+        const int expectedA = 2;
         const int expectedB = 3;
 
         // just check values in four bottom fragments (we rendered triangle)
@@ -1690,9 +1689,7 @@ tcu::TestStatus ResolveNonPresentAspectTestInstance::iterate(void)
         {
             for (uint32_t y = renderSize - 1; y > renderSize - 3; --y)
             {
-                // if independentResolveNone is available then check if image resolved in renderpassA contains clear values
-                // (we tried resolving non-existing aspect); if independentResolveNone is not available we resolved to sample 0
-                // and can expect value set in shader
+                // we resolved to sample 0 and can expect value set in shader
                 int value = outA.getPixStencil(x, y);
                 if (value != expectedA)
                 {

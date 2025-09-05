@@ -152,12 +152,14 @@ class SubpassEndInfo1
 {
 public:
     SubpassEndInfo1(const void *pNext);
+    const void *getPNext() const;
 };
 
 class SubpassEndInfo2 : public VkSubpassEndInfo
 {
 public:
     SubpassEndInfo2(const void *pNext);
+    const void *getPNext() const;
 };
 
 class RenderpassSubpass1

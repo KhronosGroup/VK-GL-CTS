@@ -69,6 +69,11 @@ VkResult InstanceDriver::createAndroidSurfaceKHR (VkInstance instance, const VkA
     return m_vk.createAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, pSurface);
 }
 
+VkResult InstanceDriver::createSurfaceOHOS (VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const
+{
+    return m_vk.createSurfaceOHOS(instance, pCreateInfo, pAllocator, pSurface);
+}
+
 VkResult InstanceDriver::getPhysicalDeviceDisplayPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkDisplayPropertiesKHR* pProperties) const
 {
     return m_vk.getPhysicalDeviceDisplayPropertiesKHR(physicalDevice, pPropertyCount, pProperties);
@@ -517,4 +522,14 @@ VkResult InstanceDriver::getPhysicalDeviceCooperativeVectorPropertiesNV (VkPhysi
 void InstanceDriver::getPhysicalDeviceExternalTensorPropertiesARM (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceExternalTensorInfoARM* pExternalTensorInfo, VkExternalTensorPropertiesARM* pExternalTensorProperties) const
 {
     m_vk.getPhysicalDeviceExternalTensorPropertiesARM(physicalDevice, pExternalTensorInfo, pExternalTensorProperties);
+}
+
+VkResult InstanceDriver::getPhysicalDeviceQueueFamilyDataGraphPropertiesARM (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pQueueFamilyDataGraphPropertyCount, VkQueueFamilyDataGraphPropertiesARM* pQueueFamilyDataGraphProperties) const
+{
+    return m_vk.getPhysicalDeviceQueueFamilyDataGraphPropertiesARM(physicalDevice, queueFamilyIndex, pQueueFamilyDataGraphPropertyCount, pQueueFamilyDataGraphProperties);
+}
+
+void InstanceDriver::getPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceQueueFamilyDataGraphProcessingEngineInfoARM* pQueueFamilyDataGraphProcessingEngineInfo, VkQueueFamilyDataGraphProcessingEnginePropertiesARM* pQueueFamilyDataGraphProcessingEngineProperties) const
+{
+    m_vk.getPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM(physicalDevice, pQueueFamilyDataGraphProcessingEngineInfo, pQueueFamilyDataGraphProcessingEngineProperties);
 }

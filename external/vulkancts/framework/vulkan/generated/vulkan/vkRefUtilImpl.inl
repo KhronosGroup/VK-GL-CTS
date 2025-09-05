@@ -270,6 +270,12 @@ void Deleter<VkTensorViewARM>::operator() (VkTensorViewARM obj) const
 	m_deviceIface->destroyTensorViewARM(m_device, obj, m_allocator);
 }
 
+template<>
+void Deleter<VkDataGraphPipelineSessionARM>::operator() (VkDataGraphPipelineSessionARM obj) const
+{
+	m_deviceIface->destroyDataGraphPipelineSessionARM(m_device, obj, m_allocator);
+}
+
 } // refdetails
 
 Move<VkInstance> createInstance (const PlatformInterface& vk, const VkInstanceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -416,6 +422,13 @@ Move<VkSurfaceKHR> createAndroidSurfaceKHR (const InstanceInterface& vk, VkInsta
 {
 	VkSurfaceKHR object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createAndroidSurfaceKHR(instance, pCreateInfo, pAllocator, &object));
+	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
+}
+
+Move<VkSurfaceKHR> createSurfaceOHOS (const InstanceInterface& vk, VkInstance instance, const VkSurfaceCreateInfoOHOS* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkSurfaceKHR object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createSurfaceOHOS(instance, pCreateInfo, pAllocator, &object));
 	return Move<VkSurfaceKHR>(check<VkSurfaceKHR>(object), Deleter<VkSurfaceKHR>(vk, instance, pAllocator));
 }
 
@@ -697,5 +710,12 @@ Move<VkTensorViewARM> createTensorViewARM (const DeviceInterface& vk, VkDevice d
 	VkTensorViewARM object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createTensorViewARM(device, pCreateInfo, pAllocator, &object));
 	return Move<VkTensorViewARM>(check<VkTensorViewARM>(object), Deleter<VkTensorViewARM>(vk, device, pAllocator));
+}
+
+Move<VkDataGraphPipelineSessionARM> createDataGraphPipelineSessionARM (const DeviceInterface& vk, VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator)
+{
+	VkDataGraphPipelineSessionARM object = VK_NULL_HANDLE;
+	VK_CHECK(vk.createDataGraphPipelineSessionARM(device, pCreateInfo, pAllocator, &object));
+	return Move<VkDataGraphPipelineSessionARM>(check<VkDataGraphPipelineSessionARM>(object), Deleter<VkDataGraphPipelineSessionARM>(vk, device, pAllocator));
 }
 

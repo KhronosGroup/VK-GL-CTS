@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDGCGraphicsDrawCountTestsExt.hpp"
+#include "util/vktShaderObjectUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktDGCUtilExt.hpp"
 #include "vktDGCUtilCommon.hpp"
@@ -1382,9 +1383,10 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
         }
 
         if (params.useShaderObjects)
-            bindShaderObjectState(ctx.vkd, getDeviceCreationExtensions(context), recCmdBuffer, viewports, scissors,
-                                  VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u, &vertexInputStateCreateInfo, nullptr,
-                                  nullptr, nullptr, nullptr);
+            vkt::shaderobjutil::bindShaderObjectState(ctx.vkd, vkt::shaderobjutil::getDeviceCreationExtensions(context),
+                                                      recCmdBuffer, viewports, scissors,
+                                                      VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0u,
+                                                      &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, nullptr);
     }
 
     if (params.useShaderObjects)

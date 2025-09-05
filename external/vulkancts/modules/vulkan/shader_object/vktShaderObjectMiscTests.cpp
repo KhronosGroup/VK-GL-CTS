@@ -925,7 +925,7 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_VERTEX_INPUT_EXT);
     if (eds2Features.extendedDynamicState2LogicOp)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_EXT);
-    if (eds2Features.extendedDynamicState2PatchControlPoints)
+    if (eds2Features.extendedDynamicState2PatchControlPoints && !m_params.meshShader)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_PATCH_CONTROL_POINTS_EXT);
     if (eds3Features.extendedDynamicState3TessellationDomainOrigin)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_TESSELLATION_DOMAIN_ORIGIN_EXT);
@@ -1276,10 +1276,14 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
         vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
     };
 
+    vk::VkImageCreateFlags depthCreateFlags = 0u;
+    if (m_params.sampleLocationsEnable)
+        depthCreateFlags |= vk::VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+
     const vk::VkImageCreateInfo depthCreateInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
         nullptr,                                 // const void*                pNext
-        0u,                                      // VkImageCreateFlags        flags
+        depthCreateFlags,                        // VkImageCreateFlags        flags
         vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
         depthStencilAttachmentFormat,            // VkFormat                    format
         {32, 32, 1},                             // VkExtent3D                extent

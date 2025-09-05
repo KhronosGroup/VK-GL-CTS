@@ -1148,7 +1148,7 @@ tcu::TestStatus DynamicPCPInstance::iterate(void)
 
     auto &log = m_context.getTestContext().getLog();
     if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, threshold,
-                                    tcu::COMPARE_LOG_EVERYTHING))
+                                    tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::fail("Unexpected color in result buffer; check log for details");
 
     return tcu::TestStatus::pass("Pass");

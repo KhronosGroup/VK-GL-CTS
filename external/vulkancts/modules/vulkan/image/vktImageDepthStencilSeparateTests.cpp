@@ -1378,26 +1378,26 @@ tcu::TestStatus DepthStencilSeparateInstance::iterate(void)
 
     bool colorOK = tcu::floatThresholdCompare(log, "ColorBuffer", "", refColorAccess, colorAccess,
                                               tcu::Vec4(kColorThreshold, kColorThreshold, kColorThreshold, 0.0f),
-                                              tcu::COMPARE_LOG_EVERYTHING);
+                                              tcu::COMPARE_LOG_ON_ERROR);
 
     bool storageOK =
         (m_params.readsDepth() ?
              tcu::floatThresholdCompare(log, "StorageBuffer", "", refStorageAccess, storageAccess,
-                                        tcu::Vec4(depthThreshold, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_EVERYTHING) :
+                                        tcu::Vec4(depthThreshold, 0.0f, 0.0f, 0.0f), tcu::COMPARE_LOG_ON_ERROR) :
              tcu::intThresholdCompare(log, "StorageBuffer", "", refStorageAccess, storageAccess,
-                                      tcu::UVec4(0u, 0u, 0u, 0u), tcu::COMPARE_LOG_EVERYTHING));
+                                      tcu::UVec4(0u, 0u, 0u, 0u), tcu::COMPARE_LOG_ON_ERROR));
 
     bool depthOK =
         (m_params.readsDepth() || // In this case the depth values will be verified through the storage image.
          (m_params.writesDepth() && m_params.writeMechanism == WriteMechanism::RP_DONT_CARE) ||
          tcu::dsThresholdCompare(log, "DepthBuffer", "", refDepthAccess, depthAccess, depthThreshold,
-                                 tcu::COMPARE_LOG_EVERYTHING));
+                                 tcu::COMPARE_LOG_ON_ERROR));
 
     bool stencilOK =
         (m_params.readsStencil() || // In this case the stencil values will be verified through the storage image.
          (m_params.writesStencil() && m_params.writeMechanism == WriteMechanism::RP_DONT_CARE) ||
          tcu::dsThresholdCompare(log, "DepthBuffer", "", refStencilAccess, stencilAccess, stencilThreshold,
-                                 tcu::COMPARE_LOG_EVERYTHING));
+                                 tcu::COMPARE_LOG_ON_ERROR));
 
     if (colorOK && storageOK && depthOK && stencilOK)
         return tcu::TestStatus::pass("Pass");

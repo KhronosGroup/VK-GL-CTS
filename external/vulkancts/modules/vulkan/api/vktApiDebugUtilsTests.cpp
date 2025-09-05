@@ -41,10 +41,15 @@ namespace
 
 using namespace vk;
 
-tcu::TestStatus testLongDebugLabelsTest(Context &context)
+struct TestParams
+{
+    VkQueueFlags required;
+    VkQueueFlags excluded;
+};
+
+tcu::TestStatus testLongDebugLabelsTest(Context &context, TestParams params)
 {
     // create custom instance to test debug_utils regardles of validation beeing enabled
-    const int queueFamilyIndex   = 0;
     const uint32_t apiVersion    = context.getUsedApiVersion();
     const auto &cmdLine          = context.getTestContext().getCommandLine();
     const PlatformInterface &vkp = context.getPlatformInterface();
@@ -52,12 +57,14 @@ tcu::TestStatus testLongDebugLabelsTest(Context &context)
     const Unique<VkInstance> instance(createDefaultInstance(vkp, apiVersion, {}, enabledExtensions, cmdLine));
     const InstanceDriver vki(vkp, *instance);
     const VkPhysicalDevice physicalDevice = chooseDevice(vki, *instance, cmdLine);
+    int queueFamilyIndex = findQueueFamilyIndexWithCaps(vki, physicalDevice, params.required, params.excluded);
 
     void *pNextForDeviceCreateInfo                = nullptr;
     void *pNextForCommandPoolCreateInfo           = nullptr;
     const float queuePriority                     = 1.0f;
     const auto queueFamilyProperties              = getPhysicalDeviceQueueFamilyProperties(vki, physicalDevice);
     VkDeviceQueueCreateInfo deviceQueueCreateInfo = initVulkanStructure();
+    deviceQueueCreateInfo.queueFamilyIndex        = queueFamilyIndex;
     deviceQueueCreateInfo.queueCount              = 1;
     deviceQueueCreateInfo.pQueuePriorities        = &queuePriority;
 
@@ -111,7 +118,10 @@ tcu::TestStatus testLongDebugLabelsTest(Context &context)
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdInsertDebugUtilsLabelEXT(*cmdBuffer, &insertLabelInfo);
-    vk.cmdFillBuffer(*cmdBuffer, *testBuffer, 0, VK_WHOLE_SIZE, 1985);
+    if (params.required & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT))
+    {
+        vk.cmdFillBuffer(*cmdBuffer, *testBuffer, 0, VK_WHOLE_SIZE, 1985);
+    }
     endCommandBuffer(vk, *cmdBuffer);
 
     vk.queueInsertDebugUtilsLabelEXT(queue, &insertLabelInfo);
@@ -121,9 +131,12 @@ tcu::TestStatus testLongDebugLabelsTest(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
-void checkDebugUtilsSupport(Context &context)
+void checkDebugUtilsSupport(Context &context, TestParams params)
 {
     context.requireInstanceFunctionality("VK_EXT_debug_utils");
+
+    findQueueFamilyIndexWithCaps(context.getInstanceInterface(), context.getPhysicalDevice(), params.required,
+                                 params.excluded);
 }
 
 } // namespace
@@ -132,7 +145,23 @@ tcu::TestCaseGroup *createDebugUtilsTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> debugUtilsTests(new tcu::TestCaseGroup(testCtx, "debug_utils"));
 
-    addFunctionCase(debugUtilsTests.get(), "long_labels", checkDebugUtilsSupport, testLongDebugLabelsTest);
+    TestParams params;
+    params.required = VK_QUEUE_GRAPHICS_BIT;
+    params.excluded = 0;
+    addFunctionCase(debugUtilsTests.get(), "long_labels_graphics", checkDebugUtilsSupport, testLongDebugLabelsTest,
+                    params);
+
+    params.required = VK_QUEUE_TRANSFER_BIT;
+    params.excluded = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+    addFunctionCase(debugUtilsTests.get(), "long_labels_transfer", checkDebugUtilsSupport, testLongDebugLabelsTest,
+                    params);
+
+#ifndef CTS_USES_VULKANSC
+    params.required = VK_QUEUE_VIDEO_DECODE_BIT_KHR;
+    params.excluded = VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT;
+    addFunctionCase(debugUtilsTests.get(), "long_labels_video_decode", checkDebugUtilsSupport, testLongDebugLabelsTest,
+                    params);
+#endif
 
     return debugUtilsTests.release();
 }

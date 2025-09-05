@@ -6434,6 +6434,8 @@ tcu::TestStatus ExtendedDynamicStateInstance::iterate(void)
             {
                 DE_ASSERT(kSequenceOrdering == SequenceOrdering::CMD_BUFFER_START);
                 meshNoOutPipeline.bind(cmdBuffer);
+                // VUID-vkCmdDraw-None-04914
+                setDynamicStates(m_testConfig, vkd, depthClampControlEnabled, cmdBuffer);
             }
 
             if (m_testConfig.useExtraDynPCPPipeline)

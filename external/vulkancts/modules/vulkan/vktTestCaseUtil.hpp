@@ -123,7 +123,7 @@ public:
         m_support.checkSupport(context);
     }
 
-private:
+protected:
     const Programs m_progs;
     const Arg0 m_arg0;
     const Support m_support;
@@ -318,38 +318,37 @@ TestCase *createFunctionCase(tcu::TestContext &testCtx, const std::string &name,
     return new InstanceFactoryClass(testCtx, name, typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
 }
 
-template <typename Arg0>
+template <typename Arg0, typename InstanceFactoryClass = InstanceFactory1WithSupport<
+                             FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0>>>
 TestCase *createFunctionCase(tcu::TestContext &testCtx, const std::string &name,
                              typename FunctionSupport1<Arg0>::Function checkSupport,
                              typename FunctionInstance1<Arg0>::Function testFunction, Arg0 arg0)
 {
-    return new InstanceFactory1WithSupport<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args,
-                                           FunctionSupport1<Arg0>>(
-        testCtx, name, typename FunctionInstance1<Arg0>::Args(testFunction, arg0),
-        typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
+    return new InstanceFactoryClass(testCtx, name, typename FunctionInstance1<Arg0>::Args(testFunction, arg0),
+                                    typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
 }
 
-template <typename Arg0>
+template <typename Arg0, typename FunctionFactoryClass = InstanceFactory1<
+                             FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionPrograms1<Arg0>>>
 TestCase *createFunctionCaseWithPrograms(tcu::TestContext &testCtx, const std::string &name,
                                          typename FunctionPrograms1<Arg0>::Function initPrograms,
                                          typename FunctionInstance1<Arg0>::Function testFunction, Arg0 arg0)
 {
-    return new InstanceFactory1<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args,
-                                FunctionPrograms1<Arg0>>(testCtx, name, FunctionPrograms1<Arg0>(initPrograms),
-                                                         typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
+    return new FunctionFactoryClass(testCtx, name, FunctionPrograms1<Arg0>(initPrograms),
+                                    typename FunctionInstance1<Arg0>::Args(testFunction, arg0));
 }
 
-template <typename Arg0>
+template <typename Arg0, typename FunctionFactoryClass = InstanceFactory1WithSupport<
+                             FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0>,
+                             FunctionPrograms1<Arg0>>>
 TestCase *createFunctionCaseWithPrograms(tcu::TestContext &testCtx, const std::string &name,
                                          typename FunctionSupport1<Arg0>::Function checkSupport,
                                          typename FunctionPrograms1<Arg0>::Function initPrograms,
                                          typename FunctionInstance1<Arg0>::Function testFunction, Arg0 arg0)
 {
-    return new InstanceFactory1WithSupport<FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args,
-                                           FunctionSupport1<Arg0>, FunctionPrograms1<Arg0>>(
-        testCtx, name, FunctionPrograms1<Arg0>(initPrograms),
-        typename FunctionInstance1<Arg0>::Args(testFunction, arg0),
-        typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
+    return new FunctionFactoryClass(testCtx, name, FunctionPrograms1<Arg0>(initPrograms),
+                                    typename FunctionInstance1<Arg0>::Args(testFunction, arg0),
+                                    typename FunctionSupport1<Arg0>::Args(checkSupport, arg0));
 }
 
 // addFunctionCase
@@ -390,12 +389,14 @@ void addFunctionCase(tcu::TestCaseGroup *group, const std::string &name,
     group->addChild(createFunctionCase<Arg0, InstanceFactoryClass>(group->getTestContext(), name, testFunc, arg0));
 }
 
-template <typename Arg0>
+template <typename Arg0, typename InstanceFactoryClass = InstanceFactory1WithSupport<
+                             FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0>>>
 void addFunctionCase(tcu::TestCaseGroup *group, const std::string &name,
                      typename FunctionSupport1<Arg0>::Function checkSupport,
                      typename FunctionInstance1<Arg0>::Function testFunc, Arg0 arg0)
 {
-    group->addChild(createFunctionCase<Arg0>(group->getTestContext(), name, checkSupport, testFunc, arg0));
+    group->addChild(
+        createFunctionCase<Arg0, InstanceFactoryClass>(group->getTestContext(), name, checkSupport, testFunc, arg0));
 }
 
 template <typename Arg0>
@@ -413,23 +414,26 @@ void addFunctionCaseWithPrograms(tcu::TestCaseGroup *group, const std::string &n
     group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), name, initPrograms, testFunc, arg0));
 }
 
-template <typename Arg0>
+template <typename Arg0, typename FunctionFactoryClass = InstanceFactory1WithSupport<
+                             FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionSupport1<Arg0>,
+                             FunctionPrograms1<Arg0>>>
 void addFunctionCaseWithPrograms(tcu::TestCaseGroup *group, const std::string &name,
                                  typename FunctionSupport1<Arg0>::Function checkSupport,
                                  typename FunctionPrograms1<Arg0>::Function initPrograms,
                                  typename FunctionInstance1<Arg0>::Function testFunc, Arg0 arg0)
 {
-    group->addChild(createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), name, checkSupport, initPrograms,
-                                                         testFunc, arg0));
+    group->addChild(createFunctionCaseWithPrograms<Arg0, FunctionFactoryClass>(
+        group->getTestContext(), name, checkSupport, initPrograms, testFunc, arg0));
 }
 
-template <typename Arg0>
+template <typename Arg0, typename FunctionFactoryClass = InstanceFactory1<
+                             FunctionInstance1<Arg0>, typename FunctionInstance1<Arg0>::Args, FunctionPrograms1<Arg0>>>
 void addFunctionCaseWithPrograms(tcu::TestCaseGroup *group, tcu::TestNodeType type, const std::string &name,
                                  typename FunctionPrograms1<Arg0>::Function initPrograms,
                                  typename FunctionInstance1<Arg0>::Function testFunc, Arg0 arg0)
 {
-    group->addChild(
-        createFunctionCaseWithPrograms<Arg0>(group->getTestContext(), type, name, initPrograms, testFunc, arg0));
+    group->addChild(createFunctionCaseWithPrograms<Arg0, FunctionFactoryClass>(group->getTestContext(), type, name,
+                                                                               initPrograms, testFunc, arg0));
 }
 
 } // namespace vkt

@@ -39,6 +39,8 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vkSafetyCriticalUtil.hpp"
+#include "vkAppParamsUtil.hpp"
 
 #include "deDefs.h"
 #include "deMath.h"
@@ -123,7 +125,7 @@ Move<VkDevice> createImageRobustnessDevice(Context &context, const vk::VkInstanc
 
     vki.getPhysicalDeviceFeatures2(physicalDevice, &enabledFeatures);
 
-    const VkDeviceCreateInfo deviceParams = {
+    VkDeviceCreateInfo deviceParams = {
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,                      // VkStructureType sType;
         &enabledFeatures,                                          // const void* pNext;
         0u,                                                        // VkDeviceCreateFlags flags;
@@ -135,6 +137,77 @@ Move<VkDevice> createImageRobustnessDevice(Context &context, const vk::VkInstanc
         deviceExtensions.empty() ? nullptr : &deviceExtensions[0], // const char* const* ppEnabledExtensionNames;
         nullptr,                                                   // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
+
+#ifdef CTS_USES_VULKANSC
+    // devices created for Vulkan SC must have VkDeviceObjectReservationCreateInfo structure defined in VkDeviceCreateInfo::pNext chain
+    VkDeviceObjectReservationCreateInfo dmrCI = resetDeviceObjectReservationCreateInfo();
+    VkPipelineCacheCreateInfo pcCI            = {
+        VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                      // const void* pNext;
+        VK_PIPELINE_CACHE_CREATE_READ_ONLY_BIT |
+            VK_PIPELINE_CACHE_CREATE_USE_APPLICATION_STORAGE_BIT, // VkPipelineCacheCreateFlags flags;
+        0U,                                                       // uintptr_t initialDataSize;
+        nullptr                                                   // const void* pInitialData;
+    };
+
+    const tcu::CommandLine &cmdLine                    = context.getTestContext().getCommandLine();
+    de::SharedPtr<ResourceInterface> resourceInterface = context.getResourceInterface();
+
+    std::vector<VkPipelinePoolSize> poolSizes;
+    if (cmdLine.isSubProcess())
+    {
+        resourceInterface->importPipelineCacheData(context.getPlatformInterface(), instance, vki, physicalDevice,
+                                                   context.getUniversalQueueFamilyIndex());
+        dmrCI = resourceInterface->getStatMax();
+
+        if (resourceInterface->getCacheDataSize() > 0)
+        {
+            pcCI.initialDataSize               = resourceInterface->getCacheDataSize();
+            pcCI.pInitialData                  = resourceInterface->getCacheData();
+            dmrCI.pipelineCacheCreateInfoCount = 1;
+            dmrCI.pPipelineCacheCreateInfos    = &pcCI;
+        }
+
+        poolSizes = resourceInterface->getPipelinePoolSizes();
+        if (!poolSizes.empty())
+        {
+            dmrCI.pipelinePoolSizeCount = uint32_t(poolSizes.size());
+            dmrCI.pPipelinePoolSizes    = poolSizes.data();
+        }
+    }
+
+    dmrCI.pNext                                     = deviceParams.pNext;
+    VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
+    if (findStructureInChain(dmrCI.pNext, getStructureType<VkPhysicalDeviceVulkanSC10Features>()) == nullptr)
+    {
+        sc10Features.pNext = &dmrCI;
+        deviceParams.pNext = &sc10Features;
+    }
+    else
+        deviceParams.pNext = &dmrCI;
+
+    vector<VkApplicationParametersEXT> appParams;
+    if (readApplicationParameters(appParams, cmdLine, false))
+    {
+        appParams[appParams.size() - 1].pNext = deviceParams.pNext;
+        deviceParams.pNext                    = &appParams[0];
+    }
+
+    VkFaultCallbackInfo faultCallbackInfo = {
+        VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, // VkStructureType sType;
+        nullptr,                               // void* pNext;
+        0U,                                    // uint32_t faultCount;
+        nullptr,                               // VkFaultData* pFaults;
+        Context::faultCallbackFunction         // PFN_vkFaultCallbackFunction pfnFaultCallback;
+    };
+
+    if (cmdLine.isSubProcess())
+    {
+        // XXX workaround incorrect constness on faultCallbackInfo.pNext.
+        faultCallbackInfo.pNext = const_cast<void *>(deviceParams.pNext);
+        deviceParams.pNext      = &faultCallbackInfo;
+    }
+#endif // CTS_USES_VULKANSC
 
     return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
                               context.getPlatformInterface(), instance, vki, context.getPhysicalDevice(),

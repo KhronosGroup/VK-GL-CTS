@@ -590,7 +590,7 @@ bool CrossStageTestInstance::checkImage(VkImage image, VkCommandPool cmdPool, Vk
     tcu::copy(dst, tcu::ConstPixelBufferAccess(dst.getFormat(), dst.getSize(), bufferAlloc->getHostPtr()));
 
     if (tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", description.c_str(),
-                                   referenceFrame.getLevel(0), dst, tcu::Vec4(0.05f), tcu::COMPARE_LOG_EVERYTHING))
+                                   referenceFrame.getLevel(0), dst, tcu::Vec4(0.05f), tcu::COMPARE_LOG_ON_ERROR))
         return true;
     return false;
 }

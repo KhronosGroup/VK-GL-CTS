@@ -28,6 +28,7 @@
 #include "vktGeometryInstancedRenderingTests.hpp"
 #include "vktGeometryVaryingGeometryShaderTests.hpp"
 #include "vktGeometryEmitGeometryShaderTests.hpp"
+#include "vktGeometryBuiltinVariableGeometryShaderTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -47,6 +48,7 @@ void createChildren(tcu::TestCaseGroup *geometryTests)
     geometryTests->addChild(createInstancedRenderingTests(testCtx));
     geometryTests->addChild(createVaryingGeometryShaderTests(testCtx));
     geometryTests->addChild(createEmitGeometryShaderTests(testCtx));
+    geometryTests->addChild(createBuiltinVariableGeometryShaderTests(testCtx));
 }
 
 } // namespace

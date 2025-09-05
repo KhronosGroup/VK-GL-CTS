@@ -855,7 +855,9 @@ m_vk.bindOpticalFlowSessionImageNV = (BindOpticalFlowSessionImageNVFunc) GET_PRO
 m_vk.cmdOpticalFlowExecuteNV = (CmdOpticalFlowExecuteNVFunc) GET_PROC_ADDR("vkCmdOpticalFlowExecuteNV");
 m_vk.getDeviceFaultInfoEXT = (GetDeviceFaultInfoEXTFunc) GET_PROC_ADDR("vkGetDeviceFaultInfoEXT");
 m_vk.cmdSetDepthBias2EXT = (CmdSetDepthBias2EXTFunc) GET_PROC_ADDR("vkCmdSetDepthBias2EXT");
-m_vk.releaseSwapchainImagesEXT = (ReleaseSwapchainImagesEXTFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
+m_vk.releaseSwapchainImagesKHR = (ReleaseSwapchainImagesKHRFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesKHR");
+if (!m_vk.releaseSwapchainImagesKHR)
+    m_vk.releaseSwapchainImagesKHR = (ReleaseSwapchainImagesKHRFunc) GET_PROC_ADDR("vkReleaseSwapchainImagesEXT");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 4, 0))
     m_vk.getDeviceImageSubresourceLayout = (GetDeviceImageSubresourceLayoutFunc) GET_PROC_ADDR("vkGetDeviceImageSubresourceLayout");
 if (!m_vk.getDeviceImageSubresourceLayout)
@@ -931,3 +933,12 @@ m_vk.getDeviceTensorMemoryRequirementsARM = (GetDeviceTensorMemoryRequirementsAR
 m_vk.cmdCopyTensorARM = (CmdCopyTensorARMFunc) GET_PROC_ADDR("vkCmdCopyTensorARM");
 m_vk.getTensorOpaqueCaptureDescriptorDataARM = (GetTensorOpaqueCaptureDescriptorDataARMFunc) GET_PROC_ADDR("vkGetTensorOpaqueCaptureDescriptorDataARM");
 m_vk.getTensorViewOpaqueCaptureDescriptorDataARM = (GetTensorViewOpaqueCaptureDescriptorDataARMFunc) GET_PROC_ADDR("vkGetTensorViewOpaqueCaptureDescriptorDataARM");
+m_vk.createDataGraphPipelinesARM = (CreateDataGraphPipelinesARMFunc) GET_PROC_ADDR("vkCreateDataGraphPipelinesARM");
+m_vk.createDataGraphPipelineSessionARM = (CreateDataGraphPipelineSessionARMFunc) GET_PROC_ADDR("vkCreateDataGraphPipelineSessionARM");
+m_vk.getDataGraphPipelineSessionBindPointRequirementsARM = (GetDataGraphPipelineSessionBindPointRequirementsARMFunc) GET_PROC_ADDR("vkGetDataGraphPipelineSessionBindPointRequirementsARM");
+m_vk.getDataGraphPipelineSessionMemoryRequirementsARM = (GetDataGraphPipelineSessionMemoryRequirementsARMFunc) GET_PROC_ADDR("vkGetDataGraphPipelineSessionMemoryRequirementsARM");
+m_vk.bindDataGraphPipelineSessionMemoryARM = (BindDataGraphPipelineSessionMemoryARMFunc) GET_PROC_ADDR("vkBindDataGraphPipelineSessionMemoryARM");
+m_vk.destroyDataGraphPipelineSessionARM = (DestroyDataGraphPipelineSessionARMFunc) GET_PROC_ADDR("vkDestroyDataGraphPipelineSessionARM");
+m_vk.cmdDispatchDataGraphARM = (CmdDispatchDataGraphARMFunc) GET_PROC_ADDR("vkCmdDispatchDataGraphARM");
+m_vk.getDataGraphPipelineAvailablePropertiesARM = (GetDataGraphPipelineAvailablePropertiesARMFunc) GET_PROC_ADDR("vkGetDataGraphPipelineAvailablePropertiesARM");
+m_vk.getDataGraphPipelinePropertiesARM = (GetDataGraphPipelinePropertiesARMFunc) GET_PROC_ADDR("vkGetDataGraphPipelinePropertiesARM");

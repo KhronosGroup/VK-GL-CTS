@@ -61,6 +61,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 			endif()
 
 			if (DEQP_SUPPORT_GLX)
+				pkg_check_modules(GLX glx REQUIRED)
 				set(TCUTIL_PLATFORM_SRCS
 					${TCUTIL_PLATFORM_SRCS}
 					lnx/X11/tcuLnxX11GlxPlatform.hpp
@@ -84,6 +85,7 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 				configure_file(${WAYLAND_XDG_SHELL_SRC_DIR}/xdg-shell.h ${DEQP_XDG_SHELL_GEN_OUTPUTS_DIR}/xdg-shell.h COPYONLY)
 			else ()
 				if (NOT WAYLAND_PROTOCOLS_DIR)
+					pkg_check_modules(WAYLAND_PROTOCOLS_DIR wayland-protocols REQUIRED)
 					pkg_get_variable(WAYLAND_PROTOCOLS_DIR wayland-protocols pkgdatadir)
 				endif()
 

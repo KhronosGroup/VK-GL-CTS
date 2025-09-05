@@ -2037,6 +2037,11 @@ void SampleMaskWithConservativeTest::checkSupport(Context &context) const
     if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
         TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
 
+    if (m_useFragmentShadingRate &&
+        !context.getFragmentShadingRateProperties().fragmentShadingRateWithConservativeRasterization)
+        TCU_THROW(NotSupportedError,
+                  "fragmentShadingRateWithConservativeRasterization not supported with conservative rasterization");
+
     context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
 
     const auto &conservativeRasterizationProperties = context.getConservativeRasterizationPropertiesEXT();
@@ -6176,6 +6181,7 @@ void ZExportCheckSupport(Context &context, const ZExportParams params)
         if (!eds3Features.extendedDynamicState3AlphaToCoverageEnable)
             TCU_THROW(NotSupportedError, "extendedDynamicState3AlphaToCoverageEnable not supported");
 #else
+        // VK_EXT_extended_dynamic_state3 is not available on vksc
         DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
     }
@@ -6501,8 +6507,6 @@ tcu::TestStatus ZExportIterate(Context &context, const ZExportParams params)
 #ifndef CTS_USES_VULKANSC
     if (params.dynamicAlphaToCoverage)
         dynamicStates.push_back(VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
-#else
-    DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
 
     const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
@@ -6570,8 +6574,6 @@ tcu::TestStatus ZExportIterate(Context &context, const ZExportParams params)
 #ifndef CTS_USES_VULKANSC
     if (params.dynamicAlphaToCoverage)
         ctx.vkd.cmdSetAlphaToCoverageEnableEXT(cmdBuffer, VK_TRUE);
-#else
-    DE_ASSERT(false);
 #endif // CTS_USES_VULKANSC
     ctx.vkd.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
     renderPass.end(ctx.vkd, cmdBuffer);

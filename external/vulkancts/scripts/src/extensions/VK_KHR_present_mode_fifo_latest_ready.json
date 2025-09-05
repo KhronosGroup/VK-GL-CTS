@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR": [
+            {
+                "features": [
+                    "presentModeFifoLatestReady"
+                ],
+                "requirements": [
+                    "VK_KHR_present_mode_fifo_latest_ready"
+                ]
+            }
+        ]
+    }
+}

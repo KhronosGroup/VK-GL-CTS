@@ -11,6 +11,9 @@
                 ],
                 "requirements": [
                     "VK_KHR_shader_float_controls2"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
                 ]
             }
         ]

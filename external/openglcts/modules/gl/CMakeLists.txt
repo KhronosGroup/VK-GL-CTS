@@ -123,6 +123,8 @@ set(GLCTS_GL_SRCS
 	gl4cIndirectParametersTests.hpp
 	gl4cLimitsTests.cpp
 	gl4cLimitsTests.hpp
+	gl4cTextureQueryLevelsTests.hpp
+	gl4cTextureQueryLevelsTests.cpp
 	gl4cGlSpirvTests.cpp
 	gl4cGlSpirvTests.hpp
 	gl4cTextureQueryLodTests.hpp

@@ -140,12 +140,13 @@ Move<VkSampler> makeSampler(const DeviceInterface &vk, const VkDevice device)
 }
 
 Move<VkImage> makeImage(const DeviceInterface &vk, const VkDevice device, const VkFormat format, const UVec2 &size,
-                        const VkSampleCountFlagBits samples, const VkImageUsageFlags usage)
+                        const VkSampleCountFlagBits samples, const VkImageUsageFlags usage,
+                        VkImageCreateFlags createFlags = 0)
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
         nullptr,                             // const void* pNext;
-        (VkImageCreateFlags)0,               // VkImageCreateFlags flags;
+        createFlags,                         // VkImageCreateFlags flags;
         VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
         format,                              // VkFormat format;
         makeExtent3D(size.x(), size.y(), 1), // VkExtent3D extent;
@@ -1228,8 +1229,12 @@ void createPerSubpassData(Context &context, const TestParams &params, WorkingDat
                                VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT,
                                depthStencilImageUsageFlags, samples.numDepthStencilSamples);
 
-        subpassData.depthStencilImage = makeImage(vk, device, params.depthStencilFormat, wd.renderSize,
-                                                  samples.numDepthStencilSamples, depthStencilImageUsageFlags);
+        VkImageCreateFlags depthImageCreateFlags = (VkImageCreateFlags)0u;
+        if (params.useProgrammableSampleLocations && isDepthFormat(params.depthStencilFormat))
+            depthImageCreateFlags |= VK_IMAGE_CREATE_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT;
+        subpassData.depthStencilImage =
+            makeImage(vk, device, params.depthStencilFormat, wd.renderSize, samples.numDepthStencilSamples,
+                      depthStencilImageUsageFlags, depthImageCreateFlags);
         subpassData.depthStencilImageAlloc =
             bindImage(vk, device, *allocator, *subpassData.depthStencilImage, MemoryRequirement::Any);
         subpassData.depthStencilImageView =

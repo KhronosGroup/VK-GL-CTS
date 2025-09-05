@@ -8,7 +8,8 @@
             {
                 "features": [
                     "shaderBFloat16Type",
-                    "shaderBFloat16CooperativeMatrix,shaderBFloat16DotProduct"
+                    "shaderBFloat16CooperativeMatrix",
+                    "shaderBFloat16DotProduct"
                 ],
                 "requirements": [
                     "VK_KHR_shader_bfloat16"

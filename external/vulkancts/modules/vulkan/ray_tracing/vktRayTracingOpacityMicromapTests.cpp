@@ -68,6 +68,7 @@ std::vector<std::string> testFlagBitNames = {
 struct TestParams
 {
     bool useSpecialIndex;
+    bool nonZeroBase;
     uint32_t testFlagMask;
     uint32_t subdivisionLevel; // Must be 0 for useSpecialIndex
     uint32_t mode;             // Special index value if useSpecialIndex, 2 or 4 for number of states otherwise
@@ -328,11 +329,14 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     auto topLevelAS    = makeTopLevelAccelerationStructure();
     auto bottomLevelAS = makeBottomLevelAccelerationStructure();
 
-    uint32_t numSubtriangles      = levelToSubtriangles(m_params.subdivisionLevel);
-    uint32_t opacityMicromapBytes = (m_params.mode == 2) ? (numSubtriangles + 3) / 4 : (numSubtriangles + 1) / 2;
+    const auto triangleCount       = (m_params.nonZeroBase ? 2u : 1u);
+    uint32_t numSubtriangles       = levelToSubtriangles(m_params.subdivisionLevel);
+    uint32_t triangleMicromapBytes = (m_params.mode == 2) ? (numSubtriangles + 7) / 8 : (numSubtriangles + 3) / 4;
+    uint32_t opacityMicromapBytes  = triangleMicromapBytes * triangleCount;
 
     // Generate random micromap data
     std::vector<uint8_t> opacityMicromapData;
+    opacityMicromapData.reserve(opacityMicromapBytes);
 
     de::Random rnd(m_params.seed);
 
@@ -359,7 +363,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
 
     // Fill out VkMicromapUsageEXT with size information
     VkMicromapUsageEXT mmUsage = {};
-    mmUsage.count              = 1;
+    mmUsage.count              = triangleCount;
     mmUsage.subdivisionLevel   = m_params.subdivisionLevel;
     mmUsage.format =
         m_params.mode == 2 ? VK_OPACITY_MICROMAP_FORMAT_2_STATE_EXT : VK_OPACITY_MICROMAP_FORMAT_4_STATE_EXT;
@@ -372,10 +376,13 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         DE_STATIC_ASSERT(sizeof(VkMicromapTriangleEXT) == 8);
 
         // Triangle information
-        VkMicromapTriangleEXT *tri = (VkMicromapTriangleEXT *)(&data[TriangleOffset]);
-        tri->dataOffset            = 0;
-        tri->subdivisionLevel      = uint16_t(mmUsage.subdivisionLevel);
-        tri->format                = uint16_t(mmUsage.format);
+        for (uint32_t i = 0u; i < triangleCount; ++i)
+        {
+            VkMicromapTriangleEXT *tri = (VkMicromapTriangleEXT *)(&data[TriangleOffset]) + i;
+            tri->dataOffset            = triangleMicromapBytes * i;
+            tri->subdivisionLevel      = uint16_t(mmUsage.subdivisionLevel);
+            tri->format                = uint16_t(mmUsage.format);
+        }
 
         // Micromap data
         {
@@ -391,19 +398,19 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
 
     // Query the size from the build info
     VkMicromapBuildInfoEXT mmBuildInfo = {
-        VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT, // VkStructureType sType;
-        nullptr,                                   // const void* pNext;
-        VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT,     // VkMicromapTypeEXT type;
-        0,                                         // VkBuildMicromapFlagsEXT flags;
-        VK_BUILD_MICROMAP_MODE_BUILD_EXT,          // VkBuildMicromapModeEXT mode;
-        VK_NULL_HANDLE,                            // VkMicromapEXT dstMicromap;
-        1,                                         // uint32_t usageCountsCount;
-        &mmUsage,                                  // const VkMicromapUsageEXT* pUsageCounts;
-        nullptr,                                   // const VkMicromapUsageEXT* const* ppUsageCounts;
-        makeDeviceOrHostAddressConstKHR(nullptr),  // VkDeviceOrHostAddressConstKHR data;
-        makeDeviceOrHostAddressKHR(nullptr),       // VkDeviceOrHostAddressKHR scratchData;
-        makeDeviceOrHostAddressConstKHR(nullptr),  // VkDeviceOrHostAddressConstKHR triangleArray;
-        0,                                         // VkDeviceSize triangleArrayStride;
+        VK_STRUCTURE_TYPE_MICROMAP_BUILD_INFO_EXT,                // VkStructureType sType;
+        nullptr,                                                  // const void* pNext;
+        VK_MICROMAP_TYPE_OPACITY_MICROMAP_EXT,                    // VkMicromapTypeEXT type;
+        0,                                                        // VkBuildMicromapFlagsEXT flags;
+        VK_BUILD_MICROMAP_MODE_BUILD_EXT,                         // VkBuildMicromapModeEXT mode;
+        VK_NULL_HANDLE,                                           // VkMicromapEXT dstMicromap;
+        1,                                                        // uint32_t usageCountsCount;
+        &mmUsage,                                                 // const VkMicromapUsageEXT* pUsageCounts;
+        nullptr,                                                  // const VkMicromapUsageEXT* const* ppUsageCounts;
+        makeDeviceOrHostAddressConstKHR(nullptr),                 // VkDeviceOrHostAddressConstKHR data;
+        makeDeviceOrHostAddressKHR(nullptr),                      // VkDeviceOrHostAddressKHR scratchData;
+        makeDeviceOrHostAddressConstKHR(nullptr),                 // VkDeviceOrHostAddressConstKHR triangleArray;
+        static_cast<VkDeviceSize>(sizeof(VkMicromapTriangleEXT)), // VkDeviceSize triangleArrayStride;
     };
 
     VkMicromapBuildSizesInfoEXT sizeInfo = {
@@ -480,7 +487,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         makeDeviceOrHostAddressConstKHR(vkd, device, micromapDataBuffer.get(),
                                         IndexOffset), //VkDeviceOrHostAddressConstKHR indexBuffer;
         0u,                                           //VkDeviceSize indexStride;
-        0u,                                           //uint32_t baseTriangle;
+        (m_params.nonZeroBase ? 1u : 0u),             //uint32_t baseTriangle;
         1u,                                           //uint32_t usageCountsCount;
         &mmUsage,                                     //const VkMicromapUsageEXT* pUsageCounts;
         nullptr,                                      //const VkMicromapUsageEXT* const* ppUsageCounts;
@@ -530,6 +537,8 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     origins.reserve(numRays);
     expectedOutputModes.reserve(numRays);
 
+    const auto micromapDataOffset = (m_params.nonZeroBase ? triangleMicromapBytes : 0u);
+
     // Fill in vector of expected outputs
     for (uint32_t index = 0; index < numRays; index++)
     {
@@ -548,13 +557,13 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             {
                 if (m_params.mode == 2)
                 {
-                    uint8_t byte = opacityMicromapData[index / 8];
+                    uint8_t byte = opacityMicromapData[index / 8 + micromapDataOffset];
                     state        = (byte >> (index % 8)) & 0x1;
                 }
                 else
                 {
                     DE_ASSERT(m_params.mode == 4);
-                    uint8_t byte = opacityMicromapData[index / 4];
+                    uint8_t byte = opacityMicromapData[index / 4 + micromapDataOffset];
                     state        = (byte >> 2 * (index % 4)) & 0x3;
                 }
                 // Process in SPECIAL_INDEX number space
@@ -734,6 +743,16 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     DE_ASSERT(de::dataSize(outputData) == outputModesBufferSizeSz);
     deMemcpy(outputData.data(), outputModesBufferData, outputModesBufferSizeSz);
 
+    bool fail = false;
+    auto &log = m_context.getTestContext().getLog();
+
+    const auto logValues = [&](uint32_t ref, uint32_t res, size_t idx)
+    {
+        std::ostringstream msg;
+        msg << "Ray " << idx << ": expected " << ref << " and found " << res;
+        log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+    };
+
     for (size_t i = 0; i < outputData.size(); ++i)
     {
         const auto &outVal      = outputData[i];
@@ -741,21 +760,13 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
 
         if (outVal != expectedVal)
         {
-            std::ostringstream msg;
-            msg << "Unexpected value found for ray " << i << ": expected " << expectedVal << " and found " << outVal
-                << ";";
-            TCU_FAIL(msg.str());
+            logValues(expectedVal, outVal, i);
+            fail = true;
         }
-#if 0
-        else
-        {
-            std::ostringstream msg;
-            msg << "Expected value found for ray " << i << ": expected " << expectedVal << " and found " << outVal << ";\n"; // XXX Debug remove
-            std::cout << msg.str();
-        }
-#endif
     }
 
+    if (fail)
+        TCU_FAIL("Unexpected values found in output buffer; check log for details --");
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -808,13 +819,14 @@ tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
                 for (uint32_t specialIndex = 0; specialIndex < 4; specialIndex++)
                 {
                     TestParams testParams{
-                        specialIndexUse[specialIndexNdx].useSpecialIndex, testFlagMask, 0, ~specialIndex, seed++,
+                        specialIndexUse[specialIndexNdx].useSpecialIndex, false, testFlagMask, 0, ~specialIndex, seed++,
                     };
 
                     std::stringstream css;
                     css << specialIndex;
+                    const auto testName = css.str();
 
-                    specialGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), testParams));
+                    specialGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
                 }
                 testFlagGroup->addChild(specialGroup.release());
             }
@@ -834,6 +846,7 @@ tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
                     {
                         TestParams testParams{
                             specialIndexUse[specialIndexNdx].useSpecialIndex,
+                            false,
                             testFlagMask,
                             level,
                             modes[modeNdx].mode,
@@ -842,8 +855,16 @@ tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
 
                         std::stringstream css;
                         css << "level_" << level;
+                        const auto testName = css.str();
 
-                        modeGroup->addChild(new OpacityMicromapCase(testCtx, css.str().c_str(), testParams));
+                        modeGroup->addChild(new OpacityMicromapCase(testCtx, testName, testParams));
+
+                        if (testFlagMask == 0u)
+                        {
+                            testParams.nonZeroBase = true;
+                            const auto variantName = testName + "_non_zero_base";
+                            modeGroup->addChild(new OpacityMicromapCase(testCtx, variantName, testParams));
+                        }
                     }
                     specialGroup->addChild(modeGroup.release());
                 }

@@ -77,6 +77,7 @@
 #include "vktPipelineRobustnessCacheTests.hpp"
 #include "vktPipelineInputAttributeOffsetTests.hpp"
 #include "vktPipelineEmptyFSTests.hpp"
+#include "vktPipelineNoQueuesTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt
@@ -256,6 +257,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     mainGroup->addChild(shaderObjectUnlinkedBinaryGroup.release());
     mainGroup->addChild(shaderObjectLinkedSpirvGroup.release());
     mainGroup->addChild(shaderObjectLinkedBinaryGroup.release());
+    mainGroup->addChild(vkt::no_queues::createNoQueuesTests(testCtx));
 #endif
     return mainGroup.release();
 }

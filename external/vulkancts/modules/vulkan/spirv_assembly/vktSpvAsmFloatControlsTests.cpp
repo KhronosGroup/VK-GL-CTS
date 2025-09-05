@@ -591,7 +591,8 @@ struct conversionDetail
     typedef typename TO_FLOAT_TYPE::StorageType ToInt;
 
     // How many bits will be removed from the mantissa by the conversion?
-    static const int excessWidth = FROM_FLOAT_TYPE::MANTISSA_BITS - TO_FLOAT_TYPE::MANTISSA_BITS;
+    static const int excessWidth =
+        static_cast<int>(FROM_FLOAT_TYPE::MANTISSA_BITS) - static_cast<int>(TO_FLOAT_TYPE::MANTISSA_BITS);
 
     // 'tie' contains the bits for the "1y, y is 0" case in RoundCase table.
     // All the positions in tie32 will be thrown away, but help determine

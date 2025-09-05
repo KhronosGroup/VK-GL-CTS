@@ -769,6 +769,10 @@ void LogErrorCase::expectMessage(GLenum source, GLenum type)
     TestLog &log             = m_testCtx.getLog();
     MessageData lastMsg;
 
+    // Reset error so that code afterwards (such as glu::ShaderProgram) doesn't break because of
+    // lingering error state.
+    m_context.getRenderContext().getFunctions().getError();
+
     if (source == GL_DONT_CARE || type == GL_DONT_CARE)
         return;
 
@@ -817,10 +821,6 @@ void LogErrorCase::expectMessage(GLenum source, GLenum type)
     log << TestLog::Message << "Driver says: \"" << lastMsg.message << "\"" << TestLog::EndMessage;
 
     verifyMessage(lastMsg, source, type);
-
-    // Reset error so that code afterwards (such as glu::ShaderProgram) doesn't break because of
-    // lingering error state.
-    m_context.getRenderContext().getFunctions().getError();
 }
 
 // Generate errors, verify that calling glGetError afterwards produces desired result

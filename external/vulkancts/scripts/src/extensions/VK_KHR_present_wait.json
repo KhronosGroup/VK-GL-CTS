@@ -11,9 +11,6 @@
                 ],
                 "requirements": [
                     "VK_KHR_present_wait"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
                 ]
             }
         ]

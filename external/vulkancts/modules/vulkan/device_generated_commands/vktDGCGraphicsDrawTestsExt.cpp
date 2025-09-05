@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDGCGraphicsDrawTestsExt.hpp"
+#include "util/vktShaderObjectUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktDGCUtilCommon.hpp"
@@ -1738,9 +1739,9 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
         if (m_params.isShaderObjects())
         {
             // Bind state for shader objects. This is needed with and without execution sets.
-            bindShaderObjectState(ctx.vkd, getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
-                                  primitiveTopology, patchControlPoints, &vertexInputStateCreateInfo, nullptr, nullptr,
-                                  nullptr, nullptr);
+            vkt::shaderobjutil::bindShaderObjectState(
+                ctx.vkd, vkt::shaderobjutil::getDeviceCreationExtensions(m_context), recCmdBuffer, viewports, scissors,
+                primitiveTopology, patchControlPoints, &vertexInputStateCreateInfo, nullptr, nullptr, nullptr, nullptr);
         }
 
         if (isIndexed(m_params.testType) || m_params.testType == TestType::DRAW_SIMPLE)
@@ -1818,7 +1819,7 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
     auto &log                  = m_context.getTestContext().getLog();
     const float thresholdValue = 0.005f; // 1/255 < 0.005 < 2/255
     const tcu::Vec4 threshold(thresholdValue, 0.0f, 0.0f, 0.0f);
-    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_EVERYTHING))
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Unexpected results in color buffer; check log for details");
 
     return tcu::TestStatus::pass("Pass");

@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR": [
+            {
+                "features": [
+                    "swapchainMaintenance1"
+                ],
+                "requirements": [
+                    "VK_KHR_swapchain_maintenance1"
+                ]
+            }
+        ]
+    }
+}

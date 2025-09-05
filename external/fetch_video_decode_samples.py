@@ -279,6 +279,132 @@ PACKAGES = [
         "24b9554460aea54b24aff4adaf154c887fcc14ed114436bc87e8c29d8f4e7113",
         "vulkancts/data/vulkan/video/av1",
         ""),
+    # GStreamer generated
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-176x144-key-10.ivf",
+        "vp9/vp9-176x144-key-10.ivf",
+        "c0da2ebe0c2787e5a4ffb23dc3dee31d57c11786e0cf22f1a15196d4428bbdd7",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # Source to confirm
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-512x288-basic-10.ivf",
+        "vp9/vp9-512x288-basic-10.ivf",
+        "28652251b44be3549fcb827c9d0bb1ddcdc203f11792b8c9cd9b8b6c3b0b88ca",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-17-show-existing-frame.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-352x288-show-existing-frames.ivf",
+        "vp9/vp9-352x288-show-existing-frames.ivf",
+        "af01c1466fe5759bad4fee45cf6444bfb6baa027d98d7334a9ef76aea6d33cce",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-11-size-351x287.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-351x287-basic.ivf",
+        "vp9/vp9-351x287-basic.ivf",
+        "26865fd70915a801a4dc1bc9db71ac33097e6992f2f9119b86b8f3b4f3dfc841",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-08-tile_1x2.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-1920x1080-tile-1x2.ivf",
+        "vp9/vp9-1920x1080-tile-1x2.ivf",
+        "6d7b071fbae0604b098a09bdea66ab4b0d5e9c273efd52d82be6b3bd4827603f",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-08-tile_1x4.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-1920x1080-tile-1x4.ivf",
+        "vp9/vp9-1920x1080-tile-1x4.ivf",
+        "7ebe0ecb21fa7a53264a5ab6b29325520261b80039be279ffc7e8c49b1ada539",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-08-tile_1x8.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-3980x2160-tile-1x8.ivf",
+        "vp9/vp9-3980x2160-tile-1x8.ivf",
+        "c2340e53813734331247f860f928eaef3316e08362a163c74aa1efa3fcc4de3b",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-08-tile_4x4.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-1920x1080-tile-4x4.ivf",
+        "vp9/vp9-1920x1080-tile-4x4.ivf",
+        "aac08edced94e6c5858d48bcaea839679c701133963959e182e1684ea44cfb21",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-05-resize.ivf
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-resize.ivf",
+        "vp9/vp9-resize.ivf",
+        "84a345546e47e37de87d2959347bf731f9f440f9f2ab32bede3f0e416100c585",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-09-lf_deltas.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-352x240-lf.ivf",
+        "vp9/vp9-352x240-lf.ivf",
+        "808e5734610d2f58472d7a3dc2e703e83fbf0e4ab513c2f13dfce902ee41d0b7",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # Generated with GStreamer videotestsrc
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-320x240-10bits.ivf",
+        "vp9/vp9-320x240-10bits.ivf",
+        "0ba93502fa08ace58c84d02c7bc8664ca862cb4ad5cda7642d116956fe53d137",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-16-intra-only.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-352x288-intra-only.ivf",
+        "vp9/vp9-352x288-intra-only.ivf",
+        "abe164efe985fcc342af82866e1a7998348563c75d95fec3e96e59bd871f2fd5",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-15-segkey_adpq.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-852x480-segkey.ivf",
+        "vp9/vp9-852x480-segkey.ivf",
+        "39e9f10473f358fe25bc901157be6fcbd1a62c1bd1b0eefde05de201fd4f5ea7",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-00-quantizer-00.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-352x288-quant-00.ivf",
+        "vp9/vp9-352x288-quant-00.ivf",
+        "0ee879e57f9f705757847c7cf62ea1672c99d7f8b6e5f6764d5b5f25847022bc",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-00-quantizer-26.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-352x288-quant-26.ivf",
+        "vp9/vp9-352x288-quant-26.ivf",
+        "8950c0d42d34f9d767d25382a30e08198df8ca18ba8ad9481c66c28e7e6da335",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-00-quantizer-59.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-352x288-quant-59.ivf",
+        "vp9/vp9-352x288-quant-59.ivf",
+        "a063b444112d81ca6d3163756bac01e341c79c607dbf52ad7169a2b71b17a460",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-14-resize-fp-tiles-1-2.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-resize-1-2.ivf",
+        "vp9/vp9-resize-1-2.ivf",
+        "eb73c5e6a3fe0aa22bda18ed5fbf4c57baa29681ace12aa1a2739b89ab2536bd",
+        "vulkancts/data/vulkan/video",
+        ""),
+    # vp90-2-22-svc_1280x720_1.webm container converted with GStreamer
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/vp9/vp9-1280x720-svc.ivf",
+        "vp9/vp9-1280x720-svc.ivf",
+        "8a8dc19ce33eaeb48a1b800fb775a45b358cf8a779ea97face108e2e6ea958f2",
+        "vulkancts/data/vulkan/video",
+        ""),
 ]
 
 def parseArgs ():

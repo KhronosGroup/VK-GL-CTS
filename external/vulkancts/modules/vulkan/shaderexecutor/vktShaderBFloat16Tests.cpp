@@ -143,6 +143,58 @@ void AlignedBF16Vec4::revert()
     std::swap(y(), z());
 }
 
+template <>
+const char *getExtensionName<tcu::FloatE5M2>()
+{
+    return "GL_EXT_float_e5m2";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE5M2, 1>()
+{
+    return "floate5m2_t";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE5M2, 2>()
+{
+    return "fe5m2vec2";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE5M2, 3>()
+{
+    return "fe5m2vec3";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE5M2, 4>()
+{
+    return "fe5m2vec4";
+}
+
+template <>
+const char *getExtensionName<tcu::FloatE4M3>()
+{
+    return "GL_EXT_float_e4m3";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE4M3, 1>()
+{
+    return "floate4m3_t";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE4M3, 2>()
+{
+    return "fe4m3vec2";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE4M3, 3>()
+{
+    return "fe4m3vec3";
+}
+template <>
+const char *getVecTypeName<tcu::FloatE4M3, 4>()
+{
+    return "fe4m3vec4";
+}
+
 } // namespace bf16
 
 extern void createBFloat16DotTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *bfloat16);

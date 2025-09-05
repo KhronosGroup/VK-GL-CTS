@@ -732,7 +732,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto extendedDynamicStateFeatures               = m_context.getExtendedDynamicStateFeaturesEXT();
     auto pipelineExecutablePropertiesFeatures       = m_context.getPipelineExecutablePropertiesFeatures();
     auto shaderAtomicFloat2Features                 = m_context.getShaderAtomicFloat2FeaturesEXT();
-    auto swapchainMaitenance1Features               = m_context.getSwapchainMaintenance1FeaturesEXT();
+    auto swapchainMaitenance1Features               = m_context.getSwapchainMaintenance1Features();
     auto shaderDemoteToHelperInvocationFeatures     = m_context.getShaderDemoteToHelperInvocationFeatures();
     auto deviceGeneratedCommandsFeatures            = m_context.getDeviceGeneratedCommandsFeatures();
     auto inheritedViewportScissorFeatures           = m_context.getInheritedViewportScissorFeatures();

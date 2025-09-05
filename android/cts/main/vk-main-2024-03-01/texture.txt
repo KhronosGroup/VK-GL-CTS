@@ -688,6 +688,7 @@ dEQP-VK.texture.filtering.cube.sizes.8x8.nearest_mipmap_linear.non_seamless
 dEQP-VK.texture.filtering.cube.sizes.8x8.nearest_mipmap_linear.seamless
 dEQP-VK.texture.filtering.cube.sizes.8x8.nearest_mipmap_nearest.non_seamless
 dEQP-VK.texture.filtering.cube.sizes.8x8.nearest_mipmap_nearest.seamless
+dEQP-VK.texture.mipmap.cubemap.misc.projected_derivatives
 dEQP-VK.texture.multisample.atomic.storage_image_r64i
 dEQP-VK.texture.multisample.atomic.storage_image_r64ui
 dEQP-VK.texture.swizzle.component_mapping.depth.d16_unorm_2d_npot_oooo

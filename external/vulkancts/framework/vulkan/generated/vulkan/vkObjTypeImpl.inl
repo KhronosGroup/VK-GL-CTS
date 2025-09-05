@@ -51,6 +51,7 @@ template<> inline VkObjectType	getObjectType<VkMicromapEXT>					(void) { return 
 template<> inline VkObjectType	getObjectType<VkShaderEXT>						(void) { return VK_OBJECT_TYPE_SHADER_EXT;						}
 template<> inline VkObjectType	getObjectType<VkTensorARM>						(void) { return VK_OBJECT_TYPE_TENSOR_ARM;						}
 template<> inline VkObjectType	getObjectType<VkTensorViewARM>					(void) { return VK_OBJECT_TYPE_TENSOR_VIEW_ARM;					}
+template<> inline VkObjectType	getObjectType<VkDataGraphPipelineSessionARM>	(void) { return VK_OBJECT_TYPE_DATA_GRAPH_PIPELINE_SESSION_ARM;	}
 template<> inline VkObjectType	getObjectType<VkDisplayKHR>						(void) { return VK_OBJECT_TYPE_DISPLAY_KHR;						}
 template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>					(void) { return VK_OBJECT_TYPE_DISPLAY_MODE_KHR;				}
 template<> inline VkObjectType	getObjectType<VkSurfaceKHR>						(void) { return VK_OBJECT_TYPE_SURFACE_KHR;						}

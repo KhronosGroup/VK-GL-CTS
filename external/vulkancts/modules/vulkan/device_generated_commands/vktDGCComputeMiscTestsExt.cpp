@@ -2274,7 +2274,7 @@ tcu::TestCaseGroup *createDGCComputeMiscTestsExt(tcu::TestContext &testCtx)
                                         manyDispatchesInitPrograms, manyExecutesRun, params);
         }
 
-    for (const auto executeCount : {64u, 1024u, 8192u})
+    for (const auto executeCount : {64u, 1024u, 8192u, 131072u})
         for (const auto useComputeQueue : {false, true})
         {
             const ManyDispatchesParams params{executeCount, useComputeQueue};

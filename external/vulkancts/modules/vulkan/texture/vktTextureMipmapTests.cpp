@@ -35,6 +35,7 @@
 #include "tcuTexLookupVerifier.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuVectorUtil.hpp"
+#include "tcuVectorType.hpp"
 #include "tcuCommandLine.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -49,6 +50,7 @@
 #include "vktCustomInstancesDevices.hpp"
 
 #include <memory>
+#include <algorithm>
 
 using namespace vk;
 
@@ -1535,6 +1537,202 @@ protected:
     }
 };
 
+class TextureCubeProjectedDerivativesTestInstance : public TestInstance
+{
+public:
+    TextureCubeProjectedDerivativesTestInstance(Context &context);
+    ~TextureCubeProjectedDerivativesTestInstance(void) = default;
+
+    virtual tcu::TestStatus iterate(void);
+};
+
+TextureCubeProjectedDerivativesTestInstance::TextureCubeProjectedDerivativesTestInstance(Context &context)
+    : TestInstance(context)
+{
+}
+
+tcu::TestStatus TextureCubeProjectedDerivativesTestInstance::iterate(void)
+{
+    // test discontinuities in cubemap sampling with explicit derivatives
+
+    const int32_t size = 256;
+    const auto format  = vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM);
+    TestTextureCubeSp texture(new pipeline::TestTextureCube(format, size));
+
+    uint32_t faceColors[]{
+        0xff0000ff, // red       +X
+        0xffffff00, // cyan      -X
+        0xff00ff00, // green     +Y
+        0xffff00ff, // magenta   -Y
+        0xffff0000, // blue      +Z
+        0xff00ffff, // yellow    -Z
+    };
+
+    // helper array with directions to face corners;
+    // order of entries coresponds to cornerRGBAValues array
+    const tcu::Vec2 cornerDirections[]{
+        tcu::normalize(tcu::Vec2(-1.0f, 1.0f)), // left-top
+        tcu::normalize(tcu::Vec2(1.0f, 1.0f)),  // right-top
+        tcu::normalize(tcu::Vec2(1.0f, -1.0f)), // right-bottom
+        tcu::normalize(tcu::Vec2(-1.0f, -1.0f)) // left-bottom
+    };
+    const float epsilon = 0.01f;
+
+    // assign to each subsequent mip level half of RGB values
+    for (uint32_t faceNdx = 0u; faceNdx < 6u; faceNdx++)
+    {
+        tcu::RGBA color(faceColors[faceNdx]);
+        for (uint32_t levelNdx = 0u; levelNdx < 9u; levelNdx++)
+        {
+            tcu::clear(texture->getLevel(levelNdx, (tcu::CubeFace)faceNdx), color.toVec());
+
+            color.setRed(color.getRed() / 2);
+            color.setGreen(color.getGreen() / 2);
+            color.setBlue(color.getBlue() / 2);
+        }
+    }
+
+    auto &log = m_context.getTestContext().getLog();
+    TextureRenderer renderer(m_context, VK_SAMPLE_COUNT_1_BIT, size, size);
+    renderer.addCubeTexture(texture, VK_IMAGE_ASPECT_COLOR_BIT);
+
+    bool pass     = true;
+    const float v = 0.02f;
+    tcu::Surface renderedFrame(size, size);
+
+    // helper that sum all channels - this is used to determine gradient direction
+    auto sumRGBA = [&renderedFrame](int32_t x, int32_t y)
+    {
+        auto c = renderedFrame.getPixel(x, y);
+        return c.getRed() + c.getGreen() + c.getBlue();
+    };
+
+    // use nearest filtering to simplify verification
+    ReferenceParams refParams(TEXTURETYPE_CUBE);
+    refParams.sampler.wrapS           = tcu::Sampler::CLAMP_TO_EDGE;
+    refParams.sampler.wrapT           = tcu::Sampler::CLAMP_TO_EDGE;
+    refParams.sampler.wrapR           = tcu::Sampler::CLAMP_TO_EDGE;
+    refParams.sampler.minFilter       = tcu::Sampler::NEAREST_MIPMAP_NEAREST;
+    refParams.sampler.magFilter       = tcu::Sampler::NEAREST_MIPMAP_NEAREST;
+    refParams.sampler.reductionMode   = tcu::Sampler::MIN;
+    refParams.sampler.seamlessCubeMap = true;
+
+    for (uint32_t faceNdx = 0u; faceNdx < 6u; faceNdx++)
+    {
+        std::vector<float> texCoord;
+        computeQuadTexCoordCube(texCoord, static_cast<tcu::CubeFace>(faceNdx));
+
+        // generate all possible permutations of three component vectors consisting of -1 and +1
+        // (+1, -1, -1), (+1, -1, +1) ...
+        for (uint32_t permutationNdx = 0u; permutationNdx < 8u; permutationNdx++)
+        {
+            // calculate derivative sign - it will be used to generate both: derivatives
+            // and expected result
+            IVec3 dsign((permutationNdx & 1) * 2 - 1,        // convert [0, 1] to [-1, 1]
+                        ((permutationNdx & 2) == 2) * 2 - 1, //
+                        ((permutationNdx & 4) == 4) * 2 - 1);
+
+            // asign -1 for face at odd index (-X, -Y, -Z) and +1 to face at eaven index (+X, +Y, +Z)
+            const int32_t faceSign = 1 - 2 * (faceNdx % 2);
+
+            // calculate expected gradient direction basing on face index and the signs of derivatives;
+            // expected gradient is the same regardles of derivatives beeing used for dx or dy;
+            // instead of using table with expected results, equations were found
+            // empiracely to be able to verify if there is continuity betwean all faces
+            tcu::IVec2 direction(1);
+            if (faceNdx < 2u) // +X or -X
+                direction = {dsign[2] * dsign[0], dsign[1] * dsign[0] * faceSign};
+            else if (faceNdx < 4u) // +Y or -Y
+                direction = {faceSign * (2 * (dsign[0] == dsign[1]) - 1), dsign[1] * dsign[2]};
+            else // +Z or -Z
+                direction = {dsign[0] * -dsign[2], dsign[1] * dsign[2] * faceSign};
+
+            tcu::Vec2 expectedGradientDirection(static_cast<float>(direction.x()), static_cast<float>(direction.y()));
+            expectedGradientDirection = tcu::normalize(expectedGradientDirection);
+
+            // generate permutations for both dx and dy derivatives in glsl textureGrad
+            for (bool useDy : {false, true})
+            {
+                // to be able to reuse TextureRenderer and thus significantly simplify
+                // code we repourpes colorBias uniform to pass derivatives data to glsl;
+                // posible derivative values are:
+                // (+0.02, -0.02, -0.02), (+0.02, -0.02, +0.02), (+0.02, +0.02, -0.02),
+                // (+0.02, +0.02, +0.02), (-0.02, -0.02, -0.02), (-0.02, -0.02, +0.02),
+                // (-0.02, +0.02, -0.02), (-0.02, +0.02, +0.02)
+                // fourth component defines if derivative is for dx (0.0) or dy (1.0) - see frag shader
+                const auto d        = tcu::Vec3((float)dsign[0], (float)dsign[1], (float)dsign[2]) * v;
+                refParams.colorBias = tcu::Vec4(d.x(), d.y(), d.z(), 1.0f * useDy);
+
+                renderer.renderQuad(renderedFrame, 0, texCoord.data(), refParams);
+
+                // grab value of four fragments in corners;
+                // there is no possibility of comparing tcu::RGBA objects, but since on each face we
+                // operate on the same color but with a smaller intensity at each level, we can sum
+                // values from all channels and use those sums for comparisions
+                int32_t c0             = 0;
+                int32_t c1             = size - c0 - 1;
+                int32_t cornerValues[] = {
+                    sumRGBA(c0, c0), // left-top
+                    sumRGBA(c1, c0), // right-top
+                    sumRGBA(c1, c1), // right-bottom
+                    sumRGBA(c0, c1), // left-bottom
+                };
+
+                // find corners that have smallest and bigest values
+                const auto [minValue, maxValue] = std::minmax_element(std::begin(cornerValues), std::end(cornerValues));
+
+                // calculate weighted sum of drections to all corners
+                tcu::Vec2 resultGradientDirection(0.0f);
+                for (uint32_t i = 0; i < std::size(cornerValues); ++i)
+                {
+                    const float weight = float(cornerValues[i] - *minValue) / float(*maxValue);
+                    resultGradientDirection += cornerDirections[i] * (1.0f - weight);
+                }
+                resultGradientDirection = tcu::normalize(resultGradientDirection);
+
+                // check if gradient dirrection is correct - cos of vectors should be close to 1
+                if (tcu::dot(expectedGradientDirection, resultGradientDirection) < (1.0f - epsilon))
+                {
+                    // log wrong face
+                    pass = false;
+                    std::stringstream desc;
+                    desc << "Wrong gradient direction at face: " << faceNdx << " at derivative " << d << " for "
+                         << (useDy ? "dy" : "dx") << ". Expected gradient direction " << expectedGradientDirection
+                         << " got " << resultGradientDirection;
+                    log << tcu::TestLog::Image("", desc.str(), renderedFrame.getAccess());
+                }
+
+                // check gradient continuity and monotonicity by checking if value for subsequent fragment
+                // on diagonal is the same or smaller then the value of previous fragment
+                tcu::IVec2 step(direction.x(), -1 * direction.y()); // y flip
+                tcu::IVec2 curr(step.x() > 0 ? 0 : size - 1, step.y() > 0 ? 0 : size - 1);
+                int32_t lastValue = sumRGBA(curr.x(), curr.y());
+                for (uint32_t i = 1; i < size - 1; ++i)
+                {
+                    curr += step;
+                    int32_t currValue = sumRGBA(curr.x(), curr.y());
+                    if (currValue > lastValue)
+                    {
+                        pass = false;
+                        std::stringstream desc;
+                        desc << "Gradient for face: " << faceNdx << " at derivative " << d << " for "
+                             << (useDy ? "dy" : "dx") << " has correct direction " << expectedGradientDirection
+                             << " but is not monotonic at fragment " << curr;
+                        log << tcu::TestLog::Image("", desc.str(), renderedFrame.getAccess());
+                        break;
+                    }
+                    currValue = lastValue;
+                }
+            }
+        }
+    }
+
+    if (pass)
+        return tcu::TestStatus::pass("pass");
+
+    return tcu::TestStatus::fail("fail");
+}
+
 // Texture3DLodControlTestInstance
 class Texture3DLodControlTestInstance : public TestInstance
 {
@@ -2822,6 +3020,54 @@ tcu::TestStatus TextureGatherMinLodInstance::iterate(void)
 
 #endif // CTS_USES_VULKANSC
 
+class MiscTestCase : public TestCase
+{
+public:
+    MiscTestCase(tcu::TestContext &context, const std::string &name) : TestCase(context, name)
+    {
+    }
+
+    virtual TestInstance *createInstance(Context &context) const
+    {
+        return new TextureCubeProjectedDerivativesTestInstance(context);
+    }
+
+    virtual void initPrograms(vk::SourceCollections &programCollection) const
+    {
+        std::string vert = "#version 450\n"
+                           "layout(location = 0) in vec4 a_position;\n"
+                           "layout(location = 1) in vec3 a_texCoord;\n"
+                           "layout(location = 0) out vec3 v_texCoord;\n"
+                           "out gl_PerVertex { vec4 gl_Position; };\n"
+                           "\n"
+                           "void main (void)\n"
+                           "{\n"
+                           "    gl_Position = a_position;\n"
+                           "    v_texCoord = a_texCoord;\n"
+                           "}\n";
+        programCollection.glslSources.add("vertex_CUBE_FLOAT") << glu::VertexSource(vert);
+
+        std::string frag = "#version 450\n"
+                           "layout(location = 0) in vec3 v_texCoord;\n"
+                           "layout(location = 0) out vec4 dEQP_FragColor;\n"
+                           "layout (set=0, binding=0, std140) uniform Block \n"
+                           "{\n"
+                           "  float u_bias;\n"
+                           "  float u_ref;\n"
+                           "  vec4 u_colorScale;\n"
+                           "  vec4 u_derivatives;\n" // repurposed u_colorBias
+                           "};\n\n"
+                           "layout (set=1, binding=0) uniform samplerCube u_sampler;\n"
+                           "void main (void)\n"
+                           "{\n"
+                           "  vec3 dx = u_derivatives.xyz * (1.0 - u_derivatives.w);\n"
+                           "  vec3 dy = u_derivatives.xyz * u_derivatives.w;\n"
+                           "  dEQP_FragColor = textureGrad(u_sampler, v_texCoord, dx, dy);\n"
+                           "}\n";
+        programCollection.glslSources.add("fragment_CUBE_FLOAT") << glu::FragmentSource(frag);
+    }
+};
+
 } // namespace
 
 #ifndef CTS_USES_VULKANSC
@@ -3222,6 +3468,7 @@ void populateTextureMipmappingTests(tcu::TestCaseGroup *textureMipmappingTests)
         de::MovePtr<tcu::TestCaseGroup> maxLodGroupCube(new tcu::TestCaseGroup(testCtx, "max_lod"));
         de::MovePtr<tcu::TestCaseGroup> baseLevelGroupCube(new tcu::TestCaseGroup(testCtx, "base_level"));
         de::MovePtr<tcu::TestCaseGroup> maxLevelGroupCube(new tcu::TestCaseGroup(testCtx, "max_level"));
+        de::MovePtr<tcu::TestCaseGroup> miscGroupCube(new tcu::TestCaseGroup(testCtx, "misc"));
 
 #ifndef CTS_USES_VULKANSC
         de::MovePtr<tcu::TestCaseGroup> imageViewMinLodExtGroupCube(
@@ -3363,10 +3610,14 @@ void populateTextureMipmappingTests(tcu::TestCaseGroup *textureMipmappingTests)
         }
 #endif // CTS_USES_VULKANSC
 
+        // misc cubemap tests
+        miscGroupCube->addChild(new MiscTestCase(testCtx, "projected_derivatives"));
+
         groupCube->addChild(minLodGroupCube.release());
         groupCube->addChild(maxLodGroupCube.release());
         groupCube->addChild(baseLevelGroupCube.release());
         groupCube->addChild(maxLevelGroupCube.release());
+        groupCube->addChild(miscGroupCube.release());
 #ifndef CTS_USES_VULKANSC
         groupCube->addChild(imageViewMinLodExtGroupCube.release());
 #endif // CTS_USES_VULKANSC

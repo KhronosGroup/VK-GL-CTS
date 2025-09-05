@@ -134,6 +134,12 @@ public:
     {
         return m_name.c_str();
     }
+#if defined(DEQP_LOG_NODE_SOURCE)
+    const char *getSource(void) const
+    {
+        return m_source.c_str();
+    }
+#endif
     void getChildren(std::vector<TestNode *> &children) const;
     void addRootChild(const std::string &groupName, const CaseListFilter *caseListFilter,
                       TestCaseGroup *(*createTestGroup)(tcu::TestContext &testCtx, const std::string &name));
@@ -154,10 +160,19 @@ public:
     {
         return true;
     }
+#if defined(DEQP_LOG_NODE_SOURCE)
+    virtual void setSource(const std::string &source)
+    {
+        m_source = source;
+    }
+#endif
 
 protected:
     TestContext &m_testCtx;
     std::string m_name;
+#if defined(DEQP_LOG_NODE_SOURCE)
+    std::string m_source;
+#endif
 
 private:
     const TestNodeType m_nodeType;

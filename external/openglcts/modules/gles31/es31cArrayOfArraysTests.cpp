@@ -191,9 +191,6 @@ const std::string set_tesseation = "    gl_TessLevelOuter[0] = 1.0;\n"
                                    "    gl_TessLevelInner[0] = 1.0;\n"
                                    "    gl_TessLevelInner[1] = 1.0;\n";
 
-/* Input and output data type modifiers. */
-const std::string in_out_type_modifiers[] = {"in", "out", "uniform"};
-
 /* Types and appropriate initialisers, used throughout these tests */
 const var_descriptor var_descriptors[] = {
     {"bool", "", "true", "false", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A", "N/A"},
