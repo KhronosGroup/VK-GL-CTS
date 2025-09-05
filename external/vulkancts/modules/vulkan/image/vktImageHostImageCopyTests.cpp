@@ -1875,6 +1875,7 @@ tcu::TestStatus PropertiesTestInstance::iterate(void)
     vk::VkInstance instance(m_context.getInstance());
     vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
     vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    tcu::TestLog &log                   = m_context.getTestContext().getLog();
 
     vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT, // VkStructureType sType;
@@ -1926,6 +1927,89 @@ tcu::TestStatus PropertiesTestInstance::iterate(void)
     }
     if (UUIDZero)
         return tcu::TestStatus::fail("All bytes of optimalTilingLayoutUUID are 0");
+
+    if (m_context.getUnifiedImageLayoutsFeatures().unifiedImageLayouts)
+    {
+        std::vector<vk::VkImageLayout> interchangeableLayouts = {
+            vk::VK_IMAGE_LAYOUT_GENERAL,
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        };
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_fragment_shading_rate"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering_local_read"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT);
+        }
+        if (m_context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
+        {
+            if (m_context.isDeviceFunctionalitySupported("VK_KHR_video_decode_queue"))
+            {
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_DECODE_SRC_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR);
+            }
+            if (m_context.isDeviceFunctionalitySupported("VK_KHR_video_encode_queue"))
+            {
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR);
+            }
+            if (m_context.isDeviceFunctionalitySupported("VK_KHR_video_encode_quantization_map"))
+            {
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR);
+            }
+        }
+
+        for (const auto layout : interchangeableLayouts)
+        {
+            if (std::find(srcLayouts.begin(), srcLayouts.end(), layout) == srcLayouts.end())
+            {
+                log << tcu::TestLog::Message << "unifiedImageLayouts feature is supported, but layout " << layout
+                    << " was not included in VkPhysicalDeviceHostImageCopyProperties::pCopySrcLayouts"
+                    << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+            if (std::find(dstLayouts.begin(), dstLayouts.end(), layout) == dstLayouts.end())
+            {
+                log << tcu::TestLog::Message << "unifiedImageLayouts feature is supported, but layout " << layout
+                    << " was not included in VkPhysicalDeviceHostImageCopyProperties::pCopyDstLayouts"
+                    << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+        }
+    }
 
     return tcu::TestStatus::pass("Pass");
 }
