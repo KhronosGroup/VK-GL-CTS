@@ -3797,7 +3797,8 @@ void SingleAttachmentTestInstance::inbetweenDrawsRenderBarriers(VkCommandBuffer 
 #endif
 
     vkd.cmdPipelineBarrier(cmdBuffer,
-                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT,
+                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_ALL_COMMANDS_BIT |
+                               VK_PIPELINE_STAGE_HOST_BIT,
                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u,
                            0u, DE_NULL, 0u, DE_NULL, 2u, imageBarriers);
 }

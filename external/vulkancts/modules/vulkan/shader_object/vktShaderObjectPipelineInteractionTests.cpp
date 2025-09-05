@@ -584,6 +584,9 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader2, *tescShader, *teseShader, *geomShader, *fragShader2,
                                 taskSupported, meshSupported);
+        vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                                false,
+                                                !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
 
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline3);
@@ -600,6 +603,9 @@ tcu::TestStatus ShaderObjectPipelineInteractionInstance::iterate(void)
 
         vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader3, *tescShader, *teseShader, *geomShader, *fragShader3,
                                 taskSupported, meshSupported);
+        vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST,
+                                                false,
+                                                !m_context.getExtendedDynamicStateFeaturesEXT().extendedDynamicState);
         vk.cmdDraw(*cmdBuffer, 4, 1, 0, 0);
     }
     else if (m_params.testType == MIN_PIPELINE_SHADER_OBJECT)
