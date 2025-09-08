@@ -91,6 +91,7 @@ private:
     void init(void);
     uint8_t *loadDataFromFile(const char *filename, size_t *size);
     virtual tcu::TestStatus iterate(void);
+    void replaceCRLFInPlace(uint8_t *data, size_t *size);
 
     size_t m_compressedSize{};
     size_t m_decompressedSize{};
@@ -121,6 +122,27 @@ MemoryDecompressionTestInstance::~MemoryDecompressionTestInstance()
 {
     delete m_compressedData;
     delete m_decompressedData;
+}
+
+void MemoryDecompressionTestInstance::replaceCRLFInPlace(uint8_t *buffer, size_t *size)
+{
+    size_t read = 0, write = 0;
+    size_t length = *size;
+
+    while (read < length)
+    {
+        if (buffer[read] == '\r' && read + 1 < length && buffer[read + 1] == '\n')
+        {
+            buffer[write++] = '\n';
+            read += 2;
+        }
+        else
+        {
+            buffer[write++] = buffer[read++];
+        }
+    }
+
+    *size = write;
 }
 
 uint8_t *MemoryDecompressionTestInstance::loadDataFromFile(const char *filename, size_t *size)
@@ -194,6 +216,8 @@ void MemoryDecompressionTestInstance::init(void)
     snprintf(decompressedFile, 64, "./vulkan/data/gdeflate/decompressed_%s.gdef", m_decompressedFilename);
     m_compressedData   = loadDataFromFile(compressedFile, &m_compressedSize);
     m_decompressedData = loadDataFromFile(decompressedFile, &m_decompressedSize);
+
+    replaceCRLFInPlace(m_decompressedData, &m_decompressedSize);
 
     if (!m_compressedData || !m_decompressedData)
         TCU_THROW(NotSupportedError, "Could not read compressed/decompressed file");
