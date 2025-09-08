@@ -167,6 +167,15 @@
                 "Undefined-Value-ShaderInputNotProduced"
              ],
             "description": "Warning about not saving data in attachments by fragment shader. Fixing this is not necessary for the test to work, and implementing it would make the test case unnecessarily complicated."
-        }
+        },
+        {
+            "groups": [
+                "dEQP-VK.robustness.robustness2.bind.*.r64i.*.uniform_texel_buffer.*"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-SampledType-04472"
+            ],
+            "description": "The validation error occurs because the shader tries to read a 64-bit texel buffer using a 32-bit data type, which violates Vulkan's type matching rules. The issue should have been detected by checking if the buffer format supports property as a uniform texel buffer. Certain implementations erroneously indicate that this format is compatible with uniform texel buffer property, which leads to a mismatch between the declared format and the shader's expected data type."
+        },
     ]
 }
