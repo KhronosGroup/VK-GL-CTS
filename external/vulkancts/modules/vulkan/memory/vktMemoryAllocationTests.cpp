@@ -124,7 +124,7 @@ T roundUpToNextMultiple(T value, T multiple)
 class BaseAllocateTestInstance : public TestInstance
 {
 public:
-    BaseAllocateTestInstance(Context &context, AllocationMode allocationMode)
+    BaseAllocateTestInstance(Context &context, AllocationMode allocationMode, bool enable_descriptor_buffer = false)
         : TestInstance(context)
         , m_allocationMode(allocationMode)
         , m_subsetAllocationAllowed(false)
@@ -136,7 +136,7 @@ public:
         if (m_allocationMode == ALLOCATION_MODE_DEVICE_GROUP)
             createDeviceGroup();
         else
-            createTestDevice();
+            createTestDevice(enable_descriptor_buffer);
 
         m_allocFlagsInfo.sType      = VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO;
         m_allocFlagsInfo.pNext      = DE_NULL;
@@ -144,7 +144,7 @@ public:
         m_allocFlagsInfo.deviceMask = 0;
     }
 
-    void createTestDevice(void);
+    void createTestDevice(bool enable_descriptor_buffer);
     void createDeviceGroup(void);
     const vk::DeviceInterface &getDeviceInterface(void)
     {
@@ -172,7 +172,7 @@ private:
 #endif // CTS_USES_VULKANSC
 };
 
-void BaseAllocateTestInstance::createTestDevice(void)
+void BaseAllocateTestInstance::createTestDevice(bool enable_descriptor_buffer)
 {
     const auto &instanceDriver = m_context.getInstanceInterface();
     const VkInstance instance  = m_context.getInstance();
@@ -247,6 +247,10 @@ void BaseAllocateTestInstance::createTestDevice(void)
     {
         deviceExtensions.push_back("VK_EXT_memory_priority");
         deviceExtensions.push_back("VK_EXT_pageable_device_local_memory");
+    }
+    if (enable_descriptor_buffer && m_context.isDeviceFunctionalitySupported("VK_EXT_descriptor_buffer"))
+    {
+        deviceExtensions.push_back("VK_EXT_descriptor_buffer");
     }
 
     VkDeviceQueueCreateInfo queueInfo = {
@@ -707,7 +711,7 @@ private:
 };
 
 RandomAllocFreeTestInstance::RandomAllocFreeTestInstance(Context &context, TestConfigRandom config)
-    : BaseAllocateTestInstance(context, config.allocationMode)
+    : BaseAllocateTestInstance(context, config.allocationMode, true)
     , m_opCount(128)
     , m_allocSysMemSize(computeDeviceMemorySystemMemFootprint(getDeviceInterface(), context.getDevice()) +
                         sizeof(MemoryObject))
