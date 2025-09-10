@@ -8496,6 +8496,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, true));
+            renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
         }
         break;
 #endif // CTS_USES_VULKANSC

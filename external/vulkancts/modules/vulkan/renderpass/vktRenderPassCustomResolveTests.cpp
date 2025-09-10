@@ -168,6 +168,14 @@ struct ResolvePass
 {
     CoveredArea area;
     std::vector<AttachmentResolve> attachmentResolves;
+
+    // Returns the depth and/or stencil aspects resolved by this resolve pass. If no depth/stencil attachment is
+    // resolved by this resolve pass, zero is returned.
+    VkImageAspectFlags depthStencilResolveAspects() const
+    {
+        return (attachmentResolves.back().attachment.aspects &
+                (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT));
+    }
 };
 
 // Putting it all together. Note we should not attempt to resolve an area and
@@ -410,6 +418,29 @@ struct TestParams
     uint32_t getDepthStencilInputAttOffsetDynamicRendering() const
     {
         return 100u;
+    }
+
+    // Returns the highest resolve location for any color attachment in the resolve pass resolvePassIndex. If that
+    // resolve pass does not contain color attachments, returns nothing.
+    tcu::Maybe<uint32_t> topColorLocationForResolve(uint32_t resolvePassIndex) const
+    {
+        const auto &resolvePass = resolvePasses.at(resolvePassIndex);
+
+        bool hasColorAtt     = false;
+        uint32_t topLocation = 0u;
+
+        for (const auto &attResolve : resolvePass.attachmentResolves)
+        {
+            if (attResolve.attachment.aspects & VK_IMAGE_ASPECT_COLOR_BIT)
+            {
+                hasColorAtt                = true;
+                const auto resolveLocation = attachmentList.at(attResolve.attachment.index).resolveLocation;
+                if (resolveLocation > topLocation)
+                    topLocation = resolveLocation;
+            }
+        }
+
+        return (hasColorAtt ? tcu::just(topLocation) : tcu::Nothing);
     }
 };
 
@@ -839,10 +870,11 @@ using AreaLimit       = std::pair<tcu::IVec2, tcu::IVec2>; // top-left, bottom-r
 using TextureLevelPtr = std::unique_ptr<tcu::TextureLevel>;
 using FormatVec       = std::vector<VkFormat>;
 using FormatVecPtr    = std::unique_ptr<FormatVec>;
-using RenderingAttachmentLocationInfoPtr = std::unique_ptr<VkRenderingAttachmentLocationInfo>;
-using RenderingAttachmentInfoVec         = std::vector<VkRenderingAttachmentInfo>;
-using RenderingAttachmentInfoVecPtr      = std::unique_ptr<RenderingAttachmentInfoVec>;
-using RenderingInfoVec                   = std::vector<VkRenderingInfo>;
+using RenderingAttachmentLocationInfoPtr   = std::unique_ptr<VkRenderingAttachmentLocationInfo>;
+using RenderingAttachmentInfoVec           = std::vector<VkRenderingAttachmentInfo>;
+using RenderingAttachmentInfoVecPtr        = std::unique_ptr<RenderingAttachmentInfoVec>;
+using RenderingInfoVec                     = std::vector<VkRenderingInfo>;
+using RenderingInputAttachmentIndexInfoPtr = std::unique_ptr<VkRenderingInputAttachmentIndexInfo>;
 
 VkAttachmentDescription makeDefaultAttachmentDescription(VkFormat format, VkSampleCountFlagBits sampleCount,
                                                          VkImageLayout finalLayout)
@@ -898,6 +930,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 {
     const auto ctx                                   = m_context.getContextCommonData();
     const bool dynamicRendering                      = m_params.useDynamicRendering();
+    const bool useSecondaries                        = m_params.groupParams->useSecondaryCmdBuffer;
     const uint32_t dynamicRenderingDepthInputIndex   = m_params.getDepthStencilInputAttOffsetDynamicRendering();
     const uint32_t dynamicRenderingStencilInputIndex = dynamicRenderingDepthInputIndex + 1u;
     const auto extent                                = m_params.getExtent();
@@ -909,6 +942,12 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     const auto stencilSRR                            = makeSimpleImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT);
     const auto stencilSRL                            = makeSimpleImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT);
     auto &log                                        = m_context.getTestContext().getLog();
+
+    if (useSecondaries)
+    {
+        DE_ASSERT(dynamicRendering);
+        DE_ASSERT(!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass);
+    }
 
     de::Random rnd(m_params.getRandomSeed());
 
@@ -1085,6 +1124,9 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
     RenderingInfoVec uploadRenderingInfos;
     RenderingInfoVec resolveRenderingInfos;
+
+    std::vector<RenderingInputAttachmentIndexInfoPtr> resolveInputAttachmentIndexInfos;
+    resolveInputAttachmentIndexInfos.reserve(m_params.resolvePasses.size());
 
     if (m_params.getRenderingType() == RENDERING_TYPE_RENDERPASS_LEGACY)
     {
@@ -1472,6 +1514,14 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 }
             }
 
+            // uploadFormatVec may have unneeded trailing VK_FORMAT_UNDEFINED items. This happens, for example, if we
+            // have 3 color attachments and a depth/stencil attachment, and there's an upload pass that uploads the
+            // first color attachment and the depth/stencil one. lastAttIndex would be 3, and the loop above
+            // inserts padding VK_FORMAT_UNDEFINED elements for color attachments 1 and 2, only to arrive at the last
+            // attachment to find out it's a depth/stencil one.
+            while (!uploadFormatVec.empty() && uploadFormatVec.back() == VK_FORMAT_UNDEFINED)
+                uploadFormatVec.pop_back();
+
             uploadAttFormats.emplace_back(VkPipelineRenderingCreateInfo{
                 VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                 nullptr,
@@ -1540,10 +1590,21 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 }
             }
 
+            // Same as above with uploadFormatVec, colorRenderingAttachmentInfos may contain unneeded padding items at
+            // the end due to mixing color and depth/stencil attachment uploads.
+            while (!colorRenderingAttachmentInfos.empty() &&
+                   colorRenderingAttachmentInfos.back().imageView == VK_NULL_HANDLE)
+                colorRenderingAttachmentInfos.pop_back();
+
+            // Note the upload passes don't have any special flags.
+            VkRenderingFlags renderingFlags = 0u;
+            if (useSecondaries)
+                renderingFlags |= VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+
             uploadRenderingInfos.push_back(VkRenderingInfo{
                 VK_STRUCTURE_TYPE_RENDERING_INFO,
                 nullptr,
-                0u, // Note the upload passes don't have any special flags.
+                renderingFlags,
                 makeRect2D(extent),
                 1u,
                 0u,
@@ -1568,6 +1629,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             bool remappingNeeded    = false;
 
             const AttachmentIndexAspect *depthStencilAttIndexAspects = nullptr;
+            bool resolveDepth                                        = false;
+            bool resolveStencil                                      = false;
 
             // Map frag shader locations to attachment indices.
             std::map<uint32_t, uint32_t> locationToAttIndex;
@@ -1581,6 +1644,10 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 {
                     DE_ASSERT(!depthStencilAttIndexAspects);
                     depthStencilAttIndexAspects = &attResolve.attachment;
+
+                    resolveDepth   = (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_DEPTH_BIT);
+                    resolveStencil = (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_STENCIL_BIT);
+
                     continue;
                 }
 
@@ -1662,13 +1729,13 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             {
                 const auto &attInfo = m_params.attachmentList.at(depthStencilAttIndexAspects->index);
 
-                if (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_DEPTH_BIT)
+                if (resolveDepth)
                 {
                     depthRenderingFormat = attInfo.attachmentFormat;
                     depthResolveFormat   = attInfo.resolveFormat;
                 }
 
-                if (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_STENCIL_BIT)
+                if (resolveStencil)
                 {
                     stencilRenderingFormat = attInfo.attachmentFormat;
                     stencilResolveFormat   = attInfo.resolveFormat;
@@ -1763,17 +1830,22 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                     makeClearValueDepthStencil(0.0f, 0u), // Not used.
                 };
 
-                if (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_DEPTH_BIT)
+                if (resolveDepth)
                     resolveDepthRenderingAttachmentInfos.back()->push_back(dsRenderingAttachmentInfo);
 
-                if (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_STENCIL_BIT)
+                if (resolveStencil)
                     resolveStencilRenderingAttachmentInfos.back()->push_back(dsRenderingAttachmentInfo);
             }
+
+            // Mark as doing a custom resolve here.
+            VkRenderingFlags renderingFlags = static_cast<VkRenderingFlags>(VK_RENDERING_CUSTOM_RESOLVE_BIT_EXT);
+            if (useSecondaries)
+                renderingFlags |= VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
 
             resolveRenderingInfos.push_back(VkRenderingInfo{
                 VK_STRUCTURE_TYPE_RENDERING_INFO,
                 nullptr,
-                VK_RENDERING_CUSTOM_RESOLVE_BIT_EXT, // Mark as doing a custom resolve here.
+                renderingFlags,
                 makeRect2D(extent),
                 1u,
                 0u,
@@ -1783,7 +1855,21 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 de::dataOrNull(*resolveStencilRenderingAttachmentInfos.back()),
             });
 
-            colorAttCounts.insert(resolveRenderingInfos.back().colorAttachmentCount);
+            const auto colorAttachmentCount = resolveRenderingInfos.back().colorAttachmentCount;
+            colorAttCounts.insert(colorAttachmentCount);
+
+            resolveInputAttachmentIndexInfos.emplace_back(nullptr);
+            if (dynamicRendering && depthStencilAttIndexAspects)
+            {
+                resolveInputAttachmentIndexInfos.back().reset(new VkRenderingInputAttachmentIndexInfo{
+                    VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO,
+                    nullptr,
+                    colorAttachmentCount,
+                    nullptr,
+                    (resolveDepth ? &dynamicRenderingDepthInputIndex : nullptr),
+                    (resolveStencil ? &dynamicRenderingStencilInputIndex : nullptr),
+                });
+            }
         }
     }
     else
@@ -2127,16 +2213,17 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
         auto &wrapper = *resolvePipelines.back();
 
-        VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo              = nullptr;
-        VkRenderingAttachmentLocationInfo *pRenderingAttachmentLocationInfo = nullptr;
-        VkPipelineRenderingCreateInfoKHR *pRenderingCreateInfo              = nullptr;
-        std::unique_ptr<VkRenderingInputAttachmentIndexInfo> pRenderingInputAttachmentIndex;
+        VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo                  = nullptr;
+        VkRenderingAttachmentLocationInfo *pRenderingAttachmentLocationInfo     = nullptr;
+        VkPipelineRenderingCreateInfoKHR *pRenderingCreateInfo                  = nullptr;
+        VkRenderingInputAttachmentIndexInfo *pRenderingInputAttachmentIndexInfo = nullptr;
 
         if (dynamicRendering)
         {
-            pRenderingCreateInfo             = &resolveAttFormats.at(i);
-            pCustomResolveCreateInfo         = &customResolveAttFormats.at(i);
-            pRenderingAttachmentLocationInfo = resolveAttLocations.at(i).get();
+            pRenderingCreateInfo               = &resolveAttFormats.at(i);
+            pCustomResolveCreateInfo           = &customResolveAttFormats.at(i);
+            pRenderingAttachmentLocationInfo   = resolveAttLocations.at(i).get();
+            pRenderingInputAttachmentIndexInfo = resolveInputAttachmentIndexInfos.at(i).get();
         }
 
         const auto colorAttachmentCount = (dynamicRendering ? resolveRenderingInfos.at(i).colorAttachmentCount :
@@ -2145,30 +2232,18 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         VkBool32 depthTestEnable   = VK_FALSE;
         VkBool32 stencilTestEnable = VK_FALSE;
 
-        const auto &lastResolveAtt = resolvePass.attachmentResolves.back().attachment;
+        const auto &dsResolveAspects = resolvePass.depthStencilResolveAspects();
 
-        if (lastResolveAtt.aspects & VK_IMAGE_ASPECT_DEPTH_BIT)
+        if (dsResolveAspects & VK_IMAGE_ASPECT_DEPTH_BIT)
             depthTestEnable = VK_TRUE;
 
-        if (lastResolveAtt.aspects & VK_IMAGE_ASPECT_STENCIL_BIT)
+        if (dsResolveAspects & VK_IMAGE_ASPECT_STENCIL_BIT)
             stencilTestEnable = VK_TRUE;
 
-        if (m_params.disableDepthWrites)
-            dsStateCreateInfo.depthWriteEnable = VK_FALSE;
         dsStateCreateInfo.depthTestEnable   = depthTestEnable;
         dsStateCreateInfo.stencilTestEnable = stencilTestEnable;
-
-        if (dynamicRendering && (depthTestEnable || stencilTestEnable))
-        {
-            pRenderingInputAttachmentIndex.reset(new VkRenderingInputAttachmentIndexInfo{
-                VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO,
-                nullptr,
-                colorAttachmentCount,
-                nullptr,
-                (depthTestEnable ? &dynamicRenderingDepthInputIndex : nullptr),
-                (stencilTestEnable ? &dynamicRenderingStencilInputIndex : nullptr),
-            });
-        }
+        if (m_params.disableDepthWrites)
+            dsStateCreateInfo.depthWriteEnable = VK_FALSE;
 
         wrapper.setDefaultRasterizationState()
             .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
@@ -2177,7 +2252,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                                               nullptr, nullptr, pRenderingCreateInfo)
             .setupFragmentShaderState(resolvePipelineLayout, *renderPass, subpassIdx, *resolveShaders.at(i),
                                       &dsStateCreateInfo, multisampleStatePtr, nullptr, VK_NULL_HANDLE, nullptr,
-                                      pRenderingInputAttachmentIndex.get())
+                                      pRenderingInputAttachmentIndexInfo)
             .setupFragmentOutputState(
                 *renderPass, subpassIdx, colorBlendStateCreateInfos.at(colorAttachmentCount).get(), multisampleStatePtr,
                 VK_NULL_HANDLE, nullptr, pRenderingAttachmentLocationInfo, nullptr, pCustomResolveCreateInfo)
@@ -2233,15 +2308,221 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     // Run passes.
     const auto bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
-    const auto cmdBuffer = *cmd.cmdBuffer;
 
     VkClearValue defaultClearValue;
     memset(&defaultClearValue, 0, sizeof(defaultClearValue));
     const std::vector<VkClearValue> clearColors(attachmentDescriptions.size(), defaultClearValue);
 
+    // We will reuse this function to record primary and secondary command buffers.
+    const auto recordUploadPassContents = [&](VkCommandBuffer targetCmdBuffer, uint32_t uploadPassIdx)
+    {
+        const auto &uploadPass = m_params.uploadPasses.at(uploadPassIdx);
+        ctx.vkd.cmdBindDescriptorSets(targetCmdBuffer, bindPoint, uploadPipelineLayout.get(), 0u, 1u,
+                                      &pixelsDescriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(targetCmdBuffer, uploadPipelineLayout.get(), pcStages, 0u, pcSize, &uploadPass.area);
+        uploadPipelines.at(uploadPassIdx)->bind(targetCmdBuffer);
+        ctx.vkd.cmdDraw(targetCmdBuffer, 4u, 1u, 0u, 0u);
+    };
+
+    // We will reuse this function to record the main tasks of resolve passes in primary or secondary cmd buffers.
+    const auto recordMainResolvePassContents = [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIdx)
+    {
+        const auto &resolvePass = m_params.resolvePasses.at(resolvePassIdx);
+        ctx.vkd.cmdBindDescriptorSets(targetCmdBuffer, bindPoint, resolvePipelineLayout.get(), 0u,
+                                      de::sizeU32(allDescriptorSets), de::dataOrNull(allDescriptorSets), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(targetCmdBuffer, resolvePipelineLayout.get(), pcStages, 0u, pcSize, &resolvePass.area);
+        if (dynamicRendering && resolveInputAttachmentIndexInfos.at(resolvePassIdx))
+        {
+            // The pNext pointer may have been modified while building the pipelines.
+            resolveInputAttachmentIndexInfos.at(resolvePassIdx)->pNext = nullptr;
+            ctx.vkd.cmdSetRenderingInputAttachmentIndices(targetCmdBuffer,
+                                                          resolveInputAttachmentIndexInfos.at(resolvePassIdx).get());
+        }
+        resolvePipelines.at(resolvePassIdx)->bind(targetCmdBuffer);
+        ctx.vkd.cmdDraw(targetCmdBuffer, 4u, 1u, 0u, 0u);
+    };
+
+    // We will use this function to record the start of the resolve block.
+    const auto recordBeginCustomResolve = [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIdx)
+    {
+        ctx.vkd.cmdBeginCustomResolveEXT(targetCmdBuffer, nullptr);
+        if (resolveAttLocations.at(resolvePassIdx))
+        {
+            // The pNext pointer may have been modified while building the pipelines.
+            resolveAttLocations.at(resolvePassIdx)->pNext = nullptr;
+            ctx.vkd.cmdSetRenderingAttachmentLocations(targetCmdBuffer, resolveAttLocations.at(resolvePassIdx).get());
+        }
+    };
+
+    // Array of secondary command buffers, needed when useSecondaries is true, to record render pass contents.
+    std::vector<std::unique_ptr<Move<VkCommandBuffer>>> secondaries;
+    if (useSecondaries)
+    {
+        const uint32_t secondaryCount = de::sizeU32(m_params.uploadPasses) + de::sizeU32(m_params.resolvePasses);
+        secondaries.reserve(secondaryCount);
+
+        for (uint32_t i = 0u; i < de::sizeU32(m_params.uploadPasses); ++i)
+        {
+            auto secCmdBuffer =
+                allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+            secondaries.emplace_back(new Move<VkCommandBuffer>(secCmdBuffer));
+
+            const auto cmdBufferHandle  = secondaries.back()->get();
+            const bool isLastUploadPass = (i == de::sizeU32(m_params.uploadPasses) - 1u);
+            const bool mergeThisPass    = (isLastUploadPass && mergeUploadResolve);
+
+            // Use the rendering info from the upload pipeline.
+            const VkPipelineRenderingCreateInfo *pRenderingCreateInfo = &uploadAttFormats.at(i);
+
+            // Make sure we use the right rendering flags.
+            VkRenderingFlags renderingFlags = 0u;
+            if (mergeThisPass)
+                renderingFlags |= VK_RENDERING_CUSTOM_RESOLVE_BIT_EXT;
+
+            // Sample count from the upload pass.
+            const auto sampleCount =
+                m_params.attachmentList.at(m_params.uploadPasses.at(i).attachments.front().index).sampleCount;
+
+            // Custom resolve info and input attachment index info if this upload pass will be merged with the first
+            // resolve.
+            VkCustomResolveCreateInfoEXT customResolveCreateInfo           = initVulkanStructure();
+            VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo         = nullptr;
+            VkRenderingInputAttachmentIndexInfo *pInputAttachmentIndexInfo = nullptr;
+
+            if (mergeThisPass)
+            {
+                // As these were used to create the pipeline, their chains may have been modified so we reset them.
+                customResolveCreateInfo               = customResolveAttFormats.front();
+                customResolveCreateInfo.customResolve = VK_FALSE;
+                customResolveCreateInfo.pNext         = nullptr;
+                pCustomResolveCreateInfo              = &customResolveCreateInfo;
+
+                pInputAttachmentIndexInfo = resolveInputAttachmentIndexInfos.front().get();
+                if (pInputAttachmentIndexInfo)
+                    pInputAttachmentIndexInfo->pNext = nullptr;
+            }
+
+            VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo = {
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,
+                nullptr,
+                renderingFlags,
+                pRenderingCreateInfo->viewMask,
+                pRenderingCreateInfo->colorAttachmentCount,
+                pRenderingCreateInfo->pColorAttachmentFormats,
+                pRenderingCreateInfo->depthAttachmentFormat,
+                pRenderingCreateInfo->stencilAttachmentFormat,
+                sampleCount,
+            };
+
+            VkCommandBufferInheritanceInfo inheritanceInfo = {
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+                nullptr,
+                VK_NULL_HANDLE,
+                0u,
+                VK_NULL_HANDLE,
+                VK_FALSE,
+                0u,
+                0u,
+            };
+
+            const auto addInheritanceInfo = makeStructChainAdder(&inheritanceInfo);
+            addInheritanceInfo(&inheritanceRenderingInfo);
+            if (pCustomResolveCreateInfo)
+                addInheritanceInfo(pCustomResolveCreateInfo);
+            if (pInputAttachmentIndexInfo)
+                addInheritanceInfo(pInputAttachmentIndexInfo);
+
+            const VkCommandBufferBeginInfo beginInfo = {
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                nullptr,
+                VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+                &inheritanceInfo,
+            };
+
+            VK_CHECK(ctx.vkd.beginCommandBuffer(cmdBufferHandle, &beginInfo));
+            recordUploadPassContents(cmdBufferHandle, i);
+            endCommandBuffer(ctx.vkd, cmdBufferHandle);
+        }
+
+        for (uint32_t i = 0u; i < de::sizeU32(m_params.resolvePasses); ++i)
+        {
+            auto secCmdBuffer =
+                allocateCommandBuffer(ctx.vkd, ctx.device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
+            secondaries.emplace_back(new Move<VkCommandBuffer>(secCmdBuffer));
+            const auto cmdBufferHandle = secondaries.back()->get();
+
+            // Command buffer begin only if not merged.
+            const auto renderingFlags = static_cast<VkRenderingFlags>(VK_RENDERING_CUSTOM_RESOLVE_BIT_EXT);
+
+            // Use the rendering info from the resolve pipeline.
+            const VkPipelineRenderingCreateInfo *pRenderingCreateInfo = &resolveAttFormats.at(i);
+
+            // Take the sample count from the first attachment.
+            const auto sampleCount =
+                m_params.attachmentList.at(m_params.resolvePasses.at(i).attachmentResolves.front().attachment.index)
+                    .sampleCount;
+
+            // As these chains were used to create the pipeline, their chains may have been modified so we reset them.
+            VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo = &customResolveAttFormats.at(i);
+            pCustomResolveCreateInfo->pNext                        = nullptr;
+
+            VkRenderingInputAttachmentIndexInfo *pInputAttachmentIndexInfo =
+                resolveInputAttachmentIndexInfos.at(i).get();
+            if (pInputAttachmentIndexInfo)
+                pInputAttachmentIndexInfo->pNext = nullptr;
+
+            VkRenderingAttachmentLocationInfo *pRenderingAttachmentLocationInfo = resolveAttLocations.at(i).get();
+            if (pRenderingAttachmentLocationInfo)
+                pRenderingAttachmentLocationInfo->pNext = nullptr;
+
+            VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo = {
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR,
+                nullptr,
+                renderingFlags,
+                pRenderingCreateInfo->viewMask,
+                pRenderingCreateInfo->colorAttachmentCount,
+                pRenderingCreateInfo->pColorAttachmentFormats,
+                pRenderingCreateInfo->depthAttachmentFormat,
+                pRenderingCreateInfo->stencilAttachmentFormat,
+                sampleCount,
+            };
+
+            VkCommandBufferInheritanceInfo inheritanceInfo = {
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO,
+                nullptr,
+                VK_NULL_HANDLE,
+                0u,
+                VK_NULL_HANDLE,
+                VK_FALSE,
+                0u,
+                0u,
+            };
+
+            const auto addInheritanceInfo = makeStructChainAdder(&inheritanceInfo);
+            addInheritanceInfo(&inheritanceRenderingInfo);
+            addInheritanceInfo(pCustomResolveCreateInfo);
+            if (pInputAttachmentIndexInfo)
+                addInheritanceInfo(pInputAttachmentIndexInfo);
+            if (pRenderingAttachmentLocationInfo)
+                addInheritanceInfo(pRenderingAttachmentLocationInfo);
+
+            const VkCommandBufferBeginInfo beginInfo = {
+                VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
+                nullptr,
+                VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT,
+                &inheritanceInfo,
+            };
+
+            VK_CHECK(ctx.vkd.beginCommandBuffer(cmdBufferHandle, &beginInfo));
+            recordMainResolvePassContents(cmdBufferHandle, i);
+            endCommandBuffer(ctx.vkd, cmdBufferHandle);
+        }
+    }
+
     // We need to track this for some barriers. See VUID-vkCmdPipelineBarrier-dependencyFlags-07891.
     bool inRenderPass = false;
 
+    const auto cmdBuffer = *cmd.cmdBuffer;
     beginCommandBuffer(ctx.vkd, cmdBuffer);
 
     if (dynamicRendering)
@@ -2375,8 +2656,6 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     }
 
     // Upload passes.
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, uploadPipelineLayout.get(), 0u, 1u, &pixelsDescriptorSet.get(),
-                                  0u, nullptr);
     for (uint32_t i = 0u; i < de::sizeU32(m_params.uploadPasses); ++i)
     {
         const bool isLastUploadPass = (i == de::sizeU32(m_params.uploadPasses) - 1u);
@@ -2389,7 +2668,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
             // If we merge this pass, we use the rendering info from the first resolve, which is compatible and contains
             // the custom resolve information that we need.
-            const auto &renderingInfoPtr =
+            const auto renderingInfoPtr =
                 (mergeThisPass ? &resolveRenderingInfos.front() : &uploadRenderingInfos.at(i));
             ctx.vkd.cmdBeginRendering(cmdBuffer, renderingInfoPtr);
             inRenderPass = true;
@@ -2400,10 +2679,10 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 ctx.vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
         }
 
-        const auto &uploadPass = m_params.uploadPasses.at(i);
-        ctx.vkd.cmdPushConstants(cmdBuffer, uploadPipelineLayout.get(), pcStages, 0u, pcSize, &uploadPass.area);
-        uploadPipelines.at(i)->bind(cmdBuffer);
-        ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+        if (useSecondaries)
+            ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaries.at(i)->get());
+        else
+            recordUploadPassContents(cmdBuffer, i);
 
         if (dynamicRendering && !mergeThisPass)
         {
@@ -2412,9 +2691,6 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         }
     }
 
-    // Resolve passes.
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, resolvePipelineLayout.get(), 0u, de::sizeU32(allDescriptorSets),
-                                  de::dataOrNull(allDescriptorSets), 0u, nullptr);
     for (uint32_t i = 0u; i < de::sizeU32(m_params.resolvePasses); ++i)
     {
         if (dynamicRendering)
@@ -2432,13 +2708,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 inRenderPass = true;
             }
 
-            ctx.vkd.cmdBeginCustomResolveEXT(cmdBuffer, nullptr);
-            if (resolveAttLocations.at(i))
-            {
-                // The pNext pointer may have been modified while building the pipelines.
-                resolveAttLocations.at(i)->pNext = nullptr;
-                ctx.vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, resolveAttLocations.at(i).get());
-            }
+            // Starting here, we're always in the resolve render pass, so we can switch to the custom resolve part.
+            recordBeginCustomResolve(cmdBuffer, i);
         }
         else
         {
@@ -2446,51 +2717,11 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 ctx.vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
         }
 
-        const auto &resolvePass = m_params.resolvePasses.at(i);
-        ctx.vkd.cmdPushConstants(cmdBuffer, resolvePipelineLayout.get(), pcStages, 0u, pcSize, &resolvePass.area);
-        if (dynamicRendering)
-        {
-            const auto &lastAttResolve = resolvePass.attachmentResolves.back();
-            const auto lastAttIndex    = lastAttResolve.attachment.index;
-            const auto &attInfo        = m_params.attachmentList.at(lastAttIndex);
-
-            if (attInfo.isDepthStencil())
-            {
-                const bool resolveDepth   = (lastAttResolve.attachment.aspects & VK_IMAGE_ASPECT_DEPTH_BIT);
-                const bool resolveStencil = (lastAttResolve.attachment.aspects & VK_IMAGE_ASPECT_STENCIL_BIT);
-
-                // We need to recalculate the highest color location to know the color attachment count.
-                bool hasColorAttachments = false;
-                uint32_t topLocation     = 0u;
-
-                for (const auto &attResolve : resolvePass.attachmentResolves)
-                {
-                    const auto &resolveAttInfo = m_params.attachmentList.at(attResolve.attachment.index);
-
-                    if (resolveAttInfo.isDepthStencil())
-                        continue;
-
-                    hasColorAttachments = true;
-                    if (resolveAttInfo.resolveLocation > topLocation)
-                        topLocation = resolveAttInfo.resolveLocation;
-                }
-
-                const auto colorAttachmentCount = (hasColorAttachments ? topLocation + 1u : 0u);
-
-                const VkRenderingInputAttachmentIndexInfo inputAttIndexInfo = {
-                    VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO,
-                    nullptr,
-                    colorAttachmentCount,
-                    nullptr,
-                    (resolveDepth ? &dynamicRenderingDepthInputIndex : nullptr),
-                    (resolveStencil ? &dynamicRenderingStencilInputIndex : nullptr),
-                };
-
-                ctx.vkd.cmdSetRenderingInputAttachmentIndices(cmdBuffer, &inputAttIndexInfo);
-            }
-        }
-        resolvePipelines.at(i)->bind(cmdBuffer);
-        ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+        // Resolve pass contents.
+        if (useSecondaries)
+            ctx.vkd.cmdExecuteCommands(cmdBuffer, 1u, &secondaries.at(de::sizeU32(m_params.uploadPasses) + i)->get());
+        else
+            recordMainResolvePassContents(cmdBuffer, i);
 
         if (dynamicRendering)
         {
@@ -4182,7 +4413,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 new CustomResolveCase(testCtx, "color_upload_resolve_multi_attachment_simple", params));
         }
 
-        //if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+        if (!origGroupParams->useSecondaryCmdBuffer)
         {
             for (const bool close : {false, true})
                 for (const bool large : {false, true})
