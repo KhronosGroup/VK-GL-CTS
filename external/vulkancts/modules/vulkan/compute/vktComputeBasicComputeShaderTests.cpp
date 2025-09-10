@@ -46,8 +46,10 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
-#include "vkSafetyCriticalUtil.hpp"
 #include "vkImageWithMemory.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vkSafetyCriticalUtil.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -1150,8 +1152,8 @@ private:
 class BufferToBufferInvertTestInstance : public vkt::TestInstance
 {
 public:
-    BufferToBufferInvertTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localSize,
-                                     const tcu::IVec3 &workSize, const BufferType bufferType,
+    BufferToBufferInvertTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
+                                     const BufferType bufferType,
                                      const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
     tcu::TestStatus iterate(void);
@@ -1159,7 +1161,6 @@ public:
 private:
     const BufferType m_bufferType;
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     const tcu::IVec3 m_workSize;
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
@@ -1254,17 +1255,16 @@ void BufferToBufferInvertTest::initPrograms(SourceCollections &sourceCollections
 
 TestInstance *BufferToBufferInvertTest::createInstance(Context &context) const
 {
-    return new BufferToBufferInvertTestInstance(context, m_numValues, m_localSize, m_workSize, m_bufferType,
+    return new BufferToBufferInvertTestInstance(context, m_numValues, m_workSize, m_bufferType,
                                                 m_computePipelineConstructionType);
 }
 
 BufferToBufferInvertTestInstance::BufferToBufferInvertTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
-    const BufferType bufferType, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    Context &context, const uint32_t numValues, const tcu::IVec3 &workSize, const BufferType bufferType,
+    const vk::ComputePipelineConstructionType computePipelineConstructionType)
     : TestInstance(context)
     , m_bufferType(bufferType)
     , m_numValues(numValues)
-    , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -1419,15 +1419,13 @@ private:
 class InvertSSBOInPlaceTestInstance : public vkt::TestInstance
 {
 public:
-    InvertSSBOInPlaceTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localSize,
-                                  const tcu::IVec3 &workSize,
+    InvertSSBOInPlaceTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
                                   const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
     tcu::TestStatus iterate(void);
 
 private:
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     const tcu::IVec3 m_workSize;
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
@@ -1477,16 +1475,14 @@ void InvertSSBOInPlaceTest::initPrograms(SourceCollections &sourceCollections) c
 
 TestInstance *InvertSSBOInPlaceTest::createInstance(Context &context) const
 {
-    return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_localSize, m_workSize,
-                                             m_computePipelineConstructionType);
+    return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_workSize, m_computePipelineConstructionType);
 }
 
 InvertSSBOInPlaceTestInstance::InvertSSBOInPlaceTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
+    Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
     : TestInstance(context)
     , m_numValues(numValues)
-    , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -1623,15 +1619,13 @@ private:
 class WriteToMultipleSSBOTestInstance : public vkt::TestInstance
 {
 public:
-    WriteToMultipleSSBOTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localSize,
-                                    const tcu::IVec3 &workSize,
+    WriteToMultipleSSBOTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
                                     const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
     tcu::TestStatus iterate(void);
 
 private:
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     const tcu::IVec3 m_workSize;
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
@@ -1694,16 +1688,14 @@ void WriteToMultipleSSBOTest::initPrograms(SourceCollections &sourceCollections)
 
 TestInstance *WriteToMultipleSSBOTest::createInstance(Context &context) const
 {
-    return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_localSize, m_workSize,
-                                               m_computePipelineConstructionType);
+    return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_workSize, m_computePipelineConstructionType);
 }
 
 WriteToMultipleSSBOTestInstance::WriteToMultipleSSBOTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
+    Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
     : TestInstance(context)
     , m_numValues(numValues)
-    , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -3478,14 +3470,12 @@ private:
 class DeviceIndexTestInstance : public ComputeTestInstance
 {
 public:
-    DeviceIndexTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localsize,
-                            const tcu::IVec3 &worksize,
+    DeviceIndexTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &worksize,
                             const vk::ComputePipelineConstructionType computePipelineConstructionType);
     tcu::TestStatus iterate(void);
 
 private:
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     tcu::IVec3 m_workSize;
 };
 
@@ -3537,17 +3527,15 @@ void DeviceIndexTest::initPrograms(SourceCollections &sourceCollections) const
 
 TestInstance *DeviceIndexTest::createInstance(Context &context) const
 {
-    return new DeviceIndexTestInstance(context, m_numValues, m_localSize, m_workSize,
-                                       m_computePipelineConstructionType);
+    return new DeviceIndexTestInstance(context, m_numValues, m_workSize, m_computePipelineConstructionType);
 }
 
 DeviceIndexTestInstance::DeviceIndexTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localsize, const tcu::IVec3 &worksize,
+    Context &context, const uint32_t numValues, const tcu::IVec3 &worksize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
 
     : ComputeTestInstance(context, computePipelineConstructionType, false)
     , m_numValues(numValues)
-    , m_localSize(localsize)
     , m_workSize(worksize)
 {
 }
@@ -5848,6 +5836,8 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
             cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "atomic_barrier_sum_small", "", "compute",
                                                                    "atomic_barrier_sum_small.amber"));
+        basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "vec2_nclamp_nan_component", "", "compute",
+                                                                   "vec2_nclamp_nan_component.amber"));
         basicComputeTests->addChild(
             cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(

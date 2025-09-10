@@ -1,5 +1,6 @@
 include_directories(
 	..
+	../amber
 	${DEQP_INL_DIR}
 )
 
@@ -35,6 +36,8 @@ set(DEQP_VK_TESSELLATION_SRCS
 	vktTessellationGeometryGridRenderTests.hpp
 	vktTessellationGeometryGridRenderTests.cpp
 	vktTessellationMaxIOTests.cpp
+	vktTessellationMatrixMultiplicationTests.hpp
+	vktTessellationMatrixMultiplicationTests.cpp
 	)
 
 PCH(DEQP_VK_TESSELLATION_SRCS ../pch.cpp)

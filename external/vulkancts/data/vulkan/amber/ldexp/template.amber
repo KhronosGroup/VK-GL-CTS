@@ -1,0 +1,50 @@
+#!amber
+# Copyright (c) 2025 The Khronos Group Inc.
+# Copyright (c) 2025 Valve Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+{device_features}
+
+SHADER compute compute_shader SPIRV-ASM
+{spirv_asm}
+END
+
+BUFFER significands DATA_TYPE {amber_float_type} DATA
+{significands}
+END
+
+BUFFER exponents DATA_TYPE {amber_int_type} DATA
+{exponents}
+END
+
+BUFFER results DATA_TYPE {amber_float_type} DATA
+{initial_results}
+END
+
+BUFFER pc DATA_TYPE uint32 DATA
+{count}
+END
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER significands AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER exponents AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER results AS storage DESCRIPTOR_SET 0 BINDING 2
+  BIND BUFFER pc AS push_constant
+END
+
+RUN pipeline 1 1 1
+
+{expects}

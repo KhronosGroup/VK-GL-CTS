@@ -28,6 +28,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
 #include "vktRenderPassTestsUtil.hpp"
+#include "vkDeviceUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -39,9 +40,14 @@
 #include "tcuStringTemplate.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTestLog.hpp"
+#include "tcuImageCompare.hpp"
 #include <sstream>
 #include <vector>
 #include <set>
+#include <mutex>
+#include <cmath>
+#include <algorithm>
+#include <iterator>
 
 // Each test generates an image with a color gradient where all colors should be unique when rendered without density map
 // ( and for multi_view tests - the quantity of each color in a histogram should be 2 instead of 1 ).
@@ -71,6 +77,9 @@
 // Code of FragmentDensityMapTestInstance is also used to test subsampledLoads, subsampledCoarseReconstructionEarlyAccess,
 // maxDescriptorSetSubsampledSamplers properties.
 
+//#define USE_QCOM_OFFSET_EXT 1
+#undef USE_QCOM_OFFSET_EXT
+
 namespace vkt
 {
 
@@ -97,6 +106,7 @@ struct TestParams
     bool multiViewport;
     bool makeCopy;
     bool depthEnabled;
+    bool addZeroOffset;
     float renderMultiplier;
     VkSampleCountFlagBits colorSamples;
     tcu::UVec2 fragmentArea;
@@ -113,12 +123,20 @@ struct Vertex4RGBA
     tcu::Vec4 color;
 };
 
-de::SharedPtr<Move<vk::VkDevice>> g_singletonDevice;
-
-VkDevice getDevice(Context &context)
+class DeviceHelper
 {
-    if (!g_singletonDevice)
+public:
+    DeviceHelper(Context &context)
+        : m_instance()
+        , m_physicalDevice(VK_NULL_HANDLE)
+        , m_device()
+        , m_vkd()
+        , m_queueFamilyIndex(context.getUniversalQueueFamilyIndex())
+        , m_queue(VK_NULL_HANDLE)
+        , m_allocator()
     {
+        m_instance = createCustomInstanceWithExtensions(context, context.getInstanceExtensions());
+
         const float queuePriority = 1.0f;
 
         // Create a universal queue that supports graphics and compute
@@ -126,7 +144,7 @@ VkDevice getDevice(Context &context)
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
             nullptr,                                    // const void* pNext;
             0u,                                         // VkDeviceQueueCreateFlags flags;
-            context.getUniversalQueueFamilyIndex(),     // uint32_t queueFamilyIndex;
+            m_queueFamilyIndex,                         // uint32_t queueFamilyIndex;
             1u,                                         // uint32_t queueCount;
             &queuePriority                              // const float* pQueuePriorities;
         };
@@ -142,6 +160,7 @@ VkDevice getDevice(Context &context)
         VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR dynamicRenderingLocalReadFeatures = initVulkanStructure();
         VkPhysicalDeviceFragmentDensityMap2FeaturesEXT fragmentDensityMap2Features             = initVulkanStructure();
         VkPhysicalDeviceFragmentDensityMapFeaturesEXT fragmentDensityMapFeatures               = initVulkanStructure();
+        VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT fragmentDensityMapOffsetFeatures   = initVulkanStructure();
         VkPhysicalDeviceFeatures2 features2                                                    = initVulkanStructure();
 
         const auto addFeatures = makeStructChainAdder(&features2);
@@ -164,9 +183,20 @@ VkDevice getDevice(Context &context)
         if (context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map2"))
             addFeatures(&fragmentDensityMap2Features);
 
+#ifdef USE_QCOM_OFFSET_EXT
+        if (context.isDeviceFunctionalitySupported("VK_QCOM_fragment_density_map_offset"))
+#else
+        if (context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map_offset"))
+#endif
+            addFeatures(&fragmentDensityMapOffsetFeatures);
+
         addFeatures(&fragmentDensityMapFeatures);
 
-        context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+        const auto &vki     = m_instance.getDriver();
+        const auto &cmdLine = context.getTestContext().getCommandLine();
+        m_physicalDevice    = chooseDevice(vki, m_instance, cmdLine);
+
+        vki.getPhysicalDeviceFeatures2(m_physicalDevice, &features2);
         features2.features.robustBufferAccess = VK_FALSE;
 
         const VkDeviceCreateInfo deviceCreateInfo{
@@ -182,13 +212,73 @@ VkDevice getDevice(Context &context)
             nullptr,                              //pEnabledFeatures;
         };
 
-        Move<VkDevice> device = createCustomDevice(
-            context.getTestContext().getCommandLine().isValidationEnabled(), context.getPlatformInterface(),
-            context.getInstance(), context.getInstanceInterface(), context.getPhysicalDevice(), &deviceCreateInfo);
-        g_singletonDevice = de::SharedPtr<Move<VkDevice>>(new Move<VkDevice>(device));
+        const auto &vkp = context.getPlatformInterface();
+
+        m_device = createCustomDevice(cmdLine.isValidationEnabled(), vkp, m_instance, vki, m_physicalDevice,
+                                      &deviceCreateInfo);
+
+        m_vkd.reset(new DeviceDriver(vkp, m_instance, *m_device, context.getUsedApiVersion(), cmdLine));
+        m_vkd->getDeviceQueue(*m_device, m_queueFamilyIndex, 0u, &m_queue);
+
+        VkPhysicalDeviceMemoryProperties memoryProperties;
+        vki.getPhysicalDeviceMemoryProperties(m_physicalDevice, &memoryProperties);
+        m_allocator.reset(new SimpleAllocator(*m_vkd, *m_device, memoryProperties));
     }
 
-    return g_singletonDevice->get();
+    const InstanceInterface &getInstanceInterface() const
+    {
+        return m_instance.getDriver();
+    }
+    VkInstance getInstance() const
+    {
+        return m_instance;
+    }
+    VkPhysicalDevice getPhysicalDevice() const
+    {
+        return m_physicalDevice;
+    }
+    const DeviceInterface &getDeviceInterface() const
+    {
+        return *m_vkd;
+    }
+    VkDevice getDevice() const
+    {
+        return *m_device;
+    }
+    uint32_t getQueueFamilyIndex() const
+    {
+        return m_queueFamilyIndex;
+    }
+    VkQueue getQueue() const
+    {
+        return m_queue;
+    }
+    Allocator &getAllocator() const
+    {
+        return *m_allocator;
+    }
+
+protected:
+    CustomInstance m_instance;
+    VkPhysicalDevice m_physicalDevice;
+    Move<VkDevice> m_device;
+    std::unique_ptr<DeviceDriver> m_vkd;
+    uint32_t m_queueFamilyIndex;
+    VkQueue m_queue;
+    std::unique_ptr<SimpleAllocator> m_allocator;
+};
+
+// With non-null context, creates and gets the device. With null context, destroys it.
+std::unique_ptr<DeviceHelper> g_deviceHelperPtr;
+
+DeviceHelper &getDeviceHelper(Context &context)
+{
+    std::mutex creationMutex;
+    std::lock_guard<std::mutex> lockGuard(creationMutex);
+
+    if (!g_deviceHelperPtr)
+        g_deviceHelperPtr.reset(new DeviceHelper(context));
+    return *g_deviceHelperPtr;
 }
 
 std::vector<Vertex4RGBA> createFullscreenMesh(uint32_t viewCount, tcu::Vec2 redGradient, tcu::Vec2 greenGradient)
@@ -229,7 +319,7 @@ std::vector<Vertex4RGBA> createFullscreenMesh(uint32_t viewCount, tcu::Vec2 redG
 
 template <typename T>
 void createVertexBuffer(const DeviceInterface &vk, VkDevice vkDevice, const uint32_t &queueFamilyIndex,
-                        SimpleAllocator &memAlloc, const std::vector<T> &vertices, Move<VkBuffer> &vertexBuffer,
+                        Allocator &memAlloc, const std::vector<T> &vertices, Move<VkBuffer> &vertexBuffer,
                         de::MovePtr<Allocation> &vertexAlloc)
 {
     const VkBufferCreateInfo vertexBufferParams = {
@@ -253,7 +343,7 @@ void createVertexBuffer(const DeviceInterface &vk, VkDevice vkDevice, const uint
     flushAlloc(vk, vkDevice, *vertexAlloc);
 }
 
-void prepareImageAndImageView(const DeviceInterface &vk, VkDevice vkDevice, SimpleAllocator &memAlloc,
+void prepareImageAndImageView(const DeviceInterface &vk, VkDevice vkDevice, Allocator &memAlloc,
                               VkImageCreateFlags imageCreateFlags, VkFormat format, VkExtent3D extent,
                               uint32_t arrayLayers, VkSampleCountFlagBits samples, VkImageUsageFlags usage,
                               uint32_t queueFamilyIndex, VkImageViewCreateFlags viewFlags, VkImageViewType viewType,
@@ -313,7 +403,8 @@ public:
 
     virtual void cmdBeginRenderPass(VkCommandBuffer cmdBuffer, const VkRenderPassBeginInfo *pRenderPassBegin) const = 0;
     virtual void cmdNextSubpass(VkCommandBuffer cmdBuffer) const                                                    = 0;
-    virtual void cmdEndRenderPass(VkCommandBuffer cmdBuffer) const                                                  = 0;
+    virtual void cmdEndRenderPass(VkCommandBuffer cmdBuffer, bool addZeroOffset = false,
+                                  uint32_t viewCount = 0u) const                                                    = 0;
 };
 
 // Helper template that lets us define all used types basing on single enum value.
@@ -365,7 +456,8 @@ public:
 
     void cmdBeginRenderPass(VkCommandBuffer cmdBufferm, const VkRenderPassBeginInfo *pRenderPassBegin) const override;
     void cmdNextSubpass(VkCommandBuffer cmdBuffer) const override;
-    void cmdEndRenderPass(VkCommandBuffer cmdBuffer) const override;
+    void cmdEndRenderPass(VkCommandBuffer cmdBuffer, bool addZeroOffset = false,
+                          uint32_t viewCount = 0u) const override;
 
 private:
     const DeviceInterface &m_vk;
@@ -464,6 +556,7 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
     uint32_t multisampleAttachmentIndex = 0;
     uint32_t copyAttachmentIndex        = 0;
     uint32_t densityMapAttachmentIndex  = 0;
+    uint32_t depthAttachmentIndex       = 0;
 
     // add color image
     VkAttachmentLoadOp loadOp = resampleSubsampled ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
@@ -533,6 +626,18 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
         VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT  // VkImageLayout                    finalLayout
     );
 
+    // add depth attachment if used for the image-producing variant
+    const bool useDepthAttachment = (m_testParams.depthEnabled && !resampleSubsampled);
+
+    if (useDepthAttachment)
+    {
+        depthAttachmentIndex = de::sizeU32(attachmentDescriptions);
+        attachmentDescriptions.emplace_back(constNullPtr, 0u, m_testParams.depthFormat, m_testParams.colorSamples,
+                                            loadOp, VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                            VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+    }
+
     std::vector<AttachmentRef> colorAttachmentRefs0{
         {nullptr, 0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_ASPECT_COLOR_BIT}};
 
@@ -544,6 +649,17 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
     if (m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
         pResolveAttachments = &resolveAttachmentRef;
 
+    const auto tcuDepthFormat =
+        (m_testParams.depthEnabled ?
+             mapVkFormat(m_testParams.depthFormat) :
+             mapVkFormat(VK_FORMAT_D16_UNORM)); // D16_UNORM makes sure we do not assert and have something valid below.
+    const VkImageAspectFlags dsAspects =
+        ((tcu::hasDepthComponent(tcuDepthFormat.order) ? VK_IMAGE_ASPECT_DEPTH_BIT : 0) |
+         (tcu::hasStencilComponent(tcuDepthFormat.order) ? VK_IMAGE_ASPECT_STENCIL_BIT : 0));
+    AttachmentRef depthAttachmentRef{nullptr, depthAttachmentIndex, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                     dsAspects};
+    AttachmentRef *pDepthAttachment = (useDepthAttachment ? &depthAttachmentRef : nullptr);
+
     std::vector<SubpassDesc> subpassDescriptions{{
         nullptr,
         (VkSubpassDescriptionFlags)0,                       // VkSubpassDescriptionFlags    flags
@@ -554,7 +670,7 @@ Move<VkRenderPass> RenderPassWrapper<RenderingTypeValue>::createRenderPassProduc
         static_cast<uint32_t>(colorAttachmentRefs0.size()), // uint32_t                        colorAttachmentCount
         colorAttachmentRefs0.data(),                        // const VkAttachmentReference*    pColorAttachments
         makeCopySubpass ? nullptr : pResolveAttachments,    // const VkAttachmentReference*    pResolveAttachments
-        nullptr,                                            // const VkAttachmentReference*    pDepthStencilAttachment
+        pDepthAttachment,                                   // const VkAttachmentReference*    pDepthStencilAttachment
         0u,                                                 // uint32_t                        preserveAttachmentCount
         nullptr                                             // const uint32_t*                pPreserveAttachments
     }};
@@ -709,9 +825,27 @@ void RenderPassWrapper<RenderingTypeValue>::cmdNextSubpass(VkCommandBuffer cmdBu
 }
 
 template <RenderingType RenderingTypeValue>
-void RenderPassWrapper<RenderingTypeValue>::cmdEndRenderPass(VkCommandBuffer cmdBuffer) const
+void RenderPassWrapper<RenderingTypeValue>::cmdEndRenderPass(VkCommandBuffer cmdBuffer, bool addZeroOffset,
+                                                             uint32_t viewCount) const
 {
-    RenderpassSubpass::cmdEndRenderPass(m_vk, cmdBuffer, &m_subpassEndInfo);
+    if (!addZeroOffset)
+    {
+        RenderpassSubpass::cmdEndRenderPass(m_vk, cmdBuffer, &m_subpassEndInfo);
+        return;
+    }
+
+    DE_ASSERT(viewCount > 0u);
+    const std::vector<VkOffset2D> offsets(viewCount, VkOffset2D{0, 0});
+
+    const VkRenderPassFragmentDensityMapOffsetEndInfoEXT offsetEndInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT,
+        m_subpassEndInfo.getPNext(),
+        de::sizeU32(offsets),
+        de::dataOrNull(offsets),
+    };
+
+    typename RenderpassSubpass::SubpassEndInfo subpassEndInfoWithOffsets(&offsetEndInfo);
+    RenderpassSubpass::cmdEndRenderPass(m_vk, cmdBuffer, &subpassEndInfoWithOffsets);
 }
 
 Move<VkFramebuffer> createImagelessFrameBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkRenderPass renderPass,
@@ -1053,19 +1187,22 @@ public:
 private:
     typedef std::shared_ptr<RenderPassWrapperBase> RenderPassWrapperBasePtr;
 
-    void drawDynamicDensityMap(VkCommandBuffer cmdBuffer);
-    void drawSubsampledImage(VkCommandBuffer cmdBuffer);
-    void drawCopySubsampledImage(VkCommandBuffer cmdBuffer);
-    void drawResampleSubsampledImage(VkCommandBuffer cmdBuffer);
-    void drawOutputSubsampledImage(VkCommandBuffer cmdBuffer);
-    void remapingBeforeCopySubsampledImage(VkCommandBuffer cmdBuffer);
-    void createCommandBufferForRenderpass(RenderPassWrapperBasePtr renderPassWrapper, const VkExtent3D &colorImageSize,
+    void drawDynamicDensityMap(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawCopySubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawResampleSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void drawOutputSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void remapingBeforeCopySubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer);
+    void createCommandBufferForRenderpass(const DeviceInterface &vk, VkDevice device,
+                                          RenderPassWrapperBasePtr renderPassWrapper, const VkExtent3D &colorImageSize,
                                           const VkRect2D &dynamicDensityMapRenderArea,
                                           const VkRect2D &colorImageRenderArea, const VkRect2D &outputRenderArea);
-    void createCommandBufferForDynamicRendering(const VkRect2D &dynamicDensityMapRenderArea,
-                                                const VkRect2D &colorImageRenderArea, const VkRect2D &outputRenderArea,
-                                                const VkDevice &vkDevice);
-    tcu::TestStatus verifyImage(void);
+    void createCommandBufferForDynamicRendering(const DeviceInterface &vk, VkDevice vkDevice,
+                                                const VkRect2D &dynamicDensityMapRenderArea,
+                                                const VkRect2D &colorImageRenderArea, const VkRect2D &outputRenderArea);
+    void endRendering(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, bool addZeroOffset = false,
+                      uint32_t viewCount = 0u);
+    tcu::TestStatus verifyImage(const DeviceHelper &deviceHelper);
 
 private:
     typedef de::SharedPtr<Unique<VkSampler>> VkSamplerSp;
@@ -1313,6 +1450,17 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
 
     context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
 
+    if (m_testParams.addZeroOffset)
+    {
+        DE_ASSERT(m_testParams.groupParams->renderingType != RENDERING_TYPE_RENDERPASS_LEGACY);
+
+#ifdef USE_QCOM_OFFSET_EXT
+        context.requireDeviceFunctionality("VK_QCOM_fragment_density_map_offset");
+#else
+        context.requireDeviceFunctionality("VK_EXT_fragment_density_map_offset");
+#endif
+    }
+
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
     {
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
@@ -1424,6 +1572,26 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
+tcu::Vec2 getFormatDelta(VkFormat densityMapFormat)
+{
+    // A generic solution could use tcu::getTextureChannelClass, tcu::getTextureFormatBitDepth, etc to calculate a
+    // precision depending on the format and the format type. See vktPipelineSamplerBorderSwizzleTests.cpp for an
+    // example.
+    switch (densityMapFormat)
+    {
+    case VK_FORMAT_R8G8_UNORM:
+    {
+        const float prec = 1.0f / 255.0f;
+        return tcu::Vec2(prec, prec);
+    }
+    default:
+        break;
+    }
+
+    DE_ASSERT(false);
+    return tcu::Vec2(0.0f);
+}
+
 FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context, const TestParams &testParams)
     : vkt::TestInstance(context)
     , m_testParams(testParams)
@@ -1431,17 +1599,22 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     m_renderSize = tcu::UVec2(
         deFloorFloatToInt32(m_testParams.renderMultiplier * static_cast<float>(m_testParams.densityMapSize.x())),
         deFloorFloatToInt32(m_testParams.renderMultiplier * static_cast<float>(m_testParams.densityMapSize.y())));
-    m_densityValue = tcu::Vec2(1.0f / static_cast<float>(m_testParams.fragmentArea.x()),
-                               1.0f / static_cast<float>(m_testParams.fragmentArea.y()));
-    m_viewMask     = (m_testParams.viewCount > 1) ? ((1u << m_testParams.viewCount) - 1u) : 0u;
+    const auto densityValueDelta = getFormatDelta(m_testParams.densityMapFormat);
+    const auto areaFloat         = m_testParams.fragmentArea.asFloat();
+    // This delta adjustment makes sure that the divison by m_densityValue to obtain the fragment area yields a result
+    // that is slightly above the desired value no matter what rounding is applied to the density value when storing it
+    // in the fragment density map, and this should result in the desired fragment area being a valid result according
+    // to the spec, which says the chosen density should have an area that is not larger than the desired one.
+    m_densityValue =
+        tcu::Vec2(1.0f / areaFloat.x() - densityValueDelta.x(), 1.0f / areaFloat.y() - densityValueDelta.y());
+    m_viewMask = (m_testParams.viewCount > 1) ? ((1u << m_testParams.viewCount) - 1u) : 0u;
 
-    const DeviceInterface &vk               = m_context.getDeviceInterface();
-    const VkDevice vkDevice                 = getDevice(m_context);
-    const VkPhysicalDevice vkPhysicalDevice = m_context.getPhysicalDevice();
-    const uint32_t queueFamilyIndex         = m_context.getUniversalQueueFamilyIndex();
-    const VkQueue queue                     = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
-    SimpleAllocator memAlloc(vk, vkDevice,
-                             getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), vkPhysicalDevice));
+    const auto &deviceHelper                      = getDeviceHelper(m_context);
+    const DeviceInterface &vk                     = deviceHelper.getDeviceInterface();
+    const VkDevice vkDevice                       = deviceHelper.getDevice();
+    const uint32_t queueFamilyIndex               = deviceHelper.getQueueFamilyIndex();
+    const VkQueue queue                           = deviceHelper.getQueue();
+    auto &memAlloc                                = deviceHelper.getAllocator();
     const VkComponentMapping componentMappingRGBA = makeComponentMappingRGBA();
     RenderPassWrapperBasePtr renderPassWrapper;
 
@@ -1463,7 +1636,12 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     VkImageViewType colorImageViewType    = densityMapImageViewType;
     vk::VkImageUsageFlags colorImageUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT;
     uint32_t colorImageCreateFlags =
-        m_testParams.nonSubsampledImages ? 0u : (uint32_t)VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
+        ((m_testParams.nonSubsampledImages ? 0u : (uint32_t)VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT) |
+         (m_testParams.addZeroOffset ? VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT : 0));
+
+    uint32_t depthImageCreateFlags =
+        ((m_testParams.nonSubsampledImages ? 0u : (uint32_t)VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT) |
+         (m_testParams.addZeroOffset ? VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT : 0));
     const VkImageSubresourceRange colorSubresourceRange = {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, colorImageLayers};
 
     const VkFormat depthImageFormat = m_testParams.depthFormat;
@@ -1518,9 +1696,9 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     // Create depth image
     if (isDepthEnabled)
     {
-        prepareImageAndImageView(vk, vkDevice, memAlloc, 0u, depthImageFormat, depthImageSize, 1, VK_SAMPLE_COUNT_1_BIT,
-                                 VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, queueFamilyIndex, 0u,
-                                 VK_IMAGE_VIEW_TYPE_2D, componentMappingRGBA, depthSubresourceRange, m_depthImage,
+        prepareImageAndImageView(vk, vkDevice, memAlloc, depthImageCreateFlags, depthImageFormat, depthImageSize, 1,
+                                 VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT, queueFamilyIndex,
+                                 0u, VK_IMAGE_VIEW_TYPE_2D, componentMappingRGBA, depthSubresourceRange, m_depthImage,
                                  m_depthImageAlloc, m_depthImageView);
     }
 
@@ -1531,17 +1709,18 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
                              m_outputImageAlloc, m_outputImageView);
 
     // Create density map image/images
+    const auto fdmCreateFlags = (m_testParams.addZeroOffset ? VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT : 0);
     for (uint32_t mapIndex = 0; mapIndex < densitiMapCount; ++mapIndex)
     {
         Move<VkImage> densityMapImage;
         de::MovePtr<Allocation> densityMapImageAlloc;
         Move<VkImageView> densityMapImageView;
 
-        prepareImageAndImageView(vk, vkDevice, memAlloc, 0u, m_testParams.densityMapFormat, densityMapImageSize,
-                                 densityMapImageLayers, VK_SAMPLE_COUNT_1_BIT, densityMapImageUsage, queueFamilyIndex,
-                                 densityMapImageViewFlags, densityMapImageViewType, componentMappingRGBA,
-                                 densityMapSubresourceRange, densityMapImage, densityMapImageAlloc,
-                                 densityMapImageView);
+        prepareImageAndImageView(vk, vkDevice, memAlloc, fdmCreateFlags, m_testParams.densityMapFormat,
+                                 densityMapImageSize, densityMapImageLayers, VK_SAMPLE_COUNT_1_BIT,
+                                 densityMapImageUsage, queueFamilyIndex, densityMapImageViewFlags,
+                                 densityMapImageViewType, componentMappingRGBA, densityMapSubresourceRange,
+                                 densityMapImage, densityMapImageAlloc, densityMapImageView);
 
         m_densityMapImages.push_back(VkImageSp(new Unique<VkImage>(densityMapImage)));
         m_densityMapImageAllocs.push_back(AllocationSp(densityMapImageAlloc.release()));
@@ -1658,6 +1837,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
             if (testParams.makeCopy)
                 imageViewsProduceSubsampledImage.push_back(*m_colorCopyImageView);
             imageViewsProduceSubsampledImage.push_back(**m_densityMapImageViews[0]);
+            if (testParams.depthEnabled)
+                imageViewsProduceSubsampledImage.push_back(*m_depthImageView);
 
             m_framebufferProduceSubsampledImage = createFrameBuffer(vk, vkDevice, *m_renderPassProduceSubsampledImage,
                                                                     colorImageSize, imageViewsProduceSubsampledImage);
@@ -1680,7 +1861,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
                                                            const VkFormat *format)
             {
                 return VkFramebufferAttachmentImageInfo{
-                    VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, // VkStructureType sType;
+                    VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO, // VkStructureType sType;const DeviceInterface &vk,
                     nullptr,                                             // const void* pNext;
                     createFlags,                                         // VkImageCreateFlags flags;
                     usageFlags,                                          // VkImageUsageFlags usage;
@@ -1701,7 +1882,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
             }
 
             std::vector<VkFramebufferAttachmentImageInfo> attachmentInfoProduceSubsampledImage;
-            attachmentInfoProduceSubsampledImage.reserve(4);
+            attachmentInfoProduceSubsampledImage.reserve(5);
             attachmentInfoProduceSubsampledImage.push_back(
                 createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags, colorImageUsage,
                                                      colorImageSize, colorImageLayers, &colorImageFormat));
@@ -1719,9 +1900,15 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
                     VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, colorImageSize, colorImageLayers,
                     &colorImageFormat));
             }
-            attachmentInfoProduceSubsampledImage.push_back(
-                createFramebufferAttachmentImageInfo((VkImageCreateFlags)colorImageCreateFlags, colorImageUsage,
-                                                     colorImageSize, colorImageLayers, &colorImageFormat));
+            attachmentInfoProduceSubsampledImage.push_back(createFramebufferAttachmentImageInfo(
+                0u, densityMapImageUsage, densityMapImageSize, densityMapImageLayers, &m_testParams.densityMapFormat));
+
+            if (isDepthEnabled)
+            {
+                attachmentInfoProduceSubsampledImage.push_back(createFramebufferAttachmentImageInfo(
+                    colorImageCreateFlags /*shared with depth*/, VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT,
+                    depthImageSize, colorImageLayers, &depthImageFormat));
+            }
 
             m_framebufferProduceSubsampledImage =
                 createImagelessFrameBuffer(vk, vkDevice, *m_renderPassProduceSubsampledImage, colorImageSize,
@@ -2030,16 +2217,15 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     if (isDynamicRendering)
-        createCommandBufferForDynamicRendering(dynamicDensityMapRenderArea[0], colorImageRect, outputRenderArea[0],
-                                               vkDevice);
+        createCommandBufferForDynamicRendering(vk, vkDevice, dynamicDensityMapRenderArea[0], colorImageRect,
+                                               outputRenderArea[0]);
     else
-        createCommandBufferForRenderpass(renderPassWrapper, colorImageSize, dynamicDensityMapRenderArea[0],
-                                         colorImageRect, outputRenderArea[0]);
+        createCommandBufferForRenderpass(vk, vkDevice, renderPassWrapper, colorImageSize,
+                                         dynamicDensityMapRenderArea[0], colorImageRect, outputRenderArea[0]);
 }
 
-void FragmentDensityMapTestInstance::drawDynamicDensityMap(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawDynamicDensityMap(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceDynamicDensityMap);
@@ -2047,9 +2233,8 @@ void FragmentDensityMapTestInstance::drawDynamicDensityMap(VkCommandBuffer cmdBu
     vk.cmdDraw(cmdBuffer, (uint32_t)m_verticesDDM.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawSubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineProduceSubsampledImage);
@@ -2057,9 +2242,8 @@ void FragmentDensityMapTestInstance::drawSubsampledImage(VkCommandBuffer cmdBuff
     vk.cmdDraw(cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawCopySubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawCopySubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineCopySubsampledImage);
@@ -2069,9 +2253,8 @@ void FragmentDensityMapTestInstance::drawCopySubsampledImage(VkCommandBuffer cmd
     vk.cmdDraw(cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawResampleSubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawResampleSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineUpdateSubsampledImage);
@@ -2081,9 +2264,8 @@ void FragmentDensityMapTestInstance::drawResampleSubsampledImage(VkCommandBuffer
     vk.cmdDraw(cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::drawOutputSubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::drawOutputSubsampledImage(const DeviceInterface &vk, VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkDeviceSize vertexBufferOffset = 0;
 
     vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipelineOutputSubsampledImage);
@@ -2093,10 +2275,9 @@ void FragmentDensityMapTestInstance::drawOutputSubsampledImage(VkCommandBuffer c
     vk.cmdDraw(cmdBuffer, (uint32_t)m_verticesOutput.size(), 1, 0, 0);
 }
 
-void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(VkCommandBuffer cmdBuffer)
+void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(const DeviceInterface &vk,
+                                                                       VkCommandBuffer cmdBuffer)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-
     // Barier before next subpass
     VkMemoryBarrier memoryBarrier =
         makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
@@ -2111,16 +2292,17 @@ void FragmentDensityMapTestInstance::remapingBeforeCopySubsampledImage(VkCommand
     vk.cmdSetRenderingAttachmentLocations(cmdBuffer, &renderingAttachmentLocationInfo);
 }
 
-void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPassWrapperBasePtr renderPassWrapper,
+void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(const DeviceInterface &vk, VkDevice vkDevice,
+                                                                      RenderPassWrapperBasePtr renderPassWrapper,
                                                                       const VkExtent3D &colorImageSize,
                                                                       const VkRect2D &dynamicDensityMapRenderArea,
                                                                       const VkRect2D &colorImageRenderArea,
                                                                       const VkRect2D &outputRenderArea)
 {
-    const DeviceInterface &vk               = m_context.getDeviceInterface();
-    const VkDevice vkDevice                 = getDevice(m_context);
     const bool isColorImageMultisampled     = m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
     const VkClearValue attachmentClearValue = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
+    const VkClearValue depthClearValue      = makeClearValueDepthStencil(1.0f, 0u);
+    const VkClearValue emptyClearValue      = makeClearValueColorU32(0u, 0u, 0u, 0u);
     const uint32_t attachmentCount          = 1 + m_testParams.makeCopy + isColorImageMultisampled;
     const std::vector<VkClearValue> attachmentClearValues(attachmentCount, attachmentClearValue);
 
@@ -2148,7 +2330,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             m_dynamicDensityMapSecCmdBuffer =
                 allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
-            drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
+            drawDynamicDensityMap(vk, *m_dynamicDensityMapSecCmdBuffer);
             endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
         }
 
@@ -2157,11 +2339,11 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         m_subsampledImageSecCmdBuffer =
             allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
         vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
-        drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+        drawSubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
         if (m_testParams.makeCopy)
         {
             renderPassWrapper->cmdNextSubpass(*m_subsampledImageSecCmdBuffer);
-            drawCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
+            drawCopySubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
         }
         endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
 
@@ -2172,7 +2354,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             m_resampleSubsampledImageSecCmdBuffer =
                 allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
             vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-            drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
+            drawResampleSubsampledImage(vk, *m_resampleSubsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
         }
 
@@ -2181,7 +2363,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         m_outputSubsampledImageSecCmdBuffer =
             allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
         vk.beginCommandBuffer(*m_outputSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-        drawOutputSubsampledImage(*m_outputSubsampledImageSecCmdBuffer);
+        drawOutputSubsampledImage(vk, *m_outputSubsampledImageSecCmdBuffer);
         endCommandBuffer(vk, *m_outputSubsampledImageSecCmdBuffer);
     }
 
@@ -2214,7 +2396,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         if (m_testParams.groupParams->useSecondaryCmdBuffer)
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_dynamicDensityMapSecCmdBuffer);
         else
-            drawDynamicDensityMap(*m_cmdBuffer);
+            drawDynamicDensityMap(vk, *m_cmdBuffer);
 
         renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
     }
@@ -2227,6 +2409,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         if (m_testParams.makeCopy)
             imageViewsProduceSubsampledImage.push_back(*m_colorCopyImageView);
         imageViewsProduceSubsampledImage.push_back(**m_densityMapImageViews[0]);
+        if (m_testParams.depthEnabled)
+            imageViewsProduceSubsampledImage.push_back(*m_depthImageView);
 
         const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo{
             VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO,            // VkStructureType sType;
@@ -2235,14 +2419,24 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             imageViewsProduceSubsampledImage.data()                         // const VkImageView* pAttachments;
         };
 
+        std::vector<VkClearValue> produceSubsampledImageClearValues = attachmentClearValues;
+        if (m_testParams.depthEnabled)
+        {
+            // Note clear values are accessed by attachment index. The last attachment used before depth is the FDM and
+            // it has a load operation. To correctly set the depth clear value, we need to push an extra one for the FDM
+            // so the depth clear value sits at the  right index.
+            produceSubsampledImageClearValues.push_back(emptyClearValue);
+            produceSubsampledImageClearValues.push_back(depthClearValue);
+        }
+
         const VkRenderPassBeginInfo renderPassBeginInfoProduceSubsampledImage{
             VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO,                                     // VkStructureType sType;
             m_testParams.imagelessFramebuffer ? &renderPassAttachmentBeginInfo : nullptr, // const void* pNext;
             *m_renderPassProduceSubsampledImage,                                          // VkRenderPass renderPass;
             *m_framebufferProduceSubsampledImage,                                         // VkFramebuffer framebuffer;
             colorImageRenderArea,                                                         // VkRect2D renderArea;
-            static_cast<uint32_t>(attachmentClearValues.size()),                          // uint32_t clearValueCount;
-            attachmentClearValues.data() // const VkClearValue* pClearValues;
+            de::sizeU32(produceSubsampledImageClearValues),                               // uint32_t clearValueCount;
+            de::dataOrNull(produceSubsampledImageClearValues), // const VkClearValue* pClearValues;
         };
         renderPassWrapper->cmdBeginRenderPass(*m_cmdBuffer, &renderPassBeginInfoProduceSubsampledImage);
 
@@ -2250,15 +2444,15 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_subsampledImageSecCmdBuffer);
         else
         {
-            drawSubsampledImage(*m_cmdBuffer);
+            drawSubsampledImage(vk, *m_cmdBuffer);
             if (m_testParams.makeCopy)
             {
                 renderPassWrapper->cmdNextSubpass(*m_cmdBuffer);
-                drawCopySubsampledImage(*m_cmdBuffer);
+                drawCopySubsampledImage(vk, *m_cmdBuffer);
             }
         }
 
-        renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
+        renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
     }
 
     // Resample subsampled image
@@ -2286,9 +2480,9 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
         if (m_testParams.groupParams->useSecondaryCmdBuffer)
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_resampleSubsampledImageSecCmdBuffer);
         else
-            drawResampleSubsampledImage(*m_cmdBuffer);
+            drawResampleSubsampledImage(vk, *m_cmdBuffer);
 
-        renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
+        renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
     }
 
     // Copy subsampled image to normal image using sampler that is able to read from subsampled images
@@ -2314,19 +2508,19 @@ void FragmentDensityMapTestInstance::createCommandBufferForRenderpass(RenderPass
     if (m_testParams.groupParams->useSecondaryCmdBuffer)
         vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_outputSubsampledImageSecCmdBuffer);
     else
-        drawOutputSubsampledImage(*m_cmdBuffer);
+        drawOutputSubsampledImage(vk, *m_cmdBuffer);
 
     renderPassWrapper->cmdEndRenderPass(*m_cmdBuffer);
 
     endCommandBuffer(vk, *m_cmdBuffer);
 }
 
-void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(const VkRect2D &dynamicDensityMapRenderArea,
+void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(const DeviceInterface &vk,
+                                                                            VkDevice vkDevice,
+                                                                            const VkRect2D &dynamicDensityMapRenderArea,
                                                                             const VkRect2D &colorImageRenderArea,
-                                                                            const VkRect2D &outputRenderArea,
-                                                                            const VkDevice &vkDevice)
+                                                                            const VkRect2D &outputRenderArea)
 {
-    const DeviceInterface &vk           = m_context.getDeviceInterface();
     const bool isColorImageMultisampled = m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT;
     std::vector<VkClearValue> attachmentClearValuesDDM{makeClearValueColorF32(1.0f, 1.0f, 1.0f, 1.0f)};
     const VkClearValue attachmentClearValue = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f);
@@ -2565,8 +2759,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             {
                 vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
                 vk.cmdBeginRendering(*m_dynamicDensityMapSecCmdBuffer, &dynamicDensityMapRenderingInfo);
-                drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
-                vk.cmdEndRendering(*m_dynamicDensityMapSecCmdBuffer);
+                drawDynamicDensityMap(vk, *m_dynamicDensityMapSecCmdBuffer);
+                endRendering(vk, *m_dynamicDensityMapSecCmdBuffer);
                 endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
             }
 
@@ -2574,21 +2768,22 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             inheritanceRenderingInfo.rasterizationSamples    = m_testParams.colorSamples;
             vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
             vk.cmdBeginRendering(*m_subsampledImageSecCmdBuffer, &subsampledImageRenderingInfo);
-            drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+            drawSubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
             if (m_testParams.makeCopy)
             {
-                remapingBeforeCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
-                drawCopySubsampledImage(*m_subsampledImageSecCmdBuffer);
+                remapingBeforeCopySubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
+                drawCopySubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
             }
-            vk.cmdEndRendering(*m_subsampledImageSecCmdBuffer);
+            endRendering(vk, *m_subsampledImageSecCmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
             endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
 
             if (m_testParams.subsampledLoads)
             {
                 vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
                 vk.cmdBeginRendering(*m_resampleSubsampledImageSecCmdBuffer, &resampleSubsampledImageRenderingInfo);
-                drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
-                vk.cmdEndRendering(*m_resampleSubsampledImageSecCmdBuffer);
+                drawResampleSubsampledImage(vk, *m_resampleSubsampledImageSecCmdBuffer);
+                endRendering(vk, *m_resampleSubsampledImageSecCmdBuffer, m_testParams.addZeroOffset,
+                             m_testParams.viewCount);
                 endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
             }
 
@@ -2596,8 +2791,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
             vk.beginCommandBuffer(*m_outputSubsampledImageSecCmdBuffer, &commandBufBeginParams);
             vk.cmdBeginRendering(*m_outputSubsampledImageSecCmdBuffer, &copySubsampledRenderingInfo);
-            drawOutputSubsampledImage(*m_outputSubsampledImageSecCmdBuffer);
-            vk.cmdEndRendering(*m_outputSubsampledImageSecCmdBuffer);
+            drawOutputSubsampledImage(vk, *m_outputSubsampledImageSecCmdBuffer);
+            endRendering(vk, *m_outputSubsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_outputSubsampledImageSecCmdBuffer);
         }
         else
@@ -2607,27 +2802,27 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             if (m_testParams.dynamicDensityMap)
             {
                 vk.beginCommandBuffer(*m_dynamicDensityMapSecCmdBuffer, &commandBufBeginParams);
-                drawDynamicDensityMap(*m_dynamicDensityMapSecCmdBuffer);
+                drawDynamicDensityMap(vk, *m_dynamicDensityMapSecCmdBuffer);
                 endCommandBuffer(vk, *m_dynamicDensityMapSecCmdBuffer);
             }
 
             inheritanceRenderingInfo.pColorAttachmentFormats = &colorImageFormat;
             inheritanceRenderingInfo.rasterizationSamples    = m_testParams.colorSamples;
             vk.beginCommandBuffer(*m_subsampledImageSecCmdBuffer, &commandBufBeginParams);
-            drawSubsampledImage(*m_subsampledImageSecCmdBuffer);
+            drawSubsampledImage(vk, *m_subsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_subsampledImageSecCmdBuffer);
 
             if (m_testParams.subsampledLoads)
             {
                 vk.beginCommandBuffer(*m_resampleSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-                drawResampleSubsampledImage(*m_resampleSubsampledImageSecCmdBuffer);
+                drawResampleSubsampledImage(vk, *m_resampleSubsampledImageSecCmdBuffer);
                 endCommandBuffer(vk, *m_resampleSubsampledImageSecCmdBuffer);
             }
 
             inheritanceRenderingInfo.viewMask             = 0u;
             inheritanceRenderingInfo.rasterizationSamples = VK_SAMPLE_COUNT_1_BIT;
             vk.beginCommandBuffer(*m_outputSubsampledImageSecCmdBuffer, &commandBufBeginParams);
-            drawOutputSubsampledImage(*m_outputSubsampledImageSecCmdBuffer);
+            drawOutputSubsampledImage(vk, *m_outputSubsampledImageSecCmdBuffer);
             endCommandBuffer(vk, *m_outputSubsampledImageSecCmdBuffer);
         }
 
@@ -2650,7 +2845,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
                 dynamicDensityMapRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
                 vk.cmdBeginRendering(*m_cmdBuffer, &dynamicDensityMapRenderingInfo);
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_dynamicDensityMapSecCmdBuffer);
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(vk, *m_cmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
             }
 
             // barrier that will change layout of density map
@@ -2671,7 +2866,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             subsampledImageRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
             vk.cmdBeginRendering(*m_cmdBuffer, &subsampledImageRenderingInfo);
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_subsampledImageSecCmdBuffer);
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(vk, *m_cmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
         }
 
         // Resample subsampled image
@@ -2684,7 +2879,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
                 resampleSubsampledImageRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
                 vk.cmdBeginRendering(*m_cmdBuffer, &resampleSubsampledImageRenderingInfo);
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_resampleSubsampledImageSecCmdBuffer);
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(vk, *m_cmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
             }
         }
 
@@ -2704,7 +2899,7 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
             copySubsampledRenderingInfo.flags = VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
             vk.cmdBeginRendering(*m_cmdBuffer, &copySubsampledRenderingInfo);
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &*m_outputSubsampledImageSecCmdBuffer);
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(vk, *m_cmdBuffer);
         }
 
         endCommandBuffer(vk, *m_cmdBuffer);
@@ -2723,8 +2918,8 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
                                   &dynamicDensitMapBarrier);
 
             vk.cmdBeginRendering(*m_cmdBuffer, &dynamicDensityMapRenderingInfo);
-            drawDynamicDensityMap(*m_cmdBuffer);
-            vk.cmdEndRendering(*m_cmdBuffer);
+            drawDynamicDensityMap(vk, *m_cmdBuffer);
+            endRendering(vk, *m_cmdBuffer);
 
             // barrier that will change layout of density map
             vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -2741,20 +2936,20 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
 
         // Render subsampled image
         vk.cmdBeginRendering(*m_cmdBuffer, &subsampledImageRenderingInfo);
-        drawSubsampledImage(*m_cmdBuffer);
+        drawSubsampledImage(vk, *m_cmdBuffer);
         if (m_testParams.makeCopy)
         {
-            remapingBeforeCopySubsampledImage(*m_cmdBuffer);
-            drawCopySubsampledImage(*m_cmdBuffer);
+            remapingBeforeCopySubsampledImage(vk, *m_cmdBuffer);
+            drawCopySubsampledImage(vk, *m_cmdBuffer);
         }
-        vk.cmdEndRendering(*m_cmdBuffer);
+        endRendering(vk, *m_cmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
 
         // Resample subsampled image
         if (m_testParams.subsampledLoads)
         {
             vk.cmdBeginRendering(*m_cmdBuffer, &resampleSubsampledImageRenderingInfo);
-            drawResampleSubsampledImage(*m_cmdBuffer);
-            vk.cmdEndRendering(*m_cmdBuffer);
+            drawResampleSubsampledImage(vk, *m_cmdBuffer);
+            endRendering(vk, *m_cmdBuffer, m_testParams.addZeroOffset, m_testParams.viewCount);
         }
 
         // barrier that ensures writing to colour image has completed.
@@ -2767,26 +2962,46 @@ void FragmentDensityMapTestInstance::createCommandBufferForDynamicRendering(cons
                               0, 0, nullptr, 0, nullptr, 1, &outputImageBarrier);
 
         vk.cmdBeginRendering(*m_cmdBuffer, &copySubsampledRenderingInfo);
-        drawOutputSubsampledImage(*m_cmdBuffer);
-        vk.cmdEndRendering(*m_cmdBuffer);
+        drawOutputSubsampledImage(vk, *m_cmdBuffer);
+        endRendering(vk, *m_cmdBuffer);
 
         endCommandBuffer(vk, *m_cmdBuffer);
     }
 }
 
+void FragmentDensityMapTestInstance::endRendering(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,
+                                                  bool addZeroOffset, uint32_t viewCount)
+{
+    if (addZeroOffset)
+    {
+        DE_ASSERT(viewCount > 0u);
+        const std::vector<VkOffset2D> offsets(viewCount, VkOffset2D{0, 0});
+        const VkRenderPassFragmentDensityMapOffsetEndInfoEXT offsetEndInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT,
+            nullptr,
+            de::sizeU32(offsets),
+            de::dataOrNull(offsets),
+        };
+        const VkRenderingEndInfoEXT renderingEndInfo = initVulkanStructureConst(&offsetEndInfo);
+        vk.cmdEndRendering2EXT(cmdBuffer, &renderingEndInfo);
+    }
+    else
+    {
+        vk.cmdEndRendering(cmdBuffer);
+    }
+}
+
 tcu::TestStatus FragmentDensityMapTestInstance::iterate(void)
 {
-    const DeviceInterface &vk = m_context.getDeviceInterface();
-    const VkDevice vkDevice   = getDevice(m_context);
-    const VkQueue queue       = getDeviceQueue(vk, vkDevice, m_context.getUniversalQueueFamilyIndex(), 0);
-
-    submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
+    const auto &deviceHelper = getDeviceHelper(m_context);
+    submitCommandsAndWait(deviceHelper.getDeviceInterface(), deviceHelper.getDevice(), deviceHelper.getQueue(),
+                          m_cmdBuffer.get());
 
     // approximations used when coarse reconstruction is specified are implementation defined
     if (m_testParams.coarseReconstruction)
         return tcu::TestStatus::pass("Pass");
 
-    return verifyImage();
+    return verifyImage(deviceHelper);
 }
 
 struct Vec4Sorter
@@ -2803,19 +3018,18 @@ struct Vec4Sorter
     }
 };
 
-tcu::TestStatus FragmentDensityMapTestInstance::verifyImage(void)
+tcu::TestStatus FragmentDensityMapTestInstance::verifyImage(const DeviceHelper &deviceHelper)
 {
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkDevice vkDevice         = getDevice(m_context);
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    const VkQueue queue             = getDeviceQueue(vk, vkDevice, queueFamilyIndex, 0);
-    SimpleAllocator memAlloc(
-        vk, vkDevice,
-        getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
+    const auto &vk      = deviceHelper.getDeviceInterface();
+    const auto vkDevice = deviceHelper.getDevice();
+    const auto qfIndex  = deviceHelper.getQueueFamilyIndex();
+    const auto queue    = deviceHelper.getQueue();
+    auto &memAlloc      = deviceHelper.getAllocator();
     tcu::UVec2 renderSize(m_renderSize.x(), m_renderSize.y());
-    de::UniquePtr<tcu::TextureLevel> outputImage(pipeline::readColorAttachment(vk, vkDevice, queue, queueFamilyIndex,
-                                                                               memAlloc, *m_outputImage,
-                                                                               VK_FORMAT_R8G8B8A8_UNORM, renderSize)
+
+    de::UniquePtr<tcu::TextureLevel> outputImage(pipeline::readColorAttachment(vk, vkDevice, queue, qfIndex, memAlloc,
+                                                                               *m_outputImage, VK_FORMAT_R8G8B8A8_UNORM,
+                                                                               renderSize)
                                                      .release());
     const tcu::ConstPixelBufferAccess &outputAccess(outputImage->getAccess());
     tcu::TestLog &log(m_context.getTestContext().getLog());
@@ -2872,6 +3086,1744 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage(void)
 
     return tcu::TestStatus::pass("Pass");
 }
+
+enum class OffsetType
+{
+    NONE     = 0,
+    POSITIVE = 1,
+    NEGATIVE = 2,
+};
+
+int getSign(OffsetType offsetType)
+{
+    switch (offsetType)
+    {
+    case OffsetType::NONE:
+        return 0;
+    case OffsetType::POSITIVE:
+        return 1;
+    case OffsetType::NEGATIVE:
+        return -1;
+    default:
+        break;
+    }
+
+    DE_ASSERT(false);
+    return std::numeric_limits<int>::max();
+}
+
+tcu::IVec3 getMinTexelSize(const VkPhysicalDeviceFragmentDensityMapPropertiesEXT &properties)
+{
+    return tcu::UVec3(std::max(properties.minFragmentDensityTexelSize.width, 1u),
+                      std::max(properties.minFragmentDensityTexelSize.height, 1u), 1u)
+        .asInt();
+}
+
+struct FDMOffsetBaseParams
+{
+    const SharedGroupParams testGroupParams;
+    OffsetType horizontalOffset;
+    OffsetType verticalOffset;
+    bool multiView;
+    bool resumeRendering;         // Only used for dynamic rendering.
+    std::vector<bool> iterations; // How many times to run the main loop and if we should force no offsets with each.
+
+    FDMOffsetBaseParams(const SharedGroupParams groupParams, OffsetType horizontalOffset_, OffsetType verticalOffset_,
+                        bool multiView_, bool resumeRendering_)
+        : testGroupParams(groupParams)
+        , horizontalOffset(horizontalOffset_)
+        , verticalOffset(verticalOffset_)
+        , multiView(multiView_)
+        , resumeRendering(resumeRendering_)
+        , iterations(1, false)
+    {
+        // We do not support both at the same time currently.
+        DE_ASSERT(horizontalOffset == OffsetType::NONE || verticalOffset == OffsetType::NONE);
+
+        if (resumeRendering)
+            DE_ASSERT(testGroupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING);
+    }
+
+    virtual ~FDMOffsetBaseParams() = default;
+
+    virtual uint32_t getLayerCount() const
+    {
+        return (multiView ? 2u : 1u);
+    }
+
+    virtual tcu::IVec3 getFramebufferExtent() const
+    {
+        return tcu::IVec3(1024, 1024, 1);
+    }
+
+    virtual tcu::IVec3 getFragmentDensityMapExtent(
+        const VkPhysicalDeviceFragmentDensityMapPropertiesEXT &properties) const
+    {
+        // Minimum texel size by default.
+        const auto minTexelSize = getMinTexelSize(properties);
+        const auto fbExtent     = getFramebufferExtent();
+        return fbExtent / minTexelSize;
+    }
+
+    virtual std::vector<tcu::IVec2> getOffsets(const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT *) const = 0;
+
+    virtual tcu::Vec4 getClearColor() const
+    {
+        return tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    virtual tcu::Vec4 getZeroResColor() const
+    {
+        return tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    }
+
+    virtual tcu::Vec4 getHighResColor() const
+    {
+        return tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f);
+    }
+
+    virtual tcu::Vec4 getLowResColor() const
+    {
+        return tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    }
+};
+
+using FDMOffsetParamsPtr = de::SharedPtr<const FDMOffsetBaseParams>;
+using TextureLevelPtr    = std::unique_ptr<tcu::TextureLevel>;
+using TexLevelsVec       = std::vector<TextureLevelPtr>;
+
+class FDMOffsetBaseInstance : public vkt::TestInstance
+{
+public:
+    FDMOffsetBaseInstance(Context &context, FDMOffsetParamsPtr params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~FDMOffsetBaseInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    struct QuadInfo
+    {
+        float xBegin;
+        float xEnd;
+        float yBegin;
+        float yEnd;
+    };
+
+    virtual void prepareFDMAccess(tcu::PixelBufferAccess &fdmAccess,
+                                  const std::vector<tcu::IVec2> &fdmOffsets) const = 0;
+    virtual QuadInfo getQuadInfo(const tcu::IVec3 &fbExtent, const tcu::IVec3 &fdmExtent) const;
+    virtual void prepareReferences(TexLevelsVec &references, const TexLevelsVec &results, const QuadInfo &quadInfo,
+                                   const std::vector<tcu::IVec2> &fdmOffsets) const = 0;
+    virtual void checkResults(tcu::TestLog &log, const TexLevelsVec &references, const TexLevelsVec &results,
+                              const std::vector<tcu::IVec2> &fdmOffsets) const      = 0;
+
+    FDMOffsetParamsPtr m_params;
+};
+
+class FDMOffsetBaseCase : public vkt::TestCase
+{
+public:
+    FDMOffsetBaseCase(tcu::TestContext &testCtx, const std::string &name, FDMOffsetParamsPtr params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~FDMOffsetBaseCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+protected:
+    FDMOffsetParamsPtr m_params;
+};
+
+void FDMOffsetBaseCase::checkSupport(Context &context) const
+{
+#ifdef USE_QCOM_OFFSET_EXT
+    context.requireDeviceFunctionality("VK_QCOM_fragment_density_map_offset");
+#else
+    context.requireDeviceFunctionality("VK_EXT_fragment_density_map_offset");
+#endif
+
+    if (m_params->testGroupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+        context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    else if (m_params->testGroupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+    if (m_params->multiView)
+        context.requireDeviceFunctionality("VK_KHR_multiview");
+
+    const auto &fdmoProperties = context.getFragmentDensityMapOffsetPropertiesEXT();
+
+    {
+        const auto offsets = m_params->getOffsets(nullptr);
+
+        const auto checkOffset = [](int32_t offset, int32_t granularity, const std::string &dim)
+        {
+            if (granularity == 0)
+            {
+                std::ostringstream msg;
+                msg << dim << " granularity is zero";
+                TCU_FAIL(msg.str());
+            }
+
+            if (offset % granularity != 0)
+            {
+                std::ostringstream msg;
+                msg << dim << " offset (" << offset << ") is not a multiple of the granularity (" << granularity << ")";
+                TCU_THROW(NotSupportedError, msg.str());
+            }
+        };
+
+        const auto zeroOffset = tcu::IVec2(0, 0);
+        for (const auto &singleOffset : offsets)
+        {
+            if (singleOffset == zeroOffset)
+                continue;
+
+            checkOffset(singleOffset.x(), fdmoProperties.fragmentDensityOffsetGranularity.width, "Horizontal");
+            checkOffset(singleOffset.y(), fdmoProperties.fragmentDensityOffsetGranularity.height, "Vertical");
+        }
+    }
+}
+
+void FDMOffsetBaseCase::initPrograms(SourceCollections &dst) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "void main(void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "#extension GL_EXT_fragment_invocation_density : require\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    const vec4 zeroResColor = vec4" << m_params->getZeroResColor() << ";\n"
+         << "    const vec4 highResColor = vec4" << m_params->getHighResColor() << ";\n"
+         << "    const vec4 lowResColor = vec4" << m_params->getLowResColor() << ";\n"
+         << "    const int area = gl_FragSizeEXT.x * gl_FragSizeEXT.y;\n"
+         << "    if (area == 0) { outColor = zeroResColor; }\n"
+         << "    else if (area == 1) { outColor = highResColor; }\n"
+         << "    else { outColor = lowResColor; }\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+    // Shaders for copying the framebuffer to a storage texel buffer.
+    const auto fbExtent = m_params->getFramebufferExtent();
+
+    // Draws full-screen triangle.
+    std::ostringstream vertCopy;
+    vertCopy << "#version 460\n"
+             << "vec2 positions[3] = vec2[](\n"
+             << "    vec2(-1.0, -1.0),\n"
+             << "    vec2( 3.0, -1.0),\n"
+             << "    vec2(-1.0,  3.0)\n"
+             << ");\n"
+             << "void main(void) {\n"
+             << "    gl_Position = vec4(positions[gl_VertexIndex % 3], 0.0, 1.0);\n"
+             << "}\n";
+    dst.glslSources.add("vert-copy") << glu::VertexSource(vertCopy.str());
+
+    const auto &multiView = m_params->multiView;
+
+    std::ostringstream fragCopy;
+    fragCopy
+        << "#version 460\n"
+        << (multiView ? "#extension GL_EXT_multiview : require\n" : "") << "layout (set=0, binding=0) uniform "
+        << (multiView ? "sampler2DArray" : "sampler2D") << " inSampler;\n"
+        << "layout (set=0, binding=1, rgba8) uniform imageBuffer outImg;\n"
+        << "void main (void) {\n"
+        << "    const int imageWidth = " << fbExtent.x() << ";\n"
+        << "    const int imageHeight = " << fbExtent.y() << ";\n"
+        << "    const vec2 whVec = vec2(imageWidth, imageHeight);\n"
+        << "    const int layerSize = imageWidth * imageHeight;\n"
+        << "    const int viewIndex = " << (multiView ? "gl_ViewIndex" : "0") << ";\n"
+        << (multiView ? "    const vec3 coord = vec3(gl_FragCoord.xy, viewIndex) / vec3(whVec, 1.0);\n" :
+                        "    const vec2 coord = vec2(gl_FragCoord.xy) / whVec;\n")
+        << "    const vec4 color = texture(inSampler, coord);\n"
+        << "    const int storePos = layerSize * viewIndex + int(gl_FragCoord.y) * imageWidth + int(gl_FragCoord.x);\n"
+        << "    imageStore(outImg, storePos, color);\n"
+        << "}\n";
+    dst.glslSources.add("frag-copy") << glu::FragmentSource(fragCopy.str());
+}
+
+enum class QuadPiece
+{
+    ALL    = 0,
+    FIRST  = 1,
+    SECOND = 2,
+};
+
+tcu::TestStatus FDMOffsetBaseInstance::iterate()
+{
+    const auto &deviceHelper = getDeviceHelper(m_context);
+    const auto &vkd          = deviceHelper.getDeviceInterface();
+    const auto device        = deviceHelper.getDevice();
+    const auto qfIndex       = deviceHelper.getQueueFamilyIndex();
+    const auto queue         = deviceHelper.getQueue();
+    auto &alloc              = deviceHelper.getAllocator();
+
+    const auto fbFlags    = (VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT | VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT);
+    const auto fbFormat   = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto fbExtent   = m_params->getFramebufferExtent();
+    const auto fbVkExtent = makeExtent3D(fbExtent);
+    const auto fbUsage    = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    const auto &fdmProperties       = m_context.getFragmentDensityMapPropertiesEXT();
+    const auto &fdmOffsetProperties = m_context.getFragmentDensityMapOffsetPropertiesEXT();
+    const auto bindPoint            = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    const bool isDynamicRendering = (m_params->testGroupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING);
+    const bool useSecondary       = m_params->testGroupParams->useSecondaryCmdBuffer;
+    const bool allInSecondary =
+        (useSecondary && m_params->testGroupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass);
+    const bool needsIheritance     = (useSecondary && !allInSecondary);
+    const bool multipleSecondaries = (useSecondary && m_params->resumeRendering && !allInSecondary);
+
+    const auto layerCount = m_params->getLayerCount();
+    const auto viewMask   = ((1u << layerCount) - 1u);
+    const auto viewType   = (m_params->multiView ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+    const auto colorSRR   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount);
+    const auto colorSRL   = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, layerCount);
+    const auto fdmOffsets = m_params->getOffsets(&fdmOffsetProperties);
+    const tcu::IVec3 resultExtent(fbExtent.x(), fbExtent.y(), layerCount);
+
+    const VkImageCreateInfo fbImageInfo{
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        fbFlags,
+        VK_IMAGE_TYPE_2D,
+        fbFormat,
+        fbVkExtent,
+        1u,
+        layerCount,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        fbUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    ImageWithMemory fbImage(vkd, device, alloc, fbImageInfo, MemoryRequirement::Any);
+    const auto fbView = makeImageView(vkd, device, *fbImage, viewType, fbFormat, colorSRR);
+
+    // Storage texel buffer.
+    const auto fbTcuFormat = mapVkFormat(fbFormat);
+    DE_ASSERT(fbExtent.z() == 1);
+    const auto texelBufferSize  = static_cast<VkDeviceSize>(tcu::getPixelSize(fbTcuFormat) * resultExtent.x() *
+                                                           resultExtent.y() * resultExtent.z());
+    const auto texelBufferUsage = VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT;
+    const auto texelBufferInfo  = makeBufferCreateInfo(texelBufferSize, texelBufferUsage);
+    BufferWithMemory texelBuffer(vkd, device, alloc, texelBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &bufferAlloc = texelBuffer.getAllocation();
+        memset(bufferAlloc.getHostPtr(), 0, static_cast<size_t>(texelBufferSize));
+    }
+    const auto texelBufferView = makeBufferView(vkd, device, *texelBuffer, fbFormat, 0ull, VK_WHOLE_SIZE);
+
+    // Sampler.
+    const auto samplerFlags = VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT;
+
+    const VkSamplerCreateInfo samplerInfo{
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr,
+        samplerFlags,
+        VK_FILTER_NEAREST,
+        VK_FILTER_NEAREST,
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        0.0f,
+        VK_FALSE,
+        0.0f,
+        VK_FALSE,
+        VK_COMPARE_OP_NEVER,
+        0.0f,
+        0.0f,
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        VK_FALSE,
+    };
+
+    const auto sampler = createSampler(vkd, device, &samplerInfo);
+
+    const auto fdmFlags  = (VK_IMAGE_CREATE_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT);
+    const auto fdmFormat = VK_FORMAT_R8G8_UNORM;
+    const auto fdmExtent = m_params->getFragmentDensityMapExtent(fdmProperties);
+    const auto fdmUsage  = (VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    const VkImageCreateInfo fdmImageInfo{
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        fdmFlags,
+        VK_IMAGE_TYPE_2D,
+        fdmFormat,
+        makeExtent3D(fdmExtent),
+        1u,
+        layerCount,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        fdmUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    ImageWithMemory fdmImage(vkd, device, alloc, fdmImageInfo, MemoryRequirement::Any);
+    const auto fdmView = makeImageView(vkd, device, *fdmImage, viewType, fdmFormat, colorSRR);
+
+    // Host fragment density map level. These values will be copied to a buffer and uploaded to the FDM map image.
+    const auto fdmTcuFormat = mapVkFormat(fdmFormat);
+    DE_ASSERT(fdmExtent.z() == 1);
+    tcu::TextureLevel fdmLevel(fdmTcuFormat, fdmExtent.x(), fdmExtent.y(), static_cast<int>(layerCount));
+    tcu::PixelBufferAccess fdmAccess = fdmLevel.getAccess();
+
+    // Fill FDM buffer with the desired values.
+    prepareFDMAccess(fdmAccess, fdmOffsets);
+
+    // Create an auxiliary buffer and fill it with the texture level, then copy it to the FDM image.
+    const auto fdmPixelSize      = tcu::getPixelSize(fdmTcuFormat);
+    const auto fdmXferBufferSize = static_cast<VkDeviceSize>(fdmPixelSize * fdmExtent.x() * fdmExtent.y() * layerCount);
+    const auto fdmXferBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const auto fdmXferBufferInfo  = makeBufferCreateInfo(fdmXferBufferSize, fdmXferBufferUsage);
+    BufferWithMemory fdmXferBuffer(vkd, device, alloc, fdmXferBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &bufferAlloc = fdmXferBuffer.getAllocation();
+        memcpy(bufferAlloc.getHostPtr(), fdmAccess.getDataPtr(), static_cast<size_t>(fdmXferBufferSize));
+    }
+    {
+        CommandPoolWithBuffer cmd(vkd, device, qfIndex);
+        beginCommandBuffer(vkd, *cmd.cmdBuffer);
+        {
+            const auto preCopyBarrier =
+                makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *fdmImage, colorSRR);
+            cmdPipelineImageMemoryBarrier(vkd, *cmd.cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopyBarrier);
+        }
+        {
+            const auto copyRegion = makeBufferImageCopy(makeExtent3D(fdmExtent), colorSRL);
+            vkd.cmdCopyBufferToImage(*cmd.cmdBuffer, *fdmXferBuffer, *fdmImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                     1u, &copyRegion);
+        }
+        {
+            const auto postCopyBarrier =
+                makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0u, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                       VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT, *fdmImage, colorSRR);
+            cmdPipelineImageMemoryBarrier(vkd, *cmd.cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, &postCopyBarrier);
+        }
+        endCommandBuffer(vkd, *cmd.cmdBuffer);
+        submitCommandsAndWait(vkd, device, queue, *cmd.cmdBuffer);
+    }
+
+    // Generate geometry.
+    const auto quadInfo = getQuadInfo(fbExtent, fdmExtent);
+
+    std::vector<tcu::Vec4> vertices;
+    vertices.reserve(6u);
+    vertices.emplace_back(quadInfo.xBegin, quadInfo.yBegin, 0.0f, 1.0f);
+    vertices.emplace_back(quadInfo.xBegin, quadInfo.yEnd, 0.0f, 1.0f);
+    vertices.emplace_back(quadInfo.xEnd, quadInfo.yBegin, 0.0f, 1.0f);
+    vertices.emplace_back(quadInfo.xEnd, quadInfo.yBegin, 0.0f, 1.0f);
+    vertices.emplace_back(quadInfo.xBegin, quadInfo.yEnd, 0.0f, 1.0f);
+    vertices.emplace_back(quadInfo.xEnd, quadInfo.yEnd, 0.0f, 1.0f);
+
+    const auto vertexBufferSize   = static_cast<VkDeviceSize>(de::dataSize(vertices));
+    const auto vertexBufferInfo   = makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
+    BufferWithMemory vertexBuffer(vkd, device, alloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &bufferAlloc = vertexBuffer.getAllocation();
+        memcpy(bufferAlloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+    }
+
+    // Render pass and framebuffer.
+    Move<VkRenderPass> renderPass;
+    Move<VkFramebuffer> framebuffer;
+
+    if (m_params->testGroupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+    {
+        const std::vector<VkAttachmentDescription2> attachments{
+            // Color attachment.
+            VkAttachmentDescription2{
+                VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+                nullptr,
+                0u,
+                fbImageInfo.format,
+                fbImageInfo.samples,
+                VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_STORE,
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // Stencil.
+                VK_ATTACHMENT_STORE_OP_DONT_CARE, // Stencil.
+                VK_IMAGE_LAYOUT_UNDEFINED,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            },
+            // Fragment density map.
+            VkAttachmentDescription2{
+                VK_STRUCTURE_TYPE_ATTACHMENT_DESCRIPTION_2,
+                nullptr,
+                0u,
+                fdmImageInfo.format,
+                fdmImageInfo.samples,
+                VK_ATTACHMENT_LOAD_OP_LOAD,
+                VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // Stencil.
+                VK_ATTACHMENT_STORE_OP_DONT_CARE, // Stencil.
+                VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,
+                VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,
+            },
+        };
+
+        const VkAttachmentReference2 colorRef{
+            VK_STRUCTURE_TYPE_ATTACHMENT_REFERENCE_2,
+            nullptr,
+            0u,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_ASPECT_COLOR_BIT,
+        };
+
+        const std::vector<VkSubpassDescription2> subpasses{
+            VkSubpassDescription2{
+                VK_STRUCTURE_TYPE_SUBPASS_DESCRIPTION_2,
+                nullptr,
+                0u,
+                bindPoint,
+                viewMask,
+                0u,
+                nullptr,
+                1u,
+                &colorRef,
+                nullptr,
+                nullptr,
+                0u,
+                nullptr,
+            },
+        };
+
+        const VkRenderPassFragmentDensityMapCreateInfoEXT rpFDMInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT,
+            nullptr,
+            {
+                1u, // Fragment density map attachment index.
+                VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,
+            },
+        };
+
+        // Render pass.
+        const VkRenderPassCreateInfo2 rpCreateInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO_2,
+            &rpFDMInfo,
+            0u,
+            de::sizeU32(attachments),
+            de::dataOrNull(attachments),
+            de::sizeU32(subpasses),
+            de::dataOrNull(subpasses),
+            0u,
+            nullptr,
+            0u,
+            nullptr,
+        };
+
+        renderPass = createRenderPass2(vkd, device, &rpCreateInfo);
+
+        const std::vector<VkImageView> imgViews{*fbView, *fdmView};
+
+        const VkFramebufferCreateInfo fbCreateInfo = {
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO,
+            nullptr,
+            0u,
+            *renderPass,
+            de::sizeU32(imgViews),
+            de::dataOrNull(imgViews),
+            fbVkExtent.width,
+            fbVkExtent.height,
+            1u, // Note for multiview this is still specified as 1.
+        };
+
+        framebuffer = createFramebuffer(vkd, device, &fbCreateInfo);
+    }
+    else if (isDynamicRendering)
+    {
+    }
+    else
+        DE_ASSERT(false);
+
+    const VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
+        nullptr,
+        viewMask,
+        1u,
+        &fbFormat,
+        VK_FORMAT_UNDEFINED,
+        VK_FORMAT_UNDEFINED,
+    };
+
+    const auto graphicsPipelineCreateInfoPNext = (isDynamicRendering ? &pipelineRenderingCreateInfo : nullptr);
+    const auto pipelineCreateFlags =
+        (isDynamicRendering ?
+             static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT) :
+             0u);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+    const auto topology = VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST;
+
+    // Graphics pipeline.
+    const auto graphicsPipelineLayout = makePipelineLayout(vkd, device);
+    const auto &binaries              = m_context.getBinaryCollection();
+    const auto vertModule             = createShaderModule(vkd, device, binaries.get("vert"));
+    const auto fragModule             = createShaderModule(vkd, device, binaries.get("frag"));
+    const auto graphicsPipeline       = makeGraphicsPipeline(
+        vkd, device, *graphicsPipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
+        *renderPass, viewports, scissors, topology, 0u, 0u, nullptr, nullptr, nullptr, nullptr, nullptr, nullptr,
+        graphicsPipelineCreateInfoPNext, pipelineCreateFlags);
+
+    // Copy pipeline: get the framebuffer out to a storage texel buffer.
+    const auto vertCopyModule = createShaderModule(vkd, device, binaries.get("vert-copy"));
+    const auto fragCopyModule = createShaderModule(vkd, device, binaries.get("frag-copy"));
+    const auto copyStage      = VK_SHADER_STAGE_FRAGMENT_BIT;
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER);
+    const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, copyStage, &sampler.get());
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER, copyStage);
+    const auto copySetLayout = setLayoutBuilder.build(vkd, device);
+    const auto copySet       = makeDescriptorSet(vkd, device, *descriptorPool, *copySetLayout);
+
+    using Location = DescriptorSetUpdateBuilder::Location;
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto fbDescInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, *fbView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    setUpdateBuilder.writeSingle(*copySet, Location::binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                 &fbDescInfo);
+    setUpdateBuilder.writeSingle(*copySet, Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+                                 &texelBufferView.get());
+    setUpdateBuilder.update(vkd, device);
+
+    const VkPipelineVertexInputStateCreateInfo copyInputStateInfo = initVulkanStructure();
+
+    const VkRenderPassMultiviewCreateInfo copyRenderPassMultiviewInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO, nullptr, 1u, &viewMask, 0u, nullptr, 0u, nullptr,
+    };
+    const auto copyRenderPassPnext = (m_params->multiView ? &copyRenderPassMultiviewInfo : nullptr);
+
+    const auto copyPipelineLayout = makePipelineLayout(vkd, device, *copySetLayout);
+    const auto copyRenderPass =
+        makeRenderPass(vkd, device, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                       nullptr, copyRenderPassPnext);
+    const auto copyFramebuffer =
+        makeFramebuffer(vkd, device, *copyRenderPass, 0u, nullptr, fbVkExtent.width, fbVkExtent.height, 1u);
+    const auto copyPipeline = makeGraphicsPipeline(vkd, device, *copyPipelineLayout, *vertCopyModule, VK_NULL_HANDLE,
+                                                   VK_NULL_HANDLE, VK_NULL_HANDLE, *fragCopyModule, *copyRenderPass,
+                                                   viewports, scissors, topology, 0u, 0u, &copyInputStateInfo);
+
+    const tcu::Vec4 clearColorVec(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto clearColor =
+        makeClearValueColorF32(clearColorVec.x(), clearColorVec.y(), clearColorVec.z(), clearColorVec.w());
+
+    // Transform to Vulkan offsets.
+    std::vector<VkOffset2D> fdmVkOffsets;
+
+    std::transform(begin(fdmOffsets), end(fdmOffsets), std::back_inserter(fdmVkOffsets),
+                   [](const tcu::IVec2 &fdmOffset) { return makeOffset2D(fdmOffset.x(), fdmOffset.y()); });
+
+    const VkRenderPassBeginInfo rpBeginInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_BEGIN_INFO, nullptr, *renderPass, *framebuffer, scissors.at(0u), 1u, &clearColor,
+    };
+    const VkSubpassBeginInfo subpassBeginInfo = {
+        VK_STRUCTURE_TYPE_SUBPASS_BEGIN_INFO,
+        nullptr,
+        (useSecondary ? VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS : VK_SUBPASS_CONTENTS_INLINE),
+    };
+    const VkRenderPassFragmentDensityMapOffsetEndInfoEXT fdmOffsetEndInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT,
+        nullptr,
+        de::sizeU32(fdmVkOffsets),
+        de::dataOrNull(fdmVkOffsets),
+    };
+    VkSubpassEndInfo subpassEndInfo = {
+        VK_STRUCTURE_TYPE_SUBPASS_END_INFO,
+        nullptr,
+    };
+
+    const VkRenderingFragmentDensityMapAttachmentInfoEXT renderingFDMAttachmentInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT,
+        nullptr,
+        *fdmView,
+        VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,
+    };
+    const VkRenderingAttachmentInfo colorAttachmentInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+        nullptr,
+        *fbView,
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_RESOLVE_MODE_NONE,
+        VK_NULL_HANDLE,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+        VK_ATTACHMENT_LOAD_OP_CLEAR,
+        VK_ATTACHMENT_STORE_OP_STORE,
+        clearColor,
+    };
+    const auto renderingInfoFlags =
+        (needsIheritance ? static_cast<VkRenderingFlags>(VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT) : 0u);
+    VkRenderingInfo renderingInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_INFO,
+        &renderingFDMAttachmentInfo,
+        renderingInfoFlags,
+        scissors.at(0u),
+        1u,
+        viewMask,
+        1u,
+        &colorAttachmentInfo,
+        nullptr,
+        nullptr,
+    };
+    VkRenderingEndInfoEXT renderingEndInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_END_INFO_EXT,
+        nullptr,
+    };
+
+    // Closures to record render pass begin, contents and end on a given command buffer.
+    const auto recordBeginRenderPass = [&](VkCommandBuffer cmd, VkRenderingFlags renderingFlags)
+    {
+        if (isDynamicRendering)
+        {
+            if ((renderingFlags & VK_RENDERING_RESUMING_BIT) == 0)
+            {
+                // If we are resuming the render pass, we have already transitioned the layout.
+                const auto colorAttAccess =
+                    (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+                const auto preRenderingBarrier =
+                    makeImageMemoryBarrier(0u, colorAttAccess, VK_IMAGE_LAYOUT_UNDEFINED,
+                                           VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *fbImage, colorSRR);
+                cmdPipelineImageMemoryBarrier(vkd, cmd, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &preRenderingBarrier);
+            }
+            const auto prevFlags = renderingInfo.flags;
+            renderingInfo.flags |= renderingFlags;
+            vkd.cmdBeginRendering(cmd, &renderingInfo);
+            renderingInfo.flags = prevFlags;
+        }
+        else
+        {
+            DE_ASSERT((renderingFlags & (VK_RENDERING_SUSPENDING_BIT | VK_RENDERING_RESUMING_BIT)) == 0);
+            vkd.cmdBeginRenderPass2(cmd, &rpBeginInfo, &subpassBeginInfo);
+        }
+    };
+
+    const auto recordRenderPassContents = [&](VkCommandBuffer cmd, QuadPiece quadPiece)
+    {
+        vkd.cmdBindPipeline(cmd, bindPoint, *graphicsPipeline);
+        vkd.cmdBindVertexBuffers(cmd, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        const uint32_t vertexCount =
+            de::sizeU32(vertices) / ((quadPiece == QuadPiece::ALL) ? 1u : 2u); // Half if only one piece.
+        const uint32_t firstVertex = ((quadPiece == QuadPiece::SECOND) ? (de::sizeU32(vertices) / 2u) : 0u);
+        vkd.cmdDraw(cmd, vertexCount, 1u, firstVertex, 0u);
+    };
+
+    const auto recordEndRenderPass =
+        [&](VkCommandBuffer cmd, const VkRenderPassFragmentDensityMapOffsetEndInfoEXT *fdmEnd)
+    {
+        if (isDynamicRendering)
+        {
+            if (fdmEnd == nullptr)
+                vkd.cmdEndRendering(cmd);
+            else
+            {
+                renderingEndInfo.pNext = fdmEnd;
+                vkd.cmdEndRendering2EXT(cmd, &renderingEndInfo);
+            }
+        }
+        else
+        {
+            subpassEndInfo.pNext = fdmEnd;
+            vkd.cmdEndRenderPass2(cmd, &subpassEndInfo);
+        }
+    };
+
+    TexLevelsVec results;
+
+    for (const auto forceNoOffset : m_params->iterations)
+    {
+        // Main command buffer.
+        CommandPoolWithBuffer cmd(vkd, device, qfIndex);
+        const auto primary = *cmd.cmdBuffer;
+
+        // Secondaries: we may need none, one or two, depending on the usage of secondaries and suspend/resume.
+        std::vector<Move<VkCommandBuffer>> secondaries;
+
+        if (useSecondary)
+        {
+            const uint32_t cmdBufferCount = (multipleSecondaries ? 2u : 1u);
+
+            for (uint32_t i = 0u; i < cmdBufferCount; ++i)
+            {
+                VkRenderingFlags inhRenderingFlags = 0u;
+                if (multipleSecondaries)
+                    inhRenderingFlags |= ((i == 0) ? VK_RENDERING_SUSPENDING_BIT : VK_RENDERING_RESUMING_BIT);
+
+                const VkCommandBufferInheritanceRenderingInfo inhRenderingInfo = {
+                    VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO,
+                    nullptr,
+                    inhRenderingFlags,
+                    viewMask,
+                    1u,
+                    &fbFormat,
+                    VK_FORMAT_UNDEFINED,
+                    VK_FORMAT_UNDEFINED,
+                    fbImageInfo.samples,
+                };
+                const auto inhPNext = ((isDynamicRendering && needsIheritance) ? &inhRenderingInfo : nullptr);
+                VkCommandBufferUsageFlags beginFlags = VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT;
+                if (needsIheritance)
+                    beginFlags |= VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT;
+
+                secondaries.emplace_back(
+                    allocateCommandBuffer(vkd, device, *cmd.cmdPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY));
+                auto &secondary = secondaries.back();
+
+                beginSecondaryCommandBuffer(vkd, *secondary, *renderPass, *framebuffer, beginFlags, inhPNext);
+                if (allInSecondary)
+                {
+                    DE_ASSERT(!multipleSecondaries);
+                    if (m_params->resumeRendering)
+                    {
+                        recordBeginRenderPass(*secondary, VK_RENDERING_SUSPENDING_BIT);
+                        recordRenderPassContents(*secondary, QuadPiece::FIRST);
+                        recordEndRenderPass(*secondary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+                        recordBeginRenderPass(*secondary, VK_RENDERING_RESUMING_BIT);
+                        recordRenderPassContents(*secondary, QuadPiece::SECOND);
+                        recordEndRenderPass(*secondary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+                    }
+                    else
+                    {
+                        recordBeginRenderPass(*secondary, 0u);
+                        recordRenderPassContents(*secondary, QuadPiece::ALL);
+                        recordEndRenderPass(*secondary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+                    }
+                }
+                else
+                {
+                    if (m_params->resumeRendering)
+                    {
+                        DE_ASSERT(multipleSecondaries);
+                        recordRenderPassContents(*secondary, ((i == 0) ? QuadPiece::FIRST : QuadPiece::SECOND));
+                    }
+                    else
+                        recordRenderPassContents(*secondary, QuadPiece::ALL);
+                }
+                endCommandBuffer(vkd, *secondary);
+            }
+        }
+
+        beginCommandBuffer(vkd, primary);
+
+        if (useSecondary)
+        {
+            if (allInSecondary)
+            {
+                DE_ASSERT(secondaries.size() == 1);
+                vkd.cmdExecuteCommands(primary, 1u, &secondaries.front().get());
+            }
+            else
+            {
+                if (multipleSecondaries)
+                {
+                    DE_ASSERT(secondaries.size() == 2);
+
+                    recordBeginRenderPass(primary, VK_RENDERING_SUSPENDING_BIT);
+                    vkd.cmdExecuteCommands(primary, 1u, &secondaries.front().get());
+                    recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+                    recordBeginRenderPass(primary, VK_RENDERING_RESUMING_BIT);
+                    vkd.cmdExecuteCommands(primary, 1u, &secondaries.back().get());
+                    recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+                }
+                else
+                {
+                    DE_ASSERT(secondaries.size() == 1);
+                    recordBeginRenderPass(primary, 0u);
+                    vkd.cmdExecuteCommands(primary, 1u, &secondaries.front().get());
+                    recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+                }
+            }
+        }
+        else
+        {
+            if (m_params->resumeRendering)
+            {
+                recordBeginRenderPass(primary, VK_RENDERING_SUSPENDING_BIT);
+                recordRenderPassContents(primary, QuadPiece::FIRST);
+                recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+                recordBeginRenderPass(primary, VK_RENDERING_RESUMING_BIT);
+                recordRenderPassContents(primary, QuadPiece::SECOND);
+                recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+            }
+            else
+            {
+                recordBeginRenderPass(primary, 0u);
+                recordRenderPassContents(primary, QuadPiece::ALL);
+                recordEndRenderPass(primary, (forceNoOffset ? nullptr : &fdmOffsetEndInfo));
+            }
+        }
+
+        {
+            // Sync color buffer writes with shader reads and change layout.
+            const auto fbBarrier = makeImageMemoryBarrier(
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT,
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *fbImage, colorSRR);
+            cmdPipelineImageMemoryBarrier(vkd, primary, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &fbBarrier);
+        }
+        beginRenderPass(vkd, primary, *copyRenderPass, *copyFramebuffer, scissors.at(0u));
+        vkd.cmdBindPipeline(primary, bindPoint, *copyPipeline);
+        vkd.cmdBindDescriptorSets(primary, bindPoint, *copyPipelineLayout, 0u, 1u, &copySet.get(), 0u, nullptr);
+        vkd.cmdDraw(primary, 3u, 1u, 0u, 0u); // Single full-screen triangle. See vertex-copy shader.
+        endRenderPass(vkd, primary);
+        {
+            // Sync texel buffer writes with host reads.
+            const auto hostBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+            cmdPipelineMemoryBarrier(vkd, primary, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                     &hostBarrier);
+        }
+        endCommandBuffer(vkd, primary);
+        submitCommandsAndWait(vkd, device, queue, primary);
+
+        invalidateAlloc(vkd, device, texelBuffer.getAllocation());
+        tcu::ConstPixelBufferAccess result(fbTcuFormat, resultExtent, texelBuffer.getAllocation().getHostPtr());
+
+        results.emplace_back(
+            new tcu::TextureLevel(result.getFormat(), result.getWidth(), result.getHeight(), result.getDepth()));
+        tcu::copy(results.back()->getAccess(), result);
+    }
+
+    TexLevelsVec references;
+    prepareReferences(references, results, quadInfo, fdmOffsets);
+
+    auto &log = m_context.getTestContext().getLog();
+    checkResults(log, references, results, fdmOffsets);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+FDMOffsetBaseInstance::QuadInfo FDMOffsetBaseInstance::getQuadInfo(const tcu::IVec3 &, const tcu::IVec3 &) const
+{
+    float xBegin = -1.0f;
+    float xEnd   = 1.0f;
+    float yBegin = -1.0f;
+    float yEnd   = 1.0f;
+
+    return QuadInfo{xBegin, xEnd, yBegin, yEnd};
+}
+
+struct FDMOffsetOversizedFDMParams : public FDMOffsetBaseParams
+{
+    bool extraLarge;
+
+    FDMOffsetOversizedFDMParams(const SharedGroupParams groupParams, OffsetType horizontalOffset_,
+                                OffsetType verticalOffset_, bool multiView_, bool resumeRendering_, bool extraLarge_)
+        : FDMOffsetBaseParams(groupParams, horizontalOffset_, verticalOffset_, multiView_, resumeRendering_)
+        , extraLarge(extraLarge_)
+    {
+    }
+
+    // The FDM buffer will be twice as much in the interesting dimension (horizontally or vertically).
+    int fdmSizeFactor(OffsetType offsetType) const
+    {
+        switch (offsetType)
+        {
+        case OffsetType::NONE:
+            return 1;
+        case OffsetType::POSITIVE: // fallthrough.
+        case OffsetType::NEGATIVE:
+            return (extraLarge ? 4 : 2);
+        default:
+            break;
+        }
+
+        DE_ASSERT(false);
+        return std::numeric_limits<int>::max();
+    }
+
+    tcu::IVec3 getFragmentDensityMapExtent(
+        const VkPhysicalDeviceFragmentDensityMapPropertiesEXT &properties) const override
+    {
+        const auto minTexelSize = getMinTexelSize(properties);
+        const auto fbExtent     = getFramebufferExtent();
+        const auto factor       = tcu::IVec3(fdmSizeFactor(horizontalOffset), fdmSizeFactor(verticalOffset), 1);
+        return fbExtent / minTexelSize * factor;
+    }
+
+    // How many times the framebuffer extent to offset by.
+    tcu::IVec3 getOffsetFactor() const
+    {
+        const auto baseFactor = (extraLarge ? 3 : 1);
+        const auto factor = tcu::IVec3(getSign(horizontalOffset) * baseFactor, getSign(verticalOffset) * baseFactor, 1);
+        return factor;
+    }
+
+    std::vector<tcu::IVec2> getOffsets(const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT *) const override
+    {
+        const auto fbExtent   = getFramebufferExtent();
+        const auto factor     = getOffsetFactor();
+        const auto realOffset = (fbExtent * factor).swizzle(0, 1);
+
+        std::vector<tcu::IVec2> offsets;
+        if (multiView)
+            offsets.emplace_back(0, 0);
+        offsets.push_back(realOffset);
+        return offsets;
+    }
+};
+
+class FDMOffsetOversizedFDMInstance : public FDMOffsetBaseInstance
+{
+public:
+    FDMOffsetOversizedFDMInstance(Context &context, FDMOffsetParamsPtr params) : FDMOffsetBaseInstance(context, params)
+    {
+    }
+    virtual ~FDMOffsetOversizedFDMInstance(void) = default;
+
+protected:
+    void prepareFDMAccess(tcu::PixelBufferAccess &fdmAccess, const std::vector<tcu::IVec2> &fdmOffsets) const override;
+    void prepareReferences(TexLevelsVec &references, const TexLevelsVec &results, const QuadInfo &quadInfo,
+                           const std::vector<tcu::IVec2> &fdmOffsets) const override;
+    void checkResults(tcu::TestLog &log, const TexLevelsVec &references, const TexLevelsVec &results,
+                      const std::vector<tcu::IVec2> &fdmOffsets) const override;
+};
+
+void FDMOffsetOversizedFDMInstance::prepareFDMAccess(tcu::PixelBufferAccess &fdmAccess,
+                                                     const std::vector<tcu::IVec2> &fdmOffsets) const
+{
+    const tcu::IVec2 zeroOffset(0, 0);
+
+    const auto fdmFormat = mapTextureFormat(fdmAccess.getFormat());
+    const auto fdmExtent = fdmAccess.getSize();
+
+    // 3 times the minimum to make sure we give the implementation ample room for choosing an area larger than 1.
+    const auto highDensity = tcu::Vec2(1.0f, 1.0f);
+    const auto lowDensity  = 3.0f * getFormatDelta(fdmFormat);
+
+    const tcu::Vec4 highDensityColor(highDensity.x(), highDensity.y(), 0.0f, 0.0f);
+    const tcu::Vec4 lowDensityColor(lowDensity.x(), lowDensity.y(), 0.0f, 0.0f);
+
+    // If the offset is zero, we'll clear to 1x1 on the left/top side, and 2x2 (or larger) on the right/bottom side.
+    // If the offset is nonzero, the values are reversed to make sure we sample from the right/bottom side.
+    // If the offset type is negative, values are reversed.
+
+    const auto osfdmParams = static_cast<const FDMOffsetOversizedFDMParams *>(m_params.get());
+    DE_ASSERT(!!osfdmParams);
+    const auto dimDivisor = (osfdmParams->extraLarge ? 4 : 2);
+
+    for (int layer = 0; layer < fdmExtent.z(); ++layer)
+    {
+        const bool isZeroOffset = (fdmOffsets.at(layer) == zeroOffset);
+
+        if (m_params->horizontalOffset != OffsetType::NONE)
+        {
+            const int sideWidth  = fdmExtent.x() / dimDivisor;
+            const int sideHeight = fdmExtent.y();
+
+            const auto left = tcu::getSubregion(fdmAccess, 0, 0, layer, fdmExtent.x() - sideWidth, sideHeight, 1);
+            const auto right =
+                tcu::getSubregion(fdmAccess, fdmExtent.x() - sideWidth, 0, layer, sideWidth, sideHeight, 1);
+
+            const bool isNegative = (m_params->horizontalOffset == OffsetType::NEGATIVE);
+            const bool leftLow    = (isNegative && !isZeroOffset);
+            tcu::clear(left, (leftLow ? lowDensityColor : highDensityColor));
+            tcu::clear(right, (leftLow ? highDensityColor : lowDensityColor));
+        }
+        else if (m_params->verticalOffset != OffsetType::NONE)
+        {
+            const int sideWidth  = fdmExtent.x();
+            const int sideHeight = fdmExtent.y() / dimDivisor;
+
+            const auto top = tcu::getSubregion(fdmAccess, 0, 0, layer, sideWidth, fdmExtent.y() - sideHeight, 1);
+            const auto bottom =
+                tcu::getSubregion(fdmAccess, 0, fdmExtent.y() - sideHeight, layer, sideWidth, sideHeight, 1);
+
+            const bool isNegative = (m_params->verticalOffset == OffsetType::NEGATIVE);
+            const bool topLow     = (isNegative && !isZeroOffset);
+            tcu::clear(top, (topLow ? lowDensityColor : highDensityColor));
+            tcu::clear(bottom, (topLow ? highDensityColor : lowDensityColor));
+        }
+        else
+            DE_ASSERT(false);
+    }
+}
+
+void FDMOffsetOversizedFDMInstance::prepareReferences(TexLevelsVec &references, const TexLevelsVec &results,
+                                                      const QuadInfo &, const std::vector<tcu::IVec2> &) const
+{
+    DE_ASSERT(results.size() == 1);
+    const auto &res         = *results.front();
+    const auto resultFormat = res.getFormat();
+    const auto resultExtent = res.getSize();
+
+    references.clear();
+    references.emplace_back(new tcu::TextureLevel(resultFormat, resultExtent.x(), resultExtent.y(), resultExtent.z()));
+    tcu::clear(references.back()->getAccess(), m_params->getHighResColor());
+}
+
+void FDMOffsetOversizedFDMInstance::checkResults(tcu::TestLog &log, const TexLevelsVec &references,
+                                                 const TexLevelsVec &results,
+                                                 const std::vector<tcu::IVec2> &fdmOffsets) const
+{
+    const auto logPolicy = tcu::COMPARE_LOG_ON_ERROR;
+
+    DE_ASSERT(results.size() == 1 && results.front() != nullptr);
+    DE_ASSERT(references.size() == 1 && references.front() != nullptr);
+    const auto result    = results.front()->getAccess();
+    const auto reference = references.front()->getAccess();
+    DE_ASSERT(result.getSize() == reference.getSize());
+
+    bool ok = true;
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto extent = reference.getSize();
+    const tcu::IVec2 zeroOffset(0, 0);
+
+    for (int layer = 0; layer < extent.z(); ++layer)
+    {
+        bool layerOK            = true;
+        const bool isZeroOffset = (fdmOffsets.at(layer) == zeroOffset);
+        const auto namePrefix   = "Layer" + std::to_string(layer) + "-";
+
+        // We will only check half the image.
+        if (m_params->horizontalOffset != OffsetType::NONE)
+        {
+            const int sideWidth  = extent.x() / 2;
+            const int sideHeight = extent.y();
+
+            const auto refLeft  = tcu::getSubregion(reference, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto refRight = tcu::getSubregion(reference, sideWidth, 0, layer, sideWidth, sideHeight, 1);
+
+            const auto resLeft  = tcu::getSubregion(result, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto resRight = tcu::getSubregion(result, sideWidth, 0, layer, sideWidth, sideHeight, 1);
+
+            if (m_params->horizontalOffset == OffsetType::NEGATIVE && !isZeroOffset)
+            {
+                const auto name = namePrefix + "RightSide";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refRight, resRight, threshold, logPolicy);
+            }
+            else if (m_params->horizontalOffset == OffsetType::POSITIVE || isZeroOffset)
+            {
+                const auto name = namePrefix + "LeftSide";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refLeft, resLeft, threshold, logPolicy);
+            }
+            else
+                DE_ASSERT(false);
+        }
+        else if (m_params->verticalOffset != OffsetType::NONE)
+        {
+            const int sideWidth  = extent.x();
+            const int sideHeight = extent.y() / 2;
+
+            const auto refTop    = tcu::getSubregion(reference, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto refBottom = tcu::getSubregion(reference, 0, sideHeight, layer, sideWidth, sideHeight, 1);
+
+            const auto resTop    = tcu::getSubregion(result, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto resBottom = tcu::getSubregion(result, 0, sideHeight, layer, sideWidth, sideHeight, 1);
+
+            if (m_params->verticalOffset == OffsetType::NEGATIVE && !isZeroOffset)
+            {
+                const auto name = namePrefix + "BottomHalf";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refBottom, resBottom, threshold, logPolicy);
+            }
+            else if (m_params->verticalOffset == OffsetType::POSITIVE || isZeroOffset)
+            {
+                const auto name = namePrefix + "TopHalf";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refTop, resTop, threshold, logPolicy);
+            }
+            else
+                DE_ASSERT(false);
+        }
+        else
+            DE_ASSERT(false);
+
+        if (!layerOK)
+            ok = false;
+    }
+
+    if (!ok)
+        TCU_FAIL("Unexpected result in color buffer; check log for details --");
+}
+
+class FDMOffsetOversizedFDMCase : public FDMOffsetBaseCase
+{
+public:
+    FDMOffsetOversizedFDMCase(tcu::TestContext &testCtx, const std::string &name, FDMOffsetParamsPtr params)
+        : FDMOffsetBaseCase(testCtx, name, params)
+    {
+    }
+    virtual ~FDMOffsetOversizedFDMCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new FDMOffsetOversizedFDMInstance(context, m_params);
+    }
+};
+
+struct FDMOffsetMinShiftParams : public FDMOffsetBaseParams
+{
+    FDMOffsetMinShiftParams(const SharedGroupParams groupParams, OffsetType horizontalOffset_,
+                            OffsetType verticalOffset_, bool multiView_, bool resumeRendering_)
+        : FDMOffsetBaseParams(groupParams, horizontalOffset_, verticalOffset_, multiView_, resumeRendering_)
+    {
+        // Two iterations in this case, with the first one not using offsets.
+        iterations.at(0u) = true;
+        iterations.emplace_back(false);
+    }
+
+    std::vector<tcu::IVec2> getOffsets(
+        const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT *properties) const override
+    {
+        std::vector<tcu::IVec2> offsets;
+
+        // Early return with no offsets. This is used in checkSupport because checkSupport makes sure the selected
+        // offsets are a multiple of the granularity. However, in this case what we do is precisely to use offsets that
+        // are multiples of the granularity at runtime, so we skip the support checks and build an offset vector that is
+        // supported by design at runtime.
+        if (!properties)
+            return offsets;
+
+        // Shift by the minimum amount by granularity.
+        const tcu::UVec2 propertiesOffset(properties->fragmentDensityOffsetGranularity.width,
+                                          properties->fragmentDensityOffsetGranularity.height);
+        const tcu::IVec2 baseOffset = propertiesOffset.asInt();
+        const tcu::IVec2 signs(getSign(horizontalOffset), getSign(verticalOffset));
+        const tcu::IVec2 realOffset = baseOffset * signs;
+
+        if (multiView)
+            offsets.emplace_back(0, 0);
+        offsets.push_back(realOffset);
+        return offsets;
+    }
+};
+
+class FDMOffsetMinShiftInstance : public FDMOffsetBaseInstance
+{
+public:
+    FDMOffsetMinShiftInstance(Context &context, FDMOffsetParamsPtr params) : FDMOffsetBaseInstance(context, params)
+    {
+    }
+    virtual ~FDMOffsetMinShiftInstance(void) = default;
+
+protected:
+    void prepareFDMAccess(tcu::PixelBufferAccess &fdmAccess, const std::vector<tcu::IVec2> &fdmOffsets) const override;
+    void prepareReferences(TexLevelsVec &references, const TexLevelsVec &results, const QuadInfo &quadInfo,
+                           const std::vector<tcu::IVec2> &fdmOffsets) const override;
+    void checkResults(tcu::TestLog &log, const TexLevelsVec &references, const TexLevelsVec &results,
+                      const std::vector<tcu::IVec2> &fdmOffsets) const override;
+};
+
+void FDMOffsetMinShiftInstance::prepareFDMAccess(tcu::PixelBufferAccess &fdmAccess,
+                                                 const std::vector<tcu::IVec2> &) const
+{
+    const auto fdmFormat = mapTextureFormat(fdmAccess.getFormat());
+    const auto fdmExtent = fdmAccess.getSize();
+
+    // 3 times the minimum to make sure we give the implementation ample room for choosing an area larger than 1.
+    const auto highDensity = tcu::Vec2(1.0f, 1.0f);
+    const auto lowDensity  = 3.0f * getFormatDelta(fdmFormat);
+
+    const tcu::Vec4 highDensityColor(highDensity.x(), highDensity.y(), 0.0f, 0.0f);
+    const tcu::Vec4 lowDensityColor(lowDensity.x(), lowDensity.y(), 0.0f, 0.0f);
+
+    // All layers in the FDM attachment will have the same contents: left/right or top/bottom split, with left/top low
+    // density and right/bottom high density. For negative offsets, the density values change.
+    for (int layer = 0; layer < fdmExtent.z(); ++layer)
+    {
+        if (m_params->horizontalOffset != OffsetType::NONE)
+        {
+            const bool isNegative = (m_params->horizontalOffset == OffsetType::NEGATIVE);
+
+            const int sideWidth  = fdmExtent.x() / 2;
+            const int sideHeight = fdmExtent.y();
+
+            const auto left  = tcu::getSubregion(fdmAccess, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto right = tcu::getSubregion(fdmAccess, sideWidth, 0, layer, sideWidth, sideHeight, 1);
+
+            tcu::clear(left, (isNegative ? lowDensityColor : highDensityColor));
+            tcu::clear(right, (isNegative ? highDensityColor : lowDensityColor));
+        }
+        else if (m_params->verticalOffset != OffsetType::NONE)
+        {
+            const bool isNegative = (m_params->verticalOffset == OffsetType::NEGATIVE);
+
+            const int sideWidth  = fdmExtent.x();
+            const int sideHeight = fdmExtent.y() / 2;
+
+            const auto top    = tcu::getSubregion(fdmAccess, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto bottom = tcu::getSubregion(fdmAccess, 0, sideHeight, layer, sideWidth, sideHeight, 1);
+
+            tcu::clear(top, (isNegative ? lowDensityColor : highDensityColor));
+            tcu::clear(bottom, (isNegative ? highDensityColor : lowDensityColor));
+        }
+        else
+            DE_ASSERT(false);
+    }
+}
+
+void FDMOffsetMinShiftInstance::prepareReferences(TexLevelsVec &references, const TexLevelsVec &results,
+                                                  const QuadInfo &, const std::vector<tcu::IVec2> &fdmOffsets) const
+{
+    // In this case, we will compare results of different iterations among themselves, so the refernces vector is empty.
+    references.clear();
+
+    // To avoid a quality warning, the implementation should shift the framebuffer exactly by the specified offset in
+    // the second iteration.
+    DE_ASSERT(results.size() == m_params->iterations.size());
+    DE_ASSERT(results.size() == 2);
+    const auto &firstResult = *results.front();
+    const auto extent       = firstResult.getSize();
+
+    // The first reference image is not used, but we'll create a copy of the result for the first iteration.
+    {
+        references.emplace_back(new tcu::TextureLevel(firstResult.getFormat(), extent.x(), extent.y(), extent.z()));
+        tcu::copy(references.back()->getAccess(), firstResult.getAccess());
+    }
+
+    // The second reference will be a shift of the first result by the exact amount of pixels in the offsets.
+    {
+        DE_ASSERT(static_cast<size_t>(extent.z()) == fdmOffsets.size());
+        const tcu::IVec2 noOffset(0, 0);
+        const auto hdColor = m_params->getHighResColor();
+
+        references.emplace_back(new tcu::TextureLevel(firstResult.getFormat(), extent.x(), extent.y(), extent.z()));
+        auto ref = references.back()->getAccess();
+
+        for (int z = 0; z < extent.z(); ++z)
+        {
+            const auto &fdmOffset = fdmOffsets.at(z);
+
+            // Copy layer without changes.
+            auto dstLayer = tcu::getSubregion(ref, 0, 0, z, extent.x(), extent.y(), 1);
+            auto srcLayer = tcu::getSubregion(firstResult.getAccess(), 0, 0, z, extent.x(), extent.y(), 1);
+            tcu::copy(dstLayer, srcLayer);
+
+            if (fdmOffset == noOffset)
+                continue;
+
+            DE_ASSERT(fdmOffset.x() == 0 || fdmOffset.y() == 0);
+
+            int firstHD;
+            int areaStart;
+            int areaEnd;
+
+            if (fdmOffset.x() != 0)
+            {
+                if (fdmOffset.x() < 0)
+                {
+                    for (firstHD = 0; firstHD < extent.x(); ++firstHD)
+                    {
+                        const auto color = dstLayer.getPixel(firstHD, 0);
+                        if (color == hdColor)
+                            break;
+                    }
+
+                    areaEnd   = firstHD;
+                    areaStart = de::clamp(areaEnd + fdmOffset.x(), 0, extent.x() - 1);
+
+                    if (areaStart != areaEnd)
+                    {
+                        const auto region =
+                            tcu::getSubregion(dstLayer, areaStart, 0, (areaEnd - areaStart), extent.y());
+                        tcu::clear(region, hdColor);
+                    }
+                }
+                else
+                {
+                    for (firstHD = extent.x() - 1; firstHD >= 0; --firstHD)
+                    {
+                        const auto color = dstLayer.getPixel(firstHD, 0);
+                        if (color == hdColor)
+                            break;
+                    }
+
+                    areaStart = de::clamp(firstHD + 1, 0, extent.x() - 1);
+                    areaEnd   = de::clamp(areaStart + fdmOffset.x(), 0, extent.x() - 1);
+
+                    if (areaStart != areaEnd)
+                    {
+                        const auto region =
+                            tcu::getSubregion(dstLayer, areaStart, 0, (areaEnd - areaStart), extent.y());
+                        tcu::clear(region, hdColor);
+                    }
+                }
+            }
+            else
+            {
+                if (fdmOffset.y() < 0)
+                {
+                    for (firstHD = 0; firstHD < extent.y(); ++firstHD)
+                    {
+                        const auto color = dstLayer.getPixel(0, firstHD);
+                        if (color == hdColor)
+                            break;
+                    }
+
+                    areaEnd   = firstHD;
+                    areaStart = de::clamp(areaEnd + fdmOffset.y(), 0, extent.y() - 1);
+
+                    if (areaStart != areaEnd)
+                    {
+                        const auto region =
+                            tcu::getSubregion(dstLayer, 0, areaStart, extent.x(), (areaEnd - areaStart));
+                        tcu::clear(region, hdColor);
+                    }
+                }
+                else
+                {
+                    for (firstHD = extent.y() - 1; firstHD >= 0; --firstHD)
+                    {
+                        const auto color = dstLayer.getPixel(0, firstHD);
+                        if (color == hdColor)
+                            break;
+                    }
+
+                    areaStart = de::clamp(firstHD + 1, 0, extent.y() - 1);
+                    areaEnd   = de::clamp(areaStart + fdmOffset.y(), 0, extent.y() - 1);
+
+                    if (areaStart != areaEnd)
+                    {
+                        const auto region =
+                            tcu::getSubregion(dstLayer, 0, areaStart, extent.x(), (areaEnd - areaStart));
+                        tcu::clear(region, hdColor);
+                    }
+                }
+            }
+        }
+    }
+}
+
+void FDMOffsetMinShiftInstance::checkResults(tcu::TestLog &log, const TexLevelsVec &references,
+                                             const TexLevelsVec &results,
+                                             const std::vector<tcu::IVec2> &fdmOffsets) const
+{
+    const auto logPolicy = tcu::COMPARE_LOG_ON_ERROR;
+
+    DE_ASSERT(results.size() == references.size());
+    DE_ASSERT(results.size() == m_params->iterations.size());
+    DE_ASSERT(results.size() == 2);
+
+    const auto &firstResult     = results.front()->getAccess();
+    const auto &secondResult    = results.back()->getAccess();
+    const auto &secondReference = references.back()->getAccess();
+
+    DE_ASSERT(firstResult.getSize() == secondResult.getSize());
+    DE_ASSERT(firstResult.getSize() == secondReference.getSize());
+
+    const auto extent = firstResult.getSize();
+
+    const tcu::TextureFormat errorFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
+    tcu::TextureLevel errorLevel(errorFormat, extent.x(), extent.y(), 1);
+    auto errorMask = errorLevel.getAccess();
+
+    const auto red        = tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f);
+    const auto green      = tcu::Vec4(0.0f, 1.0f, 0.0f, 1.0f);
+    const auto hdColor    = m_params->getHighResColor();
+    const auto zeroOffset = tcu::IVec2(0, 0);
+    const auto threshold  = tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f);
+
+    bool ok             = true;
+    bool qualityWarning = false;
+
+    for (int layer = 0; layer < extent.z(); ++layer)
+    {
+        const auto setName = "Layer" + std::to_string(layer);
+
+        // Try to check exact match first.
+        bool exactMatch = false;
+        {
+            const auto resLayer = tcu::getSubregion(secondResult, 0, 0, layer, extent.x(), extent.y(), 1);
+            const auto refLayer = tcu::getSubregion(secondReference, 0, 0, layer, extent.x(), extent.y(), 1);
+
+            const auto loggedName = setName + "-ExactMatch";
+            if (tcu::floatThresholdCompare(log, loggedName.c_str(), "", refLayer, resLayer, threshold, logPolicy))
+                exactMatch = true;
+        }
+        if (exactMatch)
+            continue;
+
+        bool layerOK = true;
+        tcu::clear(errorMask, green);
+
+        // If we don't have an exact match, we'll return a quality warning.
+        qualityWarning = true;
+
+        const bool isZeroOffset = (fdmOffsets.at(layer) == zeroOffset);
+
+        // Check all pixels with high density in the first iteration continue to have high density in the second one.
+        for (int y = 0; y < extent.y(); ++y)
+            for (int x = 0; x < extent.x(); ++x)
+            {
+                const auto color = firstResult.getPixel(x, y, layer);
+                const auto other = secondResult.getPixel(x, y, layer);
+
+                // For layers with zero offset, verify the first and second pass matches.
+                // For layers with non-zero offset, verify all pixels with high density continue to have it.
+                if ((isZeroOffset && color != other) || (!isZeroOffset && color == hdColor && other != hdColor))
+                {
+                    errorMask.setPixel(red, x, y);
+                    layerOK = false;
+                }
+            }
+
+        if (!layerOK)
+            ok = false;
+
+        if (!layerOK || logPolicy == tcu::COMPARE_LOG_EVERYTHING)
+        {
+            const auto layerFirst =
+                tcu::getSubregion(firstResult, 0, 0, layer, firstResult.getWidth(), firstResult.getHeight(), 1);
+            const auto layerSecond =
+                tcu::getSubregion(secondResult, 0, 0, layer, secondResult.getWidth(), secondResult.getHeight(), 1);
+
+            log << tcu::TestLog::ImageSet(setName, "") << tcu::TestLog::Image("FirstResult", setName, layerFirst)
+                << tcu::TestLog::Image("SecondResult", setName, layerSecond)
+                << tcu::TestLog::Image("ErrorMask", setName, errorMask) << tcu::TestLog::EndImageSet;
+        }
+    }
+
+    if (!ok)
+        TCU_FAIL("Unexpected result in color buffer; check log for details --");
+
+    if (qualityWarning)
+        TCU_THROW(QualityWarning, "Offset not applied exactly; check log for details --");
+}
+
+class FDMOffsetMinShiftCase : public FDMOffsetBaseCase
+{
+public:
+    FDMOffsetMinShiftCase(tcu::TestContext &testCtx, const std::string &name, FDMOffsetParamsPtr params)
+        : FDMOffsetBaseCase(testCtx, name, params)
+    {
+    }
+    virtual ~FDMOffsetMinShiftCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new FDMOffsetMinShiftInstance(context, m_params);
+    }
+};
+
+struct FDMOffsetClampToEdgeParams : public FDMOffsetBaseParams
+{
+    FDMOffsetClampToEdgeParams(const SharedGroupParams groupParams, OffsetType horizontalOffset_,
+                               OffsetType verticalOffset_, bool multiView_, bool resumeRendering_)
+        : FDMOffsetBaseParams(groupParams, horizontalOffset_, verticalOffset_, multiView_, resumeRendering_)
+    {
+    }
+
+    virtual ~FDMOffsetClampToEdgeParams() = default;
+
+    std::vector<tcu::IVec2> getOffsets(const VkPhysicalDeviceFragmentDensityMapOffsetPropertiesEXT *) const override
+    {
+        const auto fbExtent   = getFramebufferExtent();
+        const auto factor     = tcu::IVec3(getSign(horizontalOffset), getSign(verticalOffset), 1);
+        const auto realOffset = (fbExtent * factor).swizzle(0, 1);
+
+        std::vector<tcu::IVec2> offsets;
+        if (multiView)
+            offsets.emplace_back(0, 0);
+        offsets.push_back(realOffset);
+        return offsets;
+    }
+};
+
+class FDMOffsetClampToEdgeInstance : public FDMOffsetBaseInstance
+{
+public:
+    FDMOffsetClampToEdgeInstance(Context &context, FDMOffsetParamsPtr params) : FDMOffsetBaseInstance(context, params)
+    {
+    }
+    virtual ~FDMOffsetClampToEdgeInstance() = default;
+
+protected:
+    void prepareFDMAccess(tcu::PixelBufferAccess &fdmAccess, const std::vector<tcu::IVec2> &fdmOffsets) const override;
+    void prepareReferences(TexLevelsVec &references, const TexLevelsVec &results, const QuadInfo &quadInfo,
+                           const std::vector<tcu::IVec2> &fdmOffsets) const override;
+    void checkResults(tcu::TestLog &log, const TexLevelsVec &references, const TexLevelsVec &results,
+                      const std::vector<tcu::IVec2> &fdmOffsets) const override;
+};
+
+void FDMOffsetClampToEdgeInstance::prepareFDMAccess(tcu::PixelBufferAccess &fdmAccess,
+                                                    const std::vector<tcu::IVec2> &fdmOffsets) const
+{
+    // Layers with zero offset will have the full FDM filled with high density, while the layers with nonzero offsets
+    // will have one of the edges filled with high density values and the rest with low density values.
+    const tcu::IVec2 zeroOffset(0, 0);
+
+    const auto fdmFormat = mapTextureFormat(fdmAccess.getFormat());
+    const auto fdmExtent = fdmAccess.getSize();
+
+    // 3 times the minimum to make sure we give the implementation ample room for choosing an area larger than 1.
+    const auto highDensity = tcu::Vec2(1.0f, 1.0f);
+    const auto lowDensity  = 3.0f * getFormatDelta(fdmFormat);
+
+    const tcu::Vec4 highDensityColor(highDensity.x(), highDensity.y(), 0.0f, 0.0f);
+    const tcu::Vec4 lowDensityColor(lowDensity.x(), lowDensity.y(), 0.0f, 0.0f);
+
+    for (int layer = 0; layer < fdmExtent.z(); ++layer)
+    {
+        const auto fdmOffset    = fdmOffsets.at(layer);
+        const bool isZeroOffset = (fdmOffset == zeroOffset);
+        const auto layerAccess  = tcu::getSubregion(fdmAccess, 0, 0, layer, fdmExtent.x(), fdmExtent.y(), 1);
+
+        if (isZeroOffset)
+        {
+            tcu::clear(layerAccess, highDensityColor);
+        }
+        else
+        {
+            tcu::clear(layerAccess, lowDensityColor);
+            if (fdmOffset.x() < 0)
+            {
+                const auto border = tcu::getSubregion(fdmAccess, fdmExtent.x() - 1, 0, layer, 1, fdmExtent.y(), 1);
+                tcu::clear(border, highDensityColor);
+            }
+            else if (fdmOffset.x() > 0)
+            {
+                const auto border = tcu::getSubregion(fdmAccess, 0, 0, layer, 1, fdmExtent.y(), 1);
+                tcu::clear(border, highDensityColor);
+            }
+            else if (fdmOffset.y() < 0)
+            {
+                const auto border = tcu::getSubregion(fdmAccess, 0, fdmExtent.y() - 1, layer, fdmExtent.x(), 1, 1);
+                tcu::clear(border, highDensityColor);
+            }
+            else if (fdmOffset.y() > 0)
+            {
+                const auto border = tcu::getSubregion(fdmAccess, 0, 0, layer, fdmExtent.x(), 1, 1);
+                tcu::clear(border, highDensityColor);
+            }
+        }
+    }
+}
+
+void FDMOffsetClampToEdgeInstance::prepareReferences(TexLevelsVec &references, const TexLevelsVec &results,
+                                                     const QuadInfo &, const std::vector<tcu::IVec2> &) const
+{
+    DE_ASSERT(results.size() == 1);
+    const auto firstResult = *results.front();
+
+    references.clear();
+    references.emplace_back(new tcu::TextureLevel(firstResult.getFormat(), firstResult.getWidth(),
+                                                  firstResult.getHeight(), firstResult.getDepth()));
+
+    tcu::clear(references.back()->getAccess(), m_params->getHighResColor());
+}
+
+void FDMOffsetClampToEdgeInstance::checkResults(tcu::TestLog &log, const TexLevelsVec &references,
+                                                const TexLevelsVec &results,
+                                                const std::vector<tcu::IVec2> &fdmOffsets) const
+{
+    const auto logPolicy = tcu::COMPARE_LOG_ON_ERROR;
+
+    DE_ASSERT(results.size() == 1 && results.front() != nullptr);
+    DE_ASSERT(references.size() == 1 && references.front() != nullptr);
+    const auto result    = results.front()->getAccess();
+    const auto reference = references.front()->getAccess();
+    DE_ASSERT(result.getSize() == reference.getSize());
+
+    bool ok = true;
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto extent = reference.getSize();
+    const tcu::IVec2 zeroOffset(0, 0);
+
+    for (int layer = 0; layer < extent.z(); ++layer)
+    {
+        bool layerOK            = true;
+        const bool isZeroOffset = (fdmOffsets.at(layer) == zeroOffset);
+        const auto namePrefix   = "Layer" + std::to_string(layer) + "-";
+
+        // We will only check half the image.
+        if (m_params->horizontalOffset != OffsetType::NONE)
+        {
+            const int sideWidth  = extent.x() / 2;
+            const int sideHeight = extent.y();
+
+            const auto refLeft  = tcu::getSubregion(reference, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto refRight = tcu::getSubregion(reference, sideWidth, 0, layer, sideWidth, sideHeight, 1);
+
+            const auto resLeft  = tcu::getSubregion(result, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto resRight = tcu::getSubregion(result, sideWidth, 0, layer, sideWidth, sideHeight, 1);
+
+            if (m_params->horizontalOffset == OffsetType::NEGATIVE && !isZeroOffset)
+            {
+                const auto name = namePrefix + "RightSide";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refRight, resRight, threshold, logPolicy);
+            }
+            else if (m_params->horizontalOffset == OffsetType::POSITIVE || isZeroOffset)
+            {
+                const auto name = namePrefix + "LeftSide";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refLeft, resLeft, threshold, logPolicy);
+            }
+            else
+                DE_ASSERT(false);
+        }
+        else if (m_params->verticalOffset != OffsetType::NONE)
+        {
+            const int sideWidth  = extent.x();
+            const int sideHeight = extent.y() / 2;
+
+            const auto refTop    = tcu::getSubregion(reference, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto refBottom = tcu::getSubregion(reference, 0, sideHeight, layer, sideWidth, sideHeight, 1);
+
+            const auto resTop    = tcu::getSubregion(result, 0, 0, layer, sideWidth, sideHeight, 1);
+            const auto resBottom = tcu::getSubregion(result, 0, sideHeight, layer, sideWidth, sideHeight, 1);
+
+            if (m_params->verticalOffset == OffsetType::NEGATIVE && !isZeroOffset)
+            {
+                const auto name = namePrefix + "BottomHalf";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refBottom, resBottom, threshold, logPolicy);
+            }
+            else if (m_params->verticalOffset == OffsetType::POSITIVE || isZeroOffset)
+            {
+                const auto name = namePrefix + "TopHalf";
+                layerOK = tcu::floatThresholdCompare(log, name.c_str(), "", refTop, resTop, threshold, logPolicy);
+            }
+            else
+                DE_ASSERT(false);
+        }
+        else
+            DE_ASSERT(false);
+
+        if (!layerOK)
+            ok = false;
+    }
+
+    if (!ok)
+        TCU_FAIL("Unexpected result in color buffer; check log for details --");
+}
+
+class FDMOffsetClampToEdgeCase : public FDMOffsetBaseCase
+{
+public:
+    FDMOffsetClampToEdgeCase(tcu::TestContext &testCtx, const std::string &name, FDMOffsetParamsPtr params)
+        : FDMOffsetBaseCase(testCtx, name, params)
+    {
+    }
+    virtual ~FDMOffsetClampToEdgeCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new FDMOffsetClampToEdgeInstance(context, m_params);
+    }
+};
 
 } // namespace
 
@@ -2943,68 +4895,88 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                     de::MovePtr<tcu::TestCaseGroup> sampleGroup(new tcu::TestCaseGroup(testCtx, sample.name.c_str()));
                     for (const auto &area : fragmentArea)
                     {
-                        std::stringstream str;
-                        str << "_" << area.x() << "_" << area.y();
-
-                        TestParams params{
-                            false,                        // bool dynamicDensityMap;
-                            false,                        // bool deferredDensityMap;
-                            false,                        // bool nonSubsampledImages;
-                            false,                        // bool subsampledLoads;
-                            false,                        // bool coarseReconstruction;
-                            false,                        // bool imagelessFramebuffer;
-                            false,                        // bool useMemoryAccess;
-                            false,                        // bool useMaintenance5;
-                            1,                            // uint32_t samplersCount;
-                            view.viewCount,               // uint32_t viewCount;
-                            false,                        // bool multiViewport;
-                            render.makeCopy,              // bool makeCopy;
-                            false,                        // bool depthEnabled;
-                            size.renderSizeToDensitySize, // float renderMultiplier;
-                            sample.samples,               // VkSampleCountFlagBits colorSamples;
-                            area,                         // tcu::UVec2 fragmentArea;
-                            {16, 16},                     // tcu::UVec2 densityMapSize;
-                            VK_FORMAT_R8G8_UNORM,         // VkFormat densityMapFormat;
-                            VK_FORMAT_D16_UNORM,          // VkFormat depthFormat;
-                            groupParams                   // SharedGroupParams groupParams;
-                        };
-
-                        sampleGroup->addChild(
-                            new FragmentDensityMapTest(testCtx, std::string("static_subsampled") + str.str(), params));
-                        params.deferredDensityMap = true;
-                        sampleGroup->addChild(new FragmentDensityMapTest(
-                            testCtx, std::string("deferred_subsampled") + str.str(), params));
-                        params.deferredDensityMap = false;
-                        params.dynamicDensityMap  = true;
-                        sampleGroup->addChild(
-                            new FragmentDensityMapTest(testCtx, std::string("dynamic_subsampled") + str.str(), params));
-
-                        // generate nonsubsampled tests just for single view and double view cases
-                        if (view.viewCount < 3)
+                        for (const auto addZeroOffset : {false, true})
                         {
-                            params.nonSubsampledImages = true;
-                            params.dynamicDensityMap   = false;
+                            if (addZeroOffset && view.viewCount > 2)
+                                continue;
+
+                            if (addZeroOffset && sample.samples != VK_SAMPLE_COUNT_1_BIT &&
+                                sample.samples != VK_SAMPLE_COUNT_4_BIT)
+                                continue;
+
+                            if (addZeroOffset && area != tcu::UVec2(2u, 2u))
+                                continue;
+
+                            if (addZeroOffset && groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
+                                continue;
+
+                            std::stringstream str;
+                            str << "_" << area.x() << "_" << area.y();
+
+                            if (addZeroOffset)
+                                str << "_zero_offset";
+
+                            TestParams params{
+                                false,                        // bool dynamicDensityMap;
+                                false,                        // bool deferredDensityMap;
+                                false,                        // bool nonSubsampledImages;
+                                false,                        // bool subsampledLoads;
+                                false,                        // bool coarseReconstruction;
+                                false,                        // bool imagelessFramebuffer;
+                                false,                        // bool useMemoryAccess;
+                                false,                        // bool useMaintenance5;
+                                1,                            // uint32_t samplersCount;
+                                view.viewCount,               // uint32_t viewCount;
+                                false,                        // bool multiViewport;
+                                render.makeCopy,              // bool makeCopy;
+                                false,                        // bool depthEnabled;
+                                addZeroOffset,                // bool addZeroOffset;
+                                size.renderSizeToDensitySize, // float renderMultiplier;
+                                sample.samples,               // VkSampleCountFlagBits colorSamples;
+                                area,                         // tcu::UVec2 fragmentArea;
+                                {16, 16},                     // tcu::UVec2 densityMapSize;
+                                VK_FORMAT_R8G8_UNORM,         // VkFormat densityMapFormat;
+                                VK_FORMAT_D16_UNORM,          // VkFormat depthFormat;
+                                groupParams                   // SharedGroupParams groupParams;
+                            };
+
                             sampleGroup->addChild(new FragmentDensityMapTest(
-                                testCtx, std::string("static_nonsubsampled") + str.str(), params));
+                                testCtx, std::string("static_subsampled") + str.str(), params));
                             params.deferredDensityMap = true;
                             sampleGroup->addChild(new FragmentDensityMapTest(
-                                testCtx, std::string("deferred_nonsubsampled") + str.str(), params));
+                                testCtx, std::string("deferred_subsampled") + str.str(), params));
                             params.deferredDensityMap = false;
                             params.dynamicDensityMap  = true;
                             sampleGroup->addChild(new FragmentDensityMapTest(
-                                testCtx, std::string("dynamic_nonsubsampled") + str.str(), params));
-                        }
+                                testCtx, std::string("dynamic_subsampled") + str.str(), params));
 
-                        // test multiviewport - each of views uses different viewport; limit number of cases to 2 samples
-                        if ((groupParams->renderingType == RENDERING_TYPE_RENDERPASS2) && (!render.makeCopy) &&
-                            (view.viewCount > 1) && (sample.samples == VK_SAMPLE_COUNT_2_BIT))
-                        {
-                            params.nonSubsampledImages = false;
-                            params.dynamicDensityMap   = false;
-                            params.deferredDensityMap  = false;
-                            params.multiViewport       = true;
-                            sampleGroup->addChild(new FragmentDensityMapTest(
-                                testCtx, std::string("static_subsampled") + str.str() + "_multiviewport", params));
+                            // generate nonsubsampled tests just for single view and double view cases
+                            if (view.viewCount < 3)
+                            {
+                                params.nonSubsampledImages = true;
+                                params.dynamicDensityMap   = false;
+                                sampleGroup->addChild(new FragmentDensityMapTest(
+                                    testCtx, std::string("static_nonsubsampled") + str.str(), params));
+                                params.deferredDensityMap = true;
+                                sampleGroup->addChild(new FragmentDensityMapTest(
+                                    testCtx, std::string("deferred_nonsubsampled") + str.str(), params));
+                                params.deferredDensityMap = false;
+                                params.dynamicDensityMap  = true;
+                                sampleGroup->addChild(new FragmentDensityMapTest(
+                                    testCtx, std::string("dynamic_nonsubsampled") + str.str(), params));
+                            }
+
+                            // test multiviewport - each of views uses different viewport; limit number of cases to 2 samples
+                            if ((groupParams->renderingType == RENDERING_TYPE_RENDERPASS2) && (!render.makeCopy) &&
+                                (view.viewCount > 1) && (sample.samples == VK_SAMPLE_COUNT_2_BIT) && !addZeroOffset)
+                            {
+                                params.nonSubsampledImages = false;
+                                params.dynamicDensityMap   = false;
+                                params.deferredDensityMap  = false;
+                                params.multiViewport       = true;
+                                sampleGroup->addChild(new FragmentDensityMapTest(
+                                    testCtx, std::string("static_subsampled") + str.str() + "_multiviewport", params));
+                            }
                         }
                     }
                     sizeGroup->addChild(sampleGroup.release());
@@ -3043,6 +5015,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 false,                 // bool multiViewport;
                 false,                 // bool makeCopy;
                 true,                  // bool depthEnabled;
+                false,                 // bool addZeroOffset;
                 4.0f,                  // float renderMultiplier;
                 VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits colorSamples;
                 {2, 2},                // tcu::UVec2 fragmentArea;
@@ -3085,6 +5058,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             false,                 // bool multiViewport;
             false,                 // bool makeCopy;
             false,                 // bool depthEnabled;
+            false,                 // bool addZeroOffset;
             4.0f,                  // float renderMultiplier;
             VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits colorSamples;
             {2, 2},                // tcu::UVec2 fragmentArea;
@@ -3117,6 +5091,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             false,                 // bool multiViewport;
             false,                 // bool makeCopy;
             false,                 // bool depthEnabled;
+            false,                 // bool addZeroOffset;
             4.0f,                  // float renderMultiplier;
             VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits colorSamples;
             {2, 2},                // tcu::UVec2 fragmentArea;
@@ -3154,6 +5129,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 false,                            // bool multiViewport;
                 false,                            // bool makeCopy;
                 false,                            // bool depthEnabled;
+                false,                            // bool addZeroOffset;
                 4.0f,                             // float renderMultiplier;
                 VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits colorSamples;
                 {2, 2},                           // tcu::UVec2 fragmentArea;
@@ -3199,6 +5175,7 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
             false,                 // bool multiViewport;
             false,                 // bool makeCopy;
             false,                 // bool depthEnabled;
+            false,                 // bool addZeroOffset;
             4.0f,                  // float renderMultiplier;
             VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits colorSamples;
             {1, 2},                // tcu::UVec2 fragmentArea;
@@ -3215,6 +5192,116 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
         propertiesGroup->addChild(new FragmentDensityMapTest(testCtx, "memory_access", params));
     }
 
+    if (groupParams->renderingType != RENDERING_TYPE_RENDERPASS_LEGACY)
+    {
+        DE_ASSERT(groupParams->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC);
+        de::MovePtr<tcu::TestCaseGroup> offsetGroup(new tcu::TestCaseGroup(testCtx, "offset"));
+
+        // Oversized FDM tests.
+        {
+            de::MovePtr<tcu::TestCaseGroup> oversizedFDMGroup(new tcu::TestCaseGroup(testCtx, "oversized_fdm"));
+
+            struct
+            {
+                OffsetType horOffsetType;
+                OffsetType vertOffsetType;
+                const char *name;
+            } offsetCases[] = {
+                {OffsetType::NEGATIVE, OffsetType::NONE, "hor_offset_negative"},
+                {OffsetType::NONE, OffsetType::NEGATIVE, "vert_offset_negative"},
+            };
+
+            for (const auto &offsetCase : offsetCases)
+                for (const auto multiView : {false, true})
+                    for (const auto resumeRendering : {false, true})
+                        for (const bool extraLarge : {false, true})
+                        {
+                            if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
+                                continue;
+
+                            FDMOffsetParamsPtr params(new FDMOffsetOversizedFDMParams(
+                                groupParams, offsetCase.horOffsetType, offsetCase.vertOffsetType, multiView,
+                                resumeRendering, extraLarge));
+                            const auto testName = std::string(offsetCase.name) + (multiView ? "_multiview" : "") +
+                                                  (resumeRendering ? "_suspend_resume" : "") +
+                                                  (extraLarge ? "_extra_large" : "");
+                            oversizedFDMGroup->addChild(new FDMOffsetOversizedFDMCase(testCtx, testName, params));
+                        }
+
+            offsetGroup->addChild(oversizedFDMGroup.release());
+        }
+
+        // Minimum shift tests.
+        {
+            de::MovePtr<tcu::TestCaseGroup> minShiftGroup(new tcu::TestCaseGroup(testCtx, "min_shift"));
+
+            struct
+            {
+                OffsetType horOffsetType;
+                OffsetType vertOffsetType;
+                const char *name;
+            } offsetCases[] = {
+                {OffsetType::POSITIVE, OffsetType::NONE, "hor_offset_positive"},
+                {OffsetType::NEGATIVE, OffsetType::NONE, "hor_offset_negative"},
+                {OffsetType::NONE, OffsetType::POSITIVE, "vert_offset_positive"},
+                {OffsetType::NONE, OffsetType::NEGATIVE, "vert_offset_negative"},
+            };
+
+            for (const auto &offsetCase : offsetCases)
+                for (const auto multiView : {false, true})
+                    for (const auto resumeRendering : {false, true})
+                    {
+                        if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
+                            continue;
+
+                        FDMOffsetParamsPtr params(new FDMOffsetMinShiftParams(groupParams, offsetCase.horOffsetType,
+                                                                              offsetCase.vertOffsetType, multiView,
+                                                                              resumeRendering));
+                        const auto testName = std::string(offsetCase.name) + (multiView ? "_multiview" : "") +
+                                              (resumeRendering ? "_suspend_resume" : "");
+                        minShiftGroup->addChild(new FDMOffsetMinShiftCase(testCtx, testName, params));
+                    }
+
+            offsetGroup->addChild(minShiftGroup.release());
+        }
+
+        // Clamp to edge tests.
+        {
+            de::MovePtr<tcu::TestCaseGroup> clampToEdgeGroup(new tcu::TestCaseGroup(testCtx, "clamp_to_edge"));
+
+            struct
+            {
+                OffsetType horOffsetType;
+                OffsetType vertOffsetType;
+                const char *name;
+            } offsetCases[] = {
+                {OffsetType::POSITIVE, OffsetType::NONE, "hor_offset_positive"},
+                {OffsetType::NEGATIVE, OffsetType::NONE, "hor_offset_negative"},
+                {OffsetType::NONE, OffsetType::POSITIVE, "vert_offset_positive"},
+                {OffsetType::NONE, OffsetType::NEGATIVE, "vert_offset_negative"},
+            };
+
+            for (const auto &offsetCase : offsetCases)
+                for (const auto multiView : {false, true})
+                    for (const auto resumeRendering : {false, true})
+                    {
+                        if (groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING && resumeRendering)
+                            continue;
+
+                        FDMOffsetParamsPtr params(new FDMOffsetClampToEdgeParams(groupParams, offsetCase.horOffsetType,
+                                                                                 offsetCase.vertOffsetType, multiView,
+                                                                                 resumeRendering));
+                        const auto testName = std::string(offsetCase.name) + (multiView ? "_multiview" : "") +
+                                              (resumeRendering ? "_suspend_resume" : "");
+                        clampToEdgeGroup->addChild(new FDMOffsetClampToEdgeCase(testCtx, testName, params));
+                    }
+
+            offsetGroup->addChild(clampToEdgeGroup.release());
+        }
+
+        fdmTests->addChild(offsetGroup.release());
+    }
+
     fdmTests->addChild(propertiesGroup.release());
 }
 
@@ -3222,7 +5309,7 @@ static void cleanupGroup(tcu::TestCaseGroup *group, const SharedGroupParams)
 {
     DE_UNREF(group);
     // Destroy singleton objects.
-    g_singletonDevice.clear();
+    g_deviceHelperPtr.reset(nullptr);
 }
 
 tcu::TestCaseGroup *createFragmentDensityMapTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams)

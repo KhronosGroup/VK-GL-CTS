@@ -751,7 +751,10 @@ void checkOobSupport(Context &context, TestParams param)
 
     if (param.useRobustness2)
     {
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
         VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
         robustness2Features.sType = vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
@@ -764,7 +767,7 @@ void checkOobSupport(Context &context, TestParams param)
         context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
         if (robustness2Features.robustImageAccess2 == false)
-            TCU_THROW(NotSupportedError, "VK_EXT_robustness2 robustImageAccess2 feature not supported");
+            TCU_THROW(NotSupportedError, "robustImageAccess2 feature not supported");
     }
     else
     {

@@ -33,10 +33,15 @@
 #include "vkRefUtil.hpp"
 #include "vkDeviceUtil.hpp"
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkObjUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuTextureUtil.hpp"
+#include "tcuImageCompare.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deThread.hpp"
@@ -47,6 +52,8 @@
 #include "vkCmdUtil.hpp"
 
 #include <limits>
+#include <vector>
+#include <sstream>
 
 namespace vkt
 {
@@ -1291,6 +1298,433 @@ void checkSupport(Context &context, SemaphoreTestConfig config)
         context.requireDeviceFunctionality("VK_KHR_synchronization2");
 }
 
+enum class FamilyType
+{
+    IGNORED = 0,
+    EXTERNAL,
+    FOREIGN,
+    ARBITRARY,
+};
+
+uint32_t getQueueFamilyIndex(FamilyType type)
+{
+    uint32_t index = 0u;
+
+    switch (type)
+    {
+    case FamilyType::IGNORED:
+        index = VK_QUEUE_FAMILY_IGNORED;
+        break;
+    case FamilyType::EXTERNAL:
+        index = VK_QUEUE_FAMILY_EXTERNAL;
+        break;
+    case FamilyType::FOREIGN:
+        index = VK_QUEUE_FAMILY_FOREIGN_EXT;
+        break;
+    case FamilyType::ARBITRARY:
+        index = 0xDEADBEEFu;
+        break;
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+
+    return index;
+}
+
+void checkQueueFamilyTypeSupport(Context &context, FamilyType type)
+{
+    if (type == FamilyType::EXTERNAL)
+        context.requireDeviceFunctionality("VK_KHR_external_memory");
+    else if (type == FamilyType::FOREIGN)
+        context.requireDeviceFunctionality("VK_EXT_queue_family_foreign");
+}
+
+struct IgnoreQueueFamilyBufferParams
+{
+    FamilyType familyType;
+    bool sync2;
+};
+
+using IgnoreQueueFamilyImageParams = IgnoreQueueFamilyBufferParams;
+
+void checkQueueFamilyTypeBufferSupport(Context &context, IgnoreQueueFamilyBufferParams params)
+{
+    checkQueueFamilyTypeSupport(context, params.familyType);
+    if (params.sync2)
+        context.requireDeviceFunctionality("VK_KHR_synchronization2");
+}
+
+void checkQueueFamilyTypeImageSupport(Context &context, IgnoreQueueFamilyImageParams params)
+{
+    checkQueueFamilyTypeBufferSupport(context, params);
+}
+
+tcu::Vec4 getQueueFamilyTypeClearColor()
+{
+    static tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    return clearColor;
+}
+
+tcu::Vec4 getQueueFamilyTypeGeomColor()
+{
+    static tcu::Vec4 geomColor(0.0f, 0.0f, 1.0f, 1.0f);
+    return geomColor;
+}
+
+void initQueueFamilyTypePrograms(vk::SourceCollections &dst, IgnoreQueueFamilyImageParams)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "vec2 positions[3] = vec2[](\n"
+         << "    vec2(-1.0, -1.0),\n"
+         << "    vec2( 3.0, -1.0),\n"
+         << "    vec2(-1.0,  3.0)\n"
+         << ");\n"
+         << "void main (void) {\n"
+         << "    gl_Position = vec4(positions[gl_VertexIndex % 3], 0.0, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    outColor = vec4" << getQueueFamilyTypeGeomColor() << ";\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus ignoreQueueFamilyTypeBuffer(Context &context, IgnoreQueueFamilyBufferParams params)
+{
+    const auto ctx = context.getContextCommonData();
+
+    const auto bufferItemCount = 64u;
+    std::vector<uint32_t> bufferData(bufferItemCount, 0u);
+
+    const auto bufferSize       = static_cast<VkDeviceSize>(de::dataSize(bufferData));
+    const auto bufferUsage      = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    const auto bufferCreateInfo = makeBufferCreateInfo(bufferSize, bufferUsage);
+    BufferWithMemory buffer(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::R);
+    {
+        auto &alloc = buffer.getAllocation();
+        memset(alloc.getHostPtr(), 0, de::dataSize(bufferData));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const uint32_t bufferValue        = 0xAABBCCDDu;
+    const uint32_t barrierFamilyIndex = getQueueFamilyIndex(params.familyType);
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdFillBuffer(cmdBuffer, *buffer, 0ull, VK_WHOLE_SIZE, bufferValue);
+    if (params.sync2)
+    {
+        const VkBufferMemoryBarrier2 barrier{
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2,
+            nullptr,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_HOST_BIT,
+            VK_ACCESS_2_HOST_READ_BIT,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            *buffer,
+            0ull,
+            VK_WHOLE_SIZE,
+        };
+        const VkDependencyInfo dependencyInfo{
+            VK_STRUCTURE_TYPE_DEPENDENCY_INFO, nullptr, 0u, 0u, nullptr, 1u, &barrier, 0u, nullptr,
+        };
+#ifndef CTS_USES_VULKANSC
+        ctx.vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+#else
+        ctx.vkd.cmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
+#endif // CTS_USES_VULKANSC
+    }
+    else
+    {
+        const VkBufferMemoryBarrier barrier{
+            VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+            nullptr,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_ACCESS_HOST_READ_BIT,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            *buffer,
+            0ull,
+            VK_WHOLE_SIZE,
+        };
+        ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
+                                   nullptr, 1u, &barrier, 0u, nullptr);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify buffer.
+    std::vector<uint32_t> referenceValues(bufferData.size(), bufferValue);
+    {
+        auto &alloc = buffer.getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+        memcpy(de::dataOrNull(bufferData), alloc.getHostPtr(), de::dataSize(bufferData));
+    }
+
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    for (uint32_t i = 0u; i < de::sizeU32(bufferData); ++i)
+    {
+        const auto res = bufferData.at(i);
+        const auto ref = referenceValues.at(i);
+
+        if (res != ref)
+        {
+            std::ostringstream msg;
+            msg << "Unexpected value found at position " << i << ": expected " << ref << " but found " << res;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected values found in output buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus ignoreQueueFamilyTypeImage(Context &context, IgnoreQueueFamilyImageParams params)
+{
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk = makeExtent3D(extent);
+    const auto format   = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imageUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto constructionType       = PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
+    const auto vertexCount            = 3u; // See frag shader.
+    const uint32_t barrierFamilyIndex = getQueueFamilyIndex(params.familyType);
+
+    ImageWithBuffer image(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, imageUsage, VK_IMAGE_TYPE_2D);
+    const auto imageSRR = makeDefaultImageSubresourceRange();
+    const auto imageSRL = makeDefaultImageSubresourceLayers();
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    PipelineLayoutWrapper pipelineLayout(constructionType, ctx.vkd, ctx.device);
+    RenderPassWrapper renderPass(constructionType, ctx.vkd, ctx.device, format, VK_FORMAT_UNDEFINED,
+                                 VK_ATTACHMENT_LOAD_OP_LOAD);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, image.getImage(), image.getImageView(), extentVk.width,
+                                 extentVk.height);
+
+    const auto &binaries = context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     constructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragShader)
+        .setupFragmentOutputState(renderPass.get(), 0u)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Transition image from undefined to color attachment optimal after clearing it.
+    if (params.sync2)
+    {
+        const VkImageMemoryBarrier2 barrier{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            nullptr,
+            VK_PIPELINE_STAGE_2_TOP_OF_PIPE_BIT,
+            0u,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            image.getImage(),
+            imageSRR,
+        };
+        const VkDependencyInfo dependencyInfo{
+            VK_STRUCTURE_TYPE_DEPENDENCY_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier,
+        };
+#ifndef CTS_USES_VULKANSC
+        ctx.vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+#else
+        ctx.vkd.cmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
+#endif // CTS_USES_VULKANSC
+    }
+    else
+    {
+        const VkImageMemoryBarrier barrier{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            nullptr,
+            0u,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            image.getImage(),
+            imageSRR,
+        };
+        ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                                   nullptr, 0u, nullptr, 1u, &barrier);
+    }
+
+    const auto clearColor = makeClearValueColorVec4(getQueueFamilyTypeClearColor());
+    ctx.vkd.cmdClearColorImage(cmdBuffer, image.getImage(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clearColor.color, 1u,
+                               &imageSRR);
+
+    if (params.sync2)
+    {
+        const VkImageMemoryBarrier2 barrier{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            nullptr,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            (VK_ACCESS_2_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT),
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            image.getImage(),
+            imageSRR,
+        };
+        const VkDependencyInfo dependencyInfo{
+            VK_STRUCTURE_TYPE_DEPENDENCY_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier,
+        };
+#ifndef CTS_USES_VULKANSC
+        ctx.vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+#else
+        ctx.vkd.cmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
+#endif // CTS_USES_VULKANSC
+    }
+    else
+    {
+        const VkImageMemoryBarrier barrier{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            nullptr,
+            VK_ACCESS_TRANSFER_WRITE_BIT,
+            (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT),
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            image.getImage(),
+            imageSRR,
+        };
+        ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                                   &barrier);
+    }
+
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u));
+    pipeline.bind(cmdBuffer);
+    ctx.vkd.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+    renderPass.end(ctx.vkd, cmdBuffer);
+
+    // Transition image to the transfer src optimal layout and copy it out.
+    if (params.sync2)
+    {
+        const VkImageMemoryBarrier2 barrier{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER_2,
+            nullptr,
+            VK_PIPELINE_STAGE_2_COLOR_ATTACHMENT_OUTPUT_BIT,
+            VK_ACCESS_2_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,
+            VK_ACCESS_2_TRANSFER_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            image.getImage(),
+            imageSRR,
+        };
+        const VkDependencyInfo dependencyInfo{
+            VK_STRUCTURE_TYPE_DEPENDENCY_INFO, nullptr, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier,
+        };
+#ifndef CTS_USES_VULKANSC
+        ctx.vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+#else
+        ctx.vkd.cmdPipelineBarrier2KHR(cmdBuffer, &dependencyInfo);
+#endif // CTS_USES_VULKANSC
+    }
+    else
+    {
+        const VkImageMemoryBarrier barrier{
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+            nullptr,
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            VK_ACCESS_TRANSFER_READ_BIT,
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            barrierFamilyIndex,
+            barrierFamilyIndex,
+            image.getImage(),
+            imageSRR,
+        };
+        ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier);
+    }
+
+    const VkBufferImageCopy copyRegion{
+        0ull, 0u, 0u, imageSRL, makeOffset3D(0, 0, 0), extentVk,
+    };
+    ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, image.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, image.getBuffer(),
+                                 1u, &copyRegion);
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    auto &bufferAlloc = image.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, bufferAlloc);
+
+    // Reference.
+    const auto tcuFormat = mapVkFormat(format);
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, getQueueFamilyTypeGeomColor());
+
+    // Result.
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, bufferAlloc.getHostPtr());
+
+    auto &log = context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected result in color buffer; check log for details");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+const struct
+{
+    FamilyType familyType;
+    const char *name;
+} kFamilyTypeCases[] = {
+    {FamilyType::IGNORED, "ignored"},
+    {FamilyType::EXTERNAL, "external"},
+    {FamilyType::FOREIGN, "foreign"},
+    {FamilyType::ARBITRARY, "arbitrary"},
+};
+
 } // namespace
 
 tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &textCtx)
@@ -1304,6 +1738,22 @@ tcu::TestCaseGroup *createSmokeTests(tcu::TestContext &textCtx)
     addFunctionCaseWithPrograms(smokeTests.get(), "timeline_semaphores", checkSupport, initShaders, testSemaphores,
                                 SemaphoreTestConfig{type, VK_SEMAPHORE_TYPE_TIMELINE});
 
+    for (const auto &familyTypeCase : kFamilyTypeCases)
+    {
+        const auto testName = std::string("queue_type_ignore_buffer_") + familyTypeCase.name;
+        const IgnoreQueueFamilyBufferParams params{familyTypeCase.familyType, false};
+        addFunctionCase(smokeTests.get(), testName.c_str(), checkQueueFamilyTypeBufferSupport,
+                        ignoreQueueFamilyTypeBuffer, params);
+    }
+
+    for (const auto &familyTypeCase : kFamilyTypeCases)
+    {
+        const auto testName = std::string("queue_type_ignore_image_") + familyTypeCase.name;
+        const IgnoreQueueFamilyImageParams params{familyTypeCase.familyType, false};
+        addFunctionCaseWithPrograms(smokeTests.get(), testName.c_str(), checkQueueFamilyTypeImageSupport,
+                                    initQueueFamilyTypePrograms, ignoreQueueFamilyTypeImage, params);
+    }
+
     return smokeTests.release();
 }
 
@@ -1316,6 +1766,22 @@ tcu::TestCaseGroup *createSynchronization2SmokeTests(tcu::TestContext &textCtx)
                                 SemaphoreTestConfig{type, VK_SEMAPHORE_TYPE_BINARY});
     addFunctionCaseWithPrograms(smokeTests.get(), "timeline_semaphores", checkSupport, initShaders, testSemaphores,
                                 SemaphoreTestConfig{type, VK_SEMAPHORE_TYPE_TIMELINE});
+
+    for (const auto &familyTypeCase : kFamilyTypeCases)
+    {
+        const auto testName = std::string("queue_type_ignore_buffer_") + familyTypeCase.name;
+        const IgnoreQueueFamilyBufferParams params{familyTypeCase.familyType, true};
+        addFunctionCase(smokeTests.get(), testName.c_str(), checkQueueFamilyTypeBufferSupport,
+                        ignoreQueueFamilyTypeBuffer, params);
+    }
+
+    for (const auto &familyTypeCase : kFamilyTypeCases)
+    {
+        const auto testName = std::string("queue_type_ignore_image_") + familyTypeCase.name;
+        const IgnoreQueueFamilyImageParams params{familyTypeCase.familyType, true};
+        addFunctionCaseWithPrograms(smokeTests.get(), testName.c_str(), checkQueueFamilyTypeImageSupport,
+                                    initQueueFamilyTypePrograms, ignoreQueueFamilyTypeImage, params);
+    }
 
     return smokeTests.release();
 }

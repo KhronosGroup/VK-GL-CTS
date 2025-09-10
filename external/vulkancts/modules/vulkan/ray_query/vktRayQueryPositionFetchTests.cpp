@@ -631,7 +631,6 @@ tcu::TestStatus PositionFetchInstance::iterate(void)
 
         {
             const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
-            rayTracingPipeline->setCreateFlags(VK_PIPELINE_CREATE_RAY_TRACING_OPACITY_MICROMAP_BIT_EXT);
             rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
 
             pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout.get());

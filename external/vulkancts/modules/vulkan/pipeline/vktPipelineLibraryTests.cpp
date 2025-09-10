@@ -50,15 +50,14 @@
 #include "deRandom.hpp"
 #include "deClock.h"
 
+#include <sstream>
 #include <vector>
 #include <chrono>
 #include <set>
 #include <any>
 #include <limits>
 
-namespace vkt
-{
-namespace pipeline
+namespace vkt::pipeline
 {
 namespace
 {
@@ -1348,9 +1347,11 @@ enum class MiscTestMode
     SHADER_MODULE_CREATE_INFO_RT,
     SHADER_MODULE_CREATE_INFO_RT_LIB,
     NULL_RENDERING_CREATE_INFO,
+    BAD_RENDERING_CREATE_INFO,
     COMMON_FRAG_LIBRARY,
     VIEW_INDEX_FROM_DEVICE_INDEX,
     UNUSUAL_MULTISAMPLE_STATE,
+    DESTROY_RESOURCES_BEFORE_LINK
 };
 
 // params used in BIND_NULL_DESCRIPTOR_SET mode
@@ -1389,6 +1390,15 @@ struct ViewIndexFromDeviceIndexParams
     }
 };
 
+struct DestroyBeforeLinkParams
+{
+    uint32_t numSamplers;
+
+    DestroyBeforeLinkParams(uint32_t numSamplers_) : numSamplers(numSamplers_)
+    {
+    }
+};
+
 struct MiscTestParams
 {
     // miscellaneous test mode
@@ -1417,6 +1427,13 @@ struct MiscTestParams
     {
     }
 
+    // constructor used for DESTROY_RESOURCES_BEFORE_LINK test mode
+    MiscTestParams(MiscTestMode mode_, uint32_t numSamplers_)
+        : mode(mode_)
+        , modeParams(std::in_place_type<DestroyBeforeLinkParams>, numSamplers_)
+    {
+    }
+
     template <typename T>
     const T &get() const
     {
@@ -1437,6 +1454,7 @@ protected:
     tcu::TestStatus runIndependentPipelineLayoutSets(bool useLinkTimeOptimization = false);
     tcu::TestStatus runCompareLinkTimes(void);
     tcu::TestStatus runCommonFragLibraryTest(void);
+    tcu::TestStatus runDestroyResourcesBeforeLinkTest(void);
 
     struct VerificationData
     {
@@ -1513,6 +1531,8 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::iterate(void)
         return runCompareLinkTimes();
     else if (m_testParams.mode == MiscTestMode::COMMON_FRAG_LIBRARY)
         return runCommonFragLibraryTest();
+    else if (m_testParams.mode == MiscTestMode::DESTROY_RESOURCES_BEFORE_LINK)
+        return runDestroyResourcesBeforeLinkTest();
 
     DE_ASSERT(false);
     return tcu::TestStatus::fail("Fail");
@@ -2583,6 +2603,205 @@ tcu::TestStatus PipelineLibraryMiscTestInstance::runCommonFragLibraryTest(void)
     return (testOk == true ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Rendered image(s) are incorrect"));
 }
 
+VkSamplerCreateInfo makeSamplerCreateInfo()
+{
+    const VkSamplerCreateInfo defaultSamplerParams = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
+        nullptr,                                 // const void* pNext;
+        0u,                                      // VkSamplerCreateFlags flags;
+        VK_FILTER_NEAREST,                       // VkFilter magFilter;
+        VK_FILTER_NEAREST,                       // VkFilter minFilter;
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,          // VkSamplerMipmapMode mipmapMode;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeU;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeV;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeW;
+        0.0f,                                    // float mipLodBias;
+        VK_FALSE,                                // VkBool32 anisotropyEnable;
+        0.0f,                                    // float maxAnisotropy;
+        VK_FALSE,                                // VkBool32 compareEnable;
+        VK_COMPARE_OP_NEVER,                     // VkCompareOp compareOp;
+        0.0f,                                    // float minLod;
+        1.0f,                                    // float maxLod;
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // VkBorderColor borderColor;
+        VK_FALSE                                 // VkBool32 unnormalizedCoordinates;
+    };
+
+    return defaultSamplerParams;
+}
+
+tcu::TestStatus PipelineLibraryMiscTestInstance::runDestroyResourcesBeforeLinkTest(void)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+
+    const DestroyBeforeLinkParams testParams = m_testParams.get<DestroyBeforeLinkParams>();
+
+    // Create immutable samplers
+    VkSamplerCreateInfo samplerCreateInfo = makeSamplerCreateInfo();
+    std::vector<Move<VkSampler>> samplers(testParams.numSamplers);
+    for (uint32_t idx = 0u; idx < testParams.numSamplers; idx++)
+    {
+        samplers[idx] = createSampler(vk, device, &samplerCreateInfo);
+    }
+
+    // Create descriptor set layouts
+    std::vector<Move<VkDescriptorSetLayout>> descriptorSetLayouts(testParams.numSamplers);
+    for (uint32_t idx = 0u; idx < testParams.numSamplers; idx++)
+    {
+        descriptorSetLayouts[idx] =
+            DescriptorSetLayoutBuilder()
+                .addSingleSamplerBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_ALL, &samplers[idx].get())
+                .build(vk, device);
+    }
+
+    // VkDescriptorSetLayout allDescriptorSetLayouts[]  = {*descriptorSetLayout1, *descriptorSetLayout2};
+
+    // Create pipeline layouts
+    std::vector<Move<VkPipelineLayout>> pipelineLayouts(testParams.numSamplers);
+    for (uint32_t idx = 0u; idx < testParams.numSamplers; idx++)
+    {
+        pipelineLayouts[idx] = makePipelineLayout(vk, device, 1u, &descriptorSetLayouts[idx].get(),
+                                                  VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+    }
+
+    // Create descriptor sets
+    Move<VkDescriptorPool> allDescriptorPool =
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_SAMPLER, testParams.numSamplers)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, testParams.numSamplers);
+
+    std::vector<Move<VkDescriptorSet>> descriptorSetPtrs(testParams.numSamplers);
+    std::vector<VkDescriptorSet> descriptorSets(testParams.numSamplers);
+    for (uint32_t idx = 0u; idx < testParams.numSamplers; idx++)
+    {
+        descriptorSetPtrs[idx] = makeDescriptorSet(vk, device, *allDescriptorPool, descriptorSetLayouts[idx].get());
+        descriptorSets[idx]    = descriptorSetPtrs[idx].get();
+    }
+
+    uint32_t commonPipelinePartFlags = uint32_t(VK_PIPELINE_CREATE_LIBRARY_BIT_KHR);
+
+    // Create info for each part
+    GraphicsPipelineCreateInfo partialPipelineCreateInfo[]{
+        {VK_NULL_HANDLE, *m_renderPass, 0, commonPipelinePartFlags},
+        {*pipelineLayouts[0], *m_renderPass, 0, commonPipelinePartFlags},
+        {*pipelineLayouts[1], *m_renderPass, 0, commonPipelinePartFlags},
+        {VK_NULL_HANDLE, *m_renderPass, 0, commonPipelinePartFlags}};
+
+    // Fill proper portion of pipeline state
+    updateVertexInputInterface(m_context, partialPipelineCreateInfo[0], VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0u);
+    updatePreRasterization(m_context, partialPipelineCreateInfo[1], false);
+    updatePostRasterization(m_context, partialPipelineCreateInfo[2], false);
+    updateFragmentOutputInterface(m_context, partialPipelineCreateInfo[3]);
+
+    // Extend pNext chain and create all partial pipelines
+    std::vector<VkPipeline> rawParts(4u, VK_NULL_HANDLE);
+    std::vector<Move<VkPipeline>> pipelineParts;
+    pipelineParts.reserve(4u);
+    VkGraphicsPipelineLibraryCreateInfoEXT libraryCreateInfo =
+        makeGraphicsPipelineLibraryCreateInfo(VK_GRAPHICS_PIPELINE_LIBRARY_VERTEX_INPUT_INTERFACE_BIT_EXT);
+    for (uint32_t i = 0; i < 4u; ++i)
+    {
+        libraryCreateInfo.flags = GRAPHICS_PIPELINE_LIBRARY_FLAGS[i];
+        appendStructurePtrToVulkanChain(&partialPipelineCreateInfo[i].pNext, &libraryCreateInfo);
+        pipelineParts.emplace_back(createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &partialPipelineCreateInfo[i]));
+        rawParts[i] = *pipelineParts[i];
+    }
+
+    // Destroy pipeline layout and samplers leaving the last one
+    // Maintenance 4 suggests we can destroy them now as libraries have been created
+    const uint32_t idxLast = testParams.numSamplers - 1;
+    for (uint32_t idx = 0u; idx < idxLast; idx++)
+    {
+        // Destroy pipeline layout
+        vk.destroyPipelineLayout(device, pipelineLayouts[idx].get(), nullptr);
+        pipelineLayouts[idx].disown();
+
+        // Destroy sampler
+        vk.destroySampler(device, samplers[idx].get(), nullptr);
+        samplers[idx].disown();
+    }
+
+    // Create final pipeline out of four parts
+    const uint32_t finalPipelineFlag               = 0u;
+    VkPipelineLibraryCreateInfoKHR linkingInfo     = makePipelineLibraryCreateInfo(rawParts);
+    VkGraphicsPipelineCreateInfo finalPipelineInfo = initVulkanStructure();
+
+    finalPipelineInfo.flags = finalPipelineFlag;
+    // Use the last undestroyed layout
+    finalPipelineInfo.layout = pipelineLayouts[idxLast].get();
+
+    appendStructurePtrToVulkanChain(&finalPipelineInfo.pNext, &linkingInfo);
+    Move<VkPipeline> pipeline = createGraphicsPipeline(vk, device, VK_NULL_HANDLE, &finalPipelineInfo);
+
+    const VkDescriptorSet descriptorSet = descriptorSets[idxLast];
+    // Output
+    const VkDeviceSize colorBufferDataSize = static_cast<VkDeviceSize>(
+        m_renderArea.extent.width * m_renderArea.extent.height * tcu::getPixelSize(mapVkFormat(m_colorFormat)));
+    const VkBufferCreateInfo colorBufferCreateInfo = makeBufferCreateInfo(
+        colorBufferDataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const BufferWithMemory colorBuffer(vk, device, allocator, colorBufferCreateInfo, MemoryRequirement::HostVisible);
+
+    vk::beginCommandBuffer(vk, *m_cmdBuffer, 0u);
+    {
+        // change color image layout
+        const VkImageMemoryBarrier initialImageBarrier = makeImageMemoryBarrier(
+            0,                                          // VkAccessFlags srcAccessMask;
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout newLayout;
+            **m_colorImage,                             // VkImage image;
+            {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange subresourceRange;
+        );
+        vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0, nullptr, 0,
+                              nullptr, 1, &initialImageBarrier);
+
+        beginRenderPass(vk, *m_cmdBuffer, *m_renderPass, *m_framebuffer, m_renderArea, m_colorClearColor);
+
+        vk.cmdBindPipeline(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+        vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayouts[idxLast].get(), 0u, 1u,
+                                 &descriptorSet, 0u, nullptr);
+        vk.cmdDraw(*m_cmdBuffer, 6u, 1u, 0u, 0u);
+
+        endRenderPass(vk, *m_cmdBuffer);
+
+        const tcu::IVec2 size{(int32_t)m_renderArea.extent.width, (int32_t)m_renderArea.extent.height};
+        copyImageToBuffer(vk, *m_cmdBuffer, **m_colorImage, *colorBuffer, size);
+    }
+    vk::endCommandBuffer(vk, *m_cmdBuffer);
+    vk::submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *m_cmdBuffer);
+
+    vk::invalidateAlloc(vk, device, colorBuffer.getAllocation());
+    const tcu::ConstPixelBufferAccess colorPixelAccess(mapVkFormat(m_colorFormat), m_renderArea.extent.width,
+                                                       m_renderArea.extent.height, 1,
+                                                       colorBuffer.getAllocation().getHostPtr());
+
+    tcu::TextureLevel referenceImage(mapVkFormat(m_colorFormat), m_renderArea.extent.width, m_renderArea.extent.height);
+    tcu::PixelBufferAccess referencePixelAccess = referenceImage.getAccess();
+    const int edge                              = 3 * referenceImage.getWidth() / 4;
+    const Vec4 green                            = RGBA::green().toVec();
+    const Vec4 black                            = RGBA::black().toVec();
+
+    for (int y = 0; y < referenceImage.getHeight(); ++y)
+    {
+        for (int x = 0; x < referenceImage.getWidth(); ++x)
+        {
+            if (x < edge)
+                referencePixelAccess.setPixel(green, x, y);
+            else
+                referencePixelAccess.setPixel(black, x, y);
+        }
+    }
+
+    const tcu::Vec4 threshold(0.0f);
+    if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Comparison result", "Image comparison result",
+                                    referenceImage.getAccess(), colorPixelAccess, threshold, COMPARE_LOG_ON_ERROR))
+        return tcu::TestStatus::fail("Fail");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 tcu::TestStatus PipelineLibraryMiscTestInstance::verifyResult(const std::vector<VerificationData> &verificationData,
                                                               const tcu::ConstPixelBufferAccess &colorPixelAccess) const
 {
@@ -2966,18 +3185,21 @@ tcu::TestStatus PipelineLibraryShaderModuleInfoRTInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-class NullRenderingCreateInfoInstance : public vkt::TestInstance
+class UnusualRenderingCreateInfoInstance : public vkt::TestInstance
 {
 public:
-    NullRenderingCreateInfoInstance(Context &context) : vkt::TestInstance(context)
+    UnusualRenderingCreateInfoInstance(Context &context, MiscTestMode mode) : vkt::TestInstance(context), m_mode(mode)
     {
     }
-    virtual ~NullRenderingCreateInfoInstance(void) = default;
+    virtual ~UnusualRenderingCreateInfoInstance(void) = default;
 
     tcu::TestStatus iterate(void) override;
+
+private:
+    MiscTestMode m_mode;
 };
 
-tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
+tcu::TestStatus UnusualRenderingCreateInfoInstance::iterate(void)
 {
     const auto ctx = m_context.getContextCommonData();
     const tcu::IVec3 colorExtent(1, 1, 1);
@@ -3016,9 +3238,18 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
     const auto vertModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("vert"));
     const auto fragModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
 
-    // We will use a null-filled pipeline rendering info structure for all substates except the fragment output state.
-    VkPipelineRenderingCreateInfo nullRenderingInfo = initVulkanStructure();
-    nullRenderingInfo.colorAttachmentCount          = 0;
+    VkPipelineRenderingCreateInfo unusualRenderingInfo = initVulkanStructure();
+
+    // We will use a null-filled pipeline rendering info structure
+    // for all substates except the fragment output state
+    if (m_mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+        unusualRenderingInfo.colorAttachmentCount = 0;
+    else // MiscTestMode::BAD_RENDERING_CREATE_INFO
+    {
+        // use bad VkPipelineRenderingCreateInfo when it is not required
+        unusualRenderingInfo.colorAttachmentCount    = 2;
+        unusualRenderingInfo.pColorAttachmentFormats = reinterpret_cast<VkFormat *>(0xdeadbeef);
+    }
 
     VkPipelineRenderingCreateInfo finalRenderingInfo = initVulkanStructure();
     finalRenderingInfo.colorAttachmentCount          = 1u;
@@ -3114,7 +3345,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
     // Pre-rasterization shader state library.
     {
         VkGraphicsPipelineLibraryCreateInfoEXT preRasterShaderLibInfo =
-            initVulkanStructure(&nullRenderingInfo); // What we're testing.
+            initVulkanStructure(&unusualRenderingInfo); // What we're testing.
         preRasterShaderLibInfo.flags |= VK_GRAPHICS_PIPELINE_LIBRARY_PRE_RASTERIZATION_SHADERS_BIT_EXT;
 
         VkGraphicsPipelineCreateInfo preRasterShaderPipelineInfo = initVulkanStructure(&preRasterShaderLibInfo);
@@ -3133,7 +3364,7 @@ tcu::TestStatus NullRenderingCreateInfoInstance::iterate(void)
     // Fragment shader stage library.
     {
         VkGraphicsPipelineLibraryCreateInfoEXT fragShaderLibInfo =
-            initVulkanStructure(&nullRenderingInfo); // What we're testing.
+            initVulkanStructure(&unusualRenderingInfo); // What we're testing.
         fragShaderLibInfo.flags |= VK_GRAPHICS_PIPELINE_LIBRARY_FRAGMENT_SHADER_BIT_EXT;
 
         VkGraphicsPipelineCreateInfo fragShaderPipelineInfo = initVulkanStructure(&fragShaderLibInfo);
@@ -3943,7 +4174,8 @@ void PipelineLibraryMiscTestCase::checkSupport(Context &context) const
     if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
         context.requireDeviceFunctionality("VK_KHR_pipeline_library");
 
-    if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+    if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
+        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
     if (m_testParams.mode == MiscTestMode::COMMON_FRAG_LIBRARY)
@@ -3974,6 +4206,11 @@ void PipelineLibraryMiscTestCase::checkSupport(Context &context) const
         }
         else
             context.requireDeviceFunctionality("VK_KHR_multiview");
+    }
+
+    if (m_testParams.mode == MiscTestMode::DESTROY_RESOURCES_BEFORE_LINK)
+    {
+        context.requireDeviceFunctionality("VK_KHR_maintenance4");
     }
 }
 
@@ -4168,7 +4405,8 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
              << "}\n";
         programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
     }
-    else if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
+    else if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
+             (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
     {
         std::ostringstream vert;
         vert << "#version 460\n"
@@ -4448,6 +4686,35 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
             "    }\n"
             "}\n");
     }
+    else if (m_testParams.mode == MiscTestMode::DESTROY_RESOURCES_BEFORE_LINK)
+    {
+        std::ostringstream vert;
+        {
+            vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                 << "vec2 positions[6] = vec2[](\n"
+                 << "    vec2(-1.0, -1.0),\n"
+                 << "    vec2(-1.0,  1.0),\n"
+                 << "    vec2( 1.0, -1.0),\n"
+                 << "    vec2( 1.0, -1.0),\n"
+                 << "    vec2(-1.0,  1.0),\n"
+                 << "    vec2(1.0,  1.0)\n"
+                 << ");\n"
+                 << "void main() {\n"
+                 << "    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
+                 << "}\n";
+        }
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+        std::ostringstream frag;
+        {
+            frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                 << "layout (location=0) out vec4 color;\n"
+                 << "void main () {\n"
+                 << "    color = vec4(0.0, 1.0, 0.0, 1.0); // green\n"
+                 << "}\n";
+        }
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    }
     else
     {
         DE_ASSERT(false);
@@ -4465,8 +4732,9 @@ TestInstance *PipelineLibraryMiscTestCase::createInstance(Context &context) cons
     if (m_testParams.mode == MiscTestMode::SHADER_MODULE_CREATE_INFO_RT_LIB)
         return new PipelineLibraryShaderModuleInfoRTInstance(context, true /*withLibrary*/);
 
-    if (m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO)
-        return new NullRenderingCreateInfoInstance(context);
+    if ((m_testParams.mode == MiscTestMode::NULL_RENDERING_CREATE_INFO) ||
+        (m_testParams.mode == MiscTestMode::BAD_RENDERING_CREATE_INFO))
+        return new UnusualRenderingCreateInfoInstance(context, m_testParams.mode);
 
     if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX)
         return new CreateViewIndexFromDeviceIndexInstance(context, m_testParams);
@@ -4684,6 +4952,8 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
                                             {MiscTestMode::BIND_NULL_DESCRIPTOR_SET_IN_MONOLITHIC_PIPELINE}));
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "null_rendering_create_info",
                                                              {MiscTestMode::NULL_RENDERING_CREATE_INFO}));
+        otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "bad_rendering_create_info",
+                                                             {MiscTestMode::BAD_RENDERING_CREATE_INFO}));
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "common_frag_pipeline_library",
                                                              {MiscTestMode::COMMON_FRAG_LIBRARY}));
 
@@ -4716,6 +4986,11 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "unusual_multisample_state",
                                                              {MiscTestMode::UNUSUAL_MULTISAMPLE_STATE, 0u, 0u}));
 
+        otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "destroy_resources_before_link_samplers_2",
+                                                             {MiscTestMode::DESTROY_RESOURCES_BEFORE_LINK, 2u}));
+        otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "destroy_resources_before_link_samplers_3",
+                                                             {MiscTestMode::DESTROY_RESOURCES_BEFORE_LINK, 3u}));
+
         miscTests->addChild(otherTests.release());
     }
 
@@ -4735,6 +5010,4 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
     return group.release();
 }
 
-} // namespace pipeline
-
-} // namespace vkt
+} // namespace vkt::pipeline

@@ -2,5 +2,20 @@
     "register_extension": {
         "type": "device",
         "core": "0.1.3.0"
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceDynamicRenderingFeaturesKHR": [
+            {
+                "features": [
+                    "dynamicRendering"
+                ],
+                "requirements": [
+                    "VK_KHR_dynamic_rendering"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
     }
 }

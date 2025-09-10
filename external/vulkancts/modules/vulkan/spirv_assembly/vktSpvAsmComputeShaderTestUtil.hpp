@@ -35,6 +35,7 @@
 #include <string>
 #include <vector>
 #include <map>
+#include <functional>
 
 using namespace vk;
 
@@ -54,6 +55,25 @@ enum OpAtomicType
     OPATOMIC_COMPEX,
 
     OPATOMIC_LAST
+};
+
+enum AtomicOpType
+{
+    OP_ATOMIC_ADD = 0,
+    OP_ATOMIC_SUBTRACT,
+    OP_ATOMIC_INCREMENT,
+    OP_ATOMIC_DECREMENT,
+    OP_ATOMIC_LOAD,
+    OP_ATOMIC_STORE,
+    OP_ATOMIC_EXCHANGE,
+    OP_ATOMIC_COMPARE_EXCHANGE,
+    OP_ATOMIC_MIN,
+    OP_ATOMIC_MAX,
+    OP_ATOMIC_AND,
+    OP_ATOMIC_OR,
+    OP_ATOMIC_XOR,
+
+    OP_ATOMIC_LAST
 };
 
 enum BufferType
@@ -288,6 +308,295 @@ private:
     const BufferType m_type;
 };
 
+// Describes sequence of operations performed on buffer data
+struct AtomicOpDesc
+{
+    size_t elemIndex;  // Specifies index of element to preform atomic operation on to.
+    AtomicOpType type; // Specifies atomic operation type to perform.
+    double userData0;  // Specifies additional operation data.
+    double userData1;  // Specifies additional operation data.
+};
+
+template <class T>
+inline T LoadStore(T a)
+{
+    return a;
+}
+
+template <class T>
+inline T Increment(T a)
+{
+    return ++a;
+}
+
+template <>
+inline tcu::Float16 Increment<tcu::Float16>(tcu::Float16)
+{
+    return tcu::Float16();
+}
+
+template <class T>
+inline T Decrement(T a)
+{
+    return --a;
+}
+
+template <>
+inline tcu::Float16 Decrement<tcu::Float16>(tcu::Float16)
+{
+    return tcu::Float16();
+}
+
+template <class T>
+inline T Add(T a, T b)
+{
+    return static_cast<T>(a + b);
+}
+
+template <>
+inline tcu::Float16 Add<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return tcu::Float16(a.asFloat() + b.asFloat());
+}
+
+template <class T>
+inline T Subtract(T a, T b)
+{
+    return static_cast<T>(a - b);
+}
+
+template <>
+inline tcu::Float16 Subtract<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return tcu::Float16(a.asFloat() - b.asFloat());
+}
+
+template <class T>
+inline T Min(T a, T b)
+{
+    return a < b ? a : b;
+}
+
+template <>
+inline tcu::Float16 Min<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return a.asFloat() < b.asFloat() ? a : b;
+}
+
+template <class T>
+inline T Max(T a, T b)
+{
+    return a > b ? a : b;
+}
+
+template <>
+inline tcu::Float16 Max<tcu::Float16>(tcu::Float16 a, tcu::Float16 b)
+{
+    return a.asFloat() > b.asFloat() ? a : b;
+}
+
+template <class T>
+inline T And(T a, T b)
+{
+    return a & b;
+}
+
+template <>
+inline tcu::Float16 And<tcu::Float16>(tcu::Float16, tcu::Float16)
+{
+    return tcu::Float16();
+}
+
+template <>
+inline float And<float>(float, float)
+{
+    return 0;
+}
+
+template <>
+inline double And<double>(double, double)
+{
+    return 0;
+}
+
+template <class T>
+inline T Or(T a, T b)
+{
+    return a | b;
+}
+
+template <>
+inline tcu::Float16 Or<tcu::Float16>(tcu::Float16, tcu::Float16)
+{
+    return tcu::Float16();
+}
+
+template <>
+inline float Or<float>(float, float)
+{
+    return 0;
+}
+
+template <>
+inline double Or<double>(double, double)
+{
+    return 0;
+}
+
+template <class T>
+inline T Xor(T a, T b)
+{
+    return a ^ b;
+}
+
+template <>
+inline tcu::Float16 Xor<tcu::Float16>(tcu::Float16, tcu::Float16)
+{
+    return tcu::Float16();
+}
+
+template <>
+inline float Xor<float>(float, float)
+{
+    return 0;
+}
+
+template <>
+inline double Xor<double>(double, double)
+{
+    return 0;
+}
+
+template <class T>
+inline T Exchange(T a)
+{
+    return a;
+}
+
+template <class T>
+inline T CompareExchange(T a, T b, T comp)
+{
+    return a == comp ? b : a;
+}
+
+template <>
+inline tcu::Float16 CompareExchange<tcu::Float16>(tcu::Float16 a, tcu::Float16 b, tcu::Float16 comp)
+{
+    return a.asFloat() == comp.asFloat() ? b : a;
+}
+
+/*----------------------------------------------------------------------------------------*//*!
+ * \brief Concrete class for an input/output storage buffer object for atomic operations
+ *//*----------------------------------------------------------------------------------------*/
+template <class T>
+class AtomicBuffer : public BufferInterface
+{
+public:
+    AtomicBuffer(const std::vector<T> &elements, const std::vector<AtomicOpDesc> &atomicOpDescs)
+        : m_elements(elements)
+        , m_atomicOpDescs(atomicOpDescs)
+    {
+    }
+
+    void getBytes(std::vector<uint8_t> &bytes) const
+    {
+        const size_t size     = m_elements.size() * sizeof(T);
+        const uint8_t initVal = 0x00u; // Initial value for all GPU atomic operations
+        bytes.resize(size, initVal);
+
+        for (size_t ndx = 0; ndx < m_atomicOpDescs.size(); ndx++)
+        {
+            const AtomicOpType type = m_atomicOpDescs[ndx].type;
+            T *const bytesAsT       = reinterpret_cast<T *>(&bytes.front());
+            const size_t elemNdx    = m_atomicOpDescs[ndx].elemIndex;
+            DE_ASSERT(elemNdx < m_elements.size());
+            const T value = static_cast<T>(m_atomicOpDescs[ndx].userData0);
+            const T comp  = static_cast<T>(m_atomicOpDescs[ndx].userData1);
+
+            switch (type)
+            {
+            case OP_ATOMIC_LOAD:
+            case OP_ATOMIC_STORE:
+            {
+                bytesAsT[elemNdx] = LoadStore(value);
+                break;
+            }
+            case OP_ATOMIC_ADD:
+            {
+                bytesAsT[elemNdx] = Add(bytesAsT[elemNdx], value);
+                break;
+            }
+            case OP_ATOMIC_SUBTRACT:
+            {
+                bytesAsT[elemNdx] = Subtract(bytesAsT[elemNdx], value);
+                break;
+            }
+            case OP_ATOMIC_INCREMENT:
+            {
+                bytesAsT[elemNdx] = Increment(bytesAsT[elemNdx]);
+                break;
+            }
+            case OP_ATOMIC_DECREMENT:
+            {
+                bytesAsT[elemNdx] = Decrement(bytesAsT[elemNdx]);
+                break;
+            }
+            case OP_ATOMIC_MIN:
+            {
+                bytesAsT[elemNdx] = Min(bytesAsT[elemNdx], value);
+                break;
+            }
+            case OP_ATOMIC_MAX:
+            {
+                bytesAsT[elemNdx] = Max(bytesAsT[elemNdx], value);
+                break;
+            }
+            case OP_ATOMIC_AND:
+            {
+                bytesAsT[elemNdx] = And(bytesAsT[elemNdx], value);
+                break;
+            }
+            case OP_ATOMIC_OR:
+            {
+                bytesAsT[elemNdx] = Or(bytesAsT[elemNdx], value);
+                break;
+            }
+            case OP_ATOMIC_XOR:
+            {
+                bytesAsT[elemNdx] = Xor(bytesAsT[elemNdx], value);
+                break;
+            }
+            case OP_ATOMIC_EXCHANGE:
+            {
+                bytesAsT[elemNdx] = Exchange(value);
+                break;
+            }
+            case OP_ATOMIC_COMPARE_EXCHANGE:
+            {
+                bytesAsT[elemNdx] = CompareExchange(bytesAsT[elemNdx], value, comp);
+                break;
+            }
+            default:
+                break;
+            }
+        }
+    }
+
+    void getPackedBytes(std::vector<uint8_t> &bytes) const
+    {
+        getBytes(bytes);
+    }
+
+    size_t getByteSize(void) const
+    {
+        return m_elements.size() * sizeof(T);
+    }
+
+private:
+    std::vector<T> m_elements;
+    std::vector<AtomicOpDesc> m_atomicOpDescs;
+};
+
 /*--------------------------------------------------------------------*//*!
  * \brief Concrete class for an input/output storage buffer object
  *//*--------------------------------------------------------------------*/
@@ -388,6 +697,8 @@ struct ComputeShaderSpec
     bool coherentMemory;
     bool usesPhysStorageBuffer;
     const bool graphicsFeaturesRequired;
+    // The last numArrayInputs inputs are considered an array binding.
+    size_t numArrayInputs;
 
     ComputeShaderSpec(void)
         : entryPoint("main")
@@ -401,6 +712,7 @@ struct ComputeShaderSpec
         , coherentMemory(false)
         , usesPhysStorageBuffer(false)
         , graphicsFeaturesRequired(false)
+        , numArrayInputs(0)
     {
     }
 };

@@ -675,9 +675,9 @@ void BufferViewTestInstance::recordCommandBuffer(VkCommandBuffer cmdBuffer)
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
             nullptr,                                // const void* pNext;
             0,                                      // VkAccessFlags srcAccessMask;
-            VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
+            VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags dstAccessMask;
             VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
-            VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout newLayout;
             VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
             VK_QUEUE_FAMILY_IGNORED,                // uint32_t destQueueFamilyIndex;
             *m_colorImage,                          // VkImage image;
@@ -689,8 +689,7 @@ void BufferViewTestInstance::recordCommandBuffer(VkCommandBuffer cmdBuffer)
                 0u,                        // uint32_t baseArraySlice;
                 1u                         // uint32_t arraySize;
             }};
-
-        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initialImageBarrier);
 
         vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelines);
@@ -709,7 +708,29 @@ void BufferViewTestInstance::recordCommandBuffer(VkCommandBuffer cmdBuffer)
             0u,                        // uint32_t baseArraySlice;
             1u                         // uint32_t arraySize;
         };
-        vk.cmdClearColorImage(cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_GENERAL, &clrColor, 1, &subresourceRange);
+        vk.cmdClearColorImage(cmdBuffer, *m_colorImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &clrColor, 1,
+                              &subresourceRange);
+
+        const VkImageMemoryBarrier clearDispatchImageBarrier = {
+            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+            nullptr,                                // const void* pNext;
+            VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags srcAccessMask;
+            VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout oldLayout;
+            VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
+            VK_QUEUE_FAMILY_IGNORED,                // uint32_t destQueueFamilyIndex;
+            *m_colorImage,                          // VkImage image;
+            {
+                // VkImageSubresourceRange subresourceRange;
+                VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                0u,                        // uint32_t baseMipLevel;
+                1u,                        // uint32_t mipLevels;
+                0u,                        // uint32_t baseArraySlice;
+                1u                         // uint32_t arraySize;
+            }};
+        vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &clearDispatchImageBarrier);
 
         vk.cmdDispatch(cmdBuffer, m_renderSize.x(), m_renderSize.y(), 1);
 
@@ -735,7 +756,7 @@ void BufferViewTestInstance::recordCommandBuffer(VkCommandBuffer cmdBuffer)
         vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                               (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &storeTransferImageBarrier);
 
-        copyImageToBuffer(vk, cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize, VkAccessFlags(256u),
+        copyImageToBuffer(vk, cmdBuffer, *m_colorImage, *m_resultBuffer, m_renderSize, VK_ACCESS_SHADER_WRITE_BIT,
                           VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
         endCommandBuffer(vk, cmdBuffer);
     }

@@ -121,6 +121,7 @@
 #include "vktReconvergenceTests.hpp"
 #include "vktMeshShaderTests.hpp"
 #include "vktFragmentShadingBarycentricTests.hpp"
+#include "vktShaderBFloat16Tests.hpp"
 
 #ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
 #include "vktVideoTests.hpp"
@@ -148,6 +149,8 @@ using de::UniquePtr;
 using std::vector;
 using tcu::TestLog;
 
+class ContextManager;
+
 // TestCaseExecutor
 
 #ifdef CTS_USES_VULKANSC
@@ -170,7 +173,7 @@ public:
     tcu::TestNode::IterateResult iterate(tcu::TestCase *testCase) override;
 
     void deinitTestPackage(tcu::TestContext &testCtx) override;
-    bool usesLocalStatus() override;
+    bool usesLocalStatus(tcu::TestContext &testContext) override;
     void updateGlobalStatus(tcu::TestRunStatus &status) override;
     void reportDurations(tcu::TestContext &testCtx, const std::string &packageName, const int64_t &duration,
                          const std::map<std::string, uint64_t> &groupsDurationTime) override;
@@ -187,14 +190,16 @@ private:
     vk::BinaryRegistryReader m_prebuiltBinRegistry;
 
     const UniquePtr<vk::Library> m_library;
-    MovePtr<Context> m_context;
+    SharedPtr<ContextManager> m_defaultContextManager;
+    SharedPtr<ContextManager> m_contextManager;
+    SharedPtr<Context> m_context;
 
     const UniquePtr<vk::RenderDocUtil> m_renderDoc;
     SharedPtr<vk::ResourceInterface> m_resourceInterface;
     vk::VkPhysicalDeviceProperties m_deviceProperties;
     tcu::WaiverUtil m_waiverMechanism;
 
-    TestInstance *m_instance; //!< Current test case instance
+    TestInstance *m_testInstance; //!< Current test case instance
     tcu::TestRunStatus m_status;
 
 #ifdef CTS_USES_VULKANSC
@@ -249,7 +254,7 @@ static MovePtr<vk::Library> createLibrary(tcu::TestContext &testCtx)
 #endif
 }
 
-static vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(vkt::Context &context)
+[[maybe_unused]] static vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(vkt::Context &context)
 {
     const vk::InstanceInterface &vki          = context.getInstanceInterface();
     const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
@@ -258,6 +263,9 @@ static vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(vkt::Context &
     vki.getPhysicalDeviceProperties(physicalDevice, &properties);
     return properties;
 }
+
+extern vk::VkPhysicalDeviceProperties getPhysicalDeviceProperties(de::SharedPtr<ContextManager> mgr);
+extern uint32_t getUsedApiVersion(de::SharedPtr<ContextManager> mgr);
 
 std::string trim(const std::string &original)
 {
@@ -273,6 +281,8 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     : m_progCollection()
     , m_prebuiltBinRegistry(testCtx.getArchive(), "vulkan/prebuilt")
     , m_library(createLibrary(testCtx))
+    , m_defaultContextManager()
+    , m_contextManager()
     , m_context()
     , m_renderDoc(testCtx.getCommandLine().isRenderDocEnabled() ? MovePtr<vk::RenderDocUtil>(new vk::RenderDocUtil()) :
                                                                   MovePtr<vk::RenderDocUtil>(nullptr))
@@ -283,7 +293,7 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
 #endif // CTS_USES_VULKANSC
     , m_deviceProperties()
     , m_waiverMechanism()
-    , m_instance(nullptr)
+    , m_testInstance(nullptr)
     , m_status()
 #if defined CTS_USES_VULKANSC
     , m_subprocessCount(0)
@@ -362,9 +372,12 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     }
 #endif // CTS_USES_VULKANSC
 
-    m_context = MovePtr<Context>(
-        new Context(testCtx, m_library->getPlatformInterface(), m_progCollection, m_resourceInterface));
-    m_deviceProperties = getPhysicalDeviceProperties(*m_context);
+    const InstCaps defaultInstCaps(m_library->getPlatformInterface(), testCtx.getCommandLine());
+    const int maxCustomDevices =
+        std::clamp(testCtx.getCommandLine().getMaxCustomDevices(), 1, std::numeric_limits<int>::max());
+    m_defaultContextManager = ContextManager::create(m_library->getPlatformInterface(), testCtx.getCommandLine(),
+                                                     m_resourceInterface, maxCustomDevices, defaultInstCaps);
+    m_deviceProperties      = getPhysicalDeviceProperties(m_defaultContextManager);
 
     tcu::SessionInfo sessionInfo(m_deviceProperties.vendorID, m_deviceProperties.deviceID,
                                  m_deviceProperties.deviceName, testCtx.getCommandLine().getInitialCmdLine());
@@ -402,7 +415,7 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     }
 
 #ifdef CTS_USES_VULKANSC
-    m_resourceInterface->initApiVersion(m_context->getUsedApiVersion());
+    m_resourceInterface->initApiVersion(defaultInstCaps.usedApiVersion);
 
     // Real Vulkan SC tests are performed in subprocess.
     // Tests run in main process are only used to collect data required by Vulkan SC.
@@ -410,14 +423,14 @@ TestCaseExecutor::TestCaseExecutor(tcu::TestContext &testCtx)
     if (!testCtx.getCommandLine().isSubProcess())
     {
         suppressStandardOutput();
-        m_context->getTestContext().getLog().supressLogging(true);
+        testCtx.getLog().supressLogging(true);
     }
 #endif // CTS_USES_VULKANSC
 }
 
 TestCaseExecutor::~TestCaseExecutor(void)
 {
-    delete m_instance;
+    delete m_testInstance;
 }
 
 void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath)
@@ -430,28 +443,52 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
         throw tcu::TestException("Waived test", QP_TEST_RESULT_WAIVER);
     }
 
-    TestCase *vktCase                           = dynamic_cast<TestCase *>(testCase);
-    tcu::TestLog &log                           = m_context->getTestContext().getLog();
-    const uint32_t usedVulkanVersion            = m_context->getUsedApiVersion();
+    TestCase *vktCase = dynamic_cast<TestCase *>(testCase);
+    if (!vktCase)
+        TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
+
+    // findCustomManager() method may throw an exception, the assignment
+    // below ensures that the m_contextManager variable will always have a value.
+    // The m_defaultContextManager was introduced for compatibility with existing code.
+    m_contextManager = m_defaultContextManager;
+    m_contextManager = m_defaultContextManager->findCustomManager(vktCase, m_defaultContextManager);
+    // ContextManager acts as a Vulkan instance with a physical device.
+    // The currently running test can use the information contained in
+    // it for the time when the logical device has not been created.
+    m_contextManager->setContextManager(m_contextManager, vktCase);
+
+    tcu::TestLog &log                           = testCase->getTestContext().getLog();
+    const uint32_t usedVulkanVersion            = getUsedApiVersion(m_contextManager);
     const vk::SpirvVersion baselineSpirvVersion = vk::getBaselineSpirvVersion(usedVulkanVersion);
     vk::ShaderBuildOptions defaultGlslBuildOptions(usedVulkanVersion, baselineSpirvVersion, 0u);
     vk::ShaderBuildOptions defaultHlslBuildOptions(usedVulkanVersion, baselineSpirvVersion, 0u);
     vk::SpirVAsmBuildOptions defaultSpirvAsmBuildOptions(usedVulkanVersion, baselineSpirvVersion);
     vk::SourceCollections sourceProgs(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions,
                                       defaultSpirvAsmBuildOptions);
-    const tcu::CommandLine &commandLine = m_context->getTestContext().getCommandLine();
+    const tcu::CommandLine &commandLine = m_contextManager->getCommandLine();
     const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
-
-    if (!vktCase)
-        TCU_THROW(InternalError, "Test node not an instance of vkt::TestCase");
 
     {
 #ifdef CTS_USES_VULKANSC
-        int currentSubprocessCount =
-            getCurrentSubprocessCount(casePath, m_context->getTestContext().getCommandLine().getSubprocessTestCount());
+        // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
+        // the function that creates a new device, may throw an exception. All messages, including
+        // logging, are disabled while the test is being processed by the SC in the main process,
+        // so in the event of an exception, control will immediately jump to the exception handler
+        // without any information about the situation. To handle this, we put the test on the list
+        // of tests to run in the subprocess before calling the functions that may throw an exception.
+        m_testsForSubprocess.push_back(casePath);
+#endif
+    }
+
+    m_context = m_contextManager->findContext(m_contextManager, vktCase, m_context, m_progCollection);
+
+    {
+#ifdef CTS_USES_VULKANSC
+        const int currentSubprocessCount =
+            getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
         if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
         {
-            runTestsInSubprocess(m_context->getTestContext());
+            runTestsInSubprocess(testCase->getTestContext());
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests
             m_testsForSubprocess.clear();
@@ -463,18 +500,13 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             m_resourceInterface->resetObjects();
 
             suppressStandardOutput();
-            m_context->getTestContext().getLog().supressLogging(true);
+            log.supressLogging(true);
         }
         m_subprocessCount = currentSubprocessCount;
-        m_testsForSubprocess.push_back(casePath);
 #endif // CTS_USES_VULKANSC
     }
 
     m_resourceInterface->initTestCase(casePath);
-
-    vktCase->checkSupport(*m_context);
-
-    vktCase->delayedInit();
 
     m_progCollection.clear();
     vktCase->initPrograms(sourceProgs);
@@ -546,52 +578,75 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     if (m_renderDoc)
         m_renderDoc->startFrame(m_context->getInstance());
 
-    DE_ASSERT(!m_instance);
-    m_instance = vktCase->createInstance(*m_context);
+    DE_ASSERT(nullptr == m_testInstance);
+
+    m_testInstance = vktCase->createInstance(*m_context);
+
     m_context->resultSetOnValidation(false);
 }
 
 void TestCaseExecutor::deinit(tcu::TestCase *testCase)
 {
-    delete m_instance;
-    m_instance = nullptr;
+    delete m_testInstance;
+    m_testInstance = nullptr;
 
-    if (m_renderDoc)
-        m_renderDoc->endFrame(m_context->getInstance());
+    // Sometimes even the default context may not be created correctly,
+    // e.g. due to incorrect program input parameters. To eliminate potential
+    // null pointer dereference we introduce an appropriate variable and use
+    // the test context taken from the test.
+    const bool validContext = m_context.get() != nullptr;
+
+    if (m_contextManager && m_renderDoc)
+        m_renderDoc->endFrame(m_contextManager->getInstanceHandle());
 
         // Collect and report any debug messages
 #ifndef CTS_USES_VULKANSC
-    if (m_context->hasDebugReportRecorder())
-        collectAndReportDebugMessages(m_context->getDebugReportRecorder(), *m_context);
+    if (validContext && m_context->hasDebugReportRecorders())
+    {
+        const auto recorders = m_context->getDebugReportRecorders();
+        for (const auto &r : recorders)
+        {
+            if (r != nullptr)
+                collectAndReportDebugMessages(*r, *m_context);
+        }
+    }
 #endif // CTS_USES_VULKANSC
 
     if (testCase != nullptr)
         logUnusedShaders(testCase);
 
 #ifdef CTS_USES_VULKANSC
-    if (!m_context->getTestContext().getCommandLine().isSubProcess())
+    tcu::TestContext &testContext = testCase->getTestContext();
+    tcu::TestLog &log             = testContext.getLog();
+
+    if (!testContext.getCommandLine().isSubProcess())
     {
-        int currentSubprocessCount =
-            getCurrentSubprocessCount(m_context->getResourceInterface()->getCasePath(),
-                                      m_context->getTestContext().getCommandLine().getSubprocessTestCount());
+        int currentSubprocessCount = getCurrentSubprocessCount(m_resourceInterface->getCasePath(),
+                                                               testContext.getCommandLine().getSubprocessTestCount());
         if (m_testsForSubprocess.size() >= std::size_t(currentSubprocessCount))
         {
-            runTestsInSubprocess(m_context->getTestContext());
+            runTestsInSubprocess(testContext);
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests
             m_testsForSubprocess.clear();
-            const vk::DeviceInterface &vkd = m_context->getDeviceInterface();
-            const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
-            if (dds == nullptr)
-                TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
-            dds->reset();
+            bool validDriver = false;
+            if (validContext)
+            {
+                const vk::DeviceInterface &vkd = m_context->getDeviceInterface();
+                const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
+                if (validDriver = dds != nullptr; validDriver)
+                    dds->reset();
+            }
             m_resourceInterface->resetObjects();
 
             suppressStandardOutput();
-            m_context->getTestContext().getLog().supressLogging(true);
+            log.supressLogging(true);
+
+            if (false == validDriver)
+                TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
         }
     }
-    else
+    else if (validContext)
     {
         bool faultFail = false;
         std::lock_guard<std::mutex> lock(Context::m_faultDataMutex);
@@ -600,8 +655,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
         {
             for (uint32_t i = 0; i < Context::m_faultData.size(); ++i)
             {
-                m_context->getTestContext().getLog()
-                    << TestLog::Message << "Fault recorded via fault callback: " << Context::m_faultData[i]
+                log << TestLog::Message << "Fault recorded via fault callback: " << Context::m_faultData[i]
                     << TestLog::EndMessage;
                 if (Context::m_faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
                     faultFail = true;
@@ -616,8 +670,7 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
                                            &unrecordedFaults, &faultCount, nullptr);
         if (result != VK_SUCCESS)
         {
-            m_context->getTestContext().getLog()
-                << TestLog::Message << "vkGetFaultData returned error: " << getResultName(result)
+            log << TestLog::Message << "vkGetFaultData returned error: " << getResultName(result)
                 << TestLog::EndMessage;
             faultFail = true;
         }
@@ -633,21 +686,19 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
                                       &unrecordedFaults, &faultCount, faultData.data());
             if (result != VK_SUCCESS)
             {
-                m_context->getTestContext().getLog()
-                    << TestLog::Message << "vkGetFaultData returned error: " << getResultName(result)
+                log << TestLog::Message << "vkGetFaultData returned error: " << getResultName(result)
                     << TestLog::EndMessage;
                 faultFail = true;
             }
             for (uint32_t i = 0; i < faultCount; ++i)
             {
-                m_context->getTestContext().getLog()
-                    << TestLog::Message << "Fault recorded via vkGetFaultData: " << faultData[i] << TestLog::EndMessage;
+                log << TestLog::Message << "Fault recorded via vkGetFaultData: " << faultData[i] << TestLog::EndMessage;
                 if (faultData[i].faultLevel != VK_FAULT_LEVEL_WARNING)
                     faultFail = true;
             }
         }
         if (faultFail)
-            m_context->getTestContext().setTestResult(QP_TEST_RESULT_FAIL, "Fault occurred");
+            testContext.setTestResult(QP_TEST_RESULT_FAIL, "Fault occurred");
     }
 #endif // CTS_USES_VULKANSC
 }
@@ -685,16 +736,16 @@ void TestCaseExecutor::logUnusedShaders(tcu::TestCase *testCase)
 
             message = std::string("Unused shaders: ") + message;
 
-            m_context->getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
+            testCase->getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
         }
     }
 }
 
 tcu::TestNode::IterateResult TestCaseExecutor::iterate(tcu::TestCase *)
 {
-    DE_ASSERT(m_instance);
+    DE_ASSERT(m_testInstance);
 
-    const tcu::TestStatus result = m_instance->iterate();
+    const tcu::TestStatus result = m_testInstance->iterate();
 
     if (result.isComplete())
     {
@@ -733,7 +784,7 @@ void TestCaseExecutor::deinitTestPackage(tcu::TestContext &testCtx)
         // Tests are finished. Next tests ( if any ) will come from other test package and test executor
         if (!testCtx.getCommandLine().quietMode())
             restoreStandardOutput();
-        m_context->getTestContext().getLog().supressLogging(false);
+        testCtx.getLog().supressLogging(false);
     }
     m_resourceInterface->resetPipelineCaches();
 #else
@@ -741,11 +792,12 @@ void TestCaseExecutor::deinitTestPackage(tcu::TestContext &testCtx)
 #endif // CTS_USES_VULKANSC
 }
 
-bool TestCaseExecutor::usesLocalStatus()
+bool TestCaseExecutor::usesLocalStatus(tcu::TestContext &testContext)
 {
 #ifdef CTS_USES_VULKANSC
-    return !m_context->getTestContext().getCommandLine().isSubProcess();
+    return !testContext.getCommandLine().isSubProcess();
 #else
+    DE_UNREF(testContext);
     return false;
 #endif
 }
@@ -892,13 +944,33 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
 
         // brave ( but working ) assumption that each CTS parameter starts with "--deqp"
 
-        std::string paramStr("--deqp");
+        const std::string paramStr("--deqp");
         std::vector<std::string> skipElements = {
             "--deqp-case",           "--deqp-stdin-caselist", "--deqp-log-filename",  "--deqp-pipeline-compiler",
             "--deqp-pipeline-dir",   "--deqp-pipeline-args",  "--deqp-pipeline-file", "--deqp-pipeline-logfile",
             "--deqp-pipeline-prefix"};
+        const std::string replaceElements[]{"-n ", "-n\t", "-f ", "-f\t"};
 
         std::size_t pos = 0;
+
+        while (pos != std::string::npos)
+        {
+            for (const std::string &replaceElement : replaceElements)
+            {
+                if (std::size_t repl = originalCmdLine.find(replaceElement, pos); repl != std::string::npos)
+                {
+                    originalCmdLine.replace(repl, replaceElement.length(), skipElements.at(0));
+                    pos = repl;
+                    break;
+                }
+                else
+                {
+                    pos = std::string::npos;
+                }
+            }
+        }
+
+        pos = 0;
         std::vector<std::size_t> argPos;
         while ((pos = originalCmdLine.find(paramStr, pos)) != std::string::npos)
             argPos.push_back(pos++);
@@ -961,6 +1033,7 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
     std::string subProcessExitCodeInfo;
     {
         deProcess *process = deProcess_create();
+
         if (deProcess_start(process, newCmdLine.c_str(), ".") != true)
         {
             std::string err = deProcess_getLastError(process);
@@ -1132,6 +1205,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     glslTests->addChild(sr::createDiscardTests(testCtx));
 #ifndef CTS_USES_VULKANSC
     glslTests->addChild(sr::createDemoteTests(testCtx));
+    glslTests->addChild(shaderexecutor::createBFloat16Tests(testCtx));
 #endif // CTS_USES_VULKANSC
     glslTests->addChild(sr::createIndexingTests(testCtx));
     glslTests->addChild(sr::createShaderInvarianceTests(testCtx));
@@ -1226,9 +1300,7 @@ void TestPackage::init(void)
     addRootChild("binding_model", m_caseListFilter, BindingModel::createTests);
     addRootChild("spirv_assembly", m_caseListFilter, SpirVAssembly::createTests);
     addRootChild("glsl", m_caseListFilter, createGlslTests);
-    addRootChild("renderpass", m_caseListFilter, createRenderPassTests);
-    addRootChild("renderpass2", m_caseListFilter, createRenderPass2Tests);
-    addRootChild("dynamic_rendering", m_caseListFilter, createDynamicRenderingTests);
+    addRootChild("renderpasses", m_caseListFilter, createRenderPassesTests);
     addRootChild("ubo", m_caseListFilter, ubo::createTests);
     addRootChild("dynamic_state", m_caseListFilter, DynamicState::createTests);
     addRootChild("ssbo", m_caseListFilter, ssbo::createTests);
@@ -1295,8 +1367,7 @@ void TestPackageSC::init(void)
     addRootChild("binding_model", m_caseListFilter, BindingModel::createTests);
     addRootChild("spirv_assembly", m_caseListFilter, SpirVAssembly::createTests);
     addRootChild("glsl", m_caseListFilter, createGlslTests);
-    addRootChild("renderpass", m_caseListFilter, createRenderPassTests);
-    addRootChild("renderpass2", m_caseListFilter, createRenderPass2Tests);
+    addRootChild("renderpasses", m_caseListFilter, createRenderPassesTests);
     addRootChild("ubo", m_caseListFilter, ubo::createTests);
     addRootChild("dynamic_state", m_caseListFilter, DynamicState::createTests);
     addRootChild("ssbo", m_caseListFilter, ssbo::createTests);

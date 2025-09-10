@@ -23,27 +23,22 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktBindingBufferDeviceAddressTests.hpp"
+#include "vktTestCase.hpp"
 
-#include "vkBufferWithMemory.hpp"
-#include "vkImageWithMemory.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
-
-#include "vktTestGroupUtil.hpp"
-#include "vktTestCase.hpp"
+#include "vkMemUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
 
 #include "deDefs.h"
-#include "deMath.h"
-#include "deRandom.h"
 #include "deRandom.hpp"
-#include "deSharedPtr.hpp"
-#include "deString.h"
+#include "deUniquePtr.hpp"
 
 #include "tcuTestCase.hpp"
-#include "tcuTestLog.hpp"
 
 #include <string>
 #include <sstream>
@@ -1704,6 +1699,7 @@ tcu::TestCaseGroup *createBufferDeviceAddressTests(tcu::TestContext &testCtx)
         capGroup->addChild(new CaptureReplayTestCase(testCtx, (std::string("seed_") + de::toString(i)).c_str(), i));
     }
     group->addChild(capGroup.release());
+
     return group.release();
 }
 

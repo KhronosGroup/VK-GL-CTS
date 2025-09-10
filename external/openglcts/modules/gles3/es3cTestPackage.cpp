@@ -58,6 +58,7 @@
 #include "glcTransformFeedbackTests.hpp"
 #include "glcUniformBlockTests.hpp"
 #include "glcUniformBlockNegativeTests.hpp"
+#include "glcNegativeTextureLookupFunctionsBiasTests.hpp"
 #include "gluStateReset.hpp"
 #include "glwEnums.hpp"
 #include "glwFunctions.hpp"
@@ -213,6 +214,7 @@ void ES30TestPackage::init(void)
         addChild(new glcts::TransformFeedbackTests(getContext()));
         addChild(new glcts::ApiCoverageTests(getContext()));
         addChild(new glcts::TextureStorageTests(getContext()));
+        addChild(new glcts::NegativeTextureLookupFunctionsBiasTests(getContext()));
     }
     catch (...)
     {

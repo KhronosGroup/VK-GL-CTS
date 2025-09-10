@@ -198,7 +198,7 @@ string getTestSrc(const CaseDefinition &caseDef)
                     " ref = " + getIdentity(caseDef.op, caseDef.format) +
                     ";\n"
                     "  tempRes = 0;\n"
-                    "  uint identityOnly = 0x3\n;"
+                    "  uint identityOnly = 0x3;\n"
                     "  for (uint index = start; index < end; index++)\n"
                     "  {\n"
                     "    if (subgroupBallotBitExtract(mask, index))\n"
@@ -241,7 +241,7 @@ string getTestSrc(const CaseDefinition &caseDef)
 
     // Can't test max or min identity as they are +/-inf, which the SPIR-V
     // compiler is allowed to assume don't occur in the program
-    if (caseDef.op == OPERATOR_MIN || caseDef.op == OPERATOR_MAX)
+    if ((caseDef.op == OPERATOR_MIN || caseDef.op == OPERATOR_MAX) && subgroups::isFormatFloat(caseDef.format))
         shader += "  tempRes |= identityOnly;\n";
 
     return shader;

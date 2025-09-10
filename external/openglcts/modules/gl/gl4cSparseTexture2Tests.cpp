@@ -2238,6 +2238,12 @@ tcu::TestNode::IterateResult SparseTexture2LookupTestCase::iterate()
             if (!funcAllowed(mTarget, mFormat, funcToken))
                 continue;
 
+            // Check if the format is supported by the implementation
+            glw::GLint numVirtPageSizes;
+            gl.getInternalformativ(mTarget, mFormat, GL_NUM_VIRTUAL_PAGE_SIZES_ARB, 1, &numVirtPageSizes);
+            if (numVirtPageSizes == 0)
+                continue;
+
             mLog.str("");
             mLog << "Testing sparse texture lookup functions for target: " << mTarget << ", format: " << mFormat
                  << " - ";

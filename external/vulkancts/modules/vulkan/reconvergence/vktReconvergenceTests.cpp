@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktReconvergenceTests.hpp"
+#include "vktReconvergenceTerminateInvocationTests.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -5283,7 +5284,14 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
         // Don't treat allocation failure as a test failure.
         const tcu::TestStatus failAlloc(QP_TEST_RESULT_NOT_SUPPORTED,
                                         "Failed system memory allocation " + de::toString(allocSize) + " bytes");
+#ifdef __clang__
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wtautological-constant-out-of-range-compare"
+#endif
         if (maxLoc > ref.max_size())
+#ifdef __clang__
+#pragma clang diagnostic pop
+#endif
         {
             return failAlloc;
         }
@@ -7934,6 +7942,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
         }
         group->addChild(ttGroup.release());
     }
+
+    group->addChild(createTerminateInvocationTests(testCtx));
 
     return group.release();
 }

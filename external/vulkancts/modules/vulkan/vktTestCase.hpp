@@ -36,6 +36,7 @@
 #include "vkResourceInterface.hpp"
 #include "vktTestCaseDefs.hpp"
 #include "vkPipelineConstructionUtil.hpp"
+#include "vktContextManager.hpp"
 #include <vector>
 #include <string>
 #ifdef CTS_USES_VULKANSC
@@ -75,9 +76,15 @@ class DefaultDevice;
 class Context
 {
 public:
+    // Constructor retained for compatibility with legacy code,
+    // only called in createServerVKSC() and VKSC pipeline compiler.
     Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
             vk::BinaryCollection &progCollection, de::SharedPtr<vk::ResourceInterface> resourceInterface);
-    ~Context(void);
+    Context(tcu::TestContext &testCtx, const vk::PlatformInterface &platformInterface,
+            vk::BinaryCollection &progCollection, de::SharedPtr<const ContextManager> ctxmgr,
+            vk::Move<vk::VkDevice> suggestedDevice, const std::string &deviceID,
+            de::SharedPtr<DevCaps::RuntimeData> pRuntimeData, const std::vector<std::string> *pDeviceExtensions);
+    virtual ~Context(void);
 
     tcu::TestContext &getTestContext(void) const
     {
@@ -91,6 +98,7 @@ public:
     {
         return m_progCollection;
     }
+    de::SharedPtr<const ContextManager> getContextManager() const;
 
     // Default instance & device, selected with --deqp-vk-device-id=N
     uint32_t getMaximumFrameworkVulkanVersion(void) const;
@@ -155,7 +163,7 @@ public:
     bool contextSupports(const uint32_t requiredApiVersionBits) const;
     bool requireDeviceFunctionality(const std::string &required) const;
     bool requireInstanceFunctionality(const std::string &required) const;
-    bool requireDeviceCoreFeature(const DeviceCoreFeature requiredDeviceCoreFeature);
+    bool requireDeviceCoreFeature(const DeviceCoreFeature requiredDeviceCoreFeature) const;
 
 #ifndef CTS_USES_VULKANSC
     vk::VkFormatProperties3 getFormatProperties(const vk::VkFormat &format) const;
@@ -176,8 +184,10 @@ public:
     }
 
 #ifndef CTS_USES_VULKANSC
-    bool hasDebugReportRecorder() const;
-    vk::DebugReportRecorder &getDebugReportRecorder() const;
+    bool hasDebugReportRecorders() const;
+    std::vector<vk::DebugReportRecorder *> getDebugReportRecorders() const;
+    void addExternalDebugReportRecorder(vk::DebugReportRecorder *);
+    void removeExternalDebugReportRecorder(vk::DebugReportRecorder *);
 #endif // CTS_USES_VULKANSC
 
     void checkPipelineConstructionRequirements(const vk::PipelineConstructionType pipelineConstructionType);
@@ -191,12 +201,21 @@ public:
                                                             const VkFaultData *pFaults);
 #endif // CTS_USES_VULKANSC
 
+    bool isDefaultContext() const;
+    std::string getDeviceID() const;
+    DevCaps::QueueInfo getDeviceQueueInfo(uint32_t queueIndex);
+
+    void collectAndReportDebugMessages();
+
 protected:
     tcu::TestContext &m_testCtx;
     const vk::PlatformInterface &m_platformInterface;
+    const de::SharedPtr<const ContextManager> m_contextManagerPtr;
+    const de::WeakPtr<const ContextManager> m_contextManager;
     vk::BinaryCollection &m_progCollection;
 
     de::SharedPtr<vk::ResourceInterface> m_resourceInterface;
+    de::SharedPtr<DevCaps::RuntimeData> m_deviceRuntimeData;
     const de::UniquePtr<DefaultDevice> m_device;
     const de::UniquePtr<vk::Allocator> m_allocator;
 
@@ -211,15 +230,44 @@ class TestInstance;
 
 class TestCase : public tcu::TestCase
 {
+    friend class ContextManager;
+    de::WeakPtr<const ContextManager> m_contextManager;
+    void setContextManager(de::SharedPtr<const ContextManager>);
+
 public:
     TestCase(tcu::TestContext &testCtx, const std::string &name);
-    virtual ~TestCase(void)
-    {
-    }
+    virtual ~TestCase(void) = default;
+
+    // Override this function if the test requires a custom device. The framework
+    // invokes this function to determine whether one of the recently created
+    // devices can be reused or if a new custom device needs to be created with
+    // the capabilities defined in initDeviceCapabilities.
+    virtual std::string getRequiredCapabilitiesId() const;
+
+    // Override this function if test requires new custom device.
+    // Requirements for the new device should be recorded to DevCaps.
+    virtual void initDeviceCapabilities(DevCaps &caps);
+
+    // Override this function if the test requires a custom instance. The framework
+    // invokes this function to determine whether one of the recently created
+    // instances can be reused or if a new custom instance needs to be created with
+    // the capabilities defined in initInstanceCapabilities.
+    virtual std::string getInstanceCapabilitiesId() const;
+
+    // Override this function if test requires new custom instance.
+    // Requirements for the new instance should be recorded to InstCaps.
+    virtual void initInstanceCapabilities(InstCaps &caps);
+
+    // Returns the ContextManager on which the currently executing test was run.
+    // ContextManager acts as a Vulkan instance with a physical device and the
+    // currently executing test can use the information contained in it for the
+    // time when the logical device has not been created in methods that do not
+    // have access to Context, such as checkSupport() or delayedInit().
+    de::SharedPtr<const ContextManager> getContextManager() const;
 
     virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const = 0;
+    virtual TestInstance *createInstance(Context &context) const;
     virtual void checkSupport(Context &context) const;
 
     IterateResult iterate(void)
@@ -284,7 +332,9 @@ protected:
     QueueCapabilities m_queueCaps;
 };
 
-inline TestCase::TestCase(tcu::TestContext &testCtx, const std::string &name) : tcu::TestCase(testCtx, name.c_str(), "")
+inline TestCase::TestCase(tcu::TestContext &testCtx, const std::string &name)
+    : tcu::TestCase(testCtx, name.c_str(), "")
+    , m_contextManager()
 {
 }
 
@@ -295,7 +345,8 @@ void collectAndReportDebugMessages(vk::DebugReportRecorder &debugReportRecorder,
 #endif // CTS_USES_VULKANSC
 
 uint32_t findQueueFamilyIndexWithCaps(const vk::InstanceInterface &vkInstance, vk::VkPhysicalDevice physicalDevice,
-                                      vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u);
+                                      vk::VkQueueFlags requiredCaps, vk::VkQueueFlags excludedCaps = 0u,
+                                      uint32_t *availableCount = nullptr);
 
 } // namespace vkt
 

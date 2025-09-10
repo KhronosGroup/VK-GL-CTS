@@ -2060,6 +2060,11 @@ void TextureCubeMapArraySamplingTest::getColorType(samplerType sampler_type, con
         out_n_components       = 1;
         out_is_shadow          = false;
         break;
+    default:
+        out_color_type         = nullptr;
+        out_interpolation_type = nullptr;
+        DE_ASSERT(false);
+        break;
     }
 }
 

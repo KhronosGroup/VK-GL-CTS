@@ -53,6 +53,8 @@
 #include <set>
 #include <algorithm>
 #include <functional>
+#include <climits>
+#include <cmath>
 
 namespace vkt
 {
@@ -64,6 +66,14 @@ using namespace vk;
 using namespace std;
 
 //#define COOPERATIVE_MATRIX_EXTENDED_DEBUG 1
+
+//#define SIMULATE_BFLOAT16
+
+#ifdef SIMULATE_BFLOAT16
+using BFloat16 = tcu::Float16;
+#else
+using BFloat16 = tcu::BrainFloat16;
+#endif
 
 DE_STATIC_ASSERT((uint32_t)VK_COMPONENT_TYPE_FLOAT16_KHR == (uint32_t)VK_COMPONENT_TYPE_FLOAT16_NV);
 DE_STATIC_ASSERT((uint32_t)VK_COMPONENT_TYPE_FLOAT32_KHR == (uint32_t)VK_COMPONENT_TYPE_FLOAT32_NV);
@@ -96,6 +106,7 @@ typedef enum
     TT_LENGTH = 0,
     TT_CONSTANT,
     TT_CONVERT,
+    TT_CONVERT_SAT,
     TT_CONVERT_ACC_TO_A,
     TT_CONVERT_ACC_TO_B,
     TT_TRANSPOSE_ACC_TO_B,
@@ -138,6 +149,7 @@ typedef enum
     TT_MULTICOMPONENT_LOAD,
     TT_MULTICOMPONENT_SAVE,
     TT_MATRIXMULADD_CROSS,
+    TT_MATRIXMULADD_PUSH_CONSTANTS,
     TT_TENSORLAYOUT_1D,
     TT_TENSORLAYOUT_2D,
     TT_TENSORLAYOUT_3D,
@@ -207,7 +219,8 @@ bool isMatrixMulAddOp(TestType testType)
 {
     return testType == TT_MATRIXMULADD || testType == TT_MATRIXMULADD_ARRAY || testType == TT_MATRIXMULADD_SATURATED ||
            testType == TT_MATRIXMULADD_WRAPPING || testType == TT_MATRIXMULADD_STRIDE0 ||
-           testType == TT_MATRIXMULADD_CROSS || testType == TT_MATRIXMULADD_DEQUANT;
+           testType == TT_MATRIXMULADD_CROSS || testType == TT_MATRIXMULADD_DEQUANT ||
+           testType == TT_MATRIXMULADD_PUSH_CONSTANTS;
 }
 
 bool isReduceRow(TestType testType)
@@ -303,6 +316,13 @@ bool isPerElemOp(TestType testType)
 {
     return testType == TT_PER_ELEMENT_OP || testType == TT_PER_ELEMENT_OP_ROW_COL ||
            testType == TT_PER_ELEMENT_OP_STRUCT || testType == TT_PER_ELEMENT_OP_MAT;
+}
+
+bool isArithmeticTest(TestType testType)
+{
+    return testType == TT_COMPOSITE || testType == TT_FUNC || testType == TT_FUNC_CONST_IN || testType == TT_ADD ||
+           testType == TT_SUB || testType == TT_MUL || testType == TT_DIV || testType == TT_NEGATE ||
+           testType == TT_MATRIXTIMESSCALAR || isPerElemOp(testType);
 }
 
 int32_t tensorLayout1dMatrixSize[][5] = {
@@ -699,7 +719,7 @@ public:
     virtual TestInstance *createInstance(Context &context) const;
     virtual void checkSupport(Context &context) const;
 
-private:
+protected:
     virtual void initProgramsGLSL(SourceCollections &programCollection) const;
     virtual void initProgramsSPIRV(SourceCollections &programCollection) const;
     CaseDef m_data;
@@ -974,19 +994,62 @@ void CooperativeMatrixTestCase::checkSupport(Context &context) const
 
     checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                   m_data.computePipelineConstructionType);
+
+#ifndef CTS_USES_VULKANSC
+    auto &bfeatures16 = context.getShaderBfloat16Features();
+    const bool anyBFloat16 =
+        (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR || m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR);
+    if (anyBFloat16)
+    {
+        if (!bfeatures16.shaderBFloat16Type)
+            TCU_THROW(NotSupportedError, "shaderBFloat16Type is not supported by device");
+
+        if (!bfeatures16.shaderBFloat16CooperativeMatrix)
+            TCU_THROW(NotSupportedError, "shaderBFloat16CooperativeMatrix is not supported by device");
+    }
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+    auto &features8 = context.getShaderFloat8FeaturesEXT();
+    const bool anyFloat8 =
+        (m_data.inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV || m_data.outputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
+         m_data.inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV || m_data.outputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV);
+    if (anyFloat8)
+    {
+        if (!features8.shaderFloat8)
+            TCU_THROW(NotSupportedError, "shaderFloat8 is not supported by device");
+
+        if (!features8.shaderFloat8CooperativeMatrix)
+            TCU_THROW(NotSupportedError, "shaderFloat8CooperativeMatrix is not supported by device");
+    }
+#endif // CTS_USES_VULKANSC
 }
 
-struct
+struct ComponentTypeInfo
 {
     const char *typeName;
     const char *coopmatTypeName;
+    const char *vecprefix;
     uint32_t bits;
     bool isSigned;
-} componentTypeInfo[] = {
-    {"float16_t", "fcoopmatNV", 16, true}, {"float32_t", "fcoopmatNV", 32, true}, {"float64_t", "fcoopmatNV", 64, true},
-    {"int8_t", "icoopmatNV", 8, true},     {"int16_t", "icoopmatNV", 16, true},   {"int32_t", "icoopmatNV", 32, true},
-    {"int64_t", "icoopmatNV", 64, true},   {"uint8_t", "ucoopmatNV", 8, false},   {"uint16_t", "ucoopmatNV", 16, false},
-    {"uint32_t", "ucoopmatNV", 32, false}, {"uint64_t", "ucoopmatNV", 64, false},
+};
+const std::map<VkComponentTypeKHR, ComponentTypeInfo> componentTypeInfo{
+    {VK_COMPONENT_TYPE_FLOAT16_KHR, {"float16_t", "fcoopmatNV", "f16", 16, true}},
+    {VK_COMPONENT_TYPE_FLOAT32_KHR, {"float32_t", "fcoopmatNV", "f32", 32, true}},
+    {VK_COMPONENT_TYPE_FLOAT64_KHR, {"float64_t", "fcoopmatNV", "f64", 64, true}},
+    {VK_COMPONENT_TYPE_SINT8_KHR, {"int8_t", "icoopmatNV", "i8", 8, true}},
+    {VK_COMPONENT_TYPE_SINT16_KHR, {"int16_t", "icoopmatNV", "i16", 16, true}},
+    {VK_COMPONENT_TYPE_SINT32_KHR, {"int32_t", "icoopmatNV", "i32", 32, true}},
+    {VK_COMPONENT_TYPE_SINT64_KHR, {"int64_t", "icoopmatNV", "i64", 64, true}},
+    {VK_COMPONENT_TYPE_UINT8_KHR, {"uint8_t", "ucoopmatNV", "u8", 8, false}},
+    {VK_COMPONENT_TYPE_UINT16_KHR, {"uint16_t", "ucoopmatNV", "u16", 16, false}},
+    {VK_COMPONENT_TYPE_UINT32_KHR, {"uint32_t", "ucoopmatNV", "u32", 32, false}},
+    {VK_COMPONENT_TYPE_UINT64_KHR, {"uint64_t", "ucoopmatNV", "u64", 64, false}},
+#ifndef CTS_USES_VULKANSC
+    {VK_COMPONENT_TYPE_BFLOAT16_KHR, {"bfloat16_t", "fcoopmatNV", "bf16", 16, true}},
+    {VK_COMPONENT_TYPE_FLOAT_E5M2_NV, {"floate5m2_t", "fcoopmatNV", "fe5m2", 8, true}},
+    {VK_COMPONENT_TYPE_FLOAT_E4M3_NV, {"floate4m3_t", "fcoopmatNV", "fe4m3", 8, true}},
+#endif
 };
 
 bool isFloatType(VkComponentTypeKHR t)
@@ -996,6 +1059,11 @@ bool isFloatType(VkComponentTypeKHR t)
     case VK_COMPONENT_TYPE_FLOAT16_KHR:
     case VK_COMPONENT_TYPE_FLOAT32_KHR:
     case VK_COMPONENT_TYPE_FLOAT64_KHR:
+#ifndef CTS_USES_VULKANSC
+    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+#endif
         return true;
     default:
         return false;
@@ -1016,6 +1084,20 @@ bool isSIntType(VkComponentTypeKHR t)
     }
 }
 
+bool isUIntType(VkComponentTypeKHR t)
+{
+    switch (t)
+    {
+    default:
+        return false;
+    case VK_COMPONENT_TYPE_UINT8_KHR:
+    case VK_COMPONENT_TYPE_UINT16_KHR:
+    case VK_COMPONENT_TYPE_UINT32_KHR:
+    case VK_COMPONENT_TYPE_UINT64_KHR:
+        return true;
+    }
+}
+
 void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programCollection) const
 {
     const char *suffix = (isKhr(m_data.useType) ? "" : "NV");
@@ -1028,10 +1110,14 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     css << "#pragma use_vulkan_memory_model\n";
     css << "#extension GL_KHR_shader_subgroup_basic : enable\n"
            "#extension GL_KHR_memory_scope_semantics : enable\n"
-        << ext
-        << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
+        << ext;
+    css << "#extension GL_EXT_bfloat16 : enable\n"
+           "#extension GL_EXT_float_e5m2 : enable\n"
+           "#extension GL_EXT_float_e4m3 : enable\n";
+    css << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
            "#extension GL_EXT_buffer_reference : enable\n"
            "#extension GL_NV_cooperative_matrix2 : enable\n"
+           "#extension GL_EXT_bfloat16 : enable\n"
            "// strides overriden by spec constants\n"
            "layout(constant_id = 2) const int AStride = 1;\n"
            "layout(constant_id = 3) const int BStride = 1;\n"
@@ -1041,6 +1127,16 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
            "layout(constant_id = 7) const int N = 1;\n"
            "layout(constant_id = 8) const int K = 1;\n"
            "layout(local_size_x_id = 0, local_size_y_id = 1, local_size_z = 1) in;\n";
+
+    if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+    {
+        css << "layout (push_constant, std430) uniform PCBlock {\n"
+               "  int AStrideVar;\n"
+               "  int BStrideVar;\n"
+               "  int CStrideVar;\n"
+               "  int OStrideVar;\n"
+               "} pc;\n";
+    }
 
     if (m_data.storageClass == SC_BUFFER_VARIABLE_POINTERS || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
         css << "#pragma use_variable_pointers\n";
@@ -1096,10 +1192,10 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         }
     }
 
-    const char *typeStrA = componentTypeInfo[m_data.inputType].typeName;
-    const char *typeStrB = componentTypeInfo[m_data.inputType].typeName;
-    const char *typeStrC = componentTypeInfo[m_data.outputType].typeName;
-    const char *typeStrO = componentTypeInfo[m_data.outputType].typeName;
+    const char *typeStrA = componentTypeInfo.at(m_data.inputType).typeName;
+    const char *typeStrB = componentTypeInfo.at(m_data.inputType).typeName;
+    const char *typeStrC = componentTypeInfo.at(m_data.outputType).typeName;
+    const char *typeStrO = componentTypeInfo.at(m_data.outputType).typeName;
     string inputType;
     string outputType;
     string divisorA;
@@ -1116,8 +1212,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                                       m_data.inputComponentCount == 4 ? "vec4" :
                                                                         "";
 
-        inputType = string(1, componentTypeInfo[m_data.inputType].coopmatTypeName[0]) +
-                    de::toString(componentTypeInfo[m_data.inputType].bits) + componentSuffix;
+        inputType = string(componentTypeInfo.at(m_data.inputType).vecprefix) + componentSuffix;
 
         typeStrA = inputType.c_str();
         typeStrB = inputType.c_str();
@@ -1131,8 +1226,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                                       m_data.outputComponentCount == 4 ? "vec4" :
                                                                          "";
 
-        outputType = string(1, componentTypeInfo[m_data.outputType].coopmatTypeName[0]) +
-                     de::toString(componentTypeInfo[m_data.outputType].bits) + componentSuffix;
+        outputType = string(componentTypeInfo.at(m_data.outputType).vecprefix) + componentSuffix;
 
         typeStrC = outputType.c_str();
         typeStrO = outputType.c_str();
@@ -1241,27 +1335,27 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
             rtype = "gl_MatrixUseB";
         }
 
-        matAType << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr << ", ARows, ACols, "
-                 << atype << ">";
-        matBType << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr << ", "
+        matAType << "coopmat<" << componentTypeInfo.at(m_data.inputType).typeName << ", " << scopeStr
+                 << ", ARows, ACols, " << atype << ">";
+        matBType << "coopmat<" << componentTypeInfo.at(m_data.inputType).typeName << ", " << scopeStr << ", "
                  << dims[1].rows << ", " << dims[1].cols << ", " << btype << ">";
-        matCType << "coopmat<" << componentTypeInfo[m_data.outputType].typeName << ", " << scopeStr << ", "
+        matCType << "coopmat<" << componentTypeInfo.at(m_data.outputType).typeName << ", " << scopeStr << ", "
                  << dims[2].rows << ", " << dims[2].cols << ", " << ctype << ">";
-        outputMatType << "coopmat<" << componentTypeInfo[m_data.outputType].typeName << ", " << scopeStr
+        outputMatType << "coopmat<" << componentTypeInfo.at(m_data.outputType).typeName << ", " << scopeStr
                       << ", ORows, OCols, " << rtype << ">";
     }
     else
     {
-        matAType << componentTypeInfo[m_data.inputType].coopmatTypeName << "<"
-                 << componentTypeInfo[m_data.inputType].bits << ", " << scopeStr << ", ARows, ACols>";
-        matBType << componentTypeInfo[m_data.inputType].coopmatTypeName << "<"
-                 << componentTypeInfo[m_data.inputType].bits << ", " << scopeStr << ", " << dims[1].rows << ", "
+        matAType << componentTypeInfo.at(m_data.inputType).coopmatTypeName << "<"
+                 << componentTypeInfo.at(m_data.inputType).bits << ", " << scopeStr << ", ARows, ACols>";
+        matBType << componentTypeInfo.at(m_data.inputType).coopmatTypeName << "<"
+                 << componentTypeInfo.at(m_data.inputType).bits << ", " << scopeStr << ", " << dims[1].rows << ", "
                  << dims[1].cols << ">";
-        matCType << componentTypeInfo[m_data.outputType].coopmatTypeName << "<"
-                 << componentTypeInfo[m_data.outputType].bits << ", " << scopeStr << ", " << dims[2].rows << ", "
+        matCType << componentTypeInfo.at(m_data.outputType).coopmatTypeName << "<"
+                 << componentTypeInfo.at(m_data.outputType).bits << ", " << scopeStr << ", " << dims[2].rows << ", "
                  << dims[2].cols << ">";
-        outputMatType << componentTypeInfo[m_data.outputType].coopmatTypeName << "<"
-                      << componentTypeInfo[m_data.outputType].bits << ", " << scopeStr << ", ORows, OCols>";
+        outputMatType << componentTypeInfo.at(m_data.outputType).coopmatTypeName << "<"
+                      << componentTypeInfo.at(m_data.outputType).bits << ", " << scopeStr << ", ORows, OCols>";
     }
 
     css << matAType.str() << " matA;\n";
@@ -1280,7 +1374,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
 
     if (m_data.testType == TT_PER_ELEMENT_OP || m_data.testType == TT_PER_ELEMENT_OP_MAT)
     {
-        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        std::string type = componentTypeInfo.at(m_data.inputType).typeName;
         css << type << " elemOp(const in uint32_t row, const in uint32_t col, const in " << type << " elem, const in "
             << type
             << " other) {\n"
@@ -1289,7 +1383,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
     else if (m_data.testType == TT_PER_ELEMENT_OP_ROW_COL)
     {
-        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        std::string type = componentTypeInfo.at(m_data.inputType).typeName;
         css << type << " elemOpRowCol(const in uint32_t row, const in uint32_t col, const in " << type
             << " elem) {\n"
                "    return elem + "
@@ -1299,7 +1393,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
     else if (m_data.testType == TT_PER_ELEMENT_OP_STRUCT)
     {
-        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        std::string type = componentTypeInfo.at(m_data.inputType).typeName;
         css << "struct ParamType { " << type << " x; };\n";
         std::string paramType = "ParamType";
         css << type << " elemOp(const in uint32_t row, const in uint32_t col, const in " << type << " elem, const in "
@@ -1310,7 +1404,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
     else if (isReduceOp(m_data.testType))
     {
-        std::string type = componentTypeInfo[m_data.inputType].typeName;
+        std::string type = componentTypeInfo.at(m_data.inputType).typeName;
         css << type << " combineOp(const in " << type << " a, const in " << type << " b) {\n";
         if (isReduceSum(m_data.testType))
         {
@@ -1325,7 +1419,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
 
     if (m_data.testType == TT_MATRIXMULADD_DEQUANT)
     {
-        // 4-bit elements [0,15) with -4 bias and scale of 0.5.
+        // 4-bit elements [0,15) with -3 bias and scale of 0.5*(msb?2:1).
         css << "layout(buffer_reference, std430, buffer_reference_align = 1) buffer decodeBuf {\n"
                "   uint8_t bits["
             << blockSize[0] * blockSize[1] / 2
@@ -1344,13 +1438,13 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                "   bits = (bits >> shift) & 0xF;\n"
                "   return "
             << typeStrA
-            << "(0.5 * float(bits - 4));\n"
+            << "(0.5 * float((bits & 7) - 3) * (1+(bits/8)));\n"
                "}\n";
     }
     else if (m_data.addrMethod == ADDR_DECODE)
     {
         css << "layout(buffer_reference, std430, buffer_reference_align = "
-            << (componentTypeInfo[m_data.inputType].bits / 8)
+            << (componentTypeInfo.at(m_data.inputType).bits / 8)
             << ") buffer decodeBuf {\n"
                "   "
             << typeStrA << " f[" << blockSize[0] * blockSize[1]
@@ -1442,6 +1536,14 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         css << "   offset20 -= 3; offset21 -= 3;\n";
     }
 
+    if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+    {
+        strides[0] = "pc.AStrideVar";
+        strides[1] = "pc.BStrideVar";
+        strides[2] = "pc.CStrideVar";
+        strides[3] = "pc.OStrideVar";
+    }
+
     // element<i> is the starting element in buffer memory.
     // elementS<i> is the starting element in shared memory.
     css << "   uint element0 = (" << strides[0] << " * " << (m_data.colMajor ? dims[0].cols : dims[0].rows)
@@ -1510,6 +1612,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                 case TT_CONSTANT:
                 case TT_LENGTH:
                 case TT_CONVERT:
+                case TT_CONVERT_SAT:
                 case TT_NEGATE:
                 case TT_FUNC:
                 case TT_FUNC_CONST_IN:
@@ -1633,6 +1736,21 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
                 {
                     // 0x3800 == 0.5f in fp16
                     css << "   tensorLayout0 = setTensorLayoutClampValueNV(tensorLayout0, 0x3800);\n";
+                }
+                else if (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                {
+                    // 0x3f00 == 0.5f in bf16
+                    css << "   tensorLayout0 = setTensorLayoutClampValueNV(tensorLayout0, 0x3f00);\n";
+                }
+                else if (m_data.inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV)
+                {
+                    // 0x38 == 0.5f in e5m2
+                    css << "   tensorLayout0 = setTensorLayoutClampValueNV(tensorLayout0, 0x38);\n";
+                }
+                else if (m_data.inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
+                {
+                    // 0x30 == 0.5f in e4m3
+                    css << "   tensorLayout0 = setTensorLayoutClampValueNV(tensorLayout0, 0x30);\n";
                 }
                 else
                 {
@@ -1795,6 +1913,9 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_CONVERT:
         css << "   matO = " << outputMatType.str() << "(matA);\n";
         break;
+    case TT_CONVERT_SAT:
+        css << "   saturatedConvertEXT(matO, matA);\n";
+        break;
     case TT_COMPOSITE:
         css << "   " << matAType.str() << " t = " << matAType.str()
             << "(matB[0]);\n"
@@ -1806,18 +1927,18 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         break;
     case TT_COMPOSITE_RVALUE:
         css << "   for (int i = 1; i < matA.length(); ++i) {\n"
-               "       matO[i] = matA[i] + matB[i];\n"
+               "       matO[i] = matA[i];\n"
                "   }\n"
                "   "
             << matAType.str()
-            << " t = matA;\n"
+            << " t = matB;\n"
                "   if (matA.length() > 0) {\n"
-               "       matO[0] = (t += matB)[0];\n"
+               "       matO[0] = (t = matA)[0];\n"
                "   }\n";
         break;
     case TT_COMPOSITE_ARRAY:
         css << "   for (int i = 0; i < matA.length(); ++i) {\n"
-               "       matOArr[1][i] = matAArr[1][i] + matBArr[1][i];\n"
+               "       matOArr[1][i] = matAArr[1][i];\n"
                "   }\n";
         break;
     case TT_ADD:
@@ -1853,6 +1974,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     case TT_MATRIXMULADD_STRIDE0:
     case TT_MATRIXMULADD_WRAPPING:
     case TT_MATRIXMULADD_SATURATED:
+    case TT_MATRIXMULADD_PUSH_CONSTANTS:
     case TT_MATRIXMULADD:
         css << "   matO = coopMatMulAdd" << suffix << "(matA, matB, matC" << sat << ");\n";
         break;
@@ -1893,18 +2015,18 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     }
     break;
     case TT_PER_ELEMENT_OP:
-        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo[m_data.inputType].typeName
+        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo.at(m_data.inputType).typeName
             << "(2.0));\n";
         break;
     case TT_PER_ELEMENT_OP_MAT:
-        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo[m_data.inputType].typeName
+        css << "   coopMatPerElementNV(matO, matA, elemOp, " << componentTypeInfo.at(m_data.inputType).typeName
             << "(2.0) * matA);\n";
         break;
     case TT_PER_ELEMENT_OP_ROW_COL:
         css << "   coopMatPerElementNV(matO, matA, elemOpRowCol);\n";
         break;
     case TT_PER_ELEMENT_OP_STRUCT:
-        css << "   ParamType p; p.x = " << componentTypeInfo[m_data.inputType].typeName << "(2.0);\n";
+        css << "   ParamType p; p.x = " << componentTypeInfo.at(m_data.inputType).typeName << "(2.0);\n";
         css << "   coopMatPerElementNV(matO, matA, elemOp, p);\n";
         break;
     case TT_TENSORLAYOUT_1D:
@@ -1931,7 +2053,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
             uint32_t dimFactor = isTensorLayoutClipTest(m_data.testType) ? 2 : 1;
 
             stringstream mattype;
-            mattype << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr << ", "
+            mattype << "coopmat<" << componentTypeInfo.at(m_data.inputType).typeName << ", " << scopeStr << ", "
                     << dimFactor * GetTensorLayoutMatrixSizes(dim, i)[0] << ", "
                     << dimFactor * GetTensorLayoutMatrixSizes(dim, i)[1] << ", " << sameType << ">";
             css << "   " << mattype.str() << " tempmat" << i << ";\n";
@@ -1988,7 +2110,7 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
 
         {
             stringstream mattype;
-            mattype << "coopmat<" << componentTypeInfo[m_data.inputType].typeName << ", " << scopeStr
+            mattype << "coopmat<" << componentTypeInfo.at(m_data.inputType).typeName << ", " << scopeStr
                     << ", (H/2 * W/2), (4*NumCh)," << sameType << ">";
             css << "   " << mattype.str() << " tempmat;\n";
             css << "   tempmat = " << mattype.str() << "(0.5);\n";
@@ -2429,12 +2551,26 @@ TestInstance *CooperativeMatrixTestCase::createInstance(Context &context) const
     return new CooperativeMatrixTestInstance(context, m_data);
 }
 
-void setDataFloat(void *base, VkComponentTypeKHR dt, uint32_t i, float value)
+void setDataFloat(void *base, const VkComponentTypeKHR dt, uint32_t i, float value)
 {
     if (dt == VK_COMPONENT_TYPE_FLOAT32_KHR)
     {
         ((float *)base)[i] = value;
     }
+#ifndef CTS_USES_VULKANSC
+    else if (dt == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+    {
+        ((tcu::float16_t *)base)[i] = BFloat16(value).bits();
+    }
+    else if (dt == VK_COMPONENT_TYPE_FLOAT_E5M2_NV)
+    {
+        ((tcu::FloatE5M2::StorageType *)base)[i] = tcu::FloatE5M2(value).bits();
+    }
+    else if (dt == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
+    {
+        ((tcu::FloatE4M3::StorageType *)base)[i] = tcu::FloatE4M3(value).bits();
+    }
+#endif
     else
     {
         DE_ASSERT(dt == VK_COMPONENT_TYPE_FLOAT16_KHR);
@@ -2442,12 +2578,26 @@ void setDataFloat(void *base, VkComponentTypeKHR dt, uint32_t i, float value)
     }
 }
 
-float getDataFloat(void *base, VkComponentTypeKHR dt, uint32_t i)
+float getDataFloat(void *base, const VkComponentTypeKHR dt, uint32_t i)
 {
     if (dt == VK_COMPONENT_TYPE_FLOAT32_KHR)
     {
         return ((float *)base)[i];
     }
+#ifndef CTS_USES_VULKANSC
+    else if (dt == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+    {
+        return BFloat16(((const tcu::float16_t *)base)[i]).asFloat();
+    }
+    else if (dt == VK_COMPONENT_TYPE_FLOAT_E5M2_NV)
+    {
+        return tcu::FloatE5M2(((const tcu::FloatE5M2::StorageType *)base)[i]).asFloat();
+    }
+    else if (dt == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
+    {
+        return tcu::FloatE4M3(((const tcu::FloatE4M3::StorageType *)base)[i]).asFloat();
+    }
+#endif
     else
     {
         DE_ASSERT(dt == VK_COMPONENT_TYPE_FLOAT16_KHR);
@@ -2457,7 +2607,7 @@ float getDataFloat(void *base, VkComponentTypeKHR dt, uint32_t i)
 
 void setDataInt(void *base, VkComponentTypeKHR dt, uint32_t i, uint32_t value)
 {
-    DE_ASSERT(componentTypeInfo[dt].bits <= 32);
+    DE_ASSERT(componentTypeInfo.at(dt).bits <= 32);
 
     switch (dt)
     {
@@ -2486,7 +2636,7 @@ void setDataInt(void *base, VkComponentTypeKHR dt, uint32_t i, uint32_t value)
 
 uint32_t getDataInt(void *base, VkComponentTypeKHR dt, uint32_t i)
 {
-    DE_ASSERT(componentTypeInfo[dt].bits <= 32);
+    DE_ASSERT(componentTypeInfo.at(dt).bits <= 32);
 
     switch (dt)
     {
@@ -2510,7 +2660,7 @@ uint32_t getDataInt(void *base, VkComponentTypeKHR dt, uint32_t i)
 template <typename T>
 T getDataConvertedToT(void *base, VkComponentTypeKHR dt, uint32_t i)
 {
-    DE_ASSERT(componentTypeInfo[dt].bits <= 32);
+    DE_ASSERT(componentTypeInfo.at(dt).bits <= 32);
 
     switch (dt)
     {
@@ -2540,6 +2690,29 @@ T getDataConvertedToT(void *base, VkComponentTypeKHR dt, uint32_t i)
             temp = std::max(temp, 0.0f);
         return (T)temp;
     }
+#ifndef CTS_USES_VULKANSC
+    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+    {
+        float temp = BFloat16(((typename BFloat16::StorageType *)base)[i]).asFloat();
+        if (std::numeric_limits<T>::min() == 0)
+            temp = std::max(temp, 0.0f);
+        return (T)temp;
+    }
+    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+    {
+        float temp = tcu::FloatE5M2(((typename tcu::FloatE5M2::StorageType *)base)[i]).asFloat();
+        if (std::numeric_limits<T>::min() == 0)
+            temp = std::max(temp, 0.0f);
+        return (T)temp;
+    }
+    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+    {
+        float temp = tcu::FloatE4M3(((typename tcu::FloatE4M3::StorageType *)base)[i]).asFloat();
+        if (std::numeric_limits<T>::min() == 0)
+            temp = std::max(temp, 0.0f);
+        return (T)temp;
+    }
+#endif
     default:
         TCU_THROW(InternalError, "Unsupported type");
     }
@@ -2563,7 +2736,7 @@ T satAdd(T a, T b)
 
 uint32_t satAddData(VkComponentTypeKHR dt, uint32_t a, uint32_t b)
 {
-    DE_ASSERT(componentTypeInfo[dt].bits <= 32);
+    DE_ASSERT(componentTypeInfo.at(dt).bits <= 32);
 
     switch (dt)
     {
@@ -2586,7 +2759,7 @@ uint32_t satAddData(VkComponentTypeKHR dt, uint32_t a, uint32_t b)
 
 uint32_t getLimit(VkComponentTypeKHR dt, bool positive)
 {
-    DE_ASSERT(componentTypeInfo[dt].bits <= 32);
+    DE_ASSERT(componentTypeInfo.at(dt).bits <= 32);
 
     switch (dt)
     {
@@ -2763,8 +2936,8 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             if (m_data.storageClass == SC_WORKGROUP || m_data.storageClass == SC_WORKGROUP_VARIABLE_POINTERS)
             {
                 return (int32_t)(maxMatrixElements * 2 *
-                                 (componentTypeInfo[m_data.inputType].bits * m_data.inputComponentCount +
-                                  componentTypeInfo[m_data.outputType].bits * m_data.outputComponentCount) /
+                                 (componentTypeInfo.at(m_data.inputType).bits * m_data.inputComponentCount +
+                                  componentTypeInfo.at(m_data.outputType).bits * m_data.outputComponentCount) /
                                  8) <= maxSharedMem;
             }
 
@@ -3071,7 +3244,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             {
                 // A/B use input type, C/D use output type
                 dataTypes[i]   = (i < 2) ? m_data.inputType : m_data.outputType;
-                elementSize[i] = componentTypeInfo[dataTypes[i]].bits / 8;
+                elementSize[i] = componentTypeInfo.at(dataTypes[i]).bits / 8;
 
                 strides[i] = (m_data.colMajor ? dims[i].rows : dims[i].cols) * m_data.workgroupsX;
                 if (m_data.scope != VK_SCOPE_WORKGROUP_KHR)
@@ -3095,9 +3268,12 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 
                 if (m_data.testType == TT_MATRIXMULADD_DEQUANT && i < 2)
                 {
-                    // logical type is fp16, but encoded as 4bpp so takes 1/4 the storage
-                    DE_ASSERT(m_data.inputType == VK_COMPONENT_TYPE_FLOAT16_KHR);
-                    totalElements[i] /= 4;
+                    // logical type is the inputType, but encoded as 4bpp so takes 1/4 the storage
+                    DE_ASSERT(m_data.inputType == VK_COMPONENT_TYPE_FLOAT16_KHR ||
+                              m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
+                              m_data.inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
+                              m_data.inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV);
+                    totalElements[i] /= (componentTypeInfo.at(dataTypes[i]).bits / 8) * 2;
                 }
 
                 if (m_data.scope != VK_SCOPE_WORKGROUP_KHR)
@@ -3206,7 +3382,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 
         setUpdateBuilder.update(vk, device);
 
-        VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+        const VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
 
         const uint32_t specData[9] = {
             (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ? testSize.workgroupSize :
@@ -3234,11 +3410,28 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         };
 
         const vk::VkSpecializationInfo specInfo = {
-            9,                // mapEntryCount
-            entries,          // pMapEntries
-            sizeof(specData), // dataSize
-            specData          // pData
+            DE_LENGTH_OF_ARRAY(entries), // mapEntryCount
+            entries,                     // pMapEntries
+            sizeof(specData),            // dataSize
+            specData                     // pData
         };
+
+        std::vector<float> specialFloats;
+        for (int sign : {-1, 1})
+        {
+            specialFloats.push_back(tcu::Float32::inf(sign).asFloat());
+            specialFloats.push_back(tcu::Float32::largestNormal(sign).asFloat());
+            specialFloats.push_back(tcu::Float16::largestNormal(sign).asFloat());
+            specialFloats.push_back(tcu::BrainFloat16::largestNormal(sign).asFloat());
+            specialFloats.push_back(tcu::FloatE5M2::largestNormal(sign).asFloat());
+            specialFloats.push_back(tcu::FloatE4M3::largestNormal(sign).asFloat());
+            specialFloats.push_back(tcu::FloatE5M2::largestNormal(sign).asFloat() * 2);
+            specialFloats.push_back(tcu::FloatE4M3::largestNormal(sign).asFloat() * 2);
+            specialFloats.push_back(tcu::FloatE5M2::largestNormal(sign).asFloat() * 0.75f);
+            specialFloats.push_back(tcu::FloatE4M3::largestNormal(sign).asFloat() * 0.75f);
+            specialFloats.push_back(tcu::Float16::largestNormal(sign).asFloat() * 2);
+            specialFloats.push_back(tcu::Float16::largestNormal(sign).asFloat() * 0.75f);
+        }
 
         for (uint32_t i = 0; i < 4; ++i)
             for (uint32_t j = 0; j < totalElements[i]; ++j)
@@ -3247,8 +3440,24 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 {
                     if ((isTensorLayoutTest(m_data.testType) || isClampTest(m_data.testType)) && i == 3)
                     {
-                        setDataFloat(ptrs[i], dataTypes[i], j, 123.0);
+                        setDataFloat(ptrs[i], dataTypes[i], j, 14.0);
                     }
+                    else if ((m_data.testType == TT_CONVERT || m_data.testType == TT_CONVERT_SAT) &&
+                             isFloatType(dataTypes[3]))
+                    {
+                        if (j < specialFloats.size())
+                        {
+                            setDataFloat(ptrs[i], dataTypes[i], j, specialFloats[j]);
+                        }
+                        else
+                        {
+                            setDataFloat(ptrs[i], dataTypes[i], j,
+                                         ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
+                        }
+                    }
+                    else if ((m_data.testType == TT_CONVERT || m_data.testType == TT_CONVERT_SAT) &&
+                             isUIntType(m_data.outputType))
+                        setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0xff)) / 4.0f);
                     else if (!isMatrixMulAddOp(m_data.testType) && !isReduceSum(m_data.testType))
                         setDataFloat(ptrs[i], dataTypes[i], j,
                                      ((float)(deRandom_getUint32(&rnd) & 0xff) - 64.0f) / 2.0f);
@@ -3256,11 +3465,30 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     {
                         // Each "element" still accounts for 16bpp, but it's stored quantized
                         // so we just want a random 16b pattern.
-                        uint32_t value = (deRandom_getUint32(&rnd) & 0xffff);
-                        setDataInt(ptrs[i], VK_COMPONENT_TYPE_UINT16_KHR, j, value);
+                        if (componentTypeInfo.at(dataTypes[i]).bits == 16)
+                        {
+                            uint32_t value = (deRandom_getUint32(&rnd) & 0xffff);
+                            setDataInt(ptrs[i], VK_COMPONENT_TYPE_UINT16_KHR, j, value);
+                        }
+                        else
+                        {
+                            DE_ASSERT(componentTypeInfo.at(dataTypes[i]).bits == 8);
+                            uint32_t value = (deRandom_getUint32(&rnd) & 0xff);
+                            setDataInt(ptrs[i], VK_COMPONENT_TYPE_UINT8_KHR, j, value);
+                        }
+                    }
+                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                    {
+                        setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0x7) - 3.0f) / 2.0f);
+                    }
+                    else if (m_data.outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                    {
+                        setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0x7) - 3.0f) / 2.0f);
                     }
                     else
+                    {
                         setDataFloat(ptrs[i], dataTypes[i], j, ((float)(deRandom_getUint32(&rnd) & 0xf) - 4.0f) / 2.0f);
+                    }
                 }
                 else
                 {
@@ -3270,12 +3498,12 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                         // verify wrapping behavior. Use the full range of values for A and B.
                         // For matrix C, use values clustered near where the type wraps (zero
                         // for unsigned, 2^(N-1) for signed).
-                        uint32_t bits = componentTypeInfo[dataTypes[i]].bits;
+                        uint32_t bits = componentTypeInfo.at(dataTypes[i]).bits;
                         uint32_t value;
                         if (i == 2)
                         {
                             value = (deRandom_getUint32(&rnd) & 0xff) - 128;
-                            if (componentTypeInfo[dataTypes[i]].isSigned)
+                            if (componentTypeInfo.at(dataTypes[i]).isSigned)
                                 value += (1U << (bits - 1));
                         }
                         else
@@ -3292,6 +3520,34 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     else if ((isTensorLayoutTest(m_data.testType) || isClampTest(m_data.testType)) && i == 3)
                     {
                         setDataInt(ptrs[i], dataTypes[i], j, 123);
+                    }
+                    else if (m_data.testType == TT_DIV)
+                    {
+                        uint32_t value = (deRandom_getUint32(&rnd) & 0xff) - 128;
+                        if (isSIntType(dataTypes[3]) && i == 1)
+                        {
+                            if (value == 0)
+                            {
+                                // Divide by 0 is undefined behaviour.
+                                value = 1; // Arbitrarily set to 1.
+                            }
+                            else
+                            {
+                                // It is also an undefined behaviour if value is
+                                // -1 and the numerator (corresponding matA
+                                // value) is the minimum representable value.
+                                uint32_t bits = componentTypeInfo.at(dataTypes[i]).bits;
+                                uint32_t mask = bits == 32 ? ~0 : ((1 << bits) - 1);
+                                // A and B matrices have same datatype and size.
+                                uint32_t matAVal = getDataInt(ptrs[0], dataTypes[0], j);
+                                if (((value & mask) == (uint32_t)((1 << bits) - 1)) &&
+                                    ((matAVal & mask) == (uint32_t)(1 << (bits - 1))))
+                                {
+                                    value = 1; // Arbitrarily set to 1.
+                                }
+                            }
+                        }
+                        setDataInt(ptrs[i], dataTypes[i], j, value);
                     }
                     else
                     {
@@ -3336,6 +3592,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
         ComputePipelineWrapper pipeline(vk, device, m_data.computePipelineConstructionType,
                                         m_context.getBinaryCollection().get("test"));
         pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+        if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+            pipeline.addPushConstantRange(makePushConstantRange(
+                vk::VK_SHADER_STAGE_COMPUTE_BIT, 0u, (uint32_t)(DE_LENGTH_OF_ARRAY(strides) * sizeof(strides[0]))));
         pipeline.setSpecializationInfo(specInfo);
         pipeline.setSubgroupSize(m_data.subgroupSizeMode == SUBGROUP_SIZE_NONE ?
                                      0 :
@@ -3350,6 +3609,10 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 
         vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, pipeline.getPipelineLayout(), 0u, 1, &*descriptorSet, 0u,
                                  nullptr);
+        if (m_data.testType == TT_MATRIXMULADD_PUSH_CONSTANTS)
+            vk.cmdPushConstants(*cmdBuffer, pipeline.getPipelineLayout(), VK_SHADER_STAGE_COMPUTE_BIT, 0,
+                                (uint32_t)(DE_LENGTH_OF_ARRAY(strides) * sizeof(strides[0])), strides);
+
         pipeline.bind(*cmdBuffer);
 
         // tensorlayout test has larger number of workgroups to allocate more memory
@@ -3381,7 +3644,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 
         qpTestResult res = QP_TEST_RESULT_PASS;
 
-        if (m_data.testType == TT_CONVERT)
+        if (m_data.testType == TT_CONVERT || m_data.testType == TT_CONVERT_SAT)
         {
             for (uint32_t i = 0; i < totalElements[3]; ++i)
             {
@@ -3410,17 +3673,24 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     inputA = getDataConvertedToT<int32_t>(ptrs[0], dataTypes[0], i);
                     break;
                 case VK_COMPONENT_TYPE_FLOAT32_KHR:
+                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                case VK_COMPONENT_TYPE_FLOAT16_KHR:
                     inputA = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
                     break;
-                case VK_COMPONENT_TYPE_FLOAT16_KHR:
+#ifndef CTS_USES_VULKANSC
+                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
                 {
                     float temp = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
-                    inputA     = tcu::Float16(temp).asDouble();
+                    inputA     = BFloat16(temp).asDouble();
                     break;
                 }
+#endif //CTS_USES_VULKANSC
                 default:
                     TCU_THROW(InternalError, "Unexpected type");
                 }
+
+                double inputAConverted = inputA;
 
                 switch (dataTypes[3])
                 {
@@ -3447,16 +3717,62 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     break;
                 case VK_COMPONENT_TYPE_FLOAT16_KHR:
                 {
-                    float temp = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                    output     = tcu::Float16(temp).asDouble();
+                    output          = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                    inputAConverted = tcu::Float16(inputAConverted).asDouble();
                     break;
                 }
+                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                {
+                    output          = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                    inputAConverted = tcu::FloatE5M2(inputAConverted).asDouble();
+                    break;
+                }
+                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                {
+                    output          = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                    inputAConverted = tcu::FloatE4M3(inputAConverted).asDouble();
+                    break;
+                }
+#ifndef CTS_USES_VULKANSC
+                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                {
+                    float temp = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                    output     = BFloat16(temp).asDouble();
+                    break;
+                }
+#endif //CTS_USES_VULKANSC
                 default:
                     TCU_THROW(InternalError, "Unexpected type");
                 }
 
-                if (inputA != output)
+                if (m_data.testType == TT_CONVERT_SAT)
                 {
+                    switch (dataTypes[3])
+                    {
+                    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                    {
+                        if (fabs(inputA) > tcu::FloatE5M2::largestNormal(1).asFloat())
+                        {
+                            inputAConverted = tcu::FloatE5M2::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                        }
+                        break;
+                    }
+                    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                    {
+                        if (fabs(inputA) > tcu::FloatE4M3::largestNormal(1).asFloat())
+                        {
+                            inputAConverted = tcu::FloatE4M3::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                        }
+                        break;
+                    }
+                    default:
+                        break;
+                    }
+                }
+
+                if (inputAConverted != output && !(std::isnan(inputAConverted) && std::isnan(output)))
+                {
+                    //printf("i %d inputA %f inputAConverted %f output %f\n", i, inputA, inputAConverted, output);
                     res = QP_TEST_RESULT_FAIL;
                     break;
                 }
@@ -3663,7 +3979,12 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 
                                 float Dij = getDataFloat(ptrs[3], dataTypes[3], ij);
 
-                                if (ref != Dij)
+                                uint32_t temp;
+                                setDataFloat(&temp, dataTypes[3], 0, ref);
+                                float convertedRef;
+                                convertedRef = getDataFloat(&temp, dataTypes[3], 0);
+
+                                if (convertedRef != Dij)
                                 {
                                     res = QP_TEST_RESULT_FAIL;
                                 }
@@ -3715,7 +4036,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                     {
                                         index = index * GetTensorLayoutDim(dim)[k] + tensorCoord[k];
                                     }
-                                    float ref    = 123.0f;
+                                    float ref    = 14.0f;
                                     float output = getDataFloat(ptrs[3], dataTypes[3], index);
                                     // If the dest coord is in one of the store rectangles, compute
                                     // a different reference value.
@@ -3897,9 +4218,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                     ij = j2 + strides[0] * i2;
                                 }
 
-                                float ref = OOBStore ? 123.0f :
-                                            OOBLoad  ? 0.5f :
-                                                       getDataFloat(ptrs[0], dataTypes[0], ij);
+                                float ref = OOBStore ? 14.0f : OOBLoad ? 0.5f : getDataFloat(ptrs[0], dataTypes[0], ij);
 
                                 if (ref != Dij)
                                 {
@@ -4012,10 +4331,13 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                             res = QP_TEST_RESULT_FAIL;
                         break;
                     case TT_COMPOSITE:
-                    case TT_COMPOSITE_RVALUE:
-                    case TT_COMPOSITE_ARRAY:
                     case TT_ADD:
                         if (output != inputA + inputB)
+                            res = QP_TEST_RESULT_FAIL;
+                        break;
+                    case TT_COMPOSITE_ARRAY:
+                    case TT_COMPOSITE_RVALUE:
+                        if (output != inputA)
                             res = QP_TEST_RESULT_FAIL;
                         break;
                     case TT_SUB:
@@ -4071,9 +4393,13 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     case TT_CONVERT_ACC_TO_A:
                     case TT_CONVERT_ACC_TO_B:
                     {
-                        if (output != inputA)
+                        uint32_t temp;
+                        setDataFloat(&temp, dataTypes[3], 0, inputA);
+                        float convertedInput;
+                        convertedInput = getDataFloat(&temp, dataTypes[3], 0);
+                        if (output != convertedInput)
                         {
-                            //printf("i %d inputA %f output %f\n", i, inputA, output);
+                            //printf("i %d inputA %f convertedInput %f output %f\n", i, inputA, convertedInput, output);
                             res = QP_TEST_RESULT_FAIL;
                         }
                         break;
@@ -4133,7 +4459,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                         value    = getDataInt(ptrs[0], VK_COMPONENT_TYPE_UINT8_KHR, arrayidx);
                                         value    = (value >> shift) & 0xF;
                                         // decode
-                                        Aik = 0.5f * (float)(value - 4);
+                                        Aik = 0.5f * (float)(((value & 7) - 3) * (1 + value / 8));
 
                                         // Repeat for B matrix
                                         uint32_t blockkj = ((mX * N + j) / blockSize[1]) +
@@ -4146,7 +4472,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                         shift    = (idx & 1) * 4;
                                         value    = getDataInt(ptrs[1], VK_COMPONENT_TYPE_UINT8_KHR, arrayidx);
                                         value    = (value >> shift) & 0xF;
-                                        Bkj      = 0.5f * (float)(value - 4);
+                                        Bkj      = 0.5f * (float)(((value & 7) - 3) * (1 + value / 8));
                                     }
                                     else
                                     {
@@ -4219,13 +4545,13 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
                                           m_data.workgroupsY :
                                           (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
-                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                int resultSize      = componentTypeInfo.at(dataTypes[3]).bits;
                 uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
                     for (uint32_t mY = 0; mY < numMatrixY; ++mY)
                     {
-                        bool isSigned   = componentTypeInfo[dataTypes[0]].isSigned;
+                        bool isSigned   = componentTypeInfo.at(dataTypes[0]).isSigned;
                         auto const getA = [&](uint32_t i, uint32_t j) -> int64_t
                         {
                             uint32_t ij;
@@ -4403,7 +4729,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
                                           m_data.workgroupsY :
                                           (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
-                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                int resultSize      = componentTypeInfo.at(dataTypes[3]).bits;
                 uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
 
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
@@ -4552,7 +4878,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
                                           m_data.workgroupsY :
                                           (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
-                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                int resultSize      = componentTypeInfo.at(dataTypes[3]).bits;
                 uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
@@ -4687,7 +5013,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
                                           m_data.workgroupsY :
                                           (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
-                int resultSize      = componentTypeInfo[dataTypes[3]].bits;
+                int resultSize      = componentTypeInfo.at(dataTypes[3]).bits;
                 uint32_t mask       = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
@@ -4757,7 +5083,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     uint32_t inputA = getDataInt(ptrs[0], dataTypes[0], i);
                     uint32_t inputB = getDataInt(ptrs[1], dataTypes[1], i);
                     uint32_t output = getDataInt(ptrs[3], dataTypes[3], i);
-                    int resultSize  = componentTypeInfo[dataTypes[3]].bits;
+                    int resultSize  = componentTypeInfo.at(dataTypes[3]).bits;
                     uint32_t mask   = resultSize == 32 ? ~0 : ((1 << resultSize) - 1);
                     switch (m_data.testType)
                     {
@@ -4779,13 +5105,16 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                             res = QP_TEST_RESULT_FAIL;
                         break;
                     case TT_COMPOSITE:
-                    case TT_COMPOSITE_RVALUE:
-                    case TT_COMPOSITE_ARRAY:
                     case TT_ADD:
                         if ((output & mask) != ((inputA + inputB) & mask))
                         {
                             res = QP_TEST_RESULT_FAIL;
                         }
+                        break;
+                    case TT_COMPOSITE_ARRAY:
+                    case TT_COMPOSITE_RVALUE:
+                        if ((output & mask) != (inputA & mask))
+                            res = QP_TEST_RESULT_FAIL;
                         break;
                     case TT_SUB:
                         if ((output & mask) != ((inputA - inputB) & mask))
@@ -4795,7 +5124,12 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                     {
                         if (isSIntType(dataTypes[3]))
                         {
-                            if (inputB != 0 && ((int32_t)output & mask) != (((int32_t)inputA / (int32_t)inputB) & mask))
+                            // Assert conditions that lead to undefined behaviour.
+                            DE_ASSERT(inputB != 0);
+                            DE_ASSERT(!((inputA & mask) == (uint32_t)(1 << (resultSize - 1)) &&
+                                        (inputB & mask) == (uint32_t)((1 << resultSize) - 1)));
+
+                            if (((int32_t)output & mask) != (((int32_t)inputA / (int32_t)inputB) & mask))
                                 res = QP_TEST_RESULT_FAIL;
                         }
                         else
@@ -4915,7 +5249,7 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 {
                                     ref += Cij;
                                     // truncate the result to the size of C's type.
-                                    uint32_t bits = componentTypeInfo[dataTypes[3]].bits;
+                                    uint32_t bits = componentTypeInfo.at(dataTypes[3]).bits;
                                     uint32_t mask = (bits == 32) ? 0xFFFFFFFFU : ((1U << bits) - 1U);
                                     ref &= mask;
                                 }
@@ -4989,7 +5323,8 @@ const char *getUseType(UseType useType)
 }
 
 tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
-    tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType, UseType useType)
+    tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType,
+    const UseType useType)
 {
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, getUseType(useType)));
 
@@ -4999,11 +5334,13 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         const char *name;
     } TestGroupCase;
 
-    typedef struct
+    struct DataTypeTestGroupCase
     {
-        uint32_t value[2];
+        VkComponentTypeKHR value[2];
         const char *name;
-    } TestGroupCase2;
+        uint32_t inComponentCount  = 1u;
+        uint32_t outComponentCount = 1u;
+    };
 
     typedef struct
     {
@@ -5066,6 +5403,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_MATRIXMULADD_CROSS, "matrixmuladd_cross"},
         // OpCooperativeMatrixMulAdd w/decode
         {TT_MATRIXMULADD_DEQUANT, "matrixmuladd_dequant"},
+        // OpCooperativeMatrixMulAdd
+        {TT_MATRIXMULADD_PUSH_CONSTANTS, "matrixmuladd_push"},
         // OpConvertCooperativeMatrixNV
         {TT_CONVERT_ACC_TO_A, "convert_acc_to_a"},
         {TT_CONVERT_ACC_TO_B, "convert_acc_to_b"},
@@ -5106,7 +5445,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {TT_CLAMPREPEAT, "clamprepeat"},
         {TT_CLAMPMIRRORREPEAT, "clampmirrorrepeat"},
     };
-    TestGroupCase2 dtCases[] = {
+    const std::vector<DataTypeTestGroupCase> dtCases{
         // A/B are fp32 C/D are fp32
         {{VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_FLOAT32_KHR}, "float32_float32"},
         // A/B are fp32 C/D are fp16
@@ -5133,7 +5472,31 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
         {{VK_COMPONENT_TYPE_SINT32_KHR, VK_COMPONENT_TYPE_SINT32_KHR}, "sint32_sint32"},
         // A/B are s32 C/D are s8
         {{VK_COMPONENT_TYPE_SINT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR}, "sint32_sint8"},
+#ifndef CTS_USES_VULKANSC
+#ifdef SIMULATE_BFLOAT16
+#define SIM_COMPONENT_TYPE_BFLOAT16_KHR VK_COMPONENT_TYPE_FLOAT16_KHR
+#else
+#define SIM_COMPONENT_TYPE_BFLOAT16_KHR VK_COMPONENT_TYPE_BFLOAT16_KHR
+#endif
+        // A/B are bfp16 C/D are fp32
+        {{SIM_COMPONENT_TYPE_BFLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT32_KHR}, "bfloat16_float32"},
+        // A/B are bfp16 C/D are bfp16
+        {{SIM_COMPONENT_TYPE_BFLOAT16_KHR, SIM_COMPONENT_TYPE_BFLOAT16_KHR}, "bfloat16_bfloat16"},
+        {{VK_COMPONENT_TYPE_FLOAT32_KHR, SIM_COMPONENT_TYPE_BFLOAT16_KHR}, "float32_bfloat16"},
+
+        {{VK_COMPONENT_TYPE_FLOAT_E5M2_NV, VK_COMPONENT_TYPE_FLOAT_E5M2_NV}, "floate5m2_floate5m2"},
+        {{VK_COMPONENT_TYPE_FLOAT_E4M3_NV, VK_COMPONENT_TYPE_FLOAT_E4M3_NV}, "floate4m3_floate4m3"},
+        {{VK_COMPONENT_TYPE_FLOAT_E5M2_NV, VK_COMPONENT_TYPE_FLOAT16_KHR}, "floate5m2_float16"},
+        {{VK_COMPONENT_TYPE_FLOAT_E4M3_NV, VK_COMPONENT_TYPE_FLOAT16_KHR}, "floate4m3_float16"},
+        {{VK_COMPONENT_TYPE_FLOAT_E5M2_NV, VK_COMPONENT_TYPE_FLOAT32_KHR}, "floate5m2_float32"},
+        {{VK_COMPONENT_TYPE_FLOAT_E4M3_NV, VK_COMPONENT_TYPE_FLOAT32_KHR}, "floate4m3_float32"},
+        {{VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT_E5M2_NV}, "float16_floate5m2"},
+        {{VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT_E4M3_NV}, "float16_floate4m3"},
+        {{VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_FLOAT_E5M2_NV}, "float32_floate5m2"},
+        {{VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_FLOAT_E4M3_NV}, "float32_floate4m3"},
+#endif
     };
+
     SubGroubSizes sgsCases[] = {
         // Default subgroup size
         {SUBGROUP_SIZE_NONE, ""},
@@ -5175,9 +5538,13 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 
     // Types tested for conversions. Excludes 64b types.
     VkComponentTypeKHR allTypes[] = {
-        VK_COMPONENT_TYPE_FLOAT16_KHR, VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
-        VK_COMPONENT_TYPE_SINT16_KHR,  VK_COMPONENT_TYPE_SINT32_KHR,  VK_COMPONENT_TYPE_UINT8_KHR,
-        VK_COMPONENT_TYPE_UINT16_KHR,  VK_COMPONENT_TYPE_UINT32_KHR,
+        VK_COMPONENT_TYPE_FLOAT16_KHR,   VK_COMPONENT_TYPE_FLOAT32_KHR, VK_COMPONENT_TYPE_SINT8_KHR,
+        VK_COMPONENT_TYPE_SINT16_KHR,    VK_COMPONENT_TYPE_SINT32_KHR,  VK_COMPONENT_TYPE_UINT8_KHR,
+        VK_COMPONENT_TYPE_UINT16_KHR,    VK_COMPONENT_TYPE_UINT32_KHR,  VK_COMPONENT_TYPE_FLOAT_E5M2_NV,
+        VK_COMPONENT_TYPE_FLOAT_E4M3_NV,
+#ifndef CTS_USES_VULKANSC
+        VK_COMPONENT_TYPE_BFLOAT16_KHR,
+#endif //CTS_USES_VULKANSC
     };
 
     // Types tested for load/store from/into multicomponent types
@@ -5215,8 +5582,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                 const string name = string(ttCases[ttNdx].name) + sgsCases[sgsNdx].name;
                 de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
 
-                for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(dtCases); dtNdx++)
+                for (auto idtCaseBegin = dtCases.begin(), idtCase = idtCaseBegin; idtCase != dtCases.end(); ++idtCase)
                 {
+                    const int dtNdx = (int)std::distance(idtCaseBegin, idtCase);
+
                     de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, dtCases[dtNdx].name));
                     for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
                     {
@@ -5227,9 +5596,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                 new tcu::TestCaseGroup(testCtx, colCases[colNdx].name));
                             for (int addrNdx = 0; addrNdx < DE_LENGTH_OF_ARRAY(addrCases); addrNdx++)
                             {
-
-                                const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)dtCases[dtNdx].value[0];
-                                const VkComponentTypeKHR outputType = (VkComponentTypeKHR)dtCases[dtNdx].value[1];
+                                const VkComponentTypeKHR inputType  = dtCases[dtNdx].value[0];
+                                const VkComponentTypeKHR outputType = dtCases[dtNdx].value[1];
+                                const uint32_t inComponentCount     = dtCases[dtNdx].inComponentCount;
+                                const uint32_t outComponentCount    = dtCases[dtNdx].outComponentCount;
                                 const bool isMatrixMul              = isMatrixMulAddOp(testType);
 
                                 if (testType == TT_MATRIXMULADD_CROSS)
@@ -5264,13 +5634,33 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                     }
 
                                     if (isMatrixMul &&
-                                        componentTypeInfo[inputType].bits > componentTypeInfo[outputType].bits)
+                                        componentTypeInfo.at(inputType).bits > componentTypeInfo.at(outputType).bits)
                                         continue;
+
+                                    if (inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
+                                        outputType == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
+                                        inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
+                                        outputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
+                                        inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
+                                        outputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
+                                    {
+                                        if (useType == UT_NV)
+                                            continue;
+
+                                        if (isArithmeticTest(testType))
+                                            continue;
+                                    }
                                 }
 
                                 if (testType == TT_MATRIXMULADD_DEQUANT)
                                 {
-                                    if (inputType != VK_COMPONENT_TYPE_FLOAT16_KHR)
+                                    if (inputType != VK_COMPONENT_TYPE_FLOAT16_KHR
+#ifndef CTS_USES_VULKANSC
+                                        && inputType != VK_COMPONENT_TYPE_BFLOAT16_KHR &&
+                                        inputType != VK_COMPONENT_TYPE_FLOAT_E5M2_NV &&
+                                        inputType != VK_COMPONENT_TYPE_FLOAT_E4M3_NV
+#endif
+                                    )
                                     {
                                         continue;
                                     }
@@ -5324,6 +5714,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                 if (testType == TT_LENGTH && useType != UT_NV &&
                                     (outputType == VK_COMPONENT_TYPE_SINT8_KHR ||
                                      outputType == VK_COMPONENT_TYPE_UINT8_KHR))
+                                    continue;
+
+                                if (testType == TT_MATRIXMULADD_PUSH_CONSTANTS &&
+                                    addrCases[addrNdx].value != ADDR_LINEAR)
                                     continue;
 
                                 if (useType == UT_NV && (addrCases[addrNdx].value != ADDR_LINEAR ||
@@ -5415,8 +5809,8 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                                     useType,                              //  UseType useType;
                                     sgsCases[sgsNdx].value,               //  SubgroupSizeMode subgroupSizeMode;
                                     computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
-                                    1,                               //  uint32_t inputComponentCount;
-                                    1,                               //  uint32_t outputComponentCount;
+                                    inComponentCount,  //  uint32_t inputComponentCount;
+                                    outComponentCount, //  uint32_t outputComponentCount;
                                 };
                                 colGroup->addChild(new CooperativeMatrixTestCase(testCtx, addrCases[addrNdx].name, c));
                             }
@@ -5432,69 +5826,87 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 
         if (useType != UT_KHR_C)
         {
-            const string name = string("convert");
-            const string desc = string("OpFConvert/OpSConvert/OpUConvert/OpBitcast");
-            de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
-
-            for (int dtNdx1 = 0; dtNdx1 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx1++)
+            for (bool sat : {false, true})
             {
-                for (int dtNdx2 = 0; dtNdx2 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx2++)
+                const string name = string("convert") + (sat ? "_sat" : "");
+                const string desc = string("OpFConvert/OpSConvert/OpUConvert/OpBitcast");
+                de::MovePtr<tcu::TestCaseGroup> ttGroup(new tcu::TestCaseGroup(testCtx, name.c_str()));
+
+                for (int dtNdx1 = 0; dtNdx1 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx1++)
                 {
-                    const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)allTypes[dtNdx1];
-                    const VkComponentTypeKHR outputType = (VkComponentTypeKHR)allTypes[dtNdx2];
-                    const string name2 = string("input_") + string(componentTypeInfo[inputType].typeName) +
-                                         string("_output_") + string(componentTypeInfo[outputType].typeName);
-                    de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str()));
-                    for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
+                    for (int dtNdx2 = 0; dtNdx2 < DE_LENGTH_OF_ARRAY(allTypes); dtNdx2++)
                     {
-                        de::MovePtr<tcu::TestCaseGroup> scGroup(new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
-                        for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
+                        const VkComponentTypeKHR inputType  = (VkComponentTypeKHR)allTypes[dtNdx1];
+                        const VkComponentTypeKHR outputType = (VkComponentTypeKHR)allTypes[dtNdx2];
+
+                        if (sat)
                         {
-
-                            if (scCases[scNdx].value == SC_BUFFER_VARIABLE_POINTERS ||
-                                scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS)
+                            if (inputType == VK_COMPONENT_TYPE_FLOAT_E5M2_NV ||
+                                inputType == VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
                             {
-                                // trim test count
                                 continue;
                             }
-
-                            if (colCases[colNdx].value)
+                            if (outputType != VK_COMPONENT_TYPE_FLOAT_E5M2_NV &&
+                                outputType != VK_COMPONENT_TYPE_FLOAT_E4M3_NV)
                             {
-                                // trim test count
                                 continue;
                             }
-
-                            AddrMethod addrMethod = (scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR) ?
-                                                        ADDR_TENSORLAYOUT :
-                                                        ADDR_LINEAR;
-
-                            CaseDef c = {
-                                TT_CONVERT,                             //  TestType testtype;
-                                (VkScopeKHR)scopeCases[scopeNdx].value, //  VkScopeKHR                      scope;
-                                2u,                                     //  uint32_t subgroupsPerWorkgroupX;
-                                2u,                                     //  uint32_t subgroupsPerWorkgroupY;
-                                4u,                                     //  uint32_t workgroupsX;
-                                4u,                                     //  uint32_t workgroupsY;
-                                inputType,                              //  VkComponentTypeKHR inputType;
-                                outputType,                             //  VkComponentTypeKHR outputType;
-                                !!colCases[colNdx].value,               //  bool colMajor;
-                                addrMethod,                             //  AddrMethod addrMethod;
-                                (StorageClass)scCases[scNdx].value,     //  StorageClass storageClass;
-                                useType,                                //  UseType useType;
-                                SUBGROUP_SIZE_NONE,                     //  SubgroupSizeMode subgroupSizeMode;
-                                computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
-                                1,                               //  uint32_t inputComponentCount;
-                                1,                               //  uint32_t outputComponentCount;
-                            };
-
-                            scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
                         }
-                        dtGroup->addChild(scGroup.release());
+
+                        const string name2 = string("input_") + string(componentTypeInfo.at(inputType).typeName) +
+                                             string("_output_") + string(componentTypeInfo.at(outputType).typeName);
+                        de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name2.c_str()));
+                        for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
+                        {
+                            de::MovePtr<tcu::TestCaseGroup> scGroup(
+                                new tcu::TestCaseGroup(testCtx, scCases[scNdx].name));
+                            for (int colNdx = 0; colNdx < DE_LENGTH_OF_ARRAY(colCases); colNdx++)
+                            {
+                                if (scCases[scNdx].value == SC_BUFFER_VARIABLE_POINTERS ||
+                                    scCases[scNdx].value == SC_WORKGROUP_VARIABLE_POINTERS)
+                                {
+                                    // trim test count
+                                    continue;
+                                }
+
+                                if (colCases[colNdx].value)
+                                {
+                                    // trim test count
+                                    continue;
+                                }
+
+                                AddrMethod addrMethod = (scopeCases[scopeNdx].value == VK_SCOPE_WORKGROUP_KHR) ?
+                                                            ADDR_TENSORLAYOUT :
+                                                            ADDR_LINEAR;
+
+                                CaseDef c = {
+                                    sat ? TT_CONVERT_SAT : TT_CONVERT,      //  TestType testtype;
+                                    (VkScopeKHR)scopeCases[scopeNdx].value, //  VkScopeKHR                      scope;
+                                    2u,                                     //  uint32_t subgroupsPerWorkgroupX;
+                                    2u,                                     //  uint32_t subgroupsPerWorkgroupY;
+                                    4u,                                     //  uint32_t workgroupsX;
+                                    4u,                                     //  uint32_t workgroupsY;
+                                    inputType,                              //  VkComponentTypeKHR inputType;
+                                    outputType,                             //  VkComponentTypeKHR outputType;
+                                    !!colCases[colNdx].value,               //  bool colMajor;
+                                    addrMethod,                             //  AddrMethod addrMethod;
+                                    (StorageClass)scCases[scNdx].value,     //  StorageClass storageClass;
+                                    useType,                                //  UseType useType;
+                                    SUBGROUP_SIZE_NONE,                     //  SubgroupSizeMode subgroupSizeMode;
+                                    computePipelineConstructionType, //  vk::ComputePipelineConstructionType computePipelineConstructionType;
+                                    1,                               //  uint32_t inputComponentCount;
+                                    1,                               //  uint32_t outputComponentCount;
+                                };
+
+                                scGroup->addChild(new CooperativeMatrixTestCase(testCtx, colCases[colNdx].name, c));
+                            }
+                            dtGroup->addChild(scGroup.release());
+                        }
+                        ttGroup->addChild(dtGroup.release());
                     }
-                    ttGroup->addChild(dtGroup.release());
                 }
+                scopeGroup->addChild(ttGroup.release());
             }
-            scopeGroup->addChild(ttGroup.release());
         }
 
         if (useType != UT_NV && useType != UT_KHR_C)
@@ -5518,7 +5930,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
                     for (int dtNdx = 0; dtNdx < DE_LENGTH_OF_ARRAY(allTypes); dtNdx++)
                     {
                         const VkComponentTypeKHR inputType = allTypes[dtNdx];
-                        const string name                  = componentTypeInfo[inputType].typeName;
+                        const string name                  = componentTypeInfo.at(inputType).typeName;
 
                         de::MovePtr<tcu::TestCaseGroup> dtGroup(new tcu::TestCaseGroup(testCtx, name.c_str(), ""));
                         for (int scNdx = 0; scNdx < DE_LENGTH_OF_ARRAY(scCases); scNdx++)
@@ -5575,6 +5987,10 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 }
 } // namespace
 
+extern void createCooperativeMatrixOpConstantNullTests(
+    tcu::TestContext &testCtx, tcu::TestCaseGroup *groupCooperativeMatrix,
+    vk::ComputePipelineConstructionType computePipelineConstructionType);
+
 tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,
                                                  vk::ComputePipelineConstructionType computePipelineConstructionType)
 {
@@ -5585,6 +6001,7 @@ tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_B));
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_C));
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_Result));
+    createCooperativeMatrixOpConstantNullTests(testCtx, group.operator->(), computePipelineConstructionType);
 
     return group.release();
 }

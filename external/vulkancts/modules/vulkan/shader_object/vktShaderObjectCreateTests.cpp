@@ -594,27 +594,56 @@ tcu::TestStatus ShaderObjectStageInstance::iterate(void)
         if (result != vk::VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT)
         {
             log << tcu::TestLog::Message << "Shader at index " << failIndex
-                << "was created with size 0, but vkCreateShadersEXT returned " << result << tcu::TestLog::EndMessage;
+                << "was created with size 1, but vkCreateShadersEXT returned " << result << tcu::TestLog::EndMessage;
             return tcu::TestStatus::fail("Fail");
         }
 
-        for (uint32_t i = 0; i < failIndex; ++i)
+        for (uint32_t i = 0; i < count; ++i)
         {
-            if (binaryShaders[i] == garbage)
+            if (i < failIndex)
             {
-                log << tcu::TestLog::Message
-                    << "vkCreateShadersEXT returned VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT and failed at index "
-                    << failIndex << ", but shader at index " << i << "was not created" << tcu::TestLog::EndMessage;
-                return tcu::TestStatus::fail("Fail");
+                if (binaryShaders[i] == garbage)
+                {
+                    log << tcu::TestLog::Message
+                        << "vkCreateShadersEXT returned VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT and failed at index "
+                        << failIndex << ", but shader at index " << i << "was not created" << tcu::TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Fail");
+                }
+                else if (binaryShaders[i] == VK_NULL_HANDLE)
+                {
+                    log << tcu::TestLog::Message
+                        << "vkCreateShadersEXT returned VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT with an intentional"
+                        << " failure at " << failIndex << ", but the first null shader is at index " << i
+                        << tcu::TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Fail");
+                }
             }
-            vk.destroyShaderEXT(device, binaryShaders[i], nullptr);
-        }
-        if (binaryShaders[failIndex] != VK_NULL_HANDLE)
-        {
-            log << tcu::TestLog::Message
-                << "vkCreateShadersEXT returned VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT, creating shader at index "
-                << failIndex << " failed, but the shader is not VK_NULL_HANDLE" << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
+            if (i == failIndex)
+            {
+                if (binaryShaders[i] != VK_NULL_HANDLE)
+                {
+                    tcu::MessageBuilder msg{&log};
+                    msg << "vkCreateShadersEXT returned VK_ERROR_INCOMPATIBLE_SHADER_BINARY_EXT, the shader at index "
+                        << failIndex;
+                    if (binaryShaders[i] == garbage)
+                    {
+                        msg << " was not written to";
+                    }
+                    else
+                    {
+                        msg << " succeeded";
+                    }
+                    msg << ", but should have failed and been set to VK_NULL_HANDLE" << tcu::TestLog::EndMessage;
+                    return tcu::TestStatus::fail("Fail");
+                }
+            }
+
+            // Clean up all shaders that the driver actually wrote to. This includes indicies past the first failure, as
+            // the driver may have completed  compilation of later shaders prior to detecting the error.
+            if (binaryShaders[i] != garbage)
+            {
+                vk.destroyShaderEXT(device, binaryShaders[i], nullptr);
+            }
         }
     }
     else

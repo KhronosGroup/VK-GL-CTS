@@ -27,12 +27,10 @@
 #include "tcuTestLog.hpp"
 #include "tcuSurface.hpp"
 #include "tcuImageCompare.hpp"
-#include "tcuVector.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuRenderTarget.hpp"
 
 #include "deRandom.hpp"
-#include "deMath.h"
 #include "deInt32.h"
 #include "deString.h"
 
@@ -567,21 +565,17 @@ class Incomplete2DEmptyObjectCase : public Tex2DCompletenessCase
 {
 public:
     Incomplete2DEmptyObjectCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name,
-                                const char *description, IVec2 size);
+                                const char *description);
     ~Incomplete2DEmptyObjectCase(void)
     {
     }
 
     virtual void createTexture(GLuint texture);
-
-private:
-    IVec2 m_size;
 };
 
 Incomplete2DEmptyObjectCase::Incomplete2DEmptyObjectCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx,
-                                                         const char *name, const char *description, IVec2 size)
+                                                         const char *name, const char *description)
     : Tex2DCompletenessCase(testCtx, renderCtx, name, description)
-    , m_size(size)
 {
 }
 
@@ -967,21 +961,17 @@ class IncompleteCubeEmptyObjectCase : public TexCubeCompletenessCase
 {
 public:
     IncompleteCubeEmptyObjectCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx, const char *name,
-                                  const char *description, IVec2 size);
+                                  const char *description);
     ~IncompleteCubeEmptyObjectCase(void)
     {
     }
 
     virtual void createTexture(GLuint texture);
-
-private:
-    IVec2 m_size;
 };
 
 IncompleteCubeEmptyObjectCase::IncompleteCubeEmptyObjectCase(tcu::TestContext &testCtx, glu::RenderContext &renderCtx,
-                                                             const char *name, const char *description, IVec2 size)
+                                                             const char *name, const char *description)
     : TexCubeCompletenessCase(testCtx, renderCtx, name, description)
-    , m_size(size)
 {
 }
 
@@ -1059,8 +1049,7 @@ void TextureCompletenessTests::init(void)
     tex2d->addChild(
         new Complete2DExtraLevelCase(m_testCtx, m_context.getRenderContext(), "extra_level", "", IVec2(64, 64)));
     // Texture 2D empty object.
-    tex2d->addChild(
-        new Incomplete2DEmptyObjectCase(m_testCtx, m_context.getRenderContext(), "empty_object", "", IVec2(64, 64)));
+    tex2d->addChild(new Incomplete2DEmptyObjectCase(m_testCtx, m_context.getRenderContext(), "empty_object", ""));
 
     // Cube size.
     cube->addChild(new IncompleteCubeSizeCase(m_testCtx, m_context.getRenderContext(), "npot_size_level_0", "",
@@ -1117,8 +1106,7 @@ void TextureCompletenessTests::init(void)
     cube->addChild(
         new CompleteCubeExtraLevelCase(m_testCtx, m_context.getRenderContext(), "extra_level", "", IVec2(64, 64)));
     // Cube extra level.
-    cube->addChild(
-        new IncompleteCubeEmptyObjectCase(m_testCtx, m_context.getRenderContext(), "empty_object", "", IVec2(64, 64)));
+    cube->addChild(new IncompleteCubeEmptyObjectCase(m_testCtx, m_context.getRenderContext(), "empty_object", ""));
 }
 
 } // namespace Functional

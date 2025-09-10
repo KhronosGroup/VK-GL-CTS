@@ -26,6 +26,7 @@
 #include <vector>
 #include <fstream>
 #include <iterator>
+#include <memory>
 #include "deSharedPtr.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuRGBA.hpp"
@@ -301,11 +302,10 @@ struct PixelBufferAccessBuffer : public UpdatablePixelBufferAccess
 
 struct PixelBufferAccessAllocation : public UpdatablePixelBufferAccess
 {
-    std::vector<unsigned char> m_data;
+    std::unique_ptr<unsigned char[]> m_dataPtr;
     PixelBufferAccessAllocation(const tcu::TextureFormat &format, const VkExtent3D &extent)
         : UpdatablePixelBufferAccess(format, extent, (new unsigned char[calcTexSize(format, extent)]))
-        , m_data(static_cast<unsigned char *>(getDataPtr()),
-                 (static_cast<unsigned char *>(getDataPtr()) + calcTexSize(format, extent)))
+        , m_dataPtr(reinterpret_cast<decltype(m_dataPtr)::pointer>(getDataPtr()))
     {
     }
     void invalidate(void) const

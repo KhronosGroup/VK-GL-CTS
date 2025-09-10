@@ -167,6 +167,17 @@ void allocateNonDispHandleArray(Parent parent, VkPipelineCache pipelineCache, ui
     }
 }
 
+template <typename Object, typename BaseObject, typename Handle, typename Parent, typename CreateInfo,
+          typename DeferredOperation>
+void allocateNonDispHandleArray(Parent parent, DeferredOperation deferredOperation, VkPipelineCache pipelineCache,
+                                uint32_t createInfoCount, const CreateInfo *pCreateInfos,
+                                const VkAllocationCallbacks *pAllocator, Handle *pHandles)
+{
+    (void)deferredOperation;
+    allocateNonDispHandleArray<Object, BaseObject, Handle, Parent, CreateInfo>(parent, pipelineCache, createInfoCount,
+                                                                               pCreateInfos, pAllocator, pHandles);
+}
+
 template <typename Object, typename BaseObject, typename Handle, typename Parent, typename CreateInfo>
 Handle allocateNonDispHandle(Parent parent, const CreateInfo *pCreateInfo, const VkAllocationCallbacks *pAllocator)
 {
@@ -271,9 +282,13 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSessionParameters, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ValidationCache, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, BufferCollection, FUCHSIA)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT);
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT);
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ExternalComputeQueue, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Tensor, ARM)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, TensorView, ARM)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, DataGraphPipelineSession, ARM)
 #endif // CTS_USES_VULKANSC
 
 class Instance
@@ -333,6 +348,9 @@ public:
     SurfaceKHR(VkInstance, const VkScreenSurfaceCreateInfoQNX *)
     {
     }
+    SurfaceKHR(VkInstance, const VkSurfaceCreateInfoOHOS *)
+    {
+    }
 #endif // CTS_USES_VULKANSC
     SurfaceKHR(VkInstance, const VkDisplaySurfaceCreateInfoKHR *)
     {
@@ -390,6 +408,9 @@ public:
     {
     }
     Pipeline(VkDevice, const VkExecutionGraphPipelineCreateInfoAMDX *)
+    {
+    }
+    Pipeline(VkDevice, const VkDataGraphPipelineCreateInfoARM *)
     {
     }
 #endif // CTS_USES_VULKANSC
@@ -821,16 +842,6 @@ void DescriptorPool::reset(void)
         delete m_managedSets[ndx];
     m_managedSets.clear();
 }
-
-#ifndef CTS_USES_VULKANSC
-class ExternalComputeQueueNV
-{
-public:
-    ExternalComputeQueueNV(VkDevice, const VkExternalComputeQueueCreateInfoNV *)
-    {
-    }
-};
-#endif
 
 // API implementation
 

@@ -34,6 +34,8 @@ set(DEQP_VK_MEMORY_SRCS
 	vktMemoryExternalMemoryAcquireUnmodifiedTests.hpp
 	vktMemoryDecompressionTests.cpp
 	vktMemoryDecompressionTests.hpp
+	vktMemoryZeroInitializeDeviceMemoryTests.cpp
+	vktMemoryZeroInitializeDeviceMemoryTests.hpp
 	)
 
 PCH(DEQP_VK_MEMORY_SRCS ../pch.cpp)

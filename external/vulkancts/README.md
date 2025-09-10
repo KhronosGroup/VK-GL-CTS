@@ -73,6 +73,15 @@ With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
 using cmake.
 
+If you intend to run the Vulkan CTS video decode or encode tests, you must first
+download the required sample clips by running the two helper scripts in the
+`external/` directory:
+
+	python3 external/fetch_video_decode_samples.py
+	python3 external/fetch_video_encode_samples.py
+
+Each script will pull down the necessary video files into the CTS data tree.
+Both scripts support the `--help` flag to list all available options.
 
 ### Windows x86-32
 
@@ -859,8 +868,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     default: '1'
 
   --deqp-log-images=[enable|disable]
-    Enable or disable logging of result images
+    When disabled, prevent any image from being logged into the test results file
     default: 'enable'
+
+  --deqp-log-all-images=[enable|disable]
+    When enabled, log all images from image comparison routines as if COMPARE_LOG_EVERYTHING was used in the code
+    default: 'disable'
 
   --deqp-log-shader-sources=[enable|disable]
     Enable or disable logging of shader sources
@@ -1015,6 +1028,18 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-pipeline-prefix=<value>
     Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)
     default: ''
+
+  --deqp-vk-video-log-print=[enable|disable]
+    Print log messages of vulkan video tests to stdout
+    default: 'disable'
+
+  --deqp-vk-video-decode-dump=[disable|single|separate]
+    Dump mode for output of vulkan video decoding tests
+    default: 'disable'
+
+  --deqp-vk-video-encode-dump=[disable|yuv|bitstream|all]
+    Dump mode for output of vulkan video encoding tests
+    default: 'disable'
 
 Full list of parameters for the `vksc-server` application:
 
