@@ -41,6 +41,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkFormatLists.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuTexture.hpp"
@@ -98,7 +99,7 @@ struct TestParameters
     VkFormat featurelessFormat;
     VkImageUsageFlags testedImageUsage;
     VkImageUsageFlags pairedImageUsage;
-    const VkFormat *compatibleFormats;
+    const std::vector<VkFormat> &compatibleFormats;
 };
 
 const uint32_t SINGLE_LEVEL = 1u;
@@ -1101,34 +1102,35 @@ void ImageTranscodingCase::checkSupport(Context &context) const
 
 TestInstance *ImageTranscodingCase::createInstance(Context &context) const
 {
-    VkFormat featurelessFormat = VK_FORMAT_UNDEFINED;
-    bool differenceFound       = false;
+    VkFormat foundFormat = VK_FORMAT_UNDEFINED;
 
     DE_ASSERT(m_parameters.testedImageUsageFeature != 0);
 
-    for (uint32_t i = 0; m_parameters.compatibleFormats[i] != VK_FORMAT_UNDEFINED; i++)
+    for (auto featurelessFormat : m_parameters.compatibleFormats)
     {
-        featurelessFormat = m_parameters.compatibleFormats[i];
+        // skip compressed formats
+        if (de::contains(formats::compressedFormatsFloats, featurelessFormat) ||
+            de::contains(formats::compressedFormatsSrgb, featurelessFormat))
+            continue;
 
         if (isSupportedByFramework(featurelessFormat) &&
             !isFormatUsageFlagSupported(context, featurelessFormat, m_parameters.testedImageUsageFeature) &&
             isFormatUsageFlagSupported(context, featurelessFormat,
                                        m_parameters.testedImageUsage & (~m_parameters.testedImageUsageFeature)))
         {
-            differenceFound = true;
-
+            foundFormat = featurelessFormat;
             break;
         }
     }
 
-    if (differenceFound)
+    if (foundFormat)
     {
 #ifndef CTS_USES_VULKANSC
         if ((context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
              !context.getPortabilitySubsetFeatures().imageViewFormatReinterpretation))
         {
             tcu::TextureFormat textureImageFormat = vk::mapVkFormat(m_parameters.featuredFormat);
-            tcu::TextureFormat textureViewFormat  = vk::mapVkFormat(featurelessFormat);
+            tcu::TextureFormat textureViewFormat  = vk::mapVkFormat(foundFormat);
 
             if (tcu::getTextureFormatBitDepth(textureImageFormat) != tcu::getTextureFormatBitDepth(textureViewFormat))
                 TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Format must not contain a different number of "
@@ -1136,16 +1138,16 @@ TestInstance *ImageTranscodingCase::createInstance(Context &context) const
         }
 #endif // CTS_USES_VULKANSC
 
-        TestParameters calculatedParameters = {
+        TestParameters calculatedParameters{
             m_parameters.operation,               // Operation                operation
             m_parameters.size,                    // UVec3                    size
             m_parameters.imageType,               // ImageType                imageType
             m_parameters.testedImageUsageFeature, // VkImageUsageFlagBits        testedImageUsageFeature
             m_parameters.featuredFormat,          // VkFormat                    featuredFormat
-            featurelessFormat,                    // VkFormat                    featurelessFormat
+            foundFormat,                          // VkFormat                    featurelessFormat
             m_parameters.testedImageUsage,        // VkImageUsageFlags        testedImageUsage
             m_parameters.pairedImageUsage,        // VkImageUsageFlags        pairedImageUsage
-            nullptr,                              // const VkFormat*            compatibleFormats
+            {},                                   // const VkFormat*            compatibleFormats
         };
 
         switch (m_parameters.operation)
@@ -1168,139 +1170,11 @@ TestInstance *ImageTranscodingCase::createInstance(Context &context) const
 
 } // namespace
 
-static const VkFormat compatibleFormatList8Bit[] = {
-    VK_FORMAT_R4G4_UNORM_PACK8, VK_FORMAT_R8_UNORM, VK_FORMAT_R8_SNORM, VK_FORMAT_R8_USCALED,
-    VK_FORMAT_R8_SSCALED,       VK_FORMAT_R8_UINT,  VK_FORMAT_R8_SINT,  VK_FORMAT_R8_SRGB,
-
-    VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList16Bit[] = {VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-                                                     VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-                                                     VK_FORMAT_R5G6B5_UNORM_PACK16,
-                                                     VK_FORMAT_B5G6R5_UNORM_PACK16,
-                                                     VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-                                                     VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-                                                     VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-                                                     VK_FORMAT_R8G8_UNORM,
-                                                     VK_FORMAT_R8G8_SNORM,
-                                                     VK_FORMAT_R8G8_USCALED,
-                                                     VK_FORMAT_R8G8_SSCALED,
-                                                     VK_FORMAT_R8G8_UINT,
-                                                     VK_FORMAT_R8G8_SINT,
-                                                     VK_FORMAT_R8G8_SRGB,
-                                                     VK_FORMAT_R16_UNORM,
-                                                     VK_FORMAT_R16_SNORM,
-                                                     VK_FORMAT_R16_USCALED,
-                                                     VK_FORMAT_R16_SSCALED,
-                                                     VK_FORMAT_R16_UINT,
-                                                     VK_FORMAT_R16_SINT,
-                                                     VK_FORMAT_R16_SFLOAT,
-                                                     VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
-                                                     VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
-
-                                                     VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList24Bit[] = {
-    VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_R8G8B8_SNORM,   VK_FORMAT_R8G8B8_USCALED, VK_FORMAT_R8G8B8_SSCALED,
-    VK_FORMAT_R8G8B8_UINT,  VK_FORMAT_R8G8B8_SINT,    VK_FORMAT_R8G8B8_SRGB,    VK_FORMAT_B8G8R8_UNORM,
-    VK_FORMAT_B8G8R8_SNORM, VK_FORMAT_B8G8R8_USCALED, VK_FORMAT_B8G8R8_SSCALED, VK_FORMAT_B8G8R8_UINT,
-    VK_FORMAT_B8G8R8_SINT,  VK_FORMAT_B8G8R8_SRGB,
-
-    VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList32Bit[] = {VK_FORMAT_R8G8B8A8_UNORM,
-                                                     VK_FORMAT_R8G8B8A8_SNORM,
-                                                     VK_FORMAT_R8G8B8A8_USCALED,
-                                                     VK_FORMAT_R8G8B8A8_SSCALED,
-                                                     VK_FORMAT_R8G8B8A8_UINT,
-                                                     VK_FORMAT_R8G8B8A8_SINT,
-                                                     VK_FORMAT_R8G8B8A8_SRGB,
-                                                     VK_FORMAT_B8G8R8A8_UNORM,
-                                                     VK_FORMAT_B8G8R8A8_SNORM,
-                                                     VK_FORMAT_B8G8R8A8_USCALED,
-                                                     VK_FORMAT_B8G8R8A8_SSCALED,
-                                                     VK_FORMAT_B8G8R8A8_UINT,
-                                                     VK_FORMAT_B8G8R8A8_SINT,
-                                                     VK_FORMAT_B8G8R8A8_SRGB,
-                                                     VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-                                                     VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-                                                     VK_FORMAT_A8B8G8R8_USCALED_PACK32,
-                                                     VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
-                                                     VK_FORMAT_A8B8G8R8_UINT_PACK32,
-                                                     VK_FORMAT_A8B8G8R8_SINT_PACK32,
-                                                     VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-                                                     VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-                                                     VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-                                                     VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-                                                     VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-                                                     VK_FORMAT_A2R10G10B10_UINT_PACK32,
-                                                     VK_FORMAT_A2R10G10B10_SINT_PACK32,
-                                                     VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-                                                     VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-                                                     VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-                                                     VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-                                                     VK_FORMAT_A2B10G10R10_UINT_PACK32,
-                                                     VK_FORMAT_A2B10G10R10_SINT_PACK32,
-                                                     VK_FORMAT_R16G16_UNORM,
-                                                     VK_FORMAT_R16G16_SNORM,
-                                                     VK_FORMAT_R16G16_USCALED,
-                                                     VK_FORMAT_R16G16_SSCALED,
-                                                     VK_FORMAT_R16G16_UINT,
-                                                     VK_FORMAT_R16G16_SINT,
-                                                     VK_FORMAT_R16G16_SFLOAT,
-                                                     VK_FORMAT_R32_UINT,
-                                                     VK_FORMAT_R32_SINT,
-                                                     VK_FORMAT_R32_SFLOAT,
-
-                                                     VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList48Bit[] = {
-    VK_FORMAT_R16G16B16_UNORM, VK_FORMAT_R16G16B16_SNORM, VK_FORMAT_R16G16B16_USCALED, VK_FORMAT_R16G16B16_SSCALED,
-    VK_FORMAT_R16G16B16_UINT,  VK_FORMAT_R16G16B16_SINT,  VK_FORMAT_R16G16B16_SFLOAT,
-
-    VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList64Bit[] = {VK_FORMAT_R16G16B16A16_UNORM,
-                                                     VK_FORMAT_R16G16B16A16_SNORM,
-                                                     VK_FORMAT_R16G16B16A16_USCALED,
-                                                     VK_FORMAT_R16G16B16A16_SSCALED,
-                                                     VK_FORMAT_R16G16B16A16_UINT,
-                                                     VK_FORMAT_R16G16B16A16_SINT,
-                                                     VK_FORMAT_R16G16B16A16_SFLOAT,
-                                                     VK_FORMAT_R32G32_UINT,
-                                                     VK_FORMAT_R32G32_SINT,
-                                                     VK_FORMAT_R32G32_SFLOAT,
-                                                     VK_FORMAT_R64_UINT,
-                                                     VK_FORMAT_R64_SINT,
-                                                     VK_FORMAT_R64_SFLOAT,
-
-                                                     VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList96Bit[] = {VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SINT,
-                                                     VK_FORMAT_R32G32B32_SFLOAT,
-
-                                                     VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList128Bit[] = {
-    VK_FORMAT_R32G32B32A32_UINT, VK_FORMAT_R32G32B32A32_SINT, VK_FORMAT_R32G32B32A32_SFLOAT,
-    VK_FORMAT_R64G64_UINT,       VK_FORMAT_R64G64_SINT,       VK_FORMAT_R64G64_SFLOAT,
-
-    VK_FORMAT_UNDEFINED};
-
-const VkFormat compatibleFormatList192Bit[] = {VK_FORMAT_R64G64B64_UINT, VK_FORMAT_R64G64B64_SINT,
-                                               VK_FORMAT_R64G64B64_SFLOAT,
-
-                                               VK_FORMAT_UNDEFINED};
-
-static const VkFormat compatibleFormatList256Bit[] = {VK_FORMAT_R64G64B64A64_UINT, VK_FORMAT_R64G64B64A64_SINT,
-                                                      VK_FORMAT_R64G64B64A64_SFLOAT,
-
-                                                      VK_FORMAT_UNDEFINED};
-
-static const VkFormat *compatibleFormatsList[] = {
-    compatibleFormatList8Bit,   compatibleFormatList16Bit,  compatibleFormatList24Bit, compatibleFormatList32Bit,
-    compatibleFormatList48Bit,  compatibleFormatList64Bit,  compatibleFormatList96Bit, compatibleFormatList128Bit,
-    compatibleFormatList192Bit, compatibleFormatList256Bit,
+const std::vector<std::vector<VkFormat>> compatibleFormatsList{
+    formats::compatibleFormats8Bit,   formats::compatibleFormats16Bit,  formats::compatibleFormats24Bit,
+    formats::compatibleFormats32Bit,  formats::compatibleFormats48Bit,  formats::compatibleFormats64Bit,
+    formats::compatibleFormats96Bit,  formats::compatibleFormats128Bit, formats::compatibleFormats192Bit,
+    formats::compatibleFormats256Bit,
 };
 
 tcu::TestCaseGroup *createImageTranscodingSupportTests(tcu::TestContext &testCtx)
@@ -1323,6 +1197,7 @@ tcu::TestCaseGroup *createImageTranscodingSupportTests(tcu::TestContext &testCtx
         VK_IMAGE_USAGE_STORAGE_BIT,
         VK_IMAGE_USAGE_SAMPLED_BIT,
     };
+
     VkImageUsageFlags baseFlagsAddOn = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 
     MovePtr<tcu::TestCaseGroup> imageTranscodingTests(new tcu::TestCaseGroup(testCtx, "extended_usage_bit"));
@@ -1332,13 +1207,16 @@ tcu::TestCaseGroup *createImageTranscodingSupportTests(tcu::TestContext &testCtx
         MovePtr<tcu::TestCaseGroup> imageOperationGroup(
             new tcu::TestCaseGroup(testCtx, operationName[operationNdx].c_str()));
 
-        for (uint32_t groupNdx = 0; groupNdx < DE_LENGTH_OF_ARRAY(compatibleFormatsList); groupNdx++)
+        for (const auto &formatList : compatibleFormatsList)
         {
-            for (uint32_t featuredFormatNdx = 0;
-                 compatibleFormatsList[groupNdx][featuredFormatNdx] != VK_FORMAT_UNDEFINED; featuredFormatNdx++)
+            for (auto featuredFormat : formatList)
             {
-                const VkFormat featuredFormat    = compatibleFormatsList[groupNdx][featuredFormatNdx];
                 const VkFormat featurelessFormat = VK_FORMAT_UNDEFINED; // Lookup process is in createInstance()
+
+                // skip compressed formats
+                if (de::contains(formats::compressedFormatsFloats, featuredFormat) ||
+                    de::contains(formats::compressedFormatsSrgb, featuredFormat))
+                    continue;
 
                 if (!isSupportedByFramework(featuredFormat))
                     continue;
@@ -1359,8 +1237,8 @@ tcu::TestCaseGroup *createImageTranscodingSupportTests(tcu::TestContext &testCtx
                 if (getNumUsedChannels(featuredFormat) == 3)
                     continue;
 
-                const std::string testName      = getFormatShortString(featuredFormat);
-                const TestParameters parameters = {
+                const std::string testName = getFormatShortString(featuredFormat);
+                const TestParameters parameters{
                     static_cast<Operation>(operationNdx), // Operation                operation
                     UVec3(16u, 16u, 1u),                  // UVec3                    size
                     IMAGE_TYPE_2D,                        // ImageType                imageType
@@ -1369,7 +1247,7 @@ tcu::TestCaseGroup *createImageTranscodingSupportTests(tcu::TestContext &testCtx
                     featurelessFormat,                    // VkFormat                    featurelessFormat
                     baseFlagsAddOn | testedImageUsageFlags[operationNdx], // VkImageUsageFlags        testedImageUsage
                     baseFlagsAddOn | pairedImageUsageFlags[operationNdx], // VkImageUsageFlags        pairedImageUsage
-                    compatibleFormatsList[groupNdx] // const VkFormat*            compatibleFormats
+                    formatList // const std::vector<VkFormat>&            compatibleFormats
                 };
 
                 imageOperationGroup->addChild(new ImageTranscodingCase(testCtx, testName, parameters));

@@ -1819,6 +1819,8 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64(int x, int y, int z) const
     case TextureFormat::UNSIGNED_INT_1010102_REV:
         return swizzleGe(U64Vec4(U32(0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), m_format.order,
                          TextureFormat::RGBA);
+    case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+        return swizzleGe(U64Vec4(U32(0, 11), U32(11, 11), U32(22, 10), 1), m_format.order, TextureFormat::RGB);
     case TextureFormat::SNORM_INT_1010102_REV:   // Fall-through
     case TextureFormat::SSCALED_INT_1010102_REV: // Fall-through
     case TextureFormat::SIGNED_INT_1010102_REV:
@@ -1826,7 +1828,9 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64(int x, int y, int z) const
                          TextureFormat::RGBA);
     case TextureFormat::UNORM_SHORT_1555:
         return swizzleGe(U64Vec4(U16(15, 1), U16(10, 5), U16(5, 5), U16(0, 5)), m_format.order, TextureFormat::RGBA);
-
+    case TextureFormat::UNSIGNED_INT_999_E5_REV:
+        // shared exponent in bits 27..31
+        return swizzleGe(U64Vec4(U32(0, 9), U32(9, 9), U32(18, 9), 1), m_format.order, TextureFormat::RGB);
     default:
         break; // To generic path.
     }

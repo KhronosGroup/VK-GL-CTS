@@ -306,7 +306,7 @@ TYPE_SUBSTITUTIONS = [
 ]
 
 EXTENSION_POSTFIXES_STANDARD = ["KHR", "EXT"]
-EXTENSION_POSTFIXES_VENDOR = ["AMD", "ARM", "NV", 'INTEL', "NVX", "KHX", "NN", "MVK", "FUCHSIA", 'QCOM', "GGP", "QNX", "ANDROID", 'VALVE', 'HUAWEI']
+EXTENSION_POSTFIXES_VENDOR = ["AMD", "ARM", "NV", 'INTEL', "NVX", "KHX", "NN", "MVK", "FUCHSIA", 'QCOM', "GGP", "QNX", "ANDROID", 'VALVE', 'HUAWEI', 'IMG']
 EXTENSION_POSTFIXES = EXTENSION_POSTFIXES_STANDARD + EXTENSION_POSTFIXES_VENDOR
 
 def printObjectAttributes(obj, indent=0):
@@ -3191,6 +3191,222 @@ class ProfileTestsGenerator(BaseGenerator):
             self.write(l)
         self.write("};")
 
+class FormatListsGenerator(BaseGenerator):
+    def __init__(self, _):
+        BaseGenerator.__init__(self)
+
+    def generate (self):
+
+        self.write(INL_HEADER)
+        self.write('// note: using inline C++17 feature instead of extern\n')
+
+        bitClassesDict = {}
+        for f in self.vk.formats.values():
+            if f.className.endswith("-bit"):
+                bitClassesDict[int(f.className.split('-')[0])] = f.className
+
+        for bitValue, bitClass in bitClassesDict.items():
+            arraySubName = bitClass.replace('-b','B')
+            def compatibleFormatsCheckFun(f):
+                # skip vendor extension formats
+                if self.isPartOfVendorExtension(f.name):
+                    return False
+                if f.className == bitClass:
+                    return True
+                # add selected compressed formats to 64-bit+ formats
+                if bitValue >= 64:
+                    return f.compressed is not None and f.blockSize == (bitValue / 8)
+                return False
+            self.writeList(f'compatibleFormats{arraySubName}', compatibleFormatsCheckFun)
+
+        for intClass in ['SINT', 'UINT']:
+            arraySubName = intClass.replace('NT','nt')
+            def intCompatibleFormatsCheckFun(f):
+                # find int formats (but don't include depth/stencil formats)
+                if intClass in f.name and not f.className.startswith('D') and not f.className.startswith('S'):
+                    return not self.isPartOfVendorExtension(f.name)
+                return False
+            self.writeList(f'compatibleFormats{arraySubName}s', intCompatibleFormatsCheckFun)
+
+        floatVariants = ['UNORM', 'SNORM', 'USCALED', 'SSCALED', 'SFLOAT', 'UFLOAT']
+        def compatibleFormatsFloatsCheckFun(f):
+            if any(sub in f.name for sub in floatVariants):
+                if f.compressed is None and not f.className.startswith('D'):
+                    if f.chroma:
+                        # accept only one chroma format to match what was in the list before generation
+                        return f.className == '64-bit R10G10B10A10'
+                    # skip vendor extension formats
+                    return not self.isPartOfVendorExtension(f.name)
+            return False
+        self.writeList(f'compatibleFormatsFloats', compatibleFormatsFloatsCheckFun)
+
+        def compressedFormatsFloatsCheckFun(f):
+            if f.compressed is not None and any(sub in f.name for sub in floatVariants):
+                # skip formats added by VK_EXT_texture_compression_astc_hdr to
+                # avoid adding thousends of tests that were not there before
+                # generation of format lists
+                if 'ASTC' in f.name and 'SFLOAT' in f.name:
+                    return False
+                # skip vendor extension formats
+                return not self.isPartOfVendorExtension(f.name)
+            return False
+        self.writeList(f'compressedFormatsFloats', compressedFormatsFloatsCheckFun)
+
+        compatibleFormatsSrgbCheckFun = lambda f: f.compressed is None and 'SRGB' in f.name
+        self.writeList(f'compatibleFormatsSrgb', compatibleFormatsSrgbCheckFun)
+
+        def compressedFormatsSrgbCheckFun(f):
+            return not self.isPartOfVendorExtension(f.name) and f.compressed is not None and 'SRGB' in f.name
+        self.writeList(f'compressedFormatsSrgb', compressedFormatsSrgbCheckFun)
+
+        stencilFormatsCheckFun = lambda f: 'S8' in f.className
+        self.writeList(f'stencilFormats', stencilFormatsCheckFun)
+
+        depthFormatsCheckFun = lambda f: f.className.startswith('D')
+        self.writeList(f'depthFormats', depthFormatsCheckFun)
+
+        depthFormatsCheckFun = lambda f: f.className.startswith('D') and not 'S' in f.className
+        self.writeList(f'depthOnlyFormats', depthFormatsCheckFun)
+
+        depthAndStencilFormatsCheckFun = lambda f: f.className.startswith('D') or f.className.startswith('S')
+        self.writeList(f'depthAndStencilFormats', depthAndStencilFormatsCheckFun)
+
+        ycbcrFormatsCheckFun = lambda f: not self.isPartOfVendorExtension(f.name) and f.chroma
+        self.writeList(f'ycbcrFormats', ycbcrFormatsCheckFun)
+
+        ycbcrCompatibileFormatsCheckFun = lambda f: ('X6_UNORM' in f.name or 'X4_UNORM' in f.name) and len(f.components) < 4
+        self.writeList(f'ycbcrCompatibileFormats', ycbcrCompatibileFormatsCheckFun)
+
+        disjointPlanesCheckFun = lambda f: not self.isPartOfVendorExtension(f.name) and 'plane' in f.className
+        self.writeList(f'disjointPlanesFormats', disjointPlanesCheckFun)
+
+        xChromaSubsampledCheckFun = lambda f: not self.isPartOfVendorExtension(f.name) and '422_UNORM' in f.name
+        self.writeList(f'xChromaSubsampledFormats', xChromaSubsampledCheckFun)
+
+        xyChromaSubsampledCheckFun = lambda f: not self.isPartOfVendorExtension(f.name) and '420_UNORM' in f.name
+        self.writeList(f'xyChromaSubsampledFormats', xyChromaSubsampledCheckFun)
+
+        allFormatsCheckFun = lambda f: not self.isPartOfVendorExtension(f.name)
+        self.writeList(f'allFormats', allFormatsCheckFun)
+
+        def nonPlanarFormatsCheckFun(f):
+            # skip vendor extension formats
+            if self.isPartOfVendorExtension(f.name):
+                return False
+            return 'plane' not in f.className
+        self.writeList(f'nonPlanarFormats', nonPlanarFormatsCheckFun)
+
+        def planarFormatsCheckFun(f):
+            # skip vendor extension formats
+            if self.isPartOfVendorExtension(f.name):
+                return False
+            return 'plane' in f.className
+        self.writeList(f'planarFormats', planarFormatsCheckFun)
+
+        # helper function used in generation of few folowing lists
+        def isCommonlySkippedFormat(f):
+            return self.isPartOfVendorExtension(f.name) or \
+                    'plane' in f.className or f.chroma
+
+        def basicColorCheckFun(f):
+            if isCommonlySkippedFormat(f):
+                return False
+            return "-bit" in f.className
+        self.writeList(f'basicColorFormats', basicColorCheckFun)
+
+        def basicUnsignedFloatFormatsCheckFun(f):
+           return not self.isPartOfVendorExtension(f.name) and\
+                ('UNORM' in f.name or 'UFLOAT' in f.name) and\
+                not f.compressed and not f.className.startswith('D') and\
+                'E5B9G9R9' not in f.name
+        self.writeList(f'basicUnsignedFloatFormats', basicUnsignedFloatFormatsCheckFun)
+
+        def bufferViewAccessCheckFun(f):
+            if 'UFLOAT' in f.name or 'SRGB' in f.name:
+                return False
+            if isCommonlySkippedFormat(f):
+                return False
+            if "-bit" in f.className:
+                # accept only up to 64-bit formats because bigger formats are not supported by vkImageUtil in cts framework
+                bitCount = int(f.className.split('-')[0])
+                if bitCount > 64:
+                    return False
+                return True
+            return False
+        self.writeList(f'bufferViewAccessFormats', bufferViewAccessCheckFun)
+
+        def pipelineImageCheckFun(f):
+            if isCommonlySkippedFormat(f):
+                return False
+            if f.className.startswith('D') or f.className.startswith('S'):
+                return False
+            if f.className.startswith('BC'):
+                return False
+            if f.className.startswith('ASTC') and 'SFLOAT' in f.name:
+                return False
+            if '64' in f.name:
+                return False
+            # skip formats that would not be correctly handled in tcuTexture.cpp for
+            # sampling_type tests that operate on large negative values
+            if 'A2R10G10B10_SINT' in f.name or 'A2B10G10R10_SINT' in f.name:
+                return False
+            return True
+        self.writeList(f'pipelineImageFormats', pipelineImageCheckFun)
+
+    def writeList(self, listName, checkCallback):
+        listOfFormatsNotSupportedBySC = [
+            'VK_FORMAT_A1B5G5R5_UNORM_PACK16',
+            'VK_FORMAT_A8_UNORM',
+
+            'VK_FORMAT_R16G16_SFIXED5_NV',
+            'VK_FORMAT_R10X6_UINT_PACK16_ARM',
+            'VK_FORMAT_R10X6G10X6_UINT_2PACK16_ARM',
+            'VK_FORMAT_R10X6G10X6B10X6A10X6_UINT_4PACK16_ARM',
+            'VK_FORMAT_R12X4_UINT_PACK16_ARM',
+            'VK_FORMAT_R12X4G12X4_UINT_2PACK16_ARM',
+            'VK_FORMAT_R12X4G12X4B12X4A12X4_UINT_4PACK16_ARM',
+            'VK_FORMAT_R14X2_UINT_PACK16_ARM',
+            'VK_FORMAT_R14X2G14X2_UINT_2PACK16_ARM',
+            'VK_FORMAT_R14X2G14X2B14X2A14X2_UINT_4PACK16_ARM',
+            'VK_FORMAT_R14X2_UNORM_PACK16_ARM',
+            'VK_FORMAT_R14X2G14X2_UNORM_2PACK16_ARM',
+            'VK_FORMAT_R14X2G14X2B14X2A14X2_UNORM_4PACK16_ARM',
+            'VK_FORMAT_G14X2_B14X2R14X2_2PLANE_420_UNORM_3PACK16_ARM',
+            'VK_FORMAT_G14X2_B14X2R14X2_2PLANE_422_UNORM_3PACK16_ARM',
+            'VK_FORMAT_R8_BOOL_ARM',
+
+            # removed from Vulkan SC test set: VK_IMG_format_pvrtc extension does not exist in Vulkan SC
+            'VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG',
+            'VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG',
+            'VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG',
+            'VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG',
+            'VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG',
+            'VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG',
+            'VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG',
+            'VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG',
+            'VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT',
+            'VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT',
+            'VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT',
+            'VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT',
+            'VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT',
+            'VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT',
+        ]
+
+        formats = []
+        for f in self.vk.formats.values():
+            if self.targetApiName == "vulkansc" and f.name in listOfFormatsNotSupportedBySC:
+                continue
+            if checkCallback(f):
+                formats.append(f.name)
+
+        self.write(f'inline const std::vector<VkFormat> {listName}\n{{')
+        for formatName in formats:
+            self.write('\t' + formatName + ',')
+        self.write('};\n')
+
+    def isPartOfVendorExtension(self, name):
+        return any(name.endswith(postfix) for postfix in EXTENSION_POSTFIXES_VENDOR)
+
 class ConformanceVersionsGenerator(BaseGenerator):
     def __init__(self, _):
         BaseGenerator.__init__(self)
@@ -3435,6 +3651,7 @@ if __name__ == "__main__":
         GenData('vkApiExtensionDependencyInfo.inl',           ApiExtensionDependencyInfoGenerator),
         GenData('vkEntryPointValidation.inl',                 EntryPointValidationGenerator),
         GenData('vkGetDeviceProcAddr.inl',                    GetDeviceProcAddrGenerator),
+        GenData('vkFormatLists.inl',                          FormatListsGenerator),
         GenData('vkKnownConformanceVersions.inl',             ConformanceVersionsGenerator),
 
         # NOTE: when new generators are added then they should also be added to the
@@ -3450,7 +3667,6 @@ if __name__ == "__main__":
         generatorList.append(GenData('vkProfileTests.inl', ProfileTestsGenerator, (profileList)))
 
     for i, generatorData in enumerate(generatorList):
-
         gen = generatorData.generatorType(generatorData.params)
         print('[' + (' ' * (i<9)) + f'{i+1}/{len(generatorList)}] Generating {generatorData.filename}')
 

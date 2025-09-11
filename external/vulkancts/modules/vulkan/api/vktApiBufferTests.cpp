@@ -30,6 +30,7 @@
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "vkFormatLists.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "tcuPlatform.hpp"
@@ -777,23 +778,15 @@ tcu::TestCaseGroup *createBufferTests(tcu::TestContext &testCtx)
     }
 
     {
-        static const VkFormat dsFormats[] = {VK_FORMAT_S8_UINT,
-                                             VK_FORMAT_D16_UNORM,
-                                             VK_FORMAT_D16_UNORM_S8_UINT,
-                                             VK_FORMAT_D24_UNORM_S8_UINT,
-                                             VK_FORMAT_D32_SFLOAT,
-                                             VK_FORMAT_D32_SFLOAT_S8_UINT,
-                                             VK_FORMAT_X8_D24_UNORM_PACK32};
-
         // Checks that drivers are not exposing undesired format features for depth/stencil formats.
         de::MovePtr<tcu::TestCaseGroup> invalidBufferFeatures(
             new tcu::TestCaseGroup(testCtx, "invalid_buffer_features"));
 
-        for (const auto &testFormat : dsFormats)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
-            std::string formatName = de::toLower(getFormatName(testFormat));
+            std::string formatName = de::toLower(getFormatName(format));
 
-            addFunctionCase(invalidBufferFeatures.get(), formatName, testDepthStencilBufferFeatures, testFormat);
+            addFunctionCase(invalidBufferFeatures.get(), formatName, testDepthStencilBufferFeatures, format);
         }
 
         buffersTests->addChild(invalidBufferFeatures.release());

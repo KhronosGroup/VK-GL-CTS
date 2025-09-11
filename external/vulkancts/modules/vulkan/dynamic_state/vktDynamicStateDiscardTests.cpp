@@ -39,6 +39,7 @@
 #include "vkObjUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkFormatLists.hpp"
 
 namespace vkt
 {
@@ -59,21 +60,14 @@ enum TestDynamicStateDiscard
 
 VkFormat pickSupportedStencilFormat(const InstanceInterface &instanceInterface, const VkPhysicalDevice device)
 {
-    static const VkFormat stencilFormats[] = {
-        VK_FORMAT_S8_UINT,
-        VK_FORMAT_D16_UNORM_S8_UINT,
-        VK_FORMAT_D24_UNORM_S8_UINT,
-        VK_FORMAT_D32_SFLOAT_S8_UINT,
-    };
-
-    for (uint32_t i = 0; i < DE_LENGTH_OF_ARRAY(stencilFormats); ++i)
+    for (auto format : formats::stencilFormats)
     {
         VkFormatProperties formatProps;
-        instanceInterface.getPhysicalDeviceFormatProperties(device, stencilFormats[i], &formatProps);
+        instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
 
         if ((formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) != 0)
         {
-            return stencilFormats[i];
+            return format;
         }
     }
     TCU_FAIL("Cannot find supported stencil format");
