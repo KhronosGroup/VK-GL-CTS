@@ -4721,6 +4721,15 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
             (deviceFeatures.sparseResidency16Samples ? VK_SAMPLE_COUNT_16_BIT : 0);
 
         sampleCounts &= sparseSampleCounts;
+
+        // Vulkan spec says:
+        //     A sparse image created using VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT supports all non-compressed
+        //     color formats with power-of-two element size that non-sparse usage supports. Additional formats
+        //     may also be supported and can be queried via vkGetPhysicalDeviceSparseImageFormatProperties.
+        //
+        // So for non-color formats, just require VK_SAMPLE_COUNT_1_BIT.
+        if (!isColorFormat)
+            sampleCounts &= VK_SAMPLE_COUNT_1_BIT;
     }
 
     // If there is no usage flag set that would have corresponding device limit,
