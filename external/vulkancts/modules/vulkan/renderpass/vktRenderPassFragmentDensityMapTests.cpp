@@ -1597,7 +1597,9 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     , m_testParams(testParams)
 {
     m_renderSize = tcu::UVec2(
-        deFloorFloatToInt32(m_testParams.renderMultiplier * static_cast<float>(m_testParams.densityMapSize.x())),
+        de::roundDown(
+            deFloorFloatToInt32(m_testParams.renderMultiplier * static_cast<float>(m_testParams.densityMapSize.x())),
+            (int)m_testParams.viewCount),
         deFloorFloatToInt32(m_testParams.renderMultiplier * static_cast<float>(m_testParams.densityMapSize.y())));
     const auto densityValueDelta = getFormatDelta(m_testParams.densityMapFormat);
     const auto areaFloat         = m_testParams.fragmentArea.asFloat();
