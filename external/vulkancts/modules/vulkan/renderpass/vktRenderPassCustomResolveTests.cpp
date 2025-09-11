@@ -128,7 +128,7 @@ enum class ResolveType
 
 union StrategyParams
 {
-    tcu::Vec4 fixedValue;
+    tcu::Vec4 fixedValue; // For color: color values; for depth/stencil: .x is depth and .y is stencil.
     uint32_t sampleIndex;
 
     StrategyParams()
@@ -272,6 +272,9 @@ struct TestParams
 
     // Disable depth writes for attachments. This will make the resolve depth buffer contents not be updated.
     bool disableDepthWrites = false;
+
+    // Disable stencil exports, using the stencil reference value from the pipeline instead.
+    bool disableStencilExport = false;
 
     tcu::IVec3 getExtent() const
     {
@@ -552,6 +555,17 @@ void CustomResolveCase::checkSupport(Context &context) const
     }
 
     bool stencilExport = false;
+    if (m_params.disableStencilExport)
+        goto stencil_export_end;
+    for (const auto &pass : m_params.uploadPasses)
+        for (const auto &att : pass.attachments)
+        {
+            if (att.aspects & VK_IMAGE_ASPECT_STENCIL_BIT)
+            {
+                stencilExport = true;
+                goto stencil_export_end;
+            }
+        }
     for (const auto &pass : m_params.resolvePasses)
         for (const auto &att : pass.attachmentResolves)
         {
@@ -700,7 +714,7 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
             if (uploadDepth)
                 stores << "    gl_FragDepth = pixels" << attIndex << ".colors[i" << attIndex << "].r;\n";
 
-            if (uploadStencil)
+            if (uploadStencil && !m_params.disableStencilExport)
             {
                 stores << "    gl_FragStencilRefARB = int(pixels" << attIndex << ".colors[i" << attIndex << "].g);\n";
                 stencilRef = true;
@@ -816,7 +830,7 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
                 else
                     DE_ASSERT(false);
             }
-            if (resolveStencil)
+            if (resolveStencil && !m_params.disableStencilExport)
             {
                 stencilRef = true;
                 if (attResolve.resolveType == ResolveType::AVERAGE)
@@ -830,7 +844,7 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
                 }
                 else if (attResolve.resolveType == ResolveType::FIXED_VALUE)
                 {
-                    resolves << "    gl_FragStencilRefARB = int(" << attResolve.resolveParams.fixedValue.x() << ");\n";
+                    resolves << "    gl_FragStencilRefARB = int(" << attResolve.resolveParams.fixedValue.y() << ");\n";
                 }
                 else if (attResolve.resolveType == ResolveType::SELECTED_SAMPLE)
                 {
@@ -840,6 +854,8 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
                 else
                     DE_ASSERT(false);
             }
+            if (resolveStencil && m_params.disableStencilExport)
+                DE_ASSERT(attResolve.resolveType == ResolveType::FIXED_VALUE);
         }
 
         std::ostringstream frag;
@@ -2021,9 +2037,27 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
     // When creating each pipeline, we must adjust the value of the depth and stencil test enablement flag. The rest is
     // prepared to overwrite the depth value with the fragment depth and to replace the stencil value with the reference
-    // value, which could be set from the shader.
+    // value, which could be set from the shader or set here.
+    uint32_t uploadStencilRef  = 0u;
+    uint32_t resolveStencilRef = 0u;
+
+    if (m_params.disableStencilExport)
+    {
+        // The reference value will be set from the pipeline. We will assume the resolve strategy for stencil, if any,
+        // is FIXED_VALUE, and we will upload a different value from the upload pipeline.
+        for (const auto &pass : m_params.resolvePasses)
+            for (const auto &att : pass.attachmentResolves)
+            {
+                if (att.attachment.aspects & VK_IMAGE_ASPECT_STENCIL_BIT)
+                {
+                    DE_ASSERT(att.resolveType == ResolveType::FIXED_VALUE);
+                    resolveStencilRef = static_cast<uint32_t>(att.resolveParams.fixedValue.y());
+                    uploadStencilRef  = 255u - resolveStencilRef;
+                }
+            }
+    }
     const auto stencilOpState = makeStencilOpState(VK_STENCIL_OP_REPLACE, VK_STENCIL_OP_REPLACE, VK_STENCIL_OP_REPLACE,
-                                                   VK_COMPARE_OP_ALWAYS, 0xFFu, 0xFFu, 0u);
+                                                   VK_COMPARE_OP_ALWAYS, 0xFFu, 0xFFu, uploadStencilRef);
     VkPipelineDepthStencilStateCreateInfo dsStateCreateInfo = {
         VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
         nullptr,
@@ -2171,6 +2205,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
         dsStateCreateInfo.depthTestEnable   = depthTestEnable;
         dsStateCreateInfo.stencilTestEnable = stencilTestEnable;
+        dsStateCreateInfo.front.reference   = resolveStencilRef;
+        dsStateCreateInfo.back.reference    = resolveStencilRef;
 
         auto &wrapper = *uploadPipelines.back();
 
@@ -4077,6 +4113,19 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 const auto testName                           = "stencil_only_" + dsFormatNames.at(format);
                 constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
             }
+
+            params.disableStencilExport                                       = true;
+            params.resolvePasses.back().attachmentResolves.back().resolveType = ResolveType::FIXED_VALUE;
+            params.resolvePasses.back().attachmentResolves.back().resolveParams =
+                StrategyParams(tcu::Vec4(0.0f, 77.0f, 0.0f, 0.0f));
+
+            for (const auto &format : stencilFormats)
+            {
+                params.attachmentList.back().attachmentFormat = format;
+                params.attachmentList.back().resolveFormat    = format;
+                const auto testName = "stencil_only_" + dsFormatNames.at(format) + "_no_stencil_export";
+                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+            }
         }
         {
             // Combined depth-stencil tests, uploading both aspects at the same time.
@@ -4133,6 +4182,20 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 const auto testName2 =
                     "depth_stencil_upload_both_resolve_both_disable_depth_writes_" + dsFormatNames.at(format);
                 constructionGroup->addChild(new CustomResolveCase(testCtx, testName2, params));
+
+                params.disableDepthWrites   = false;
+                params.disableStencilExport = true;
+                const auto lastAttResolve   = params.resolvePasses.back().attachmentResolves.back();
+                params.resolvePasses.back().attachmentResolves.back().resolveType = ResolveType::FIXED_VALUE;
+                params.resolvePasses.back().attachmentResolves.back().resolveParams =
+                    StrategyParams(tcu::Vec4(0.25f, 50.f, 0.0f, 0.0f));
+                const auto testName3 =
+                    "depth_stencil_upload_both_resolve_both_" + dsFormatNames.at(format) + "_no_stencil_export";
+                constructionGroup->addChild(new CustomResolveCase(testCtx, testName3, params));
+
+                // Restore previous resolve params.
+                params.resolvePasses.back().attachmentResolves.back() = lastAttResolve;
+                params.disableStencilExport                           = false;
             }
         }
         {
@@ -4169,6 +4232,36 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
             }
 
+            params.resolvePasses.back().attachmentResolves.back().attachment.aspects =
+                (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+
+            for (const auto &format : dsFormats)
+            {
+                params.attachmentList.back().attachmentFormat = format;
+                params.attachmentList.back().resolveFormat    = format;
+                const auto testName = "depth_stencil_upload_both_separate_resolve_both_" + dsFormatNames.at(format);
+                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+            }
+
+            // Same without exporting stencil from the shaders.
+            params.disableStencilExport = true;
+            auto prevLastResolve        = params.resolvePasses.back().attachmentResolves.back();
+            params.resolvePasses.back().attachmentResolves.back().resolveType = ResolveType::FIXED_VALUE;
+            params.resolvePasses.back().attachmentResolves.back().resolveParams =
+                StrategyParams(tcu::Vec4(0.5f, 66.0f, 0.0f, 0.0f));
+
+            for (const auto &format : dsFormats)
+            {
+                params.attachmentList.back().attachmentFormat = format;
+                params.attachmentList.back().resolveFormat    = format;
+                const auto testName = "depth_stencil_upload_both_separate_resolve_both_" + dsFormatNames.at(format) +
+                                      "_no_stencil_export";
+                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+            }
+
+            // Restore previous params and resolve stencil only.
+            params.disableStencilExport                                              = false;
+            params.resolvePasses.back().attachmentResolves.back()                    = prevLastResolve;
             params.resolvePasses.back().attachmentResolves.back().attachment.aspects = VK_IMAGE_ASPECT_STENCIL_BIT;
 
             for (const auto &format : dsFormats)
@@ -4179,14 +4272,33 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
             }
 
-            params.resolvePasses.back().attachmentResolves.back().attachment.aspects =
-                (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT);
+            // Same without exporting stencil from the shaders.
+            params.disableStencilExport = true;
+            prevLastResolve             = params.resolvePasses.back().attachmentResolves.back();
+            params.resolvePasses.back().attachmentResolves.back().resolveType = ResolveType::FIXED_VALUE;
+            params.resolvePasses.back().attachmentResolves.back().resolveParams =
+                StrategyParams(tcu::Vec4(0.0f, 66.0f, 0.0f, 0.0f));
 
             for (const auto &format : dsFormats)
             {
                 params.attachmentList.back().attachmentFormat = format;
                 params.attachmentList.back().resolveFormat    = format;
-                const auto testName = "depth_stencil_upload_both_separate_resolve_both_" + dsFormatNames.at(format);
+                const auto testName = "depth_stencil_upload_both_separate_resolve_stencil_" + dsFormatNames.at(format) +
+                                      "_no_stencil_export";
+                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+            }
+
+            // Do not upload stencil, then resolve only depth.
+            params.disableStencilExport = false;
+            params.uploadPasses.pop_back();
+            params.resolvePasses.back().attachmentResolves.back() = prevLastResolve; // Restore state and params.
+            params.resolvePasses.back().attachmentResolves.back().attachment.aspects = VK_IMAGE_ASPECT_DEPTH_BIT;
+
+            for (const auto &format : dsFormats)
+            {
+                params.attachmentList.back().attachmentFormat = format;
+                params.attachmentList.back().resolveFormat    = format;
+                const auto testName = "depth_stencil_upload_depth_resolve_depth_" + dsFormatNames.at(format);
                 constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
             }
         }
@@ -4318,7 +4430,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {
                     AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT),
-                    AttachmentIndexAspect(3u, (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)),
+                    AttachmentIndexAspect(3u, 0u /*will be replaced below*/),
                 },
             });
 
@@ -4335,23 +4447,48 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 CoveredArea(tcu::Vec2(1.0f, 2.0f), tcu::Vec2(0.0f, -1.0f)),
                 {
                     AttachmentResolve(0u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE, StrategyParams(1u)),
-                    AttachmentResolve(3u, (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT),
-                                      ResolveType::AVERAGE, StrategyParams()),
+                    AttachmentResolve(3u, 0u /*will be replaced below*/, ResolveType::AVERAGE, StrategyParams()),
                 },
             });
 
+            // We want to test different formats for this test.
             const std::vector<VkFormat> dsFormats{
                 VK_FORMAT_D24_UNORM_S8_UINT,
                 VK_FORMAT_D32_SFLOAT_S8_UINT,
             };
 
+            // We'd like to test custom resolves for both depth/stencil as well as depth-only, for implementations that
+            // do not support VK_EXT_shader_stencil_export.
+            const std::vector<VkImageAspectFlags> dsAspects{
+                (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT),
+                VK_IMAGE_ASPECT_DEPTH_BIT,
+            };
+
             for (const auto &format : dsFormats)
-            {
-                params.attachmentList.back().attachmentFormat = format;
-                params.attachmentList.back().resolveFormat    = format;
-                const auto testName = "mix_multi_upload_multi_resolve_" + dsFormatNames.at(format);
-                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
-            }
+                for (const auto &aspects : dsAspects)
+                {
+                    const auto nameSuffix = ((aspects & VK_IMAGE_ASPECT_STENCIL_BIT) == 0u ? "_no_stencil" : "");
+
+                    params.attachmentList.back().attachmentFormat = format;
+                    params.attachmentList.back().resolveFormat    = format;
+
+                    for (auto &pass : params.uploadPasses)
+                        for (auto &att : pass.attachments)
+                        {
+                            if ((att.aspects & VK_IMAGE_ASPECT_COLOR_BIT) == 0u)
+                                att.aspects = aspects;
+                        }
+
+                    for (auto &pass : params.resolvePasses)
+                        for (auto &att : pass.attachmentResolves)
+                        {
+                            if ((att.attachment.aspects & VK_IMAGE_ASPECT_COLOR_BIT) == 0u)
+                                att.attachment.aspects = aspects;
+                        }
+
+                    const auto testName = "mix_multi_upload_multi_resolve_" + dsFormatNames.at(format) + nameSuffix;
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                }
 
             // Now we swap the resolve passes and make the resolve attachment locations the identity, which should
             // enable pass merging with dynamic rendering.
@@ -4360,12 +4497,31 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             std::swap(params.resolvePasses.front(), params.resolvePasses.back());
 
             for (const auto &format : dsFormats)
-            {
-                params.attachmentList.back().attachmentFormat = format;
-                params.attachmentList.back().resolveFormat    = format;
-                const auto testName = "mix_multi_upload_multi_resolve_with_merge_" + dsFormatNames.at(format);
-                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
-            }
+                for (const auto &aspects : dsAspects)
+                {
+                    const auto nameSuffix = ((aspects & VK_IMAGE_ASPECT_STENCIL_BIT) == 0u ? "_no_stencil" : "");
+
+                    params.attachmentList.back().attachmentFormat = format;
+                    params.attachmentList.back().resolveFormat    = format;
+
+                    for (auto &pass : params.uploadPasses)
+                        for (auto &att : pass.attachments)
+                        {
+                            if ((att.aspects & VK_IMAGE_ASPECT_COLOR_BIT) == 0u)
+                                att.aspects = aspects;
+                        }
+
+                    for (auto &pass : params.resolvePasses)
+                        for (auto &att : pass.attachmentResolves)
+                        {
+                            if ((att.attachment.aspects & VK_IMAGE_ASPECT_COLOR_BIT) == 0u)
+                                att.attachment.aspects = aspects;
+                        }
+
+                    const auto testName =
+                        "mix_multi_upload_multi_resolve_with_merge_" + dsFormatNames.at(format) + nameSuffix;
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                }
         }
         {
             // Upload and resolve multiple color attachments at the same time, with and without remapping.
