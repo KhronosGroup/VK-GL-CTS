@@ -9231,7 +9231,6 @@ dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.compute.stores_priv
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.compute.workgroup_two_buffers
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.compute.writes_single_buffer
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.compute.writes_two_buffers
-dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.dynamic_offset.select_descriptor_array
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.nullptr_compute.opselect_null_or_valid_ptr
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.nullptr_compute.opvariable_initialized_null
 dEQP-VK.spirv_assembly.instruction.compute.vector_shuffle.vector_shuffle
