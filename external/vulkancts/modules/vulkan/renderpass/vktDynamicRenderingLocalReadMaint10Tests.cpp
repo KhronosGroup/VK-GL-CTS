@@ -1702,12 +1702,6 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-std::string getFormatSimpleName(VkFormat format)
-{
-    static size_t kPrefixLen = std::strlen("VK_FORMAT_");
-    return de::toLower(std::string(getFormatName(format)).substr(kPrefixLen));
-}
-
 std::string feedbackCaseName(const std::vector<bool> &feedback)
 {
     std::string name = "loop_";

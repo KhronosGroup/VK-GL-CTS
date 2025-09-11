@@ -115,9 +115,6 @@ inline std::string updateRayTracingGLSL(const std::string &str)
 
 std::string getCommonRayGenerationShader(uint32_t set = 0, uint32_t binding = 1);
 
-// Get lowercase version of the format name with no VK_FORMAT_ prefix.
-std::string getFormatSimpleName(vk::VkFormat format);
-
 // Test whether given poin p belons to the triangle (p0, p1, p2)
 bool pointInTriangle2D(const tcu::Vec3 &p, const tcu::Vec3 &p0, const tcu::Vec3 &p1, const tcu::Vec3 &p2);
 

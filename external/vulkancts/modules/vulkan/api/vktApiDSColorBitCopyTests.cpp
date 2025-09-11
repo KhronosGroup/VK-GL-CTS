@@ -868,12 +868,6 @@ tcu::TestStatus DSColorCopyInstance::iterate(void)
 
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-std::string getFormatNameBrief(VkFormat format)
-{
-    static const size_t prefixLen = strlen("VK_FORMAT_");
-    return de::toLower(std::string(getFormatName(format)).substr(prefixLen));
-}
-
 } // namespace
 
 tcu::TestCaseGroup *createDSColorBitCopyTests(tcu::TestContext &testCtx)
@@ -941,7 +935,7 @@ tcu::TestCaseGroup *createDSColorBitCopyTests(tcu::TestContext &testCtx)
                                         const std::string usageSuffix        = (attUsage ? "_att_usage" : "");
 
                                         const auto testName =
-                                            getFormatNameBrief(srcFormat) + "_" + getFormatNameBrief(dstFormat) +
+                                            getFormatSimpleName(srcFormat) + "_" + getFormatSimpleName(dstFormat) +
                                             (formatGroup.aspect == VK_IMAGE_ASPECT_DEPTH_BIT ? "_depth" : "_stencil") +
                                             "_level" + std::to_string(srcMipLevel) + "_to_level" +
                                             std::to_string(dstMipLevel) + unrestrictedSuffix + usageSuffix +

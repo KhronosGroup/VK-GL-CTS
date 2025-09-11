@@ -8377,13 +8377,6 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-std::string getFormatSimpleName(VkFormat format)
-{
-    static size_t prefixLen    = std::strlen("VK_FORMAT_");
-    const std::string fullName = getFormatName(format);
-    return de::toLower(fullName.substr(prefixLen));
-}
-
 } // namespace
 
 static inline void addFunctionCaseInNewSubgroup(tcu::TestContext &testCtx, tcu::TestCaseGroup *group,

@@ -1496,8 +1496,7 @@ tcu::TestCaseGroup *createSamplerBorderSwizzleTests(tcu::TestContext &testCtx,
 
     for (const auto &format : textureFormats)
     {
-        const auto skip              = std::strlen("VK_FORMAT_");
-        const std::string formatName = de::toLower(std::string(getFormatName(format)).substr(skip));
+        const std::string formatName = getFormatSimpleName(format);
 
         for (const auto sampleStencil : sampleStencilFlag)
         {

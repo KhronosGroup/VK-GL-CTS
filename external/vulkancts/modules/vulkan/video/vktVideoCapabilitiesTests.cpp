@@ -1531,8 +1531,7 @@ std::string getTestName(const TestParams &params)
         TCU_THROW(InternalError, "unsupported codec");
     }
 
-    std::string formatStr = de::toString(params.format);
-    formatStr             = formatStr.substr(strlen("vk_format_"));
+    std::string formatStr = getFormatSimpleName(params.format);
     ss << "_" << formatStr;
 
     switch (params.usage)

@@ -57,12 +57,6 @@ struct DeferredThreadParams
     VkResult result;
 };
 
-std::string getFormatSimpleName(vk::VkFormat format)
-{
-    constexpr size_t kPrefixLen = 10; // strlen("VK_FORMAT_")
-    return de::toLower(de::toString(format).substr(kPrefixLen));
-}
-
 bool pointInTriangle2D(const tcu::Vec3 &p, const tcu::Vec3 &p0, const tcu::Vec3 &p1, const tcu::Vec3 &p2)
 {
     float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();

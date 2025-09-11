@@ -60,6 +60,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineMultisampleImageTests.hpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.cpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.hpp
+	vktPipelineMultisampleResolveMaint10Tests.cpp
+	vktPipelineMultisampleResolveMaint10Tests.hpp
 	vktPipelineMultisampleResolveRenderAreaTests.cpp
 	vktPipelineMultisampleResolveRenderAreaTests.hpp
 	vktPipelineMultisampleSampleLocationsExtTests.cpp
