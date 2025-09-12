@@ -12788,6 +12788,7 @@ dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.64b_indexing.comput
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.64b_indexing.compute.writes_two_buffers
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.64b_indexing.nullptr_compute.opselect_null_or_valid_ptr
 dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.64b_indexing.nullptr_compute.opvariable_initialized_null
+dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.compute.opselect_different_strides
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float16_to_int16_m4rtz_frag
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float16_to_int16_m4rtz_geom
 dEQP-VK.spirv_assembly.instruction.graphics.convertftos.float16_to_int16_m4rtz_tessc

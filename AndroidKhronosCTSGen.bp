@@ -1837,6 +1837,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmMaint9VectorizationTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmMultipleShadersTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmNonSemanticInfoTests.cpp",
+        "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmOpSelectDifferentStridesTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPhysicalStorageBufferPointerTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPointerParameterTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmPtrAccessChainTests.cpp",
