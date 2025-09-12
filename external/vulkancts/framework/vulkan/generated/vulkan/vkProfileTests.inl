@@ -31,6 +31,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		// vulkan10requirements
 		ROADMAP_FEATURE_ITEM(vkFeatures, robustBufferAccess),
 
+
 		// vulkan10requirements_roadmap2022
 		ROADMAP_FEATURE_ITEM(vkFeatures, fullDrawIndexUint32),
 		ROADMAP_FEATURE_ITEM(vkFeatures, imageCubeArray),
@@ -48,11 +49,14 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		ROADMAP_FEATURE_ITEM(vkFeatures, shaderStorageBufferArrayDynamicIndexing),
 		ROADMAP_FEATURE_ITEM(vkFeatures, shaderStorageImageArrayDynamicIndexing),
 
+
 		// vulkan11requirements
 		ROADMAP_FEATURE_ITEM(vkVulkan11Features, multiview),
 
+
 		// vulkan11requirements_roadmap2022
 		ROADMAP_FEATURE_ITEM(vkVulkan11Features, samplerYcbcrConversion),
+
 
 		// vulkan12requirements
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, uniformBufferStandardLayout),
@@ -62,6 +66,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, hostQueryReset),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, timelineSemaphore),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderSubgroupExtendedTypes),
+
 
 		// vulkan12requirements_roadmap2022
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, samplerMirrorClampToEdge),
@@ -85,10 +90,12 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, runtimeDescriptorArray),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, scalarBlockLayout),
 
+
 		// vulkan13requirements
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, vulkanMemoryModel),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, vulkanMemoryModelDeviceScope),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, bufferDeviceAddress),
+
 
 		ROADMAP_FEATURE_ITEM(vkVulkan13Features, robustImageAccess),
 		ROADMAP_FEATURE_ITEM(vkVulkan13Features, shaderTerminateInvocation),
@@ -103,8 +110,10 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 		ROADMAP_FEATURE_ITEM(vkVulkan13Features, inlineUniformBlock),
 		ROADMAP_FEATURE_ITEM(vkVulkan13Features, dynamicRendering),
 
+
 		// vulkan13requirements_roadmap2022
 		ROADMAP_FEATURE_ITEM(vkVulkan13Features, descriptorBindingInlineUniformBlockUpdateAfterBind),
+
 
 		// vulkan10optionals_roadmap2022
 		ROADMAP_FEATURE_ITEM(vkFeatures, largePoints),
@@ -251,9 +260,11 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 		ROADMAP_FEATURE_ITEM(vkFeatures, shaderInt16),
 		ROADMAP_FEATURE_ITEM(vkFeatures, shaderImageGatherExtended),
 
+
 		// vulkan11requirements_roadmap2024
 		ROADMAP_FEATURE_ITEM(vkVulkan11Features, shaderDrawParameters),
 		ROADMAP_FEATURE_ITEM(vkVulkan11Features, storageBuffer16BitAccess),
+
 
 		// vulkan12requirements_roadmap2024
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderInt8),

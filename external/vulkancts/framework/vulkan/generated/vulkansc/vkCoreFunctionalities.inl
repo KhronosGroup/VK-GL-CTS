@@ -24,6 +24,7 @@ void initApisMap (ApisMap& apis)
     apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_3, FunctionInfosList()));
     apis.insert(::std::pair<uint32_t, FunctionInfosList>(VK_API_VERSION_1_4, FunctionInfosList()));
 
+
 	apis[VK_API_VERSION_1_0] = {
 		{"vkCreateInstance",							FUNCTIONORIGIN_PLATFORM},
 		{"vkDestroyInstance",							FUNCTIONORIGIN_INSTANCE},

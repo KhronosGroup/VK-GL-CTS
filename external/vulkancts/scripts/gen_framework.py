@@ -1894,8 +1894,7 @@ class CoreFunctionalitiesGenerator(BaseGenerator):
                 functionNamesPerApiVersionDict[apiVersion] = [name]
 
         lines = [
-        '\r',
-        'enum FunctionOrigin', '{'] + [line for line in indentLines([
+        '\nenum FunctionOrigin', '{'] + [line for line in indentLines([
         '\tFUNCTIONORIGIN_PLATFORM\t= 0,',
         '\tFUNCTIONORIGIN_INSTANCE,',
         '\tFUNCTIONORIGIN_DEVICE'])] + [
@@ -1907,7 +1906,7 @@ class CoreFunctionalitiesGenerator(BaseGenerator):
         "{",
         "    apis.clear();"] + [
         "    apis.insert(::std::pair<uint32_t, FunctionInfosList>(" + v + ", FunctionInfosList()));" for v in functionNamesPerApiVersionDict] + [
-        "\r"]
+        "\n"]
 
         functionLines = []
         for apiVersion in functionNamesPerApiVersionDict:
@@ -1987,16 +1986,13 @@ class DeviceFeatures2Generator(BaseGenerator):
                        '    VkPhysicalDeviceFeatures2     extFeatures;\n'
                        '    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);\n')
             self.write(f'    {structureName} {instanceName}[count];')
-            self.write(f'    const bool{nameSpacing}is{structureName[16:]} ={condition};')
-            self.write('\r')
+            self.write(f'    const bool{nameSpacing}is{structureName[16:]} ={condition};\n')
             self.write('    if (!' + flagName + ')')
-            self.write('        return tcu::TestStatus::pass("Querying not supported");')
-            self.write('\r')
+            self.write('        return tcu::TestStatus::pass("Querying not supported");\n')
             self.write('    for (int ndx = 0; ndx < count; ++ndx)\n    {')
             self.write('        deMemset(&' + instanceName + '[ndx], 0xFF * ndx, sizeof(' + structureName + '));')
             self.write('        ' + instanceName + '[ndx].sType = ' + structure.sType + ';')
-            self.write('        ' + instanceName + '[ndx].pNext = nullptr;')
-            self.write('\r')
+            self.write('        ' + instanceName + '[ndx].pNext = nullptr;\n')
             self.write(
                     '        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));\n'
                     '        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;\n'
@@ -2004,8 +2000,7 @@ class DeviceFeatures2Generator(BaseGenerator):
                     '        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);')
             self.write('    }\n')
             # construct log section
-            self.write('    log << TestLog::Message << ' + instanceName + '[0] << TestLog::EndMessage;')
-            self.write('\r')
+            self.write('    log << TestLog::Message << ' + instanceName + '[0] << TestLog::EndMessage;\n')
             # compare each member
             self.write('    if (')
             memberCount = len(structure.members)
@@ -3063,7 +3058,7 @@ class ProfileTestsGenerator(BaseGenerator):
                                 self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
                                 for feature in featureStructList[featureStruct]:
                                     featureTableItems.append(f"vk{structName}, {feature}")
-                                featureTableItems.append("\r")
+                                featureTableItems.append("\n")
                         if "properties" in capabilityDefinition:
                             propertyStructList = capabilityDefinition["properties"]
                             propertyTableItems.append(f"\t\t// {capabilityName}");
