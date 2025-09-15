@@ -50,6 +50,8 @@ static const char *getOsName(int os)
         return "DE_OS_SYMBIAN";
     case DE_OS_IOS:
         return "DE_OS_IOS";
+    case DE_OS_OHOS:
+        return "DE_OS_OHOS";
     default:
         return nullptr;
     }
