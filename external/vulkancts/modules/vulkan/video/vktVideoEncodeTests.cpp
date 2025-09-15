@@ -1984,11 +1984,14 @@ void VideoEncodeTestInstance::queryAndValidateCapabilities()
     {
         // @FIXME: For now the GOP size can't be larger than available DPB slots due to limitations
         //         in DPB slot management.
-        DE_ASSERT(m_videoCapabilities->maxDpbSlots >= m_gopFrameCount);
+        TCU_CHECK_AND_THROW(InternalError, m_videoCapabilities->maxDpbSlots >= m_gopFrameCount,
+                            "Maximum DPB slots must be greater than or equal to GOP frame count");
     }
 
-    DE_ASSERT(m_videoEncodeCapabilities->supportedEncodeFeedbackFlags &
-              VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR);
+    TCU_CHECK_AND_THROW(InternalError,
+                        m_videoEncodeCapabilities->supportedEncodeFeedbackFlags &
+                            VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR,
+                        "Implementation must support bitstream bytes written feedback");
 
     // Check intra-refresh capabilities
     queryIntraRefreshCapabilities();
@@ -2047,21 +2050,25 @@ void VideoEncodeTestInstance::queryAndValidateCapabilities()
         if ((m_videoEncodeCapabilities->rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR) == 0)
             TCU_THROW(NotSupportedError, "Implementation does not support variable bitrate control");
 
-        DE_ASSERT(m_videoEncodeCapabilities->maxBitrate > 0);
+        TCU_CHECK_AND_THROW(InternalError, m_videoEncodeCapabilities->maxBitrate > 0,
+                            "Maximum bitrate must be greater than zero for variable bitrate");
     }
     else if (m_useConstantBitrate)
     {
         if ((m_videoEncodeCapabilities->rateControlModes & VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR) == 0)
             TCU_THROW(NotSupportedError, "Implementation does not support constant bitrate control");
 
-        DE_ASSERT(m_videoEncodeCapabilities->maxBitrate > 0);
+        TCU_CHECK_AND_THROW(InternalError, m_videoEncodeCapabilities->maxBitrate > 0,
+                            "Maximum bitrate must be greater than zero for constant bitrate");
     }
 
     // Verify DPB slots support
-    DE_ASSERT(m_videoCapabilities->maxDpbSlots >= m_dpbSlots);
+    TCU_CHECK_AND_THROW(InternalError, m_videoCapabilities->maxDpbSlots >= m_dpbSlots,
+                        "Maximum DPB slots must be greater than or equal to requested DPB slots");
 
     // Verify that chosen quality level is satisfied
-    DE_ASSERT(m_qualityLevel < m_videoEncodeCapabilities->maxQualityLevels);
+    TCU_CHECK_AND_THROW(InternalError, m_qualityLevel < m_videoEncodeCapabilities->maxQualityLevels,
+                        "Quality level must be less than maximum quality levels");
 }
 
 void VideoEncodeTestInstance::createVideoSession(void)
@@ -2676,7 +2683,7 @@ void VideoEncodeTestInstance::getSessionParametersHeaders()
             m_videoEncodeDevice, &videoEncodeSessionParametersGetInfo, &videoEncodeSessionParametersFeedbackInfo,
             &requiredHeaderSize, nullptr));
 
-        DE_ASSERT(requiredHeaderSize != 0);
+        TCU_CHECK_AND_THROW(InternalError, requiredHeaderSize != 0, "Required header size must be non-zero");
 
         headerData.resize(requiredHeaderSize);
         VK_CHECK(m_videoDeviceDriver->getEncodedVideoSessionParametersKHR(
@@ -3439,7 +3446,10 @@ void VideoEncodeTestInstance::queryIntraRefreshCapabilities(void)
         }
         else
         {
-            DE_ASSERT((m_videoH265CapabilitiesExtension->ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_KHR) != 0);
+            TCU_CHECK_AND_THROW(
+                InternalError,
+                (m_videoH265CapabilitiesExtension->ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_KHR) != 0,
+                "H.265 CTB size 64 must be supported");
             minCodingBlockSize = {64, 64};
         }
 

@@ -1385,9 +1385,9 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 
     auto openTemporaryFile = [](const std::string &basename, std::FILE **handle)
     {
-        DE_ASSERT(handle != nullptr);
+        TCU_CHECK_AND_THROW(InternalError, handle != nullptr, "File handle pointer must not be null");
         *handle = std::fopen(basename.c_str(), "wb");
-        DE_ASSERT(*handle != nullptr);
+        TCU_CHECK_AND_THROW(InternalError, *handle != nullptr, "Failed to open temporary file");
     };
 
     if (dumpMode == tcu::DUMP_DEC_TO_SINGLE)
@@ -1649,7 +1649,8 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
             allTestsPassed = false;
         totalFramesCheck += (res.correctFrames.size() + res.incorrectFrames.size());
     }
-    DE_ASSERT(totalFramesCheck == totalFrames);
+    TCU_CHECK_AND_THROW(InternalError, totalFramesCheck == totalFrames,
+                        "Total frames check must match expected total frames");
     DE_UNREF(totalFramesCheck);
 
     if (allTestsPassed)

@@ -262,9 +262,11 @@ typedef struct dpbH264Entry
                             uint32_t dpbEntryIdx, uint32_t dpbSlotIndex, bool currentPictureIsProgressive,
                             bool videoLogEnabled)
     {
-        DE_ASSERT(dpbEntryIdx <= H26X_MAX_DPB_SLOTS && dpbSlotIndex <= H26X_MAX_DPB_SLOTS);
+        TCU_CHECK_AND_THROW(InternalError, dpbEntryIdx < H26X_MAX_DPB_SLOTS && dpbSlotIndex < H26X_MAX_DPB_SLOTS,
+                            "DPB entry and slot indices must be within valid range");
 
-        DE_ASSERT((dpbSlotIndex == (uint32_t)dpbSlot) || is_non_existing);
+        TCU_CHECK_AND_THROW(InternalError, (dpbSlotIndex == (uint32_t)dpbSlot) || is_non_existing,
+                            "DPB slot index must match dpbSlot or be non-existing");
         pReferenceSlots[dpbEntryIdx].sType     = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
         pReferenceSlots[dpbEntryIdx].slotIndex = dpbSlotIndex;
         pReferenceSlots[dpbEntryIdx].pNext     = pDpbRefList[dpbEntryIdx].Init(dpbSlotIndex);
@@ -287,11 +289,13 @@ typedef struct dpbH264Entry
     void setH265PictureData(nvVideoDecodeH265DpbSlotInfo *pDpbSlotInfo, VkVideoReferenceSlotInfoKHR *pReferenceSlots,
                             uint32_t dpbEntryIdx, uint32_t dpbSlotIndex, bool videoLogEnabled)
     {
-        DE_ASSERT(dpbEntryIdx <= H26X_MAX_DPB_SLOTS && dpbSlotIndex <= H26X_MAX_DPB_SLOTS);
+        TCU_CHECK_AND_THROW(InternalError, dpbEntryIdx < H26X_MAX_DPB_SLOTS && dpbSlotIndex < H26X_MAX_DPB_SLOTS,
+                            "DPB entry and slot indices must be within valid range");
 
-        DE_ASSERT(isRef());
+        TCU_CHECK_AND_THROW(InternalError, isRef(), "Picture must be a reference");
 
-        DE_ASSERT((dpbSlotIndex == (uint32_t)dpbSlot) || is_non_existing);
+        TCU_CHECK_AND_THROW(InternalError, (dpbSlotIndex == (uint32_t)dpbSlot) || is_non_existing,
+                            "DPB slot index must match dpbSlot or be non-existing");
         pReferenceSlots[dpbEntryIdx].sType     = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_SLOT_INFO_KHR;
         pReferenceSlots[dpbEntryIdx].slotIndex = dpbSlotIndex;
         pReferenceSlots[dpbEntryIdx].pNext     = pDpbSlotInfo[dpbEntryIdx].Init(dpbSlotIndex);
@@ -343,14 +347,16 @@ int8_t VideoBaseDecoder::GetPicDpbSlot(int8_t picIndex)
 
 bool VideoBaseDecoder::GetFieldPicFlag(int8_t picIndex)
 {
-    DE_ASSERT((picIndex >= 0) && ((uint32_t)picIndex < MAX_NUM_DECODE_SURFACES));
+    TCU_CHECK_AND_THROW(InternalError, (picIndex >= 0) && ((uint32_t)picIndex < MAX_NUM_DECODE_SURFACES),
+                        "Picture index must be within valid range");
 
     return !!(m_fieldPicFlagMask & (1 << (uint32_t)picIndex));
 }
 
 bool VideoBaseDecoder::SetFieldPicFlag(int8_t picIndex, bool fieldPicFlag)
 {
-    DE_ASSERT((picIndex >= 0) && ((uint32_t)picIndex < MAX_NUM_DECODE_SURFACES));
+    TCU_CHECK_AND_THROW(InternalError, (picIndex >= 0) && ((uint32_t)picIndex < MAX_NUM_DECODE_SURFACES),
+                        "Picture index must be within valid range");
 
     bool oldFieldPicFlag = GetFieldPicFlag(picIndex);
 
@@ -435,19 +441,21 @@ void VideoBaseDecoder::reinitializeFormatsForProfile(const VkVideoCoreProfile *p
 {
     VkResult res;
     res = util::getVideoDecodeCapabilities(*m_deviceContext, *profile, m_videoCaps, m_decodeCaps);
-    if (res != VK_SUCCESS)
-        TCU_THROW(NotSupportedError, "Implementation does not support this video profile");
+
+    TCU_CHECK_AND_THROW(NotSupportedError, res == VK_SUCCESS, "Implementation does not support this video profile");
 
     res = util::getSupportedVideoFormats(*m_deviceContext, m_profile, m_decodeCaps.flags, m_outImageFormat,
                                          m_dpbImageFormat);
-    if (res != VK_SUCCESS)
-        TCU_THROW(NotSupportedError, "Implementation does not have any supported video formats for this profile");
+
+    TCU_CHECK_AND_THROW(NotSupportedError, res == VK_SUCCESS,
+                        "Implementation does not have any supported video formats for this profile");
 
     m_supportedVideoCodecs = util::getSupportedCodecs(
         *m_deviceContext, m_deviceContext->decodeQueueFamilyIdx(), VK_QUEUE_VIDEO_DECODE_BIT_KHR,
         VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR | VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR |
             VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR | VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
-    DE_ASSERT(m_supportedVideoCodecs != VK_VIDEO_CODEC_OPERATION_NONE_KHR);
+    TCU_CHECK_AND_THROW(InternalError, m_supportedVideoCodecs != VK_VIDEO_CODEC_OPERATION_NONE_KHR,
+                        "At least one video codec must be supported");
 
     VK_CHECK(BitstreamBufferImpl::Create(m_deviceContext, m_deviceContext->decodeQueueFamilyIdx(), MAX_BUFFER_SIZE,
                                          0,    // Not used
@@ -484,8 +492,10 @@ void VideoBaseDecoder::Deinitialize()
 void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVideoFormat)
 {
     VkExtent2D codedExtent = {pVideoFormat->coded_width, pVideoFormat->coded_height};
-    DE_ASSERT(pVideoFormat->display_area.right >= 0 && pVideoFormat->display_area.left >= 0 &&
-              pVideoFormat->display_area.top >= 0 && pVideoFormat->display_area.bottom >= 0);
+    TCU_CHECK_AND_THROW(InternalError,
+                        pVideoFormat->display_area.right >= 0 && pVideoFormat->display_area.left >= 0 &&
+                            pVideoFormat->display_area.top >= 0 && pVideoFormat->display_area.bottom >= 0,
+                        "Display area coordinates must be non-negative");
     uint32_t displayWidth = static_cast<uint32_t>(pVideoFormat->display_area.right) -
                             static_cast<uint32_t>(pVideoFormat->display_area.left);
     uint32_t displayHeight = static_cast<uint32_t>(pVideoFormat->display_area.bottom) -
@@ -523,8 +533,6 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
                                     pVideoFormat->filmGrainUsed);
     m_profile = videoProfile;
     reinitializeFormatsForProfile(&videoProfile);
-
-    DE_ASSERT(((detectedVideoCodec & m_supportedVideoCodecs) != 0));
 
     if (m_videoFormat.coded_width && m_videoFormat.coded_height)
     {
@@ -615,7 +623,8 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
             dpbImageUsage, outImageUsage, m_deviceContext->decodeQueueFamilyIdx(), m_useImageArray, m_useImageViewArray,
             m_useSeparateOutputImages, useLinearOutput);
 
-        DE_ASSERT((uint32_t)ret == MAX_NUM_DECODE_SURFACES);
+        TCU_CHECK_AND_THROW(InternalError, (uint32_t)ret == MAX_NUM_DECODE_SURFACES,
+                            "Failed to initialize expected number of decode surfaces");
         DE_UNREF(ret);
         m_decodeFramesData.resize(MAX_NUM_DECODE_SURFACES);
     }
@@ -625,6 +634,8 @@ void VideoBaseDecoder::StartVideoSequence(const VkParserDetectedVideoFormat *pVi
 
 int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
 {
+    TCU_CHECK_AND_THROW(InternalError, pnvsi != nullptr, "Sequence info parameter cannot be null");
+
     // TODO: The base class needs refactoring between the codecs
     bool isAv1  = (pnvsi->eCodec == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR);
     bool isVP9  = (pnvsi->eCodec == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR);
@@ -674,16 +685,8 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
 
     m_nvsi = *pnvsi;
 
-    if (isAv1 || isVP9)
-    {
-        m_nvsi.nMaxWidth  = std::max(m_nvsi.nMaxWidth, m_nvsi.nDisplayWidth);
-        m_nvsi.nMaxHeight = std::max(m_nvsi.nMaxHeight, m_nvsi.nDisplayHeight);
-    }
-    else if (isH26x)
-    {
-        m_nvsi.nMaxWidth  = m_nvsi.nDisplayWidth;
-        m_nvsi.nMaxHeight = m_nvsi.nDisplayHeight;
-    }
+    m_nvsi.nMaxWidth  = std::max(m_nvsi.nMaxWidth, m_nvsi.nDisplayWidth);
+    m_nvsi.nMaxHeight = std::max(m_nvsi.nMaxHeight, m_nvsi.nDisplayHeight);
 
     VkParserDetectedVideoFormat detectedFormat;
     memset(&detectedFormat, 0, sizeof(detectedFormat));
@@ -722,7 +725,7 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
     }
     else
     {
-        DE_ASSERT(!"Invalid chroma sub-sampling format");
+        TCU_THROW(InternalError, "Invalid chroma sub-sampling format");
     }
 
     switch (pnvsi->uBitDepthLumaMinus8)
@@ -737,7 +740,8 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
         detectedFormat.lumaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR;
         break;
     default:
-        DE_ASSERT(false);
+        TCU_THROW(InternalError,
+                  "Unsupported luma bit depth: " + de::toString(pnvsi->uBitDepthLumaMinus8 + 8) + " bits");
     }
 
     switch (pnvsi->uBitDepthChromaMinus8)
@@ -752,7 +756,8 @@ int32_t VideoBaseDecoder::BeginSequence(const VkParserSequenceInfo *pnvsi)
         detectedFormat.chromaBitDepth = VK_VIDEO_COMPONENT_BIT_DEPTH_12_BIT_KHR;
         break;
     default:
-        DE_ASSERT(false);
+        TCU_THROW(InternalError,
+                  "Unsupported chroma bit depth: " + de::toString(pnvsi->uBitDepthChromaMinus8 + 8) + " bits");
     }
 
     detectedFormat.bit_depth_luma_minus8                             = pnvsi->uBitDepthLumaMinus8;
@@ -819,7 +824,8 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd)
     if (getVideoLogPrintEnable())
         tcu::print("VulkanVideoParser::DecodePicture picIdx=%d progressive=%d\n", picIdx, pd->progressive_frame);
 
-    DE_ASSERT(picIdx < MAX_FRM_CNT);
+    TCU_CHECK_AND_THROW(InternalError, (picIdx >= 0) && ((uint32_t)picIdx < MAX_FRM_CNT),
+                        "Picture index must be within valid range");
 
     VkParserDecodePictureInfo decodePictureInfo = VkParserDecodePictureInfo();
     decodePictureInfo.pictureIndex              = picIdx;
@@ -866,7 +872,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
     }
 
     const uint32_t PicIdx = GetPicIdx(pd->pCurrPic);
-    TCU_CHECK(PicIdx < MAX_FRM_CNT);
+    TCU_CHECK_AND_THROW(InternalError, PicIdx < MAX_FRM_CNT, "Picture index must be within valid range");
 
     m_cachedDecodeParams.emplace_back(new CachedDecodeParameters);
     auto &cachedParameters = m_cachedDecodeParams.back();
@@ -931,9 +937,12 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         h264PictureInfo->sliceCount                   = pd->numSlices;
 
         uint32_t maxSliceCount = 0;
-        DE_ASSERT(pd->firstSliceIndex == 0); // No slice and MV modes are supported yet
+        TCU_CHECK_AND_THROW(
+            InternalError, pd->firstSliceIndex == 0,
+            "Only single slice mode is supported - first slice index must be 0"); // No slice and MV modes are supported yet
         h264PictureInfo->pSliceOffsets = pd->bitstreamData->GetStreamMarkersPtr(pd->firstSliceIndex, maxSliceCount);
-        DE_ASSERT(maxSliceCount == pd->numSlices);
+        TCU_CHECK_AND_THROW(InternalError, maxSliceCount == pd->numSlices,
+                            "Slice count mismatch between parser and picture data");
 
         StdVideoDecodeH264PictureInfoFlags currPicFlags = StdVideoDecodeH264PictureInfoFlags();
         currPicFlags.is_intra                           = (pd->intra_pic_flag != 0);
@@ -975,7 +984,8 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
                              referenceSlots, pCurrFrameDecParams->pGopReferenceImagesIndexes,
                              h264StandardPictureInfo->flags, &setupReferenceSlot.slotIndex);
 
-        DE_ASSERT(!pd->ref_pic_flag || (setupReferenceSlot.slotIndex >= 0));
+        TCU_CHECK_AND_THROW(InternalError, !pd->ref_pic_flag || (setupReferenceSlot.slotIndex >= 0),
+                            "Reference picture must have valid slot index");
 
         // TODO: Dummy struct to silence validation. The root problem is that the dpb map doesn't take account of the setup slot,
         // for some reason... So we can't use the existing logic to setup the picture flags and frame number from the dpbEntry
@@ -992,15 +1002,18 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         }
         if (pCurrFrameDecParams->numGopReferenceSlots)
         {
-            DE_ASSERT(pCurrFrameDecParams->numGopReferenceSlots <=
-                      (int32_t)VkParserPerFrameDecodeParameters::MAX_DPB_REF_SLOTS);
+            TCU_CHECK_AND_THROW(InternalError,
+                                pCurrFrameDecParams->numGopReferenceSlots <=
+                                    (int32_t)VkParserPerFrameDecodeParameters::MAX_DPB_REF_SLOTS,
+                                "GOP reference slots exceed maximum allowed");
             for (uint32_t dpbEntryIdx = 0; dpbEntryIdx < (uint32_t)pCurrFrameDecParams->numGopReferenceSlots;
                  dpbEntryIdx++)
             {
                 pCurrFrameDecParams->pictureResources[dpbEntryIdx].sType =
                     VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR;
                 referenceSlots[dpbEntryIdx].pPictureResource = &pCurrFrameDecParams->pictureResources[dpbEntryIdx];
-                DE_ASSERT(h264DpbReferenceList[dpbEntryIdx].IsReference());
+                TCU_CHECK_AND_THROW(InternalError, h264DpbReferenceList[dpbEntryIdx].IsReference(),
+                                    "DPB entry must be a reference picture");
             }
 
             pCurrFrameDecParams->decodeFrameInfo.pReferenceSlots    = referenceSlots;
@@ -1055,9 +1068,12 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
 
         pPictureInfo->sliceSegmentCount = pd->numSlices;
         uint32_t maxSliceCount          = 0;
-        DE_ASSERT(pd->firstSliceIndex == 0); // No slice and MV modes are supported yet
+        TCU_CHECK_AND_THROW(
+            InternalError, pd->firstSliceIndex == 0,
+            "Only single slice mode is supported - first slice index must be 0"); // No slice and MV modes are supported yet
         pPictureInfo->pSliceSegmentOffsets = pd->bitstreamData->GetStreamMarkersPtr(pd->firstSliceIndex, maxSliceCount);
-        DE_ASSERT(maxSliceCount == pd->numSlices);
+        TCU_CHECK_AND_THROW(InternalError, maxSliceCount == pd->numSlices,
+                            "Slice count mismatch between parser and picture data");
 
         pStdPictureInfo->pps_pic_parameter_set_id   = pin->pic_parameter_set_id;       // PPS ID
         pStdPictureInfo->pps_seq_parameter_set_id   = pin->seq_parameter_set_id;       // SPS ID
@@ -1085,7 +1101,8 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
             VkParserPerFrameDecodeParameters::MAX_DPB_REF_SLOTS, // max 16 reference pictures
             referenceSlots, pCurrFrameDecParams->pGopReferenceImagesIndexes, &setupReferenceSlot.slotIndex);
 
-        DE_ASSERT(!pd->ref_pic_flag || (setupReferenceSlot.slotIndex >= 0));
+        TCU_CHECK_AND_THROW(InternalError, !pd->ref_pic_flag || (setupReferenceSlot.slotIndex >= 0),
+                            "Reference picture must have valid slot index");
         // TODO: Dummy struct to silence validation. The root problem is that the dpb map doesn't take account of the setup slot,
         // for some reason... So we can't use the existing logic to setup the picture flags and frame number from the dpbEntry
         // class.
@@ -1101,15 +1118,18 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         }
         if (pCurrFrameDecParams->numGopReferenceSlots)
         {
-            DE_ASSERT(pCurrFrameDecParams->numGopReferenceSlots <=
-                      (int32_t)VkParserPerFrameDecodeParameters::MAX_DPB_REF_SLOTS);
+            TCU_CHECK_AND_THROW(InternalError,
+                                pCurrFrameDecParams->numGopReferenceSlots <=
+                                    (int32_t)VkParserPerFrameDecodeParameters::MAX_DPB_REF_SLOTS,
+                                "GOP reference slots exceed maximum allowed");
             for (uint32_t dpbEntryIdx = 0; dpbEntryIdx < (uint32_t)pCurrFrameDecParams->numGopReferenceSlots;
                  dpbEntryIdx++)
             {
                 pCurrFrameDecParams->pictureResources[dpbEntryIdx].sType =
                     VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR;
                 referenceSlots[dpbEntryIdx].pPictureResource = &pCurrFrameDecParams->pictureResources[dpbEntryIdx];
-                DE_ASSERT(pDpbRefList[dpbEntryIdx].IsReference());
+                TCU_CHECK_AND_THROW(InternalError, pDpbRefList[dpbEntryIdx].IsReference(),
+                                    "DPB entry must be a reference picture");
             }
 
             pCurrFrameDecParams->decodeFrameInfo.pReferenceSlots    = referenceSlots;
@@ -1168,7 +1188,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
         pKhr->frameHeaderOffset = 0;
         pKhr->pTileOffsets      = &p->tileOffsets[0];
         pKhr->pTileSizes        = &p->tileSizes[0];
-        DE_ASSERT(pKhr->tileCount > 0);
+        TCU_CHECK_AND_THROW(InternalError, pKhr->tileCount > 0, "Tile count must be greater than 0");
 
         p->tileInfo.pWidthInSbsMinus1  = &p->width_in_sbs_minus_1[0];
         p->tileInfo.pHeightInSbsMinus1 = &p->height_in_sbs_minus_1[0];
@@ -1192,7 +1212,10 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
             auto &lrs = p->loopRestoration.LoopRestorationSize;
             for (int i = 0; i < STD_VIDEO_AV1_MAX_NUM_PLANES; i++)
             {
-                DE_ASSERT(allowableRestorationShiftValues.find(lrs[i]) != allowableRestorationShiftValues.end());
+                TCU_CHECK_AND_THROW(InternalError,
+                                    allowableRestorationShiftValues.find(lrs[i]) !=
+                                        allowableRestorationShiftValues.end(),
+                                    "Invalid restoration shift value");
             }
 #endif
             pStd->pLoopRestoration = &p->loopRestoration;
@@ -1254,7 +1277,8 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
 
         if (!m_intraOnlyDecodingNoSetupRef)
         {
-            DE_ASSERT(m_maxNumDpbSlots <= STD_VIDEO_AV1_NUM_REF_FRAMES + 1); // + 1 for scratch slot
+            TCU_CHECK_AND_THROW(InternalError, m_maxNumDpbSlots <= STD_VIDEO_AV1_NUM_REF_FRAMES + 1,
+                                "DPB slots exceed maximum allowed for AV1"); // + 1 for scratch slot
             uint32_t refDpbUsedAndValidMask = 0;
             uint32_t referenceIndex         = 0;
             std::unordered_set<int8_t> activeReferences;
@@ -1298,9 +1322,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
                 { // Causes an assert in the driver that the DPB is invalid, with a slotindex of -1.
                     dpbSlot = GetPicDpbSlot(picIdx);
 
-                    DE_ASSERT(dpbSlot >= 0);
-                    if (dpbSlot < 0)
-                        continue;
+                    TCU_CHECK_AND_THROW(InternalError, dpbSlot >= 0, "DPB slot must be valid value different from -1");
 
                     refDpbUsedAndValidMask |= (1 << picIdx);
                     m_dpb[dpbSlot].MarkInUse(m_nCurrentPictureID);
@@ -1338,11 +1360,8 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
             // Take into account the reference picture now.
             int8_t currPicIdx = GetPicIdx(pd->pCurrPic);
             int8_t dpbSlot    = -1;
-            DE_ASSERT(currPicIdx >= 0);
-            if (currPicIdx >= 0)
-            {
-                refDpbUsedAndValidMask |= (1 << currPicIdx); // How does this do anything?
-            }
+            TCU_CHECK_AND_THROW(InternalError, currPicIdx >= 0, "Current picture index must be valid");
+            refDpbUsedAndValidMask |= (1 << currPicIdx); // How does this do anything?
 
             if (true /*pd->ref_pic_flag*/)
             {
@@ -1350,16 +1369,16 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
                 if (dpbSlot < 0)
                 {
                     dpbSlot = m_dpb.AllocateSlot();
-                    DE_ASSERT(dpbSlot >= 0);
+                    TCU_CHECK_AND_THROW(ResourceError, dpbSlot >= 0, "Failed to allocate DPB slot");
                     SetPicDpbSlot(currPicIdx, dpbSlot); // Assign the dpbSlot to the current picture index.
                     m_dpb[dpbSlot].setPictureResource(GetPic(pd->pCurrPic),
                                                       m_nCurrentPictureID); // m_nCurrentPictureID is our main index.
                 }
-                DE_ASSERT(dpbSlot >= 0);
             }
 
             setupReferenceSlot.slotIndex = dpbSlot;
-            DE_ASSERT(!pd->ref_pic_flag || (setupReferenceSlot.slotIndex >= 0));
+            TCU_CHECK_AND_THROW(InternalError, !pd->ref_pic_flag || (setupReferenceSlot.slotIndex >= 0),
+                                "Reference picture must have valid slot index");
 
             if (getVideoLogPrintEnable())
             {
@@ -1524,7 +1543,8 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
 
         if (!m_intraOnlyDecodingNoSetupRef)
         {
-            DE_ASSERT(m_maxNumDpbSlots <= STD_VIDEO_VP9_NUM_REF_FRAMES + 1); // + 1 for scratch slot
+            TCU_CHECK_AND_THROW(InternalError, m_maxNumDpbSlots <= STD_VIDEO_VP9_NUM_REF_FRAMES + 1,
+                                "DPB slots exceed maximum allowed for VP9"); // + 1 for scratch slot
             uint32_t refDpbUsedAndValidMask = 0;
             uint32_t referenceIndex         = 0;
             int8_t dpbSlot                  = -1;
@@ -1595,19 +1615,20 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
             // Take into account the reference picture now.
             int8_t currPicIdx = GetPicIdx(pd->pCurrPic);
             dpbSlot           = -1;
-            DE_ASSERT(currPicIdx >= 0);
+            TCU_CHECK_AND_THROW(InternalError, currPicIdx >= 0, "Current picture index must be valid");
 
             dpbSlot = GetPicDpbSlot(currPicIdx); // use the associated slot, if not allocate a new slot.
             if (dpbSlot < 0)
             {
                 dpbSlot = m_dpb.AllocateSlot();
-                DE_ASSERT(dpbSlot >= 0);
+                TCU_CHECK_AND_THROW(ResourceError, dpbSlot >= 0, "Failed to allocate DPB slot for VP9");
                 SetPicDpbSlot(currPicIdx, dpbSlot); // Assign the dpbSlot to the current picture index.
                 m_dpb[dpbSlot].setPictureResource(GetPic(pd->pCurrPic),
                                                   m_nCurrentPictureID); // m_nCurrentPictureID is our main index.
             }
 
-            DE_ASSERT(!pd->ref_pic_flag || (dpbSlot >= 0));
+            TCU_CHECK_AND_THROW(InternalError, !pd->ref_pic_flag || (dpbSlot >= 0),
+                                "Reference picture must have valid DPB slot");
 
             if (getVideoLogPrintEnable())
             {
@@ -1683,7 +1704,7 @@ bool VideoBaseDecoder::DecodePicture(VkParserPictureData *pd, vkPicBuffBase *pVk
 
     bRet = DecodePictureWithParameters(cachedParameters) >= 0;
 
-    DE_ASSERT(bRet);
+    TCU_CHECK_AND_THROW(TestError, bRet, "Failed to decode picture with parameters");
 
     m_nCurrentPictureID++;
 
@@ -1705,26 +1726,22 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
         applyFilmGrain = pStd->flags.apply_grain;
     }
 
-    DE_ASSERT((uint32_t)pPicParams->currPicIdx < MAX_NUM_DECODE_SURFACES);
+    TCU_CHECK_AND_THROW(InternalError, (uint32_t)pPicParams->currPicIdx < MAX_NUM_DECODE_SURFACES,
+                        "Current picture index exceeds maximum decode surfaces");
 
     cachedParameters->picNumInDecodeOrder = m_decodePicCount++;
     m_videoFrameBuffer->SetPicNumInDecodeOrder(pPicParams->currPicIdx, cachedParameters->picNumInDecodeOrder);
 
-    DE_ASSERT(pPicParams->bitstreamData->GetMaxSize() >= pPicParams->bitstreamDataLen);
+    TCU_CHECK_AND_THROW(InternalError, pPicParams->bitstreamData->GetMaxSize() >= pPicParams->bitstreamDataLen,
+                        "Bitstream data length exceeds buffer size");
     pPicParams->decodeFrameInfo.srcBuffer       = pPicParams->bitstreamData->GetBuffer();
     pPicParams->decodeFrameInfo.srcBufferOffset = pPicParams->bitstreamDataOffset;
     pPicParams->decodeFrameInfo.srcBufferRange =
         deAlign64(pPicParams->bitstreamDataLen, m_videoCaps.minBitstreamBufferSizeAlignment);
-    DE_ASSERT(pPicParams->firstSliceIndex == 0);
+    TCU_CHECK_AND_THROW(InternalError, pPicParams->firstSliceIndex == 0, "First slice index must be 0");
 
     int32_t retPicIdx = GetCurrentFrameData((uint32_t)pPicParams->currPicIdx, cachedParameters->frameDataSlot);
-    DE_ASSERT(retPicIdx == pPicParams->currPicIdx);
-
-    if (retPicIdx != pPicParams->currPicIdx)
-    {
-        fprintf(stderr, "\nERROR: DecodePictureWithParameters() retPicIdx(%d) != currPicIdx(%d)\n", retPicIdx,
-                pPicParams->currPicIdx);
-    }
+    TCU_CHECK_AND_THROW(InternalError, retPicIdx == pPicParams->currPicIdx, "Frame data slot mismatch");
 
     auto &decodeBeginInfo = cachedParameters->decodeBeginInfo;
     decodeBeginInfo.sType = VK_STRUCTURE_TYPE_VIDEO_BEGIN_CODING_INFO_KHR;
@@ -1734,7 +1751,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 
     cachedParameters->currentPictureParameterObject = m_currentPictureParameters;
 
-    DE_ASSERT(!!pPicParams->decodeFrameInfo.srcBuffer);
+    TCU_CHECK_AND_THROW(InternalError, !!pPicParams->decodeFrameInfo.srcBuffer, "Source buffer must be valid");
     cachedParameters->bitstreamBufferMemoryBarrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER_2_KHR,
                                                       nullptr,
                                                       VK_PIPELINE_STAGE_2_NONE_KHR,
@@ -1787,7 +1804,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
                                       VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR, pOutputPictureResource,
                                       pOutputPictureResourceInfo, VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR))
     {
-        DE_ASSERT(!"GetImageResourcesByIndex has failed");
+        TCU_THROW(InternalError, "GetImageResourcesByIndex has failed");
     }
 
     pPicParams->dpbSetupPictureResource.codedOffset = {
@@ -1797,7 +1814,9 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
 
     if (pOutputPictureResource)
     {
-        DE_ASSERT(pOutputPictureResource->sType == VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR);
+        TCU_CHECK_AND_THROW(InternalError,
+                            pOutputPictureResource->sType == VK_STRUCTURE_TYPE_VIDEO_PICTURE_RESOURCE_INFO_KHR,
+                            "Invalid output picture resource structure type");
         pOutputPictureResource->codedOffset = {
             0, 0}; // FIXME: This parameter must to be adjusted based on the interlaced mode.
         pOutputPictureResource->codedExtent = {(uint32_t)cachedParameters->decodedPictureInfo.displayWidth,
@@ -1849,7 +1868,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
                 pPicParams->numGopReferenceSlots, pGopReferenceImagesIndexes, pPicParams->pictureResources,
                 cachedParameters->pictureResourcesInfo, VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR))
         {
-            DE_ASSERT(!"GetImageResourcesByIndex has failed");
+            TCU_THROW(InternalError, "GetImageResourcesByIndex has failed for DPB resources");
         }
         for (uint32_t resId = 0; resId < pPicParams->numGopReferenceSlots; resId++)
         {
@@ -1915,8 +1934,7 @@ int32_t VideoBaseDecoder::DecodePictureWithParameters(MovePtr<CachedDecodeParame
     int currPicIdx =
         m_videoFrameBuffer->QueuePictureForDecode(pPicParams->currPicIdx, &cachedParameters->decodedPictureInfo,
                                                   &referencedObjectsInfo, &cachedParameters->frameSynchronizationInfo);
-    DE_ASSERT(currPicIdx == currPicIdx);
-    DE_UNREF(currPicIdx);
+    TCU_CHECK_AND_THROW(InternalError, currPicIdx == pPicParams->currPicIdx, "Picture index consistency check");
 
     if (m_outOfOrderDecoding)
     {
@@ -1949,35 +1967,37 @@ void VideoBaseDecoder::ApplyPictureParameters(de::MovePtr<CachedDecodeParameters
         (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR))
     {
         bool valid = pPicParams->pStdPps->GetClientObject(currentVkPictureParameters);
-        TCU_CHECK(currentVkPictureParameters && valid);
+        TCU_CHECK_AND_THROW(InternalError, currentVkPictureParameters && valid,
+                            "Invalid video session parameters (H.26x PPS client object)");
         pOwnerPictureParameters =
             VkParserVideoPictureParameters::VideoPictureParametersFromBase(currentVkPictureParameters);
-        TCU_CHECK(pOwnerPictureParameters);
+        TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters, "Owner picture parameters must be valid (H.26x)");
         int32_t ret = pOwnerPictureParameters->FlushPictureParametersQueue(m_videoSession);
-        TCU_CHECK(ret >= 0);
+        TCU_CHECK_AND_THROW(InternalError, ret >= 0, "Failed to flush picture parameters queue (H.26x)");
         DE_UNREF(ret);
         bool isSps    = false;
         int32_t spsId = pPicParams->pStdPps->GetSpsId(isSps);
-        TCU_CHECK(!isSps);
-        TCU_CHECK(spsId >= 0);
-        TCU_CHECK(pOwnerPictureParameters->HasSpsId(spsId));
+        TCU_CHECK_AND_THROW(InternalError, !isSps, "Expected SPS id from PPS query");
+        TCU_CHECK_AND_THROW(InternalError, spsId >= 0, "Invalid SPS id");
+        TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters->HasSpsId(spsId), "SPS id not found");
         bool isPps    = false;
         int32_t ppsId = pPicParams->pStdPps->GetPpsId(isPps);
-        TCU_CHECK(isPps);
-        TCU_CHECK(ppsId >= 0);
-        TCU_CHECK(pOwnerPictureParameters->HasPpsId(ppsId));
+        TCU_CHECK_AND_THROW(InternalError, isPps, "Expected PPS id");
+        TCU_CHECK_AND_THROW(InternalError, ppsId >= 0, "Invalid PPS id");
+        TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters->HasPpsId(ppsId), "PPS id not found");
         DE_UNREF(valid);
         cachedParameters->decodeBeginInfo.videoSessionParameters = *pOwnerPictureParameters;
     }
     else if (m_profile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
     {
         bool valid = pPicParams->pStdSps->GetClientObject(currentVkPictureParameters);
-        TCU_CHECK(currentVkPictureParameters && valid);
+        TCU_CHECK_AND_THROW(InternalError, currentVkPictureParameters && valid,
+                            "Invalid video session parameters (AV1 SPS client object)");
         pOwnerPictureParameters =
             VkParserVideoPictureParameters::VideoPictureParametersFromBase(currentVkPictureParameters);
-        TCU_CHECK(pOwnerPictureParameters);
+        TCU_CHECK_AND_THROW(InternalError, pOwnerPictureParameters, "Owner picture parameters must be valid (AV1)");
         int32_t ret = pOwnerPictureParameters->FlushPictureParametersQueue(m_videoSession);
-        TCU_CHECK(ret >= 0);
+        TCU_CHECK_AND_THROW(InternalError, ret >= 0, "Failed to flush picture parameters queue (AV1)");
         DE_UNREF(ret);
         cachedParameters->decodeBeginInfo.videoSessionParameters = *pOwnerPictureParameters;
     }
@@ -2219,7 +2239,8 @@ void VideoBaseDecoder::decodeFramesOutOfOrder()
         auto rng = std::mt19937(42);
         std::shuffle(ordering.begin(), ordering.end(), rng);
     }
-    DE_ASSERT(m_cachedDecodeParams.size() > 1);
+    TCU_CHECK_AND_THROW(InternalError, m_cachedDecodeParams.size() > 1,
+                        "Cached decode parameters must have more than one element");
 
     if (getVideoLogPrintEnable())
     {
@@ -2266,10 +2287,10 @@ bool VideoBaseDecoder::DisplayPicture(VkPicIf *pNvidiaVulkanPicture, int64_t /*l
 {
     vkPicBuffBase *pVkPicBuff = GetPic(pNvidiaVulkanPicture);
 
-    DE_ASSERT(pVkPicBuff != nullptr);
+    TCU_CHECK_AND_THROW(InternalError, pVkPicBuff != nullptr, "Picture buffer must be valid");
     int32_t picIdx = pVkPicBuff ? pVkPicBuff->m_picIdx : -1;
-    DE_ASSERT(picIdx != -1);
-    DE_ASSERT(m_videoFrameBuffer != nullptr);
+    TCU_CHECK_AND_THROW(InternalError, picIdx != -1, "Picture index must be valid");
+    TCU_CHECK_AND_THROW(InternalError, m_videoFrameBuffer != nullptr, "Video frame buffer must be valid");
 
     if (getVideoLogPrintEnable())
     {
@@ -2281,7 +2302,7 @@ bool VideoBaseDecoder::DisplayPicture(VkPicIf *pNvidiaVulkanPicture, int64_t /*l
     dispInfo.timestamp = 0; // NOTE: we ignore PTS in the CTS
 
     const int32_t retVal = m_videoFrameBuffer->QueueDecodedPictureForDisplay((int8_t)picIdx, &dispInfo);
-    DE_ASSERT(picIdx == retVal);
+    TCU_CHECK_AND_THROW(TestError, picIdx == retVal, "Display queue operation failed - picture index mismatch");
     DE_UNREF(retVal);
 
     return true;
@@ -2310,20 +2331,23 @@ VkDeviceSize VideoBaseDecoder::GetBitstreamBuffer(VkDeviceSize newSize, VkDevice
                                                   VkDeviceSize initializeBufferMemorySize,
                                                   VkSharedBaseObj<VulkanBitstreamBuffer> &bitstreamBuffer)
 {
-    DE_ASSERT(initializeBufferMemorySize <= newSize);
+    TCU_CHECK_AND_THROW(InternalError, initializeBufferMemorySize <= newSize,
+                        "Initialize buffer size must not exceed new buffer size");
 
     VkSharedBaseObj<BitstreamBufferImpl> newBitstreamBuffer;
     VK_CHECK(BitstreamBufferImpl::Create(m_deviceContext, m_deviceContext->decodeQueueFamilyIdx(), newSize,
                                          minBitstreamBufferOffsetAlignment, minBitstreamBufferSizeAlignment,
                                          newBitstreamBuffer, m_profile.GetProfileListInfo()));
-    DE_ASSERT(newBitstreamBuffer);
+    TCU_CHECK_AND_THROW(ResourceError, newBitstreamBuffer, "Failed to create new bitstream buffer");
     newSize = newBitstreamBuffer->GetMaxSize();
-    DE_ASSERT(initializeBufferMemorySize <= newSize);
+    TCU_CHECK_AND_THROW(InternalError, initializeBufferMemorySize <= newSize,
+                        "Initialize buffer size exceeds new buffer capacity");
 
-    size_t bytesToCopy = std::min(initializeBufferMemorySize, newSize);
+    size_t bytesToCopy = initializeBufferMemorySize;
     size_t bytesCopied =
         newBitstreamBuffer->CopyDataFromBuffer((const uint8_t *)pInitializeBufferMemory, 0, 0, bytesToCopy);
-    DE_ASSERT(bytesToCopy == bytesCopied);
+    TCU_CHECK_AND_THROW(InternalError, bytesToCopy == bytesCopied,
+                        "Buffer copy operation did not copy expected number of bytes");
     DE_UNREF(bytesCopied);
 
     newBitstreamBuffer->MemsetData(0x0, bytesToCopy, newSize - bytesToCopy);
@@ -2362,8 +2386,10 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
     // Create unordered DPB and generate a bitmask of all render targets present
     // in DPB
     uint32_t num_ref_frames = pd->CodecSpecific.h264.pStdSps->GetStdH264Sps()->max_num_ref_frames;
-    DE_ASSERT(num_ref_frames <= H26X_MAX_DPB_SLOTS);
-    DE_ASSERT(num_ref_frames <= m_maxNumDpbSlots);
+    TCU_CHECK_AND_THROW(InternalError, num_ref_frames <= H26X_MAX_DPB_SLOTS,
+                        "Number of reference frames exceeds H26X maximum DPB slots");
+    TCU_CHECK_AND_THROW(InternalError, num_ref_frames <= m_maxNumDpbSlots,
+                        "Number of reference frames exceeds maximum DPB slots");
     // TODO(legacy): Why does AVC require a setup slot to be accounted for here, but not HEVC?
     dpbH264Entry refOnlyDpbIn[H26X_MAX_DPB_SLOTS + 1]; // max number of Dpb
     // surfaces
@@ -2400,9 +2426,12 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
         pGopReferenceImagesIndexes[inIdx] = -1;
     }
 
-    DE_ASSERT(numUsedRef <= H26X_MAX_DPB_SLOTS);
-    DE_ASSERT(numUsedRef <= m_maxNumDpbSlots);
-    DE_ASSERT(numUsedRef <= num_ref_frames);
+    TCU_CHECK_AND_THROW(InternalError, numUsedRef <= H26X_MAX_DPB_SLOTS,
+                        "Number of used references exceeds H26X maximum DPB slots");
+    TCU_CHECK_AND_THROW(InternalError, numUsedRef <= m_maxNumDpbSlots,
+                        "Number of used references exceeds maximum DPB slots");
+    TCU_CHECK_AND_THROW(InternalError, numUsedRef <= num_ref_frames,
+                        "Number of used references exceeds allowed reference frames");
 
     if (getVideoLogPrintEnable())
     {
@@ -2464,7 +2493,7 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
     // Find or allocate slots for existing dpb items.
     // Take into account the reference picture now.
     int8_t currPicIdx = GetPicIdx(pd->pCurrPic);
-    DE_ASSERT(currPicIdx >= 0);
+    TCU_CHECK_AND_THROW(InternalError, currPicIdx >= 0, "Current picture index must be valid");
     int8_t bestNonExistingPicIdx = currPicIdx;
     if (refDpbUsedAndValidMask)
     {
@@ -2475,7 +2504,7 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
             {
                 vkPicBuffBase *picBuff = refOnlyDpbIn[dpbIdx].m_picBuff;
                 int8_t picIdx          = GetPicIdx(picBuff); // should always be valid at this point
-                DE_ASSERT(picIdx >= 0);
+                TCU_CHECK_AND_THROW(InternalError, picIdx >= 0, "Picture index must be valid for DPB entry");
                 // We have up to 17 internal frame buffers, but only MAX_DPB_SIZE dpb
                 // entries, so we need to re-map the index from the [0..MAX_DPB_SIZE]
                 // range to [0..15]
@@ -2483,23 +2512,14 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
                 if (dpbSlot < 0)
                 {
                     dpbSlot = m_dpb.AllocateSlot();
-                    DE_ASSERT((dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots));
+                    TCU_CHECK_AND_THROW(ResourceError, (dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots),
+                                        "Allocated DPB slot must be within valid range");
                     SetPicDpbSlot(picIdx, dpbSlot);
                     m_dpb[dpbSlot].setPictureResource(picBuff, m_nCurrentPictureID);
                 }
                 m_dpb[dpbSlot].MarkInUse(m_nCurrentPictureID);
-                DE_ASSERT(dpbSlot >= 0);
-
-                if (dpbSlot >= 0)
-                {
-                    refOnlyDpbIn[dpbIdx].dpbSlot = dpbSlot;
-                }
-                else
-                {
-                    // This should never happen
-                    printf("DPB mapping logic broken!\n");
-                    DE_ASSERT(0);
-                }
+                TCU_CHECK_AND_THROW(InternalError, dpbSlot >= 0, "DPB slot must be valid after allocation");
+                refOnlyDpbIn[dpbIdx].dpbSlot = dpbSlot;
 
                 int32_t frameNumDiff = ((int32_t)pd->CodecSpecific.h264.frame_num - refOnlyDpbIn[dpbIdx].FrameIdx);
                 if (frameNumDiff <= 0)
@@ -2522,7 +2542,7 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
     // regardless if it is going to become a reference or not. Non-reference slots
     // get freed right after usage. if (pd->ref_pic_flag) {
     int8_t currPicDpbSlot = AllocateDpbSlotForCurrentH264(GetPic(pd->pCurrPic), currPicFlags, pd->current_dpb_id);
-    DE_ASSERT(currPicDpbSlot >= 0);
+    TCU_CHECK_AND_THROW(ResourceError, currPicDpbSlot >= 0, "Failed to allocate DPB slot for current picture");
     *pCurrAllocatedSlotIndex = currPicDpbSlot;
 
     if (refDpbUsedAndValidMask)
@@ -2536,7 +2556,8 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
             int8_t picIdx  = -1;
             if (refOnlyDpbIn[dpbIdx].is_non_existing)
             {
-                DE_ASSERT(refOnlyDpbIn[dpbIdx].m_picBuff == NULL);
+                TCU_CHECK_AND_THROW(InternalError, refOnlyDpbIn[dpbIdx].m_picBuff == NULL,
+                                    "Non-existing DPB entry should have null picture buffer");
                 while (((uint32_t)firstNonExistingDpbSlot < m_maxNumDpbSlots) && (dpbSlot == -1))
                 {
                     if (!(dpbInUseMask & (1 << firstNonExistingDpbSlot)))
@@ -2545,7 +2566,8 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
                     }
                     firstNonExistingDpbSlot++;
                 }
-                DE_ASSERT((dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots));
+                TCU_CHECK_AND_THROW(ResourceError, (dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots),
+                                    "DPB slot must be within valid range for non-existing entry");
                 picIdx = bestNonExistingPicIdx;
                 // Find the closest valid refpic already in the DPB
                 uint32_t minDiffPOC = 0x7fff;
@@ -2567,11 +2589,13 @@ uint32_t VideoBaseDecoder::FillDpbH264State(const VkParserPictureData *pd, const
             }
             else
             {
-                DE_ASSERT(refOnlyDpbIn[dpbIdx].m_picBuff != NULL);
+                TCU_CHECK_AND_THROW(InternalError, refOnlyDpbIn[dpbIdx].m_picBuff != NULL,
+                                    "Existing DPB entry must have valid picture buffer");
                 dpbSlot = refOnlyDpbIn[dpbIdx].dpbSlot;
                 picIdx  = GetPicIdx(refOnlyDpbIn[dpbIdx].m_picBuff);
             }
-            DE_ASSERT((dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots));
+            TCU_CHECK_AND_THROW(ResourceError, (dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots),
+                                "DPB slot must be within valid range");
             refOnlyDpbIn[dpbIdx].setH264PictureData(pDpbRefList, pReferenceSlots, dpbIdx, dpbSlot,
                                                     pd->progressive_frame, getVideoLogPrintEnable());
             pGopReferenceImagesIndexes[dpbIdx] = picIdx;
@@ -2638,7 +2662,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
     // Create unordered DPB and generate a bitmask of all render targets present
     // in DPB
     dpbH264Entry refOnlyDpbIn[H26X_MAX_DPB_SLOTS];
-    DE_ASSERT(m_maxNumDpbSlots <= H26X_MAX_DPB_SLOTS);
+    TCU_CHECK_AND_THROW(InternalError, m_maxNumDpbSlots <= H26X_MAX_DPB_SLOTS, "Maximum DPB slots exceeds H26X limit");
     memset(&refOnlyDpbIn, 0, m_maxNumDpbSlots * sizeof(refOnlyDpbIn[0]));
     uint32_t refDpbUsedAndValidMask = 0;
     uint32_t numUsedRef             = 0;
@@ -2651,7 +2675,8 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
         int8_t picIdx = GetPicIdx(pin->RefPics[inIdx]);
         if (picIdx >= 0)
         {
-            DE_ASSERT(numUsedRef < H26X_MAX_DPB_SLOTS);
+            TCU_CHECK_AND_THROW(InternalError, numUsedRef < H26X_MAX_DPB_SLOTS,
+                                "Number of used references exceeds H26X maximum");
             refOnlyDpbIn[numUsedRef].setReference((pin->IsLongTerm[inIdx] == 1), pin->PicOrderCntVal[inIdx],
                                                   GetPic(pin->RefPics[inIdx]));
             if (picIdx >= 0)
@@ -2669,12 +2694,14 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
     if (getVideoLogPrintEnable())
         std::cout << "Total Ref frames: " << numUsedRef << std::endl;
 
-    DE_ASSERT(numUsedRef <= m_maxNumDpbSlots);
-    DE_ASSERT(numUsedRef <= H26X_MAX_DPB_SLOTS);
+    TCU_CHECK_AND_THROW(InternalError, numUsedRef <= m_maxNumDpbSlots,
+                        "Number of used references exceeds maximum DPB slots");
+    TCU_CHECK_AND_THROW(InternalError, numUsedRef <= H26X_MAX_DPB_SLOTS,
+                        "Number of used references exceeds H26X maximum DPB slots");
 
     // Take into account the reference picture now.
     int8_t currPicIdx = GetPicIdx(pd->pCurrPic);
-    DE_ASSERT(currPicIdx >= 0);
+    TCU_CHECK_AND_THROW(InternalError, currPicIdx >= 0, "Current picture index must be valid");
     if (currPicIdx >= 0)
     {
         refDpbUsedAndValidMask |= (1 << currPicIdx);
@@ -2700,7 +2727,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
         {
             vkPicBuffBase *picBuff = refOnlyDpbIn[dpbIdx].m_picBuff;
             int32_t picIdx         = GetPicIdx(picBuff); // should always be valid at this point
-            DE_ASSERT(picIdx >= 0);
+            TCU_CHECK_AND_THROW(InternalError, picIdx >= 0, "Picture index must be valid for H265 DPB entry");
             // We have up to 17 internal frame buffers, but only H26X_MAX_DPB_SLOTS
             // dpb entries, so we need to re-map the index from the
             // [0..H26X_MAX_DPB_SLOTS] range to [0..15]
@@ -2708,25 +2735,25 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
             if (dpbSlot < 0)
             {
                 dpbSlot = m_dpb.AllocateSlot();
-                DE_ASSERT(dpbSlot >= 0);
+                TCU_CHECK_AND_THROW(ResourceError, dpbSlot >= 0, "Failed to allocate DPB slot");
                 SetPicDpbSlot(picIdx, dpbSlot);
                 m_dpb[dpbSlot].setPictureResource(picBuff, m_nCurrentPictureID);
             }
             m_dpb[dpbSlot].MarkInUse(m_nCurrentPictureID);
-            DE_ASSERT(dpbSlot >= 0);
+            TCU_CHECK_AND_THROW(InternalError, dpbSlot >= 0, "DPB slot must be valid after marking in use");
 
             if (dpbSlot >= 0)
             {
                 refOnlyDpbIn[dpbIdx].dpbSlot = dpbSlot;
                 uint32_t originalDpbIndex    = refOnlyDpbIn[dpbIdx].originalDpbIndex;
-                DE_ASSERT(originalDpbIndex < H26X_MAX_DPB_SLOTS);
+                TCU_CHECK_AND_THROW(InternalError, originalDpbIndex < H26X_MAX_DPB_SLOTS,
+                                    "Original DPB index exceeds maximum");
                 frmListToDpb[originalDpbIndex] = dpbSlot;
             }
             else
             {
                 // This should never happen
-                printf("DPB mapping logic broken!\n");
-                DE_ASSERT(0);
+                TCU_THROW(InternalError, "DPB mapping logic broken!");
             }
         }
     }
@@ -2740,8 +2767,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
         if (refOnlyDpbIn[dpbIdx].is_non_existing)
         {
             // There shouldn't be  not_existing in h.265
-            DE_ASSERT(0);
-            DE_ASSERT(refOnlyDpbIn[dpbIdx].m_picBuff == NULL);
+            TCU_THROW(InternalError, "Non-existing entries should not occur in H.265");
             while (((uint32_t)firstNonExistingDpbSlot < m_maxNumDpbSlots) && (dpbSlot == -1))
             {
                 if (!(dpbInUseMask & (1 << firstNonExistingDpbSlot)))
@@ -2750,14 +2776,17 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
                 }
                 firstNonExistingDpbSlot++;
             }
-            DE_ASSERT((dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots));
+            TCU_CHECK_AND_THROW(ResourceError, (dpbSlot >= 0) && ((uint32_t)dpbSlot < m_maxNumDpbSlots),
+                                "DPB slot must be within valid range");
         }
         else
         {
-            DE_ASSERT(refOnlyDpbIn[dpbIdx].m_picBuff != NULL);
+            TCU_CHECK_AND_THROW(InternalError, refOnlyDpbIn[dpbIdx].m_picBuff != NULL,
+                                "Existing DPB entry must have valid picture buffer");
             dpbSlot = refOnlyDpbIn[dpbIdx].dpbSlot;
         }
-        DE_ASSERT((dpbSlot >= 0) && (dpbSlot < H26X_MAX_DPB_SLOTS));
+        TCU_CHECK_AND_THROW(ResourceError, (dpbSlot >= 0) && (dpbSlot < H26X_MAX_DPB_SLOTS),
+                            "DPB slot must be within valid range");
         refOnlyDpbIn[dpbIdx].setH265PictureData(pDpbSlotInfo, pReferenceSlots, dpbIdx, dpbSlot,
                                                 getVideoLogPrintEnable());
         pGopReferenceImagesIndexes[dpbIdx] = GetPicIdx(refOnlyDpbIn[dpbIdx].m_picBuff);
@@ -2776,7 +2805,8 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
     int32_t numPocStCurrBefore = 0;
     const size_t maxNumPocStCurrBefore =
         sizeof(pStdPictureInfo->RefPicSetStCurrBefore) / sizeof(pStdPictureInfo->RefPicSetStCurrBefore[0]);
-    DE_ASSERT((size_t)pin->NumPocStCurrBefore <= maxNumPocStCurrBefore);
+    TCU_CHECK_AND_THROW(InternalError, (size_t)pin->NumPocStCurrBefore <= maxNumPocStCurrBefore,
+                        "Number of POC short-term current before exceeds maximum");
     if ((size_t)pin->NumPocStCurrBefore > maxNumPocStCurrBefore)
     {
         tcu::print(
@@ -2802,7 +2832,8 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
     int32_t numPocStCurrAfter = 0;
     const size_t maxNumPocStCurrAfter =
         sizeof(pStdPictureInfo->RefPicSetStCurrAfter) / sizeof(pStdPictureInfo->RefPicSetStCurrAfter[0]);
-    DE_ASSERT((size_t)pin->NumPocStCurrAfter <= maxNumPocStCurrAfter);
+    TCU_CHECK_AND_THROW(InternalError, (size_t)pin->NumPocStCurrAfter <= maxNumPocStCurrAfter,
+                        "Number of POC short-term current after exceeds maximum");
     if ((size_t)pin->NumPocStCurrAfter > maxNumPocStCurrAfter)
     {
         fprintf(
@@ -2829,7 +2860,8 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
     int32_t numPocLtCurr = 0;
     const size_t maxNumPocLtCurr =
         sizeof(pStdPictureInfo->RefPicSetLtCurr) / sizeof(pStdPictureInfo->RefPicSetLtCurr[0]);
-    DE_ASSERT((size_t)pin->NumPocLtCurr <= maxNumPocLtCurr);
+    TCU_CHECK_AND_THROW(InternalError, (size_t)pin->NumPocLtCurr <= maxNumPocLtCurr,
+                        "Number of POC long-term current exceeds maximum");
     if ((size_t)pin->NumPocLtCurr > maxNumPocLtCurr)
     {
         fprintf(stderr, "\nERROR: FillDpbH265State() pin->NumPocLtCurr(%d) must be smaller than maxNumPocLtCurr(%zd)\n",
@@ -2862,7 +2894,7 @@ uint32_t VideoBaseDecoder::FillDpbH265State(const VkParserPictureData *pd, const
 
     int8_t dpbSlot = AllocateDpbSlotForCurrentH265(GetPic(pd->pCurrPic), true /* isReference */, pd->current_dpb_id);
     *pCurrAllocatedSlotIndex = dpbSlot;
-    DE_ASSERT(!(dpbSlot < 0));
+    TCU_CHECK_AND_THROW(ResourceError, dpbSlot >= 0, "Failed to allocate DPB slot for current picture");
     if (dpbSlot >= 0)
     {
         // TODO: The NVIDIA DPB management is quite broken, and always wants to allocate DPBs even for non-reference frames.
@@ -2879,7 +2911,7 @@ int8_t VideoBaseDecoder::AllocateDpbSlotForCurrentH264(vkPicBuffBase *pPic,
     // Now, map the current render target
     int8_t dpbSlot    = -1;
     int8_t currPicIdx = GetPicIdx(pPic);
-    DE_ASSERT(currPicIdx >= 0);
+    TCU_CHECK_AND_THROW(InternalError, currPicIdx >= 0, "Current picture index must be valid for H264 allocation");
     SetFieldPicFlag(currPicIdx, currPicFlags.field_pic_flag);
     // In Vulkan we always allocate reference slot for the current picture.
     if (true /* currPicFlags.is_reference */)
@@ -2888,11 +2920,10 @@ int8_t VideoBaseDecoder::AllocateDpbSlotForCurrentH264(vkPicBuffBase *pPic,
         if (dpbSlot < 0)
         {
             dpbSlot = m_dpb.AllocateSlot();
-            DE_ASSERT(dpbSlot >= 0);
+            TCU_CHECK_AND_THROW(ResourceError, dpbSlot >= 0, "Failed to allocate DPB slot");
             SetPicDpbSlot(currPicIdx, dpbSlot);
             m_dpb[dpbSlot].setPictureResource(pPic, m_nCurrentPictureID);
         }
-        DE_ASSERT(dpbSlot >= 0);
     }
     return dpbSlot;
 }
@@ -2902,19 +2933,19 @@ int8_t VideoBaseDecoder::AllocateDpbSlotForCurrentH265(vkPicBuffBase *pPic, bool
     // Now, map the current render target
     int8_t dpbSlot    = -1;
     int8_t currPicIdx = GetPicIdx(pPic);
-    DE_ASSERT(currPicIdx >= 0);
-    DE_ASSERT(isReference);
+    TCU_CHECK_AND_THROW(InternalError, currPicIdx >= 0, "Current picture index must be valid for H265 allocation");
+    TCU_CHECK_AND_THROW(InternalError, isReference, "Picture must be marked as reference");
     if (isReference)
     {
         dpbSlot = GetPicDpbSlot(currPicIdx);
         if (dpbSlot < 0)
         {
             dpbSlot = m_dpb.AllocateSlot();
-            DE_ASSERT(dpbSlot >= 0);
+            TCU_CHECK_AND_THROW(ResourceError, dpbSlot >= 0, "Failed to allocate DPB slot");
             SetPicDpbSlot(currPicIdx, dpbSlot);
             m_dpb[dpbSlot].setPictureResource(pPic, m_nCurrentPictureID);
         }
-        DE_ASSERT(dpbSlot >= 0);
+        TCU_CHECK_AND_THROW(InternalError, dpbSlot >= 0, "DPB slot must be valid after allocation");
     }
     return dpbSlot;
 }
@@ -2989,7 +3020,7 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
         createInfo.pStdHeaderVersion = &h265EncodeStdExtensionVersion;
         break;
     default:
-        DE_ASSERT(0);
+        TCU_THROW(InternalError, "Codec type not supported");
     }
     VkResult result = vk.createVideoSessionKHR(device, &createInfo, NULL, &pNewVideoSession->m_videoSession);
     if (result != VK_SUCCESS)
@@ -3002,8 +3033,9 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
     // Get the count first
     result = vk.getVideoSessionMemoryRequirementsKHR(device, pNewVideoSession->m_videoSession,
                                                      &videoSessionMemoryRequirementsCount, NULL);
-    DE_ASSERT(result == VK_SUCCESS);
-    DE_ASSERT(videoSessionMemoryRequirementsCount <= MAX_BOUND_MEMORY);
+    TCU_CHECK_AND_THROW(TestError, result == VK_SUCCESS, "Failed to get video session memory requirements");
+    TCU_CHECK_AND_THROW(InternalError, videoSessionMemoryRequirementsCount <= MAX_BOUND_MEMORY,
+                        "Video session memory requirements exceed maximum");
 
     memset(decodeSessionMemoryRequirements, 0x00, sizeof(decodeSessionMemoryRequirements));
     for (uint32_t i = 0; i < videoSessionMemoryRequirementsCount; i++)
@@ -3051,7 +3083,6 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
             return result;
         }
 
-        DE_ASSERT(result == VK_SUCCESS);
         decodeSessionBindMemory[memIdx].pNext  = NULL;
         decodeSessionBindMemory[memIdx].sType  = VK_STRUCTURE_TYPE_BIND_VIDEO_SESSION_MEMORY_INFO_KHR;
         decodeSessionBindMemory[memIdx].memory = pNewVideoSession->m_memoryBound[memIdx];
@@ -3063,7 +3094,7 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
 
     result = vk.bindVideoSessionMemoryKHR(device, pNewVideoSession->m_videoSession, decodeSessionBindMemoryCount,
                                           decodeSessionBindMemory);
-    DE_ASSERT(result == VK_SUCCESS);
+    TCU_CHECK_AND_THROW(TestError, result == VK_SUCCESS, "Failed to bind video session memory");
 
     videoSession = pNewVideoSession;
 
@@ -3137,11 +3168,15 @@ int32_t VkParserVideoPictureParameters::PopulateH264UpdateFields(
         return currentId;
     }
 
-    DE_ASSERT((pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H264_SPS) ||
-              (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H264_PPS));
+    TCU_CHECK_AND_THROW(InternalError,
+                        (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H264_SPS) ||
+                            (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H264_PPS),
+                        "Parameter set must be H.264 SPS or PPS type");
 
-    DE_ASSERT(h264SessionParametersAddInfo.sType ==
-              VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR);
+    TCU_CHECK_AND_THROW(InternalError,
+                        h264SessionParametersAddInfo.sType ==
+                            VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_SESSION_PARAMETERS_ADD_INFO_KHR,
+                        "H.264 session parameters structure type must be correct");
 
     if (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H264_SPS)
     {
@@ -3149,7 +3184,7 @@ int32_t VkParserVideoPictureParameters::PopulateH264UpdateFields(
         h264SessionParametersAddInfo.pStdSPSs    = pStdPictureParametersSet->GetStdH264Sps();
         bool isSps                               = false;
         currentId                                = pStdPictureParametersSet->GetSpsId(isSps);
-        DE_ASSERT(isSps);
+        TCU_CHECK_AND_THROW(InternalError, isSps, "Parameter must be SPS type");
     }
     else if (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H264_PPS)
     {
@@ -3157,11 +3192,11 @@ int32_t VkParserVideoPictureParameters::PopulateH264UpdateFields(
         h264SessionParametersAddInfo.pStdPPSs    = pStdPictureParametersSet->GetStdH264Pps();
         bool isPps                               = false;
         currentId                                = pStdPictureParametersSet->GetPpsId(isPps);
-        DE_ASSERT(isPps);
+        TCU_CHECK_AND_THROW(InternalError, isPps, "Parameter must be PPS type");
     }
     else
     {
-        DE_ASSERT(!"Incorrect h.264 type");
+        TCU_THROW(InternalError, "Incorrect H.264 parameter type");
     }
 
     return currentId;
@@ -3177,12 +3212,16 @@ int32_t VkParserVideoPictureParameters::PopulateH265UpdateFields(
         return currentId;
     }
 
-    DE_ASSERT((pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_VPS) ||
-              (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_SPS) ||
-              (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_PPS));
+    TCU_CHECK_AND_THROW(InternalError,
+                        (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_VPS) ||
+                            (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_SPS) ||
+                            (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_PPS),
+                        "Parameter set must be H.265 VPS, SPS or PPS type");
 
-    DE_ASSERT(h265SessionParametersAddInfo.sType ==
-              VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR);
+    TCU_CHECK_AND_THROW(InternalError,
+                        h265SessionParametersAddInfo.sType ==
+                            VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_SESSION_PARAMETERS_ADD_INFO_KHR,
+                        "H.265 session parameters structure type must be correct");
 
     if (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_VPS)
     {
@@ -3190,7 +3229,7 @@ int32_t VkParserVideoPictureParameters::PopulateH265UpdateFields(
         h265SessionParametersAddInfo.pStdVPSs    = pStdPictureParametersSet->GetStdH265Vps();
         bool isVps                               = false;
         currentId                                = pStdPictureParametersSet->GetVpsId(isVps);
-        DE_ASSERT(isVps);
+        TCU_CHECK_AND_THROW(InternalError, isVps, "Parameter must be VPS type");
     }
     else if (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_SPS)
     {
@@ -3198,7 +3237,7 @@ int32_t VkParserVideoPictureParameters::PopulateH265UpdateFields(
         h265SessionParametersAddInfo.pStdSPSs    = pStdPictureParametersSet->GetStdH265Sps();
         bool isSps                               = false;
         currentId                                = pStdPictureParametersSet->GetSpsId(isSps);
-        DE_ASSERT(isSps);
+        TCU_CHECK_AND_THROW(InternalError, isSps, "Parameter must be SPS type");
     }
     else if (pStdPictureParametersSet->GetStdType() == StdVideoPictureParametersSet::TYPE_H265_PPS)
     {
@@ -3206,11 +3245,11 @@ int32_t VkParserVideoPictureParameters::PopulateH265UpdateFields(
         h265SessionParametersAddInfo.pStdPPSs    = pStdPictureParametersSet->GetStdH265Pps();
         bool isPps                               = false;
         currentId                                = pStdPictureParametersSet->GetPpsId(isPps);
-        DE_ASSERT(isPps);
+        TCU_CHECK_AND_THROW(InternalError, isPps, "Parameter must be PPS type");
     }
     else
     {
-        DE_ASSERT(!"Incorrect h.265 type");
+        TCU_THROW(InternalError, "Incorrect H.265 parameter type");
     }
 
     return currentId;
@@ -3314,7 +3353,7 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
     }
     break;
     default:
-        DE_ASSERT(!"Invalid parameter set type");
+        TCU_THROW(InternalError, "Invalid parameter set type");
         return VK_ERROR_INITIALIZATION_FAILED;
     }
 
@@ -3322,7 +3361,7 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
     VkResult result         = m_deviceContext.getDeviceDriver().createVideoSessionParametersKHR(
         m_deviceContext.device, &createInfo, nullptr, &m_sessionParameters);
 
-    TCU_CHECK_AND_THROW(InternalError, result == VK_SUCCESS, "Could not create video session");
+    TCU_CHECK_AND_THROW(TestError, result == VK_SUCCESS, "Could not create video session parameters");
     m_videoSession = videoSession;
 
     if (pTemplatePictureParameters)
@@ -3351,7 +3390,7 @@ VkResult VkParserVideoPictureParameters::CreateParametersObject(
         m_av1SpsIdsUsed.set(currentId, true);
         break;
     default:
-        DE_ASSERT(!"Invalid StdVideoPictureParametersSet Parameter Type!");
+        TCU_THROW(InternalError, "Invalid StdVideoPictureParametersSet Parameter Type");
     }
     m_Id = ++m_currentId;
 
@@ -3385,12 +3424,14 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
 
         if (h264SessionParametersAddInfo.stdSPSCount == 1)
         {
-            DE_ASSERT(h264SessionParametersAddInfo.stdSPSCount == 1);
+            TCU_CHECK_AND_THROW(InternalError, h264SessionParametersAddInfo.stdSPSCount == 1,
+                                "H.264 SPS count must be 1");
             currentStdPictureParameters.h264Sps = h264SessionParametersAddInfo.pStdSPSs;
         }
         if (h264SessionParametersAddInfo.stdPPSCount == 1)
         {
-            DE_ASSERT(h264SessionParametersAddInfo.stdPPSCount == 1);
+            TCU_CHECK_AND_THROW(InternalError, h264SessionParametersAddInfo.stdPPSCount == 1,
+                                "H.264 PPS count must be 1");
             currentStdPictureParameters.h264Pps = h264SessionParametersAddInfo.pStdPPSs;
         }
     }
@@ -3404,17 +3445,20 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
 
         if (h265SessionParametersAddInfo.stdVPSCount > 0)
         {
-            DE_ASSERT(h265SessionParametersAddInfo.stdVPSCount == 1);
+            TCU_CHECK_AND_THROW(InternalError, h265SessionParametersAddInfo.stdVPSCount == 1,
+                                "H.265 VPS count must be 1");
             currentStdPictureParameters.h265Vps = h265SessionParametersAddInfo.pStdVPSs;
         }
         if (h265SessionParametersAddInfo.stdSPSCount > 0)
         {
-            DE_ASSERT(h265SessionParametersAddInfo.stdSPSCount == 1);
+            TCU_CHECK_AND_THROW(InternalError, h265SessionParametersAddInfo.stdSPSCount == 1,
+                                "H.265 SPS count must be 1");
             currentStdPictureParameters.h265Sps = h265SessionParametersAddInfo.pStdSPSs;
         }
         if (h265SessionParametersAddInfo.stdPPSCount > 0)
         {
-            DE_ASSERT(h265SessionParametersAddInfo.stdPPSCount == 1);
+            TCU_CHECK_AND_THROW(InternalError, h265SessionParametersAddInfo.stdPPSCount == 1,
+                                "H.265 PPS count must be 1");
             currentStdPictureParameters.h265Pps = h265SessionParametersAddInfo.pStdPPSs;
         }
     }
@@ -3424,11 +3468,11 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
         // Control should not get here. New parameter objects in AV1 imply the creation of a new session..
         // TODO: Properly fix the call chains in the case of AV1, for now just ignore the updates...
         return VK_SUCCESS;
-        DE_ASSERT(false && "There should be no calls to UpdateParametersObject for AV1");
+        TCU_THROW(InternalError, "There should be no calls to UpdateParametersObject for AV1");
         break;
     }
     default:
-        DE_ASSERT(!"Invalid Parser format");
+        TCU_THROW(InternalError, "Invalid parser format");
         return VK_ERROR_INITIALIZATION_FAILED;
     }
 
@@ -3436,7 +3480,7 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
     VK_CHECK(m_deviceContext.getDeviceDriver().updateVideoSessionParametersKHR(m_deviceContext.device,
                                                                                m_sessionParameters, &updateInfo));
 
-    DE_ASSERT(currentId >= 0);
+    TCU_CHECK_AND_THROW(InternalError, currentId >= 0, "Current ID must be non-negative");
     switch (pStdVideoPictureParametersSet->GetParameterType())
     {
     case StdVideoPictureParametersSet::PPS_TYPE:
@@ -3454,7 +3498,7 @@ VkResult VkParserVideoPictureParameters::UpdateParametersObject(
         TCU_FAIL("Parameter set updates are not supported in AV1!");
         break;
     default:
-        DE_ASSERT(!"Invalid StdVideoPictureParametersSet Parameter Type!");
+        TCU_THROW(InternalError, "Invalid StdVideoPictureParametersSet Parameter Type");
     }
 
     return VK_SUCCESS;
@@ -3485,18 +3529,18 @@ bool VkParserVideoPictureParameters::UpdatePictureParametersHierarchy(
         nodeId     = pictureParametersObject->GetPpsId(isNodeId);
         if (!((uint32_t)nodeId < VkParserVideoPictureParameters::MAX_PPS_IDS))
         {
-            DE_ASSERT(!"PPS ID is out of bounds");
+            TCU_THROW(InternalError, "PPS ID is out of bounds");
             return false;
         }
-        DE_ASSERT(isNodeId);
+        TCU_CHECK_AND_THROW(InternalError, isNodeId, "PPS ID mut be valid");
         if (m_lastPictParamsQueue[nodeParent])
         {
             bool isParentId           = false;
             const int32_t spsParentId = pictureParametersObject->GetSpsId(isParentId);
-            DE_ASSERT(!isParentId);
+            TCU_CHECK_AND_THROW(InternalError, !isParentId, "SPS ID should be valid");
             if (spsParentId == m_lastPictParamsQueue[nodeParent]->GetSpsId(isParentId))
             {
-                DE_ASSERT(isParentId);
+                TCU_CHECK_AND_THROW(InternalError, isParentId, "SPS ID should be valid");
                 pictureParametersObject->m_parent = m_lastPictParamsQueue[nodeParent];
             }
         }
@@ -3507,14 +3551,14 @@ bool VkParserVideoPictureParameters::UpdatePictureParametersHierarchy(
         nodeId     = pictureParametersObject->GetSpsId(isNodeId);
         if (!((uint32_t)nodeId < VkParserVideoPictureParameters::MAX_SPS_IDS))
         {
-            DE_ASSERT(!"SPS ID is out of bounds");
+            TCU_THROW(InternalError, "SPS ID is out of bounds");
             return false;
         }
-        DE_ASSERT(isNodeId);
+        TCU_CHECK_AND_THROW(InternalError, isNodeId, "SPS ID must be valid");
         if (m_lastPictParamsQueue[nodeChild])
         {
             const int32_t spsChildId = m_lastPictParamsQueue[nodeChild]->GetSpsId(isNodeId);
-            DE_ASSERT(!isNodeId);
+            TCU_CHECK_AND_THROW(InternalError, !isNodeId, "PPS should be valid ID");
             if (spsChildId == nodeId)
             {
                 m_lastPictParamsQueue[nodeChild]->m_parent = pictureParametersObject;
@@ -3523,11 +3567,11 @@ bool VkParserVideoPictureParameters::UpdatePictureParametersHierarchy(
         if (m_lastPictParamsQueue[nodeParent])
         {
             const int32_t vpsParentId = pictureParametersObject->GetVpsId(isNodeId);
-            DE_ASSERT(!isNodeId);
+            TCU_CHECK_AND_THROW(InternalError, !isNodeId, "VPS ID should be valid");
             if (vpsParentId == m_lastPictParamsQueue[nodeParent]->GetVpsId(isNodeId))
             {
                 pictureParametersObject->m_parent = m_lastPictParamsQueue[nodeParent];
-                DE_ASSERT(isNodeId);
+                TCU_CHECK_AND_THROW(InternalError, isNodeId, "VPS ID should be valid");
             }
         }
         break;
@@ -3536,14 +3580,14 @@ bool VkParserVideoPictureParameters::UpdatePictureParametersHierarchy(
         nodeId    = pictureParametersObject->GetVpsId(isNodeId);
         if (!((uint32_t)nodeId < VkParserVideoPictureParameters::MAX_VPS_IDS))
         {
-            DE_ASSERT(!"VPS ID is out of bounds");
+            TCU_THROW(InternalError, "VPS ID is out of bounds");
             return false;
         }
-        DE_ASSERT(isNodeId);
+        TCU_CHECK_AND_THROW(InternalError, isNodeId, "SPS ID should be valid");
         if (m_lastPictParamsQueue[nodeChild])
         {
             const int32_t vpsParentId = m_lastPictParamsQueue[nodeChild]->GetVpsId(isNodeId);
-            DE_ASSERT(!isNodeId);
+            TCU_CHECK_AND_THROW(InternalError, !isNodeId, "SPS ID should be valid");
             if (vpsParentId == nodeId)
             {
                 m_lastPictParamsQueue[nodeChild]->m_parent = pictureParametersObject;
@@ -3551,7 +3595,7 @@ bool VkParserVideoPictureParameters::UpdatePictureParametersHierarchy(
         }
         break;
     default:
-        DE_ASSERT("!Invalid STD type");
+        TCU_THROW(InternalError, "Invalid STD type");
         return false;
     }
     m_lastPictParamsQueue[pictureParametersObject->GetParameterType()] = pictureParametersObject;
@@ -3572,23 +3616,25 @@ VkResult VkParserVideoPictureParameters::HandleNewPictureParametersSet(
     VkResult result;
     if (m_sessionParameters == VK_NULL_HANDLE)
     {
-        DE_ASSERT(videoSession != VK_NULL_HANDLE);
-        DE_ASSERT(m_videoSession == VK_NULL_HANDLE);
+        TCU_CHECK_AND_THROW(InternalError, videoSession != VK_NULL_HANDLE, "Video session must be valid");
+        TCU_CHECK_AND_THROW(InternalError, m_videoSession == VK_NULL_HANDLE,
+                            " No current video session should be already set");
         if (m_templatePictureParameters)
         {
             m_templatePictureParameters->FlushPictureParametersQueue(videoSession);
         }
         result = CreateParametersObject(videoSession, pStdVideoPictureParametersSet, m_templatePictureParameters);
-        DE_ASSERT(result == VK_SUCCESS);
+        TCU_CHECK_AND_THROW(TestError, result == VK_SUCCESS, "Failed to create parameters object");
         m_templatePictureParameters = nullptr; // the template object is not needed anymore
         m_videoSession              = videoSession;
     }
     else
     {
-        DE_ASSERT(m_videoSession != VK_NULL_HANDLE);
-        DE_ASSERT(m_sessionParameters != VK_NULL_HANDLE);
+        TCU_CHECK_AND_THROW(InternalError, videoSession != VK_NULL_HANDLE, "Video session must be initialized");
+        TCU_CHECK_AND_THROW(InternalError, m_videoSession != VK_NULL_HANDLE,
+                            "Current video session should be already set");
         result = UpdateParametersObject(pStdVideoPictureParametersSet);
-        DE_ASSERT(result == VK_SUCCESS);
+        TCU_CHECK_AND_THROW(TestError, result == VK_SUCCESS, "Failed to update parameters object");
     }
 
     return result;
@@ -3637,13 +3683,14 @@ bool VkParserVideoPictureParameters::CheckStdObjectBeforeUpdate(
     }
     else
     { // existing VkParserVideoPictureParameters object
-        DE_ASSERT(currentVideoPictureParameters);
+        TCU_CHECK_AND_THROW(InternalError, currentVideoPictureParameters,
+                            "Current video picture parameters must be valid");
         // Update with the existing Vulkan Picture Parameters object
     }
 
     VkSharedBaseObj<VkVideoRefCountBase> clientObject;
     stdPictureParametersSet->GetClientObject(clientObject);
-    DE_ASSERT(!clientObject);
+    TCU_CHECK_AND_THROW(InternalError, !clientObject, "Client object should not exist");
 
     return false;
 }
@@ -3654,7 +3701,7 @@ VkResult VkParserVideoPictureParameters::AddPictureParameters(
     VkSharedBaseObj<VkParserVideoPictureParameters>
         &currentVideoPictureParameters /* reference to member field of decoder */)
 {
-    DE_ASSERT(stdPictureParametersSet);
+    TCU_CHECK_AND_THROW(InternalError, stdPictureParametersSet, "Standard picture parameters set must be valid");
 
     VkResult result;
     if (CheckStdObjectBeforeUpdate(stdPictureParametersSet, currentVideoPictureParameters))
@@ -3692,8 +3739,8 @@ shared_ptr<VideoBaseDecoder> createBasicDecoder(DeviceContext *deviceContext, co
     VkVideoDecodeCapabilitiesKHR videoDecodeCapabilities;
     VkResult res =
         util::getVideoDecodeCapabilities(*deviceContext, *profile, videoCapabilities, videoDecodeCapabilities);
-    if (res != VK_SUCCESS)
-        TCU_THROW(NotSupportedError, "Implementation does not support this video profile");
+
+    TCU_CHECK_AND_THROW(NotSupportedError, res == VK_SUCCESS, "Implementation does not support this video profile");
 
     bool separateReferenceImages = videoCapabilities.flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR;
 
