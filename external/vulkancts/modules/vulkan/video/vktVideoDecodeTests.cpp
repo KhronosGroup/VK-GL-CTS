@@ -179,6 +179,7 @@ enum TestType
     TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
     TEST_TYPE_H265_DECODE_SLIST_A,
     TEST_TYPE_H265_DECODE_SLIST_B,
+    TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE,
 
     // VK_KHR_video_maintenance2
     TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS,
@@ -311,6 +312,9 @@ static const char *testTypeToStr(TestType type)
         break;
     case TEST_TYPE_H265_DECODE_SLIST_B:
         testName = "slist_b";
+        break;
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
+        testName = "long_term_reference";
         break;
     case TEST_TYPE_AV1_DECODE_BASIC_8:
         testName = "basic_8";
@@ -480,6 +484,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
     case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
     case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_H265;
@@ -611,6 +616,8 @@ struct DecodeTestParam
      {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
     {TEST_TYPE_H265_DECODE_SLIST_A, {CLIP_H265_DEC_ITU_SLIST_A, 28, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_SLIST_B, {CLIP_H265_DEC_ITU_SLIST_B, 28, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE,
+     {CLIP_H265_DEC_ITU_LTRPSPS_A_QUALCOMM_1, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::UseInlineSessionParams}},
     {TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::ResetCodecNoSessionParams}},
 
@@ -1773,6 +1780,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
     {
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
         break;
