@@ -2110,8 +2110,8 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
                 1u,                                  // const uint32_t                                    subpass
                 &multisampleStateCreateInfo, // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
                 pNextForCopySubsampledImage, // const void*                                        pNext
-                false,  // const bool                                        useDensityMapAttachment
-                false); // const bool                                        useDepthAttachment
+                isDynamicRendering, // const bool                                        useDensityMapAttachment
+                false);             // const bool                                        useDepthAttachment
         if (m_testParams.subsampledLoads)
             m_graphicsPipelineUpdateSubsampledImage = buildGraphicsPipeline(
                 vk,                                        // const DeviceInterface&                            vk
