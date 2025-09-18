@@ -377,9 +377,14 @@ de::MovePtr<BufferWithMemory> RayTracingBuildLargeTestInstance::runTest(const ui
         allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     de::MovePtr<RayTracingPipeline> rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+
+    // Disable watchdog timeout prior to compiling large number of shaders to avoid timeouts on low clocked cpus
+    m_context.getTestContext().touchWatchdogAndDisableIntervalTimeLimit();
     const Move<VkPipeline> pipeline =
         makePipeline(vkd, device, m_context.getBinaryCollection(), rayTracingPipeline, *pipelineLayout,
                      callableShaderCount, m_data.deferredOperation, threadCount);
+    // Re-enable watchdog timeout
+    m_context.getTestContext().touchWatchdogAndEnableIntervalTimeLimit();
     const de::MovePtr<BufferWithMemory> raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
         vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1u);
     const de::MovePtr<BufferWithMemory> callableShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
