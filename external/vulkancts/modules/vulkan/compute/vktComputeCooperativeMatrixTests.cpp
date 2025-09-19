@@ -1702,12 +1702,6 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     {
         if (m_data.addrMethod != ADDR_LINEAR)
         {
-
-            if (m_data.testType == TT_MATRIXMULADD_STRIDE0)
-            {
-                heights[0] = heights[1] = heights[2] = "1";
-            }
-
             if (isClampTest(m_data.testType))
             {
                 css << "   tensorLayoutNV<2, " << clampString << "> tensorLayout0 = createTensorLayoutNV(2, "
