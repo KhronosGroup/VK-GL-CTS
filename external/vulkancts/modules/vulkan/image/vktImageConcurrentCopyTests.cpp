@@ -459,6 +459,7 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
     auto &dstBufferAlloc = dstBuffer->getAllocation();
+    invalidateAlloc(vk, device, dstBufferAlloc);
     if (memcmp(srcBufferAlloc.getHostPtr(), dstBufferAlloc.getHostPtr(), bufferSize) != 0)
     {
         uint8_t *srcPtr = (uint8_t *)srcBufferAlloc.getHostPtr();
