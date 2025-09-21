@@ -23,7 +23,7 @@
         },
         {
             "groups": [
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.unused.*",
+                "dEQP-VK.inding_model.unused_invalid_descriptor.write.unused.*",
                 "dEQP-VK.binding_model.unused_invalid_descriptor.copy.*"
             ],
             "messages": [
@@ -42,11 +42,12 @@
         },
         {
             "groups": [
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.sampled_image",
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.combined_image_sampler"
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.sampled_image",
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.combined_image_sampler"
             ],
             "messages": [
-                "VUID-RuntimeSpirv-samples-08725"
+                "VUID-RuntimeSpirv-samples-08725",
+                "VUID-VkImageCreateInfo-samples-02258"
             ],
             "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional"
         },
@@ -158,13 +159,16 @@
             "messages": [
                 "Undefined-Value-ShaderInputNotProduced"
             ],
-            "description": "Warning about not saving data in attachments by fragment shader. Fixing this is not necessary for the test to work, and implementing it would make the test case unnecessarily complicated."
+            "description": "Warning about not saving data in attachments by fragment shader. Fixing this is not necessary for the test to work, and implementing it would make the test case unnecessarily complicated"
         },
         {
             "groups": [
-                "dEQP-VK.geometry.layered.3d.*"
+                "dEQP-VK.geometry.layered.3d.*",
+                "dEQP-VK.renderpasses.renderpass1.remaining_array_layers.*"
             ],
             "messages": [
+                "VUID-VkImageMemoryBarrier-subresourceRange-01488",
+                "VUID-VkImageMemoryBarrier-subresourceRange-01725",
                 "VUID-vkCmdDraw-None-09600"
             ],
             "description": "TODO raport validaiton layers issue in 3D layered rendering tests when using 3D images with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT"
@@ -181,15 +185,16 @@
         },
         {
             "groups": [
-                "dEQP-VK.shader_object.misc.state.*.cull.front_and_back",
-                "dEQP-VK.shader_object.misc.state.*.stencil.enabled",
-                "dEQP-VK.shader_object.misc.state.pipeline.vert.*",
-                "dEQP-VK.shader_object.misc.state.pipeline.mesh_frag.*"
+                "dEQP-VK.shader_object.misc.state.*"
             ],
             "messages": [
                 "VUID-vkCmdDraw-None-07841",
                 "VUID-vkCmdDraw-None-07627",
-                "VUID-vkCmdDraw-None-07629"
+                "VUID-vkCmdDraw-None-07629",
+                "VUID-vkCmdDraw-None-07626",
+                "VUID-vkCmdDrawMeshTasksEXT-None-07841",
+                "VUID-vkCmdDrawMeshTasksEXT-None-07627",
+                "VUID-vkCmdDrawMeshTasksEXT-None-07629"
             ],
             "description": "Validation layer requires set state calls when the respective dynamic states are enabled. Tests intentionally skips setting certain dynamic states"
         },
@@ -207,7 +212,12 @@
                 "dEQP-VK.ray_tracing_pipeline.amber.basic",
                 "dEQP-VK.ray_tracing_pipeline.amber.basic2",
                 "dEQP-VK.draw.renderpass.basic_draw.misc.flat_b_sat_error",
-                "dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_fill"
+                "dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_fill",
+                "dEQP-VK.glsl.builtin.precision.determinant.highp.mat3",
+                "dEQP-VK.glsl.builtin.precision.determinant.highp.mat4",
+                "dEQP-VK.texture.shadow.texel_replacement.d32_sfloat",
+                "dEQP-VK.robustness.non_robust_buffer_access.unexecuted_oob_underflow",
+                "dEQP-VK.binding_model.dynamic_offset.shader_reuse_differing_layout_compute"
             ],
             "messages": [
                 "VUID-vkCmdPipelineBarrier-srcAccessMask-02815",
@@ -235,12 +245,26 @@
         },
         {
             "groups": [
-                "dEQP-VK.robustness.robustness2.bind.*.r64i.*.uniform_texel_buffer.*"
+                "dEQP-VK.robustness.robustness2.bind.*.r64i.*.uniform_texel_buffer.*",
+                "dEQP-VK.robustness.robustness2.bind.*.r64i.dontunroll.nonvolatile.uniform_texel_buffer.*"
             ],
             "messages": [
-                "VUID-vkCmdDispatch-SampledType-04472"
+                "VUID-vkCmdDispatch-SampledType-04472",
+                "VUID-vkCmdTraceRaysKHR-SampledType-04472",
+                "VUID-vkCmdDraw-SampledType-04472"
             ],
-            "description": "The validation error occurs because the shader tries to read a 64-bit texel buffer using a 32-bit data type, which violates Vulkan's type matching rules. The issue should have been detected by checking if the buffer format supports property as a uniform texel buffer. Certain implementations erroneously indicate that this format is compatible with uniform texel buffer property, which leads to a mismatch between the declared format and the shader's expected data type."
+            "description": "The validation error occurs because the shader tries to read a 64-bit texel buffer using a 32-bit data type, which violates Vulkan's type matching rules. The issue should have been detected by checking if the buffer format supports property as a uniform texel buffer. Certain implementations erroneously indicate that this format is compatible with uniform texel buffer property, which leads to a mismatch between the declared format and the shader's expected data type"
+        },
+        {
+            "groups": [
+                "dEQP-VK.drm_format_modifiers.export_import.*",
+                "dEQP-VK.drm_format_modifiers.export_import_explicit.*"
+            ],
+            "messages": [
+                "VUID-vkCmdCopyImage-srcImage-01995",
+                "VUID-vkCmdCopyImage-dstImage-01996"
+            ],
+            "description": "TODO report lavapipe driver limitation where DRM format modifier enumeration reports transfer feature support during vkGetPhysicalDeviceFormatProperties2, but actual image creation with VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT returns VkFormatFeatureFlags2(0)"
         }
     ]
 }

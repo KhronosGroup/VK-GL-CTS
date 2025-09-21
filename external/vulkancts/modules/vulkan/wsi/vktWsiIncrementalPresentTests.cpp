@@ -88,6 +88,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-VkSwapchainCreateInfoKHR-imageColorSpace-parameter
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
+        extensions.push_back("VK_EXT_swapchain_colorspace");
+
     checkAllSupported(supportedExtensions, extensions);
 
     return vkt::createCustomInstanceWithExtensions(context, extensions);
@@ -111,7 +115,15 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
-    const char *const extensions[]                 = {"VK_KHR_swapchain", "VK_KHR_incremental_present"};
+
+    std::vector<const char *> extensions;
+    extensions.push_back("VK_KHR_swapchain");
+    if (requiresIncrementalPresent)
+        extensions.push_back("VK_KHR_incremental_present");
+
+    // VUID-VkSwapchainCreateInfoKHR-imageColorSpace-parameter
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
+        extensions.push_back("VK_EXT_swapchain_colorspace");
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                                  nullptr,
@@ -120,11 +132,11 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                  &queueInfos[0],
                                                  0u,
                                                  nullptr,
-                                                 requiresIncrementalPresent ? 2u : 1u,
-                                                 DE_ARRAY_BEGIN(extensions),
+                                                 static_cast<uint32_t>(extensions.size()),
+                                                 extensions.data(),
                                                  &features};
 
-    for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
+    for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
     {
         if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
@@ -797,7 +809,8 @@ void IncrementalPresentTestInstance::deinitSwapchainResources(void)
 
 void IncrementalPresentTestInstance::render(void)
 {
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t foreverNs = 1000000000ul;
     const vk::VkFence fence  = m_fences[m_frameNdx % m_fences.size()];
     const uint32_t width     = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.width;
     const uint32_t height    = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.height;
