@@ -1371,11 +1371,17 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         css << type << " combineOp(const in " << type << " a, const in " << type << " b) {\n";
         if (isReduceSum(m_data.testType))
         {
-            css << "    return a + b;\n";
+            if (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                css << "    return " << type << "(float(a) + float(b));\n"; // GLSL does not support adding bfloat16_t
+            else
+                css << "    return a + b;\n";
         }
         else if (isReduceMin(m_data.testType))
         {
-            css << "    return min(a, b);\n";
+            if (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                css << "    return " << type << "(min(float(a), float(b)));\n"; // GLSL does not support min bfloat16_t
+            else
+                css << "    return min(a, b);\n";
         }
         css << "}\n";
     }
