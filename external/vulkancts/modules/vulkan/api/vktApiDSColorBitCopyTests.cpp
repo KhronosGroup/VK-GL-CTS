@@ -538,6 +538,8 @@ tcu::TestStatus DSColorCopyInstance::iterate(void)
     const auto srcValues = getRandomSrcValues(rnd, m_params.formatPair, pixelCount, m_params.unrestricted);
     deMemcpy(srcBuffer.getAllocation().getHostPtr(), de::dataOrNull(srcValues), de::dataSize(srcValues));
 
+    flushAlloc(ctx.vkd, ctx.device, srcBuffer.getAllocation());
+
     // Create source and destination images.
     const VkImageCreateInfo srcImgCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
