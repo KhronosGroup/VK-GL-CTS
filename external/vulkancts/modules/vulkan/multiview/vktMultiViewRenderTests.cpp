@@ -3428,6 +3428,7 @@ void MultiViewQueriesTestInstance::draw(const uint32_t subpassCount, VkRenderPas
 
     if (m_cmdCopyQueryPoolResults)
     {
+        invalidateAlloc(m_context.getDeviceInterface(), *m_logicalDevice, queryBuffer.getAllocation());
         memcpy(occlusionQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
                de::dataSize(occlusionQueryResultsBuffer));
         memcpy(timestampStartQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
