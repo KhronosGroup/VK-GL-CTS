@@ -218,7 +218,7 @@ BasicLocalReadTestInstance::BasicLocalReadTestInstance(Context &context, TestTyp
 
     // by default all test read from depth attachment and some from stencil
     // but after promoting DRLR to vk1.4 reading depth/stencil is guarded by property
-    bool readDepthStencil = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+    bool readDepthStencil = (context.getEquivalentApiVersion() < VK_API_VERSION_1_4) ||
                             context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments;
 
     // setup test configuration - all test cases use same test instance code but with diferent parameters
@@ -1897,7 +1897,7 @@ void LocalReadTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "extendedDynamicState3RasterizationSamples not supported");
     }
 
-    if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0) &&
+    if ((context.getEquivalentApiVersion() > VK_API_VERSION_1_3) &&
         !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
     {
         if ((m_testType == TestType::DEPTH_STENCIL_MAPPING_TO_SAME_INDEX) ||

@@ -3183,7 +3183,7 @@ void ImageDeviceScopeAccessTest::checkSupport(Context &context) const
     if (!vkMemModelFeatures.vulkanMemoryModelDeviceScope)
         TCU_THROW(NotSupportedError, "vulkanMemoryModelDeviceScope not supported");
 
-    if (context.getUsedApiVersion() < SPIRV_VERSION_1_5)
+    if (context.getEquivalentApiVersion() < VK_API_VERSION_1_2)
         TCU_THROW(NotSupportedError,
                   std::string("Vulkan higher than or equal to spirv 1.5 is required for this test to run").c_str());
 

@@ -4381,7 +4381,7 @@ void FirstInvocationCase::checkSupport(Context &context) const
 {
     MeshShaderMiscCase::checkSupport(context);
 
-    if (context.getUsedApiVersion() < VK_MAKE_VERSION(1, 1, 0))
+    if (context.getEquivalentApiVersion() < VK_API_VERSION_1_1)
         TCU_THROW(NotSupportedError, "Vulkan API version >= 1.1 required");
 
     const auto &subgroupProperties = context.getSubgroupProperties();

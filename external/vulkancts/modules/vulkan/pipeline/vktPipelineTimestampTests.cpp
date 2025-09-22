@@ -878,7 +878,7 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
     auto deviceFeatures2      = m_context.getDeviceFeatures2();
 
     const void *pNext = &deviceFeatures2;
-    if (m_context.getUsedApiVersion() < VK_API_VERSION_1_2)
+    if (m_context.getEquivalentApiVersion() < VK_API_VERSION_1_2)
     {
         queryResetFeatures.pNext = &deviceFeatures2;
         pNext                    = &queryResetFeatures;

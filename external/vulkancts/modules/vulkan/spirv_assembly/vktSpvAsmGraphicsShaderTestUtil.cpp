@@ -3116,7 +3116,7 @@ TestStatus runAndVerifyUnusedVariablePipeline(Context &context, UnusedVariableCo
 
 TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instance)
 {
-    if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getUsedApiVersion())
+    if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getEquivalentApiVersion())
     {
         TCU_THROW(NotSupportedError,
                   string("Vulkan higher than or equal to " +
