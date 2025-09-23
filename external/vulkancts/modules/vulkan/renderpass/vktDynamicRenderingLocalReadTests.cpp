@@ -34,6 +34,7 @@
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -109,6 +110,10 @@ enum class TestType
 
     // One subpass input attachment, where that input is also the color attachment
     FEEDBACK_LOOP,
+
+    // One subpass input attachment, where that input is also the color attachment,
+    // With VK_EXT_shader_object
+    FEEDBACK_LOOP_ESO,
 };
 
 bool isRemapSingle(TestType testType)
@@ -1754,24 +1759,34 @@ public:
 
 protected:
     tcu::TestStatus iterate(void) override;
+
+private:
+    const TestType m_testType;
 };
 
 FeedbackLoopTestInstance::FeedbackLoopTestInstance(Context &context, const TestType testType)
     : vkt::TestInstance(context)
+    , m_testType(testType)
 {
-    DE_UNREF(testType);
 }
 
 tcu::TestStatus FeedbackLoopTestInstance::iterate()
 {
+    const auto &vki                 = m_context.getInstanceInterface();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
+    const auto physicalDevice       = m_context.getPhysicalDevice();
+    const auto deviceExtensions     = m_context.getDeviceExtensions();
     Allocator &alloc                = m_context.getDefaultAllocator();
     VkQueue queue                   = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkFormat imageFormat      = VK_FORMAT_R8G8B8A8_UNORM;
     const uint32_t imageSize        = 1024; // 1024 size is required to trigger delta color compression
     const auto extent               = makeExtent3D(imageSize, imageSize, 1u);
+
+    const PipelineConstructionType pipelineType = (m_testType == TestType::FEEDBACK_LOOP) ?
+                                                      PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC :
+                                                      PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
 
     const VkImageSubresourceRange srr = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const VkImageSubresourceLayers sl = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
@@ -1829,10 +1844,10 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0), descriptorType, &di)
         .update(vk, device);
 
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
-    auto &bc                              = m_context.getBinaryCollection();
-    Move<VkShaderModule> vertModule       = createShaderModule(vk, device, bc.get("vert"));
-    Move<VkShaderModule> fragModule       = createShaderModule(vk, device, bc.get("frag"));
+    PipelineLayoutWrapper pipelineLayout(pipelineType, vk, device, *descriptorSetLayout);
+    auto &bc = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(vk, device, bc.get("vert"));
+    ShaderWrapper fragShader(vk, device, bc.get("frag"));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -1848,10 +1863,19 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     renderingCreateInfo.colorAttachmentCount          = 1;
     renderingCreateInfo.pColorAttachmentFormats       = &imageFormat;
 
-    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
-        VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputState, nullptr,
-        nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
+    // Pipeline
+    GraphicsPipelineWrapper pipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType);
+    pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {},
+                                          {}, {}, 0, nullptr, &renderingCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo)
+        .buildPipeline();
 
     const auto selfDependencyBarrier =
         makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
@@ -1865,7 +1889,7 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
 
     beginRendering(vk, cmdBuffer, *imageView, scissors[0], {}, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD);
 
-    vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+    pipelineWrapper.bind(cmdBuffer);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u,
                              nullptr);
 
@@ -1962,7 +1986,7 @@ void LocalReadTestCase::checkSupport(Context &context) const
              m_testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
         context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
     else if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT ||
-             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT)
+             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT || m_testType == TestType::FEEDBACK_LOOP_ESO)
         context.requireDeviceFunctionality("VK_EXT_shader_object");
     else if (m_testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC ||
              m_testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
@@ -2537,7 +2561,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                             "}\n");
         glslSources.add("frag") << glu::FragmentSource(fragSrc);
     }
-    else if (m_testType == TestType::FEEDBACK_LOOP)
+    else if ((m_testType == TestType::FEEDBACK_LOOP) || (m_testType == TestType::FEEDBACK_LOOP_ESO))
     {
         std::string fragSrc("#version 450\n"
                             "layout(input_attachment_index = 0, binding = 0) uniform subpassInput inColor;\n"
@@ -2574,7 +2598,7 @@ TestInstance *LocalReadTestCase::createInstance(Context &context) const
         return new MappingWithBlendStateTestInstance(context, m_testType);
     if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
         return new MappingWithGraphicsPipelineLibraryTestInstance(context, m_testType);
-    if (m_testType == TestType::FEEDBACK_LOOP)
+    if ((m_testType == TestType::FEEDBACK_LOOP) || (m_testType == TestType::FEEDBACK_LOOP_ESO))
         return new FeedbackLoopTestInstance(context, m_testType);
 
     if (isInteractionWithShaderObjOrRemapSingle(m_testType))
@@ -2612,6 +2636,7 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
         {"remap_single_attachment_fast_lib", TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB},
         {"remap_single_attachment_shader_object", TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT},
         {"feedback_loop", TestType::FEEDBACK_LOOP},
+        {"feedback_loop_with_shader_object", TestType::FEEDBACK_LOOP_ESO},
     };
 
     de::MovePtr<tcu::TestCaseGroup> mainGroup(
