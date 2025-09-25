@@ -436,6 +436,10 @@ struct BufferMarkerMemDepCase : public ApiBufferMarkerMemDepTestCase
         if (m_arg0.arg0.base.useHostPtr)
             caps.addExtension("VK_EXT_external_memory_host");
 
+        // VUID-RuntimeSpirv-NonWritable-06340
+        if (m_arg0.arg0.method == MEMORY_DEP_DRAW)
+            caps.addFeature(&VkPhysicalDeviceFeatures::fragmentStoresAndAtomics);
+
         const SimpleAllocator::OptionalOffsetParams offsetParams(
             {caps.getContextManager().getDeviceFeaturesAndProperties().getDeviceProperties().limits.nonCoherentAtomSize,
              static_cast<VkDeviceSize>(m_arg0.arg0.base.offset)});

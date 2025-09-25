@@ -209,21 +209,28 @@
         },
         {
             "groups": [
-                "dEQP-VK.ray_tracing_pipeline.amber.basic",
-                "dEQP-VK.ray_tracing_pipeline.amber.basic2",
-                "dEQP-VK.draw.renderpass.basic_draw.misc.flat_b_sat_error",
-                "dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_fill",
-                "dEQP-VK.glsl.builtin.precision.determinant.highp.mat3",
-                "dEQP-VK.glsl.builtin.precision.determinant.highp.mat4",
-                "dEQP-VK.texture.shadow.texel_replacement.d32_sfloat",
-                "dEQP-VK.robustness.non_robust_buffer_access.unexecuted_oob_underflow",
-                "dEQP-VK.binding_model.dynamic_offset.shader_reuse_differing_layout_compute"
+                "dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup",
+                "dEQP-VK.spirv_assembly.instruction.compute.ptr_access_chain.workgroup_bad_stride"
+            ],
+            "messages": [
+                "VUID-StandaloneSpirv-MemorySemantics-10866"
+            ],
+            "description": "TODO report validation layers issue in google amber shader test framework"
+        },
+        {
+            "groups": [
+                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial00",
+                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial01",
+                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial02",
+                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial03",
+                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial04"
             ],
             "messages": [
                 "VUID-vkCmdPipelineBarrier-srcAccessMask-02815",
-                "VUID-vkCmdPipelineBarrier-dstAccessMask-02816"
+                "VUID-vkCmdPipelineBarrier-dstAccessMask-02816",
+                "VUID-VkPipelineShaderStageCreateInfo-flags-02759"
             ],
-            "description": "TODO report validation layers issue in google amber shader test framework. Amber tests use incorrect pipeline barrier access masks with VK_PIPELINE_STAGE_ALL_COMMANDS_BIT that include unsupported VK_ACCESS_HOST_READ_BIT and VK_ACCESS_HOST_WRITE_BIT flags"
+            "description": "Partial subgroup tests intentionally use workgroup size that is not a multiple of subgroup size, TODO 02815 and 02816 are validation layers issue in google amber shader test framework"
         },
         {
             "groups": [
@@ -265,6 +272,55 @@
                 "VUID-vkCmdCopyImage-dstImage-01996"
             ],
             "description": "TODO report lavapipe driver limitation where DRM format modifier enumeration reports transfer feature support during vkGetPhysicalDeviceFormatProperties2, but actual image creation with VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT returns VkFormatFeatureFlags2(0)"
+        },
+        {
+            "groups": [
+                "dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment",
+                "dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment_robustness2"
+            ],
+            "messages": [
+                "VUID-VkFramebufferCreateInfo-flags-04539",
+                "VUID-VkFramebufferCreateInfo-flags-04540"
+            ],
+            "description": "Intentionall out of bounds fragment shading rate attachment tests"
+        },
+        {
+            "groups": [
+                "dEQP-VK.compute.*.replicated_composites_coopmat_*"
+            ],
+            "messages": [
+                "VUID-VkPipelineShaderStageCreateInfo-module-08987"
+            ],
+            "description": "Tests intentionally use workgroup size 1 with cooperative matrices to test replicated composites functionality, not workgroup size validation"
+        },
+        {
+            "groups": [
+                "dEQP-VK.memory.address_binding_report.create_and_destroy_object.*"
+            ],
+            "messages": [
+                "VUID-VkDebugUtilsMessengerCreateInfoEXT-messageType-parameter"
+            ],
+            "description": "Known validation layer issue (https://github.com/KhronosGroup/Vulkan-ValidationLayers/issues/9746). VK_DEBUG_UTILS_MESSAGE_TYPE_DEVICE_ADDRESS_BINDING_BIT_EXT should be valid with VK_EXT_debug_utils instance extension, regardless of device extensions. Validation layer incorrectly requires VK_EXT_device_address_binding_report at instance level"
+        },
+        {
+            "groups": [
+                "dEQP-VK.synchronization.timeline_semaphore.one_to_n.*",
+                "dEQP-VK.synchronization2.timeline_semaphore.one_to_n.*"
+            ],
+            "messages": [
+                "VUID-vkQueueSubmit-pSubmits-02207",
+                "VUID-vkQueueSubmit2-commandBuffer-03879"
+            ],
+            "description": "Validation layer limitation in tracking queue family ownership transfers synchronized via timeline semaphores. The tests correctly use timeline semaphores to establish happens-before relationships between release and acquire operations across different queue families, but validation layers do not properly track the execution ordering guarantees provided by timeline semaphore wait/signal values"
+        },
+        {
+            "groups": [
+                "dEQP-VK.ray_tracing_pipeline.pipeline_library.configurations.misc.maintenance5"
+            ],
+            "messages": [
+                "VUID-vkGetRayTracingCaptureReplayShaderGroupHandlesKHR-pipeline-03607"
+            ],
+            "description": "Validation layer bug when checking VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR with VK_KHR_maintenance5. When VkPipelineCreateFlags2CreateInfoKHR is used in the pNext chain, the spec states its flags field is used INSTEAD of VkRayTracingPipelineCreateInfoKHR::flags. The validation layers incorrectly check the base flags field (which is set to 0) rather than checking the VkPipelineCreateFlags2CreateInfoKHR::flags in the pNext chain where the actual flags are stored"
         }
     ]
 }

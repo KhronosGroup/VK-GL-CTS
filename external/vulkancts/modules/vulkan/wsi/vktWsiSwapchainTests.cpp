@@ -128,6 +128,13 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     return vkt::createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
 
+VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
+{
+    VkPhysicalDeviceFeatures features;
+    deMemset(&features, 0, sizeof(features));
+    return features;
+}
+
 Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
                                    const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                    const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
@@ -163,16 +170,30 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
     }
 
     VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
+    features2.features                  = getDeviceFeaturesForWsi();
 
     VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT fifoLatestReadyFeatures = initVulkanStructure();
     fifoLatestReadyFeatures.presentModeFifoLatestReady                            = VK_TRUE;
+
+    bool hasFifoLatestReadyExtension = false;
     for (const auto &ext : supportedExtensions)
     {
         if (strcmp(ext.extensionName, "VK_KHR_present_mode_fifo_latest_ready") == 0)
         {
             extensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
-            features2.pNext = &fifoLatestReadyFeatures;
+            hasFifoLatestReadyExtension = true;
         }
+        else if (strcmp(ext.extensionName, "VK_EXT_present_mode_fifo_latest_ready") == 0)
+        {
+            extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+            hasFifoLatestReadyExtension = true;
+        }
+    }
+
+    if (hasFifoLatestReadyExtension)
+    {
+        fifoLatestReadyFeatures.pNext = features2.pNext;
+        features2.pNext               = &fifoLatestReadyFeatures;
     }
 
     VkDevicePrivateDataCreateInfoEXT pdci = initVulkanStructure();

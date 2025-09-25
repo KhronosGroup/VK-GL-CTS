@@ -2006,6 +2006,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
     // but using them without enabling the extension is not allowed. Thus we have
