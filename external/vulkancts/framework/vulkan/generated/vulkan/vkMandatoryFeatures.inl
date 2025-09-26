@@ -1560,6 +1560,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("maintenance6");
 	}
 
+	// VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_copy_memory_indirect")) )
+	{
+		if ( physicalDeviceCopyMemoryIndirectFeaturesKHR.indirectMemoryCopy == VK_FALSE )
+			failMesages.push_back("indirectMemoryCopy");
+	}
+
 	// VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_intra_refresh")) )
 	{

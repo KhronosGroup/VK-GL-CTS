@@ -285,7 +285,6 @@ VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ExternalComputeQueue, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Tensor, ARM)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, TensorView, ARM)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, DataGraphPipelineSession, ARM)
@@ -845,6 +844,16 @@ void DescriptorPool::reset(void)
         delete m_managedSets[ndx];
     m_managedSets.clear();
 }
+
+#ifndef CTS_USES_VULKANSC
+class ExternalComputeQueueNV
+{
+public:
+    ExternalComputeQueueNV(VkDevice, const VkExternalComputeQueueCreateInfoNV *)
+    {
+    }
+};
+#endif
 
 // API implementation
 

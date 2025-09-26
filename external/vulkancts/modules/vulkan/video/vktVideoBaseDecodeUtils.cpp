@@ -2957,6 +2957,7 @@ VkResult VulkanVideoSession::Create(DeviceContext &vkDevCtx, uint32_t videoQueue
 
     const auto flags = (useInlineVideoQueries ? VK_VIDEO_SESSION_CREATE_INLINE_QUERIES_BIT_KHR : 0) |
                        (useInlineParameters ? VK_VIDEO_SESSION_CREATE_INLINE_SESSION_PARAMETERS_BIT_KHR : 0);
+
     VkVideoSessionCreateInfoKHR &createInfo = pNewVideoSession->m_createInfo;
     createInfo.flags                        = flags;
     createInfo.pVideoProfile                = pVideoProfile->GetProfile();
