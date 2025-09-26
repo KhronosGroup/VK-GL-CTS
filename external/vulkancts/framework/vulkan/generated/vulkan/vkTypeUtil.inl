@@ -221,9 +221,9 @@ inline VkConformanceVersion makeConformanceVersion (uint8_t major, uint8_t minor
 	return res;
 }
 
-inline VkCopyMemoryIndirectCommandNV makeCopyMemoryIndirectCommandNV (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize size)
+inline VkCopyMemoryIndirectCommandKHR makeCopyMemoryIndirectCommandKHR (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize size)
 {
-	VkCopyMemoryIndirectCommandNV res;
+	VkCopyMemoryIndirectCommandKHR res;
 	res.srcAddress	= srcAddress;
 	res.dstAddress	= dstAddress;
 	res.size		= size;
@@ -892,6 +892,15 @@ inline VkStridedDeviceAddressNV makeStridedDeviceAddressNV (VkDeviceAddress star
 	VkStridedDeviceAddressNV res;
 	res.startAddress	= startAddress;
 	res.strideInBytes	= strideInBytes;
+	return res;
+}
+
+inline VkStridedDeviceAddressRangeKHR makeStridedDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize size, VkDeviceSize stride)
+{
+	VkStridedDeviceAddressRangeKHR res;
+	res.address	= address;
+	res.size	= size;
+	res.stride	= stride;
 	return res;
 }
 

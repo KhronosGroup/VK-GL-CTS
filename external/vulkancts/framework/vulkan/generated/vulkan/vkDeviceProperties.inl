@@ -232,7 +232,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeMatrix2Propertie
 template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeMatrixPropertiesKHR>(VkPhysicalDeviceCooperativeMatrixPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeMatrixPropertiesNV>(VkPhysicalDeviceCooperativeMatrixPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCooperativeVectorPropertiesNV>(VkPhysicalDeviceCooperativeVectorPropertiesNV&, const AllPropertiesBlobs&) {}
-template<> void initPropertyFromBlob<VkPhysicalDeviceCopyMemoryIndirectPropertiesNV>(VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR>(VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCudaKernelLaunchPropertiesNV>(VkPhysicalDeviceCudaKernelLaunchPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceCustomBorderColorPropertiesEXT>(VkPhysicalDeviceCustomBorderColorPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>(VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&, const AllPropertiesBlobs&) {}
@@ -312,7 +312,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCooperativeMatrix2Prope
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCooperativeMatrixPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCooperativeMatrixPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCooperativeVectorPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_PROPERTIES_NV, VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME}; }
-template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCopyMemoryIndirectPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV, VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCudaKernelLaunchPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_PROPERTIES_NV, VK_NV_CUDA_KERNEL_LAUNCH_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceCustomBorderColorPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDepthStencilResolveProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES, VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME}; }
@@ -419,7 +419,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceCooperativeMatrixPropertiesKHR>, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceCooperativeMatrixPropertiesNV>, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceCooperativeVectorPropertiesNV>, VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME },
-	{ createPropertyStructWrapper<VkPhysicalDeviceCopyMemoryIndirectPropertiesNV>, VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR>, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceCudaKernelLaunchPropertiesNV>, VK_NV_CUDA_KERNEL_LAUNCH_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceCustomBorderColorPropertiesEXT>, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDepthStencilResolveProperties>, VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME },
@@ -518,6 +518,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 const std::string getPreviousPropertyExtName (const std::string &name)
 {
 	const std::map<std::string, std::string> previousExtensionsMap {
+		{ "VK_KHR_copy_memory_indirect", "VK_NV_copy_memory_indirect" },
 		{ "VK_EXT_fragment_density_map_offset", "VK_QCOM_fragment_density_map_offset" },
 		{ "VK_KHR_external_memory_capabilities", "VK_KHR_external_semaphore_capabilities" },
 		{ "VK_KHR_line_rasterization", "VK_EXT_line_rasterization" },

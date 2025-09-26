@@ -2185,6 +2185,18 @@ bool check_VK_KHR_copy_commands2(const tcu::UVec2& v, const ExtPropVect& vIEP, c
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_KHR_copy_memory_indirect(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_KHR_copy_memory_indirect"))
+		return true;
+
+	// depends attribute in xml: (VK_KHR_get_physical_device_properties2+VK_KHR_buffer_device_address),VK_VERSION_1_2
+	return (((isCompatible(1, 1, v) || isSupported(vIEP, "VK_KHR_get_physical_device_properties2")) && isSupported(vDEP, "VK_KHR_buffer_device_address")) || isCompatible(1, 2, v));
+}
+
 bool check_VK_KHR_create_renderpass2(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	if (isCompatible(1, 2, v))
@@ -4075,6 +4087,18 @@ bool check_VK_VALVE_mutable_descriptor_type(const tcu::UVec2& v, const ExtPropVe
 	return (isCompatible(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
 }
 
+bool check_VK_VALVE_video_encode_rgb_conversion(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_VALVE_video_encode_rgb_conversion"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_encode_queue+(VK_KHR_sampler_ycbcr_conversion,VK_VERSION_1_1)
+	return (isSupported(vDEP, "VK_KHR_video_encode_queue") && (isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") || isCompatible(1, 1, v)));
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_AMDX_dense_geometry_format",							&check_VK_AMDX_dense_geometry_format),
@@ -4219,6 +4243,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_KHR_compute_shader_derivatives",						&check_VK_KHR_compute_shader_derivatives),
 	std::make_pair("VK_KHR_cooperative_matrix",								&check_VK_KHR_cooperative_matrix),
 	std::make_pair("VK_KHR_copy_commands2",									&check_VK_KHR_copy_commands2),
+	std::make_pair("VK_KHR_copy_memory_indirect",							&check_VK_KHR_copy_memory_indirect),
 	std::make_pair("VK_KHR_create_renderpass2",								&check_VK_KHR_create_renderpass2),
 	std::make_pair("VK_KHR_dedicated_allocation",							&check_VK_KHR_dedicated_allocation),
 	std::make_pair("VK_KHR_depth_clamp_zero_one",							&check_VK_KHR_depth_clamp_zero_one),
@@ -4370,6 +4395,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_VALVE_descriptor_set_host_mapping",					&check_VK_VALVE_descriptor_set_host_mapping),
 	std::make_pair("VK_VALVE_fragment_density_map_layered",					&check_VK_VALVE_fragment_density_map_layered),
 	std::make_pair("VK_VALVE_mutable_descriptor_type",						&check_VK_VALVE_mutable_descriptor_type),
+	std::make_pair("VK_VALVE_video_encode_rgb_conversion",					&check_VK_VALVE_video_encode_rgb_conversion),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4584,6 +4610,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_compute_shader_derivatives"),
 	std::make_tuple(1, 0, "VK_KHR_cooperative_matrix"),
 	std::make_tuple(1, 0, "VK_KHR_copy_commands2"),
+	std::make_tuple(1, 0, "VK_KHR_copy_memory_indirect"),
 	std::make_tuple(1, 0, "VK_KHR_create_renderpass2"),
 	std::make_tuple(1, 0, "VK_KHR_dedicated_allocation"),
 	std::make_tuple(1, 0, "VK_KHR_deferred_host_operations"),
@@ -4805,4 +4832,5 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_VALVE_fragment_density_map_layered"),
 	std::make_tuple(1, 0, "VK_VALVE_mutable_descriptor_type"),
+	std::make_tuple(1, 0, "VK_VALVE_video_encode_rgb_conversion"),
 };

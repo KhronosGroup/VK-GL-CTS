@@ -12,7 +12,7 @@ const VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				getCooperativeMatrix2Pr
 const VkPhysicalDeviceCooperativeMatrixPropertiesKHR&				getCooperativeMatrixProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesKHR>();					}
 const VkPhysicalDeviceCooperativeMatrixPropertiesNV&				getCooperativeMatrixPropertiesNV				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeMatrixPropertiesNV>();					}
 const VkPhysicalDeviceCooperativeVectorPropertiesNV&				getCooperativeVectorPropertiesNV				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCooperativeVectorPropertiesNV>();					}
-const VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				getCopyMemoryIndirectProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCopyMemoryIndirectPropertiesNV>();					}
+const VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR&				getCopyMemoryIndirectProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR>();				}
 const VkPhysicalDeviceCudaKernelLaunchPropertiesNV&					getCudaKernelLaunchPropertiesNV					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCudaKernelLaunchPropertiesNV>();					}
 const VkPhysicalDeviceCustomBorderColorPropertiesEXT&				getCustomBorderColorPropertiesEXT				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceCustomBorderColorPropertiesEXT>();					}
 const VkPhysicalDeviceDepthStencilResolveProperties&				getDepthStencilResolveProperties				(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceDepthStencilResolveProperties>();					}

@@ -141,6 +141,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_vector"))
 		addFeatures(&physicalDeviceCooperativeVectorFeaturesNV);
 
+	// VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR for ext [VK_KHR_copy_memory_indirect]
+	vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR physicalDeviceCopyMemoryIndirectFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_copy_memory_indirect"))
+		addFeatures(&physicalDeviceCopyMemoryIndirectFeaturesKHR);
+
 	// VkPhysicalDeviceCopyMemoryIndirectFeaturesNV for ext [VK_NV_copy_memory_indirect]
 	vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesNV physicalDeviceCopyMemoryIndirectFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_copy_memory_indirect"))
@@ -1090,6 +1095,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR physicalDeviceVideoEncodeQuantizationMapFeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_quantization_map"))
 		addFeatures(&physicalDeviceVideoEncodeQuantizationMapFeaturesKHR);
+
+	// VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE for ext [VK_VALVE_video_encode_rgb_conversion]
+	vk::VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE physicalDeviceVideoEncodeRgbConversionFeaturesVALVE = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_VALVE_video_encode_rgb_conversion"))
+		addFeatures(&physicalDeviceVideoEncodeRgbConversionFeaturesVALVE);
 
 	// VkPhysicalDeviceVideoMaintenance1FeaturesKHR for ext [VK_KHR_video_maintenance1]
 	vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR physicalDeviceVideoMaintenance1FeaturesKHR = initVulkanStructure();
@@ -2409,6 +2419,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceGlobalPriorityQueryFeatures.globalPriorityQuery == VK_FALSE )
 			failMesages.push_back("globalPriorityQuery");
+	}
+
+	// VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_VALVE_video_encode_rgb_conversion")) )
+	{
+		if ( physicalDeviceVideoEncodeRgbConversionFeaturesVALVE.videoEncodeRgbConversion == VK_FALSE )
+			failMesages.push_back("videoEncodeRgbConversion");
 	}
 
 	// VkPhysicalDeviceImageViewMinLodFeaturesEXT

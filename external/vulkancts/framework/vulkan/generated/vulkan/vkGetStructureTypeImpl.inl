@@ -543,9 +543,19 @@ template<> VkStructureType getStructureType<VkCopyImageToMemoryInfo> (void)
 	return VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO;
 }
 
+template<> VkStructureType getStructureType<VkCopyMemoryIndirectInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkCopyMemoryToAccelerationStructureInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyMemoryToImageIndirectInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INDIRECT_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkCopyMemoryToImageInfo> (void)
@@ -2213,14 +2223,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCooperativeVectorPro
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_PROPERTIES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectPropertiesNV> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceCornerSampledImageFeaturesNV> (void)
@@ -3753,6 +3768,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeQuantizat
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceVideoFormatInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
@@ -5268,6 +5288,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeIntraRefreshInfoKHR> (v
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeProfileRgbConversionInfoVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeQualityLevelInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR;
@@ -5303,6 +5328,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeRateControlLayerInfoKHR
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeRgbConversionCapabilitiesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeSessionIntraRefreshCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR;
@@ -5316,6 +5346,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeSessionParametersFeedba
 template<> VkStructureType getStructureType<VkVideoEncodeSessionParametersGetInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeSessionRgbConversionCreateInfoVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeUsageInfoKHR> (void)

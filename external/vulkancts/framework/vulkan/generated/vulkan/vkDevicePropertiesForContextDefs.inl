@@ -12,7 +12,7 @@ const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				Context::getCoopera
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&				Context::getCooperativeMatrixProperties						(void) const { return m_device->getCooperativeMatrixProperties();					}
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&				Context::getCooperativeMatrixPropertiesNV					(void) const { return m_device->getCooperativeMatrixPropertiesNV();					}
 const vk::VkPhysicalDeviceCooperativeVectorPropertiesNV&				Context::getCooperativeVectorPropertiesNV					(void) const { return m_device->getCooperativeVectorPropertiesNV();					}
-const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				Context::getCopyMemoryIndirectProperties					(void) const { return m_device->getCopyMemoryIndirectProperties();					}
+const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR&				Context::getCopyMemoryIndirectProperties					(void) const { return m_device->getCopyMemoryIndirectProperties();					}
 const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&					Context::getCudaKernelLaunchPropertiesNV					(void) const { return m_device->getCudaKernelLaunchPropertiesNV();					}
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&				Context::getCustomBorderColorPropertiesEXT					(void) const { return m_device->getCustomBorderColorPropertiesEXT();				}
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&				Context::getDepthStencilResolveProperties					(void) const { return m_device->getDepthStencilResolveProperties();					}

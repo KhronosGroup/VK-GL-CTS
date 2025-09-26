@@ -2294,7 +2294,6 @@ class FeaturesOrPropertiesMethodsGenerator(BaseGenerator):
             "FragmentShadingRateEnums",
             "RayTracingMotionBlur",
             "ExternalMemoryRDMA",
-            "CopyMemoryIndirect",
             "MemoryDecompression",
             "LinearColorAttachment",
             "OpticalFlow",

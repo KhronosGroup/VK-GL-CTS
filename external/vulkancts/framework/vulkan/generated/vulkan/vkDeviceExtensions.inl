@@ -14,6 +14,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_compute_shader_derivatives",
 	"VK_KHR_cooperative_matrix",
 	"VK_KHR_copy_commands2",
+	"VK_KHR_copy_memory_indirect",
 	"VK_KHR_create_renderpass2",
 	"VK_KHR_dedicated_allocation",
 	"VK_KHR_deferred_host_operations",

@@ -2275,7 +2275,7 @@ struct VkCopyDescriptorSet
 	uint32_t		descriptorCount;
 };
 
-struct VkCopyMemoryIndirectCommandNV
+struct VkCopyMemoryIndirectCommandKHR
 {
 	VkDeviceAddress	srcAddress;
 	VkDeviceAddress	dstAddress;
@@ -5110,7 +5110,7 @@ struct VkBufferImageCopy2
 	VkExtent3D					imageExtent;
 };
 
-struct VkCopyMemoryToImageIndirectCommandNV
+struct VkCopyMemoryToImageIndirectCommandKHR
 {
 	VkDeviceAddress				srcAddress;
 	uint32_t					bufferRowLength;
@@ -5803,6 +5803,14 @@ struct VkPhysicalDeviceCooperativeVectorPropertiesNV
 	uint32_t			maxCooperativeVectorComponents;
 };
 
+struct VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		indirectMemoryCopy;
+	VkBool32		indirectMemoryToImageCopy;
+};
+
 struct VkPhysicalDeviceCopyMemoryIndirectFeaturesNV
 {
 	VkStructureType	sType;
@@ -5810,7 +5818,7 @@ struct VkPhysicalDeviceCopyMemoryIndirectFeaturesNV
 	VkBool32		indirectCopy;
 };
 
-struct VkPhysicalDeviceCopyMemoryIndirectPropertiesNV
+struct VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -8729,6 +8737,13 @@ struct VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR
 	VkBool32		videoEncodeQuantizationMap;
 };
 
+struct VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoEncodeRgbConversion;
+};
+
 struct VkPhysicalDeviceVideoFormatInfoKHR
 {
 	VkStructureType		sType;
@@ -9504,7 +9519,7 @@ struct VkPipelineShaderStageNodeCreateInfoAMDX
 struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfo
 {
 	VkStructureType	sType;
-	void*			pNext;
+	const void*		pNext;
 	uint32_t		requiredSubgroupSize;
 };
 
@@ -10827,6 +10842,35 @@ struct VkClusterAccelerationStructureInstantiateClusterInfoNV
 	uint32_t					reserved : 8;
 	VkDeviceAddress				clusterTemplateAddress;
 	VkStridedDeviceAddressNV	vertexBuffer;
+};
+
+struct VkStridedDeviceAddressRangeKHR
+{
+	VkDeviceAddress	address;
+	VkDeviceSize	size;
+	VkDeviceSize	stride;
+};
+
+struct VkCopyMemoryIndirectInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAddressCopyFlagsKHR			srcCopyFlags;
+	VkAddressCopyFlagsKHR			dstCopyFlags;
+	uint32_t						copyCount;
+	VkStridedDeviceAddressRangeKHR	copyAddressRange;
+};
+
+struct VkCopyMemoryToImageIndirectInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAddressCopyFlagsKHR			srcCopyFlags;
+	uint32_t						copyCount;
+	VkStridedDeviceAddressRangeKHR	copyAddressRange;
+	VkImage							dstImage;
+	VkImageLayout					dstImageLayout;
+	const VkImageSubresourceLayers*	pImageSubresources;
 };
 
 struct VkStridedDeviceAddressRegionKHR
@@ -12418,6 +12462,13 @@ struct VkVideoEncodeIntraRefreshInfoKHR
 	uint32_t		intraRefreshIndex;
 };
 
+struct VkVideoEncodeProfileRgbConversionInfoVALVE
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		performEncodeRgbConversion;
+};
+
 struct VkVideoEncodeQualityLevelInfoKHR
 {
 	VkStructureType	sType;
@@ -12477,6 +12528,16 @@ struct VkVideoEncodeRateControlInfoKHR
 	uint32_t									initialVirtualBufferSizeInMs;
 };
 
+struct VkVideoEncodeRgbConversionCapabilitiesVALVE
+{
+	VkStructureType								sType;
+	void*										pNext;
+	VkVideoEncodeRgbModelConversionFlagsVALVE	rgbModels;
+	VkVideoEncodeRgbRangeCompressionFlagsVALVE	rgbRanges;
+	VkVideoEncodeRgbChromaOffsetFlagsVALVE		xChromaOffsets;
+	VkVideoEncodeRgbChromaOffsetFlagsVALVE		yChromaOffsets;
+};
+
 struct VkVideoEncodeSessionIntraRefreshCreateInfoKHR
 {
 	VkStructureType								sType;
@@ -12496,6 +12557,16 @@ struct VkVideoEncodeSessionParametersGetInfoKHR
 	VkStructureType				sType;
 	const void*					pNext;
 	VkVideoSessionParametersKHR	videoSessionParameters;
+};
+
+struct VkVideoEncodeSessionRgbConversionCreateInfoVALVE
+{
+	VkStructureType									sType;
+	const void*										pNext;
+	VkVideoEncodeRgbModelConversionFlagBitsVALVE	rgbModel;
+	VkVideoEncodeRgbRangeCompressionFlagBitsVALVE	rgbRange;
+	VkVideoEncodeRgbChromaOffsetFlagBitsVALVE		xChromaOffset;
+	VkVideoEncodeRgbChromaOffsetFlagBitsVALVE		yChromaOffset;
 };
 
 struct VkVideoEncodeUsageInfoKHR
@@ -13033,6 +13104,12 @@ typedef VkCopyImageToImageInfo VkCopyImageToImageInfoEXT;
 typedef VkCopyImageToMemoryInfo VkCopyImageToMemoryInfoEXT;
 
 
+typedef VkCopyMemoryIndirectCommandKHR VkCopyMemoryIndirectCommandNV;
+
+
+typedef VkCopyMemoryToImageIndirectCommandKHR VkCopyMemoryToImageIndirectCommandNV;
+
+
 typedef VkCopyMemoryToImageInfo VkCopyMemoryToImageInfoEXT;
 
 
@@ -13235,6 +13312,9 @@ typedef VkPhysicalDeviceBufferDeviceAddressFeaturesEXT VkPhysicalDeviceBufferAdd
 
 
 typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComputeShaderDerivativesFeaturesNV;
+
+
+typedef VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR VkPhysicalDeviceCopyMemoryIndirectPropertiesNV;
 
 
 typedef VkPhysicalDeviceDepthClampZeroOneFeaturesKHR VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;

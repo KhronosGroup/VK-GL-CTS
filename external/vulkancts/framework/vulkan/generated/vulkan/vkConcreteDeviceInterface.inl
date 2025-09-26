@@ -74,8 +74,10 @@ virtual void				cmdCopyImage											(VkCommandBuffer commandBuffer, VkImage s
 virtual void				cmdCopyImage2											(VkCommandBuffer commandBuffer, const VkCopyImageInfo2* pCopyImageInfo) const;
 virtual void				cmdCopyImageToBuffer									(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions) const;
 virtual void				cmdCopyImageToBuffer2									(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo) const;
+virtual void				cmdCopyMemoryIndirectKHR								(VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo) const;
 virtual void				cmdCopyMemoryIndirectNV									(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride) const;
 virtual void				cmdCopyMemoryToAccelerationStructureKHR					(VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const;
+virtual void				cmdCopyMemoryToImageIndirectKHR							(VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo) const;
 virtual void				cmdCopyMemoryToImageIndirectNV							(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const;
 virtual void				cmdCopyMemoryToMicromapEXT								(VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo) const;
 virtual void				cmdCopyMicromapEXT										(VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo) const;

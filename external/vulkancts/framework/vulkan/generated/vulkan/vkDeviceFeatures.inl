@@ -262,6 +262,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrix2FeaturesNV
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>(VkPhysicalDeviceCooperativeMatrixFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrixFeaturesNV>(VkPhysicalDeviceCooperativeMatrixFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeVectorFeaturesNV>(VkPhysicalDeviceCooperativeVectorFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>(VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>(VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCornerSampledImageFeaturesNV>(VkPhysicalDeviceCornerSampledImageFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCoverageReductionModeFeaturesNV>(VkPhysicalDeviceCoverageReductionModeFeaturesNV&, const AllFeaturesBlobs&) {}
@@ -415,6 +416,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR>(V
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>(VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>(VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>(VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE>(VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>(VkPhysicalDeviceVideoMaintenance1FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoMaintenance2FeaturesKHR>(VkPhysicalDeviceVideoMaintenance2FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR>(VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -448,6 +450,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrix2Feature
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrixFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeVectorFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV, VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV, VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCornerSampledImageFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV, VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCoverageReductionModeFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COVERAGE_REDUCTION_MODE_FEATURES_NV, VK_NV_COVERAGE_REDUCTION_MODE_EXTENSION_NAME}; }
@@ -641,6 +644,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_AV1_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_AV1_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_INTRA_REFRESH_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE, VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR, VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoMaintenance2FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR, VK_KHR_VIDEO_MAINTENANCE_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVulkanMemoryModelFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_MEMORY_MODEL_FEATURES, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME}; }
@@ -678,6 +682,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrixFeaturesNV>, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeVectorFeaturesNV>, VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>, VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCornerSampledImageFeaturesNV>, VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCoverageReductionModeFeaturesNV>, VK_NV_COVERAGE_REDUCTION_MODE_EXTENSION_NAME },
@@ -871,6 +876,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>, VK_KHR_VIDEO_ENCODE_AV1_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>, VK_KHR_VIDEO_ENCODE_INTRA_REFRESH_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE>, VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>, VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoMaintenance2FeaturesKHR>, VK_KHR_VIDEO_MAINTENANCE_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVulkanMemoryModelFeatures>, VK_KHR_VULKAN_MEMORY_MODEL_EXTENSION_NAME },

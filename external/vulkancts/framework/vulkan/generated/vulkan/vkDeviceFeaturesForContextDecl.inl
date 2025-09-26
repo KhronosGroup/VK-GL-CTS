@@ -27,7 +27,8 @@ const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatri
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						getCooperativeMatrixFeatures						(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&						getCooperativeMatrixFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceCooperativeVectorFeaturesNV&						getCooperativeVectorFeaturesNV						(void) const;
-const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&						getCopyMemoryIndirectFeatures						(void) const;
+const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&					getCopyMemoryIndirectFeatures						(void) const;
+const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&						getCopyMemoryIndirectFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&						getCornerSampledImageFeatures						(void) const;
 const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&					getCoverageReductionModeFeatures					(void) const;
 const vk::VkPhysicalDeviceCubicClampFeaturesQCOM&							getCubicClampFeaturesQCOM							(void) const;
@@ -220,6 +221,7 @@ const vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						getVideoDecodeVP9Featu
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						getVideoEncodeAV1Features							(void) const;
 const vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&				getVideoEncodeIntraRefreshFeatures					(void) const;
 const vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&			getVideoEncodeQuantizationMapFeatures				(void) const;
+const vk::VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE&			getVideoEncodeRgbConversionFeaturesVALVE			(void) const;
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						getVideoMaintenance1Features						(void) const;
 const vk::VkPhysicalDeviceVideoMaintenance2FeaturesKHR&						getVideoMaintenance2Features						(void) const;
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&						getVulkanMemoryModelFeatures						(void) const;

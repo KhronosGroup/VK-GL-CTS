@@ -372,6 +372,11 @@ void DeviceDriver::cmdCopyImageToBuffer2 (VkCommandBuffer commandBuffer, const V
     m_vk.cmdCopyImageToBuffer2(commandBuffer, pCopyImageToBufferInfo);
 }
 
+void DeviceDriver::cmdCopyMemoryIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo) const
+{
+    m_vk.cmdCopyMemoryIndirectKHR(commandBuffer, pCopyMemoryIndirectInfo);
+}
+
 void DeviceDriver::cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride) const
 {
     m_vk.cmdCopyMemoryIndirectNV(commandBuffer, copyBufferAddress, copyCount, stride);
@@ -380,6 +385,11 @@ void DeviceDriver::cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffer, VkDev
 void DeviceDriver::cmdCopyMemoryToAccelerationStructureKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo) const
 {
     m_vk.cmdCopyMemoryToAccelerationStructureKHR(commandBuffer, pInfo);
+}
+
+void DeviceDriver::cmdCopyMemoryToImageIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo) const
+{
+    m_vk.cmdCopyMemoryToImageIndirectKHR(commandBuffer, pCopyMemoryToImageIndirectInfo);
 }
 
 void DeviceDriver::cmdCopyMemoryToImageIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const

@@ -27,7 +27,8 @@ const VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						getCooperativeMatrix2Fe
 const VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						getCooperativeMatrixFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>();					}
 const VkPhysicalDeviceCooperativeMatrixFeaturesNV&						getCooperativeMatrixFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeMatrixFeaturesNV>();					}
 const VkPhysicalDeviceCooperativeVectorFeaturesNV&						getCooperativeVectorFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCooperativeVectorFeaturesNV>();					}
-const VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&						getCopyMemoryIndirectFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>();					}
+const VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&					getCopyMemoryIndirectFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>();					}
+const VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&						getCopyMemoryIndirectFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV>();					}
 const VkPhysicalDeviceCornerSampledImageFeaturesNV&						getCornerSampledImageFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCornerSampledImageFeaturesNV>();					}
 const VkPhysicalDeviceCoverageReductionModeFeaturesNV&					getCoverageReductionModeFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCoverageReductionModeFeaturesNV>();				}
 const VkPhysicalDeviceCubicClampFeaturesQCOM&							getCubicClampFeaturesQCOM							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceCubicClampFeaturesQCOM>();						}
@@ -220,6 +221,7 @@ const VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						getVideoDecodeVP9Features	
 const VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						getVideoEncodeAV1Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>();						}
 const VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&				getVideoEncodeIntraRefreshFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>();			}
 const VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&			getVideoEncodeQuantizationMapFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>();			}
+const VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE&			getVideoEncodeRgbConversionFeaturesVALVE			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE>();			}
 const VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						getVideoMaintenance1Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>();					}
 const VkPhysicalDeviceVideoMaintenance2FeaturesKHR&						getVideoMaintenance2Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoMaintenance2FeaturesKHR>();					}
 const VkPhysicalDeviceVulkanMemoryModelFeatures&						getVulkanMemoryModelFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVulkanMemoryModelFeatures>();						}

@@ -684,6 +684,46 @@ tcu::TestStatus testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR (Context& 
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureCopyMemoryIndirectFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR deviceCopyMemoryIndirectFeaturesKHR[count];
+    const bool                                    isCopyMemoryIndirectFeaturesKHR = checkExtension(properties, "VK_KHR_copy_memory_indirect");
+
+    if (!isCopyMemoryIndirectFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceCopyMemoryIndirectFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR));
+        deviceCopyMemoryIndirectFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR;
+        deviceCopyMemoryIndirectFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceCopyMemoryIndirectFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceCopyMemoryIndirectFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceCopyMemoryIndirectFeaturesKHR[0].indirectMemoryCopy != deviceCopyMemoryIndirectFeaturesKHR[1].indirectMemoryCopy ||
+        deviceCopyMemoryIndirectFeaturesKHR[0].indirectMemoryToImageCopy != deviceCopyMemoryIndirectFeaturesKHR[1].indirectMemoryToImageCopy)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -6822,6 +6862,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "compute_shader_derivatives_features_khr", testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR);
 	addFunctionCase(testGroup, "conditional_rendering_features_ext", testPhysicalDeviceFeatureConditionalRenderingFeaturesEXT);
 	addFunctionCase(testGroup, "cooperative_matrix_features_khr", testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR);
+	addFunctionCase(testGroup, "copy_memory_indirect_features_khr", testPhysicalDeviceFeatureCopyMemoryIndirectFeaturesKHR);
 	addFunctionCase(testGroup, "custom_border_color_features_ext", testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT);
 	addFunctionCase(testGroup, "depth_bias_control_features_ext", testPhysicalDeviceFeatureDepthBiasControlFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_control_features_ext", testPhysicalDeviceFeatureDepthClampControlFeaturesEXT);

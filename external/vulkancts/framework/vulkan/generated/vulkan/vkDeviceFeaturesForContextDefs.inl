@@ -27,7 +27,8 @@ const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						Context::getCoopera
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						Context::getCooperativeMatrixFeatures						(void) const { return m_device->getCooperativeMatrixFeatures();						}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&						Context::getCooperativeMatrixFeaturesNV						(void) const { return m_device->getCooperativeMatrixFeaturesNV();					}
 const vk::VkPhysicalDeviceCooperativeVectorFeaturesNV&						Context::getCooperativeVectorFeaturesNV						(void) const { return m_device->getCooperativeVectorFeaturesNV();					}
-const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&						Context::getCopyMemoryIndirectFeatures						(void) const { return m_device->getCopyMemoryIndirectFeatures();					}
+const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&					Context::getCopyMemoryIndirectFeatures						(void) const { return m_device->getCopyMemoryIndirectFeatures();					}
+const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesNV&						Context::getCopyMemoryIndirectFeaturesNV					(void) const { return m_device->getCopyMemoryIndirectFeaturesNV();					}
 const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&						Context::getCornerSampledImageFeatures						(void) const { return m_device->getCornerSampledImageFeatures();					}
 const vk::VkPhysicalDeviceCoverageReductionModeFeaturesNV&					Context::getCoverageReductionModeFeatures					(void) const { return m_device->getCoverageReductionModeFeatures();					}
 const vk::VkPhysicalDeviceCubicClampFeaturesQCOM&							Context::getCubicClampFeaturesQCOM							(void) const { return m_device->getCubicClampFeaturesQCOM();						}
@@ -220,6 +221,7 @@ const vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						Context::getVideoDecod
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						Context::getVideoEncodeAV1Features							(void) const { return m_device->getVideoEncodeAV1Features();						}
 const vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&				Context::getVideoEncodeIntraRefreshFeatures					(void) const { return m_device->getVideoEncodeIntraRefreshFeatures();				}
 const vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&			Context::getVideoEncodeQuantizationMapFeatures				(void) const { return m_device->getVideoEncodeQuantizationMapFeatures();			}
+const vk::VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE&			Context::getVideoEncodeRgbConversionFeaturesVALVE			(void) const { return m_device->getVideoEncodeRgbConversionFeaturesVALVE();			}
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						Context::getVideoMaintenance1Features						(void) const { return m_device->getVideoMaintenance1Features();						}
 const vk::VkPhysicalDeviceVideoMaintenance2FeaturesKHR&						Context::getVideoMaintenance2Features						(void) const { return m_device->getVideoMaintenance2Features();						}
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&						Context::getVulkanMemoryModelFeatures						(void) const { return m_device->getVulkanMemoryModelFeatures();						}

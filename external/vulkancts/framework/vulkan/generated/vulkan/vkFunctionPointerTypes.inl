@@ -101,8 +101,10 @@ typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBufferFunc)													(
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBuffer2Func)													(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBuffer2KHRFunc)												(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyImageToBuffer2Func)													(VkCommandBuffer commandBuffer, const VkCopyImageToBufferInfo2* pCopyImageToBufferInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryIndirectKHRFunc)												(VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryIndirectNVFunc)												(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryToAccelerationStructureKHRFunc)								(VkCommandBuffer commandBuffer, const VkCopyMemoryToAccelerationStructureInfoKHR* pInfo);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryToImageIndirectKHRFunc)										(VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryToImageIndirectNVFunc)										(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMemoryToMicromapEXTFunc)											(VkCommandBuffer commandBuffer, const VkCopyMemoryToMicromapInfoEXT* pInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdCopyMicromapEXTFunc)													(VkCommandBuffer commandBuffer, const VkCopyMicromapInfoEXT* pInfo);

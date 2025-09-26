@@ -1388,6 +1388,12 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuff
 	DE_UNREF(pCopyImageToBufferInfo);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyMemoryIndirectInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride)
 {
 	DE_UNREF(commandBuffer);
@@ -1400,6 +1406,12 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToAccelerationStructureKHR (VkCommandBuf
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToImageIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyMemoryToImageIndirectInfo);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToImageIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources)
@@ -5550,8 +5562,10 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImage2,												cmdCopyImage2),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer,										cmdCopyImageToBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer2,										cmdCopyImageToBuffer2),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryIndirectKHR,									cmdCopyMemoryIndirectKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryIndirectNV,									cmdCopyMemoryIndirectNV),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToAccelerationStructureKHR,					cmdCopyMemoryToAccelerationStructureKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToImageIndirectKHR,							cmdCopyMemoryToImageIndirectKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToImageIndirectNV,							cmdCopyMemoryToImageIndirectNV),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToMicromapEXT,								cmdCopyMemoryToMicromapEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMicromapEXT,										cmdCopyMicromapEXT),

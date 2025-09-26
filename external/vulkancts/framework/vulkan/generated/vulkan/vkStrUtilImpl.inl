@@ -3192,7 +3192,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2:												return "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2";
 		case VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO:												return "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO";
 		case VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO:												return "VK_STRUCTURE_TYPE_COPY_IMAGE_TO_MEMORY_INFO";
+		case VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR:											return "VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR:							return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_ACCELERATION_STRUCTURE_INFO_KHR";
+		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INDIRECT_INFO_KHR:									return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INDIRECT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO:												return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INFO";
 		case VK_STRUCTURE_TYPE_COPY_MEMORY_TO_MICROMAP_INFO_EXT:										return "VK_STRUCTURE_TYPE_COPY_MEMORY_TO_MICROMAP_INFO_EXT";
 		case VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT:													return "VK_STRUCTURE_TYPE_COPY_MICROMAP_INFO_EXT";
@@ -3528,8 +3530,9 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV";
-		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COVERAGE_REDUCTION_MODE_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COVERAGE_REDUCTION_MODE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_CLAMP_FEATURES_QCOM";
@@ -3836,6 +3839,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR";
@@ -4138,6 +4142,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR:													return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_PROPERTIES_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR";
@@ -4145,9 +4150,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_SESSION_PARAMETERS_CREATE_INFO_KHR:		return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_SESSION_PARAMETERS_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR";
@@ -4525,6 +4532,18 @@ tcu::Format::Bitfield<32> getAcquireProfilingLockFlagsKHRStr (VkAcquireProfiling
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getAddressCopyFlagsKHRStr (VkAddressCopyFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR,	"VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ADDRESS_COPY_PROTECTED_BIT_KHR,		"VK_ADDRESS_COPY_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_ADDRESS_COPY_SPARSE_BIT_KHR,		"VK_ADDRESS_COPY_SPARSE_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -5194,6 +5213,7 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_BOX_FILTER_SAMPLED_BIT_QCOM,													"VK_FORMAT_FEATURE_2_BOX_FILTER_SAMPLED_BIT_QCOM"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT,															"VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT,													"VK_FORMAT_FEATURE_2_COLOR_ATTACHMENT_BLEND_BIT"),
+		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR,												"VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_COSITED_CHROMA_SAMPLES_BIT,													"VK_FORMAT_FEATURE_2_COSITED_CHROMA_SAMPLES_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT,													"VK_FORMAT_FEATURE_2_DEPTH_STENCIL_ATTACHMENT_BIT"),
 		tcu::Format::BitDesc(VK_FORMAT_FEATURE_2_DISJOINT_BIT,																	"VK_FORMAT_FEATURE_2_DISJOINT_BIT"),
@@ -5921,6 +5941,7 @@ tcu::Format::Bitfield<64> getPipelineStageFlags2Str (VkPipelineStageFlags2 value
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT,				"VK_PIPELINE_STAGE_2_CONDITIONAL_RENDERING_BIT_EXT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_CONVERT_COOPERATIVE_VECTOR_MATRIX_BIT_NV,	"VK_PIPELINE_STAGE_2_CONVERT_COOPERATIVE_VECTOR_MATRIX_BIT_NV"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COPY_BIT,									"VK_PIPELINE_STAGE_2_COPY_BIT"),
+		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_COPY_INDIRECT_BIT_KHR,						"VK_PIPELINE_STAGE_2_COPY_INDIRECT_BIT_KHR"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_DATA_GRAPH_BIT_ARM,						"VK_PIPELINE_STAGE_2_DATA_GRAPH_BIT_ARM"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT,							"VK_PIPELINE_STAGE_2_DRAW_INDIRECT_BIT"),
 		tcu::Format::BitDesc(VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT,					"VK_PIPELINE_STAGE_2_EARLY_FRAGMENT_TESTS_BIT"),
@@ -6767,6 +6788,42 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncod
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR,			"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR,	"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR,			"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbChromaOffsetFlagsVALVEStr (VkVideoEncodeRgbChromaOffsetFlagsVALVE value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_COSITED_EVEN_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_COSITED_EVEN_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_MIDPOINT_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_MIDPOINT_BIT_VALVE"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbModelConversionFlagsVALVEStr (VkVideoEncodeRgbModelConversionFlagsVALVE value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_RGB_IDENTITY_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_RGB_IDENTITY_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_2020_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_2020_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_601_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_601_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_709_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_709_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_IDENTITY_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_IDENTITY_BIT_VALVE"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbRangeCompressionFlagsVALVEStr (VkVideoEncodeRgbRangeCompressionFlagsVALVE value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FULL_RANGE_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FULL_RANGE_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_NARROW_RANGE_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_NARROW_RANGE_BIT_VALVE"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -8708,12 +8765,25 @@ std::ostream& operator<< (std::ostream& s, const VkCopyImageToMemoryInfo& value)
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkCopyMemoryIndirectCommandNV& value)
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryIndirectCommandKHR& value)
 {
-	s << "VkCopyMemoryIndirectCommandNV = {\n";
+	s << "VkCopyMemoryIndirectCommandKHR = {\n";
 	s << "\tsrcAddress = " << value.srcAddress << '\n';
 	s << "\tdstAddress = " << value.dstAddress << '\n';
 	s << "\tsize = " << value.size << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryIndirectInfoKHR& value)
+{
+	s << "VkCopyMemoryIndirectInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcCopyFlags = " << getAddressCopyFlagsKHRStr(value.srcCopyFlags) << '\n';
+	s << "\tdstCopyFlags = " << getAddressCopyFlagsKHRStr(value.dstCopyFlags) << '\n';
+	s << "\tcopyCount = " << value.copyCount << '\n';
+	s << "\tcopyAddressRange = " << value.copyAddressRange << '\n';
 	s << '}';
 	return s;
 }
@@ -8730,15 +8800,30 @@ std::ostream& operator<< (std::ostream& s, const VkCopyMemoryToAccelerationStruc
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkCopyMemoryToImageIndirectCommandNV& value)
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryToImageIndirectCommandKHR& value)
 {
-	s << "VkCopyMemoryToImageIndirectCommandNV = {\n";
+	s << "VkCopyMemoryToImageIndirectCommandKHR = {\n";
 	s << "\tsrcAddress = " << value.srcAddress << '\n';
 	s << "\tbufferRowLength = " << value.bufferRowLength << '\n';
 	s << "\tbufferImageHeight = " << value.bufferImageHeight << '\n';
 	s << "\timageSubresource = " << value.imageSubresource << '\n';
 	s << "\timageOffset = " << value.imageOffset << '\n';
 	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCopyMemoryToImageIndirectInfoKHR& value)
+{
+	s << "VkCopyMemoryToImageIndirectInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tsrcCopyFlags = " << getAddressCopyFlagsKHRStr(value.srcCopyFlags) << '\n';
+	s << "\tcopyCount = " << value.copyCount << '\n';
+	s << "\tcopyAddressRange = " << value.copyAddressRange << '\n';
+	s << "\tdstImage = " << value.dstImage << '\n';
+	s << "\tdstImageLayout = " << value.dstImageLayout << '\n';
+	s << "\tpImageSubresources = " << value.pImageSubresources << '\n';
 	s << '}';
 	return s;
 }
@@ -13414,6 +13499,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeVect
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tindirectMemoryCopy = " << value.indirectMemoryCopy << '\n';
+	s << "\tindirectMemoryToImageCopy = " << value.indirectMemoryToImageCopy << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectFeaturesNV& value)
 {
 	s << "VkPhysicalDeviceCopyMemoryIndirectFeaturesNV = {\n";
@@ -13424,9 +13520,9 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCopyMemoryIndir
 	return s;
 }
 
-std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectPropertiesNV& value)
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR& value)
 {
-	s << "VkPhysicalDeviceCopyMemoryIndirectPropertiesNV = {\n";
+	s << "VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tsupportedQueues = " << getQueueFlagsStr(value.supportedQueues) << '\n';
@@ -17280,6 +17376,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeQuan
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE& value)
+{
+	s << "VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoEncodeRgbConversion = " << value.videoEncodeRgbConversion << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoFormatInfoKHR& value)
 {
 	s << "VkPhysicalDeviceVideoFormatInfoKHR = {\n";
@@ -19885,6 +19991,16 @@ std::ostream& operator<< (std::ostream& s, const VkStridedDeviceAddressNV& value
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkStridedDeviceAddressRangeKHR& value)
+{
+	s << "VkStridedDeviceAddressRangeKHR = {\n";
+	s << "\taddress = " << value.address << '\n';
+	s << "\tsize = " << value.size << '\n';
+	s << "\tstride = " << value.stride << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkStridedDeviceAddressRegionKHR& value)
 {
 	s << "VkStridedDeviceAddressRegionKHR = {\n";
@@ -21753,6 +21869,16 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeIntraRefreshInfoKH
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeProfileRgbConversionInfoVALVE& value)
+{
+	s << "VkVideoEncodeProfileRgbConversionInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperformEncodeRgbConversion = " << value.performEncodeRgbConversion << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkVideoEncodeQualityLevelInfoKHR& value)
 {
 	s << "VkVideoEncodeQualityLevelInfoKHR = {\n";
@@ -21833,6 +21959,19 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeRateControlLayerIn
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeRgbConversionCapabilitiesVALVE& value)
+{
+	s << "VkVideoEncodeRgbConversionCapabilitiesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trgbModels = " << getVideoEncodeRgbModelConversionFlagsVALVEStr(value.rgbModels) << '\n';
+	s << "\trgbRanges = " << getVideoEncodeRgbRangeCompressionFlagsVALVEStr(value.rgbRanges) << '\n';
+	s << "\txChromaOffsets = " << getVideoEncodeRgbChromaOffsetFlagsVALVEStr(value.xChromaOffsets) << '\n';
+	s << "\tyChromaOffsets = " << getVideoEncodeRgbChromaOffsetFlagsVALVEStr(value.yChromaOffsets) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkVideoEncodeSessionIntraRefreshCreateInfoKHR& value)
 {
 	s << "VkVideoEncodeSessionIntraRefreshCreateInfoKHR = {\n";
@@ -21859,6 +21998,19 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeSessionParametersG
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvideoSessionParameters = " << value.videoSessionParameters << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeSessionRgbConversionCreateInfoVALVE& value)
+{
+	s << "VkVideoEncodeSessionRgbConversionCreateInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trgbModel = " << value.rgbModel << '\n';
+	s << "\trgbRange = " << value.rgbRange << '\n';
+	s << "\txChromaOffset = " << value.xChromaOffset << '\n';
+	s << "\tyChromaOffset = " << value.yChromaOffset << '\n';
 	s << '}';
 	return s;
 }

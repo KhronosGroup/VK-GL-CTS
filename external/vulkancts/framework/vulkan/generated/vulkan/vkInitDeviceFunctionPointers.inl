@@ -110,8 +110,10 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdCopyImageToBuffer2 = (CmdCopyImageToBuffer2Func) GET_PROC_ADDR("vkCmdCopyImageToBuffer2");
 if (!m_vk.cmdCopyImageToBuffer2)
     m_vk.cmdCopyImageToBuffer2 = (CmdCopyImageToBuffer2Func) GET_PROC_ADDR("vkCmdCopyImageToBuffer2KHR");
+m_vk.cmdCopyMemoryIndirectKHR = (CmdCopyMemoryIndirectKHRFunc) GET_PROC_ADDR("vkCmdCopyMemoryIndirectKHR");
 m_vk.cmdCopyMemoryIndirectNV = (CmdCopyMemoryIndirectNVFunc) GET_PROC_ADDR("vkCmdCopyMemoryIndirectNV");
 m_vk.cmdCopyMemoryToAccelerationStructureKHR = (CmdCopyMemoryToAccelerationStructureKHRFunc) GET_PROC_ADDR("vkCmdCopyMemoryToAccelerationStructureKHR");
+m_vk.cmdCopyMemoryToImageIndirectKHR = (CmdCopyMemoryToImageIndirectKHRFunc) GET_PROC_ADDR("vkCmdCopyMemoryToImageIndirectKHR");
 m_vk.cmdCopyMemoryToImageIndirectNV = (CmdCopyMemoryToImageIndirectNVFunc) GET_PROC_ADDR("vkCmdCopyMemoryToImageIndirectNV");
 m_vk.cmdCopyMemoryToMicromapEXT = (CmdCopyMemoryToMicromapEXTFunc) GET_PROC_ADDR("vkCmdCopyMemoryToMicromapEXT");
 m_vk.cmdCopyMicromapEXT = (CmdCopyMicromapEXTFunc) GET_PROC_ADDR("vkCmdCopyMicromapEXT");

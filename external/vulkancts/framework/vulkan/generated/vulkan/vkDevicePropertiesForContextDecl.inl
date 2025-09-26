@@ -12,7 +12,7 @@ const vk::VkPhysicalDeviceCooperativeMatrix2PropertiesNV&				getCooperativeMatri
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesKHR&				getCooperativeMatrixProperties					(void) const;
 const vk::VkPhysicalDeviceCooperativeMatrixPropertiesNV&				getCooperativeMatrixPropertiesNV				(void) const;
 const vk::VkPhysicalDeviceCooperativeVectorPropertiesNV&				getCooperativeVectorPropertiesNV				(void) const;
-const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				getCopyMemoryIndirectProperties					(void) const;
+const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR&				getCopyMemoryIndirectProperties					(void) const;
 const vk::VkPhysicalDeviceCudaKernelLaunchPropertiesNV&					getCudaKernelLaunchPropertiesNV					(void) const;
 const vk::VkPhysicalDeviceCustomBorderColorPropertiesEXT&				getCustomBorderColorPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceDepthStencilResolveProperties&				getDepthStencilResolveProperties				(void) const;

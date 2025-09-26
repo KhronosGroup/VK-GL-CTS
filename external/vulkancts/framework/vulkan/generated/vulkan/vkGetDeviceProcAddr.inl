@@ -536,6 +536,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdCopyImageToBuffer2KHR",
 		"vkCmdResolveImage2KHR",
 
+		// "VK_KHR_copy_memory_indirect
+		"vkCmdCopyMemoryIndirectKHR",
+		"vkCmdCopyMemoryToImageIndirectKHR",
+
 		// "VK_KHR_create_renderpass2
 		"vkCmdBeginRenderPass2KHR",
 		"vkCmdEndRenderPass2KHR",

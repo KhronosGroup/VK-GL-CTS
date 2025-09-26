@@ -863,6 +863,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_copy_memory_indirect")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_create_renderpass2")
 	{
 		return;
@@ -1813,6 +1817,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_VALVE_video_encode_rgb_conversion")
+	{
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)
@@ -2468,8 +2476,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdDrawMeshTasksEXT");
 		functions.push_back("vkCmdDrawMeshTasksIndirectEXT");
-		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
+		// Dependencies: VK_VERSION_1_2,VK_KHR_draw_indirect_count,VK_AMD_draw_indirect_count
+		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || extensionIsSupported(vDEP, "VK_AMD_draw_indirect_count"))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
 		}
 		return;
@@ -3033,6 +3041,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdCopyImageToBuffer2KHR");
 		functions.push_back("vkCmdBlitImage2KHR");
 		functions.push_back("vkCmdResolveImage2KHR");
+		return;
+	}
+	if (extName == "VK_KHR_copy_memory_indirect")
+	{
+		functions.push_back("vkCmdCopyMemoryIndirectKHR");
+		functions.push_back("vkCmdCopyMemoryToImageIndirectKHR");
 		return;
 	}
 	if (extName == "VK_KHR_create_renderpass2")
@@ -3937,8 +3951,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdDrawMeshTasksNV");
 		functions.push_back("vkCmdDrawMeshTasksIndirectNV");
-		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
+		// Dependencies: VK_VERSION_1_2,VK_KHR_draw_indirect_count,VK_AMD_draw_indirect_count
+		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || extensionIsSupported(vDEP, "VK_AMD_draw_indirect_count"))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountNV");
 		}
 		return;
@@ -4155,6 +4169,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_VALVE_video_encode_rgb_conversion")
+	{
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 ::std::string instanceExtensionNames[] =
@@ -4312,6 +4330,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_calibrated_timestamps",
 	"VK_KHR_shader_expect_assume",
 	"VK_KHR_maintenance6",
+	"VK_KHR_copy_memory_indirect",
 	"VK_KHR_video_encode_intra_refresh",
 	"VK_KHR_video_encode_quantization_map",
 	"VK_KHR_shader_relaxed_extended_instruction",
@@ -4496,6 +4515,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_color_write_enable",
 	"VK_EXT_primitives_generated_query",
 	"VK_EXT_global_priority_query",
+	"VK_VALVE_video_encode_rgb_conversion",
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
 	"VK_EXT_image_2d_view_of_3d",
