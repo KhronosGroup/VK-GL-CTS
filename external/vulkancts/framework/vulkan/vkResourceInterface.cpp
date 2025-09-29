@@ -998,6 +998,16 @@ void ResourceInterfaceStandard::resetPipelineCaches()
     }
 }
 
+bool ResourceInterfaceStandard::resetPipelineCache(VkDevice device, bool onlyIfInSubprocess)
+{
+    if (auto cache = m_pipelineCache.find(device);
+        cache != m_pipelineCache.end() && (!onlyIfInSubprocess || m_testCtx.getCommandLine().isSubProcess()))
+    {
+        m_pipelineCache.erase(cache);
+    }
+    return false;
+}
+
 #endif // CTS_USES_VULKANSC
 
 vk::ProgramBinary *ResourceInterfaceStandard::compileProgram(const vk::ProgramIdentifier &progId,

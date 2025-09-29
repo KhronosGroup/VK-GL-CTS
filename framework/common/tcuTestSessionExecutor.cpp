@@ -172,7 +172,7 @@ void TestSessionExecutor::leaveTestPackage(TestPackage *testPackage)
     DE_UNREF(testPackage);
     m_caseExecutor->deinitTestPackage(m_testCtx);
     // If m_caseExecutor uses local status then it may perform some tests in deinitTestPackage(). We have to update TestSessionExecutor::m_status
-    if (m_caseExecutor->usesLocalStatus())
+    if (m_caseExecutor->usesLocalStatus(m_testCtx))
         m_caseExecutor->updateGlobalStatus(m_status);
 
     const int64_t duration = deGetMicroseconds() - m_packageStartTime;
@@ -213,7 +213,12 @@ bool TestSessionExecutor::enterTestCase(TestCase *testCase, const std::string &c
 {
     TestLog &log                  = m_testCtx.getLog();
     const qpTestCaseType caseType = nodeTypeToTestCaseType(testCase->getNodeType());
-    bool initOk                   = false;
+#if defined(DEQP_LOG_NODE_SOURCE)
+    const char *caseSource = testCase->getSource();
+#else
+    const char *caseSource = nullptr;
+#endif
+    bool initOk = false;
 
     print("\nTest case '%s'..\n", casePath.c_str());
 
@@ -223,7 +228,7 @@ bool TestSessionExecutor::enterTestCase(TestCase *testCase, const std::string &c
 
     m_testCtx.setTestResult(QP_TEST_RESULT_LAST, "");
     m_testCtx.setTerminateAfter(false);
-    log.startCase(casePath.c_str(), caseType);
+    log.startCase(casePath.c_str(), caseType, caseSource);
 
     m_isInTestCase  = true;
     m_testStartTime = deGetMicroseconds();
@@ -304,7 +309,7 @@ void TestSessionExecutor::leaveTestCase(TestCase *testCase)
 #if (DE_OS == DE_OS_WIN32)
         fflush(stdout);
 #endif
-        if (!m_caseExecutor->usesLocalStatus())
+        if (!m_caseExecutor->usesLocalStatus(m_testCtx))
         {
             m_status.numExecuted += 1;
             switch (testResult)
