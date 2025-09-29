@@ -274,6 +274,12 @@ PACKAGES = [
         "vulkancts/data/vulkan/video/av1",
         ""),
     SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/av1/av1-frames_refs_short_signaling_golden.ivf",
+        "av1-frames_refs_short_signaling_golden.ivf",
+        "d9136e7e427a1ec1423823f1d8cee37ed0aa354d16bb6607feb5413436810918",
+        "vulkancts/data/vulkan/video/av1",
+        ""),
+    SourceFile(
         "https://storage.googleapis.com/vulkan-video-samples/av1/av1-argon_test9354_2.obu",
         "av1-argon_test9354_2.obu",
         "23cc663c961262f4417adcd8f25ef6c92ba47f76bdfb3cafe6f1e78c27a03211",
