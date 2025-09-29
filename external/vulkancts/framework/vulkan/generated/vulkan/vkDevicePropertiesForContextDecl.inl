@@ -68,6 +68,7 @@ const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&					getOpacityMicromapPr
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&						getOpticalFlowProperties						(void) const;
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&						getPCIBusInfoPropertiesEXT						(void) const;
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	getPartitionedAccelerationStructurePropertiesNV	(void) const;
+const vk::VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&		getPerformanceCountersByRegionPropertiesARM		(void) const;
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&				getPerformanceQueryProperties					(void) const;
 const vk::VkPhysicalDevicePipelineBinaryPropertiesKHR&					getPipelineBinaryProperties						(void) const;
 const vk::VkPhysicalDevicePipelineRobustnessProperties&					getPipelineRobustnessProperties					(void) const;

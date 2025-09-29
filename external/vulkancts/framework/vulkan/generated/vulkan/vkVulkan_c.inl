@@ -3082,6 +3082,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT = 1000382000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR = 1000386000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR = 1000387000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE = 1000390000,
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE = 1000390001,
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE = 1000390002,
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE = 1000390003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT = 1000391000,
     VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT = 1000391001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT = 1000392000,
@@ -3428,6 +3432,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT = 1000602001,
     VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT = 1000602002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR = 1000421000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM = 1000605000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM = 1000605001,
+    VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_ARM = 1000605002,
+    VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_ARM = 1000605003,
+    VK_STRUCTURE_TYPE_RENDER_PASS_PERFORMANCE_COUNTERS_BY_REGION_BEGIN_INFO_ARM = 1000605004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT = 1000608000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FORMAT_PACK_FEATURES_ARM = 1000609000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_LAYERED_FEATURES_VALVE = 1000611000,
@@ -9655,7 +9664,7 @@ typedef struct VkPhysicalDeviceSubgroupSizeControlProperties {
 
 typedef struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfo {
     VkStructureType    sType;
-    void*              pNext;
+    const void*        pNext;
     uint32_t           requiredSubgroupSize;
 } VkPipelineShaderStageRequiredSubgroupSizeCreateInfo;
 
@@ -21471,6 +21480,66 @@ typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropert
 
 
 
+// VK_VALVE_video_encode_rgb_conversion is a preprocessor guard. Do not pass it to API calls.
+#define VK_VALVE_video_encode_rgb_conversion 1
+#define VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION_SPEC_VERSION 1
+#define VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION_EXTENSION_NAME "VK_VALVE_video_encode_rgb_conversion"
+
+typedef enum VkVideoEncodeRgbModelConversionFlagBitsVALVE {
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_RGB_IDENTITY_BIT_VALVE = 0x00000001,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_IDENTITY_BIT_VALVE = 0x00000002,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_709_BIT_VALVE = 0x00000004,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_601_BIT_VALVE = 0x00000008,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_2020_BIT_VALVE = 0x00000010,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_FLAG_BITS_MAX_ENUM_VALVE = 0x7FFFFFFF
+} VkVideoEncodeRgbModelConversionFlagBitsVALVE;
+typedef VkFlags VkVideoEncodeRgbModelConversionFlagsVALVE;
+
+typedef enum VkVideoEncodeRgbRangeCompressionFlagBitsVALVE {
+    VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FULL_RANGE_BIT_VALVE = 0x00000001,
+    VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_NARROW_RANGE_BIT_VALVE = 0x00000002,
+    VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FLAG_BITS_MAX_ENUM_VALVE = 0x7FFFFFFF
+} VkVideoEncodeRgbRangeCompressionFlagBitsVALVE;
+typedef VkFlags VkVideoEncodeRgbRangeCompressionFlagsVALVE;
+
+typedef enum VkVideoEncodeRgbChromaOffsetFlagBitsVALVE {
+    VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_COSITED_EVEN_BIT_VALVE = 0x00000001,
+    VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_MIDPOINT_BIT_VALVE = 0x00000002,
+    VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_FLAG_BITS_MAX_ENUM_VALVE = 0x7FFFFFFF
+} VkVideoEncodeRgbChromaOffsetFlagBitsVALVE;
+typedef VkFlags VkVideoEncodeRgbChromaOffsetFlagsVALVE;
+typedef struct VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           videoEncodeRgbConversion;
+} VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE;
+
+typedef struct VkVideoEncodeRgbConversionCapabilitiesVALVE {
+    VkStructureType                               sType;
+    void*                                         pNext;
+    VkVideoEncodeRgbModelConversionFlagsVALVE     rgbModels;
+    VkVideoEncodeRgbRangeCompressionFlagsVALVE    rgbRanges;
+    VkVideoEncodeRgbChromaOffsetFlagsVALVE        xChromaOffsets;
+    VkVideoEncodeRgbChromaOffsetFlagsVALVE        yChromaOffsets;
+} VkVideoEncodeRgbConversionCapabilitiesVALVE;
+
+typedef struct VkVideoEncodeProfileRgbConversionInfoVALVE {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           performEncodeRgbConversion;
+} VkVideoEncodeProfileRgbConversionInfoVALVE;
+
+typedef struct VkVideoEncodeSessionRgbConversionCreateInfoVALVE {
+    VkStructureType                                  sType;
+    const void*                                      pNext;
+    VkVideoEncodeRgbModelConversionFlagBitsVALVE     rgbModel;
+    VkVideoEncodeRgbRangeCompressionFlagBitsVALVE    rgbRange;
+    VkVideoEncodeRgbChromaOffsetFlagBitsVALVE        xChromaOffset;
+    VkVideoEncodeRgbChromaOffsetFlagBitsVALVE        yChromaOffset;
+} VkVideoEncodeSessionRgbConversionCreateInfoVALVE;
+
+
+
 // VK_EXT_image_view_min_lod is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_view_min_lod 1
 #define VK_EXT_IMAGE_VIEW_MIN_LOD_SPEC_VERSION 1
@@ -25528,6 +25597,64 @@ typedef struct VkPhysicalDevicePipelineOpacityMicromapFeaturesARM {
     VkBool32           pipelineOpacityMicromap;
 } VkPhysicalDevicePipelineOpacityMicromapFeaturesARM;
 
+
+
+// VK_ARM_performance_counters_by_region is a preprocessor guard. Do not pass it to API calls.
+#define VK_ARM_performance_counters_by_region 1
+#define VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_SPEC_VERSION 1
+#define VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_EXTENSION_NAME "VK_ARM_performance_counters_by_region"
+typedef VkFlags VkPerformanceCounterDescriptionFlagsARM;
+typedef struct VkPhysicalDevicePerformanceCountersByRegionFeaturesARM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           performanceCountersByRegion;
+} VkPhysicalDevicePerformanceCountersByRegionFeaturesARM;
+
+typedef struct VkPhysicalDevicePerformanceCountersByRegionPropertiesARM {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           maxPerRegionPerformanceCounters;
+    VkExtent2D         performanceCounterRegionSize;
+    uint32_t           rowStrideAlignment;
+    uint32_t           regionAlignment;
+    VkBool32           identityTransformOrder;
+} VkPhysicalDevicePerformanceCountersByRegionPropertiesARM;
+
+typedef struct VkPerformanceCounterARM {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           counterID;
+} VkPerformanceCounterARM;
+
+typedef struct VkPerformanceCounterDescriptionARM {
+    VkStructureType                            sType;
+    void*                                      pNext;
+    VkPerformanceCounterDescriptionFlagsARM    flags;
+    char                                       name[VK_MAX_DESCRIPTION_SIZE];
+} VkPerformanceCounterDescriptionARM;
+
+typedef struct VkRenderPassPerformanceCountersByRegionBeginInfoARM {
+    VkStructureType           sType;
+    void*                     pNext;
+    uint32_t                  counterAddressCount;
+    const VkDeviceAddress*    pCounterAddresses;
+    VkBool32                  serializeRegions;
+    uint32_t                  counterIndexCount;
+    uint32_t*                 pCounterIndices;
+} VkRenderPassPerformanceCountersByRegionBeginInfoARM;
+
+typedef VkResult (VKAPI_PTR *PFN_vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM)(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterARM* pCounters, VkPerformanceCounterDescriptionARM* pCounterDescriptions);
+
+#ifndef VK_NO_PROTOTYPES
+#ifndef VK_ONLY_EXPORTED_PROTOTYPES
+VKAPI_ATTR VkResult VKAPI_CALL vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM(
+    VkPhysicalDevice                            physicalDevice,
+    uint32_t                                    queueFamilyIndex,
+    uint32_t*                                   pCounterCount,
+    VkPerformanceCounterARM*                    pCounters,
+    VkPerformanceCounterDescriptionARM*         pCounterDescriptions);
+#endif
+#endif
 
 
 // VK_EXT_vertex_attribute_robustness is a preprocessor guard. Do not pass it to API calls.

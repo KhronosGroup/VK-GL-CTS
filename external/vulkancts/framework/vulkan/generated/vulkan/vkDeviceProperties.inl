@@ -275,6 +275,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceOpacityMicromapPropertiesEX
 template<> void initPropertyFromBlob<VkPhysicalDeviceOpticalFlowPropertiesNV>(VkPhysicalDeviceOpticalFlowPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePCIBusInfoPropertiesEXT>(VkPhysicalDevicePCIBusInfoPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV>(VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>(VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePerformanceQueryPropertiesKHR>(VkPhysicalDevicePerformanceQueryPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePipelineBinaryPropertiesKHR>(VkPhysicalDevicePipelineBinaryPropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDevicePortabilitySubsetPropertiesKHR>(VkPhysicalDevicePortabilitySubsetPropertiesKHR&, const AllPropertiesBlobs&) {}
@@ -368,6 +369,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceOpacityMicromapProperti
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceOpticalFlowPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPTICAL_FLOW_PROPERTIES_NV, VK_NV_OPTICAL_FLOW_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePCIBusInfoPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT, VK_EXT_PCI_BUS_INFO_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV, VK_NV_PARTITIONED_ACCELERATION_STRUCTURE_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM, VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePerformanceQueryPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePipelineBinaryPropertiesKHR>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_BINARY_PROPERTIES_KHR, VK_KHR_PIPELINE_BINARY_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDevicePipelineRobustnessProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_ROBUSTNESS_PROPERTIES, VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME}; }
@@ -475,6 +477,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceOpticalFlowPropertiesNV>, VK_NV_OPTICAL_FLOW_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePCIBusInfoPropertiesEXT>, VK_EXT_PCI_BUS_INFO_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV>, VK_NV_PARTITIONED_ACCELERATION_STRUCTURE_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>, VK_ARM_PERFORMANCE_COUNTERS_BY_REGION_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePerformanceQueryPropertiesKHR>, VK_KHR_PERFORMANCE_QUERY_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePipelineBinaryPropertiesKHR>, VK_KHR_PIPELINE_BINARY_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDevicePipelineRobustnessProperties>, VK_EXT_PIPELINE_ROBUSTNESS_EXTENSION_NAME },

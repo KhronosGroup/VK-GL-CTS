@@ -2003,6 +2003,16 @@ template<> VkStructureType getStructureType<VkPerformanceConfigurationAcquireInf
 	return VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL;
 }
 
+template<> VkStructureType getStructureType<VkPerformanceCounterARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceCounterDescriptionARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_ARM;
+}
+
 template<> VkStructureType getStructureType<VkPerformanceCounterDescriptionKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR;
@@ -3043,6 +3053,16 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePerStageDescriptorSe
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCountersByRegionFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR;
@@ -3753,6 +3773,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeQuantizat
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceVideoFormatInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR;
@@ -4361,6 +4386,11 @@ template<> VkStructureType getStructureType<VkRenderPassInputAttachmentAspectCre
 template<> VkStructureType getStructureType<VkRenderPassMultiviewCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassPerformanceCountersByRegionBeginInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_PERFORMANCE_COUNTERS_BY_REGION_BEGIN_INFO_ARM;
 }
 
 template<> VkStructureType getStructureType<VkRenderPassSampleLocationsBeginInfoEXT> (void)
@@ -5268,6 +5298,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeIntraRefreshInfoKHR> (v
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeProfileRgbConversionInfoVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeQualityLevelInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR;
@@ -5303,6 +5338,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeRateControlLayerInfoKHR
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkVideoEncodeRgbConversionCapabilitiesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE;
+}
+
 template<> VkStructureType getStructureType<VkVideoEncodeSessionIntraRefreshCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR;
@@ -5316,6 +5356,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeSessionParametersFeedba
 template<> VkStructureType getStructureType<VkVideoEncodeSessionParametersGetInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeSessionRgbConversionCreateInfoVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeUsageInfoKHR> (void)

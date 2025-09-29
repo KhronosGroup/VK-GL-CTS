@@ -645,6 +645,9 @@ tcu::Format::Bitfield<32>	getVideoEncodeH265StdFlagsKHRStr							(VkVideoEncodeH
 tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsKHRStr				(VkVideoEncodeH265TransformBlockSizeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeIntraRefreshModeFlagsKHRStr					(VkVideoEncodeIntraRefreshModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeRateControlModeFlagsKHRStr					(VkVideoEncodeRateControlModeFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodeRgbChromaOffsetFlagsVALVEStr					(VkVideoEncodeRgbChromaOffsetFlagsVALVE value);
+tcu::Format::Bitfield<32>	getVideoEncodeRgbModelConversionFlagsVALVEStr				(VkVideoEncodeRgbModelConversionFlagsVALVE value);
+tcu::Format::Bitfield<32>	getVideoEncodeRgbRangeCompressionFlagsVALVEStr				(VkVideoEncodeRgbRangeCompressionFlagsVALVE value);
 tcu::Format::Bitfield<32>	getVideoEncodeUsageFlagsKHRStr								(VkVideoEncodeUsageFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr							(VkVideoSessionCreateFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionParametersCreateFlagsKHRStr					(VkVideoSessionParametersCreateFlagsKHR value);
@@ -1161,6 +1164,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPastPresentationTimingGOOGLE&
 std::ostream&	operator<<	(std::ostream& s, const VkPerTileBeginInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerTileEndInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceConfigurationAcquireInfoINTEL& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterDescriptionARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterDescriptionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterResultKHR& value);
@@ -1377,6 +1382,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePageableDeviceL
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerStageDescriptorSetFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceQueryFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceQueryPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryFeaturesKHR& value);
@@ -1521,6 +1528,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeAV1F
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoFormatInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoMaintenance1FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoMaintenance2FeaturesKHR& value);
@@ -1657,6 +1665,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkRenderPassFragmentDensityMapC
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassFragmentDensityMapOffsetEndInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassInputAttachmentAspectCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassMultiviewCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassPerformanceCountersByRegionBeginInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassSampleLocationsBeginInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeBeginInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeInfoARM& value);
@@ -1875,6 +1884,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH265SessionParamet
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeIntraRefreshCapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeIntraRefreshInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeProfileRgbConversionInfoVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQualityLevelInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQualityLevelPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQuantizationMapCapabilitiesKHR& value);
@@ -1882,9 +1892,11 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQuantizationMapInf
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeQuantizationMapSessionParametersCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeRateControlInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeRateControlLayerInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeRgbConversionCapabilitiesVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeSessionIntraRefreshCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeSessionParametersFeedbackInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeSessionParametersGetInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeSessionRgbConversionCreateInfoVALVE& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeUsageInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEndCodingInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoFormatAV1QuantizationMapPropertiesKHR& value);

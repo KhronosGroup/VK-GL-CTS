@@ -68,6 +68,7 @@ const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&					Context::getOpacityM
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&						Context::getOpticalFlowProperties							(void) const { return m_device->getOpticalFlowProperties();							}
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&						Context::getPCIBusInfoPropertiesEXT							(void) const { return m_device->getPCIBusInfoPropertiesEXT();						}
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	Context::getPartitionedAccelerationStructurePropertiesNV	(void) const { return m_device->getPartitionedAccelerationStructurePropertiesNV();	}
+const vk::VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&		Context::getPerformanceCountersByRegionPropertiesARM		(void) const { return m_device->getPerformanceCountersByRegionPropertiesARM();		}
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&				Context::getPerformanceQueryProperties						(void) const { return m_device->getPerformanceQueryProperties();					}
 const vk::VkPhysicalDevicePipelineBinaryPropertiesKHR&					Context::getPipelineBinaryProperties						(void) const { return m_device->getPipelineBinaryProperties();						}
 const vk::VkPhysicalDevicePipelineRobustnessProperties&					Context::getPipelineRobustnessProperties					(void) const { return m_device->getPipelineRobustnessProperties();					}

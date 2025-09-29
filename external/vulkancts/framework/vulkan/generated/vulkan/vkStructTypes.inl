@@ -5414,6 +5414,21 @@ struct VkPerformanceConfigurationAcquireInfoINTEL
 	VkPerformanceConfigurationTypeINTEL	type;
 };
 
+struct VkPerformanceCounterARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		counterID;
+};
+
+struct VkPerformanceCounterDescriptionARM
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkPerformanceCounterDescriptionFlagsARM	flags;
+	char									name[VK_MAX_DESCRIPTION_SIZE];
+};
+
 struct VkPerformanceCounterDescriptionKHR
 {
 	VkStructureType							sType;
@@ -7494,6 +7509,24 @@ struct VkPhysicalDevicePerStageDescriptorSetFeaturesNV
 	VkBool32		dynamicPipelineLayout;
 };
 
+struct VkPhysicalDevicePerformanceCountersByRegionFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		performanceCountersByRegion;
+};
+
+struct VkPhysicalDevicePerformanceCountersByRegionPropertiesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxPerRegionPerformanceCounters;
+	VkExtent2D		performanceCounterRegionSize;
+	uint32_t		rowStrideAlignment;
+	uint32_t		regionAlignment;
+	VkBool32		identityTransformOrder;
+};
+
 struct VkPhysicalDevicePerformanceQueryFeaturesKHR
 {
 	VkStructureType	sType;
@@ -8729,6 +8762,13 @@ struct VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR
 	VkBool32		videoEncodeQuantizationMap;
 };
 
+struct VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoEncodeRgbConversion;
+};
+
 struct VkPhysicalDeviceVideoFormatInfoKHR
 {
 	VkStructureType		sType;
@@ -9504,7 +9544,7 @@ struct VkPipelineShaderStageNodeCreateInfoAMDX
 struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfo
 {
 	VkStructureType	sType;
-	void*			pNext;
+	const void*		pNext;
 	uint32_t		requiredSubgroupSize;
 };
 
@@ -10066,6 +10106,17 @@ struct VkRenderPassMultiviewCreateInfo
 	const int32_t*	pViewOffsets;
 	uint32_t		correlationMaskCount;
 	const uint32_t*	pCorrelationMasks;
+};
+
+struct VkRenderPassPerformanceCountersByRegionBeginInfoARM
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint32_t				counterAddressCount;
+	const VkDeviceAddress*	pCounterAddresses;
+	VkBool32				serializeRegions;
+	uint32_t				counterIndexCount;
+	uint32_t*				pCounterIndices;
 };
 
 struct VkRenderPassStripeInfoARM
@@ -12418,6 +12469,13 @@ struct VkVideoEncodeIntraRefreshInfoKHR
 	uint32_t		intraRefreshIndex;
 };
 
+struct VkVideoEncodeProfileRgbConversionInfoVALVE
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		performEncodeRgbConversion;
+};
+
 struct VkVideoEncodeQualityLevelInfoKHR
 {
 	VkStructureType	sType;
@@ -12477,6 +12535,16 @@ struct VkVideoEncodeRateControlInfoKHR
 	uint32_t									initialVirtualBufferSizeInMs;
 };
 
+struct VkVideoEncodeRgbConversionCapabilitiesVALVE
+{
+	VkStructureType								sType;
+	void*										pNext;
+	VkVideoEncodeRgbModelConversionFlagsVALVE	rgbModels;
+	VkVideoEncodeRgbRangeCompressionFlagsVALVE	rgbRanges;
+	VkVideoEncodeRgbChromaOffsetFlagsVALVE		xChromaOffsets;
+	VkVideoEncodeRgbChromaOffsetFlagsVALVE		yChromaOffsets;
+};
+
 struct VkVideoEncodeSessionIntraRefreshCreateInfoKHR
 {
 	VkStructureType								sType;
@@ -12496,6 +12564,16 @@ struct VkVideoEncodeSessionParametersGetInfoKHR
 	VkStructureType				sType;
 	const void*					pNext;
 	VkVideoSessionParametersKHR	videoSessionParameters;
+};
+
+struct VkVideoEncodeSessionRgbConversionCreateInfoVALVE
+{
+	VkStructureType									sType;
+	const void*										pNext;
+	VkVideoEncodeRgbModelConversionFlagBitsVALVE	rgbModel;
+	VkVideoEncodeRgbRangeCompressionFlagBitsVALVE	rgbRange;
+	VkVideoEncodeRgbChromaOffsetFlagBitsVALVE		xChromaOffset;
+	VkVideoEncodeRgbChromaOffsetFlagBitsVALVE		yChromaOffset;
 };
 
 struct VkVideoEncodeUsageInfoKHR

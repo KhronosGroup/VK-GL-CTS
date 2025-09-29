@@ -122,6 +122,7 @@ const vk::VkPhysicalDeviceOpticalFlowFeaturesNV&							Context::getOpticalFlowFe
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				Context::getPageableDeviceLocalMemoryFeaturesEXT			(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();			}
 const vk::VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV&		Context::getPartitionedAccelerationStructureFeaturesNV		(void) const { return m_device->getPartitionedAccelerationStructureFeaturesNV();	}
 const vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV&					Context::getPerStageDescriptorSetFeaturesNV					(void) const { return m_device->getPerStageDescriptorSetFeaturesNV();				}
+const vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			Context::getPerformanceCountersByRegionFeaturesARM			(void) const { return m_device->getPerformanceCountersByRegionFeaturesARM();		}
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						Context::getPerformanceQueryFeatures						(void) const { return m_device->getPerformanceQueryFeatures();						}
 const vk::VkPhysicalDevicePipelineBinaryFeaturesKHR&						Context::getPipelineBinaryFeatures							(void) const { return m_device->getPipelineBinaryFeatures();						}
 const vk::VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC&			Context::getPipelineCacheIncrementalModeFeaturesSEC			(void) const { return m_device->getPipelineCacheIncrementalModeFeaturesSEC();		}
@@ -220,6 +221,7 @@ const vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						Context::getVideoDecod
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						Context::getVideoEncodeAV1Features							(void) const { return m_device->getVideoEncodeAV1Features();						}
 const vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&				Context::getVideoEncodeIntraRefreshFeatures					(void) const { return m_device->getVideoEncodeIntraRefreshFeatures();				}
 const vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&			Context::getVideoEncodeQuantizationMapFeatures				(void) const { return m_device->getVideoEncodeQuantizationMapFeatures();			}
+const vk::VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE&			Context::getVideoEncodeRgbConversionFeaturesVALVE			(void) const { return m_device->getVideoEncodeRgbConversionFeaturesVALVE();			}
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						Context::getVideoMaintenance1Features						(void) const { return m_device->getVideoMaintenance1Features();						}
 const vk::VkPhysicalDeviceVideoMaintenance2FeaturesKHR&						Context::getVideoMaintenance2Features						(void) const { return m_device->getVideoMaintenance2Features();						}
 const vk::VkPhysicalDeviceVulkanMemoryModelFeatures&						Context::getVulkanMemoryModelFeatures						(void) const { return m_device->getVulkanMemoryModelFeatures();						}

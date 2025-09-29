@@ -50,6 +50,7 @@
 #include "vktRenderPassDitheringTests.hpp"
 #include "vktDynamicRenderingUnusedAttachmentsTests.hpp"
 #include "vktRenderPassRemainingArrayLayersTests.hpp"
+#include "vktRenderPassPerformanceCountersByRegionTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -8539,6 +8540,12 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
     {
         renderingTests->addChild(createRenderPassRemainingArrayLayersTests(testCtx, groupParams));
     }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        renderingTests->addChild(createRenderPassPerformanceCountersByRegionTests(testCtx, groupParams));
+    }
+#endif // CTS_USES_VULKANSC
 
     renderingTests->addChild(suballocationTestGroup.release());
     renderingTests->addChild(dedicatedAllocationTestGroup.release());

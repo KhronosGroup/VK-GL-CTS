@@ -145,6 +145,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_performance_counters_by_region")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM");
+		return;
+	}
 	if (extName == "VK_ARM_pipeline_opacity_micromap")
 	{
 		return;
@@ -1813,6 +1818,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_VALVE_video_encode_rgb_conversion")
+	{
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::string> vIEP, const std::vector<std::string> vDEP, const std::string extName, ::std::vector<const char*>& functions)
@@ -1960,6 +1969,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_performance_counters_by_region")
 	{
 		return;
 	}
@@ -4155,6 +4168,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_VALVE_video_encode_rgb_conversion")
+	{
+		return;
+	}
 	DE_FATAL("Extension name not found");
 }
 ::std::string instanceExtensionNames[] =
@@ -4496,6 +4513,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_color_write_enable",
 	"VK_EXT_primitives_generated_query",
 	"VK_EXT_global_priority_query",
+	"VK_VALVE_video_encode_rgb_conversion",
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
 	"VK_EXT_image_2d_view_of_3d",
@@ -4575,6 +4593,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_cooperative_matrix2",
 	"VK_ARM_pipeline_opacity_micromap",
 	"VK_EXT_external_memory_metal",
+	"VK_ARM_performance_counters_by_region",
 	"VK_EXT_vertex_attribute_robustness",
 	"VK_ARM_format_pack",
 	"VK_VALVE_fragment_density_map_layered",

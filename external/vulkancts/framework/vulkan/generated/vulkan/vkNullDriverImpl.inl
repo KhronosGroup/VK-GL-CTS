@@ -3172,6 +3172,16 @@ VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceGroupsKHR (VkInstance inst
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterARM* pCounters, VkPerformanceCounterDescriptionARM* pCounterDescriptions)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(pCounterCount);
+	DE_UNREF(pCounters);
+	DE_UNREF(pCounterDescriptions);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions)
 {
 	DE_UNREF(physicalDevice);
@@ -5409,6 +5419,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,									enumerateDeviceExtensionProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,										enumerateDeviceLayerProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,											enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM,		enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR,			enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,												enumeratePhysicalDevices),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,											getDisplayModeProperties2KHR),

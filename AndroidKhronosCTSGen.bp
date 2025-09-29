@@ -1677,6 +1677,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleResolveTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassNestedCommandBuffersTests.cpp",
+        "external/vulkancts/modules/vulkan/renderpass/vktRenderPassPerformanceCountersByRegionTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassRemainingArrayLayersTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSampleReadTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassSparseRenderTargetTests.cpp",

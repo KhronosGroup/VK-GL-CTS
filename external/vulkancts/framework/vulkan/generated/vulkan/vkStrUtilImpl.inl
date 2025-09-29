@@ -3484,6 +3484,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_FLAGS_NV:								return "VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_FLAGS_NV";
 		case VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_INSTANCES_INPUT_NV:					return "VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_INSTANCES_INPUT_NV";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL:							return "VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_ARM:													return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_ARM";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_ARM:										return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_ARM";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR:										return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR:													return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL:											return "VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL";
@@ -3693,6 +3695,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV";
@@ -3836,6 +3840,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_2_FEATURES_KHR";
@@ -3966,6 +3971,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT:					return "VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO:							return "VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO:										return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_PERFORMANCE_COUNTERS_BY_REGION_BEGIN_INFO_ARM:				return "VK_STRUCTURE_TYPE_RENDER_PASS_PERFORMANCE_COUNTERS_BY_REGION_BEGIN_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT:								return "VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM:										return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM:												return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM";
@@ -4138,6 +4144,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR:													return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_PROPERTIES_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUALITY_LEVEL_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR";
@@ -4145,9 +4152,11 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_SESSION_PARAMETERS_CREATE_INFO_KHR:		return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_SESSION_PARAMETERS_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR:										return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR:								return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_INTRA_REFRESH_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_FEEDBACK_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR:							return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_PARAMETERS_GET_INFO_KHR";
+		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE:					return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE";
 		case VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_ENCODE_USAGE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR:												return "VK_STRUCTURE_TYPE_VIDEO_END_CODING_INFO_KHR";
 		case VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_VIDEO_FORMAT_AV1_QUANTIZATION_MAP_PROPERTIES_KHR";
@@ -6767,6 +6776,42 @@ tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncod
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR,			"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DEFAULT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR,	"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR"),
 		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR,			"VK_VIDEO_ENCODE_RATE_CONTROL_MODE_VBR_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbChromaOffsetFlagsVALVEStr (VkVideoEncodeRgbChromaOffsetFlagsVALVE value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_COSITED_EVEN_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_COSITED_EVEN_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_MIDPOINT_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_MIDPOINT_BIT_VALVE"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbModelConversionFlagsVALVEStr (VkVideoEncodeRgbModelConversionFlagsVALVE value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_RGB_IDENTITY_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_RGB_IDENTITY_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_2020_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_2020_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_601_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_601_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_709_BIT_VALVE,		"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_709_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_IDENTITY_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_IDENTITY_BIT_VALVE"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbRangeCompressionFlagsVALVEStr (VkVideoEncodeRgbRangeCompressionFlagsVALVE value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FULL_RANGE_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FULL_RANGE_BIT_VALVE"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_NARROW_RANGE_BIT_VALVE,	"VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_NARROW_RANGE_BIT_VALVE"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -12890,6 +12935,27 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceConfigurationAcqui
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterARM& value)
+{
+	s << "VkPerformanceCounterARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcounterID = " << value.counterID << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterDescriptionARM& value)
+{
+	s << "VkPerformanceCounterDescriptionARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tname = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.name)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.name))) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterDescriptionKHR& value)
 {
 	s << "VkPerformanceCounterDescriptionKHR = {\n";
@@ -15612,6 +15678,30 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerStageDescrip
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionFeaturesARM& value)
+{
+	s << "VkPhysicalDevicePerformanceCountersByRegionFeaturesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperformanceCountersByRegion = " << value.performanceCountersByRegion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionPropertiesARM& value)
+{
+	s << "VkPhysicalDevicePerformanceCountersByRegionPropertiesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPerRegionPerformanceCounters = " << value.maxPerRegionPerformanceCounters << '\n';
+	s << "\tperformanceCounterRegionSize = " << value.performanceCounterRegionSize << '\n';
+	s << "\trowStrideAlignment = " << value.rowStrideAlignment << '\n';
+	s << "\tregionAlignment = " << value.regionAlignment << '\n';
+	s << "\tidentityTransformOrder = " << value.identityTransformOrder << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceQueryFeaturesKHR& value)
 {
 	s << "VkPhysicalDevicePerformanceQueryFeaturesKHR = {\n";
@@ -17276,6 +17366,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeQuan
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvideoEncodeQuantizationMap = " << value.videoEncodeQuantizationMap << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE& value)
+{
+	s << "VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoEncodeRgbConversion = " << value.videoEncodeRgbConversion << '\n';
 	s << '}';
 	return s;
 }
@@ -19067,6 +19167,20 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassMultiviewCreateInfo
 	s << "\tpViewOffsets = " << value.pViewOffsets << '\n';
 	s << "\tcorrelationMaskCount = " << value.correlationMaskCount << '\n';
 	s << "\tpCorrelationMasks = " << value.pCorrelationMasks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassPerformanceCountersByRegionBeginInfoARM& value)
+{
+	s << "VkRenderPassPerformanceCountersByRegionBeginInfoARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcounterAddressCount = " << value.counterAddressCount << '\n';
+	s << "\tpCounterAddresses = " << value.pCounterAddresses << '\n';
+	s << "\tserializeRegions = " << value.serializeRegions << '\n';
+	s << "\tcounterIndexCount = " << value.counterIndexCount << '\n';
+	s << "\tpCounterIndices = " << value.pCounterIndices << '\n';
 	s << '}';
 	return s;
 }
@@ -21753,6 +21867,16 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeIntraRefreshInfoKH
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeProfileRgbConversionInfoVALVE& value)
+{
+	s << "VkVideoEncodeProfileRgbConversionInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperformEncodeRgbConversion = " << value.performEncodeRgbConversion << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkVideoEncodeQualityLevelInfoKHR& value)
 {
 	s << "VkVideoEncodeQualityLevelInfoKHR = {\n";
@@ -21833,6 +21957,19 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeRateControlLayerIn
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeRgbConversionCapabilitiesVALVE& value)
+{
+	s << "VkVideoEncodeRgbConversionCapabilitiesVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trgbModels = " << getVideoEncodeRgbModelConversionFlagsVALVEStr(value.rgbModels) << '\n';
+	s << "\trgbRanges = " << getVideoEncodeRgbRangeCompressionFlagsVALVEStr(value.rgbRanges) << '\n';
+	s << "\txChromaOffsets = " << getVideoEncodeRgbChromaOffsetFlagsVALVEStr(value.xChromaOffsets) << '\n';
+	s << "\tyChromaOffsets = " << getVideoEncodeRgbChromaOffsetFlagsVALVEStr(value.yChromaOffsets) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkVideoEncodeSessionIntraRefreshCreateInfoKHR& value)
 {
 	s << "VkVideoEncodeSessionIntraRefreshCreateInfoKHR = {\n";
@@ -21859,6 +21996,19 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeSessionParametersG
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tvideoSessionParameters = " << value.videoSessionParameters << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeSessionRgbConversionCreateInfoVALVE& value)
+{
+	s << "VkVideoEncodeSessionRgbConversionCreateInfoVALVE = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trgbModel = " << value.rgbModel << '\n';
+	s << "\trgbRange = " << value.rgbRange << '\n';
+	s << "\txChromaOffset = " << value.xChromaOffset << '\n';
+	s << "\tyChromaOffset = " << value.yChromaOffset << '\n';
 	s << '}';
 	return s;
 }

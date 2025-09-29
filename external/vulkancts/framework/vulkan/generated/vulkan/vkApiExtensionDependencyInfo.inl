@@ -567,6 +567,18 @@ bool check_VK_ARM_data_graph(const tcu::UVec2& v, const ExtPropVect& vIEP, const
 	return (isCompatible(1, 3, v) && (isCompatible(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")) && isSupported(vDEP, "VK_KHR_deferred_host_operations"));
 }
 
+bool check_VK_ARM_performance_counters_by_region(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_performance_counters_by_region"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_ARM_pipeline_opacity_micromap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4075,6 +4087,18 @@ bool check_VK_VALVE_mutable_descriptor_type(const tcu::UVec2& v, const ExtPropVe
 	return (isCompatible(1, 1, v) || isSupported(vDEP, "VK_KHR_maintenance3"));
 }
 
+bool check_VK_VALVE_video_encode_rgb_conversion(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_VALVE_video_encode_rgb_conversion"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_video_encode_queue+(VK_KHR_sampler_ycbcr_conversion,VK_VERSION_1_1)
+	return (isSupported(vDEP, "VK_KHR_video_encode_queue") && (isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") || isCompatible(1, 1, v)));
+}
+
 static const DependencyCheckVect deviceExtensionDependencies
 {
 	std::make_pair("VK_AMDX_dense_geometry_format",							&check_VK_AMDX_dense_geometry_format),
@@ -4088,6 +4112,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ANDROID_external_format_resolve",					&check_VK_ANDROID_external_format_resolve),
 	std::make_pair("VK_ANDROID_external_memory_android_hardware_buffer",	&check_VK_ANDROID_external_memory_android_hardware_buffer),
 	std::make_pair("VK_ARM_data_graph",										&check_VK_ARM_data_graph),
+	std::make_pair("VK_ARM_performance_counters_by_region",					&check_VK_ARM_performance_counters_by_region),
 	std::make_pair("VK_ARM_pipeline_opacity_micromap",						&check_VK_ARM_pipeline_opacity_micromap),
 	std::make_pair("VK_ARM_rasterization_order_attachment_access",			&check_VK_ARM_rasterization_order_attachment_access),
 	std::make_pair("VK_ARM_render_pass_striped",							&check_VK_ARM_render_pass_striped),
@@ -4370,6 +4395,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_VALVE_descriptor_set_host_mapping",					&check_VK_VALVE_descriptor_set_host_mapping),
 	std::make_pair("VK_VALVE_fragment_density_map_layered",					&check_VK_VALVE_fragment_density_map_layered),
 	std::make_pair("VK_VALVE_mutable_descriptor_type",						&check_VK_VALVE_mutable_descriptor_type),
+	std::make_pair("VK_VALVE_video_encode_rgb_conversion",					&check_VK_VALVE_video_encode_rgb_conversion),
 };
 
 static const std::tuple<uint32_t, uint32_t, uint32_t, uint32_t>	releasedApiVersions[]	=
@@ -4411,6 +4437,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ANDROID_external_memory_android_hardware_buffer"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph"),
 	std::make_tuple(1, 0, "VK_ARM_format_pack"),
+	std::make_tuple(1, 0, "VK_ARM_performance_counters_by_region"),
 	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),
 	std::make_tuple(1, 0, "VK_ARM_rasterization_order_attachment_access"),
 	std::make_tuple(1, 0, "VK_ARM_render_pass_striped"),
@@ -4805,4 +4832,5 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_VALVE_descriptor_set_host_mapping"),
 	std::make_tuple(1, 0, "VK_VALVE_fragment_density_map_layered"),
 	std::make_tuple(1, 0, "VK_VALVE_mutable_descriptor_type"),
+	std::make_tuple(1, 0, "VK_VALVE_video_encode_rgb_conversion"),
 };

@@ -68,6 +68,7 @@ const VkPhysicalDeviceOpacityMicromapPropertiesEXT&					getOpacityMicromapProper
 const VkPhysicalDeviceOpticalFlowPropertiesNV&						getOpticalFlowProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDeviceOpticalFlowPropertiesNV>();						}
 const VkPhysicalDevicePCIBusInfoPropertiesEXT&						getPCIBusInfoPropertiesEXT						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePCIBusInfoPropertiesEXT>();						}
 const VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	getPartitionedAccelerationStructurePropertiesNV	(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV>();	}
+const VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&		getPerformanceCountersByRegionPropertiesARM		(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM>();		}
 const VkPhysicalDevicePerformanceQueryPropertiesKHR&				getPerformanceQueryProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePerformanceQueryPropertiesKHR>();					}
 const VkPhysicalDevicePipelineBinaryPropertiesKHR&					getPipelineBinaryProperties						(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePipelineBinaryPropertiesKHR>();					}
 const VkPhysicalDevicePipelineRobustnessProperties&					getPipelineRobustnessProperties					(void) const { return m_deviceProperties.getPropertyType<VkPhysicalDevicePipelineRobustnessProperties>();					}
