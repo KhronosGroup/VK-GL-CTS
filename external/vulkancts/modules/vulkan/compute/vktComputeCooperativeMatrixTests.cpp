@@ -2819,6 +2819,15 @@ string dumpWholeMatrix(void *data, VkComponentTypeKHR dt, bool colMajor, uint32_
 }
 #endif
 
+#ifndef CTS_USES_VULKANSC
+template <typename F8Type>
+static float toF8Exact(float x)
+{
+    F8Type fp8{x, tcu::ROUND_TO_EVEN};
+    return fp8.asFloat();
+}
+#endif // CTS_USES_VULKANSC
+
 tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
@@ -4503,6 +4512,20 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 float Cij = getDataFloat(ptrs[2], dataTypes[2], ij);
 
                                 ref += Cij;
+
+#ifndef CTS_USES_VULKANSC
+                                switch (dataTypes[3])
+                                {
+                                case VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT:
+                                    ref = toF8Exact<tcu::FloatE5M2>(ref);
+                                    break;
+                                case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:
+                                    ref = toF8Exact<tcu::FloatE4M3>(ref);
+                                    break;
+                                default:
+                                    break;
+                                }
+#endif //CTS_USES_VULKANSC
 
                                 // When loading with stride 0, ij for matrix D is different from matrix C
                                 if (m_data.colMajor)
