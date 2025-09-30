@@ -20,6 +20,9 @@ The following tools must be installed and present in the PATH variable:
  * Git (for checking out sources)
  * Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
  * CMake 3.20.0 or newer
+ * The `lxml` Python module.
+     * It can be installed using `pip` with `python3 -m pip install lxml`.
+     * On Linux, many distributions already package the module as `python3-lxml`.
 
 ### Win32
 
@@ -28,9 +31,21 @@ The following tools must be installed and present in the PATH variable:
 ### Linux
 
  * Standard toolchain (make, gcc/clang)
- * If you have X11 installed, then the build assumes you also have the `GL/glx.h` header
-   file.
-    * You can get this from the `mesa-common-dev` Ubuntu package.
+     * For Ubuntu, the `build-essential` package will provide most tools.
+     * For Fedora, `dnf group install development-tools` and the `g++` package
+       will cover the basics.
+ * If you want to use Ninja as the CMake backend, you will need the
+   `ninja-build` package.
+ * If you have X11 installed, then the build assumes you also have the
+   `GL/glx.h` header file.
+    * You can get this from the `mesa-common-devl` Ubuntu package.
+    * For Fedora, this is provided by the `libglvnd-devel` package.
+ * If you prefer to use the `wayland` dEQP target (`-DDEQP_TARGET=wayland` with
+   CMake) you will need some Wayland development packages.
+    * On most distributions, installing the Mesa build dependencies is a good
+      way to get all the required packages.
+       * For Fedora, `dnf builddep mesa` can be used.
+       * For Ubuntu, `apt-get build-dep mesa` can be used.
 
 ### MacOS
 
@@ -55,19 +70,16 @@ you can install the necessary components by running:
 Building CTS
 ------------
 
-To build dEQP, you need first to download sources for zlib, libpng, jsoncpp, glslang,
-vulkan-docs, spirv-headers, and spirv-tools.
+To build dEQP, you need first to download sources for zlib, libpng, jsoncpp,
+glslang, vulkan-docs, spirv-tools and others.
 
 To download sources, run:
 
 	python3 external/fetch_sources.py
 
-You may need to re-run `fetch_sources.py` to update to the latest glslang,
-vulkan-docs and spirv-tools revisions occasionally.
-
-You also need to install lxml python module by running:
-
-	python3 -m pip install lxml
+The required versions of external sources may change from time to time, so you
+should run `fetch_sources.py` when switching branches or pulling changes to make
+sure you have the right versions.
 
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
