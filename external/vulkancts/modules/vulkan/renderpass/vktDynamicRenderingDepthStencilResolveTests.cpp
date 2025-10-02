@@ -22,8 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDynamicRenderingDepthStencilResolveTests.hpp"
-
-#include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 
 #include "vkDefs.hpp"
@@ -38,19 +36,31 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
+#include "vkBufferWithMemory.hpp"
+#include "vkImageWithMemory.hpp"
+#include "vkShaderProgram.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include "tcuImageCompare.hpp"
 #include "tcuFormatUtil.hpp"
 #include "tcuResultCollector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuRGBA.hpp"
+#include "tcuTexture.hpp"
+#include "tcuVectorType.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deMath.h"
 
+#include "gluShaderProgram.hpp"
+#include "gluShaderUtil.hpp"
+
 #include <limits>
 #include <map>
+#include <sstream>
 
 using namespace vk;
 
@@ -121,6 +131,7 @@ struct TestConfig
     uint8_t stencilExpectedValue;
     bool separateDepthStencilLayouts;
     const SharedGroupParams groupParams;
+    const bool enablePushConsts;
 };
 
 float get16bitDepthComponent(uint8_t *pixelPtr)
@@ -168,7 +179,7 @@ protected:
                                      VkRenderingFlagsKHR renderingFlags = 0) const;
 #endif // CTS_USES_VULKANSC
 
-    void submit(void);
+    virtual void submit(void);
     bool verifyDepth(void);
     bool verifyStencil(void);
 
@@ -1136,6 +1147,11 @@ tcu::TestStatus DepthStencilResolveTest::iterate(void)
     return tcu::TestStatus::fail("Fail");
 }
 
+struct TestPushConstants
+{
+    Vec4 fillColor;
+};
+
 struct Programs
 {
     void init(vk::SourceCollections &dst, TestConfig config) const
@@ -1217,6 +1233,41 @@ struct Programs
                                                                     "  gl_FragDepth = 0.5;\n"
                                                                     "}\n");
         }
+
+        if (config.enablePushConsts)
+        {
+            std::ostringstream vert;
+            {
+                vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                     << "vec2 positions[6] = vec2[](\n"
+                     << "    vec2(-1.0f, 1.0f),\n"
+                     << "    vec2(1.0f, 1.0f),\n"
+                     << "    vec2(-1.0f, -1.0f),\n"
+                     << "    vec2(-1.0f, -1.0f),\n"
+                     << "    vec2(1.0f, 1.0f),\n"
+                     << "    vec2(1.0f, -1.0f)\n"
+                     << ");\n"
+                     << "\n"
+                     << "void main() {\n"
+                     << "    gl_Position = vec4(positions[gl_VertexIndex], 0.0, 1.0);\n"
+                     << "}\n";
+            }
+            dst.glslSources.add("vert-pc") << glu::VertexSource(vert.str());
+
+            std::ostringstream frag;
+            {
+                frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                     << "layout (push_constant, std430) uniform PushConstants {\n"
+                     << "    vec4 color;\n"
+                     << "} pc;\n"
+                     << "layout (location=0) out vec4 outColor;"
+                     << "\n"
+                     << "void main (void) {\n"
+                     << "    outColor = pc.color;\n"
+                     << "}\n";
+            }
+            dst.glslSources.add("frag-pc") << glu::FragmentSource(frag.str());
+        }
     }
 };
 
@@ -1225,10 +1276,416 @@ void checkSupport(Context &context)
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
+class DepthStencilPushConstResolveTest : public DepthStencilResolveTest
+{
+public:
+    DepthStencilPushConstResolveTest(Context &context, TestConfig config);
+    virtual ~DepthStencilPushConstResolveTest(void);
+    virtual tcu::TestStatus iterate(void);
+
+protected:
+    virtual void submit(void);
+
+protected:
+    const VkFormat m_pcImageFormat;
+    const tcu::UVec2 m_pcImageSize;
+    de::MovePtr<ImageWithMemory> m_colorImage;
+    Move<VkImageView> m_colorAttachmentView;
+    Move<VkPipelineLayout> m_pcPipelineLayout;
+    Move<VkPipeline> m_pcPipeline;
+    de::MovePtr<BufferWithMemory> m_outputColorBuffer;
+};
+
+DepthStencilPushConstResolveTest::DepthStencilPushConstResolveTest(Context &context, TestConfig config)
+    : DepthStencilResolveTest(context, config)
+    , m_pcImageFormat(VK_FORMAT_R8G8B8A8_UNORM)
+    , m_pcImageSize(32u, 32u)
+
+{
+    DE_ASSERT(m_config.verifyBuffer == VB_DEPTH);
+    DE_ASSERT(m_config.groupParams->useSecondaryCmdBuffer == false);
+
+    auto &allocator = m_context.getDefaultAllocator();
+
+    // Color image
+    const VkImageCreateInfo colorImageParams = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                     // VkStructureType sType;
+        nullptr,                                                                 // const void* pNext;
+        0u,                                                                      // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                                                        // VkImageType imageType;
+        m_pcImageFormat,                                                         // VkFormat format;
+        makeExtent3D(m_pcImageSize.x(), m_pcImageSize.y(), 1u),                  // VkExtent3D extent;
+        1u,                                                                      // uint32_t mipLevels;
+        1u,                                                                      // uint32_t arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,                                                   // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,                                                 // VkImageTiling tiling;
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,                                               // VkSharingMode sharingMode;
+        0u,                                                                      // uint32_t queueFamilyIndexCount;
+        nullptr,                                                                 // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,                                               // VkImageLayout initialLayout;
+    };
+
+    m_colorImage = de::MovePtr<ImageWithMemory>(
+        new ImageWithMemory(m_vkd, m_device, allocator, colorImageParams, MemoryRequirement::Any));
+
+    // Color image view
+    m_colorAttachmentView = makeImageView(m_vkd, m_device, **m_colorImage, VK_IMAGE_VIEW_TYPE_2D, m_pcImageFormat,
+                                          makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+
+    // Pipeline layout
+    const VkPushConstantRange pcRange = {
+        VK_SHADER_STAGE_FRAGMENT_BIT,                     // VkShaderStageFlags stageFlags;
+        0u,                                               // uint32_t offset;
+        static_cast<uint32_t>(sizeof(TestPushConstants)), // uint32_t size;
+    };
+
+    const uint32_t pushConstantRangeCount          = 1u;
+    const VkPushConstantRange *pPushConstantRanges = &pcRange;
+
+    const VkPipelineLayoutCreateInfo createInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType                 sType
+        nullptr,                                       // const void*                     pNext
+        (vk::VkPipelineLayoutCreateFlags)0,            // VkPipelineLayoutCreateFlags     flags
+        0u,                                            // uint32_t                        setLayoutCount
+        nullptr,                                       // const VkDescriptorSetLayout*    pSetLayouts
+        pushConstantRangeCount,                        // uint32_t                        pushConstantRangeCount
+        pPushConstantRanges                            // const VkPushConstantRange*      pPushConstantRanges
+    };
+
+    m_pcPipelineLayout = createPipelineLayout(m_vkd, m_device, &createInfo);
+
+    // Pipeline
+    const vk::BinaryCollection &binaryCollection = m_context.getBinaryCollection();
+    const Unique<VkShaderModule> vertModule(createShaderModule(m_vkd, m_device, binaryCollection.get("vert-pc"), 0u));
+    const Unique<VkShaderModule> fragModule(createShaderModule(m_vkd, m_device, binaryCollection.get("frag-pc"), 0u));
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
+        nullptr,                                                   // const void*                                 pNext
+        (VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags       flags
+        0u,      // uint32_t                                    vertexBindingDescriptionCount
+        nullptr, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+        0u,      // uint32_t                                    vertexAttributeDescriptionCount
+        nullptr  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+    };
+
+    const std::vector<VkViewport> viewports(1, makeViewport(m_pcImageSize));
+    const std::vector<VkRect2D> scissors(1, makeRect2D(m_pcImageSize.x(), m_pcImageSize.y()));
+
+    VkPipelineRenderingCreateInfoKHR renderingCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR, // VkStructureType    sType
+        nullptr,                                              // const void*        pNext
+        0u,                                                   // uint32_t            viewMask
+        1u,                                                   // uint32_t            colorAttachmentCount
+        &m_pcImageFormat,                                     // const VkFormat*    pColorAttachmentFormats
+        VK_FORMAT_UNDEFINED,                                  // VkFormat            depthAttachmentFormat
+        VK_FORMAT_UNDEFINED,                                  // VkFormat            stencilAttachmentFormat
+    };
+
+    m_pcPipeline = makeGraphicsPipeline(
+        m_vkd,               // const DeviceInterface&                            vk
+        m_device,            // const VkDevice                                    device
+        *m_pcPipelineLayout, // const VkPipelineLayout                            pipelineLayout
+        *vertModule,         // const VkShaderModule                                vertexShaderModule
+        VK_NULL_HANDLE,      // const VkShaderModule                                tessellationControlShaderModule
+        VK_NULL_HANDLE,      // const VkShaderModule                                tessellationEvalShaderModule
+        VK_NULL_HANDLE,      // const VkShaderModule                                geometryShaderModule
+        *fragModule,         // const VkShaderModule                                fragmentShaderModule
+        VK_NULL_HANDLE,      // const VkRenderPass                                renderPass
+        viewports,           // const std::vector<VkViewport>&                    viewports
+        scissors,            // const std::vector<VkRect2D>&                        scissors
+        VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                        topology
+        0u,                                   // const uint32_t                                    subpass
+        0u,                                   // const uint32_t                                    patchControlPoints
+        &vertexInputState,     // const VkPipelineVertexInputStateCreateInfo*        vertexInputStateCreateInfo
+        nullptr,               // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
+        nullptr,               // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
+        nullptr,               // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
+        nullptr,               // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
+        nullptr,               // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
+        &renderingCreateInfo); // const void*
+
+    // Output buffer
+    const VkDeviceSize outputBufferSize =
+        static_cast<VkDeviceSize>(static_cast<uint32_t>(tcu::getPixelSize(mapVkFormat(m_pcImageFormat))) *
+                                  m_pcImageSize.x() * m_pcImageSize.y() * 1u);
+    const auto outputBufferInfo = makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+    m_outputColorBuffer = de::MovePtr<BufferWithMemory>(
+        new BufferWithMemory(m_vkd, m_device, allocator, outputBufferInfo, MemoryRequirement::HostVisible));
+}
+
+DepthStencilPushConstResolveTest::~DepthStencilPushConstResolveTest()
+{
+}
+
+void DepthStencilPushConstResolveTest::submit(void)
+{
+    const DeviceInterface &vkd(m_context.getDeviceInterface());
+    const VkDevice device(m_context.getDevice());
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    const Vec4 clearColor              = tcu::RGBA::red().toVec();
+    const VkClearValue clearColorValue = makeClearValueColor(clearColor);
+
+    const vk::VkImageSubresourceRange imageRange = {
+        aspectFlagsForFormat(m_config.format), // VkImageAspectFlags    aspectMask
+        0u,                                    // uint32_t              baseMipLevel
+        VK_REMAINING_MIP_LEVELS,               // uint32_t              levelCount
+        0u,                                    // uint32_t              baseArrayLayer
+        VK_REMAINING_ARRAY_LAYERS,             // uint32_t              layerCount
+    };
+
+    const VkImageMemoryBarrier preClearBarrier = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
+        nullptr,                                // const void*                pNext
+        VK_ACCESS_NONE_KHR,                     // VkAccessFlags              srcAccessMask
+        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags              dstAccessMask
+        VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout              oldLayout
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout              newLayout
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   dstQueueFamilyIndex
+        **m_singlesampleImage,                  // VkImage                    image
+        imageRange,                             // VkImageSubresourceRange    subresourceRange
+    };
+
+    const VkImageMemoryBarrier preRenderBarrier = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
+        nullptr,                                          // const void*                pNext
+        VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags              srcAccessMask
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,             // VkImageLayout              oldLayout
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   dstQueueFamilyIndex
+        **m_singlesampleImage,                            // VkImage                    image
+        imageRange,                                       // VkImageSubresourceRange    subresourceRange
+    };
+
+    // Clearing resolve image
+    {
+        const Unique<VkCommandBuffer> clearCmdBuffer(
+            allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+        beginCommandBuffer(vkd, *clearCmdBuffer);
+        vkd.cmdPipelineBarrier(*clearCmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                               0u, nullptr, 0u, nullptr, 1u, &preClearBarrier);
+
+        vkd.cmdClearDepthStencilImage(*clearCmdBuffer, **m_singlesampleImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                                      &m_config.clearValue, 1u, &imageRange);
+        endCommandBuffer(vkd, *clearCmdBuffer);
+
+        vk::submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *clearCmdBuffer);
+    }
+
+    bool testingDepth = (m_config.verifyBuffer == VB_DEPTH);
+
+    // Begin rendering
+    VkClearValue clearVal;
+    clearVal.depthStencil = m_config.clearValue;
+
+    const VkRenderingAttachmentInfo depthAttachment = {
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      // VkStructureType          sType
+        nullptr,                                          // const void*              pNext
+        **m_multisampleImageView,                         // VkImageView              imageView
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout            imageLayout
+        m_config.depthResolveMode,                        // VkResolveModeFlagBits    resolveMode
+        **m_singlesampleImageView,                        // VkImageView              resolveImageView
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout            resolveImageLayout
+        VK_ATTACHMENT_LOAD_OP_CLEAR,                      // VkAttachmentLoadOp       loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,                     // VkAttachmentStoreOp      storeOp
+        clearVal                                          // VkClearValue             clearValue
+    };
+
+    VkRenderingInfoKHR dsRenderingInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_INFO, // VkStructureType                     sType
+        nullptr,                          // const void*                         pNext
+        static_cast<VkRenderingFlags>(0), // VkRenderingFlags                    flags
+        {
+            // VkRect2D                            renderArea
+            {0u, 0u},                         // VkOffset2D    offset;
+            {m_config.width, m_config.height} // VkExtent2D    extent
+        },
+        m_config.viewLayers, // uint32_t                            layerCount
+        0,                   // uint32_t                            viewMask
+        0,                   // uint32_t                            colorAttachmentCount
+        nullptr,             // const VkRenderingAttachmentInfo*    pColorAttachments
+        &depthAttachment,    // const VkRenderingAttachmentInfo*    pDepthAttachment
+        nullptr              // const VkRenderingAttachmentInfo*    pStencilAttachment
+    };
+
+    const VkRenderingAttachmentInfoKHR colorAttachmentInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType            sType
+        nullptr,                                         // const void*                pNext
+        *m_colorAttachmentView,                          // VkImageView                imageView
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout            imageLayout
+        VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits    resolveMode
+        VK_NULL_HANDLE,                                  // VkImageView                resolveImageView
+        VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout            resolveImageLayout
+        VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp        loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp        storeOp
+        clearColorValue                                  // VkClearValue                clearValue
+    };
+
+    const VkRenderingInfoKHR pcRenderingInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,             // VkStructureType                        sType
+        nullptr,                                          // const void*                            pNext
+        static_cast<VkRenderingFlags>(0),                 // VkRenderingFlagsKHR                    flags
+        makeRect2D(m_pcImageSize.x(), m_pcImageSize.y()), // VkRect2D                                renderArea
+        1u,                                               // uint32_t                                layerCount
+        0u,                                               // uint32_t                                viewMask
+        1u,                   // uint32_t                                colorAttachmentCount
+        &colorAttachmentInfo, // const VkRenderingAttachmentInfoKHR*    pColorAttachments
+        nullptr,              // const VkRenderingAttachmentInfoKHR*    pDepthAttachment
+        nullptr               // const VkRenderingAttachmentInfoKHR*    pStencilAttachment
+    };
+
+    beginCommandBuffer(vkd, *cmdBuffer);
+    {
+        // Bind push constants and do DS resolve
+        {
+            vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                                       vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                   0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
+            {
+                const TestPushConstants pushConstants = {tcu::RGBA::green().toVec()};
+                vkd.cmdPushConstants(*cmdBuffer, *m_pcPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
+                                     static_cast<uint32_t>(sizeof(pushConstants)), &pushConstants);
+            }
+
+            vkd.cmdBeginRendering(*cmdBuffer, &dsRenderingInfo);
+            vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
+            vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+            vkd.cmdEndRendering(*cmdBuffer);
+        }
+
+        // Memory barriers between rendering and copying
+        {
+            const VkImageMemoryBarrier barrier = {
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                nullptr,
+
+                // Note: as per the spec, depth/stencil *resolve* operations are synchronized using the color attachment write access.
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                VK_ACCESS_TRANSFER_READ_BIT,
+
+                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+
+                VK_QUEUE_FAMILY_IGNORED,
+                VK_QUEUE_FAMILY_IGNORED,
+
+                **m_singlesampleImage,
+                {(m_config.separateDepthStencilLayouts) ?
+                     VkImageAspectFlags(testingDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT) :
+                     aspectFlagsForFormat(m_config.format),
+                 0u, 1u, 0u, m_config.viewLayers}};
+
+            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                                   0u, nullptr, 0u, nullptr, 1u, &barrier);
+        }
+
+        // Copy image memory to buffers
+        const VkBufferImageCopy region = {
+            0u,
+            0u,
+            0u,
+            {
+                VkImageAspectFlags(testingDepth ? VK_IMAGE_ASPECT_DEPTH_BIT : VK_IMAGE_ASPECT_STENCIL_BIT),
+                0u,
+                0u,
+                m_config.viewLayers,
+            },
+            {0u, 0u, 0u},
+            {m_config.width, m_config.height, 1u}};
+
+        vkd.cmdCopyImageToBuffer(*cmdBuffer, **m_singlesampleImage, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **m_buffer,
+                                 1u, &region);
+
+        // Memory barriers between copies and host access
+        {
+            const VkBufferMemoryBarrier barrier = {VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER,
+                                                   nullptr,
+
+                                                   VK_ACCESS_TRANSFER_WRITE_BIT,
+                                                   VK_ACCESS_HOST_READ_BIT,
+
+                                                   VK_QUEUE_FAMILY_IGNORED,
+                                                   VK_QUEUE_FAMILY_IGNORED,
+
+                                                   **m_buffer,
+                                                   0u,
+                                                   VK_WHOLE_SIZE};
+
+            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u,
+                                   nullptr, 1u, &barrier, 0u, nullptr);
+        }
+
+        const auto colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+        const VkImageMemoryBarrier outImageBarrier =
+            makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, **m_colorImage, colorSubresourceRange);
+
+        // Render for testing push constants
+        {
+
+            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                                   (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &outImageBarrier);
+            vkd.cmdBeginRendering(*cmdBuffer, &pcRenderingInfo);
+            vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pcPipeline);
+            vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
+            vkd.cmdEndRendering(*cmdBuffer);
+            copyImageToBuffer(vkd, *cmdBuffer, **m_colorImage, **m_outputColorBuffer,
+                              tcu::IVec2(m_pcImageSize.x(), m_pcImageSize.y()));
+        }
+    }
+    endCommandBuffer(vkd, *cmdBuffer);
+
+    submitCommandsAndWait(vkd, device, m_context.getUniversalQueue(), *cmdBuffer);
+}
+
+tcu::TestStatus DepthStencilPushConstResolveTest::iterate(void)
+{
+    submit();
+
+    bool result = false;
+
+    result = verifyDepth();
+
+    if (!result)
+        return tcu::TestStatus::fail("Depth buffer test Fail");
+
+    const auto &resultBufferAlloc = m_outputColorBuffer->getAllocation();
+    invalidateAlloc(m_vkd, m_device, resultBufferAlloc);
+
+    const auto resultsBufferPtr =
+        reinterpret_cast<const char *>(resultBufferAlloc.getHostPtr()) + resultBufferAlloc.getOffset();
+    const tcu::ConstPixelBufferAccess resultPixels{mapVkFormat(m_pcImageFormat), static_cast<int>(m_pcImageSize.x()),
+                                                   static_cast<int>(m_pcImageSize.y()), 1, resultsBufferPtr};
+
+    tcu::TextureLevel referenceImage(mapVkFormat(m_pcImageFormat), m_pcImageSize.x(), m_pcImageSize.y());
+    tcu::clear(referenceImage.getAccess(), tcu::RGBA::green().toVec());
+
+    result = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "ComparisonResult",
+                                        "Image comparison result", referenceImage.getAccess(), resultPixels,
+                                        tcu::Vec4(0.0f), tcu::COMPARE_LOG_ON_ERROR);
+
+    if (!result)
+        return tcu::TestStatus::fail("Push constant test Fail");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
 {
     typedef InstanceFactory1WithSupport<DepthStencilResolveTest, TestConfig, FunctionSupport0, Programs>
         DSResolveTestInstance;
+
+    typedef InstanceFactory1WithSupport<DepthStencilPushConstResolveTest, TestConfig, FunctionSupport0, Programs>
+        DSResolvePushConstTestInstance;
 
     struct FormatData
     {
@@ -1380,7 +1837,8 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                                                            expectedValue,
                                                            0u,
                                                            useSeparateDepthStencilLayouts,
-                                                           groupParams};
+                                                           groupParams,
+                                                           false};
                             formatGroup->addChild(
                                 new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
                         }
@@ -1407,9 +1865,43 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                                                            0.0f,
                                                            expectedValue,
                                                            useSeparateDepthStencilLayouts,
-                                                           groupParams};
+                                                           groupParams,
+                                                           false};
                             formatGroup->addChild(
                                 new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
+                        }
+
+                        // Corner case: first depth/stencil resolve with multisampled layered images
+                        // and then rendering using push constants
+                        if (hasDepth && !hasStencil && (dResolve.flag == VK_RESOLVE_MODE_AVERAGE_BIT) &&
+                            (sResolve.flag == VK_RESOLVE_MODE_NONE) && !groupParams->useSecondaryCmdBuffer)
+                        {
+                            std::string name           = baseName + "_testing_pushconsts";
+                            const char *testName       = name.c_str();
+                            float expectedValue        = depthExpectedValue[depthResolveModeNdx][sampleCountNdx];
+                            const uint32_t imageLayers = 2u; // must be > 1u
+
+                            const TestConfig testConfig = {
+                                format,                         // VkFormat format
+                                imageData.width,                // uint32_t width
+                                imageData.height,               // uint32_t height
+                                imageLayers,                    // uint32_t imageLayers
+                                imageLayers,                    // uint32_t viewLayers
+                                0u,                             // uint32_t resolveBaseLayer
+                                imageData.renderArea,           // VkRect2D renderArea
+                                aspectFlags,                    // VkImageAspectFlags aspectFlag
+                                sampleCount,                    // uint32_t sampleCount
+                                dResolve.flag,                  // VkResolveModeFlagBits depthResolveMode
+                                sResolve.flag,                  // VkResolveModeFlagBits stencilResolveMode
+                                VB_DEPTH,                       // VerifyBuffer verifyBuffer
+                                imageData.clearValue,           // VkClearDepthStencilValue clearValue
+                                expectedValue,                  // float depthExpectedValue
+                                0u,                             // uint8_t stencilExpectedValue
+                                useSeparateDepthStencilLayouts, // bool separateDepthStencilLayouts
+                                groupParams,                    // const SharedGroupParams groupParams
+                                true};                          // const bool enablePushConsts
+                            formatGroup->addChild(
+                                new DSResolvePushConstTestInstance(testCtx, testName, testConfig, checkSupport));
                         }
                     }
                 }
