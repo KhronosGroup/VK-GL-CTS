@@ -369,7 +369,11 @@ BufferWithMemoryPtr makeStridedBuffer(const DeviceInterface &vkd, VkDevice devic
                             static_cast<size_t>(endPadding);
     const auto bufferInfo = makeBufferCreateInfo(static_cast<VkDeviceSize>(bufferSize), usage);
 
-    BufferWithMemoryPtr buffer(new BufferWithMemory(vkd, device, alloc, bufferInfo, MemoryRequirement::HostVisible));
+    const MemoryRequirement memReq = (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) ?
+                                         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                         MemoryRequirement::HostVisible;
+
+    BufferWithMemoryPtr buffer(new BufferWithMemory(vkd, device, alloc, bufferInfo, memReq));
     auto &bufferAlloc   = buffer->getAllocation();
     char *bufferDataPtr = reinterpret_cast<char *>(bufferAlloc.getHostPtr());
 

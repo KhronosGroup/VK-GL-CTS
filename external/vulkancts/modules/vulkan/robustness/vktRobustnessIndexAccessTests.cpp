@@ -170,6 +170,14 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     const std::vector<VkViewport> viewports{makeViewport(renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
 
+    VkBufferUsageFlags commonUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    if (m_params.useDeviceAddressCommands)
+        commonUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+    MemoryRequirement memReq = m_params.useDeviceAddressCommands ?
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                   MemoryRequirement::HostVisible;
+
     // create vertex buffer
     const std::vector<float> vertices{
         0.0f, -0.8f, 0.0f, 1.0f, 0.0f,  0.8f,  0.0f, 1.0f, 0.8f,  -0.8f, 0.0f, 1.0f,
@@ -177,8 +185,8 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     };
     VkDeviceSize vertexBufferSize = vertices.size() * sizeof(float);
     const auto vertexBufferInfo =
-        makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory vertexBuffer(vk, *m_device, memAlloc, vertexBufferInfo, MemoryRequirement::HostVisible);
+        makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | commonUsage);
+    BufferWithMemory vertexBuffer(vk, *m_device, memAlloc, vertexBufferInfo, memReq);
     deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), vertices.size() * sizeof(float));
     flushAlloc(vk, *m_device, vertexBuffer.getAllocation());
 
@@ -188,9 +196,8 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     // 5--1--3
     const std::vector<uint32_t> index = {0, 1, 2, 3, 4, 5};
     VkDeviceSize indexBufferSize      = index.size() * sizeof(uint32_t);
-    const auto indexBufferInfo =
-        makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indexBuffer(vk, *m_device, memAlloc, indexBufferInfo, MemoryRequirement::HostVisible);
+    const auto indexBufferInfo = makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
+    BufferWithMemory indexBuffer(vk, *m_device, memAlloc, indexBufferInfo, memReq);
     deMemcpy(indexBuffer.getAllocation().getHostPtr(), index.data(), index.size() * sizeof(uint32_t));
     flushAlloc(vk, *m_device, indexBuffer.getAllocation());
 
@@ -203,9 +210,9 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
         0u,                     // firstInstance
     };
     VkDeviceSize indirectBufferSize = sizeof(drawIndirectCommand);
-    const auto indirectBufferInfo   = makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT |
-                                                                                   VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indirectBuffer(vk, *m_device, memAlloc, indirectBufferInfo, MemoryRequirement::HostVisible);
+    const auto indirectBufferInfo =
+        makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
+    BufferWithMemory indirectBuffer(vk, *m_device, memAlloc, indirectBufferInfo, memReq);
     if ((m_params.mode == TM_DRAW_INDEXED_INDIRECT) || (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT))
     {
         deMemcpy(indirectBuffer.getAllocation().getHostPtr(), &drawIndirectCommand, sizeof(drawIndirectCommand));
@@ -213,11 +220,10 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     }
 
     // create indirect count buffer
-    VkDeviceSize indirectCountBufferSize             = sizeof(uint32_t);
-    const VkBufferCreateInfo indirectCountBufferInfo = makeBufferCreateInfo(
-        indirectCountBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory indirectCountBuffer(vk, *m_device, memAlloc, indirectCountBufferInfo,
-                                         MemoryRequirement::HostVisible);
+    VkDeviceSize indirectCountBufferSize = sizeof(uint32_t);
+    const auto indirectCountBufferInfo =
+        makeBufferCreateInfo(indirectCountBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
+    BufferWithMemory indirectCountBuffer(vk, *m_device, memAlloc, indirectCountBufferInfo, memReq);
     if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
     {
         *(reinterpret_cast<uint32_t *>(indirectCountBuffer.getAllocation().getHostPtr())) = 1;
@@ -226,9 +232,9 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 
     // create output buffer that will be used to read rendered image
     const VkDeviceSize outputBufferSize = renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-    const VkBufferCreateInfo outputBufferInfo =
-        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory outputBuffer(vk, *m_device, memAlloc, outputBufferInfo, MemoryRequirement::HostVisible);
+    const auto outputBufferInfo =
+        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | commonUsage);
+    BufferWithMemory outputBuffer(vk, *m_device, memAlloc, outputBufferInfo, memReq);
     VkDeviceAddress outputBufferAddress = 0ull;
 
 #ifndef CTS_USES_VULKANSC
@@ -756,11 +762,19 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
                                     {-1.0f, 0.0f, 0.0f, 1.0f},
                                     {1.0f, 1.0f, 0.0f, 1.0f}};
 
+    const VkBufferUsageFlags commonUsage =
+        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+        (m_params.useDeviceAddressCommands ? VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT : 0);
+
+    MemoryRequirement memReq = m_params.useDeviceAddressCommands ?
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+                                   MemoryRequirement::HostVisible;
+
     // create vertex buffer
     const VkDeviceSize vertexBufferSize = vertices.size() * sizeof(tcu::Vec4);
     const VkBufferCreateInfo vertexBufferInfo =
-        makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    BufferWithMemory vertexBuffer(vk, device, allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
+        makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | commonUsage);
+    BufferWithMemory vertexBuffer(vk, device, allocator, vertexBufferInfo, memReq);
     deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), (size_t)vertexBufferSize);
 
     // build index data
@@ -796,12 +810,9 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     }
 
     // create index buffer
-    const VkBufferUsageFlags commonUsage =
-        VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-        (m_params.useDeviceAddressCommands ? VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT : 0);
     const VkBufferCreateInfo indexBufferInfo =
         makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
-    BufferWithMemory indexBuffer(vk, device, allocator, indexBufferInfo, MemoryRequirement::HostVisible);
+    BufferWithMemory indexBuffer(vk, device, allocator, indexBufferInfo, memReq);
     deMemcpy(indexBuffer.getAllocation().getHostPtr(), indices.data(), size_t(indexBufferSize));
 
     // create indirect buffer
@@ -815,7 +826,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const VkDeviceSize indirectBufferSize = sizeof(drawIndirectCommand);
     const VkBufferCreateInfo indirectBufferInfo =
         makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
-    BufferWithMemory indirectBuffer(vk, *m_device, allocator, indirectBufferInfo, MemoryRequirement::HostVisible);
+    BufferWithMemory indirectBuffer(vk, *m_device, allocator, indirectBufferInfo, memReq);
     if ((m_params.mode == TM_DRAW_INDEXED_INDIRECT) || (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT))
     {
         deMemcpy(indirectBuffer.getAllocation().getHostPtr(), &drawIndirectCommand, indirectBufferSize);
@@ -825,8 +836,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const VkDeviceSize indirectCountBufferSize = sizeof(uint32_t);
     const VkBufferCreateInfo indirectCountBufferInfo =
         makeBufferCreateInfo(indirectCountBufferSize, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | commonUsage);
-    BufferWithMemory indirectCountBuffer(vk, *m_device, allocator, indirectCountBufferInfo,
-                                         MemoryRequirement::HostVisible);
+    BufferWithMemory indirectCountBuffer(vk, *m_device, allocator, indirectCountBufferInfo, memReq);
     if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
     {
         *static_cast<uint32_t *>(indirectCountBuffer.getAllocation().getHostPtr()) = 1u;
@@ -836,7 +846,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const VkDeviceSize outputBufferSize = renderSize.x() * renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
     const VkBufferCreateInfo outputBufferInfo =
         makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | commonUsage);
-    BufferWithMemory outputBuffer(vk, device, allocator, outputBufferInfo, MemoryRequirement::HostVisible);
+    BufferWithMemory outputBuffer(vk, device, allocator, outputBufferInfo, memReq);
     VkDeviceAddress outputBufferAddress = 0ull;
 
 #ifndef CTS_USES_VULKANSC
