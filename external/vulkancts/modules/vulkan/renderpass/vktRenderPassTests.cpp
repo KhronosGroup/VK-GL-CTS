@@ -2149,7 +2149,7 @@ void beginCommandBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, Vk
 
         pInheritanceInfo.pNext = &inheritanceRenderingInfo;
 
-        if (subpassIndex > 0)
+        if (pRenderPassInfo->getSubpasses().size() > 1)
         {
             prepareAttachmentRemapping(subpass, allAttachments, colorAttachmentIndices, colorAttachmentLocations,
                                        colorAttachmentInputIndices, localDepthAttachmentIndex,
@@ -3501,7 +3501,7 @@ void pushDynamicRenderingCommands(const DeviceInterface &vk, VkCommandBuffer com
 
             if (subpassRenderers[subpassNdx]->isSecondary())
             {
-                if (subpassNdx > 0)
+                if (subpassRenderers.size() > 1)
                 {
                     std::vector<uint32_t> colorAttachmentIndices;
                     std::vector<VkFormat> colorAttachmentFormats;

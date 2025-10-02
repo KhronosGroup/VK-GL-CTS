@@ -3576,11 +3576,10 @@ tcu::TestStatus testMemoryFdProperties(Context &context, MemoryTestConfig config
                                                                          exportedMemoryTypeIndex, config.externalType,
                                                                          config.dedicated ? *buffer : (vk::VkBuffer)0));
 
-    vk::VkMemoryFdPropertiesKHR properties;
+    vk::VkMemoryFdPropertiesKHR properties = vk::initVulkanStructure();
     NativeHandle handle;
 
     getMemoryNative(vkd, *device, *memory, config.externalType, handle);
-    properties.sType = vk::VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
     vk::VkResult res = vkd.getMemoryFdPropertiesKHR(*device, config.externalType, handle.getFd(), &properties);
 
     switch (config.externalType)
