@@ -297,21 +297,85 @@ std::vector<Vertex4RGBA> createFullscreenMesh(uint32_t viewCount, tcu::Vec2 redG
         const uint32_t nextIndex = viewIndex + 1;
         const float xEnd         = (nextIndex == viewCount) ? 1.0f : (-1.0f + step * static_cast<float>(nextIndex));
 
-        // quad vertex                            position                        uv                                color
-        const Vertex4RGBA lowerLeftVertex = {
-            {xStart, 1.0f, 0.0f, 1.0f}, {0.0f, 1.0f, fIndex, 1.0f}, {r.x(), g.y(), 0.0f, 1.0f}};
-        const Vertex4RGBA upperLeftVertex = {
-            {xStart, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, fIndex, 1.0f}, {r.x(), g.x(), 0.0f, 1.0f}};
-        const Vertex4RGBA lowerRightVertex = {
-            {xEnd, 1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, fIndex, 1.0f}, {r.y(), g.y(), 0.0f, 1.0f}};
-        const Vertex4RGBA upperRightVertex = {
-            {xEnd, -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f, fIndex, 1.0f}, {r.y(), g.x(), 0.0f, 1.0f}};
+        // clang-format off
+        // quad vertex                         position                      uv                          color
+        const Vertex4RGBA lowerLeftVertex =    {{xStart, 1.0f, 0.0f, 1.0f},  {0.0f, 1.0f, fIndex, 1.0f}, {r.x(), g.y(), 0.0f, 1.0f}};
+        const Vertex4RGBA upperLeftVertex =    {{xStart, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, fIndex, 1.0f}, {r.x(), g.x(), 0.0f, 1.0f}};
+        const Vertex4RGBA lowerRightVertex =   {{xEnd, 1.0f, 0.0f, 1.0f},    {1.0f, 1.0f, fIndex, 1.0f}, {r.y(), g.y(), 0.0f, 1.0f}};
+        const Vertex4RGBA upperRightVertex =   {{xEnd, -1.0f, 0.0f, 1.0f},   {1.0f, 0.0f, fIndex, 1.0f}, {r.y(), g.x(), 0.0f, 1.0f}};
+        // clang-format on
 
         const std::vector<Vertex4RGBA> viewData{lowerLeftVertex, lowerRightVertex, upperLeftVertex,
                                                 upperLeftVertex, lowerRightVertex, upperRightVertex};
 
         resultMesh.insert(resultMesh.end(), viewData.begin(), viewData.end());
         xStart = xEnd;
+    }
+
+    return resultMesh;
+}
+
+// Drop-in replacement for the function above, creating a full screen mesh surrounded by 8 mirrored replicas.
+std::vector<Vertex4RGBA> createFullScreenMeshWithMirrors(uint32_t viewCount, tcu::Vec2 r, tcu::Vec2 g)
+{
+    DE_ASSERT(viewCount == 1u);
+    DE_UNREF(viewCount);
+
+    // The original geometry will be between -1 and 1, and the replicas will be offset by -2, 0 or +2 in each axis.
+    const std::vector<tcu::Vec4> geometryOffsets{
+        // clang-format off
+        tcu::Vec4( 0.0f,  0.0f, 0.0f, 0.0f), // Original quad, using the first offset. The rest will be mirrored.
+        tcu::Vec4( 0.0f, -2.0f, 0.0f, 0.0f), // Top mirror.
+        tcu::Vec4( 2.0f, -2.0f, 0.0f, 0.0f), // Top-right mirror.
+        tcu::Vec4( 2.0f,  0.0f, 0.0f, 0.0f), // Right mirror.
+        tcu::Vec4( 2.0f,  2.0f, 0.0f, 0.0f), // Bottom-right mirror.
+        tcu::Vec4( 0.0f,  2.0f, 0.0f, 0.0f), // Bottom mirror.
+        tcu::Vec4(-2.0f,  2.0f, 0.0f, 0.0f), // Bottom-left mirror.
+        tcu::Vec4(-2.0f,  0.0f, 0.0f, 0.0f), // Left mirror.
+        tcu::Vec4(-2.0f, -2.0f, 0.0f, 0.0f), // Top-left mirror.
+        // clang-format on
+    };
+
+    // Mirrored colors.
+    const auto rm = r.swizzle(1, 0);
+    const auto gm = g.swizzle(1, 0);
+
+    // clang-format off
+    // quad vertex               position                     uv                        color
+    const Vertex4RGBA botLeft =  {{-1.0f,  1.0f, 0.0f, 1.0f}, {0.0f, 1.0f, 0.0f, 1.0f}, {r.x(), g.y(), 0.0f, 1.0f}};
+    const Vertex4RGBA topLeft =  {{-1.0f, -1.0f, 0.0f, 1.0f}, {0.0f, 0.0f, 0.0f, 1.0f}, {r.x(), g.x(), 0.0f, 1.0f}};
+    const Vertex4RGBA botRight = {{ 1.0f,  1.0f, 0.0f, 1.0f}, {1.0f, 1.0f, 0.0f, 1.0f}, {r.y(), g.y(), 0.0f, 1.0f}};
+    const Vertex4RGBA topRight = {{ 1.0f, -1.0f, 0.0f, 1.0f}, {1.0f, 0.0f, 0.0f, 1.0f}, {r.y(), g.x(), 0.0f, 1.0f}};
+    // clang-format on
+
+    std::vector<Vertex4RGBA> resultMesh;
+    const auto kVerticesPerQuad = 6u; // Each quad is 2 triangles with 3 vertices: 6 items.
+    resultMesh.reserve(kVerticesPerQuad * de::sizeU32(geometryOffsets));
+
+    for (size_t i = 0; i < geometryOffsets.size(); ++i)
+    {
+        const auto &offset = geometryOffsets.at(i);
+
+        // Vertex red and green are mirrored if they're not centered in their axes.
+        const auto &vr = (offset.x() == 0.0f ? r : rm);
+        const auto &vg = (offset.y() == 0.0f ? g : gm);
+
+        // Offset position by the geometry offset, then mirror the colors if needed.
+        // UV coordinates do not change (unused).
+        // clang-format off
+        auto bl = botLeft;  bl.position += offset; bl.color.x() = vr.x(); bl.color.y() = vg.y();
+        auto tl = topLeft;  tl.position += offset; tl.color.x() = vr.x(); tl.color.y() = vg.x();
+        auto br = botRight; br.position += offset; br.color.x() = vr.y(); br.color.y() = vg.y();
+        auto tr = topRight; tr.position += offset; tr.color.x() = vr.y(); tr.color.y() = vg.x();
+        // clang-format on
+
+        // Push the two triangles.
+        resultMesh.push_back(bl);
+        resultMesh.push_back(br);
+        resultMesh.push_back(tl);
+        resultMesh.push_back(tl);
+        resultMesh.push_back(br);
+        resultMesh.push_back(tr);
     }
 
     return resultMesh;
@@ -2201,7 +2265,7 @@ FragmentDensityMapTestInstance::FragmentDensityMapTestInstance(Context &context,
     // Create vertex buffers
     const tcu::Vec2 densityX(m_densityValue.x());
     const tcu::Vec2 densityY(m_densityValue.y());
-    m_vertices = createFullscreenMesh(1, {0.0f, 1.0f}, {0.0f, 1.0f}); // create fullscreen quad with gradient
+    m_vertices = createFullScreenMeshWithMirrors(1, {0.0f, 1.0f}, {0.0f, 1.0f}); // create fullscreen quad with gradient
     if (testParams.dynamicDensityMap)
         m_verticesDDM = createFullscreenMesh(1, densityX, densityY); // create fullscreen quad with single color
     m_verticesOutput = createFullscreenMesh(m_testParams.viewCount, {0.0f, 0.0f},
