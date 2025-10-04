@@ -4807,9 +4807,12 @@ void copyBufferToImageIndirect(const DeviceInterface &vk, const InstanceInterfac
         }
     }
 
+    VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo = initVulkanStructure();
+    memoryAllocateFlagsInfo.flags                     = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
     VkMemoryAllocateInfo allocInfo = {
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType
-        nullptr,                                // const void* pNext
+        &memoryAllocateFlagsInfo,               // const void* pNext
         memReqs.size,                           // VkDeviceSize allocationSize
         memoryTypeIndex                         // uint32_t memoryTypeIndex
     };

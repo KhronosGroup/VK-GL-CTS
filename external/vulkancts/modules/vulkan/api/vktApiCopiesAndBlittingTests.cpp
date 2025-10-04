@@ -3431,9 +3431,11 @@ tcu::TestStatus CopyMipmappedImageToBuffer::iterate(void)
             new ImageWithMemory(vk, vkDevice, memAlloc, sourceImageParams, vk::MemoryRequirement::Any));
     }
 
-    m_sourceBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-        vk, vkDevice, memAlloc, makeBufferCreateInfo(m_texture->getSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
-        vk::MemoryRequirement::HostVisible));
+    m_sourceBuffer = de::MovePtr<BufferWithMemory>(
+        new BufferWithMemory(vk, vkDevice, memAlloc,
+                             makeBufferCreateInfo(m_texture->getSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                                                            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
+                             vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress));
     m_texture->write(reinterpret_cast<uint8_t *>(m_sourceBuffer->getAllocation().getHostPtr()));
     flushAlloc(vk, vkDevice, m_sourceBuffer->getAllocation());
     std::vector<VkBufferImageCopy> copyRegions = m_texture->getBufferCopyRegions();
