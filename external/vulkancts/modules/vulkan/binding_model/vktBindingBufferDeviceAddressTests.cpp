@@ -2095,14 +2095,14 @@ void FragmentStoreTestCase::initPrograms(SourceCollections &programCollection) c
          %90 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
          %91 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %90
          %92 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %91 %uint_0
-         %93 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %92 Aligned 4
+         %93 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %92 Aligned 8
          %94 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %93 %uint_1
          %95 = OpAtomicIAdd %uint %94 %uint_4 %uint_0 %uint_13
          %96 = OpIAdd %uint %95 %uint_13
          %97 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
          %98 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %97
          %99 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %98 %uint_0
-        %100 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %99 Aligned 4
+        %100 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %99 Aligned 8
         %101 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %100 %uint_0
         %102 = OpLoad %uint %101 Aligned 4
         %103 = OpULessThanEqual %bool %96 %102
@@ -2113,91 +2113,91 @@ void FragmentStoreTestCase::initPrograms(SourceCollections &programCollection) c
         %105 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %106 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %105
         %107 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %106 %uint_0
-        %108 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %107 Aligned 4
+        %108 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %107 Aligned 8
         %109 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %108 %uint_2 %104
                OpStore %109 %uint_13 Aligned 4
         %111 = OpIAdd %uint %95 %uint_1
         %112 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %113 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %112
         %114 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %113 %uint_0
-        %115 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %114 Aligned 4
+        %115 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %114 Aligned 8
         %116 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %115 %uint_2 %111
                OpStore %116 %uint_2 Aligned 4
         %117 = OpIAdd %uint %95 %uint_2
         %118 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %119 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %118
         %120 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %119 %uint_0
-        %121 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %120 Aligned 4
+        %121 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %120 Aligned 8
         %122 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %121 %uint_2 %117
                OpStore %122 %72 Aligned 4
         %123 = OpIAdd %uint %95 %uint_3
         %125 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %126 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %125
         %127 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %126 %uint_0
-        %128 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %127 Aligned 4
+        %128 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %127 Aligned 8
         %129 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %128 %uint_2 %123
                OpStore %129 %73 Aligned 4
         %130 = OpIAdd %uint %95 %uint_4
         %131 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %132 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %131
         %133 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %132 %uint_0
-        %134 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %133 Aligned 4
+        %134 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %133 Aligned 8
         %135 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %134 %uint_2 %130
                OpStore %135 %74 Aligned 4
         %136 = OpIAdd %uint %95 %uint_5
         %138 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %139 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %138
         %140 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %139 %uint_0
-        %141 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %140 Aligned 4
+        %141 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %140 Aligned 8
         %142 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %141 %uint_2 %136
                OpStore %142 %75 Aligned 4
         %143 = OpIAdd %uint %95 %uint_6
         %145 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %146 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %145
         %147 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %146 %uint_0
-        %148 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %147 Aligned 4
+        %148 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %147 Aligned 8
         %149 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %148 %uint_2 %143
                OpStore %149 %76 Aligned 4
         %150 = OpIAdd %uint %95 %uint_7
         %152 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %153 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %152
         %154 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %153 %uint_0
-        %155 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %154 Aligned 4
+        %155 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %154 Aligned 8
         %156 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %155 %uint_2 %150
                OpStore %156 %77 Aligned 4
         %157 = OpIAdd %uint %95 %uint_8
         %159 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %160 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %159
         %161 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %160 %uint_0
-        %162 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %161 Aligned 4
+        %162 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %161 Aligned 8
         %163 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %162 %uint_2 %157
                OpStore %163 %78 Aligned 4
         %164 = OpIAdd %uint %95 %uint_9
         %166 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %167 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %166
         %168 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %167 %uint_0
-        %169 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %168 Aligned 4
+        %169 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %168 Aligned 8
         %170 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %169 %uint_2 %164
                OpStore %170 %79 Aligned 4
         %171 = OpIAdd %uint %95 %uint_10
         %173 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %174 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %173
         %175 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %174 %uint_0
-        %176 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %175 Aligned 4
+        %176 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %175 Aligned 8
         %177 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %176 %uint_2 %171
                OpStore %177 %80 Aligned 4
         %178 = OpIAdd %uint %95 %uint_11
         %180 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %181 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %180
         %182 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %181 %uint_0
-        %183 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %182 Aligned 4
+        %183 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %182 Aligned 8
         %184 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %183 %uint_2 %178
                OpStore %184 %81 Aligned 4
         %185 = OpIAdd %uint %95 %uint_12
         %187 = OpAccessChain %_ptr_StorageBuffer__ptr_PhysicalStorageBuffer__struct_66 %70 %uint_0
         %188 = OpLoad %_ptr_PhysicalStorageBuffer__struct_66 %187
         %189 = OpAccessChain %_ptr_PhysicalStorageBuffer__ptr_PhysicalStorageBuffer__struct_64 %188 %uint_0
-        %190 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %189 Aligned 4
+        %190 = OpLoad %_ptr_PhysicalStorageBuffer__struct_64 %189 Aligned 8
         %191 = OpAccessChain %_ptr_PhysicalStorageBuffer_uint %190 %uint_2 %185
                OpStore %191 %82 Aligned 4
                OpBranch %85
