@@ -3086,6 +3086,8 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
     flushAlloc(vk, vkDevice, m_sourceBuffer->getAllocation());
     std::vector<VkBufferImageCopy> copyRegions = m_texture->getBufferCopyRegions();
 
+    const VkImageLayout initialLayout =
+        m_params.useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 #ifndef CTS_USES_VULKANSC
     if (m_params.extensionFlags & INDIRECT_COPY)
     {
@@ -3102,7 +3104,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
         copyBufferToImageIndirect(vk, vki, vkPhysDevice, vkDevice, queue, activeQueueFamilyIndex(),
                                   m_sourceBuffer->get(), m_texture->getCompressedSize(), copyRegions, nullptr,
                                   VK_IMAGE_ASPECT_COLOR_BIT, m_texture->getNumLevels(), m_texture->getArraySize(),
-                                  m_source->get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  m_source->get(), initialLayout, VK_PIPELINE_STAGE_TRANSFER_BIT,
                                   VK_ACCESS_TRANSFER_READ_BIT, &commandPool, 0);
     }
     else
@@ -3110,9 +3112,8 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
     {
         copyBufferToImage(vk, vkDevice, queue, activeQueueFamilyIndex(), m_sourceBuffer->get(),
                           m_texture->getCompressedSize(), copyRegions, nullptr, VK_IMAGE_ASPECT_COLOR_BIT,
-                          m_texture->getNumLevels(), m_texture->getArraySize(), m_source->get(),
-                          VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                          VK_ACCESS_TRANSFER_READ_BIT, &commandPool, 0);
+                          m_texture->getNumLevels(), m_texture->getArraySize(), m_source->get(), initialLayout,
+                          VK_PIPELINE_STAGE_TRANSFER_BIT, VK_ACCESS_TRANSFER_READ_BIT, &commandPool, 0);
     }
 
     // VKSC requires static allocation, so allocate a large enough buffer for each individual mip level of
