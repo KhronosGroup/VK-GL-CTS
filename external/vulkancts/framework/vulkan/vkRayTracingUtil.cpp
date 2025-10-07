@@ -924,7 +924,7 @@ void updateVertexBuffer(const DeviceInterface &vk, const VkDevice device,
 
         // Make sure we're starting off well-aligned so we can min-align by pure offsetting
         DE_ASSERT(geometryMinAlign <= geometryVertexAlign);
-        DE_ASSERT((bufferOffset & (geometryVertexAlign - 1)) == 0);
+        DE_ASSERT((bufferOffset & (geometryVertexAlign - 1)) == 0 || (geometryMinAlign == 0));
 
         bufferOffset += geometryMinAlign;
 
@@ -1809,7 +1809,7 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
             {
                 // Make sure we're starting off well-aligned so we can min-align by pure offsetting
                 DE_ASSERT(geometryMinAlign <= geometryVertexAlign);
-                DE_ASSERT((vertexBufferOffset & (geometryVertexAlign - 1)) == 0);
+                DE_ASSERT((vertexBufferOffset & (geometryVertexAlign - 1)) == 0 || (geometryMinAlign == 0));
                 DE_ASSERT(!m_indirectBuffer || (geometryMinAlign == 0));
 
                 vertexBufferOffset += geometryMinAlign;
