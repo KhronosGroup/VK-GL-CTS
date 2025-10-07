@@ -49,7 +49,7 @@ using namespace vk;
 namespace
 {
 
-constexpr uint32_t kValueByIndexInvocations = 64u;
+constexpr uint32_t kTypicalWorkingGroupSize = 64u;
 
 struct ManyDispatchesParams
 {
@@ -82,14 +82,20 @@ void twoCmdBuffersCheckSupport(Context &context, TwoCmdBuffersParams params)
     generalCheckSupport(context, params.useExecutionSet, params.computeQueue);
 }
 
+void nullSetLayoutsInfoCheckSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_EXT_shader_object");
+    checkDGCExtComputeSupport(context, DGCComputeSupportType::BIND_SHADER);
+}
+
 // The idea here is that each command sequence will set the push constant to select an index and launch a single
 // workgroup, which will increase the buffer value by 1 in each invocation, so every output buffer value ends up being
-// kValueByIndexInvocations.
+// kTypicalWorkingGroupSize.
 void increaseValueByIndexPrograms(SourceCollections &dst)
 {
     std::ostringstream comp;
     comp << "#version 460\n"
-         << "layout (local_size_x=" << kValueByIndexInvocations << ", local_size_y=1, local_size_z=1) in;\n"
+         << "layout (local_size_x=" << kTypicalWorkingGroupSize << ", local_size_y=1, local_size_z=1) in;\n"
          << "layout (set=0, binding=0, std430) buffer OutputBlock { uint values[]; } outputBuffer;\n"
          << "layout (push_constant, std430) uniform PushConstantBlock { uint valueIndex; } pc;\n"
          << "void main (void) { atomicAdd(outputBuffer.values[pc.valueIndex], 1u); }\n";
@@ -104,6 +110,40 @@ void manyDispatchesInitPrograms(SourceCollections &dst, ManyDispatchesParams)
 void twoCmdBuffersInitPrograms(SourceCollections &dst, TwoCmdBuffersParams)
 {
     increaseValueByIndexPrograms(dst);
+}
+
+// We will have two command sequences and two shaders. Both of them will work with an input buffer and an output buffer
+// that contain an array of 128 integers, and each sequence will use a 64-threads working group to copy values from a
+// region of the input buffer to the output buffer. The first sequence will copy them in sequential order. The second
+// one will do it in reverse order. Dispatch size for each sequence is (1,1,1).
+void nullSetLayoutsInfoPrograms(SourceCollections &dst)
+{
+    std::ostringstream commonHeaderStream;
+    commonHeaderStream
+        << "#version 460\n"
+        << "layout (local_size_x=" << kTypicalWorkingGroupSize << ", local_size_y=1, local_size_z=1) in;\n"
+        << "layout (set=0, binding=0, std430) buffer OutputBlock { uint values[]; } outputBuffer;\n"
+        << "layout (set=0, binding=1, std430) readonly buffer InputBlock { uint values[]; } inputBuffer;\n"
+        << "layout (push_constant, std430) uniform PushConstantBlock { uint bufferOffset; } pc;\n";
+    const auto commonHeader = commonHeaderStream.str();
+
+    {
+        std::ostringstream comp;
+        comp << commonHeader << "void main(void) {\n"
+             << "    const uint idx = gl_LocalInvocationIndex + pc.bufferOffset;\n"
+             << "    outputBuffer.values[idx] = inputBuffer.values[idx];\n"
+             << "}\n";
+        dst.glslSources.add("comp1") << glu::ComputeSource(comp.str());
+    }
+    {
+        std::ostringstream comp;
+        comp << commonHeader << "void main(void) {\n"
+             << "    const uint srcIdx = gl_LocalInvocationIndex + pc.bufferOffset;\n"
+             << "    const uint dstIdx = (gl_WorkGroupSize.x - 1u - gl_LocalInvocationIndex) + pc.bufferOffset;\n"
+             << "    outputBuffer.values[dstIdx] = inputBuffer.values[srcIdx];\n"
+             << "}\n";
+        dst.glslSources.add("comp2") << glu::ComputeSource(comp.str());
+    }
 }
 
 tcu::TestStatus twoCmdBuffersRun(Context &context, TwoCmdBuffersParams params)
@@ -290,9 +330,9 @@ tcu::TestStatus twoCmdBuffersRun(Context &context, TwoCmdBuffersParams params)
     for (uint32_t i = 0; i < dispatchCount; ++i)
     {
         const auto &result = outputValues.at(i);
-        if (result != kValueByIndexInvocations)
+        if (result != kTypicalWorkingGroupSize)
         {
-            log << tcu::TestLog::Message << "Error at execution " << i << ": expected " << kValueByIndexInvocations
+            log << tcu::TestLog::Message << "Error at execution " << i << ": expected " << kTypicalWorkingGroupSize
                 << " but found " << result << tcu::TestLog::EndMessage;
             fail = true;
         }
@@ -487,9 +527,9 @@ tcu::TestStatus manyExecutesRun(Context &context, ManyDispatchesParams params)
     for (uint32_t i = 0; i < params.dispatchCount; ++i)
     {
         const auto &result = outputValues.at(i);
-        if (result != kValueByIndexInvocations)
+        if (result != kTypicalWorkingGroupSize)
         {
-            log << tcu::TestLog::Message << "Error at execution " << i << ": expected " << kValueByIndexInvocations
+            log << tcu::TestLog::Message << "Error at execution " << i << ": expected " << kTypicalWorkingGroupSize
                 << " but found " << result << tcu::TestLog::EndMessage;
             fail = true;
         }
@@ -628,9 +668,9 @@ tcu::TestStatus manySequencesRun(Context &context, ManyDispatchesParams params)
     for (uint32_t i = 0; i < params.dispatchCount; ++i)
     {
         const auto &result = outputValues.at(i);
-        if (result != kValueByIndexInvocations)
+        if (result != kTypicalWorkingGroupSize)
         {
-            log << tcu::TestLog::Message << "Error at execution " << i << ": expected " << kValueByIndexInvocations
+            log << tcu::TestLog::Message << "Error at execution " << i << ": expected " << kTypicalWorkingGroupSize
                 << " but found " << result << tcu::TestLog::EndMessage;
             fail = true;
         }
@@ -638,6 +678,214 @@ tcu::TestStatus manySequencesRun(Context &context, ManyDispatchesParams params)
 
     if (fail)
         return tcu::TestStatus::fail("Unexpected values found in output buffer; check log for details");
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus nullSetLayoutsInfoRun(Context &context)
+{
+    const auto ctx          = context.getContextCommonData();
+    const auto descType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto stageFlagBit = VK_SHADER_STAGE_COMPUTE_BIT;
+    const auto stageFlags   = static_cast<VkShaderStageFlags>(stageFlagBit);
+    const auto bindPoint    = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+    // Input and output buffers.
+    const auto valueCount  = kTypicalWorkingGroupSize * 2u;
+    const auto valueOffset = 1000u;
+
+    std::vector<uint32_t> inputValues(valueCount, 0u);
+    std::iota(begin(inputValues), end(inputValues), valueOffset);
+
+    const auto bufferSize       = static_cast<VkDeviceSize>(de::dataSize(inputValues));
+    const auto bufferUsage      = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto bufferCreateInfo = makeBufferCreateInfo(bufferSize, bufferUsage);
+
+    BufferWithMemory inputBuffer(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::W);
+    {
+        auto &alloc = inputBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(inputValues), de::dataSize(inputValues));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+    BufferWithMemory outputBuffer(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::R);
+    {
+        auto &alloc = outputBuffer.getAllocation();
+        memset(alloc.getHostPtr(), 0, de::dataSize(inputValues));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Descriptor set layout.
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, stageFlags);
+    setLayoutBuilder.addSingleBinding(descType, stageFlags);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    // Push constants.
+    const auto pcSize   = DE_SIZEOF32(uint32_t);
+    const auto pcStages = stageFlags;
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+
+    // Pipeline layout.
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, 2u);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+
+    // Update descriptor set.
+    DescriptorSetUpdateBuilder updateBuilder;
+    const VkBuffer buffersArray[] = {*outputBuffer, *inputBuffer};
+    const auto binding            = DescriptorSetUpdateBuilder::Location::binding;
+    for (uint32_t i = 0u; i < 2u; ++i)
+    {
+        const auto descInfo = makeDescriptorBufferInfo(buffersArray[i], 0ull, VK_WHOLE_SIZE);
+        updateBuilder.writeSingle(*descSet, binding(i), descType, &descInfo);
+    }
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    // Shaders.
+    const auto &binaries = context.getBinaryCollection();
+    const std::vector<VkDescriptorSetLayout> shaderSetLayouts{*setLayout};
+    const std::vector<VkPushConstantRange> shaderPCRanges{pcRange};
+    DGCComputeShaderExt comp1Shader(ctx.vkd, ctx.device, 0u, binaries.get("comp1"), shaderSetLayouts, shaderPCRanges);
+    DGCComputeShaderExt comp2Shader(ctx.vkd, ctx.device, 0u, binaries.get("comp2"), shaderSetLayouts, shaderPCRanges);
+
+    // Indirect execution set, created manually in this case to be able to use a null pSetLayoutsInfo.
+    const VkIndirectExecutionSetShaderInfoEXT iesShaderInfo = {
+        VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_SHADER_INFO_EXT,
+        nullptr,
+        1u,
+        &comp1Shader.get(),
+        nullptr, // THIS IS THE KEY OF THE TEST. THE IMPLEMENTATION WOULD HAVE TO FETCH THIS INFO FROM THE SHADER.
+        2u,
+        1u,
+        &pcRange,
+    };
+
+    VkIndirectExecutionSetInfoEXT iesInfo;
+    iesInfo.pShaderInfo = &iesShaderInfo;
+
+    const VkIndirectExecutionSetCreateInfoEXT iesCreateInfo = {
+        VK_STRUCTURE_TYPE_INDIRECT_EXECUTION_SET_CREATE_INFO_EXT,
+        nullptr,
+        VK_INDIRECT_EXECUTION_SET_INFO_TYPE_SHADER_OBJECTS_EXT,
+        iesInfo,
+    };
+
+    const auto ies = createIndirectExecutionSetEXT(ctx.vkd, ctx.device, &iesCreateInfo);
+
+    const VkWriteIndirectExecutionSetShaderEXT iesUpdate = {
+        VK_STRUCTURE_TYPE_WRITE_INDIRECT_EXECUTION_SET_SHADER_EXT,
+        nullptr,
+        1u,
+        comp2Shader.get(),
+    };
+    ctx.vkd.updateIndirectExecutionSetShaderEXT(ctx.device, *ies, 1u, &iesUpdate);
+
+    // Create the commands layout and DGC buffer.
+    IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(0u, stageFlags, *pipelineLayout);
+    cmdsLayoutBuilder.addComputeShaderObjectToken(cmdsLayoutBuilder.getStreamRange());
+    cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(), pcRange);
+    cmdsLayoutBuilder.addDispatchToken(cmdsLayoutBuilder.getStreamRange());
+    const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    const auto sequenceCount = 2u;
+    const auto dgcBufferSize = sequenceCount * cmdsLayoutBuilder.getStreamStride();
+
+    std::vector<uint32_t> dgcData;
+    dgcData.reserve(dgcBufferSize / DE_SIZEOF32(uint32_t));
+    dgcData.push_back(0u); // Choose comp1
+    dgcData.push_back(0u); // Value offset for the first sequence.
+    dgcData.push_back(1u); // Dispatch
+    dgcData.push_back(1u);
+    dgcData.push_back(1u);
+    dgcData.push_back(1u);                       // Choose comp2
+    dgcData.push_back(kTypicalWorkingGroupSize); // Value offset for the second sequence.
+    dgcData.push_back(1u);                       // Dispatch
+    dgcData.push_back(1u);
+    dgcData.push_back(1u);
+
+    DGCBuffer dgcBuffer(ctx.vkd, ctx.device, ctx.allocator, de::dataSize(dgcData));
+    {
+        auto &alloc = dgcBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(dgcData), de::dataSize(dgcData));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Preprocess buffer.
+    PreprocessBufferExt preprocessBuffer(ctx.vkd, ctx.device, ctx.allocator, *ies, *cmdsLayout, sequenceCount, 0u);
+
+    // Command pool and buffer.
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    // Main command buffer contents.
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindShadersEXT(cmdBuffer, 1u, &stageFlagBit, &comp1Shader.get());
+
+    {
+        const DGCGenCmdsInfo cmdsInfo(
+            stageFlags,                          // VkShaderStageFlags          shaderStages;
+            *ies,                                // VkIndirectExecutionSetEXT   indirectExecutionSet;
+            *cmdsLayout,                         // VkIndirectCommandsLayoutEXT indirectCommandsLayout;
+            dgcBuffer.getDeviceAddress(),        // VkDeviceAddress             indirectAddress;
+            dgcBuffer.getSize(),                 // VkDeviceSize                indirectAddressSize;
+            preprocessBuffer.getDeviceAddress(), // VkDeviceAddress             preprocessAddress;
+            preprocessBuffer.getSize(),          // VkDeviceSize                preprocessSize;
+            sequenceCount,                       // uint32_t                    maxSequenceCount;
+            0ull,                                // VkDeviceAddress             sequenceCountAddress;
+            0u);                                 // uint32_t                    maxDrawCount;
+        ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_FALSE, &cmdsInfo.get());
+    }
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Check output buffer.
+    {
+        auto &alloc = outputBuffer.getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+
+        std::vector<uint32_t> outputValues(inputValues.size());
+        memcpy(de::dataOrNull(outputValues), alloc.getHostPtr(), de::dataSize(outputValues));
+
+        std::vector<uint32_t> expectedValues(inputValues.size());
+        for (uint32_t i = 0u; i < valueCount; ++i)
+        {
+            if (i < kTypicalWorkingGroupSize)
+                expectedValues.at(i) = valueOffset + i;
+            else
+                expectedValues.at(i) = valueOffset + (valueCount - 1u - (i - kTypicalWorkingGroupSize));
+        }
+
+        bool fail = false;
+        auto &log = context.getTestContext().getLog();
+
+        for (uint32_t i = 0u; i < valueCount; ++i)
+        {
+            const auto &ref = expectedValues.at(i);
+            const auto &res = outputValues.at(i);
+
+            if (ref != res)
+            {
+                fail = true;
+                std::ostringstream msg;
+                msg << "Unexpected value at index " << i << ": expected " << ref << " but found " << res;
+                log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            }
+        }
+
+        if (fail)
+            TCU_FAIL("Unexpected values found in output buffer; check log for details --");
+    }
+
     return tcu::TestStatus::pass("Pass");
 }
 
@@ -2274,7 +2522,7 @@ tcu::TestCaseGroup *createDGCComputeMiscTestsExt(tcu::TestContext &testCtx)
                                         manyDispatchesInitPrograms, manyExecutesRun, params);
         }
 
-    for (const auto executeCount : {64u, 1024u, 8192u})
+    for (const auto executeCount : {64u, 1024u, 8192u, 131072u})
         for (const auto useComputeQueue : {false, true})
         {
             const ManyDispatchesParams params{executeCount, useComputeQueue};
@@ -2352,6 +2600,9 @@ tcu::TestCaseGroup *createDGCComputeMiscTestsExt(tcu::TestContext &testCtx)
             std::string("descriptor_buffer_push_descriptor") + (useExecutionSet ? "_with_ies" : "");
         mainGroup->addChild(new DBPDCase(testCtx, testName, params));
     }
+
+    addFunctionCaseWithPrograms(mainGroup.get(), "null_set_layouts_info", nullSetLayoutsInfoCheckSupport,
+                                nullSetLayoutsInfoPrograms, nullSetLayoutsInfoRun);
 
     return mainGroup.release();
 }

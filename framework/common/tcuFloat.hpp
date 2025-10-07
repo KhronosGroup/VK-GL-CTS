@@ -35,7 +35,8 @@ namespace tcu
 enum FloatFlags
 {
     FLOAT_HAS_SIGN       = (1 << 0),
-    FLOAT_SUPPORT_DENORM = (1 << 1)
+    FLOAT_SUPPORT_DENORM = (1 << 1),
+    FLOAT_NO_INFINITY    = (1 << 2),
 };
 
 enum RoundingDirection
@@ -153,11 +154,27 @@ public:
 
     inline bool isInf(void) const
     {
-        return exponentBits() == ((1 << ExponentBits) - 1) && mantissaBits() == 0;
+        if (!(Flags & FLOAT_NO_INFINITY))
+        {
+            return exponentBits() == ((1 << ExponentBits) - 1) && mantissaBits() == 0;
+        }
+        else
+        {
+            return false;
+        }
     }
     inline bool isNaN(void) const
     {
-        return exponentBits() == ((1 << ExponentBits) - 1) && mantissaBits() != 0;
+        if (!(Flags & FLOAT_NO_INFINITY))
+        {
+            return exponentBits() == ((1 << ExponentBits) - 1) && mantissaBits() != 0;
+        }
+        else
+        {
+            // For E4M3 there are only two NAN patterns - all mantissa/exponent bits set
+            constexpr uint64_t mask = (uint64_t{1} << (ExponentBits + MantissaBits)) - 1;
+            return (m_value & mask) == mask;
+        }
     }
     inline bool isZero(void) const
     {
@@ -196,6 +213,10 @@ typedef Float<uint16_t, 8, 7, 127, FLOAT_HAS_SIGN | FLOAT_SUPPORT_DENORM>
                   //
 typedef Float<uint16_t, 5, 10, 15, FLOAT_HAS_SIGN>
     Float16Denormless; //!< IEEE 754-2008 16-bit floating-point value without denormalized support
+
+typedef Float<uint8_t, 5, 2, 15, FLOAT_HAS_SIGN | FLOAT_SUPPORT_DENORM> FloatE5M2;
+
+typedef Float<uint8_t, 4, 3, 7, FLOAT_HAS_SIGN | FLOAT_SUPPORT_DENORM | FLOAT_NO_INFINITY> FloatE4M3;
 
 template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, uint32_t Flags>
 inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::Float(void) : m_value(0)
@@ -255,6 +276,7 @@ template <typename StorageType, int ExponentBits, int MantissaBits, int Exponent
 inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<
     StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::inf(int sign)
 {
+    DE_ASSERT(!(Flags & FLOAT_NO_INFINITY));
     DE_ASSERT(sign == 1 || ((Flags & FLOAT_HAS_SIGN) && sign == -1));
     return Float(StorageType(((sign > 0 ? 0ull : 1ull) << (ExponentBits + MantissaBits)) |
                              (((1ull << ExponentBits) - 1) << MantissaBits)));
@@ -272,8 +294,17 @@ inline Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float
     StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::largestNormal(int sign)
 {
     DE_ASSERT(sign == 1 || ((Flags & FLOAT_HAS_SIGN) && sign == -1));
-    return Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::construct(
-        sign, ExponentBias, (static_cast<StorageType>(1) << (MantissaBits + 1)) - 1);
+    if (!(Flags & FLOAT_NO_INFINITY))
+    {
+        return Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::construct(
+            sign, ExponentBias, (static_cast<StorageType>(1) << (MantissaBits + 1)) - 1);
+    }
+    else
+    {
+        // E4M3 has all exponent bits set, and the LSB of mantissa not set
+        return Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags>::construct(
+            sign, ExponentBias + 1, (static_cast<StorageType>(1) << (MantissaBits + 1)) - 2);
+    }
 }
 
 template <typename StorageType, int ExponentBits, int MantissaBits, int ExponentBias, uint32_t Flags>
@@ -338,9 +369,11 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
         return zero(+1);
     }
 
+    auto infVal = !(Flags & FLOAT_NO_INFINITY) ? inf(sign) : nan();
+
     if (other.isInf())
     {
-        return inf(sign);
+        return infVal;
     }
 
     if (other.isNaN())
@@ -354,7 +387,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
     }
 
     const int eMin = 1 - ExponentBias;
-    const int eMax = ((1 << ExponentBits) - 2) - ExponentBias;
+    const int eMax = ((1 << ExponentBits) - (!(Flags & FLOAT_NO_INFINITY) ? 2 : 1)) - ExponentBias;
 
     const StorageType s = StorageType((StorageType(other.signBit()))
                                       << (StorageType(ExponentBits + MantissaBits))); // \note Not sign, but sign bit.
@@ -473,7 +506,7 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
     {
         // Overflow.
         return (((sign < 0 && rd == ROUND_UPWARD) || (sign > 0 && rd == ROUND_DOWNWARD)) ? largestNormal(sign) :
-                                                                                           inf(sign));
+                                                                                           infVal);
     }
 
     DE_ASSERT(de::inRange(e, eMin, eMax));

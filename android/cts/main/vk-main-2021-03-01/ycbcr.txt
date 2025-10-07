@@ -5764,14 +5764,6 @@ dEQP-VK.ycbcr.query.levels.vertex.g16_b16r16_2plane_444_unorm
 dEQP-VK.ycbcr.query.levels.vertex.g16_b16r16_2plane_444_unorm_disjoint
 dEQP-VK.ycbcr.query.levels.vertex.g8_b8r8_2plane_444_unorm
 dEQP-VK.ycbcr.query.levels.vertex.g8_b8r8_2plane_444_unorm_disjoint
-dEQP-VK.ycbcr.query.lod.fragment.g10x6_b10x6r10x6_2plane_444_unorm_3pack16
-dEQP-VK.ycbcr.query.lod.fragment.g10x6_b10x6r10x6_2plane_444_unorm_3pack16_disjoint
-dEQP-VK.ycbcr.query.lod.fragment.g12x4_b12x4r12x4_2plane_444_unorm_3pack16
-dEQP-VK.ycbcr.query.lod.fragment.g12x4_b12x4r12x4_2plane_444_unorm_3pack16_disjoint
-dEQP-VK.ycbcr.query.lod.fragment.g16_b16r16_2plane_444_unorm
-dEQP-VK.ycbcr.query.lod.fragment.g16_b16r16_2plane_444_unorm_disjoint
-dEQP-VK.ycbcr.query.lod.fragment.g8_b8r8_2plane_444_unorm
-dEQP-VK.ycbcr.query.lod.fragment.g8_b8r8_2plane_444_unorm_disjoint
 dEQP-VK.ycbcr.query.size_lod.compute.g10x6_b10x6r10x6_2plane_444_unorm_3pack16
 dEQP-VK.ycbcr.query.size_lod.compute.g10x6_b10x6r10x6_2plane_444_unorm_3pack16_disjoint
 dEQP-VK.ycbcr.query.size_lod.compute.g12x4_b12x4r12x4_2plane_444_unorm_3pack16

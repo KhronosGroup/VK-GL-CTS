@@ -2,5 +2,17 @@
     "register_extension": {
         "type": "device",
         "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR": [
+            {
+                "features": [
+                    "fragmentShaderBarycentric"
+                ],
+                "requirements": [
+                    "VK_KHR_fragment_shader_barycentric"
+                ]
+            }
+        ]
     }
 }

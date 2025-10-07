@@ -544,8 +544,15 @@ tcu::TestStatus FillBufferTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
     if (m_params.useDeviceAddressCommands)
     {
+        // use different valid addressFlags in some cases to test them
+        VkAddressCommandFlagsKHR dstFlags = 0;
+        if (m_params.dstOffset)
+            dstFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+        if (m_params.size < VK_WHOLE_SIZE)
+            dstFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+
         VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
-        vk.cmdFillMemoryKHR(*m_cmdBuffer, dstRange, VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR, m_params.testData[0]);
+        vk.cmdFillMemoryKHR(*m_cmdBuffer, dstRange, dstFlags, m_params.testData[0]);
     }
 #endif
 
@@ -692,9 +699,16 @@ tcu::TestStatus UpdateBufferTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
     if (m_params.useDeviceAddressCommands)
     {
+        // use different valid addressFlags in some cases to test them
+        VkAddressCommandFlagsKHR dstFlags = VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+        if (m_params.size < TestParams::TEST_DATA_SIZE)
+            dstFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+        if (m_params.useTransferOnlyQueue)
+            dstFlags = 0;
+
         VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
-        vk.cmdUpdateMemoryKHR(*m_cmdBuffer, dstRange, VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR,
-                              TestParams::TEST_DATA_SIZE * sizeof(uint32_t), &m_params.testData);
+        vk.cmdUpdateMemoryKHR(*m_cmdBuffer, dstRange, dstFlags, TestParams::TEST_DATA_SIZE * sizeof(uint32_t),
+                              &m_params.testData);
     }
 #endif
 

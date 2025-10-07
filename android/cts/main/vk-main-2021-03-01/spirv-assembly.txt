@@ -2065,7 +2065,6 @@ dEQP-VK.spirv_assembly.instruction.compute.signed_op.uint_atomicsmin
 dEQP-VK.spirv_assembly.instruction.compute.signed_op.uint_sdiv
 dEQP-VK.spirv_assembly.instruction.compute.signed_op.uint_smulextended
 dEQP-VK.spirv_assembly.instruction.compute.signed_op.uint_snegate
-dEQP-VK.spirv_assembly.instruction.compute.variable_pointers.dynamic_offset.select_descriptor_array
 dEQP-VK.spirv_assembly.instruction.compute.vector_shuffle.vector_shuffle
 dEQP-VK.spirv_assembly.instruction.function_params.sampler_param
 dEQP-VK.spirv_assembly.instruction.graphics.composite_insert.undef_mat2x2_frag

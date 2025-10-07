@@ -515,8 +515,17 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
 #ifndef CTS_USES_VULKANSC
         if (m_params.useDeviceAddressCommands)
         {
-            vk::VkDeviceAddressRangeKHR addressRange{indirectBufferAddress + offset, m_params.bufferSize};
-            vkdi.cmdDispatchIndirect2KHR(*cmdBuffer, addressRange);
+            vk::VkDispatchIndirect2InfoKHR dispatchIndirect2Info = vk::initVulkanStructure();
+            dispatchIndirect2Info.addressRange = {indirectBufferAddress + offset, m_params.bufferSize, 0};
+            dispatchIndirect2Info.addressFlags = vk::VK_ADDRESS_COMMAND_MAYBE_ALIASES_STORAGE_BUFFER_BIT_KHR;
+
+            // use different valid addressFlags in some cases to test them
+            if (m_params.workGroupSize.x() > 1)
+                dispatchIndirect2Info.addressFlags |= vk::VK_ADDRESS_COMMAND_ALWAYS_ALIASES_STORAGE_BUFFER_BIT_KHR;
+            if (m_params.workGroupSize.y() > 1)
+                dispatchIndirect2Info.addressFlags |= vk::VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+
+            vkdi.cmdDispatchIndirect2KHR(*cmdBuffer, &dispatchIndirect2Info);
         }
 #else
         DE_UNREF(indirectBufferAddress);

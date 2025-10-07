@@ -359,7 +359,7 @@ VertexAttributeDivisorInstance::VertexAttributeDivisorInstance(Context &context,
                                                               DE_LENGTH_OF_ARRAY(vertexInputAttributeDescriptions),
                                                               vertexInputAttributeDescriptions);
 
-    const vk::VkVertexInputBindingDivisorDescriptionEXT vertexInputBindingDivisorDescription = {
+    const vk::VkVertexInputBindingDivisorDescription vertexInputBindingDivisorDescription = {
         1u,
         m_params.attribDivisor,
     };
@@ -966,6 +966,11 @@ void VertexAttributeDivisorCase::checkSupport(Context &context) const
     if (m_params.extension == Extension::EXT)
     {
         context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
+        // VUID-vkCmdDraw-pNext-09461
+        const vk::VkPhysicalDeviceVertexAttributeDivisorProperties &vertexAttributeDivisorProperties =
+            context.getVertexAttributeDivisorProperties();
+        if (!m_params.firstInstanceZero && !vertexAttributeDivisorProperties.supportsNonZeroFirstInstance)
+            TCU_THROW(NotSupportedError, "supportsNonZeroFirstInstance not supported");
     }
     else if (m_params.extension == Extension::KHR)
     {

@@ -39,7 +39,6 @@ struct PropertyDesc
 {
     VkStructureType sType;
     const char *name;
-    const uint32_t specVersion;
 };
 
 // Structure containg all property blobs - this simplifies generated code
@@ -71,7 +70,6 @@ struct PropertyStructCreationData
 {
     PropertyStructWrapperCreator creatorFunction;
     const std::string name;
-    uint32_t specVersion;
 };
 
 template <class PropertyType>

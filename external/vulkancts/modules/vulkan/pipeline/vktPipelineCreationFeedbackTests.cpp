@@ -226,16 +226,15 @@ protected:
     Move<VkPipelineCache> m_cache;
 
     // binary related structures are used when m_mode is set to TestMode::BINARIES
-    PipelineBinaryWrapper m_binaries[4];
+    PipelineBinaryWrapper m_binaries[5];
 };
 
 BaseTestInstance::BaseTestInstance(Context &context, const TestParam *param)
     : TestInstance(context)
     , m_param(param)
     , m_binaries{
-          {context.getDeviceInterface(), context.getDevice()},
-          {context.getDeviceInterface(), context.getDevice()},
-          {context.getDeviceInterface(), context.getDevice()},
+          {context.getDeviceInterface(), context.getDevice()}, {context.getDeviceInterface(), context.getDevice()},
+          {context.getDeviceInterface(), context.getDevice()}, {context.getDeviceInterface(), context.getDevice()},
           {context.getDeviceInterface(), context.getDevice()},
       }
 {
@@ -305,9 +304,11 @@ protected:
     RenderPassWrapper m_renderPass;
 
     GraphicsPipelinePtr m_pipeline[PIPELINE_NDX_COUNT];
-    VkPipelineCreationFeedbackEXT m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT];
-    bool m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT];
-    VkPipelineCreationFeedbackEXT m_pipelineStageCreationFeedbacks[PIPELINE_NDX_COUNT * VK_MAX_SHADER_STAGES];
+    VkPipelineCreationFeedbackEXT
+        m_pipelineCreationFeedback[static_cast<int>(VK_MAX_PIPELINE_PARTS) * static_cast<int>(PIPELINE_NDX_COUNT)];
+    bool m_pipelineCreationIsHeavy[static_cast<int>(VK_MAX_PIPELINE_PARTS) * static_cast<int>(PIPELINE_NDX_COUNT)];
+    VkPipelineCreationFeedbackEXT
+        m_pipelineStageCreationFeedbacks[static_cast<int>(PIPELINE_NDX_COUNT) * static_cast<int>(VK_MAX_SHADER_STAGES)];
 };
 
 void GraphicsTestCase::initPrograms(SourceCollections &programCollection) const
@@ -444,11 +445,7 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
 
-    // pipeline reconstructed from binaries should not use RETAIN_LINK_TIME_OPTIMIZATION/LINK_TIME_OPTIMIZATION
     PipelineConstructionType pipelineConstructionTypeForUseBlobs = param->getPipelineConstructionType();
-    if ((param->getMode() == TestMode::BINARY) &&
-        (pipelineConstructionTypeForUseBlobs == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY))
-        pipelineConstructionTypeForUseBlobs = PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY;
 
     m_pipeline[PIPELINE_NDX_NO_BLOBS]   = GraphicsPipelinePtr(new GraphicsPipelineWrapper(
         context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(),
@@ -602,19 +599,28 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
         }
         else
         {
-            VkPipelineBinaryInfoKHR pipelinePartBinaryInfo[4];
-            VkPipelineBinaryInfoKHR *binaryInfoPtr[4];
-            deMemset(binaryInfoPtr, 0, 4 * sizeof(nullptr));
+            VkPipelineBinaryInfoKHR pipelinePartBinaryInfo[5];
+            VkPipelineBinaryInfoKHR *binaryInfoPtr[5];
+            deMemset(binaryInfoPtr, 0, 5 * sizeof(nullptr));
 
+            // Binaries for the final linked pipeline, which could have more optimized binaries.
+            m_binaries[0].createPipelineBinariesFromPipeline(m_pipeline[PIPELINE_NDX_NO_BLOBS]->getPipeline());
+            if (m_binaries[0].getBinariesCount() > 0U)
+            {
+                pipelinePartBinaryInfo[0] = m_binaries[0].preparePipelineBinaryInfo();
+                binaryInfoPtr[0]          = &pipelinePartBinaryInfo[0];
+            }
+
+            // Binaries for the pipeline libraries.
             for (uint32_t i = 0; i < 4; ++i)
             {
                 VkPipeline partialPipeline = m_pipeline[PIPELINE_NDX_NO_BLOBS]->getPartialPipeline(i);
-                m_binaries[i].createPipelineBinariesFromPipeline(partialPipeline);
-                if (m_binaries[i].getBinariesCount() == 0)
+                m_binaries[1 + i].createPipelineBinariesFromPipeline(partialPipeline);
+                if (m_binaries[1 + i].getBinariesCount() == 0)
                     continue;
 
-                pipelinePartBinaryInfo[i] = m_binaries[i].preparePipelineBinaryInfo();
-                binaryInfoPtr[i]          = &pipelinePartBinaryInfo[i];
+                pipelinePartBinaryInfo[1 + i] = m_binaries[1 + i].preparePipelineBinaryInfo();
+                binaryInfoPtr[1 + i]          = &pipelinePartBinaryInfo[1 + i];
             }
 
             // Create derivative pipeline that also uses binaries
@@ -626,7 +632,7 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
                 geomShaderModule, fragShaderModule, &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS],
                 &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS],
                 &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES], basePipeline, param->isZeroOutFeedbackCount(),
-                VK_NULL_HANDLE, binaryInfoPtr[0], binaryInfoPtr[1], binaryInfoPtr[2], binaryInfoPtr[3]);
+                binaryInfoPtr[0], binaryInfoPtr[1], binaryInfoPtr[2], binaryInfoPtr[3], binaryInfoPtr[4]);
 
             // Destroy second pipeline as soon as it was created
             if (m_pipeline[PIPELINE_NDX_DERIVATIVE]->wasBuild())
@@ -645,8 +651,8 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
                                    &m_pipelineCreationFeedback[VK_MAX_PIPELINE_PARTS * 2],
                                    &m_pipelineCreationIsHeavy[VK_MAX_PIPELINE_PARTS * 2],
                                    &m_pipelineStageCreationFeedbacks[VK_MAX_SHADER_STAGES * 2], VK_NULL_HANDLE,
-                                   param->isZeroOutFeedbackCount(), nullptr, binaryInfoPtr[0], binaryInfoPtr[1],
-                                   binaryInfoPtr[2], binaryInfoPtr[3]);
+                                   param->isZeroOutFeedbackCount(), binaryInfoPtr[0], binaryInfoPtr[1],
+                                   binaryInfoPtr[2], binaryInfoPtr[3], binaryInfoPtr[4]);
 
             // Destroy third pipeline as soon as it was created
             if (m_pipeline[PIPELINE_NDX_USE_BLOBS]->wasBuild())
@@ -837,7 +843,8 @@ tcu::TestStatus GraphicsTestInstance::verifyTestResult(void)
     uint32_t step               = start + 1u;
 
     // Iterate ofer creation feedback for all pipeline parts - if monolithic pipeline is tested then skip (step over) feedback for parts
-    for (uint32_t creationFeedbackNdx = start; creationFeedbackNdx < VK_MAX_PIPELINE_PARTS * PIPELINE_NDX_COUNT;
+    for (uint32_t creationFeedbackNdx = start;
+         creationFeedbackNdx < static_cast<uint32_t>(VK_MAX_PIPELINE_PARTS) * static_cast<uint32_t>(PIPELINE_NDX_COUNT);
          creationFeedbackNdx += step)
     {
         uint32_t pipelineCacheNdx  = creationFeedbackNdx / uint32_t(VK_MAX_PIPELINE_PARTS);

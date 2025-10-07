@@ -4,7 +4,6 @@ vk-main-2023-03-01/conditional-rendering.txt
 vk-main-2023-03-01/depth.txt
 vk-main-2023-03-01/draw.txt
 vk-main-2023-03-01/drm-format-modifiers.txt
-vk-main-2023-03-01/dynamic-rendering.txt
 vk-main-2023-03-01/dynamic-state.txt
 vk-main-2023-03-01/fragment-operations.txt
 vk-main-2023-03-01/fragment-shading-barycentric.txt
@@ -34,8 +33,7 @@ vk-main-2023-03-01/query-pool.txt
 vk-main-2023-03-01/rasterization.txt
 vk-main-2023-03-01/ray-query.txt
 vk-main-2023-03-01/ray-tracing-pipeline.txt
-vk-main-2023-03-01/renderpass.txt
-vk-main-2023-03-01/renderpass2.txt
+vk-main-2023-03-01/renderpasses.txt
 vk-main-2023-03-01/robustness.txt
 vk-main-2023-03-01/spirv-assembly.txt
 vk-main-2023-03-01/subgroups.txt

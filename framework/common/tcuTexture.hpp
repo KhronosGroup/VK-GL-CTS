@@ -149,6 +149,7 @@ public:
     }
 } DE_WARN_UNUSED_TYPE;
 
+tcu::Vec4 unpackRGB999E5(uint32_t color);
 bool isValid(TextureFormat format);
 int getPixelSize(TextureFormat format);
 int getNumUsedChannels(TextureFormat::ChannelOrder order);

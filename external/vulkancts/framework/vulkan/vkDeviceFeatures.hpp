@@ -40,7 +40,6 @@ struct FeatureDesc
 {
     VkStructureType sType;
     const std::string name;
-    const uint32_t specVersion;
 };
 
 // Structure containg all feature blobs - this simplifies generated code
@@ -61,9 +60,10 @@ class FeatureStructWrapperBase
 public:
     virtual ~FeatureStructWrapperBase(void)                                          = default;
     virtual void initializeFeatureFromBlob(const AllFeaturesBlobs &allFeaturesBlobs) = 0;
-    virtual FeatureDesc getFeatureDesc(void) const                                   = 0;
+    virtual const FeatureDesc &getFeatureDesc(void) const                            = 0;
     virtual void **getFeatureTypeNext(void)                                          = 0;
     virtual void *getFeatureTypeRaw(void)                                            = 0;
+    virtual FeatureStructWrapperBase *clone(void)                                    = 0;
 };
 
 using FeatureStructWrapperCreator = FeatureStructWrapperBase *(*)(void);
@@ -71,7 +71,6 @@ struct FeatureStructCreationData
 {
     FeatureStructWrapperCreator creatorFunction;
     const std::string name;
-    uint32_t specVersion;
 };
 
 template <class FeatureType>
@@ -196,13 +195,21 @@ public:
         initFeatureFromBlobWrapper(m_featureType, allFeaturesBlobs);
     }
 
-    FeatureDesc getFeatureDesc(void) const
+    const FeatureDesc &getFeatureDesc(void) const
     {
         return m_featureDesc;
     }
     void **getFeatureTypeNext(void)
     {
-        return &m_featureType.pNext;
+        if constexpr (std::is_const_v<std::remove_pointer_t<decltype(m_featureType.pNext)>>)
+        {
+            // for example const void* VkFaultCallbackInfo::pNext
+            return const_cast<void **>(reinterpret_cast<const void **>(&m_featureType.pNext));
+        }
+        else
+        {
+            return &m_featureType.pNext;
+        }
     }
     void *getFeatureTypeRaw(void)
     {
@@ -211,6 +218,13 @@ public:
     FeatureType &getFeatureTypeRef(void)
     {
         return m_featureType;
+    }
+    FeatureStructWrapperBase *clone(void)
+    {
+        FeatureStructWrapperBase *p                           = new FeatureStructWrapper(m_featureDesc);
+        static_cast<FeatureStructWrapper *>(p)->m_featureType = m_featureType;
+        *getFeatureTypeNext()                                 = nullptr;
+        return p;
     }
 
 public:

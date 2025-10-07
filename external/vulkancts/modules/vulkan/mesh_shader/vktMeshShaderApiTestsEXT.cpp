@@ -657,9 +657,17 @@ tcu::TestStatus MeshApiInstance::iterate(void)
         const auto &indirectArgs = m_params.indirectArgs.get();
         if (m_params.useDeviceAddressCommands)
         {
-            VkStridedDeviceAddressRangeKHR range{indirectBufferAddress + indirectArgs.offset, indirectArgs.stride,
-                                                 indirectBuffer->getBufferSize()};
-            vkd.cmdDrawMeshTasksIndirect2EXT(rpCmdBuffer, range, m_params.drawCount);
+            VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
+            drawIndirect2Info.addressRange           = {indirectBufferAddress + indirectArgs.offset,
+                                                        indirectBuffer->getBufferSize(), indirectArgs.stride};
+            drawIndirect2Info.drawCount              = m_params.drawCount;
+
+            // use different valid addressFlags in some cases to test them
+            drawIndirect2Info.addressFlags = (m_params.drawCount > 1) ?
+                                                 VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR :
+                                                 VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+
+            vkd.cmdDrawMeshTasksIndirect2EXT(rpCmdBuffer, &drawIndirect2Info);
         }
         else
         {
@@ -677,10 +685,22 @@ tcu::TestStatus MeshApiInstance::iterate(void)
             ((indirectCountLimit == IndirectCountLimitType::MAX_COUNT) ? m_params.drawCount : largeDrawCount);
         if (m_params.useDeviceAddressCommands)
         {
-            VkStridedDeviceAddressRangeKHR range{indirectBufferAddress + indirectArgs.offset, indirectArgs.stride,
-                                                 indirectBuffer->getBufferSize()};
-            VkDeviceAddressRangeKHR countRange{countBufferAddress + indirectCountOffset, countBuffer->getBufferSize()};
-            vkd.cmdDrawMeshTasksIndirectCount2EXT(rpCmdBuffer, range, countRange, maxCount);
+            VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
+
+            drawIndirectCount2Info.addressRange      = {indirectBufferAddress + indirectArgs.offset,
+                                                        indirectBuffer->getBufferSize(), indirectArgs.stride};
+            drawIndirectCount2Info.countAddressRange = {countBufferAddress + indirectCountOffset,
+                                                        countBuffer->getBufferSize()};
+            drawIndirectCount2Info.maxDrawCount      = maxCount;
+
+            // use different valid addressFlags in some cases to test them
+            VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR |
+                                                    VK_ADDRESS_COMMAND_NEVER_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT |
+                                                    VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+            drawIndirectCount2Info.addressFlags      = m_params.useTask ? 0u : addressFlags;
+            drawIndirectCount2Info.countAddressFlags = (m_params.drawCount > 1) ? addressFlags : 0u;
+
+            vkd.cmdDrawMeshTasksIndirectCount2EXT(rpCmdBuffer, &drawIndirectCount2Info);
         }
         else
         {

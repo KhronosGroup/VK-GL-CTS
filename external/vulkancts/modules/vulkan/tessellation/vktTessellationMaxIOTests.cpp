@@ -851,6 +851,7 @@ void MaxIOTest::initPrograms(vk::SourceCollections &programCollection) const
 void MaxIOTest::checkSupport(Context &context) const
 {
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
 
     const auto params = dynamic_cast<MaxIOTestParams *>(m_testParams.get());
 
@@ -1620,6 +1621,7 @@ void LevelIOTest::initPrograms(vk::SourceCollections &programCollection) const
 void LevelIOTest::checkSupport(Context &context) const
 {
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_VIEWPORT);
 }
 
 class LevelIOTestInstance : public TestInstance

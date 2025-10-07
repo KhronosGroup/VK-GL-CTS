@@ -46,7 +46,7 @@ public:
         , m_sampleLocations(gridSize.x() * gridSize.y() * numSamples)
     {
         DE_ASSERT(gridSize.x() > 0 && gridSize.y() > 0);
-        DE_ASSERT(numSamples > 1);
+        DE_ASSERT(numSamples > 0);
     }
 
     //! If grid x,y is larger than gridSize, then each coordinate is wrapped, x' = x % size_x

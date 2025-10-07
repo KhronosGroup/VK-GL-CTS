@@ -36,38 +36,24 @@ namespace
 {
 using namespace vk;
 
-enum class CopyFlagTestMode
+enum class CommandFlagTestMode
 {
-    // Copy to/from sparsely bound memory, with some unbound ranges of memory, using the SPARSE flag
-    COPY_TO_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT,
-    COPY_FROM_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT,
-
-    // Copy to/from memory allocated in a sparse buffer, but fully bound to disjoint memory, without the SPARSE copy flag
-    COPY_TO_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT,
-    COPY_FROM_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT,
-
-    // Copy to/from memory allocated in a non-sparse buffer, using the SPARSE flag
-    COPY_TO_NON_SPARSE_BUFFER_USING_SPARSE_BIT,
-
-    // Copy to memory allocated in a DEVICE_LOCAL heap without the DEVICE_LOCAL flag
-    COPY_TO_NON_SPARSE_BUFFER_USING_PROTECTED_BIT,
-
-    // Copy to/from memory allocated in a non-DEVICE_LOCAL heap with and without the DEVICE_LOCAL flag
-    COPY_NON_LOCAL_MEMORY_USING_DEVICE_LOCAL_BIT,
-    COPY_NON_LOCAL_MEMORY_USING_SPARSE_BIT,
+    // Copy to/from sparsely bound memory, with some unbound ranges of memory
+    COPY_TO_MEMORY_WITH_UNBOUND_RANGES,
+    COPY_FROM_MEMORY_WITH_UNBOUND_RANGES,
 };
 
 struct TestParams
 {
-    CopyFlagTestMode mode;
+    CommandFlagTestMode mode;
 };
 
-class BufferAddressCopyFlags : public vkt::TestInstance
+class BufferAddressCommandFlags : public vkt::TestInstance
 {
 public:
     using AllocVect = std::vector<de::MovePtr<Allocation>>;
 
-    BufferAddressCopyFlags(Context &context, const TestParams &params);
+    BufferAddressCommandFlags(Context &context, const TestParams &params);
 
     tcu::TestStatus iterate(void) override;
 
@@ -82,8 +68,8 @@ private:
     VkBufferCreateFlags m_dstBufferCreateFlag;
     VkDeviceSize m_srcBufferSize;
     VkDeviceSize m_dstBufferSize;
-    VkAddressCopyFlagsKHR m_srcCopyFlag;
-    VkAddressCopyFlagsKHR m_dstCopyFlag;
+    VkAddressCommandFlagsKHR m_srcCommandFlag;
+    VkAddressCommandFlagsKHR m_dstCommandFlag;
 
     VkBufferCopy m_copyRegion;
 
@@ -96,15 +82,15 @@ private:
     AllocVect m_dstBufferAllocVect;
 };
 
-BufferAddressCopyFlags::BufferAddressCopyFlags(Context &context, const TestParams &params)
+BufferAddressCommandFlags::BufferAddressCommandFlags(Context &context, const TestParams &params)
     : vkt::TestInstance(context)
     , m_params(params)
     , m_srcBufferCreateFlag(0)
     , m_dstBufferCreateFlag(0)
     , m_srcBufferSize(64ull)
     , m_dstBufferSize(64ull)
-    , m_srcCopyFlag(VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR)
-    , m_dstCopyFlag(VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR)
+    , m_srcCommandFlag(0)
+    , m_dstCommandFlag(0)
     , m_copyRegion{0u, 0u, 512u}
     , m_useSingleChunk(false)
     , m_replaceSrcOffsetWithChunkSize(false)
@@ -114,73 +100,29 @@ BufferAddressCopyFlags::BufferAddressCopyFlags(Context &context, const TestParam
     // setup configuration parameters based on the test mode
     switch (m_params.mode)
     {
-    case CopyFlagTestMode::COPY_TO_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT:
+    case CommandFlagTestMode::COPY_TO_MEMORY_WITH_UNBOUND_RANGES:
         m_srcBufferSize                 = 512ull;
         m_dstBufferSize                 = 1 << 18;
-        m_dstCopyFlag                   = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
+        m_dstCommandFlag                = VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
         m_dstBufferCreateFlag           = VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
         m_copyRegion                    = {0u, 0u, 512u};
         m_replaceDstOffsetWithChunkSize = true;
         m_useSingleChunk                = true;
         break;
 
-    case CopyFlagTestMode::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT:
+    case CommandFlagTestMode::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES:
         m_srcBufferSize                 = 1 << 18;
         m_dstBufferSize                 = 512ull;
-        m_srcCopyFlag                   = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
+        m_srcCommandFlag                = 0;
         m_srcBufferCreateFlag           = VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
         m_copyRegion                    = {0u, 0u, 512u};
         m_replaceSrcOffsetWithChunkSize = true;
         m_useSingleChunk                = true;
         break;
-
-    case CopyFlagTestMode::COPY_TO_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT:
-        m_srcBufferSize       = 512ull;
-        m_dstBufferSize       = 1 << 18;
-        m_dstBufferCreateFlag = VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
-        m_copyRegion          = {0u, 0u, 512u};
-        break;
-
-    case CopyFlagTestMode::COPY_FROM_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT:
-        m_srcBufferSize       = static_cast<vk::VkDeviceSize>(1) << 18;
-        m_dstBufferSize       = 512ull;
-        m_srcBufferCreateFlag = VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
-        m_copyRegion          = {0u, 0u, 512u};
-        break;
-
-    case CopyFlagTestMode::COPY_TO_NON_SPARSE_BUFFER_USING_SPARSE_BIT:
-        m_srcBufferSize = 64ull;
-        m_dstBufferSize = 64ull;
-        m_srcCopyFlag   = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
-        m_dstCopyFlag   = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
-        m_copyRegion    = {0u, 0u, 64u};
-        break;
-
-    case CopyFlagTestMode::COPY_TO_NON_SPARSE_BUFFER_USING_PROTECTED_BIT:
-        m_srcBufferSize = 64ull;
-        m_dstBufferSize = 64ull;
-        m_srcCopyFlag   = VK_ADDRESS_COPY_PROTECTED_BIT_KHR;
-        m_dstCopyFlag   = VK_ADDRESS_COPY_PROTECTED_BIT_KHR;
-        m_copyRegion    = {0u, 0u, 64u};
-        break;
-
-    case CopyFlagTestMode::COPY_NON_LOCAL_MEMORY_USING_DEVICE_LOCAL_BIT:
-        m_srcBufferSize = 64ull;
-        m_dstBufferSize = 64ull;
-        m_copyRegion    = {0u, 0u, 64u};
-        break;
-
-    case CopyFlagTestMode::COPY_NON_LOCAL_MEMORY_USING_SPARSE_BIT:
-        m_srcBufferSize = 64ull;
-        m_dstBufferSize = 64ull;
-        m_srcCopyFlag   = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
-        m_dstCopyFlag   = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
-        m_copyRegion    = {0u, 0u, 64u};
-        break;
     };
 }
 
-tcu::TestStatus BufferAddressCopyFlags::iterate()
+tcu::TestStatus BufferAddressCommandFlags::iterate()
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     auto device               = m_context.getDevice();
@@ -228,9 +170,9 @@ tcu::TestStatus BufferAddressCopyFlags::iterate()
 
     VkDeviceMemoryCopyKHR memoryCopy2KHR = initVulkanStructure();
     memoryCopy2KHR.srcRange              = srcAddressRange;
-    memoryCopy2KHR.srcCopyFlags          = m_srcCopyFlag;
+    memoryCopy2KHR.srcFlags              = m_srcCommandFlag;
     memoryCopy2KHR.dstRange              = dstAddressRange;
-    memoryCopy2KHR.dstCopyFlags          = m_dstCopyFlag;
+    memoryCopy2KHR.dstFlags              = m_dstCommandFlag;
 
     const auto cmdPool(createCommandPool(vk, device, (VkCommandPoolCreateFlags)0, queueFamilyIndex));
     const auto cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -295,8 +237,8 @@ tcu::TestStatus BufferAddressCopyFlags::iterate()
     return tcu::TestStatus::fail("Fail");
 }
 
-Move<VkBuffer> BufferAddressCopyFlags::constructBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
-                                                       VkBufferCreateFlags createFlag) const
+Move<VkBuffer> BufferAddressCommandFlags::constructBuffer(VkDeviceSize size, VkBufferUsageFlags usage,
+                                                          VkBufferCreateFlags createFlag) const
 {
     auto device = m_context.getDevice();
     uint32_t queueFamilyIndex[]{m_context.getUniversalQueueFamilyIndex(), m_context.getSparseQueueFamilyIndex()};
@@ -315,7 +257,8 @@ Move<VkBuffer> BufferAddressCopyFlags::constructBuffer(VkDeviceSize size, VkBuff
     return createBuffer(m_context.getDeviceInterface(), device, &bufferParams);
 }
 
-void BufferAddressCopyFlags::bindBufferMemory(VkBuffer buffer, VkDeviceSize size, AllocVect &allocVect, bool useSparse)
+void BufferAddressCommandFlags::bindBufferMemory(VkBuffer buffer, VkDeviceSize size, AllocVect &allocVect,
+                                                 bool useSparse)
 {
     const DeviceInterface &vk                     = m_context.getDeviceInterface();
     auto device                                   = m_context.getDevice();
@@ -364,51 +307,39 @@ void BufferAddressCopyFlags::bindBufferMemory(VkBuffer buffer, VkDeviceSize size
     }
     else
     {
-        bool useNonLocalMemory = (m_params.mode == CopyFlagTestMode::COPY_NON_LOCAL_MEMORY_USING_DEVICE_LOCAL_BIT ||
-                                  m_params.mode == CopyFlagTestMode::COPY_NON_LOCAL_MEMORY_USING_SPARSE_BIT);
-        auto mr                = MemoryRequirement::DeviceAddress | MemoryRequirement::HostVisible |
-                  (useNonLocalMemory ? MemoryRequirement::NonLocal : MemoryRequirement::Any);
-
+        auto mr = MemoryRequirement::DeviceAddress | MemoryRequirement::HostVisible | MemoryRequirement::Any;
         allocVect.push_back(allocator.allocate(memoryRequirements, mr));
         auto &bAlloc = allocVect.back();
         vk.bindBufferMemory(device, buffer, bAlloc->getMemory(), bAlloc->getOffset());
     }
 }
 
-class BufferAddressCopyFlagsTestCase : public vkt::TestCase
+class BufferAddressCommandFlagsTestCase : public vkt::TestCase
 {
 public:
-    BufferAddressCopyFlagsTestCase(tcu::TestContext &testCtx, const std::string &name, const TestParams &params)
+    BufferAddressCommandFlagsTestCase(tcu::TestContext &testCtx, const std::string &name, const TestParams &params)
         : vkt::TestCase(testCtx, name)
         , m_params(params)
     {
     }
 
-    virtual ~BufferAddressCopyFlagsTestCase(void) = default;
+    virtual ~BufferAddressCommandFlagsTestCase(void) = default;
 
     virtual TestInstance *createInstance(Context &context) const override
     {
-        return new BufferAddressCopyFlags(context, m_params);
+        return new BufferAddressCommandFlags(context, m_params);
     }
 
     virtual void checkSupport(Context &context) const override
     {
         context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 
-        using TM = CopyFlagTestMode;
-        if ((m_params.mode == TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT) ||
-            (m_params.mode == TM::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT) ||
-            (m_params.mode == TM::COPY_TO_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT) ||
-            (m_params.mode == TM::COPY_FROM_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT))
+        using TM = CommandFlagTestMode;
+        if ((m_params.mode == TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES) ||
+            (m_params.mode == TM::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES))
         {
             context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
             context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
-        }
-
-        if ((m_params.mode == TM::COPY_TO_NON_SPARSE_BUFFER_USING_PROTECTED_BIT) &&
-            !context.getProtectedMemoryFeatures().protectedMemory)
-        {
-            TCU_THROW(NotSupportedError, "Protected Memory feature not supported by the device");
         }
     }
 
@@ -422,26 +353,18 @@ tcu::TestCaseGroup *createDeviceAddressCommandsTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "device_address"));
 
-    using TM = CopyFlagTestMode;
-    de::MovePtr<tcu::TestCaseGroup> copyFlags(new tcu::TestCaseGroup(testCtx, "copy_flags"));
+    using TM = CommandFlagTestMode;
+    de::MovePtr<tcu::TestCaseGroup> copyFlags(new tcu::TestCaseGroup(testCtx, "command_flags"));
     const std::vector<std::pair<std::string, TM>> copyFlagCaseVect{
-        {"copy_to_memory_with_unbound_ranges_using_sparse_bit",
-         TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT},
-        {"copy_from_memory_with_unbound_ranges_using_sparse_bit",
-         TM::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES_USING_SPARSE_BIT},
-        {"copy_to_disjoint_memory_using_device_local_bit", TM::COPY_TO_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT},
-        {"copy_from_disjoint_memory_using_device_local_bit", TM::COPY_FROM_DISJOINT_MEMORY_USING_DEVICE_LOCAL_BIT},
-        {"copy_to_non_sparse_buffer_using_sparse_bit", TM::COPY_TO_NON_SPARSE_BUFFER_USING_SPARSE_BIT},
-        {"copy_to_non_sparse_buffer_using_protected_bit", TM::COPY_TO_NON_SPARSE_BUFFER_USING_PROTECTED_BIT},
-        {"copy_non_local_memory_using_device_local_bit", TM::COPY_NON_LOCAL_MEMORY_USING_DEVICE_LOCAL_BIT},
-        {"copy_to_non_local_memory_using_sparse_bit", TM::COPY_NON_LOCAL_MEMORY_USING_SPARSE_BIT},
+        {"copy_to_memory_with_unbound_ranges", TM::COPY_TO_MEMORY_WITH_UNBOUND_RANGES},
+        {"copy_from_memory_with_unbound_ranges", TM::COPY_FROM_MEMORY_WITH_UNBOUND_RANGES},
     };
     for (auto &[name, mode] : copyFlagCaseVect)
     {
         TestParams params{
             mode,
         };
-        copyFlags->addChild(new BufferAddressCopyFlagsTestCase(testCtx, name, params));
+        copyFlags->addChild(new BufferAddressCommandFlagsTestCase(testCtx, name, params));
     }
     mainGroup->addChild(copyFlags.release());
 

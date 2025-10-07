@@ -51,10 +51,23 @@ using namespace Draw;
 namespace
 {
 
-Move<VkQueryPool> makeOcclusionQueryPool(const DeviceInterface &vkd, const VkDevice device, uint32_t numQueries)
+Move<VkQueryPool> makeOcclusionQueryPool(const DeviceInterface &vkd, const VkDevice device, uint32_t numQueries,
+                                         bool createReset = false)
 {
-    const VkQueryPoolCreateInfo queryPoolCreateInfo = {
-        VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO, nullptr, 0u, VK_QUERY_TYPE_OCCLUSION, numQueries, 0u,
+    VkQueryPoolCreateFlags queryPoolCreateFlags = 0u;
+#ifndef CTS_USES_VULKANSC
+    queryPoolCreateFlags = VkQueryPoolCreateFlags((createReset) ? VK_QUERY_POOL_CREATE_RESET_BIT_KHR : 0);
+#else
+    DE_UNREF(createReset);
+#endif
+
+    const VkQueryPoolCreateInfo queryPoolCreateInfo{
+        VK_STRUCTURE_TYPE_QUERY_POOL_CREATE_INFO,
+        nullptr,
+        queryPoolCreateFlags,
+        VK_QUERY_TYPE_OCCLUSION,
+        numQueries,
+        0u,
     };
     return createQueryPool(vkd, device, &queryPoolCreateInfo);
 }
@@ -304,6 +317,7 @@ enum OcclusionQueryResultsMode
 {
     RESULTS_MODE_GET,
     RESULTS_MODE_GET_RESET,
+    RESULTS_MODE_GET_CREATE_RESET,
     RESULTS_MODE_COPY,
     RESULTS_MODE_COPY_RESET
 };
@@ -313,6 +327,13 @@ enum OcculusionQueryClearOp
     CLEAR_NOOP,
     CLEAR_COLOR,
     CLEAR_DEPTH
+};
+
+enum OcclusionQueryStride
+{
+    STRIDE_RESULT_SIZE,
+    STRIDE_ZERO,
+    STRIDE_MAX,
 };
 
 struct OcclusionQueryTestVector
@@ -329,6 +350,7 @@ struct OcclusionQueryTestVector
     OcculusionQueryClearOp clearOp;
     bool noColorAttachments;
     bool useDeviceAddressCommands;
+    OcclusionQueryStride stride;
 };
 
 class BasicOcclusionQueryTestInstance : public vkt::TestInstance
@@ -457,8 +479,30 @@ tcu::TestStatus BasicOcclusionQueryTestInstance::iterate(void)
     uint64_t queryResults[NUM_QUERIES_IN_POOL] = {0};
     size_t queryResultsSize                    = sizeof(queryResults);
 
-    VkResult queryResult = vk.getQueryPoolResults(device, *m_queryPool, 0, NUM_QUERIES_IN_POOL, queryResultsSize,
-                                                  queryResults, sizeof(queryResults[0]), VK_QUERY_RESULT_64_BIT);
+    VkResult queryResult = VK_NOT_READY;
+
+    if (m_testVector.stride == STRIDE_RESULT_SIZE)
+    {
+        queryResult = vk.getQueryPoolResults(device, *m_queryPool, 0, NUM_QUERIES_IN_POOL, queryResultsSize,
+                                             queryResults, sizeof(queryResults[0]), VK_QUERY_RESULT_64_BIT);
+    }
+    else
+    {
+        for (uint32_t i = 0; i < NUM_QUERIES_IN_POOL; ++i)
+        {
+            if (m_testVector.stride == STRIDE_ZERO)
+            {
+                queryResult = vk.getQueryPoolResults(device, *m_queryPool, i, 1, queryResultsSize, &queryResults[i], 0,
+                                                     VK_QUERY_RESULT_64_BIT);
+            }
+            else if (m_testVector.stride == STRIDE_MAX)
+            {
+                const uint64_t stride = std::numeric_limits<uint64_t>::max() / 8u * 8u;
+                queryResult = vk.getQueryPoolResults(device, *m_queryPool, i, 1, queryResultsSize, &queryResults[i],
+                                                     stride, VK_QUERY_RESULT_64_BIT);
+            }
+        }
+    }
 
     if (queryResult == VK_NOT_READY)
     {
@@ -604,6 +648,15 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance(vkt::Context &context,
           (m_testVector.queryResultsAvailability ? VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : 0))
     , m_queryPoolResultsBufferDeviceAddress(0ull)
 {
+#ifndef CTS_USES_VULKANSC
+    if (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
+    {
+        // Check VK_KHR_maintenance9 is supported
+        m_context.requireDeviceFunctionality("VK_KHR_maintenance9");
+        if (m_context.getMaintenance9Features().maintenance9 == VK_FALSE)
+            throw tcu::NotSupportedError(std::string("Implementation doesn't support creating reset queries").c_str());
+    }
+#endif
     const VkDevice device     = m_context.getDevice();
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
@@ -615,7 +668,8 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance(vkt::Context &context,
                                           NUM_VERTICES_IN_DRAWCALL + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL +
                                               NUM_VERTICES_IN_OCCLUDER_DRAWCALL,
                                           m_testVector.primitiveTopology, m_testVector.noColorAttachments));
-    m_queryPool = makeOcclusionQueryPool(vk, device, NUM_QUERIES_IN_POOL);
+    m_queryPool = makeOcclusionQueryPool(vk, device, NUM_QUERIES_IN_POOL,
+                                         (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET));
 
     if (m_testVector.queryResultsMode == RESULTS_MODE_COPY || m_testVector.queryResultsMode == RESULTS_MODE_COPY_RESET)
     {
@@ -877,9 +931,8 @@ void OcclusionQueryTestInstance::cmdCopyQueryPoolResults(VkCommandBuffer cmdBuff
 #ifndef CTS_USES_VULKANSC
     if (m_testVector.useDeviceAddressCommands)
     {
-        VkStridedDeviceAddressRangeKHR range{dstBufferDeviceAddress + dstOffset, stride, dstSize};
-        vk.cmdCopyQueryPoolResultsToMemoryKHR(cmdBuffer, queryPool, firstQuery, queryCount, range,
-                                              VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR, resultFlags);
+        VkStridedDeviceAddressRangeKHR range{dstBufferDeviceAddress + dstOffset, dstSize, stride};
+        vk.cmdCopyQueryPoolResultsToMemoryKHR(cmdBuffer, queryPool, firstQuery, queryCount, range, 0, resultFlags);
     }
 #else
     DE_UNREF(dstBufferDeviceAddress);
@@ -909,7 +962,8 @@ Move<VkCommandBuffer> OcclusionQueryTestInstance::recordRender(VkCommandPool cmd
     std::vector<VkClearValue> renderPassClearValues(2);
     deMemset(&renderPassClearValues[0], 0, static_cast<int>(renderPassClearValues.size()) * sizeof(VkClearValue));
 
-    if (!hasSeparateResetCmdBuf() && m_testVector.queryResultsMode != RESULTS_MODE_GET_RESET)
+    if (!hasSeparateResetCmdBuf() && m_testVector.queryResultsMode != RESULTS_MODE_GET_RESET &&
+        m_testVector.queryResultsMode != RESULTS_MODE_GET_CREATE_RESET)
     {
         vk.cmdResetQueryPool(*cmdBuffer, *m_queryPool, 0, NUM_QUERIES_IN_POOL);
     }
@@ -1072,7 +1126,8 @@ void OcclusionQueryTestInstance::captureResults(uint64_t *retResults, uint64_t *
                                          m_testVector.queryResultsStride;
     std::vector<uint8_t> resultsBuffer(static_cast<size_t>(resultsSize * NUM_QUERIES_IN_POOL));
 
-    if (m_testVector.queryResultsMode == RESULTS_MODE_GET || m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
+    if (m_testVector.queryResultsMode == RESULTS_MODE_GET || m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET ||
+        m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
     {
         VkResult queryResult =
             vk.getQueryPoolResults(device, *m_queryPool, 0, NUM_QUERIES_IN_POOL, resultsBuffer.size(),
@@ -1523,7 +1578,8 @@ void QueryPoolOcclusionTests::init(void)
         false,                            // bool queryResultsDstOffset;
         CLEAR_NOOP,                       // OcculusionQueryClearOp clearOp;
         false,                            // bool noColorAttachments;
-        false                             // bool useDeviceAddressCommands;
+        false,                            // bool useDeviceAddressCommands;
+        STRIDE_RESULT_SIZE                // OcclusionQueryStride stride;
     };
 
     //Basic tests
@@ -1534,6 +1590,19 @@ void QueryPoolOcclusionTests::init(void)
             new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(m_testCtx, "basic_conservative", testVector));
         testVector.queryControlFlags = VK_QUERY_CONTROL_PRECISE_BIT;
         addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(m_testCtx, "basic_precise", testVector));
+    }
+
+    {
+        // STRIDE_RESULT_SIZE is omitted because it is already covered in the basic tests above
+        const OcclusionQueryStride queryStrides[] = {STRIDE_ZERO, STRIDE_MAX};
+        const char *const queryStridesStr[]       = {"stride_zero", "stride_max"};
+        for (int queryStrideIdx = 0; queryStrideIdx < DE_LENGTH_OF_ARRAY(queryStrides); ++queryStrideIdx)
+        {
+            OcclusionQueryTestVector testVector = baseTestVector;
+            testVector.stride                   = queryStrides[queryStrideIdx];
+            addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(
+                m_testCtx, queryStridesStr[queryStrideIdx], testVector));
+        }
     }
 
     // No attachment cases.
@@ -1572,8 +1641,10 @@ void QueryPoolOcclusionTests::init(void)
                     for (int waitIdx = 0; waitIdx < DE_LENGTH_OF_ARRAY(wait); ++waitIdx)
                     {
                         const OcclusionQueryResultsMode resultsMode[] = {RESULTS_MODE_GET, RESULTS_MODE_GET_RESET,
+                                                                         RESULTS_MODE_GET_CREATE_RESET,
                                                                          RESULTS_MODE_COPY, RESULTS_MODE_COPY_RESET};
-                        const char *const resultsModeStr[]            = {"get", "get_reset", "copy", "copy_reset"};
+                        const char *const resultsModeStr[]            = {"get", "get_reset", "get_create_reset", "copy",
+                                                                         "copy_reset"};
 
                         for (int resultsModeIdx = 0; resultsModeIdx < DE_LENGTH_OF_ARRAY(resultsMode); ++resultsModeIdx)
                         {

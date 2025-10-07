@@ -1665,7 +1665,7 @@ bool BasicComputeTestInstance::decompressImage(const VkCommandPool &cmdPool, con
                                                            refLayerPtr);
 
                     if (!fuzzyCompare(m_context.getTestContext().getLog(), imageName.c_str(), "", resultPixels,
-                                      referencePixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING))
+                                      referencePixels, 0.001f, tcu::COMPARE_LOG_ON_ERROR))
                         return false;
                 }
             }
@@ -2576,8 +2576,9 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
     const Unique<VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    const VkBufferImageCopy copyBufferToImageRegion =
-        makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u, mipmapDimsBlocked.x(), mipmapDimsBlocked.y());
+    // VUID-vkCmdCopyBufferToImage-dstImage-00207
+    const VkBufferImageCopy copyBufferToImageRegion = makeBufferImageCopy(
+        mipmapDimsBlocked.x(), mipmapDimsBlocked.y(), 0u, 0u, mipmapDimsBlocked.x(), mipmapDimsBlocked.y());
     const VkBufferImageCopy copyRegion = makeBufferImageCopy(mipmapDims.x(), mipmapDims.y(), 0u, 0u);
     const VkBufferMemoryBarrier refSrcCopyBufferBarrierPre =
         makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, refSrcImageBuffer->get(), 0ull,
@@ -2714,10 +2715,10 @@ bool GraphicsAttachmentsTestInstance::verifyDecompression(const VkCommandPool &c
 
             if (isWriteToCompressedOperation())
                 tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ImageComparison", comment.c_str(), refPixels,
-                                  resPixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING);
+                                  resPixels, 0.001f, tcu::COMPARE_LOG_ON_ERROR);
             else
                 tcu::fuzzyCompare(m_context.getTestContext().getLog(), "ImageComparison", comment.c_str(), resPixels,
-                                  refPixels, 0.001f, tcu::COMPARE_LOG_EVERYTHING);
+                                  refPixels, 0.001f, tcu::COMPARE_LOG_ON_ERROR);
 
             return false;
         }

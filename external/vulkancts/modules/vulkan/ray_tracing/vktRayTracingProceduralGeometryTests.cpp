@@ -231,7 +231,7 @@ tcu::TestStatus RayTracingProceduralGeometryTestBase::iterate(void)
     tcu::PixelBufferAccess resultAccess(imageFormat, imageSize, imageSize, 1, resultAllocation.getHostPtr());
 
     if (tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Result comparison", "", referenceAccess,
-                                 resultAccess, tcu::UVec4(0), tcu::COMPARE_LOG_EVERYTHING))
+                                 resultAccess, tcu::UVec4(0), tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::pass("Pass");
     return tcu::TestStatus::fail("Fail");
 }
