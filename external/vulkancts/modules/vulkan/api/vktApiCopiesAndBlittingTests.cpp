@@ -4023,43 +4023,46 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     }
 
 #ifndef CTS_USES_VULKANSC
-    const auto &copyMemoryIndirectFeatures = m_context.getCopyMemoryIndirectFeatures();
-    if (!copyMemoryIndirectFeatures.indirectMemoryToImageCopy)
-        TCU_THROW(NotSupportedError, "Indirect memory copy to image feature not supported");
+    if (m_params.extensionFlags & INDIRECT_COPY)
+    {
+        const auto &copyMemoryIndirectFeatures = m_context.getCopyMemoryIndirectFeatures();
+        if (!copyMemoryIndirectFeatures.indirectMemoryToImageCopy)
+            TCU_THROW(NotSupportedError, "Indirect memory copy to image feature not supported");
 
-    VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR copyMemoryIndirectProperties = {};
-    copyMemoryIndirectProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR;
-    VkPhysicalDeviceProperties2 deviceProperties = {};
-    deviceProperties.sType                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    deviceProperties.pNext                       = &copyMemoryIndirectProperties;
-    vki.getPhysicalDeviceProperties2(vkPhysDevice, &deviceProperties);
+        VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR copyMemoryIndirectProperties = {};
+        copyMemoryIndirectProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR;
+        VkPhysicalDeviceProperties2 deviceProperties = {};
+        deviceProperties.sType                       = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+        deviceProperties.pNext                       = &copyMemoryIndirectProperties;
+        vki.getPhysicalDeviceProperties2(vkPhysDevice, &deviceProperties);
 
-    switch (m_params.queueSelection)
-    {
-    case QueueSelectionOptions::Universal:
-    {
-        if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_GRAPHICS_BIT))
+        switch (m_params.queueSelection)
         {
-            TCU_THROW(NotSupportedError, "Graphics queue not supported!");
-        }
-        break;
-    }
-    case QueueSelectionOptions::TransferOnly:
-    {
-        if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_TRANSFER_BIT))
+        case QueueSelectionOptions::Universal:
         {
-            TCU_THROW(NotSupportedError, "Transfer queue not supported!");
+            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_GRAPHICS_BIT))
+            {
+                TCU_THROW(NotSupportedError, "Graphics queue not supported!");
+            }
+            break;
         }
-        break;
-    }
-    case QueueSelectionOptions::ComputeOnly:
-    {
-        if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_COMPUTE_BIT))
+        case QueueSelectionOptions::TransferOnly:
         {
-            TCU_THROW(NotSupportedError, "Compute queue not supported!");
+            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_TRANSFER_BIT))
+            {
+                TCU_THROW(NotSupportedError, "Transfer queue not supported!");
+            }
+            break;
         }
-        break;
-    }
+        case QueueSelectionOptions::ComputeOnly:
+        {
+            if (!(copyMemoryIndirectProperties.supportedQueues & VK_QUEUE_COMPUTE_BIT))
+            {
+                TCU_THROW(NotSupportedError, "Compute queue not supported!");
+            }
+            break;
+        }
+        }
     }
 #endif
 
@@ -4085,12 +4088,16 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
 
     // Create source buffer, this is where the depth & stencil data will go that's used by test's regions.
     {
+        VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+        if (m_params.extensionFlags & INDIRECT_COPY)
+            usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
         const VkBufferCreateInfo sourceBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_bufferSize,                         // VkDeviceSize size;
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
+            usageFlags,                           // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
             nullptr,                              // const uint32_t* pQueueFamilyIndices;
@@ -4184,6 +4191,8 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
     std::vector<VkBufferImageCopy2KHR> bufferImageCopies2KHR;
 #ifndef CTS_USES_VULKANSC
     std::vector<VkCopyMemoryToImageIndirectCommandKHR> memoryImageCopiesKHR;
+    VkDeviceAddress srcBufferAddress      = 0;
+    VkDeviceAddress indirectBufferAddress = 0;
 #endif
     VkDeviceSize bufferOffset  = 0;
     const VkDevice vkDevice    = m_device;
@@ -4202,14 +4211,17 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
         vk, vkDevice, memAlloc, makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
-    VkBufferDeviceAddressInfo srcBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
-                                                   m_source.get()};
-    VkDeviceAddress srcBufferAddress = vk.getBufferDeviceAddress(m_device, &srcBufferAddressInfo);
+    if (m_params.extensionFlags & INDIRECT_COPY)
+    {
+        VkBufferDeviceAddressInfo srcBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
+                                                       m_source.get()};
+        srcBufferAddress = vk.getBufferDeviceAddress(m_device, &srcBufferAddressInfo);
 
-    // indirectBuffer Address
-    VkBufferDeviceAddressInfo indirectBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
-                                                        indirectBuffer.get()};
-    VkDeviceAddress indirectBufferAddress = vk.getBufferDeviceAddress(m_device, &indirectBufferAddressInfo);
+        // indirectBuffer Address
+        VkBufferDeviceAddressInfo indirectBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
+                                                            indirectBuffer.get()};
+        indirectBufferAddress = vk.getBufferDeviceAddress(m_device, &indirectBufferAddressInfo);
+    }
 #endif
 
     // To be able to test ordering depth & stencil differently
@@ -18013,11 +18025,13 @@ void addImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGro
     addTestGroup(group, "1d_images", add1dImageToBufferTests, testGroupParams);
     addTestGroup(group, "2d_images", add2dImageToBufferTests, testGroupParams);
     addTestGroup(group, "3d_images", add3dImageToBufferTests, testGroupParams);
+}
 
-    testGroupParams->extensionFlags |= INDIRECT_COPY;
-    addTestGroup(group, "1d_images_indirect", add1dImageToBufferTests, testGroupParams);
+void addImageToBufferIndirectTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
+{
+    addTestGroup(group, "1d_images", add1dImageToBufferTests, testGroupParams);
     // 2D images are exercised with addMemoryToImageTests
-    addTestGroup(group, "3d_images_indirect", add3dImageToBufferTests, testGroupParams);
+    addTestGroup(group, "3d_images", add3dImageToBufferTests, testGroupParams);
 }
 
 void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationKind allocationKind,
@@ -19942,6 +19956,7 @@ void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKi
 #ifndef CTS_USES_VULKANSC
     addTestGroup(group, "memory_to_image_indirect", addMemoryToImageTests, universalGroupParams);
     addTestGroup(group, "memory_to_depthstencil_indirect", addBufferToDepthStencilTests, universalGroupParams);
+    addTestGroup(group, "image_to_buffer_indirect", addImageToBufferIndirectTests, universalGroupParams);
 #endif
 
     TestGroupParamsPtr transferOnlyGroup(new TestGroupParams{
@@ -19954,6 +19969,7 @@ void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKi
     });
 #ifndef CTS_USES_VULKANSC
     addTestGroup(group, "memory_to_image_indirect_transfer_queue", addMemoryToImageTests, transferOnlyGroup);
+    addTestGroup(group, "image_to_buffer_indirect_transfer_queue", addImageToBufferIndirectTests, transferOnlyGroup);
 #endif
 
     TestGroupParamsPtr computeOnlyGroup(new TestGroupParams{
@@ -19966,6 +19982,7 @@ void addIndirectCopyTests(tcu::TestCaseGroup *group, AllocationKind allocationKi
     });
 #ifndef CTS_USES_VULKANSC
     addTestGroup(group, "memory_to_image_indirect_compute_queue", addMemoryToImageTests, computeOnlyGroup);
+    addTestGroup(group, "image_to_buffer_indirect_compute_queue", addImageToBufferIndirectTests, computeOnlyGroup);
 #endif
 }
 
