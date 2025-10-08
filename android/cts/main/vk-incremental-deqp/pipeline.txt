@@ -10,6 +10,3 @@ dEQP-VK.pipeline.monolithic.cache.pipeline_from_get_data.vertex_stage_tessellati
 dEQP-VK.pipeline.monolithic.cache.pipeline_from_incomplete_get_data.vertex_stage_fragment_stage
 dEQP-VK.pipeline.monolithic.cache.pipeline_from_incomplete_get_data.vertex_stage_geometry_stage_fragment_stage
 dEQP-VK.pipeline.monolithic.cache.pipeline_from_incomplete_get_data.vertex_stage_tessellation_control_stage_tessellation_evaluation_stage_fragment_stage
-dEQP-VK.pipeline.monolithic.stencil.format.s8_uint.states.fail_keep.pass_keep.dfail_keep.comp_equal
-dEQP-VK.pipeline.monolithic.stencil.format.s8_uint.states.fail_keep.pass_keep.dfail_keep.comp_less
-dEQP-VK.pipeline.monolithic.stencil.format.s8_uint.states.fail_keep.pass_keep.dfail_keep.comp_never

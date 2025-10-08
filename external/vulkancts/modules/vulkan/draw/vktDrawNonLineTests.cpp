@@ -286,6 +286,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
         const std::string outputPrimitive = m_params.getGeometryOutputPrimitive();
         const auto inputLength            = m_params.getVertexOutputLength();
         const auto outputLength           = m_params.getGeometryOutputLength();
+        const auto iterLength             = deMin32(inputLength, outputLength);
 
         std::ostringstream geom;
         geom << "#version 460\n"
@@ -307,7 +308,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
 
         if (m_params.geometryOutput == GeometryOutput::POINTS)
         {
-            geom << "    for (uint i = 0; i < " << inputLength << "; ++i) {\n"
+            geom << "    for (uint i = 0; i < " << iterLength << "; ++i) {\n"
                  << "        gl_Position = gl_in[i].gl_Position;\n"
                  << "        gl_PointSize = gl_in[i].gl_PointSize;\n"
                  << "        outColor = inColor[i];\n"
@@ -317,7 +318,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
         else if (m_params.geometryOutput == GeometryOutput::TRIANGLES &&
                  m_params.vertexTopology == VertexTopology::TRIANGLES)
         {
-            geom << "    for (uint i = 0; i < " << inputLength << "; ++i) {\n"
+            geom << "    for (uint i = 0; i < " << iterLength << "; ++i) {\n"
                  << "        gl_Position = gl_in[i].gl_Position;\n"
                  << "        gl_PointSize = gl_in[i].gl_PointSize;\n"
                  << "        outColor = inColor[i];\n"
@@ -328,7 +329,7 @@ void NonLineDrawCase::initPrograms(SourceCollections &dst) const
         else if (m_params.geometryOutput == GeometryOutput::TRIANGLES &&
                  m_params.vertexTopology == VertexTopology::LINES)
         {
-            geom << "    for (uint i = 0; i < " << inputLength << "; ++i) {\n"
+            geom << "    for (uint i = 0; i < " << iterLength << "; ++i) {\n"
                  << "        gl_Position = gl_in[i].gl_Position;\n"
                  << "        gl_PointSize = gl_in[i].gl_PointSize;\n"
                  << "        outColor = inColor[i];\n"

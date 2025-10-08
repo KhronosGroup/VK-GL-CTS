@@ -278,7 +278,8 @@ struct TestParams
     uint32_t dstMipLevel;
     uint32_t seed; // For the pseudorandom number generator.
     QueueType queueType;
-    bool unrestricted;
+    bool unrestricted;    // Unrestricted depth range.
+    bool attachmentUsage; // Include attachment usage flags for the images instead of transfer usage only.
 };
 
 class DSColorCopyInstance : public vkt::TestInstance
@@ -323,12 +324,24 @@ TestInstance *DSColorCopyCase::createInstance(Context &context) const
     return new DSColorCopyInstance(context, m_params);
 }
 
+VkImageUsageFlags getImageUsage(VkFormat format, bool attachmentUsage)
+{
+    const bool isDepthStencil    = isDepthStencilFormat(format);
+    VkImageUsageFlags usageFlags = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+
+    if (attachmentUsage)
+        usageFlags |=
+            (isDepthStencil ? VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+
+    return usageFlags;
+}
+
 bool isFormatSupported(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkFormat format,
-                       uint32_t mipLevel)
+                       uint32_t mipLevel, bool attachmentUsage)
 {
     const auto imageType   = VK_IMAGE_TYPE_2D;
     const auto tiling      = VK_IMAGE_TILING_OPTIMAL;
-    const auto usage       = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto usage       = getImageUsage(format, attachmentUsage);
     const auto createFlags = 0u;
 
     VkImageFormatProperties formatProperties;
@@ -357,7 +370,7 @@ void DSColorCopyCase::checkSupport(Context &context) const
 
     for (const auto &param : formatParams)
     {
-        if (!isFormatSupported(ctx.vki, ctx.physicalDevice, param.first, param.second))
+        if (!isFormatSupported(ctx.vki, ctx.physicalDevice, param.first, param.second, m_params.attachmentUsage))
         {
             std::ostringstream msg;
             msg << "Format " << getFormatName(param.first) << " does not support required features";
@@ -488,7 +501,8 @@ tcu::TestStatus DSColorCopyInstance::iterate(void)
     const auto pixelCount   = static_cast<uint32_t>(baseExtent.x() * baseExtent.y() * baseExtent.z());
     const auto srcMipLevels = m_params.srcMipLevel + 1u;
     const auto dstMipLevels = m_params.dstMipLevel + 1u;
-    const auto imgUsage     = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto srcImgUsage  = getImageUsage(m_params.formatPair.srcFormat, m_params.attachmentUsage);
+    const auto dstImgUsage  = getImageUsage(m_params.formatPair.dstFormat, m_params.attachmentUsage);
     const bool isSrcDS      = isDepthStencilFormat(m_params.formatPair.srcFormat);
     const bool isDstDS      = isDepthStencilFormat(m_params.formatPair.dstFormat);
     const auto srcAspect    = (isSrcDS ? m_params.formatPair.aspect : VK_IMAGE_ASPECT_COLOR_BIT);
@@ -550,7 +564,7 @@ tcu::TestStatus DSColorCopyInstance::iterate(void)
         1u,
         VK_SAMPLE_COUNT_1_BIT,
         VK_IMAGE_TILING_OPTIMAL,
-        imgUsage,
+        srcImgUsage,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
         nullptr,
@@ -574,7 +588,7 @@ tcu::TestStatus DSColorCopyInstance::iterate(void)
         1u,
         VK_SAMPLE_COUNT_1_BIT,
         VK_IMAGE_TILING_OPTIMAL,
-        imgUsage,
+        dstImgUsage,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
         nullptr,
@@ -759,61 +773,68 @@ tcu::TestCaseGroup *createDSColorBitCopyTests(tcu::TestContext &testCtx)
                 for (const bool dsToColor : {true, false})
                     for (const uint32_t srcMipLevel : {0u, 3u})
                         for (const uint32_t dstMipLevel : {0u, 3u})
-                        {
-                            const auto srcFormat = (dsToColor ? dsFormat : colorFormat);
-                            const auto dstFormat = (dsToColor ? colorFormat : dsFormat);
-
-                            const auto seed =
-                                ((static_cast<uint32_t>(srcFormat) << 24) | (static_cast<uint32_t>(dstFormat) << 16) |
-                                 (static_cast<uint32_t>(formatGroup.aspect) << 8) |
-                                 (static_cast<uint32_t>(srcMipLevel) << 2) | (static_cast<uint32_t>(dstMipLevel)));
-
-                            for (const auto queueType :
-                                 {QueueType::UNIVERSAL, QueueType::COMPUTE_ONLY, QueueType::TRANSFER_ONLY})
+                            for (const bool attUsage : {false, true})
                             {
-                                // These tests need to be skipped for now due to VUs *-10217 and *-10218.
-                                if (queueType != QueueType::UNIVERSAL)
+                                if (attUsage && (srcMipLevel != 0u || dstMipLevel != 0u))
                                     continue;
 
-                                const FormatPair formatPair{
-                                    srcFormat,
-                                    dstFormat,
-                                    formatGroup.aspect,
-                                };
+                                const auto srcFormat = (dsToColor ? dsFormat : colorFormat);
+                                const auto dstFormat = (dsToColor ? colorFormat : dsFormat);
 
-                                // Values for the "unrestricted" test parameter.
-                                static const std::vector<bool> alwaysRestricted{false};
-                                static const std::vector<bool> sometimesRestricted{false, true};
+                                const auto seed =
+                                    ((static_cast<uint32_t>(srcFormat) << 24) |
+                                     (static_cast<uint32_t>(dstFormat) << 16) |
+                                     (static_cast<uint32_t>(formatGroup.aspect) << 8) |
+                                     (static_cast<uint32_t>(srcMipLevel) << 2) | (static_cast<uint32_t>(dstMipLevel)));
 
-                                const auto bitCount = getBitCount(formatPair);
-                                const auto &unrestrictedValues =
-                                    ((bitCount == 32u) ? sometimesRestricted : alwaysRestricted);
-
-                                for (const bool unrestricted : unrestrictedValues)
+                                for (const auto queueType :
+                                     {QueueType::UNIVERSAL, QueueType::COMPUTE_ONLY, QueueType::TRANSFER_ONLY})
                                 {
-                                    const TestParams params{
-                                        formatPair, srcMipLevel, dstMipLevel, seed, queueType, unrestricted,
+                                    // These tests need to be skipped for now due to VUs *-10217 and *-10218.
+                                    if (queueType != QueueType::UNIVERSAL)
+                                        continue;
+
+                                    const FormatPair formatPair{
+                                        srcFormat,
+                                        dstFormat,
+                                        formatGroup.aspect,
                                     };
 
-                                    static const std::map<QueueType, std::string> queueTypeSuffix{
-                                        std::make_pair(QueueType::UNIVERSAL, ""),
-                                        std::make_pair(QueueType::COMPUTE_ONLY, "_cq"),
-                                        std::make_pair(QueueType::TRANSFER_ONLY, "_tq"),
-                                    };
+                                    // Values for the "unrestricted" test parameter.
+                                    static const std::vector<bool> alwaysRestricted{false};
+                                    static const std::vector<bool> sometimesRestricted{false, true};
 
-                                    const std::string unrestrictedSuffix = (unrestricted ? "_unrestricted" : "");
+                                    const auto bitCount = getBitCount(formatPair);
+                                    const auto &unrestrictedValues =
+                                        ((bitCount == 32u) ? sometimesRestricted : alwaysRestricted);
 
-                                    const auto testName =
-                                        getFormatNameBrief(srcFormat) + "_" + getFormatNameBrief(dstFormat) +
-                                        (formatGroup.aspect == VK_IMAGE_ASPECT_DEPTH_BIT ? "_depth" : "_stencil") +
-                                        "_level" + std::to_string(srcMipLevel) + "_to_level" +
-                                        std::to_string(dstMipLevel) + unrestrictedSuffix +
-                                        queueTypeSuffix.at(queueType);
+                                    for (const bool unrestricted : unrestrictedValues)
+                                    {
+                                        const TestParams params{
+                                            formatPair, srcMipLevel,  dstMipLevel, seed,
+                                            queueType,  unrestricted, attUsage,
+                                        };
 
-                                    mainGroup->addChild(new DSColorCopyCase(testCtx, testName, params));
+                                        static const std::map<QueueType, std::string> queueTypeSuffix{
+                                            std::make_pair(QueueType::UNIVERSAL, ""),
+                                            std::make_pair(QueueType::COMPUTE_ONLY, "_cq"),
+                                            std::make_pair(QueueType::TRANSFER_ONLY, "_tq"),
+                                        };
+
+                                        const std::string unrestrictedSuffix = (unrestricted ? "_unrestricted" : "");
+                                        const std::string usageSuffix        = (attUsage ? "_att_usage" : "");
+
+                                        const auto testName =
+                                            getFormatNameBrief(srcFormat) + "_" + getFormatNameBrief(dstFormat) +
+                                            (formatGroup.aspect == VK_IMAGE_ASPECT_DEPTH_BIT ? "_depth" : "_stencil") +
+                                            "_level" + std::to_string(srcMipLevel) + "_to_level" +
+                                            std::to_string(dstMipLevel) + unrestrictedSuffix + usageSuffix +
+                                            queueTypeSuffix.at(queueType);
+
+                                        mainGroup->addChild(new DSColorCopyCase(testCtx, testName, params));
+                                    }
                                 }
                             }
-                        }
 
     return mainGroup.release();
 }

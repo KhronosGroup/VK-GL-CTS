@@ -26,6 +26,10 @@
 
 #include "deString.h"
 
+#if defined(DEQP_LOG_NODE_SOURCE)
+#include <stacktrace>
+#endif
+
 namespace tcu
 {
 
@@ -108,6 +112,36 @@ void TestNode::addChild(TestNode *node)
     if (!m_children.empty())
         DE_ASSERT(getTestNodeTypeClass(m_children.front()->getNodeType()) == getTestNodeTypeClass(node->getNodeType()));
 
+#if defined(DEQP_LOG_NODE_SOURCE)
+    static const char *kHelperNames[] = {
+        "addFunctionCase",
+    };
+
+    auto currentStacktrace = std::stacktrace::current();
+
+    // Find the first parent stack frame that is not a helper, which should be the one triggering the addChild call.
+    for (unsigned short i = 1; i < currentStacktrace.size(); ++i)
+    {
+        const auto &entry = currentStacktrace.at(i);
+        const auto desc   = entry.description();
+        bool isHelper     = false;
+
+        for (const auto &helperName : kHelperNames)
+        {
+            if (desc.contains(helperName))
+            {
+                isHelper = true;
+                break;
+            }
+        }
+
+        if (isHelper)
+            continue;
+
+        node->setSource(entry.source_file() + ":" + std::to_string(entry.source_line()));
+        break;
+    }
+#endif
     m_children.push_back(node);
 }
 

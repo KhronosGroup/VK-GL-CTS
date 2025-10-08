@@ -107,5 +107,14 @@
 		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.line_strip_wide</t>
 		<t>dEQP-GLES3.functional.rasterization.interpolation.projected.lines_wide</t>
 	</waiver>
+	<waiver vendor="NVIDIA Corporation" url="https://gitlab.khronos.org/Tracker/vk-gl-cts/-/issues/5776">
+		<description></description>
+		<renderer_list>
+			<r>NVIDIA Tegra/*</r>
+			<r>NVIDIA Tegra X1 *</r>
+			<r>NVIDIA Tegra X2 *</r>
+		</renderer_list>
+		<t>KHR-GL46.texture_barrier*.overlapping-texels</t>
+	</waiver>
 
 </waiver_list>

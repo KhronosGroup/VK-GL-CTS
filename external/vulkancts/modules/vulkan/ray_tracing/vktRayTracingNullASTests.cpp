@@ -131,7 +131,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
 
 struct TestDeviceFeatures
 {
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
+    VkPhysicalDeviceRobustness2FeaturesKHR robustness2Features;
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures;
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures;
     VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceAddressFeatures;
@@ -148,7 +148,7 @@ struct TestDeviceFeatures
 
     TestDeviceFeatures(const InstanceInterface &vki, VkPhysicalDevice physicalDevice)
     {
-        robustness2Features.sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+        robustness2Features.sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR;
         rayTracingPipelineFeatures.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
         accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
         deviceAddressFeatures.sType         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;
@@ -205,7 +205,8 @@ struct DeviceHelper
         requiredExtensions.push_back("VK_EXT_descriptor_indexing");
         requiredExtensions.push_back("VK_KHR_spirv_1_4");
         requiredExtensions.push_back("VK_KHR_shader_float_controls");
-        requiredExtensions.push_back("VK_EXT_robustness2");
+        requiredExtensions.push_back(
+            context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ? "VK_KHR_robustness2" : "VK_EXT_robustness2");
 
         const VkDeviceCreateInfo createInfo = {
             VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,             // VkStructureType sType;
@@ -300,8 +301,10 @@ void RayTracingTestCase::checkSupport(Context &context) const
     if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
         TCU_FAIL("VK_KHR_buffer_device_address not supported but VK_KHR_acceleration_structure supported");
 
-    if (!context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
-        TCU_THROW(NotSupportedError, "VK_EXT_robustness2 not supported");
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+        !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+        TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 not supported");
 
     // Required extensions supported: check features.
     TestDeviceFeatures testFeatures(vki, physicalDevice);

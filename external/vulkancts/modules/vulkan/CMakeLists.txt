@@ -126,6 +126,8 @@ set(DEQP_VK_SRCS
 	vktInfoTests.hpp
 	vktCustomInstancesDevices.cpp
 	vktCustomInstancesDevices.hpp
+	vktContextManager.cpp
+	vktContextManager.hpp
 	)
 
 set(DEQP_VK_LIBS

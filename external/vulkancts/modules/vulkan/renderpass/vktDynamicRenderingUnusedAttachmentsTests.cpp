@@ -953,7 +953,7 @@ tcu::TestStatus DynamicUnusedAttachmentsInstance::iterate(void)
 
             tcu::clear(refAccess, expectedColor);
             if (!tcu::intThresholdCompare(log, logImgName.c_str(), "", refAccess, layerAccess, threshold,
-                                          tcu::COMPARE_LOG_EVERYTHING))
+                                          tcu::COMPARE_LOG_ON_ERROR))
                 failure = true;
         }
     }

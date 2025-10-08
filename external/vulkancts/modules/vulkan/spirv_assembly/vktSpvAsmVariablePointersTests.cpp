@@ -1388,37 +1388,6 @@ void addNullptrVariablePointersComputeGroup(tcu::TestCaseGroup *group)
     }
 }
 
-void addDynamicOffsetComputeGroup(tcu::TestCaseGroup *group)
-{
-#ifndef CTS_USES_VULKANSC
-    tcu::TestContext &testCtx = group->getTestContext();
-
-    static const char dataDir[] = "spirv_assembly/instruction/compute/variable_pointer/dynamic_offset";
-
-    struct Case
-    {
-        string name;
-    };
-
-    static const Case cases[] = {
-        // Test accessing a descriptor array using a variable pointer from OpSelect
-        {"select_descriptor_array"},
-    };
-
-    for (const auto &testCase : cases)
-    {
-        const string fileName = testCase.name + ".amber";
-
-        group->addChild(cts_amber::createAmberTestCase(
-            testCtx, testCase.name.c_str(), dataDir, fileName,
-            {"VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class",
-             "VariablePointerFeatures.variablePointers", "VariablePointerFeatures.variablePointersStorageBuffer"}));
-    }
-#else
-    DE_UNREF(group);
-#endif // CTS_USES_VULKANSC
-}
-
 void addVariablePointersGraphicsGroup(tcu::TestCaseGroup *testGroup)
 {
     tcu::TestContext &testCtx = testGroup->getTestContext();
@@ -2768,8 +2737,6 @@ tcu::TestCaseGroup *createVariablePointersComputeGroup(tcu::TestContext &testCtx
     addTestGroup(group.get(), "complex_types_compute", addComplexTypesVariablePointersComputeGroup);
     // Test the usage of nullptr using the variable pointers extension in a compute shader
     addTestGroup(group.get(), "nullptr_compute", addNullptrVariablePointersComputeGroup);
-    // Testing variable pointers referring to descriptors using dynamic offset
-    addTestGroup(group.get(), "dynamic_offset", addDynamicOffsetComputeGroup);
 
     return group.release();
 }

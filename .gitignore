@@ -8,3 +8,8 @@
 !.editorconfig
 !.travis.yml
 !.github
+*.h265
+*.h264
+*.ivf
+*.obu
+*.yuv

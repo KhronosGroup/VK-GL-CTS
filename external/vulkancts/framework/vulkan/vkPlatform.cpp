@@ -142,6 +142,7 @@ DeviceDriver::DeviceDriver(const PlatformInterface &platformInterface, VkInstanc
                            uint32_t usedApiVersion, const tcu::CommandLine &cmdLine)
     : m_computeOnlyMode(cmdLine.isComputeOnly())
 {
+    DE_UNREF(usedApiVersion);
     deMemset(&m_vk, 0, sizeof(m_vk));
 
     m_vk.getDeviceProcAddr =

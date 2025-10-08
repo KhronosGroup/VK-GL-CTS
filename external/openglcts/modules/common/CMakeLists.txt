@@ -8,6 +8,10 @@ endif ()
 add_subdirectory(subgroups)
 include_directories(subgroups)
 
+add_subdirectory(meshShader)
+include_directories(meshShader)
+
+
 set(GLCTS_COMMON_SRCS
 	glcAggressiveShaderOptimizationsTests.cpp
 	glcAggressiveShaderOptimizationsTests.hpp
@@ -155,6 +159,8 @@ set(GLCTS_COMMON_SRCS
 	glcShaderImageLoadStoreTests.hpp
 	glcShaderStorageBufferObjectTests.cpp
 	glcShaderStorageBufferObjectTests.hpp
+	glcNegativeTextureLookupFunctionsBiasTests.cpp
+	glcNegativeTextureLookupFunctionsBiasTests.hpp
 	)
 
 set(GLCTS_COMMON_LIBS
@@ -163,6 +169,7 @@ set(GLCTS_COMMON_LIBS
 	tcutil-platform
 	eglutil
 	deqp-gl-subgroups
+	deqp-gl-meshShader
 	)
 
 # Add glslang

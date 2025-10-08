@@ -450,7 +450,7 @@ vector<AllocationSp> MultisampleRenderPassTestBase::createBufferMemory(const vec
     {
         VkBuffer buffer                   = **buffers[memoryNdx];
         VkMemoryRequirements requirements = getBufferMemoryRequirements(vkd, device, buffer);
-        de::MovePtr<Allocation> allocation(allocator.allocate(requirements, MemoryRequirement::HostVisible));
+        de::MovePtr<Allocation> allocation(allocator.allocate(requirements, HostIntent::R));
 
         VK_CHECK(vkd.bindBufferMemory(device, buffer, allocation->getMemory(), allocation->getOffset()));
         memory[memoryNdx] = safeSharedPtr(allocation.release());

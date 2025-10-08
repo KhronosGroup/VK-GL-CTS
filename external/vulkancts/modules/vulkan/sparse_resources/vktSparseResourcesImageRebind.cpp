@@ -277,8 +277,9 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
 
         DE_ASSERT((imageMemoryRequirements.size % imageMemoryRequirements.alignment) == 0);
 
-        const uint32_t memoryType = findMatchingMemoryType(instance, getPhysicalDevice(secondDeviceID),
-                                                           imageMemoryRequirements, MemoryRequirement::Any);
+        const auto devMemProps    = getPhysicalDeviceMemoryProperties(instance, getPhysicalDevice(secondDeviceID));
+        const uint32_t memoryType = selectBestMemoryType(devMemProps, imageMemoryRequirements.memoryTypeBits,
+                                                         MemoryRequirement::Any, tcu::just(HostIntent::NONE));
 
         if (memoryType == NO_MATCH_FOUND)
             return tcu::TestStatus::fail("No matching memory type found");
@@ -609,7 +610,7 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
             makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
         const Unique<VkBuffer> outputBuffer(createBuffer(deviceInterface, getDevice(), &outputBufferCreateInfo));
         const de::UniquePtr<Allocation> outputBufferAlloc(
-            bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, MemoryRequirement::HostVisible));
+            bindBuffer(deviceInterface, getDevice(), getAllocator(), *outputBuffer, HostIntent::R));
 
         std::vector<VkBufferImageCopy> bufferImageCopy(formatDescription.numPlanes);
         {

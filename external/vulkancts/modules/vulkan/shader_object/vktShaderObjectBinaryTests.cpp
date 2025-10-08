@@ -732,14 +732,14 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto extendedDynamicStateFeatures               = m_context.getExtendedDynamicStateFeaturesEXT();
     auto pipelineExecutablePropertiesFeatures       = m_context.getPipelineExecutablePropertiesFeatures();
     auto shaderAtomicFloat2Features                 = m_context.getShaderAtomicFloat2FeaturesEXT();
-    auto swapchainMaitenance1Features               = m_context.getSwapchainMaintenance1FeaturesEXT();
+    auto swapchainMaitenance1Features               = m_context.getSwapchainMaintenance1Features();
     auto shaderDemoteToHelperInvocationFeatures     = m_context.getShaderDemoteToHelperInvocationFeatures();
     auto deviceGeneratedCommandsFeatures            = m_context.getDeviceGeneratedCommandsFeatures();
     auto inheritedViewportScissorFeatures           = m_context.getInheritedViewportScissorFeatures();
     auto shaderIntegerDotProductFeatures            = m_context.getShaderIntegerDotProductFeatures();
     auto texelBufferAlignmentFeatures               = m_context.getTexelBufferAlignmentFeaturesEXT();
     auto deviceMemoryReportFeatures                 = m_context.getDeviceMemoryReportFeaturesEXT();
-    auto robustness2Features                        = m_context.getRobustness2FeaturesEXT();
+    auto robustness2Features                        = m_context.getRobustness2Features();
     auto customBorderColorFeatures                  = m_context.getCustomBorderColorFeaturesEXT();
     auto presentBarrierFeatures                     = m_context.getPresentBarrierFeatures();
     auto presentIdFeatures                          = m_context.getPresentIdFeatures();
@@ -794,7 +794,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto descriptorSetHostMappingFeatures           = m_context.getDescriptorSetHostMappingFeaturesVALVE();
     auto depthClampZeroOneFeatures                  = m_context.getDepthClampZeroOneFeatures();
     auto nonSeamlessCubeMapFeatures                 = m_context.getNonSeamlessCubeMapFeaturesEXT();
-    auto fragmentDensityMapOffsetFeatures           = m_context.getFragmentDensityMapOffsetFeaturesQCOM();
+    auto fragmentDensityMapOffsetFeatures           = m_context.getFragmentDensityMapOffsetFeaturesEXT();
     auto copyMemoryIndirectFeatures                 = m_context.getCopyMemoryIndirectFeatures();
     auto memoryDecompressionFeatures                = m_context.getMemoryDecompressionFeatures();
     auto linearColorAttachmentFeatures              = m_context.getLinearColorAttachmentFeatures();
@@ -809,7 +809,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto pipelineProtectedAccessFeatures            = m_context.getPipelineProtectedAccessFeatures();
     auto tilePropertiesFeatures                     = m_context.getTilePropertiesFeaturesQCOM();
     auto multivewPerViewViewportsFeatures           = m_context.getMultiviewPerViewViewportsFeaturesQCOM();
-    auto rayTracingInvocationReorderFeatures        = m_context.getRayTracingInvocationReorderFeatures();
+    auto rayTracingInvocationReorderFeatures        = m_context.getRayTracingInvocationReorderFeaturesEXT();
     auto shaderCoreBuiltinsFeatures                 = m_context.getShaderCoreBuiltinsFeaturesARM();
     auto pipelineLibraryGroupHandlesFeatures        = m_context.getPipelineLibraryGroupHandlesFeaturesEXT();
     auto multivewPerViewRenderAreasFeatures         = m_context.getMultiviewPerViewRenderAreasFeaturesQCOM();

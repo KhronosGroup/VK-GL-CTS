@@ -171,6 +171,12 @@ void ComputePipelineWrapper::setSubgroupSize(uint32_t subgroupSize)
 {
     m_subgroupSize = subgroupSize;
 }
+
+void ComputePipelineWrapper::addPushConstantRange(const VkPushConstantRange &range)
+{
+    m_pushConstantRanges.push_back(range);
+}
+
 void ComputePipelineWrapper::buildPipeline(void)
 {
     const auto &vk     = m_internalData->vk;
@@ -218,8 +224,8 @@ void ComputePipelineWrapper::buildPipeline(void)
             "main",                                                  // const char* pName;
             (uint32_t)m_descriptorSetLayouts.size(),                 // uint32_t setLayoutCount;
             m_descriptorSetLayouts.data(),                           // VkDescriptorSetLayout* pSetLayouts;
-            0u,                                                      // uint32_t pushConstantRangeCount;
-            nullptr,                                                 // const VkPushConstantRange* pPushConstantRanges;
+            (uint32_t)m_pushConstantRanges.size(),                   // uint32_t pushConstantRangeCount;
+            m_pushConstantRanges.data(),                             // const VkPushConstantRange* pPushConstantRanges;
             specializationInfo,                                      // const VkSpecializationInfo* pSpecializationInfo;
         };
 
@@ -259,7 +265,12 @@ void ComputePipelineWrapper::bind(VkCommandBuffer commandBuffer)
 
 void ComputePipelineWrapper::buildPipelineLayout(void)
 {
-    m_pipelineLayout = makePipelineLayout(m_internalData->vk, m_internalData->device, m_descriptorSetLayouts);
+    m_pipelineLayout =
+        m_pushConstantRanges.empty() ?
+            makePipelineLayout(m_internalData->vk, m_internalData->device, m_descriptorSetLayouts) :
+            makePipelineLayout(m_internalData->vk, m_internalData->device, (uint32_t)m_descriptorSetLayouts.size(),
+                               de::dataOrNull(m_descriptorSetLayouts), (uint32_t)m_pushConstantRanges.size(),
+                               de::dataOrNull(m_pushConstantRanges), 0u);
 }
 
 VkPipelineLayout ComputePipelineWrapper::getPipelineLayout(void)

@@ -31,6 +31,7 @@
 #include "tcuWaiverUtil.hpp"
 
 #include "glcSubgroupsTests.hpp"
+#include "glcMeshShaderTests.hpp"
 #include "gl4cEnhancedLayoutsTests.hpp"
 #include "../gles31/es31cArrayOfArraysTests.hpp"
 
@@ -191,6 +192,7 @@ void SingleConfigGL45TestPackage::init(void)
     {
         // Add main test groups
         addChild(new glc::subgroups::GlSubgroupTests(getContext()));
+        addChild(new glc::meshShader::MeshShaderTests(getContext()));
     }
     catch (...)
     {

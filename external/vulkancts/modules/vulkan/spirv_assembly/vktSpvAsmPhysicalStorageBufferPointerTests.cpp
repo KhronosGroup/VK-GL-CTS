@@ -74,7 +74,7 @@ class Buffer
 {
 public:
     Buffer(Context &ctx, VkBufferUsageFlags usage, VkDeviceSize size, bool address = false);
-    Buffer(const Buffer &src);
+    Buffer(const Buffer &src) = delete;
 
     VkBuffer getBuffer(void) const
     {
@@ -135,33 +135,6 @@ private:
     const uint32_t m_elements;
 };
 
-class Image
-{
-public:
-    Image(Context &ctx, uint32_t width, uint32_t height, VkFormat format);
-    Image(const Image &) = delete;
-    Image(Image &&)      = delete;
-
-    Move<VkRenderPass> createRenderPass(void) const;
-    Move<VkFramebuffer> createFramebuffer(VkRenderPass rp) const;
-
-    template <class X>
-    TypedBuffer<X> getBuffer(void);
-    void downloadAfterDraw(VkCommandBuffer cmdBuffer);
-
-private:
-    Context &m_context;
-    const uint32_t m_width;
-    const uint32_t m_height;
-    const VkFormat m_format;
-    VkImageLayout m_layout;
-    Buffer m_buffer;
-
-    Move<VkImage> m_image;
-    Move<VkImageView> m_view;
-    de::MovePtr<Allocation> m_imageMemory;
-};
-
 template <class X>
 SharedPtr<Move<X>> makeShared(Move<X> move)
 {
@@ -203,15 +176,6 @@ Buffer::Buffer(Context &ctx, VkBufferUsageFlags usage, VkDeviceSize size, bool a
     m_bufferMemory = makeShared(allocator.allocate(getBufferMemoryRequirements(vki, dev, **m_buffer), requirements));
 
     VK_CHECK(vki.bindBufferMemory(dev, **m_buffer, (*m_bufferMemory)->getMemory(), (*m_bufferMemory)->getOffset()));
-}
-
-Buffer::Buffer(const Buffer &src)
-    : m_context(src.m_context)
-    , m_size(src.m_size)
-    , m_address(src.m_address)
-    , m_buffer(src.m_buffer)
-    , m_bufferMemory(src.m_bufferMemory)
-{
 }
 
 uint64_t Buffer::getDeviceAddress(void) const
@@ -311,12 +275,6 @@ TypedBuffer<X>::TypedBuffer(const TypedBuffer &src) : Buffer(src)
 }
 
 template <class X>
-TypedBuffer<X>::TypedBuffer(const Buffer &src) : Buffer(src)
-                                               , m_elements(static_cast<uint32_t>(m_size / sizeof(X)))
-{
-}
-
-template <class X>
 void TypedBuffer<X>::iota(X start, bool flushAfter)
 {
     X *data = getData();
@@ -331,122 +289,6 @@ X &TypedBuffer<X>::operator[](uint32_t at)
 {
     DE_ASSERT(at < m_elements);
     return getData()[at];
-}
-
-Image::Image(Context &ctx, uint32_t width, uint32_t height, VkFormat format)
-    : m_context(ctx)
-    , m_width(width)
-    , m_height(height)
-    , m_format(format)
-    , m_layout(VK_IMAGE_LAYOUT_UNDEFINED)
-    , m_buffer(ctx, (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-               (m_width * m_height * vk::mapVkFormat(m_format).getPixelSize()), false)
-{
-    const DeviceInterface &vki      = m_context.getDeviceInterface();
-    const VkDevice dev              = m_context.getDevice();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    const VkImageUsageFlags imageUsageFlags =
-        VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    const VkImageSubresourceRange viewResourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-    Allocator &allocator = m_context.getDefaultAllocator();
-
-    const VkImageCreateInfo imageCreateInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                             // const void* pNext;
-        0u,                                  // VkImageCreateFlags flags;
-        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
-        m_format,                            // VkFormat format;
-        {m_width, m_height, 1u},             // VkExtent3D extent;
-        1u,                                  // uint32_t mipLevels;
-        1u,                                  // uint32_t arrayLayers;
-        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
-        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
-        imageUsageFlags,                     // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
-        1u,                                  // uint32_t queueFamilyIndexCount;
-        &queueFamilyIndex,                   // const uint32_t* pQueueFamilyIndices;
-        m_layout                             // VkImageLayout initialLayout;
-    };
-
-    m_image = createImage(vki, dev, &imageCreateInfo);
-
-    m_imageMemory = allocator.allocate(getImageMemoryRequirements(vki, dev, *m_image), MemoryRequirement::Any);
-    VK_CHECK(vki.bindImageMemory(dev, *m_image, m_imageMemory->getMemory(), m_imageMemory->getOffset()));
-
-    m_view = makeImageView(vki, dev, *m_image, VK_IMAGE_VIEW_TYPE_2D, m_format, viewResourceRange);
-}
-
-template <class X>
-TypedBuffer<X> Image::getBuffer(void)
-{
-    m_buffer.invalidate();
-    return TypedBuffer<X>(m_buffer);
-}
-
-Move<VkRenderPass> Image::createRenderPass(void) const
-{
-    const DeviceInterface &vki = m_context.getDeviceInterface();
-    const VkDevice dev         = m_context.getDevice();
-
-    const VkAttachmentDescription attachmentDescription = {
-        (VkAttachmentDescriptionFlags)0,         // VkAttachmentDescriptionFlags    flags
-        m_format,                                // VkFormat                        format
-        VK_SAMPLE_COUNT_1_BIT,                   // VkSampleCountFlagBits           samples
-        VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp              loadOp
-        VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp             storeOp
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp              stencilLoadOp
-        VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp             stencilStoreOp
-        m_layout,                                // VkImageLayout                   initialLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout                   finalLayout
-    };
-
-    const VkAttachmentReference attachmentReference = {
-        0u,                                      // uint32_t                            attachment
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout                    layout
-    };
-
-    const VkSubpassDescription subpassDescription = {
-        (VkSubpassDescriptionFlags)0,    // VkSubpassDescriptionFlags       flags
-        VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint             pipelineBindPoint
-        0u,                              // uint32_t                        inputAttachmentCount
-        nullptr,                         // const VkAttachmentReference*    pInputAttachments
-        1u,                              // uint32_t                        colorAttachmentCount
-        &attachmentReference,            // const VkAttachmentReference*    pColorAttachments
-        nullptr,                         // const VkAttachmentReference*    pResolveAttachments
-        nullptr,                         // const VkAttachmentReference*    pDepthStencilAttachment
-        0u,                              // uint32_t                        preserveAttachmentCount
-        nullptr                          // const uint32_t*                 pPreserveAttachments
-    };
-
-    const VkRenderPassCreateInfo renderPassInfo = {
-        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType                   sType
-        nullptr,                                   // const void*                       pNext
-        (VkRenderPassCreateFlags)0,                // VkRenderPassCreateFlags           flags
-        1u,                                        // uint32_t                          attachmentCount
-        &attachmentDescription,                    // const VkAttachmentDescription*    pAttachments
-        1u,                                        // uint32_t                          subpassCount
-        &subpassDescription,                       // const VkSubpassDescription*       pSubpasses
-        0u,                                        // uint32_t                          dependencyCount
-        nullptr                                    // const VkSubpassDependency*        pDependencies
-    };
-
-    return vk::createRenderPass(vki, dev, &renderPassInfo);
-}
-
-Move<VkFramebuffer> Image::createFramebuffer(VkRenderPass rp) const
-{
-    const DeviceInterface &vki = m_context.getDeviceInterface();
-    const VkDevice dev         = m_context.getDevice();
-
-    return makeFramebuffer(vki, dev, rp, 1u, &m_view.get(), m_width, m_height, 1u);
-}
-
-void Image::downloadAfterDraw(VkCommandBuffer cmdBuffer)
-{
-    const DeviceInterface &vki = m_context.getDeviceInterface();
-    vk::copyImageToBuffer(vki, cmdBuffer, *m_image, m_buffer.getBuffer(), {int32_t(m_width), int32_t(m_height)});
-    m_layout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
 }
 
 } // namespace ut

@@ -104,7 +104,9 @@ Move<VkPipeline> makeGraphicsPipeline(
     const VkPipelineMultisampleStateCreateInfo *multisampleStateCreateInfo     = nullptr,
     const VkPipelineDepthStencilStateCreateInfo *depthStencilStateCreateInfo   = nullptr,
     const VkPipelineColorBlendStateCreateInfo *colorBlendStateCreateInfo       = nullptr,
-    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr);
+    const VkPipelineDynamicStateCreateInfo *dynamicStateCreateInfo = nullptr, const void *pNext = nullptr,
+    const VkPipelineVertexInputStateCreateInfo *vertexInputStateCreateInfo     = nullptr,
+    const VkPipelineInputAssemblyStateCreateInfo *inputAssemblyStateCreateInfo = nullptr);
 
 Move<VkRenderPass> makeRenderPass(
     const DeviceInterface &vk, const VkDevice device, const VkFormat colorFormat = VK_FORMAT_UNDEFINED,
@@ -165,7 +167,8 @@ Move<VkFramebuffer> makeFramebuffer(const DeviceInterface &vk, const VkDevice de
                                     const uint32_t attachmentCount, const VkImageView *attachmentsArray,
                                     const uint32_t width, const uint32_t height, const uint32_t layers = 1u);
 
-Move<VkCommandPool> makeCommandPool(const DeviceInterface &vk, const VkDevice device, const uint32_t queueFamilyIndex);
+Move<VkCommandPool> makeCommandPool(const DeviceInterface &vk, const VkDevice device, const uint32_t queueFamilyIndex,
+                                    const VkCommandPoolCreateFlags additionalFlags = 0u);
 
 inline Move<VkBuffer> makeBuffer(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize bufferSize,
                                  const VkBufferUsageFlags usage)

@@ -51,8 +51,8 @@ public:
     {
     }
 
-    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, uint32_t queueFamilyIndex,
-                                  VkDeviceSize size, VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
+                                  VkBufferUsageFlags usage, Context &context, Allocator &allocator,
                                   Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
                                   de::MovePtr<Allocation> &memory) const = 0;
 };
@@ -60,8 +60,8 @@ public:
 class BufferSuballocation : public IBufferAllocator
 {
 public:
-    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, uint32_t queueFamilyIndex,
-                                  VkDeviceSize size, VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
+                                  VkBufferUsageFlags usage, Context &context, Allocator &allocator,
                                   Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
                                   de::MovePtr<Allocation> &memory) const; // override
 };
@@ -69,8 +69,8 @@ public:
 class BufferDedicatedAllocation : public IBufferAllocator
 {
 public:
-    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, uint32_t queueFamilyIndex,
-                                  VkDeviceSize size, VkBufferUsageFlags usage, Context &context, Allocator &allocator,
+    virtual void createTestBuffer(const DeviceInterface &vk, VkDevice vkDevice, VkDeviceSize size,
+                                  VkBufferUsageFlags usage, Context &context, Allocator &allocator,
                                   Move<VkBuffer> &buffer, const MemoryRequirement &requirement,
                                   de::MovePtr<Allocation> &memory) const; // override
 };
@@ -84,8 +84,9 @@ public:
 
     virtual void createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
                                  Move<VkImage> &image, const MemoryRequirement &requirement,
-                                 de::MovePtr<Allocation> &memory,
-                                 VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const = 0;
+                                 de::MovePtr<Allocation> &memory, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+                                 VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT |
+                                                           VK_IMAGE_USAGE_TRANSFER_SRC_BIT) const = 0;
 };
 
 class ImageSuballocation : public IImageAllocator
@@ -93,8 +94,8 @@ class ImageSuballocation : public IImageAllocator
 public:
     virtual void createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
                                  Move<VkImage> &image, const MemoryRequirement &requirement,
-                                 de::MovePtr<Allocation> &memory,
-                                 VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
+                                 de::MovePtr<Allocation> &memory, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+                                 VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) const; // override
 };
 
 class ImageDedicatedAllocation : public IImageAllocator
@@ -102,8 +103,8 @@ class ImageDedicatedAllocation : public IImageAllocator
 public:
     virtual void createTestImage(tcu::IVec2 size, VkFormat format, Context &context, Allocator &allocator,
                                  Move<VkImage> &image, const MemoryRequirement &requirement,
-                                 de::MovePtr<Allocation> &memory,
-                                 VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL) const; // override
+                                 de::MovePtr<Allocation> &memory, VkImageTiling tiling = VK_IMAGE_TILING_OPTIMAL,
+                                 VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT) const; // override
 };
 
 } // namespace api

@@ -3,11 +3,15 @@ include_directories(
 	${DEQP_INL_DIR}
 )
 
+set(DEQP_VK_VKSC_IMAGE_UTIL_SRCS
+	vktImageTestsUtil.cpp
+	vktImageTestsUtil.hpp
+	)
+
 set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageTests.cpp
 	vktImageTests.hpp
-	vktImageTestsUtil.cpp
-	vktImageTestsUtil.hpp
+	${DEQP_VK_VKSC_IMAGE_UTIL_SRCS}
 	vktImageAstcDecodeModeTests.cpp
 	vktImageAstcDecodeModeTests.hpp
 	vktImageAtomicOperationTests.cpp
@@ -56,6 +60,10 @@ set(DEQP_VK_VKSC_IMAGE_SRCS
 	vktImageNonUniformOffsetSampleTests.hpp
 	vktImageConcurrentCopyTests.cpp
 	vktImageConcurrentCopyTests.hpp
+	vktImage2dArrayCompatibleTests.cpp
+	vktImage2dArrayCompatibleTests.hpp
+	vktImageGeneralLayoutTests.cpp
+	vktImageGeneralLayoutTests.hpp
 	)
 
 set(DEQP_VK_IMAGE_SRCS
@@ -63,7 +71,14 @@ set(DEQP_VK_IMAGE_SRCS
 	vktImageHostImageCopyTests.hpp
 	)
 
+PCH(DEQP_VK_IMAGE_UTIL_SRCS ../pch.cpp)
 PCH(DEQP_VK_IMAGE_SRCS ../pch.cpp)
+
+add_library(deqp-vk-image-util STATIC ${DEQP_VK_VKSC_IMAGE_UTIL_SRCS})
+target_link_libraries(deqp-vk-image-util  tcutil vkutil)
+
+add_library(deqp-vksc-image-util STATIC ${DEQP_VK_VKSC_IMAGE_UTIL_SRCS})
+target_link_libraries(deqp-vksc-image-util PUBLIC deqp-vksc-util tcutil vkscutil)
 
 add_library(deqp-vk-image STATIC ${DEQP_VK_VKSC_IMAGE_SRCS} ${DEQP_VK_IMAGE_SRCS})
 target_link_libraries(deqp-vk-image tcutil vkutil)

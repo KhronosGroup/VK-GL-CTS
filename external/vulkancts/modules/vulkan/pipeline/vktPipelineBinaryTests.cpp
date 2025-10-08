@@ -593,10 +593,10 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
     const std::pair<VkShaderStageFlagBits, std::string> stageNames[]{
         {VK_SHADER_STAGE_RAYGEN_BIT_KHR, "rgen"},  {VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, "chit"},
         {VK_SHADER_STAGE_MISS_BIT_KHR, "miss"},    {VK_SHADER_STAGE_INTERSECTION_BIT_KHR, "isec"},
-        {VK_SHADER_STAGE_ANY_HIT_BIT_KHR, "ahit"},
+        {VK_SHADER_STAGE_ANY_HIT_BIT_KHR, "ahit"}, {VK_SHADER_STAGE_CALLABLE_BIT_KHR, "call"},
     };
 
-    const uint32_t shaderCount                              = DE_LENGTH_OF_ARRAY(stageNames);
+    const auto shaderCount                                  = de::arrayLength(stageNames);
     VkPipelineShaderStageCreateInfo defaultShaderCreateInfo = initVulkanStructure();
     defaultShaderCreateInfo.pName                           = "main";
     m_shaderCreateInfoVect.resize(shaderCount, defaultShaderCreateInfo);
@@ -613,7 +613,9 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
         shaderCreateInfo.module               = *m_shaderModules[index];
     }
 
-    // define three shader groups
+    // Define four shader groups: rgen, hit, miss, call in that order.
+    const size_t shaderGroupCount = 4u;
+
     const VkRayTracingShaderGroupCreateInfoKHR defaultShaderGroupCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR, // VkStructureType sType;
         nullptr,                                                    // const void* pNext;
@@ -624,13 +626,17 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
         VK_SHADER_UNUSED_KHR,                                       // uint32_t intersectionShader;
         nullptr,                                                    // const void* pShaderGroupCaptureReplayHandle;
     };
-    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(3, defaultShaderGroupCreateInfo);
+
+    // Fill indices to each shader in the shaders array.
+    std::vector<VkRayTracingShaderGroupCreateInfoKHR> shaderGroupCreateInfoVect(shaderGroupCount,
+                                                                                defaultShaderGroupCreateInfo);
     shaderGroupCreateInfoVect[0].generalShader      = 0u;
     shaderGroupCreateInfoVect[1].type               = VK_RAY_TRACING_SHADER_GROUP_TYPE_PROCEDURAL_HIT_GROUP_KHR;
     shaderGroupCreateInfoVect[1].anyHitShader       = 4u;
     shaderGroupCreateInfoVect[1].intersectionShader = 3u;
     shaderGroupCreateInfoVect[1].closestHitShader   = 1u;
     shaderGroupCreateInfoVect[2].generalShader      = 2u;
+    shaderGroupCreateInfoVect[3].generalShader      = 5u;
 
     VkPipelineCreateFlags2CreateInfoKHR pipelineFlags2CreateInfo = initVulkanStructure();
     pipelineFlags2CreateInfo.flags                               = VK_PIPELINE_CREATE_2_CAPTURE_DATA_BIT_KHR;
@@ -663,18 +669,18 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
     VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo{
         VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
         pNext,
-        0,                                // VkPipelineCreateFlags                       flags;
-        shaderCount,                      // uint32_t                                    stageCount;
-        m_shaderCreateInfoVect.data(),    // const VkPipelineShaderStageCreateInfo*      pStages;
-        3u,                               // uint32_t                                    groupCount;
-        shaderGroupCreateInfoVect.data(), // const VkRayTracingShaderGroupCreateInfoKHR* pGroups;
-        1u,                               // uint32_t                                    maxPipelineRayRecursionDepth;
-        nullptr,                          // VkPipelineLibraryCreateInfoKHR*             pLibraryInfo;
-        pLibraryInterface,                // VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
-        nullptr,                          // const VkPipelineDynamicStateCreateInfo*     pDynamicState;
-        *pipelineLayout,                  // VkPipelineLayout                            layout;
-        VK_NULL_HANDLE,                   // VkPipeline                                  basePipelineHandle;
-        0,                                // int32_t                                     basePipelineIndex;
+        0,                                         // VkPipelineCreateFlags                       flags;
+        de::sizeU32(m_shaderCreateInfoVect),       // uint32_t                                    stageCount;
+        de::dataOrNull(m_shaderCreateInfoVect),    // const VkPipelineShaderStageCreateInfo*      pStages;
+        de::sizeU32(shaderGroupCreateInfoVect),    // uint32_t                                    groupCount;
+        de::dataOrNull(shaderGroupCreateInfoVect), // const VkRayTracingShaderGroupCreateInfoKHR* pGroups;
+        1u,                // uint32_t                                    maxPipelineRayRecursionDepth;
+        nullptr,           // VkPipelineLibraryCreateInfoKHR*             pLibraryInfo;
+        pLibraryInterface, // VkRayTracingPipelineInterfaceCreateInfoKHR* pLibraryInterface;
+        nullptr,           // const VkPipelineDynamicStateCreateInfo*     pDynamicState;
+        *pipelineLayout,   // VkPipelineLayout                            layout;
+        VK_NULL_HANDLE,    // VkPipeline                                  basePipelineHandle;
+        0,                 // int32_t                                     basePipelineIndex;
     };
     m_pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
     BinariesStatus binariesStatus = BinariesStatus::VALID;
@@ -787,12 +793,13 @@ tcu::TestStatus RayTracingPipelineTestInstance::iterate(void)
     auto rgenShaderBT = createShaderBindingTable(*m_pipeline, 0);
     auto chitShaderBT = createShaderBindingTable(*m_pipeline, 1);
     auto missShaderBT = createShaderBindingTable(*m_pipeline, 2);
+    auto callShaderBT = createShaderBindingTable(*m_pipeline, 3);
 
     auto &makeSDARegion     = makeStridedDeviceAddressRegionKHR;
     const auto rgenSBTR     = makeSDARegion(getBufferDeviceAddress(**rgenShaderBT), sgHandleSize, sgHandleSize);
     const auto chitSBTR     = makeSDARegion(getBufferDeviceAddress(**chitShaderBT), sgHandleSize, sgHandleSize);
     const auto missSBTR     = makeSDARegion(getBufferDeviceAddress(**missShaderBT), sgHandleSize, sgHandleSize);
-    const auto callableSBTR = makeSDARegion(0, 0, 0);
+    const auto callableSBTR = makeSDARegion(getBufferDeviceAddress(**callShaderBT), sgHandleSize, sgHandleSize);
 
     auto tlas      = makeTopLevelAccelerationStructure();
     auto cmdPool   = createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());
@@ -1295,6 +1302,7 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
                    "#version 460 core\n"
                    "#extension GL_EXT_ray_tracing : require\n"
                    "layout(location = 0) rayPayloadEXT int payload;\n"
+                   "layout(location = 0) callableDataEXT int callableIO;\n"
 
                    "layout(set = 0, binding = 0) uniform accelerationStructureEXT tlas;\n"
                    "layout(set = 0, binding = 1, std430) writeonly buffer Result {\n"
@@ -1313,7 +1321,9 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
                    "tmax, 0);\n"
                    // to be able to display result in cherry this is interpreated as r8g8b8a8 during verification
                    // we are using only red but we need to add alpha (note: r and a may be swapped depending on endianness)
-                   "  result.value[resultIndex] = payload + 0xFF000000;\n"
+                   "  callableIO = 0;\n"
+                   "  executeCallableEXT(0, 0);\n"
+                   "  result.value[resultIndex] = payload + callableIO;\n" // 0xFF000000
                    "};\n")
             << buildOptions;
 
@@ -1356,6 +1366,16 @@ void BaseTestCase::initPrograms(SourceCollections &programCollection) const
                                "{\n"
                                "  payload = 128;\n"
                                "}\n")
+            << buildOptions;
+
+        programCollection.glslSources.add("call")
+            << glu::CallableSource("#version 460 core\n"
+                                   "#extension GL_EXT_ray_tracing : require\n"
+                                   "layout(location = 0) callableDataInEXT int callableIO;\n"
+                                   "void main()\n"
+                                   "{\n"
+                                   "  callableIO = callableIO + 0xFF000000;\n"
+                                   "}\n")
             << buildOptions;
     }
     else if ((m_testParams.type == TestType::UNIQUE_KEY_PAIRS) || (m_testParams.type == TestType::VALID_KEY))

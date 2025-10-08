@@ -70,3 +70,4 @@ def build (config, generator, targets = None):
             execute(baseCmd + ['--target', target] + buildArgs)
 
     popWorkingDir()
+    return baseCmd + buildArgs

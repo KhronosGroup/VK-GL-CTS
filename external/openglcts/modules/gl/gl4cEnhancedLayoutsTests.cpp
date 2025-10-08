@@ -38,6 +38,7 @@
 
 #include <algorithm>
 #include <iomanip>
+#include <iterator>
 #include <string>
 #include <vector>
 
@@ -15850,7 +15851,7 @@ void VaryingInvalidValueComponentTest::testInit()
     std::vector<GLuint> invalid_components;
 
     std::set_symmetric_difference(every_component.begin(), every_component.end(), valid_components.begin(),
-                                  valid_components.end(), back_inserter(invalid_components));
+                                  valid_components.end(), std::back_inserter(invalid_components));
 
     for (std::vector<GLuint>::const_iterator it_invalid_components = invalid_components.begin();
          it_invalid_components != invalid_components.end(); ++it_invalid_components)

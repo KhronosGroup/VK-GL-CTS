@@ -119,14 +119,6 @@ Move<VkShaderEXT> createShaderFromBinary(const DeviceInterface &vk, VkDevice dev
     return createShader(vk, device, pCreateInfo);
 }
 
-Move<VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device,
-                               const vk::VkShaderCreateInfoEXT &shaderCreateInfo)
-{
-    VkShaderEXT object = VK_NULL_HANDLE;
-    VK_CHECK(vk.createShadersEXT(device, 1u, &shaderCreateInfo, nullptr, &object));
-    return Move<VkShaderEXT>(check<VkShaderEXT>(object), Deleter<VkShaderEXT>(vk, device, nullptr));
-}
-
 void addBasicShaderObjectShaders(vk::SourceCollections &programCollection)
 {
     std::stringstream vert;

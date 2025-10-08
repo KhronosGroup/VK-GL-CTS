@@ -377,9 +377,6 @@ deFloat16 deFloat64To16Round(double val64, deRoundingMode mode)
     int exp16;      /* exp16: biased exponent for 16-bit floats */
     uint64_t mantissa;
 
-    /* We only support these two rounding modes for now */
-    DE_ASSERT(mode == DE_ROUNDINGMODE_TO_ZERO || mode == DE_ROUNDINGMODE_TO_NEAREST_EVEN);
-
     x.f      = val64;
     sign     = (x.u >> 48u) & 0x00008000u;
     exp64    = (x.u >> 52u) & 0x000007ffu;
@@ -438,30 +435,46 @@ deFloat16 deFloat64To16Round(double val64, deRoundingMode mode)
         {
             mantissa >>= (43 - exp16);
         }
-        else
+        else if (mode == DE_ROUNDINGMODE_TO_NEAREST_EVEN)
         {
             /* mantissa in the above may exceed 10-bits, in which case overflow happens.
              * The overflowed bit is automatically carried to exponent then.
              */
             mantissa = roundToNearestEven64(mantissa, 43 - exp16);
         }
+        else
+        {
+            uint64_t discardedBits = mantissa & ((1ull << (43 - exp16)) - 1);
+            mantissa >>= (43 - exp16);
+
+            if (discardedBits != 0 && ((mode == DE_ROUNDINGMODE_TO_NEGATIVE_INF && sign != 0) ||
+                                       (mode == DE_ROUNDINGMODE_TO_POSITIVE_INF && sign == 0)))
+                mantissa++;
+        }
+
         return (deFloat16)(sign | mantissa);
     }
     /* Case: normalized floats -> normalized floats */
     else if (exp16 <= 30)
     {
         if (mode == DE_ROUNDINGMODE_TO_ZERO)
-        {
-            return (deFloat16)(sign | ((uint32_t)exp16 << 10u) | (mantissa >> 42u));
-        }
+            mantissa >>= 42u;
+        else if (mode == DE_ROUNDINGMODE_TO_NEAREST_EVEN)
+            mantissa = roundToNearestEven64(mantissa, 42);
         else
         {
-            mantissa = roundToNearestEven64(mantissa, 42);
-            /* Handle overflow. exp16 may overflow (and become Inf) itself, but that's correct. */
-            exp16 = (exp16 << 10u) + (deFloat16)(mantissa & (1 << 10));
-            mantissa &= (1u << 10) - 1;
-            return (deFloat16)(sign | ((uint32_t)exp16) | mantissa);
+            uint64_t discardedBits = mantissa & ((1ull << 42) - 1);
+            mantissa >>= 42u;
+
+            if (discardedBits != 0 && ((mode == DE_ROUNDINGMODE_TO_NEGATIVE_INF && sign != 0) ||
+                                       (mode == DE_ROUNDINGMODE_TO_POSITIVE_INF && sign == 0)))
+                mantissa++;
         }
+
+        /* Handle overflow. exp16 may overflow (and become Inf) itself, but that's correct. */
+        exp16 = (exp16 << 10u) + (deFloat16)(mantissa & (1 << 10));
+        mantissa &= (1u << 10) - 1;
+        return (deFloat16)(sign | ((uint32_t)exp16) | mantissa);
     }
     /* Case: normalized floats (too large to be representable as 16-bit floats) */
     else
@@ -471,8 +484,13 @@ deFloat16 deFloat64To16Round(double val64, deRoundingMode mode)
          *   of the intermediate  result.
          * * roundTowardZero carries all overflows to the format's largest finite number
          *   with the sign of the intermediate result.
+         * * roundTowardNegative carries positive overflows to the format's largest finite number,
+         *   and carries negative overflows to -Inf.
+         * * roundTowardPositive carries negative overflows to the format's most negative finite
+         *   number, and carries positive overflows to Inf.
          */
-        if (mode == DE_ROUNDINGMODE_TO_ZERO)
+        if (mode == DE_ROUNDINGMODE_TO_ZERO || (mode == DE_ROUNDINGMODE_TO_NEGATIVE_INF && sign == 0) ||
+            (mode == DE_ROUNDINGMODE_TO_POSITIVE_INF && sign != 0))
         {
             return (deFloat16)(sign | 0x7bffu); /* 111 1011 1111 1111 */
         }

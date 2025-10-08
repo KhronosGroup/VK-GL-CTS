@@ -22,7 +22,6 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktRayTracingProceduralGeometryTests.hpp"
-#include "vktCustomInstancesDevices.hpp"
 #include "vkDefs.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -61,77 +60,6 @@ enum class TestType
     TRIANGLE_IN_BETWEEN
 };
 
-struct DeviceHelper
-{
-    Move<VkDevice> device;
-    de::MovePtr<DeviceDriver> vkd;
-    uint32_t queueFamilyIndex;
-    VkQueue queue;
-    de::MovePtr<SimpleAllocator> allocator;
-
-    DeviceHelper(Context &context)
-    {
-        const auto &vkp           = context.getPlatformInterface();
-        const auto &vki           = context.getInstanceInterface();
-        const auto instance       = context.getInstance();
-        const auto physicalDevice = context.getPhysicalDevice();
-
-        queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-
-        // Get device features (these have to be checked in the test case)
-        VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures = initVulkanStructure();
-        VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures =
-            initVulkanStructure(&rayTracingPipelineFeatures);
-        VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceAddressFeatures =
-            initVulkanStructure(&accelerationStructureFeatures);
-        VkPhysicalDeviceFeatures2 deviceFeatures = initVulkanStructure(&deviceAddressFeatures);
-
-        vki.getPhysicalDeviceFeatures2(physicalDevice, &deviceFeatures);
-
-        // Make sure robust buffer access is disabled as in the default device
-        deviceFeatures.features.robustBufferAccess = VK_FALSE;
-
-        const auto queuePriority = 1.0f;
-        const VkDeviceQueueCreateInfo queueInfo{
-            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                    // const void* pNext;
-            0u,                                         // VkDeviceQueueCreateFlags flags;
-            queueFamilyIndex,                           // uint32_t queueFamilyIndex;
-            1u,                                         // uint32_t queueCount;
-            &queuePriority,                             // const float* pQueuePriorities;
-        };
-
-        // Required extensions - create device with VK_KHR_ray_tracing_pipeline but
-        // without VK_KHR_pipeline_library to also test that that combination works
-        std::vector<const char *> requiredExtensions{"VK_KHR_ray_tracing_pipeline",     "VK_KHR_acceleration_structure",
-                                                     "VK_KHR_deferred_host_operations", "VK_KHR_buffer_device_address",
-                                                     "VK_EXT_descriptor_indexing",      "VK_KHR_spirv_1_4",
-                                                     "VK_KHR_shader_float_controls"};
-
-        const VkDeviceCreateInfo createInfo{
-            VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,             // VkStructureType sType;
-            deviceFeatures.pNext,                             // const void* pNext;
-            0u,                                               // VkDeviceCreateFlags flags;
-            1u,                                               // uint32_t queueCreateInfoCount;
-            &queueInfo,                                       // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-            0u,                                               // uint32_t enabledLayerCount;
-            nullptr,                                          // const char* const* ppEnabledLayerNames;
-            static_cast<uint32_t>(requiredExtensions.size()), // uint32_t enabledExtensionCount;
-            requiredExtensions.data(),                        // const char* const* ppEnabledExtensionNames;
-            &deviceFeatures.features,                         // const VkPhysicalDeviceFeatures* pEnabledFeatures;
-        };
-
-        // Create custom device and related objects
-        device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki,
-                                    physicalDevice, &createInfo);
-        vkd    = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device.get(), context.getUsedApiVersion(),
-                                                            context.getTestContext().getCommandLine()));
-        queue  = getDeviceQueue(*vkd, *device, queueFamilyIndex, 0u);
-        allocator = de::MovePtr<SimpleAllocator>(
-            new SimpleAllocator(*vkd, device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
-    }
-};
-
 class RayTracingProceduralGeometryTestBase : public TestInstance
 {
 public:
@@ -150,7 +78,6 @@ private:
     void clearBuffer(de::SharedPtr<BufferWithMemory> buffer, VkDeviceSize bufferSize);
 
 protected:
-    DeviceHelper m_customDevice;
     de::MovePtr<RayTracingPipeline> m_rayTracingPipeline;
     Move<VkPipelineLayout> m_pipelineLayout;
     Move<VkPipeline> m_pipeline;
@@ -169,7 +96,6 @@ protected:
 
 RayTracingProceduralGeometryTestBase::RayTracingProceduralGeometryTestBase(Context &context)
     : vkt::TestInstance(context)
-    , m_customDevice(context)
     , m_referenceTLAS(makeTopLevelAccelerationStructure().release())
     , m_resultTLAS(makeTopLevelAccelerationStructure().release())
 {
@@ -177,11 +103,11 @@ RayTracingProceduralGeometryTestBase::RayTracingProceduralGeometryTestBase(Conte
 
 tcu::TestStatus RayTracingProceduralGeometryTestBase::iterate(void)
 {
-    const DeviceInterface &vkd      = *m_customDevice.vkd;
-    const VkDevice device           = *m_customDevice.device;
-    const uint32_t queueFamilyIndex = m_customDevice.queueFamilyIndex;
-    const VkQueue queue             = m_customDevice.queue;
-    Allocator &allocator            = *m_customDevice.allocator;
+    const DeviceInterface &vkd      = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    Allocator &allocator            = m_context.getDefaultAllocator();
     const uint32_t sgHandleSize     = m_context.getRayTracingPipelineProperties().shaderGroupHandleSize;
     const uint32_t imageSize        = 64u;
 
@@ -305,7 +231,7 @@ tcu::TestStatus RayTracingProceduralGeometryTestBase::iterate(void)
     tcu::PixelBufferAccess resultAccess(imageFormat, imageSize, imageSize, 1, resultAllocation.getHostPtr());
 
     if (tcu::intThresholdCompare(m_context.getTestContext().getLog(), "Result comparison", "", referenceAccess,
-                                 resultAccess, tcu::UVec4(0), tcu::COMPARE_LOG_EVERYTHING))
+                                 resultAccess, tcu::UVec4(0), tcu::COMPARE_LOG_ON_ERROR))
         return tcu::TestStatus::pass("Pass");
     return tcu::TestStatus::fail("Fail");
 }
@@ -323,8 +249,8 @@ VkWriteDescriptorSetAccelerationStructureKHR RayTracingProceduralGeometryTestBas
 
 void RayTracingProceduralGeometryTestBase::clearBuffer(de::SharedPtr<BufferWithMemory> buffer, VkDeviceSize bufferSize)
 {
-    const DeviceInterface &vkd = *m_customDevice.vkd;
-    const VkDevice device      = *m_customDevice.device;
+    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const VkDevice device      = m_context.getDevice();
     auto &bufferAlloc          = buffer->getAllocation();
     void *bufferPtr            = bufferAlloc.getHostPtr();
 
@@ -348,9 +274,9 @@ ObjectBehindBoundingBoxInstance::ObjectBehindBoundingBoxInstance(Context &contex
 
 void ObjectBehindBoundingBoxInstance::setupRayTracingPipeline()
 {
-    const DeviceInterface &vkd     = *m_customDevice.vkd;
-    const VkDevice device          = *m_customDevice.device;
-    Allocator &allocator           = *m_customDevice.allocator;
+    const DeviceInterface &vkd     = m_context.getDeviceInterface();
+    const VkDevice device          = m_context.getDevice();
+    Allocator &allocator           = m_context.getDefaultAllocator();
     vk::BinaryCollection &bc       = m_context.getBinaryCollection();
     const uint32_t sgHandleSize    = m_context.getRayTracingPipelineProperties().shaderGroupHandleSize;
     const uint32_t sgBaseAlignment = m_context.getRayTracingPipelineProperties().shaderGroupBaseAlignment;
@@ -376,9 +302,9 @@ void ObjectBehindBoundingBoxInstance::setupRayTracingPipeline()
 
 void ObjectBehindBoundingBoxInstance::setupAccelerationStructures()
 {
-    const DeviceInterface &vkd = *m_customDevice.vkd;
-    const VkDevice device      = *m_customDevice.device;
-    Allocator &allocator       = *m_customDevice.allocator;
+    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const VkDevice device      = m_context.getDevice();
+    Allocator &allocator       = m_context.getDefaultAllocator();
 
     AccelerationStructBufferProperties bufferProps;
     bufferProps.props.residency = ResourceResidency::TRADITIONAL;
@@ -435,9 +361,9 @@ TriangleInBeteenInstance::TriangleInBeteenInstance(Context &context) : RayTracin
 
 void TriangleInBeteenInstance::setupRayTracingPipeline()
 {
-    const DeviceInterface &vkd     = *m_customDevice.vkd;
-    const VkDevice device          = *m_customDevice.device;
-    Allocator &allocator           = *m_customDevice.allocator;
+    const DeviceInterface &vkd     = m_context.getDeviceInterface();
+    const VkDevice device          = m_context.getDevice();
+    Allocator &allocator           = m_context.getDefaultAllocator();
     vk::BinaryCollection &bc       = m_context.getBinaryCollection();
     const uint32_t sgHandleSize    = m_context.getRayTracingPipelineProperties().shaderGroupHandleSize;
     const uint32_t sgBaseAlignment = m_context.getRayTracingPipelineProperties().shaderGroupBaseAlignment;
@@ -465,9 +391,9 @@ void TriangleInBeteenInstance::setupRayTracingPipeline()
 
 void TriangleInBeteenInstance::setupAccelerationStructures()
 {
-    const DeviceInterface &vkd = *m_customDevice.vkd;
-    const VkDevice device      = *m_customDevice.device;
-    Allocator &allocator       = *m_customDevice.allocator;
+    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    const VkDevice device      = m_context.getDevice();
+    Allocator &allocator       = m_context.getDefaultAllocator();
 
     AccelerationStructBufferProperties bufferProps;
     bufferProps.props.residency = ResourceResidency::TRADITIONAL;
@@ -529,6 +455,8 @@ public:
     void checkSupport(Context &context) const override;
     void initPrograms(SourceCollections &programCollection) const override;
     TestInstance *createInstance(Context &context) const override;
+    void initDeviceCapabilities(DevCaps &caps) override;
+    std::string getRequiredCapabilitiesId() const override;
 
 protected:
     TestType m_testType;
@@ -655,6 +583,27 @@ TestInstance *RayTracingProceduralGeometryTestCase::createInstance(Context &cont
 
     // TestType::OBJECT_BEHIND_BOUNDING_BOX
     return new ObjectBehindBoundingBoxInstance(context);
+}
+
+std::string RayTracingProceduralGeometryTestCase::getRequiredCapabilitiesId() const
+{
+    return typeid(RayTracingProceduralGeometryTestCase).name();
+}
+
+void RayTracingProceduralGeometryTestCase::initDeviceCapabilities(DevCaps &caps)
+{
+    std::vector<std::string> requiredExtensions{"VK_KHR_ray_tracing_pipeline",     "VK_KHR_acceleration_structure",
+                                                "VK_KHR_deferred_host_operations", "VK_KHR_buffer_device_address",
+                                                "VK_EXT_descriptor_indexing",      "VK_KHR_spirv_1_4",
+                                                "VK_KHR_shader_float_controls"};
+    for (std::string &e : requiredExtensions)
+    {
+        caps.addExtension(std::move(e));
+    }
+
+    caps.addFeature<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>();
+    caps.addFeature<VkPhysicalDeviceAccelerationStructureFeaturesKHR>();
+    caps.addFeature<VkPhysicalDeviceBufferDeviceAddressFeaturesKHR>();
 }
 
 } // namespace

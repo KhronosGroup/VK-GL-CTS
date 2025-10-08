@@ -166,6 +166,11 @@ void MultisampledImageSparseBindingCase::checkSupport(Context &context) const
     if (!isImageSizeSupported(vki, physicalDevice, IMAGE_TYPE_2D, m_params.imgSize))
         TCU_THROW(NotSupportedError, "Image size not supported for device");
 
+    // Check multisample storage images support.
+    const auto features = vk::getPhysicalDeviceFeatures(vki, physicalDevice);
+    if (!features.shaderStorageImageMultisample)
+        TCU_THROW(NotSupportedError, "Using multisample images as storage is not supported");
+
     VkImageFormatProperties imageFormatProperties;
     const VkResult imageFormatResult = vki.getPhysicalDeviceImageFormatProperties(
         physicalDevice, m_params.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, VK_IMAGE_USAGE_STORAGE_BIT,

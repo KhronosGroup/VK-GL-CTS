@@ -46,8 +46,10 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
-#include "vkSafetyCriticalUtil.hpp"
 #include "vkImageWithMemory.hpp"
+#ifdef CTS_USES_VULKANSC
+#include "vkSafetyCriticalUtil.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include "tcuCommandLine.hpp"
 #include "tcuTestLog.hpp"
@@ -1150,8 +1152,8 @@ private:
 class BufferToBufferInvertTestInstance : public vkt::TestInstance
 {
 public:
-    BufferToBufferInvertTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localSize,
-                                     const tcu::IVec3 &workSize, const BufferType bufferType,
+    BufferToBufferInvertTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
+                                     const BufferType bufferType,
                                      const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
     tcu::TestStatus iterate(void);
@@ -1159,7 +1161,6 @@ public:
 private:
     const BufferType m_bufferType;
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     const tcu::IVec3 m_workSize;
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
@@ -1254,17 +1255,16 @@ void BufferToBufferInvertTest::initPrograms(SourceCollections &sourceCollections
 
 TestInstance *BufferToBufferInvertTest::createInstance(Context &context) const
 {
-    return new BufferToBufferInvertTestInstance(context, m_numValues, m_localSize, m_workSize, m_bufferType,
+    return new BufferToBufferInvertTestInstance(context, m_numValues, m_workSize, m_bufferType,
                                                 m_computePipelineConstructionType);
 }
 
 BufferToBufferInvertTestInstance::BufferToBufferInvertTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
-    const BufferType bufferType, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    Context &context, const uint32_t numValues, const tcu::IVec3 &workSize, const BufferType bufferType,
+    const vk::ComputePipelineConstructionType computePipelineConstructionType)
     : TestInstance(context)
     , m_bufferType(bufferType)
     , m_numValues(numValues)
-    , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -1419,15 +1419,13 @@ private:
 class InvertSSBOInPlaceTestInstance : public vkt::TestInstance
 {
 public:
-    InvertSSBOInPlaceTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localSize,
-                                  const tcu::IVec3 &workSize,
+    InvertSSBOInPlaceTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
                                   const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
     tcu::TestStatus iterate(void);
 
 private:
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     const tcu::IVec3 m_workSize;
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
@@ -1477,16 +1475,14 @@ void InvertSSBOInPlaceTest::initPrograms(SourceCollections &sourceCollections) c
 
 TestInstance *InvertSSBOInPlaceTest::createInstance(Context &context) const
 {
-    return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_localSize, m_workSize,
-                                             m_computePipelineConstructionType);
+    return new InvertSSBOInPlaceTestInstance(context, m_numValues, m_workSize, m_computePipelineConstructionType);
 }
 
 InvertSSBOInPlaceTestInstance::InvertSSBOInPlaceTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
+    Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
     : TestInstance(context)
     , m_numValues(numValues)
-    , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -1623,15 +1619,13 @@ private:
 class WriteToMultipleSSBOTestInstance : public vkt::TestInstance
 {
 public:
-    WriteToMultipleSSBOTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localSize,
-                                    const tcu::IVec3 &workSize,
+    WriteToMultipleSSBOTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
                                     const vk::ComputePipelineConstructionType computePipelineConstructionType);
 
     tcu::TestStatus iterate(void);
 
 private:
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     const tcu::IVec3 m_workSize;
     vk::ComputePipelineConstructionType m_computePipelineConstructionType;
 };
@@ -1694,16 +1688,14 @@ void WriteToMultipleSSBOTest::initPrograms(SourceCollections &sourceCollections)
 
 TestInstance *WriteToMultipleSSBOTest::createInstance(Context &context) const
 {
-    return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_localSize, m_workSize,
-                                               m_computePipelineConstructionType);
+    return new WriteToMultipleSSBOTestInstance(context, m_numValues, m_workSize, m_computePipelineConstructionType);
 }
 
 WriteToMultipleSSBOTestInstance::WriteToMultipleSSBOTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
+    Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
     : TestInstance(context)
     , m_numValues(numValues)
-    , m_localSize(localSize)
     , m_workSize(workSize)
     , m_computePipelineConstructionType(computePipelineConstructionType)
 {
@@ -1822,6 +1814,201 @@ tcu::TestStatus WriteToMultipleSSBOTestInstance::iterate(void)
             }
         }
     }
+    return tcu::TestStatus::pass("Compute succeeded");
+}
+
+class ReadUnboundSSBOTest : public vkt::TestCase
+{
+public:
+    ReadUnboundSSBOTest(tcu::TestContext &testCtx, const std::string &name,
+                        const vk::ComputePipelineConstructionType computePipelineConstructionType);
+
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+class ReadUnboundSSBOTestInstance : public vkt::TestInstance
+{
+public:
+    ReadUnboundSSBOTestInstance(Context &context,
+                                const vk::ComputePipelineConstructionType computePipelineConstructionType);
+
+    tcu::TestStatus iterate(void);
+
+private:
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+ReadUnboundSSBOTest::ReadUnboundSSBOTest(tcu::TestContext &testCtx, const std::string &name,
+                                         const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestCase(testCtx, name)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+{
+}
+
+void ReadUnboundSSBOTest::checkSupport(Context &context) const
+{
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                  m_computePipelineConstructionType);
+}
+
+void ReadUnboundSSBOTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    std::ostringstream src;
+    src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+        << "layout (set = 0, binding = 0) buffer SSBO_0 {\n"
+        << "  uint x; \n" // A single unsigned integer stored in an SSBO
+        << "} ssbo0;\n"
+        << "\n"
+        << "layout(set = 0, binding = 1, std430) buffer SSBO_1 {\n"
+        << "  vec4 data;\n"
+        << "  uint not_set[];\n"
+        << "} ssbo1;\n"
+        << "\n"
+        << "void main() {\n"
+        << "  ssbo0.x = 23;\n" // Set to any arbitrary non-zero number
+        << "  ssbo0.x = ssbo1.not_set.length();\n"
+        << "  ssbo1.data *= 2.0;\n"
+        << "}\n";
+
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+}
+
+TestInstance *ReadUnboundSSBOTest::createInstance(Context &context) const
+{
+    return new ReadUnboundSSBOTestInstance(context, m_computePipelineConstructionType);
+}
+
+ReadUnboundSSBOTestInstance::ReadUnboundSSBOTestInstance(
+    Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestInstance(context)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+{
+}
+
+tcu::TestStatus ReadUnboundSSBOTestInstance::iterate(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    // Create an output buffer
+    const VkDeviceSize bufferSizeBytes = static_cast<VkDeviceSize>(sizeof(uint32_t)); // 4 bytes
+    const BufferWithMemory buffer0(vk, device, allocator,
+                                   makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                   MemoryRequirement::HostVisible);
+
+    // Create second buffer partially unbound
+    const VkDeviceSize bufferSizeBytes1 = static_cast<VkDeviceSize>(sizeof(tcu::Vec4)); // 16 bytes for vec4
+    const BufferWithMemory buffer1(vk, device, allocator,
+                                   makeBufferCreateInfo(bufferSizeBytes1, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                   MemoryRequirement::HostVisible);
+
+    // Writing to buffer1
+    const Allocation &buffer1Allocation = buffer1.getAllocation();
+    void *dataPtr                       = buffer1Allocation.getHostPtr();
+    float *boundArrayValues             = static_cast<float *>(dataPtr);
+
+    // Random values for data
+    boundArrayValues[0] = 4.0f;
+    boundArrayValues[1] = 3.0f;
+    boundArrayValues[2] = 2.0f;
+    boundArrayValues[3] = 1.0f;
+
+    flushAlloc(vk, device, buffer1Allocation);
+
+    // Create descriptor set
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    const VkDescriptorBufferInfo buffer0DescriptorInfo = makeDescriptorBufferInfo(*buffer0, 0ull, bufferSizeBytes);
+    const VkDescriptorBufferInfo buffer1DescriptorInfo = makeDescriptorBufferInfo(*buffer1, 0ull, bufferSizeBytes1);
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &buffer0DescriptorInfo)
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &buffer1DescriptorInfo)
+        .update(vk, device);
+
+    // Perform the computation
+    ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
+                                    m_context.getBinaryCollection().get("comp"));
+    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+    pipeline.buildPipeline();
+
+    const VkBufferMemoryBarrier shaderWriteBarriers[] = {
+        makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer0, 0ull, bufferSizeBytes)};
+
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    // Start recording commands
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    pipeline.bind(*cmdBuffer);
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
+                             &descriptorSet.get(), 0u, nullptr);
+
+    const uint32_t groupCountXYZ = 1u;
+    vk.cmdDispatch(*cmdBuffer, groupCountXYZ, groupCountXYZ, groupCountXYZ);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 0, nullptr, DE_LENGTH_OF_ARRAY(shaderWriteBarriers),
+                          shaderWriteBarriers, 0, nullptr);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    // Wait for completion
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    // Validate the results for SSBO0
+    {
+        const Allocation &buffer0Allocation = buffer0.getAllocation();
+        invalidateAlloc(vk, device, buffer0Allocation);
+        const uint32_t *buffer0Ptr = static_cast<uint32_t *>(buffer0Allocation.getHostPtr());
+
+        const uint32_t res = buffer0Ptr[0];
+
+        if (res != 0)
+        {
+            std::ostringstream msg;
+            msg << "Comparison failed for not_set.length(). Expected: 0, Got: " << res;
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+
+    // Validate the results for SSBO1
+    {
+        const Allocation &buffer1OutputAllocation = buffer1.getAllocation();
+        invalidateAlloc(vk, device, buffer1OutputAllocation);
+
+        const float *outputValues = static_cast<const float *>(buffer1OutputAllocation.getHostPtr());
+
+        // Compare output values. They should be * 2 times the input if test is working correctly
+        if (!((outputValues[0] == 8.0f) && (outputValues[1] == 6.0f) && (outputValues[2] == 4.0f) &&
+              (outputValues[3] == 2.0f)))
+        {
+            return tcu::TestStatus::fail("Comparison failed for data values.");
+        }
+    }
+
     return tcu::TestStatus::pass("Compute succeeded");
 }
 
@@ -3048,6 +3235,219 @@ tcu::TestStatus DispatchBaseTestInstance::iterate(void)
     return tcu::TestStatus::pass("Compute succeeded");
 }
 
+class SequentialDispatchTest : public vkt::TestCase
+{
+public:
+    SequentialDispatchTest(tcu::TestContext &testCtx, const std::string &name,
+                           const vk::ComputePipelineConstructionType computePipelineConstructionType);
+    ~SequentialDispatchTest(void);
+
+    void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+class SequentialDispatchTestInstance : public vkt::TestInstance
+{
+public:
+    SequentialDispatchTestInstance(Context &context,
+                                   const vk::ComputePipelineConstructionType computePipelineConstructionType);
+    ~SequentialDispatchTestInstance(void);
+
+    tcu::TestStatus iterate(void);
+
+private:
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+SequentialDispatchTest::SequentialDispatchTest(
+    tcu::TestContext &testCtx, const std::string &name,
+    const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestCase(testCtx, name)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+{
+}
+
+SequentialDispatchTest::~SequentialDispatchTest(void)
+{
+}
+
+void SequentialDispatchTest::checkSupport(Context &context) const
+{
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                  m_computePipelineConstructionType);
+}
+
+void SequentialDispatchTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    std::ostringstream comp;
+
+    comp << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+         << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in; \n"
+
+         // Use a storage buffer instead of a push constant
+         << "layout(std430, binding = 0) buffer CounterBuffer {\n"
+         << "  uint counter;\n"
+         << "};\n"
+
+         << "void main() {\n"
+         << "  atomicAdd(counter, 1);\n"
+         << "}\n";
+
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+TestInstance *SequentialDispatchTest::createInstance(Context &context) const
+{
+    return new SequentialDispatchTestInstance(context, m_computePipelineConstructionType);
+}
+
+SequentialDispatchTestInstance::SequentialDispatchTestInstance(
+    Context &context, const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestInstance(context)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+{
+}
+
+SequentialDispatchTestInstance::~SequentialDispatchTestInstance(void)
+{
+}
+
+tcu::TestStatus SequentialDispatchTestInstance::iterate(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    // Indirect dispatch buffer.
+    const VkDeviceSize bufferSizeBytes = sizeof(VkDispatchIndirectCommand);
+    const BufferWithMemory indirectDispatchBuffer(
+        vk, device, allocator, makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
+        MemoryRequirement::HostVisible);
+
+    // Counter buffer to read count from shader.
+    const VkDeviceSize counterBufferSizeBytes = sizeof(uint32_t);
+    const BufferWithMemory counterBuffer(
+        vk, device, allocator,
+        makeBufferCreateInfo(counterBufferSizeBytes,
+                             VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
+        MemoryRequirement::HostVisible);
+
+    // Fill the parameters in indirect dispatch buffer.
+    const Allocation &indirectDispatchBufferAllocation = indirectDispatchBuffer.getAllocation();
+    void *dataPtr                                      = indirectDispatchBufferAllocation.getHostPtr();
+    VkDispatchIndirectCommand *dispatchDataValues      = static_cast<VkDispatchIndirectCommand *>(dataPtr);
+
+    const uint32_t secondGroupCountX = 3u;
+    const uint32_t secondGroupCountY = 3u;
+    const uint32_t secondGroupCountZ = 1u;
+
+    dispatchDataValues->x = secondGroupCountX; // groupCountX
+    dispatchDataValues->y = secondGroupCountY; // groupCountY
+    dispatchDataValues->z = secondGroupCountZ; // groupCountZ
+
+    flushAlloc(vk, device, indirectDispatchBufferAllocation);
+
+    // Initialize the atomic counter to 0.
+    const Allocation &counterBufferAllocation = counterBuffer.getAllocation();
+    void *counterDataPtr                      = counterBufferAllocation.getHostPtr();
+    uint32_t *counterValue                    = static_cast<uint32_t *>(counterDataPtr);
+    *counterValue                             = 0u;
+
+    flushAlloc(vk, device, counterBufferAllocation);
+
+    // Create descriptor set
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    const VkDescriptorBufferInfo bufferDescriptorInfo =
+        makeDescriptorBufferInfo(*counterBuffer, 0ull, counterBufferSizeBytes);
+
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
+        .update(vk, device);
+
+    // Create compute pipeline.
+    ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
+                                    m_context.getBinaryCollection().get("comp"));
+    pipeline.setPipelineCreateFlags(VK_PIPELINE_CREATE_DISPATCH_BASE);
+    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+    pipeline.buildPipeline();
+
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(
+        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *counterBuffer, 0ull, counterBufferSizeBytes);
+
+    // Perform the computation.
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    pipeline.bind(*cmdBuffer);
+
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
+                             &descriptorSet.get(), 0u, nullptr);
+
+    // First issue the dispatch base command.
+    const uint32_t baseGroupX         = 2u;
+    const uint32_t baseGroupY         = 3u;
+    const uint32_t baseGroupZ         = 4u;
+    const uint32_t firstGroupCountXYZ = 1u;
+
+    vk.cmdDispatchBase(*cmdBuffer, baseGroupX, baseGroupY, baseGroupZ, firstGroupCountXYZ, firstGroupCountXYZ,
+                       firstGroupCountXYZ);
+
+    // Secondly, issue the dispatch indirect command.
+    {
+        const VkDeviceSize bufferOffset = 0; // Offset where dispatch data is stored
+        vk.cmdDispatchIndirect(*cmdBuffer, indirectDispatchBuffer.get(), bufferOffset);
+    }
+
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 0, nullptr, 1u, &shaderWriteBarrier, 0, nullptr);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    // Read results
+    const Allocation &resultCounterBufferAllocation = counterBuffer.getAllocation();
+    invalidateAlloc(vk, device, resultCounterBufferAllocation);
+    void *resultCounterDataPtr   = resultCounterBufferAllocation.getHostPtr();
+    uint32_t *resultCounterValue = static_cast<uint32_t *>(resultCounterDataPtr);
+
+    // CmdDispatchBase invocations = 1x1x1 = 1
+    // CmdDispatchIndirect invocations = 3x3x1 = 9
+    // Total invocations = 10
+    const uint32_t expectedCounterValue = (firstGroupCountXYZ * firstGroupCountXYZ * firstGroupCountXYZ) +
+                                          (secondGroupCountX * secondGroupCountY * secondGroupCountZ);
+
+    if (resultCounterValue[0] != expectedCounterValue)
+    {
+        std::ostringstream msg;
+        msg << "Comparison failed for counter value. Got: " << resultCounterValue[0]
+            << ". Expected: " << expectedCounterValue;
+        return tcu::TestStatus::fail(msg.str());
+    }
+    return tcu::TestStatus::pass("Compute succeeded");
+}
+
 class DeviceIndexTest : public vkt::TestCase
 {
 public:
@@ -3070,14 +3470,12 @@ private:
 class DeviceIndexTestInstance : public ComputeTestInstance
 {
 public:
-    DeviceIndexTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localsize,
-                            const tcu::IVec3 &worksize,
+    DeviceIndexTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &worksize,
                             const vk::ComputePipelineConstructionType computePipelineConstructionType);
     tcu::TestStatus iterate(void);
 
 private:
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     tcu::IVec3 m_workSize;
 };
 
@@ -3129,17 +3527,15 @@ void DeviceIndexTest::initPrograms(SourceCollections &sourceCollections) const
 
 TestInstance *DeviceIndexTest::createInstance(Context &context) const
 {
-    return new DeviceIndexTestInstance(context, m_numValues, m_localSize, m_workSize,
-                                       m_computePipelineConstructionType);
+    return new DeviceIndexTestInstance(context, m_numValues, m_workSize, m_computePipelineConstructionType);
 }
 
 DeviceIndexTestInstance::DeviceIndexTestInstance(
-    Context &context, const uint32_t numValues, const tcu::IVec3 &localsize, const tcu::IVec3 &worksize,
+    Context &context, const uint32_t numValues, const tcu::IVec3 &worksize,
     const vk::ComputePipelineConstructionType computePipelineConstructionType)
 
     : ComputeTestInstance(context, computePipelineConstructionType, false)
     , m_numValues(numValues)
-    , m_localSize(localsize)
     , m_workSize(worksize)
 {
 }
@@ -4691,6 +5087,8 @@ void ReplicatedCompositesTest::checkSupport(Context &context) const
 
 void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections) const
 {
+    const ShaderBuildOptions buildOptions(sourceCollections.usedVulkanVersion, SPIRV_VERSION_1_3, 0u);
+
     std::ostringstream src;
     src << "#version 460 core\n"
         << "#extension GL_EXT_scalar_block_layout : enable\n"
@@ -4893,7 +5291,7 @@ void ReplicatedCompositesTest::initPrograms(SourceCollections &sourceCollections
     }
     src << "}\n";
 
-    sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str());
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
 }
 
 TestInstance *ReplicatedCompositesTest::createInstance(Context &context) const
@@ -5333,6 +5731,9 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
                                                             false, tcu::IVec3(1, 4, 2), tcu::IVec3(2, 2, 4),
                                                             computePipelineConstructionType));
 
+    // Read from SSBO thats not fully bound
+    basicComputeTests->addChild(new ReadUnboundSSBOTest(testCtx, "read_unbound_ssbo", computePipelineConstructionType));
+
     // SSBO local barrier usage
     basicComputeTests->addChild(new SSBOLocalBarrierTest(testCtx, "ssbo_local_barrier_single_invocation",
                                                          tcu::IVec3(1, 1, 1), tcu::IVec3(1, 1, 1),
@@ -5435,6 +5836,8 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
             cts_amber::createAmberTestCase(testCtx, "write_ssbo_array", "", "compute", "write_ssbo_array.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "atomic_barrier_sum_small", "", "compute",
                                                                    "atomic_barrier_sum_small.amber"));
+        basicComputeTests->addChild(cts_amber::createAmberTestCase(testCtx, "vec2_nclamp_nan_component", "", "compute",
+                                                                   "vec2_nclamp_nan_component.amber"));
         basicComputeTests->addChild(
             cts_amber::createAmberTestCase(testCtx, "branch_past_barrier", "", "compute", "branch_past_barrier.amber"));
         basicComputeTests->addChild(cts_amber::createAmberTestCase(
@@ -5468,6 +5871,9 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
     addFunctionCaseWithPrograms(basicComputeTests.get(), "undefined_values", UndefinedValues::checkSupport,
                                 UndefinedValues::createProgram, UndefinedValues::createTest,
                                 computePipelineConstructionType);
+
+    basicComputeTests->addChild(
+        new SequentialDispatchTest(testCtx, "indirect_after_base_dispatch", computePipelineConstructionType));
 
     return basicComputeTests.release();
 }

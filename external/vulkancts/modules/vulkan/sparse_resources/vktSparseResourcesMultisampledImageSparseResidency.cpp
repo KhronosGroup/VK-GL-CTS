@@ -260,6 +260,9 @@ void MultisampledImageSparseResidencyCase::checkSupport(Context &context) const
 
     if ((imageFormatProperties.sampleCounts & m_params.sampleCount) != m_params.sampleCount)
         TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+
+    if (m_params.sampleCount != VK_SAMPLE_COUNT_1_BIT)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_MULTISAMPLE);
 }
 
 void MultisampledImageSparseResidencyCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -384,8 +387,9 @@ tcu::TestStatus MultisampledImageSparseResidencyInstance::iterate(void)
 
     // Binding partially resident sparse image
     {
-        const uint32_t memoryType =
-            findMatchingMemoryType(instance, getPhysicalDevice(), sparseMemRequirements, MemoryRequirement::Any);
+        const auto devMemProps    = getPhysicalDeviceMemoryProperties(instance, getPhysicalDevice());
+        const uint32_t memoryType = selectBestMemoryType(devMemProps, sparseMemRequirements.memoryTypeBits,
+                                                         MemoryRequirement::Any, tcu::just(HostIntent::NONE));
 
         if (memoryType == NO_MATCH_FOUND)
             return tcu::TestStatus::fail("No matching memory type found");
@@ -634,7 +638,7 @@ Move<VkBuffer> MultisampledImageSparseResidencyInstance::createBufferAndBindMemo
 
     Move<VkBuffer> buffer(vk::createBuffer(vkdi, device, &bufferCreateInfo));
     const VkMemoryRequirements requirements = getBufferMemoryRequirements(vkdi, device, *buffer);
-    AllocationMp bufferMemory               = allocator.allocate(requirements, MemoryRequirement::HostVisible);
+    AllocationMp bufferMemory               = allocator.allocate(requirements, HostIntent::R);
 
     VK_CHECK(vkdi.bindBufferMemory(device, *buffer, bufferMemory->getMemory(), bufferMemory->getOffset()));
     *outMemory = bufferMemory;
@@ -671,7 +675,7 @@ Move<VkImage> MultisampledImageSparseResidencyInstance::createImageAndBindMemory
 
     Move<VkImage> image(vk::createImage(vkdi, device, &imageCreateInfo));
     const VkMemoryRequirements requirements = getImageMemoryRequirements(vkdi, device, *image);
-    AllocationMp imageMemory                = allocator.allocate(requirements, MemoryRequirement::Any);
+    AllocationMp imageMemory                = allocator.allocate(requirements, HostIntent::NONE);
 
     VK_CHECK(vkdi.bindImageMemory(device, *image, imageMemory->getMemory(), imageMemory->getOffset()));
     *outMemory = imageMemory;

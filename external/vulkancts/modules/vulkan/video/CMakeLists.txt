@@ -1,8 +1,8 @@
 
 include_directories(..)
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-	include_directories(${NV_VIDEO_PARSER_INCLUDE_DIRS})
-	include_directories(${NV_VIDEO_ENCODER_INCLUDE_DIRS})
+	include_directories(${VULKAN_VIDEO_PARSER_INCLUDE_DIRS})
+	include_directories(${VULKAN_VIDEO_ENCODER_INCLUDE_DIRS})
 	include_directories(${VIDEO_GENERATOR_INCLUDE_DIR})
 	include_directories(.)
 
@@ -42,7 +42,6 @@ if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
 	set(DEQP_VK_VIDEO_SRCS
 		${DEQP_VK_VIDEO_SRC_TARGET_DEPENDENT}
 		${DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT}
-		${NV_VIDEO_PARSER_SOURCES}
 		)
 else()
 	set(DEQP_VK_VIDEO_SRCS ${DEQP_VK_VIDEO_SRCS_TARGET_INDEPENDENT})
@@ -55,7 +54,8 @@ set(DEQP_VK_VIDEO_LIBS
 
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
 	list(APPEND DEQP_VK_VIDEO_LIBS
-		${NV_VIDEO_ENCODER_LIBRARY}
+		${VULKAN_VIDEO_PARSER_LIBRARY}
+		${VULKAN_VIDEO_ENCODER_LIBRARY}
 		${VIDEO_GENERATOR_STATIC_LIB}
 		)
 endif()
@@ -63,7 +63,7 @@ endif()
 PCH(DEQP_VK_VIDEO_SRCS ../pch.cpp)
 
 add_library(deqp-vk-video STATIC ${DEQP_VK_VIDEO_SRCS})
-target_link_libraries(deqp-vk-video ${DEQP_VK_VIDEO_LIBS})
+target_link_libraries(deqp-vk-video deqp-vk-synchronization deqp-vk-image-util deqp-vk-ycbcr-util ${DEQP_VK_VIDEO_LIBS})
 if (DE_OS_IS_UNIX)
 	# TODO: The NVIDIA samples app has hundreds of these warnings.
 	target_compile_options(deqp-vk-video PRIVATE "-Wno-conversion" "-Wno-sign-compare")

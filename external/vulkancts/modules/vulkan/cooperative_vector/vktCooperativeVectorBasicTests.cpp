@@ -142,6 +142,7 @@ typedef enum
     ACT_HARDGELU      = 8,
     ACT_LOAD          = 9,
     ACT_LOAD_SHARED   = 10,
+    ACT_LOAD_READONLY = 11,
 } Activation;
 
 typedef enum
@@ -625,7 +626,10 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
     css << "const uint inputVectorPaddedElements = (K + " << elementsPer16B - 1 << ") & ~" << elementsPer16B - 1
         << ";\n";
 
-    elementsPer16B = 16 * 8 / getComponentTypeInfo(m_data.outputType).bits;
+    if (m_data.testType != TT_OUTERPRODUCT)
+    {
+        elementsPer16B = 16 * 8 / getComponentTypeInfo(m_data.outputType).bits;
+    }
     css << "const uint outputVectorPaddedElements = (N + " << elementsPer16B - 1 << ") & ~" << elementsPer16B - 1
         << " ;\n";
 
@@ -885,11 +889,6 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         }
     }
 
-    if (m_data.stage == STAGE_TESS_EVAL)
-    {
-        css << "   }\n";
-    }
-
     if (m_data.testType == TT_OUTERPRODUCT)
     {
         css << "   coopVecLoadNV(vecB, inputB.x, outputBase * inputElementSize);\n";
@@ -911,6 +910,12 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         }
         css << ");\n";
     }
+
+    if (m_data.stage == STAGE_TESS_EVAL)
+    {
+        css << "   }\n";
+    }
+
     if (m_data.testType == TT_COMPOSITE_ARRAY)
     {
         css << "   " << vecAType.str() << " vecAArr[2];\n    vecAArr[1] = vecA; vecAArr[0] = " << vecAType.str()
@@ -1012,6 +1017,7 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
         break;
         case ACT_LOAD:
         case ACT_LOAD_SHARED:
+        {
             std::string actType = vecType;
             std::string actVal  = "actVal" + std::to_string(idx);
             css << "   " << actType << " " << actVal << ";\n";
@@ -1028,6 +1034,10 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
                 css << "   " << actVal << " *= 16;\n";
             }
             css << "   " << vec << " = " << vec << " + " << actVal << ";\n";
+        }
+        break;
+        case ACT_LOAD_READONLY:
+            css << "   " << vec << " = " << vec << " + " << vecType << "(inputA.x[globalInvocationIndex]);\n";
             break;
         }
     };
@@ -1841,7 +1851,9 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
 
             VK_CHECK(vk.convertCooperativeVectorMatrixNV(device, &info));
 
-            totalElements[1] = outputVectorPaddedElements;
+            elementsPer16B             = 16 * 8 / getComponentTypeInfo(m_data.inputType).bits;
+            outputVectorPaddedElements = ((N + (elementsPer16B - 1)) & ~(elementsPer16B - 1));
+            totalElements[1]           = outputVectorPaddedElements;
             totalElements[3] = deDivRoundUp32((uint32_t)outerProductSize, getComponentTypeInfo(dataTypes[3]).bits / 8);
         }
         // Holds atomic flag bit for each invocation
@@ -2241,9 +2253,18 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                 &specInfo, // pSpecializationInfo
             };
 
+            // Enable robustness for ACT_LOAD_READONLY pipelines, if supported
+            const void *pNext                                      = nullptr;
+            VkPipelineRobustnessCreateInfoEXT robustnessCreateInfo = initVulkanStructure();
+            if (m_data.act0 == ACT_LOAD_READONLY && m_context.getPipelineRobustnessFeatures().pipelineRobustness)
+            {
+                robustnessCreateInfo.storageBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_2;
+                pNext                               = &robustnessCreateInfo;
+            }
+
             const VkComputePipelineCreateInfo pipelineCreateInfo = {
                 VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-                nullptr,
+                pNext,
                 0u,               // flags
                 shaderCreateInfo, // cs
                 *pipelineLayout,  // layout
@@ -3107,6 +3128,14 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                                     inArray[i] += inputC;
                                 }
                                 break;
+                            case ACT_LOAD_READONLY:
+                                for (uint32_t i = 0; i < inDim; ++i)
+                                {
+                                    float inputA =
+                                        getDataFloatOffsetIndex(ptrs[0], dataTypes[0], 0, globalInvocationIndex);
+                                    inArray[i] += inputA;
+                                }
+                                break;
                             }
                         };
                         auto const addBias =
@@ -3272,14 +3301,6 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                         }
                         if (tempRes == QP_TEST_RESULT_PASS)
                         {
-                            // If FP8 passes on the second try, without quantization, then
-                            // call it a quality warning.
-                            if (doQuantize == 0 && res == QP_TEST_RESULT_PASS &&
-                                (m_data.inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E4M3_NV ||
-                                 m_data.inputInterpretation == VK_COMPONENT_TYPE_FLOAT_E5M2_NV))
-                            {
-                                res = QP_TEST_RESULT_QUALITY_WARNING;
-                            }
                             break;
                         }
                         // If FP8 fails on the first try, with quantization, then try again without.
@@ -3532,6 +3553,13 @@ tcu::TestStatus CooperativeVectorTestInstance::iterate(void)
                                 int64_t inputC =
                                     getDataIntOffsetIndex(ptrs[2], dataTypes[2], 16 * (globalInvocationIndex & 1), i);
                                 inArray[i] += 16 * inputC;
+                            }
+                            break;
+                        case ACT_LOAD_READONLY:
+                            for (uint32_t i = 0; i < inDim; ++i)
+                            {
+                                int64_t inputA = getDataIntOffsetIndex(ptrs[2], dataTypes[2], 0, globalInvocationIndex);
+                                inArray[i] += inputA;
                             }
                             break;
                         }
@@ -4127,6 +4155,7 @@ tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &test
         {{ACT_HARDGELU, ACT_HARDGELU, ACT_HARDGELU}, "acthardgelu", ""},
         {{ACT_LOAD, ACT_LOAD, ACT_LOAD}, "actload", ""},
         {{ACT_LOAD_SHARED, ACT_LOAD_SHARED, ACT_LOAD_SHARED}, "actloadshared", ""},
+        {{ACT_LOAD_READONLY, ACT_LOAD_READONLY, ACT_LOAD_READONLY}, "actloadreadonly", ""},
     };
 
     TestGroupCase colCases[] = {
@@ -4273,6 +4302,10 @@ tcu::TestCaseGroup *createCooperativeVectorMatrixMulTests(tcu::TestContext &test
                                             !(sizeCases[sizeNdx].value[0] == 21 && sizeCases[sizeNdx].value[1] == 35))
                                             continue;
 
+                                        if (actCases[actNdx].value[0] == ACT_LOAD_READONLY && !isFloatType(outputType))
+                                        {
+                                            continue;
+                                        }
                                         // Limit combinations of tests we run with each activation function.
                                         // Run mul everywhere. Run load for all dimensions. Run hardgelu with
                                         // all sizes for float input type. Otherwise, run all activations only
@@ -4580,7 +4613,13 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
                                     testCtx, colCases[colNdx].name, colCases[colNdx].description));
                                 for (int stageNdx = 0; stageNdx < DE_LENGTH_OF_ARRAY(stageCases); stageNdx++)
                                 {
-                                    VkComponentTypeKHR inputType = (VkComponentTypeKHR)dtCases[dtNdx].value;
+                                    VkComponentTypeKHR inputType  = (VkComponentTypeKHR)dtCases[dtNdx].value;
+                                    VkComponentTypeKHR outputType = (VkComponentTypeKHR)dtCases[dtNdx].value;
+
+                                    if (testType == TT_OUTERPRODUCT)
+                                    {
+                                        inputType = VK_COMPONENT_TYPE_FLOAT16_NV;
+                                    }
 
                                     uint32_t threadsPerWorkgroupX = stageCases[stageNdx].value[1];
                                     uint32_t threadsPerWorkgroupY = stageCases[stageNdx].value[2];
@@ -4596,8 +4635,8 @@ tcu::TestCaseGroup *createCooperativeVectorTrainingTests(tcu::TestContext &testC
                                         workgroupsY,                          // uint32_t workgroupsY;
                                         (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR inputType;
                                         (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR inputInterpretation;
-                                        (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR matrixType;
-                                        (VkComponentTypeKHR)inputType,        // VkComponentTypeKHR outputType;
+                                        (VkComponentTypeKHR)outputType,       // VkComponentTypeKHR matrixType;
+                                        (VkComponentTypeKHR)outputType,       // VkComponentTypeKHR outputType;
                                         false,                                // bool inputPacked;
                                         {
                                             (VkCooperativeVectorMatrixLayoutNV)colCases[colNdx].value,

@@ -70,7 +70,6 @@ using tcu::Vec4;
 enum QueryType
 {
     QUERY_TYPE_IMAGE_SIZE_LOD, // OpImageQuerySizeLod
-    QUERY_TYPE_IMAGE_LOD,      // OpImageQueryLod
     QUERY_TYPE_IMAGE_LEVELS,   // OpImageQueryLevels
 
     QUERY_TYPE_LAST
@@ -515,216 +514,6 @@ void checkSupport(Context &context, TestParameters params)
     checkSupportShader(context, params.shaderType);
 }
 
-tcu::TestStatus testImageQueryLod(Context &context, TestParameters params)
-{
-    const bool isYCbCrImage     = isYCbCrFormat(params.format);
-    const InstanceInterface &vk = context.getInstanceInterface();
-    const DeviceInterface &vkd  = context.getDeviceInterface();
-    const VkDevice device       = context.getDevice();
-
-    const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
-        VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
-        nullptr,
-        params.format,
-        VK_SAMPLER_YCBCR_MODEL_CONVERSION_RGB_IDENTITY,
-        VK_SAMPLER_YCBCR_RANGE_ITU_FULL,
-        {
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-            VK_COMPONENT_SWIZZLE_IDENTITY,
-        },
-        VK_CHROMA_LOCATION_MIDPOINT,
-        VK_CHROMA_LOCATION_MIDPOINT,
-        VK_FILTER_NEAREST,
-        VK_FALSE, // forceExplicitReconstruction
-    };
-    const Unique<VkSamplerYcbcrConversion> conversion(
-        isYCbCrImage ? createSamplerYcbcrConversion(vkd, device, &conversionInfo) : Move<VkSamplerYcbcrConversion>());
-
-    const VkSamplerYcbcrConversionInfo samplerConversionInfo = {
-        VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO,
-        nullptr,
-        *conversion,
-    };
-
-    const VkSamplerCreateInfo samplerInfo = {
-        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-        isYCbCrImage ? &samplerConversionInfo : nullptr,
-        0u,
-        VK_FILTER_NEAREST,                       // magFilter
-        VK_FILTER_NEAREST,                       // minFilter
-        VK_SAMPLER_MIPMAP_MODE_NEAREST,          // mipmapMode
-        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // addressModeU
-        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // addressModeV
-        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // addressModeW
-        0.0f,                                    // mipLodBias
-        VK_FALSE,                                // anisotropyEnable
-        1.0f,                                    // maxAnisotropy
-        VK_FALSE,                                // compareEnable
-        VK_COMPARE_OP_ALWAYS,                    // compareOp
-        0.0f,                                    // minLod
-        0.0f,                                    // maxLod
-        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // borderColor
-        VK_FALSE,                                // unnormalizedCoords
-    };
-
-    uint32_t combinedSamplerDescriptorCount = 1;
-
-    if (isYCbCrImage)
-    {
-        const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
-            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType;
-            nullptr,                                                      // pNext;
-            params.format,                                                // format;
-            VK_IMAGE_TYPE_2D,                                             // type;
-            VK_IMAGE_TILING_OPTIMAL,                                      // tiling;
-            VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT, // usage;
-            params.flags                                                  // flags;
-        };
-
-        VkSamplerYcbcrConversionImageFormatProperties samplerYcbcrConversionImage = {};
-        samplerYcbcrConversionImage.sType = VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_IMAGE_FORMAT_PROPERTIES;
-        samplerYcbcrConversionImage.pNext = nullptr;
-
-        VkImageFormatProperties2 imageFormatProperties = {};
-        imageFormatProperties.sType                    = VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2;
-        imageFormatProperties.pNext                    = &samplerYcbcrConversionImage;
-
-        VK_CHECK(vk.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo,
-                                                            &imageFormatProperties));
-        combinedSamplerDescriptorCount = samplerYcbcrConversionImage.combinedImageSamplerDescriptorCount;
-    }
-
-    const Unique<VkSampler> sampler(createSampler(vkd, device, &samplerInfo));
-    const Unique<VkDescriptorSetLayout> descLayout(createDescriptorSetLayout(vkd, device, *sampler));
-    const Unique<VkDescriptorPool> descPool(createDescriptorPool(vkd, device, combinedSamplerDescriptorCount));
-    const Unique<VkDescriptorSet> descSet(createDescriptorSet(vkd, device, *descPool, *descLayout));
-
-    vector<TestImageSp> testImages;
-
-    DE_ASSERT(params.query == QUERY_TYPE_IMAGE_LOD);
-    DE_ASSERT(params.shaderType == glu::SHADERTYPE_FRAGMENT);
-
-    {
-        const PlanarFormatDescription &formatDesc = getPlanarFormatDescription(params.format);
-        const UVec2 maxDivisor                    = getMaxPlaneDivisor(formatDesc);
-        vector<UVec2> testSizes;
-
-        testSizes.push_back(maxDivisor);
-        testSizes.push_back(maxDivisor * UVec2(2u, 1u));
-        testSizes.push_back(maxDivisor * UVec2(1u, 2u));
-        testSizes.push_back(maxDivisor * UVec2(4u, 123u));
-        testSizes.push_back(maxDivisor * UVec2(312u, 13u));
-        testSizes.push_back(maxDivisor * UVec2(841u, 917u));
-
-        testImages.resize(testSizes.size());
-
-        for (size_t ndx = 0; ndx < testSizes.size(); ++ndx)
-            testImages[ndx] = TestImageSp(new TestImage(context, vkd, device, context.getDefaultAllocator(),
-                                                        params.format, testSizes[ndx], params.flags, *conversion));
-    }
-
-    {
-        using namespace drawutil;
-
-        struct LocalUtil
-        {
-            static vector<Vec4> getVertices(void)
-            {
-                vector<Vec4> vertices;
-
-                vertices.push_back(Vec4(-1.0f, -1.0f, 0.0f, 1.0f));
-                vertices.push_back(Vec4(+1.0f, -1.0f, 0.0f, 1.0f));
-                vertices.push_back(Vec4(-1.0f, +1.0f, 0.0f, 1.0f));
-
-                vertices.push_back(Vec4(+1.0f, -1.0f, 0.0f, 1.0f));
-                vertices.push_back(Vec4(-1.0f, +1.0f, 0.0f, 1.0f));
-                vertices.push_back(Vec4(+1.0f, +1.0f, 0.0f, 1.0f));
-
-                return vertices;
-            }
-
-            static VulkanProgram getProgram(Context &ctx, VkDescriptorSetLayout descriptorLayout,
-                                            VkDescriptorSet descriptorSet)
-            {
-                VulkanProgram prog(std::vector<VulkanShader>{
-                    VulkanShader(VK_SHADER_STAGE_VERTEX_BIT, ctx.getBinaryCollection().get("vert")),
-                    VulkanShader(VK_SHADER_STAGE_FRAGMENT_BIT, ctx.getBinaryCollection().get("frag"))});
-                prog.descriptorSet       = descriptorSet;
-                prog.descriptorSetLayout = descriptorLayout;
-
-                return prog;
-            }
-        };
-
-        const UVec2 renderSize(128, 256);
-        FrameBufferState frameBufferState(renderSize.x(), renderSize.y());
-        frameBufferState.colorFormat = VK_FORMAT_R32G32_SFLOAT;
-        const vector<Vec4> vertices(LocalUtil::getVertices());
-        PipelineState pipelineState(context.getDeviceProperties().limits.subPixelPrecisionBits);
-        const DrawCallData drawCallData(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, vertices);
-        const VulkanProgram program(LocalUtil::getProgram(context, *descLayout, *descSet));
-
-        bool allOk = true;
-
-        context.getTestContext().getLog()
-            << TestLog::Message << "Rendering " << renderSize << " quad" << TestLog::EndMessage;
-
-        for (size_t imageNdx = 0; imageNdx < testImages.size(); ++imageNdx)
-        {
-            context.getTestContext().getLog()
-                << TestLog::Message << "Testing image size " << testImages[imageNdx]->getSize() << TestLog::EndMessage;
-
-            bindImage(vkd, device, *descSet, testImages[imageNdx]->getImageView(), *sampler);
-
-            VulkanDrawContext renderer(context, frameBufferState);
-            renderer.registerDrawObject(pipelineState, program, drawCallData);
-            renderer.draw();
-
-            {
-                // Only du/dx and dv/dy are non-zero
-                const Vec2 dtdp = testImages[imageNdx]->getSize().cast<float>() / renderSize.cast<float>();
-                const tcu::LodPrecision lodPrec(16, 4); // Pretty lax since we are not verifying LOD precision
-                const Vec2 lodBounds(tcu::computeLodBoundsFromDerivates(dtdp.x(), 0.0f, 0.0f, dtdp.y(), lodPrec));
-                tcu::ConstPixelBufferAccess resultImg(renderer.getColorPixels());
-                const int maxErrors = 5;
-                int numErrors       = 0;
-
-                for (int y = 0; y < resultImg.getHeight(); ++y)
-                    for (int x = 0; x < resultImg.getWidth(); ++x)
-                    {
-                        const Vec2 result  = resultImg.getPixel(x, y).swizzle(0, 1);
-                        const bool levelOk = result.x() == 0.0f;
-                        const bool lodOk   = de::inRange(result.y(), lodBounds.x(), lodBounds.y());
-
-                        if (!levelOk || !lodOk)
-                        {
-                            if (numErrors < maxErrors)
-                            {
-                                context.getTestContext().getLog()
-                                    << TestLog::Message << "ERROR: At (" << x << ", " << y << ")"
-                                    << ": got " << result << ", expected (0, [" << lodBounds.x() << ", "
-                                    << lodBounds.y() << "])" << TestLog::EndMessage;
-                            }
-                            else if (numErrors == maxErrors)
-                                context.getTestContext().getLog() << TestLog::Message << "..." << TestLog::EndMessage;
-
-                            numErrors += 1;
-                        }
-                    }
-
-                allOk = allOk && (numErrors == 0);
-            }
-        }
-
-        if (allOk)
-            return tcu::TestStatus::pass("Queries passed");
-        else
-            return tcu::TestStatus::fail("Got invalid results");
-    }
-}
-
 void initImageQueryPrograms(SourceCollections &dst, TestParameters params)
 {
     const ShaderSpec spec = getShaderSpec(params, &dst);
@@ -732,38 +521,14 @@ void initImageQueryPrograms(SourceCollections &dst, TestParameters params)
     generateSources(params.shaderType, spec, dst);
 }
 
-void initImageQueryLodPrograms(SourceCollections &dst, TestParameters)
-{
-    dst.glslSources.add("vert") << glu::VertexSource("#version 450\n"
-                                                     "layout(location = 0) in highp vec4 a_position;\n"
-                                                     "layout(location = 0) out highp vec2 v_texCoord;\n"
-                                                     "\n"
-                                                     "void main (void)\n"
-                                                     "{\n"
-                                                     "    gl_Position = a_position;\n"
-                                                     "    v_texCoord = a_position.xy * 0.5 - 0.5;\n"
-                                                     "}\n");
-    dst.glslSources.add("frag") << glu::FragmentSource("#version 450\n"
-                                                       "layout(binding = 0, set = 0) uniform highp sampler2D u_image;\n"
-                                                       "layout(location = 0) in highp vec2 v_texCoord;\n"
-                                                       "layout(location = 0) out highp vec2 o_lod;\n"
-                                                       "\n"
-                                                       "void main (void)\n"
-                                                       "{\n"
-                                                       "    o_lod = textureQueryLod(u_image, v_texCoord);\n"
-                                                       "}\n");
-}
-
 void addImageQueryCase(tcu::TestCaseGroup *group, const TestParameters &params)
 {
     std::string name = de::toLower(de::toString(params.format).substr(10));
-    const bool isLod = params.query == QUERY_TYPE_IMAGE_LOD;
 
     if ((params.flags & VK_IMAGE_CREATE_DISJOINT_BIT) != 0)
         name += "_disjoint";
 
-    addFunctionCaseWithPrograms(group, name, checkSupport, isLod ? initImageQueryLodPrograms : initImageQueryPrograms,
-                                isLod ? testImageQueryLod : testImageQuery, params);
+    addFunctionCaseWithPrograms(group, name, checkSupport, initImageQueryPrograms, testImageQuery, params);
 }
 
 struct QueryGroupParams
@@ -817,9 +582,6 @@ void populateQueryGroup(tcu::TestCaseGroup *group, QueryType query)
     {
         const glu::ShaderType shaderType = (glu::ShaderType)shaderTypeNdx;
 
-        if (query == QUERY_TYPE_IMAGE_LOD && shaderType != glu::SHADERTYPE_FRAGMENT)
-            continue;
-
         if (!executorSupported(shaderType))
             continue;
 
@@ -832,8 +594,6 @@ void populateImageQueryGroup(tcu::TestCaseGroup *group)
 {
     // OpImageQuerySizeLod
     addTestGroup(group, "size_lod", populateQueryGroup, QUERY_TYPE_IMAGE_SIZE_LOD);
-    // OpImageQueryLod
-    addTestGroup(group, "lod", populateQueryGroup, QUERY_TYPE_IMAGE_LOD);
     // OpImageQueryLevels
     addTestGroup(group, "levels", populateQueryGroup, QUERY_TYPE_IMAGE_LEVELS);
 }

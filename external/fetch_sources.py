@@ -155,7 +155,9 @@ class SourcePackage (Source):
         tmpPath = os.path.join(EXTERNAL_DIR, ".extract-tmp-%s" % self.baseDir)
         dstPath = os.path.join(EXTERNAL_DIR, self.baseDir, self.extractDir)
 
-        if self.filename.endswith(".zip"):
+        isZipFile = self.filename.endswith(".zip")
+
+        if isZipFile:
             archive = zipfile.ZipFile(srcPath)
         else:
             archive = tarfile.open(srcPath)
@@ -165,7 +167,10 @@ class SourcePackage (Source):
 
         os.mkdir(tmpPath)
 
-        archive.extractall(tmpPath)
+        if (not isZipFile) and sys.version_info >= (3, 13):
+            archive.extractall(tmpPath, filter='data') # Safe extraction of tar file data.
+        else:
+            archive.extractall(tmpPath)
         archive.close()
 
         extractedEntries = os.listdir(tmpPath)
@@ -242,13 +247,14 @@ class SourceFile (Source):
         writeBinaryFile(dstPath, data)
 
 class GitRepo (Source):
-    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = ""):
+    def __init__(self, httpsUrl, sshUrl, revision, baseDir, extractDir = "src", removeTags = [], patch = "", postCheckout = None):
         Source.__init__(self, baseDir, extractDir)
         self.httpsUrl = httpsUrl
         self.sshUrl = sshUrl
         self.revision = revision
         self.removeTags = removeTags
         self.patch = patch
+        self.postCheckout = postCheckout
 
     def checkout(self, url, fullDstPath, force):
         print("Directory: " + fullDstPath)
@@ -296,6 +302,12 @@ class GitRepo (Source):
 
         try:
             self.checkout(url, fullDstPath, force)
+            if self.postCheckout:
+                if self.baseDir == "vulkan-validationlayers" and SYSTEM_NAME != "Linux":
+                    print(f"Skipping post checkout command for {self.baseDir} on {SYSTEM_NAME} platform")
+                else:
+                    print(f"Running post checkout command for {self.baseDir}: {self.postCheckout}")
+                    subprocess.check_call(self.postCheckout, shell=True, cwd=fullDstPath)
         except KeyboardInterrupt:
             # Propagate the exception to stop the process if possible.
             raise
@@ -312,8 +324,8 @@ PACKAGES = [
         "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
         "zlib"),
     SourcePackage(
-        "https://prdownloads.sourceforge.net/libpng/libpng-1.6.27.tar.gz",
-        "c9d164ec247f426a525a7b89936694aefbc91fb7a50182b198898b8fc91174b4",
+        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.33.tar.gz",
+        "0b0681ed912f8f6b0175fc4ebe4b05367dfbfcd4a6f23b8f2498db42eca998d4",
         "libpng",
         postExtract = postExtractLibpng),
     SourceFile(
@@ -322,55 +334,46 @@ PACKAGES = [
         "e7b5f0aa5b1b0eadc63a1c624c0ca7f5af133aa857d6a4271b0ef3d0bdb6868e",
         "renderdoc"),
     GitRepo(
-        "https://github.com/KhronosGroup/SPIRV-Tools.git",
-        "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "3364b982713a0440d1d342dd5eec65b122a61b71",
+        "https://gitlab.khronos.org/spirv/spirv-tools.git",
+        "git@gitlab.khronos.org:spirv/spirv-tools.git",
+        "afada163a27f7cd3a86f60edf30c307fe15ab190",
         "spirv-tools"),
     GitRepo(
-        "https://github.com/KhronosGroup/glslang.git",
-        "git@github.com:KhronosGroup/glslang.git",
-        "1b65bd602b23d401d1c4c86dfa90a36a52c66294",
+        "https://gitlab.khronos.org/GLSL/glslang.git",
+        "git@gitlab.khronos.org:GLSL/glslang.git",
+        "0d5007654846e5aa32fa18eb40177912d49d7981",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
-        "https://github.com/KhronosGroup/SPIRV-Headers.git",
-        "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "767e901c986e9755a17e7939b3046fc2911a4bbd",
+        "https://gitlab.khronos.org/spirv/SPIRV-Headers.git",
+        "git@gitlab.khronos.org:spirv/SPIRV-Headers.git",
+        "f037e0ab43f8d1481f1b4c65255c17ca63c92dbf",
         "spirv-headers"),
     GitRepo(
-        "https://github.com/KhronosGroup/Vulkan-Docs.git",
-        "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "645c59c70e826d9738b6bb103316c03d887dfed3",
+        "https://gitlab.khronos.org/vulkan/vulkan.git",
+        "git@gitlab.khronos.org:vulkan/vulkan.git",
+        "a6a8801df5ab45618cdce7b86387d60c95e36bd2",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "6cf616f131e9870c499a50441bca2d07ccda9733",
-        "vulkan-validationlayers"),
+        "68e4cdd8269c2af39aa16793c9089d1893eae972",
+        "vulkan-validationlayers",
+        postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "6fa5ac1fb3b01c93eef3caa2aeb8841565e38d90",
+        "57ba1ca211b6f4890c013dcf42cb16069ae916dd",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
         "git@github.com:open-source-parsers/jsoncpp.git",
         "9059f5cad030ba11d37818847443a53918c327b1",
         "jsoncpp"),
-    # NOTE: The samples application is not well suited to external
-    # integration, this fork contains the small fixes needed for use
-    # by the CTS.
-    GitRepo(
-        "https://github.com/Igalia/vk_video_samples.git",
-        "git@github.com:Igalia/vk_video_samples.git",
-        "45fe88b456c683120138f052ea81f0a958ff3ec4",
-        "nvidia-video-samples"),
-    # NOTE: Temporary vk_video_samples repo and branch where AV1
-    # encoder library is being developed by NVidia.
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "0e87744edbb84c9c56c3fc8de9ea5150af5ee4ea",
+        "v0.3.5",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(
@@ -394,6 +397,8 @@ def parseArgs ():
                         help="Select protocol to checkout git repositories.")
     parser.add_argument('--force', dest='force', action='store_true', default=False,
                         help="Pass --force to git fetch and checkout commands")
+    parser.add_argument('--include-vvl', dest='include_vvl', action='store_true', default=False,
+                        help='Download the Vulkan Validation Layers')
     parser.add_argument("-v", "--verbose",
                         dest="verbose",
                         action="store_true",
@@ -406,7 +411,7 @@ def parseArgs ():
                 if sys.version_info < versionItem:
                     parser.error("For --insecure minimum required python version is " +
                                 versionsForInsecureStr)
-                break;
+                break
 
     return args
 
@@ -440,6 +445,7 @@ if __name__ == "__main__":
             if args.clean:
                 pkg.clean()
             else:
-                pkg.update(args.protocol, args.force)
+                if pkg.baseDir != 'vulkan-validationlayers' or args.include_vvl:
+                    pkg.update(args.protocol, args.force)
     except KeyboardInterrupt:
         sys.exit("") # Returns 1.

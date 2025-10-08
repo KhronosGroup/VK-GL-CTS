@@ -581,7 +581,12 @@ void PipelineCacheTestCase::checkSupport(vkt::Context &context) const
 {
     context.requireDeviceFunctionality("VK_EXT_pipeline_robustness");
     if (m_robustnessBufferBehaviour == ROBUSTNESS_2)
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+    {
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
+    }
 
     vk::VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures = vk::initVulkanStructure();
     vk::VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features =

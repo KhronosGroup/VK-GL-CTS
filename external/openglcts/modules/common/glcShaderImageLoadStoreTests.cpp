@@ -1147,7 +1147,7 @@ class BasicAllFormatsStoreFS : public ShaderImageLoadStoreBase
         glDrawArrays(GL_TRIANGLE_STRIP, 0, 4);
 
         glBindTexture(GL_TEXTURE_2D, texture);
-        glMemoryBarrier(GL_TEXTURE_UPDATE_BARRIER_BIT);
+        glMemoryBarrier(GL_TEXTURE_FETCH_BARRIER_BIT);
 
         GLuint c_program = CreateComputeProgram(GenC(write_value));
         std::vector<T> out_data(kSize * kSize);

@@ -102,8 +102,12 @@ tcu::TestStatus ConditionalClearAttachmentTest::iterate(void)
     preRenderBarriers();
     const bool useSecondaryCmdBuffer =
         m_conditionalData.conditionInherited || m_conditionalData.conditionInSecondaryCommandBuffer;
-    beginLegacyRender(*m_cmdBuffer, useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS :
-                                                            vk::VK_SUBPASS_CONTENTS_INLINE);
+    const auto subpassContents =
+        (m_conditionalData.conditionInherited && !m_conditionalData.conditionInSecondaryCommandBuffer) ?
+            vk::VK_SUBPASS_CONTENTS_INLINE_AND_SECONDARY_COMMAND_BUFFERS_KHR :
+            (useSecondaryCmdBuffer ? vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS :
+                                     vk::VK_SUBPASS_CONTENTS_INLINE);
+    beginLegacyRender(*m_cmdBuffer, subpassContents);
 
     vk::VkCommandBuffer targetCmdBuffer = *m_cmdBuffer;
 

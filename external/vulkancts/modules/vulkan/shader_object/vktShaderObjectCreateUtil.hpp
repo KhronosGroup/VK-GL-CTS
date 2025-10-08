@@ -39,8 +39,6 @@ Move<vk::VkShaderEXT> createShaderFromBinary(const DeviceInterface &vk, VkDevice
                                              vk::VkShaderStageFlagBits shaderStage, size_t codeSize, const void *pCode,
                                              bool tessellationShaderFeature, bool geometryShaderFeature,
                                              vk::VkDescriptorSetLayout descriptorSetLayout);
-Move<vk::VkShaderEXT> createShader(const DeviceInterface &vk, VkDevice device,
-                                   const vk::VkShaderCreateInfoEXT &shaderCreateInfo);
 
 void addBasicShaderObjectShaders(vk::SourceCollections &programCollection);
 

@@ -30,6 +30,7 @@ EXCLUSION_LIST = [
     "/doc/testspecs/VK/apitests.adoc",
     "/targets/default/FindWayland.cmake",
     "/scripts/src_util/clang-format",
+    ".spv",
 ]
 
 def checkEnds(line, ends):

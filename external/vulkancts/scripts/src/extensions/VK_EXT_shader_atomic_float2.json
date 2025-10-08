@@ -1,16 +1,35 @@
 {
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
     "mandatory_features": {
         "VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT": [
+            {
+                "features": [
+                    "shaderBufferFloat16Atomics",
+                    "shaderBufferFloat16AtomicAdd",
+                    "shaderBufferFloat16AtomicMinMax",
+                    "shaderBufferFloat32AtomicMinMax",
+                    "shaderBufferFloat64AtomicMinMax",
+                    "shaderSharedFloat16Atomics",
+                    "shaderSharedFloat16AtomicAdd",
+                    "shaderSharedFloat16AtomicMinMax",
+                    "shaderSharedFloat32AtomicMinMax",
+                    "shaderSharedFloat64AtomicMinMax",
+                    "shaderImageFloat32AtomicMinMax"
+                ],
+                "requirements": [
+                    "VK_EXT_shader_atomic_float2"
+                ]
+            },
             {
                 "features": [
                     "shaderImageFloat32AtomicMinMax"
                 ],
                 "requirements": [
                     "VK_EXT_shader_atomic_float2",
-                    "physicalDeviceShaderAtomicFloat2FeaturesEXT.sparseImageFloat32AtomicMinMax"
-                ],
-                "mandatory_variant": [
-                    "vulkan"
+                    "VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT::sparseImageFloat32AtomicMinMax"
                 ]
             }
         ]

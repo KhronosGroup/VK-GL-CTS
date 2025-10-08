@@ -6,6 +6,8 @@ VariablePointerFeatures.variablePointers
 [compute shader spirv]
 OpCapability Shader
 OpCapability VariablePointers
+OpCapability WorkgroupMemoryExplicitLayoutKHR
+OpExtension "SPV_KHR_workgroup_memory_explicit_layout"
 OpMemoryModel Logical GLSL450
 OpEntryPoint GLCompute %main "main" %gid_var %sel_var %wg_var %out_var
 OpExecutionMode %main LocalSize 1 1 1
