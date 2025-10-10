@@ -357,19 +357,21 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
         const VkPhysicalDeviceProperties physicalDeviceProperties =
             getPhysicalDeviceProperties(instance, physicalDevice);
 
-        imageCreateInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageCreateInfo.pNext         = DE_NULL;
-        imageCreateInfo.flags         = VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
-        imageCreateInfo.imageType     = mapImageType(m_imageType);
-        imageCreateInfo.format        = m_format;
-        imageCreateInfo.extent        = makeExtent3D(getLayerSize(m_imageType, m_imageSize));
-        imageCreateInfo.mipLevels     = 1u;
-        imageCreateInfo.arrayLayers   = getNumLayers(m_imageType, m_imageSize);
-        imageCreateInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageCreateInfo.usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        imageCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCreateInfo.pNext = DE_NULL;
+        imageCreateInfo.flags = VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
+        if (formatDescription.numPlanes > 1)
+            imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        imageCreateInfo.imageType             = mapImageType(m_imageType);
+        imageCreateInfo.format                = m_format;
+        imageCreateInfo.extent                = makeExtent3D(getLayerSize(m_imageType, m_imageSize));
+        imageCreateInfo.mipLevels             = 1u;
+        imageCreateInfo.arrayLayers           = getNumLayers(m_imageType, m_imageSize);
+        imageCreateInfo.samples               = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.tiling                = VK_IMAGE_TILING_OPTIMAL;
+        imageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageCreateInfo.usage                 = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        imageCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
         imageCreateInfo.queueFamilyIndexCount = 0u;
         imageCreateInfo.pQueueFamilyIndices   = DE_NULL;
 
