@@ -528,11 +528,11 @@ static ClipInfo Clips[] = {
     },
     {
         CLIP_H265_ENC_F,
-        "yuv/176x144_30_i420.yuv",
+        "yuv/720x480_420_8le.yuv",
         {H265_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN,
-        176,
-        144,
+        720,
+        480,
         24,
     },
     {
@@ -546,11 +546,11 @@ static ClipInfo Clips[] = {
     },
     {
         CLIP_H265_ENC_H,
-        "yuv/352x288_15_i420.yuv",
+        "yuv/1920x1080_420_8le.yuv",
         {H265_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN,
-        352,
-        288,
+        1920,
+        1080,
         15,
     },
     {

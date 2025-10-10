@@ -602,7 +602,13 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface);
+    //  VUID-VkSwapchainCreateInfoKHR-imageUsage-parameter
+    vector<string> additionalExtensions;
+    if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
+    const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
+                                           additionalExtensions);
+
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
     const VkSurfaceCapabilitiesKHR capabilities(
@@ -710,7 +716,11 @@ tcu::TestStatus createSwapchainPrivateDataTest(Context &context, TestParameters 
     const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, params.wsiType,
                                                      native.getDisplay(), native.getWindow(),
                                                      context.getTestContext().getCommandLine()));
-    const vector<string> extraExts(1u, "VK_EXT_private_data");
+    // VUID-VkSwapchainCreateInfoKHR-imageUsage-parameter
+    vector<string> extraExts;
+    extraExts.push_back("VK_EXT_private_data");
+    if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        extraExts.push_back("VK_EXT_attachment_feedback_loop_layout");
     const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, extraExts);
     const vector<VkSwapchainCreateInfoKHR> cases(generateSwapchainParameterCases(
         params.wsiType, params.dimension, instHelper.vki, devHelper.physicalDevice, *surface));
@@ -860,6 +870,12 @@ tcu::TestStatus createSwapchainSimulateOOMTest(Context &context, TestParameters 
         if (context.isDeviceFunctionalitySupported("VK_KHR_present_mode_fifo_latest_ready"))
         {
             additionalExtensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
+        }
+        // VUID-VkSwapchainCreateInfoKHR-imageUsage-parameter
+        // If driver supports VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT and it will used, VK_EXT_attachment_feedback_loop_layout must be enabled
+        if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        {
+            additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
         }
         const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, additionalExtensions,
                                      failingAllocator.getCallbacks());
@@ -2556,17 +2572,17 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
         allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     vk::beginCommandBuffer(vk, *cmdBuffer);
     VkImageMemoryBarrier imageMemoryBarrier = {
-        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType			sType;
-        nullptr,                                // const void*				pNext;
-        0u,                                     // VkAccessFlags			srcAccessMask;
-        0u,                                     // VkAccessFlags			dstAccessMask;
-        VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout			oldLayout;
-        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // VkImageLayout			newLayout;
-        VK_QUEUE_FAMILY_IGNORED,                // uint32_t				srcQueueFamilyIndex;
-        VK_QUEUE_FAMILY_IGNORED,                // uint32_t				dstQueueFamilyIndex;
-        images[imageIndex],                     // VkImage					image;
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+        nullptr,                                // const void* pNext;
+        0u,                                     // VkAccessFlags srcAccessMask;
+        0u,                                     // VkAccessFlags dstAccessMask;
+        VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
+        VK_IMAGE_LAYOUT_PRESENT_SRC_KHR,        // VkImageLayout newLayout;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t srcQueueFamilyIndex;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t dstQueueFamilyIndex;
+        images[imageIndex],                     // VkImage image;
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                  1u) // VkImageSubresourceRange	subresourceRange;
+                                  1u) // VkImageSubresourceRange subresourceRange;
     };
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, 0u, 0u,
                           nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);

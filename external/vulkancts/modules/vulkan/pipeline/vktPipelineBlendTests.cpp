@@ -70,16 +70,14 @@ using namespace blending_common;
 namespace
 {
 
-// VK_FORMAT_E5B9G9R9_UFLOAT_PACK32, with VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT (e.g. when using shader objects), has
-// the following rule (Vulkan spec 1.4.313):
-//
-// If a shader object is bound to any graphics stage or the bound graphics pipeline was created with
-// VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT, and the format of any color attachment is VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-// the corresponding element of the pColorWriteMasks parameter of vkCmdSetColorWriteMaskEXT must either include all of
-// VK_COLOR_COMPONENT_R_BIT, VK_COLOR_COMPONENT_G_BIT, and VK_COLOR_COMPONENT_B_BIT, or none of them
-bool mustIncludeRGBDynamicMask(VkFormat format)
+bool isSupportedBlendFormat(const InstanceInterface &instanceInterface, VkPhysicalDevice device, VkFormat format)
 {
-    return (format == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32);
+    VkFormatProperties formatProps;
+
+    instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
+
+    return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) &&
+           (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT);
 }
 
 class BlendStateUniqueRandomIterator : public UniqueRandomIterator<VkPipelineColorBlendAttachmentState>
@@ -139,7 +137,6 @@ public:
     };
 
     const static VkColorComponentFlags s_colorWriteMasks[QUAD_COUNT];
-    const static VkColorComponentFlags s_altColorWriteMasks[QUAD_COUNT];
     const static tcu::Vec4 s_blendConst;
 
     BlendTest(tcu::TestContext &testContext, const std::string &name, PipelineConstructionType pipelineConstructionType,
@@ -149,7 +146,7 @@ public:
     virtual void checkSupport(Context &context) const;
     virtual TestInstance *createInstance(Context &context) const;
 
-private:
+protected:
     const PipelineConstructionType m_pipelineConstructionType;
     const VkFormat m_colorFormat;
     VkPipelineColorBlendAttachmentState m_blendStates[QUAD_COUNT];
@@ -164,7 +161,6 @@ public:
     };
 
     const static VkColorComponentFlags s_colorWriteMasks[QUAD_COUNT];
-    const static VkColorComponentFlags s_altColorWriteMasks[QUAD_COUNT];
     const static tcu::Vec4 s_blendConst;
 
     DualSourceBlendTest(tcu::TestContext &testContext, const std::string &name,
@@ -190,6 +186,7 @@ public:
                       const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT]);
     virtual ~BlendTestInstance(void);
     virtual tcu::TestStatus iterate(void);
+    virtual const VkColorComponentFlags *getColorWriteMasks() const;
 
 private:
     tcu::TestStatus verifyImage(void);
@@ -378,14 +375,6 @@ const VkColorComponentFlags BlendTest::s_colorWriteMasks[BlendTest::QUAD_COUNT] 
     VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
         VK_COLOR_COMPONENT_A_BIT}; // All channels
 
-// See mustIncludeRGBDynamicMask
-const VkColorComponentFlags BlendTest::s_altColorWriteMasks[BlendTest::QUAD_COUNT] = {
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT),
-};
-
 const tcu::Vec4 BlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
 
 BlendTest::BlendTest(tcu::TestContext &testContext, const std::string &name,
@@ -471,14 +460,6 @@ const VkColorComponentFlags DualSourceBlendTest::s_colorWriteMasks[BlendTest::QU
     VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT, // Pair of channels: B & A
     VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
         VK_COLOR_COMPONENT_A_BIT}; // All channels
-
-// See mustIncludeRGBDynamicMask
-const VkColorComponentFlags DualSourceBlendTest::s_altColorWriteMasks[BlendTest::QUAD_COUNT] = {
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT),
-    (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT),
-};
 
 const tcu::Vec4 DualSourceBlendTest::s_blendConst = tcu::Vec4(0.1f, 0.2f, 0.3f, 0.4f);
 
@@ -570,6 +551,11 @@ void DualSourceBlendTest::initPrograms(SourceCollections &sourceCollections) con
 
     sourceCollections.glslSources.add("color_frag")
         << glu::FragmentSource(m_shaderOutputInArray ? fragmentSourceOutputArray : fragmentSourceOutputVariable);
+}
+
+const VkColorComponentFlags *BlendTestInstance::getColorWriteMasks() const
+{
+    return BlendTest::s_colorWriteMasks;
 }
 
 // BlendTestInstance
@@ -1069,9 +1055,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
 
     // Render reference image
     {
-        const bool altMasks = mustIncludeRGBDynamicMask(m_colorFormat);
-        const VkColorComponentFlags *colorWriteMasks =
-            (altMasks ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
+        const VkColorComponentFlags *colorWriteMasks = getColorWriteMasks();
 
         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
         {
@@ -1473,9 +1457,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
         tcu::Vec4 discardColor8  = access8.getPixel(0, 0);
         tcu::Vec4 discardColor64 = access64.getPixel(0, 0);
 
-        const bool altMasks = mustIncludeRGBDynamicMask(m_colorFormat);
-        const VkColorComponentFlags *colorWriteMasks =
-            (altMasks ? DualSourceBlendTest::s_altColorWriteMasks : DualSourceBlendTest::s_colorWriteMasks);
+        const VkColorComponentFlags *colorWriteMasks = DualSourceBlendTest::s_colorWriteMasks;
 
         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
         {
@@ -1965,6 +1947,79 @@ tcu::TestStatus ClampTestInstance::iterate(void)
         return tcu::TestStatus::fail("Pixel mismatch");
 }
 
+class DynamicMaskBlendTest : public BlendTest
+{
+public:
+    DynamicMaskBlendTest(tcu::TestContext &testContext, const std::string &name,
+                         PipelineConstructionType pipelineConstructionType, const VkFormat colorFormat,
+                         const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT],
+                         const VkColorComponentFlags colorWriteMasks[QUAD_COUNT]);
+
+    virtual ~DynamicMaskBlendTest(void)
+    {
+    }
+    virtual TestInstance *createInstance(Context &context) const override;
+    virtual void checkSupport(Context &context) const override;
+
+private:
+    VkColorComponentFlags m_colorWriteMasks[QUAD_COUNT];
+};
+
+class DynamicMaskBlendTestInstance : public BlendTestInstance
+{
+public:
+    DynamicMaskBlendTestInstance(Context &context, PipelineConstructionType pipelineConstructionType,
+                                 const VkFormat colorFormat,
+                                 const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT],
+                                 const VkColorComponentFlags colorWriteMasks[BlendTest::QUAD_COUNT]);
+    virtual ~DynamicMaskBlendTestInstance(void)
+    {
+    }
+
+protected:
+    virtual const VkColorComponentFlags *getColorWriteMasks() const;
+
+private:
+    VkColorComponentFlags m_colorWriteMasks[BlendTest::QUAD_COUNT];
+};
+
+DynamicMaskBlendTest::DynamicMaskBlendTest(tcu::TestContext &testContext, const std::string &name,
+                                           PipelineConstructionType pipelineConstructionType,
+                                           const VkFormat colorFormat,
+                                           const VkPipelineColorBlendAttachmentState blendStates[QUAD_COUNT],
+                                           const VkColorComponentFlags colorWriteMasks[QUAD_COUNT])
+    : BlendTest(testContext, name, pipelineConstructionType, colorFormat, blendStates)
+{
+    for (int i = 0; i < QUAD_COUNT; i++)
+        m_colorWriteMasks[i] = colorWriteMasks[i];
+}
+
+TestInstance *DynamicMaskBlendTest::createInstance(Context &context) const
+{
+    return new DynamicMaskBlendTestInstance(context, m_pipelineConstructionType, m_colorFormat, m_blendStates,
+                                            m_colorWriteMasks);
+}
+
+void DynamicMaskBlendTest::checkSupport(Context &context) const
+{
+    BlendTest::checkSupport(context);
+}
+
+DynamicMaskBlendTestInstance::DynamicMaskBlendTestInstance(
+    Context &context, PipelineConstructionType pipelineConstructionType, const VkFormat colorFormat,
+    const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT],
+    const VkColorComponentFlags colorWriteMasks[BlendTest::QUAD_COUNT])
+    : BlendTestInstance(context, pipelineConstructionType, colorFormat, blendStates)
+{
+    for (int i = 0; i < BlendTest::QUAD_COUNT; i++)
+        m_colorWriteMasks[i] = colorWriteMasks[i];
+}
+
+const VkColorComponentFlags *DynamicMaskBlendTestInstance::getColorWriteMasks() const
+{
+    return m_colorWriteMasks;
+}
+
 } // namespace
 
 std::string getBlendStateSetName(const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT])
@@ -2000,6 +2055,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
     // Uses different blend formats
     de::MovePtr<tcu::TestCaseGroup> formatTests(new tcu::TestCaseGroup(testCtx, "format"));
     de::MovePtr<tcu::TestCaseGroup> clampTests(new tcu::TestCaseGroup(testCtx, "clamp"));
+    de::MovePtr<tcu::TestCaseGroup> dynamicMaskTests(new tcu::TestCaseGroup(testCtx, "dynamic_mask"));
     de::MovePtr<tcu::TestCaseGroup> dualSourceBlendTests(new tcu::TestCaseGroup(testCtx, "dual_source"));
     de::MovePtr<tcu::TestCaseGroup> dualSourceFormatTests(new tcu::TestCaseGroup(testCtx, "format"));
 
@@ -2013,7 +2069,9 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
     {
         for (const VkFormat format : getBlendFormats())
         {
-            const bool needsAltMasksDynamic = mustIncludeRGBDynamicMask(format);
+            // VK_FORMAT_E5B9G9R9_UFLOAT_PACK32 is now handled in dedicated dynamicMaskFormatTests
+            if (format == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32)
+                continue;
 
             // Blend tests
             {
@@ -2033,8 +2091,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                 while (blendStateItr.hasNext())
                 {
                     VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
-                    const VkColorComponentFlags *colorWriteMasks =
-                        (needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
+                    const VkColorComponentFlags *colorWriteMasks = BlendTest::s_colorWriteMasks;
 
                     for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                     {
@@ -2073,9 +2130,8 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                     while (dualSourceBlendStateItr.hasNext())
                     {
                         VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
-                        bool isDualSourceBlendTest = false;
-                        const VkColorComponentFlags *colorWriteMasks =
-                            (needsAltMasksDynamic ? BlendTest::s_altColorWriteMasks : BlendTest::s_colorWriteMasks);
+                        bool isDualSourceBlendTest                   = false;
+                        const VkColorComponentFlags *colorWriteMasks = BlendTest::s_colorWriteMasks;
 
                         for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
                         {
@@ -2147,8 +2203,117 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
         clampTests->addChild(new ClampTest(testCtx, getFormatCaseName(format), testParams));
     }
 
+    // VK_FORMAT_E5B9G9R9_UFLOAT_PACK32, with VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT (e.g. when using shader objects), has
+    // the following rule (Vulkan spec 1.4.313):
+    //
+    // If a shader object is bound to any graphics stage or the bound graphics pipeline was created with
+    // VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT, and the format of any color attachment is VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+    // the corresponding element of the pColorWriteMasks parameter of vkCmdSetColorWriteMaskEXT must either include all of
+    // VK_COLOR_COMPONENT_R_BIT, VK_COLOR_COMPONENT_G_BIT, and VK_COLOR_COMPONENT_B_BIT, or none of them
+    const VkFormat dynamicMaskFormats[] = {VK_FORMAT_E5B9G9R9_UFLOAT_PACK32};
+
     if (genFormatTests)
+    {
+        de::MovePtr<tcu::TestCaseGroup> dynamicMaskFormatTests(new tcu::TestCaseGroup(testCtx, "format"));
+
+        for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(dynamicMaskFormats); formatNdx++)
+        {
+            const VkFormat format = dynamicMaskFormats[formatNdx];
+
+            de::MovePtr<tcu::TestCaseGroup> formatTest(
+                new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
+            de::MovePtr<tcu::TestCaseGroup> blendStateTests;
+            {
+                std::ostringstream blendStateDescription;
+                blendStateDescription << "Dynamic RGB mask blend tests. The constant color used in all tests is "
+                                      << BlendTest::s_blendConst;
+                blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
+            }
+
+            struct ColorMaskTestCase
+            {
+                const char *name;
+                VkColorComponentFlags masks[BlendTest::QUAD_COUNT];
+            };
+
+            const ColorMaskTestCase colorMaskTests[] = {
+                {"mask_0", {0, 0, 0, 0}},
+                {"mask_rgb",
+                 {VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT,
+                  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT,
+                  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT,
+                  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT}},
+                {"mask_a",
+                 {VK_COLOR_COMPONENT_A_BIT, VK_COLOR_COMPONENT_A_BIT, VK_COLOR_COMPONENT_A_BIT,
+                  VK_COLOR_COMPONENT_A_BIT}},
+                {"mask_rgba",
+                 {VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                      VK_COLOR_COMPONENT_A_BIT,
+                  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                      VK_COLOR_COMPONENT_A_BIT,
+                  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                      VK_COLOR_COMPONENT_A_BIT,
+                  VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT |
+                      VK_COLOR_COMPONENT_A_BIT}}};
+
+            const VkPipelineColorBlendAttachmentState basicBlendStates[] = {
+                // No blending
+                {
+                    VK_FALSE,             // blendEnable
+                    VK_BLEND_FACTOR_ONE,  // srcColorBlendFactor
+                    VK_BLEND_FACTOR_ZERO, // dstColorBlendFactor
+                    VK_BLEND_OP_ADD,      // colorBlendOp
+                    VK_BLEND_FACTOR_ONE,  // srcAlphaBlendFactor
+                    VK_BLEND_FACTOR_ZERO, // dstAlphaBlendFactor
+                    VK_BLEND_OP_ADD,      // alphaBlendOp
+                    0                     // colorWriteMask (set later)
+                },
+                // Alpha blending
+                {
+                    VK_TRUE,                             // blendEnable
+                    VK_BLEND_FACTOR_SRC_ALPHA,           // srcColorBlendFactor
+                    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // dstColorBlendFactor
+                    VK_BLEND_OP_ADD,                     // colorBlendOp
+                    VK_BLEND_FACTOR_ONE,                 // srcAlphaBlendFactor
+                    VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA, // dstAlphaBlendFactor
+                    VK_BLEND_OP_ADD,                     // alphaBlendOp
+                    0                                    // colorWriteMask (set later)
+                }};
+
+            for (size_t blendNdx = 0; blendNdx < DE_LENGTH_OF_ARRAY(basicBlendStates); blendNdx++)
+            {
+                for (size_t maskNdx = 0; maskNdx < DE_LENGTH_OF_ARRAY(colorMaskTests); maskNdx++)
+                {
+                    VkPipelineColorBlendAttachmentState quadBlendConfigs[BlendTest::QUAD_COUNT];
+
+                    for (int quadNdx = 0; quadNdx < BlendTest::QUAD_COUNT; quadNdx++)
+                    {
+                        quadBlendConfigs[quadNdx]                = basicBlendStates[blendNdx];
+                        quadBlendConfigs[quadNdx].colorWriteMask = colorMaskTests[maskNdx].masks[quadNdx];
+                    }
+
+                    std::string testName =
+                        std::string(colorMaskTests[maskNdx].name) + "_" + (blendNdx == 0 ? "no_blend" : "alpha_blend");
+
+                    blendStateTests->addChild(new DynamicMaskBlendTest(testCtx, testName, pipelineConstructionType,
+                                                                       format, quadBlendConfigs,
+                                                                       colorMaskTests[maskNdx].masks));
+                }
+            }
+
+            formatTest->addChild(blendStateTests.release());
+            dynamicMaskFormatTests->addChild(formatTest.release());
+        }
+
+        dynamicMaskTests->addChild(dynamicMaskFormatTests.release());
+    }
+
+    if (genFormatTests)
+    {
         blendTests->addChild(formatTests.release());
+        blendTests->addChild(dynamicMaskTests.release());
+    }
+
     blendTests->addChild(clampTests.release());
 
     if (genFormatTests)

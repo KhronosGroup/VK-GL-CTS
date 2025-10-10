@@ -89,6 +89,29 @@ enum ScreenRotation
     SCREENROTATION_LAST
 };
 
+/*--------------------------------------------------------------------*//*!
+ * \brief Dump output of vulkan video decoding tests.
+ *//*--------------------------------------------------------------------*/
+enum VideoDecodeOutput
+{
+    DUMP_DEC_DISABLE = 0,       // Disabled by default
+    DUMP_DEC_TO_SINGLE,         // Write all decoded frames to one single file
+    DUMP_DEC_TO_SEPARATE_FILES, // Write each decoded frame to its own file
+    DUMP_DEC_LAST
+};
+
+/*--------------------------------------------------------------------*//*!
+ * \brief Dump output of vulkan video encoding tests.
+ *//*--------------------------------------------------------------------*/
+enum VideoEncodeOutput
+{
+    DUMP_ENC_DISABLE = 0, // Disabled by default
+    DUMP_ENC_YUV,         // Write input yuv and output yuv from encoded bitstream.
+    DUMP_ENC_BITSTREAM,   // Write encoded bitstream.
+    DUMP_ENC_ALL,         // Write both yuv and encoded bitstream.
+    DUMP_ENC_LAST
+};
+
 class CaseTreeNode;
 class CasePaths;
 class Archive;
@@ -111,7 +134,7 @@ public:
     bool checkTestCaseName(const char *caseName) const;
 
     //! Check if test group passes the case fraction filter.
-    bool checkCaseFraction(int i, const std::string &testCaseName) const;
+    bool checkCaseFraction(int i, const std::string &testCaseName, bool useFraction0) const;
 
     //! Check if test case runner is of supplied type
     bool checkRunnerType(tcu::TestRunnerType type) const
@@ -336,6 +359,15 @@ public:
 
     //! Prefix for offline pipeline compiler input files
     const char *getPipelineCompilerFilePrefix(void) const;
+
+    // Print logs of video operations to stdout
+    bool getVideoLogPrint(void) const;
+
+    // Dump output of vulkan video decoding tests.
+    VideoDecodeOutput getVideoDumpDecodeOutput(void) const;
+
+    // Dump output of vulkan video encoding tests.
+    VideoEncodeOutput getVideoDumpEncodeOutput(void) const;
 
     //! Path to Vulkan library (e.g. loader library vulkan-1.dll)
     const char *getVkLibraryPath(void) const;

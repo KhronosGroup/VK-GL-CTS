@@ -22,6 +22,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktReconvergenceTests.hpp"
+#include "vktReconvergenceTerminateInvocationTests.hpp"
 
 #include "vkBufferWithMemory.hpp"
 #include "vkImageWithMemory.hpp"
@@ -7941,6 +7942,8 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
         }
         group->addChild(ttGroup.release());
     }
+
+    group->addChild(createTerminateInvocationTests(testCtx));
 
     return group.release();
 }

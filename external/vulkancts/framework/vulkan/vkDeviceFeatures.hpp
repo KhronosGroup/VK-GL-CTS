@@ -40,7 +40,6 @@ struct FeatureDesc
 {
     VkStructureType sType;
     const std::string name;
-    const uint32_t specVersion;
 };
 
 // Structure containg all feature blobs - this simplifies generated code
@@ -72,7 +71,6 @@ struct FeatureStructCreationData
 {
     FeatureStructWrapperCreator creatorFunction;
     const std::string name;
-    uint32_t specVersion;
 };
 
 template <class FeatureType>

@@ -50,11 +50,11 @@
 namespace vk
 {
 
-#define MAKE_FEATURE_IMPL(clazz, enume)   \
-    template <>                           \
-    FeatureDesc makeFeatureDesc<clazz>()  \
-    {                                     \
-        return FeatureDesc{enume, "", 1}; \
+#define MAKE_FEATURE_IMPL(clazz, enume)  \
+    template <>                          \
+    FeatureDesc makeFeatureDesc<clazz>() \
+    {                                    \
+        return FeatureDesc{enume, ""};   \
     }
 
 #define INIT_FEATURE_IMPL(clazz, enume)                                \
@@ -67,11 +67,22 @@ MAKE_FEATURE_IMPL(VkPhysicalDeviceFeatures, VK_STRUCTURE_TYPE_MAX_ENUM)
 INIT_FEATURE_IMPL(VkPhysicalDeviceFeatures, VK_STRUCTURE_TYPE_MAX_ENUM)
 MAKE_FEATURE_IMPL(VkPhysicalDeviceFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
 INIT_FEATURE_IMPL(VkPhysicalDeviceFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan11Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan11Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan12Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan12Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+#ifndef CTS_USES_VULKANSC
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan13Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan13Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan14Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan14Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES)
+#endif
 
 #ifdef CTS_USES_VULKANSC
 MAKE_FEATURE_IMPL(VkFaultCallbackInfo, VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO)
 INIT_FEATURE_IMPL(VkFaultCallbackInfo, VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO)
 MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkanSC10Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkanSC10Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
 MAKE_FEATURE_IMPL(VkDeviceObjectReservationCreateInfo, VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO)
 INIT_FEATURE_IMPL(VkDeviceObjectReservationCreateInfo, VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO)
 #endif

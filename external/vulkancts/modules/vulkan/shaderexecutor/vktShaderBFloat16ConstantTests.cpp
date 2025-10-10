@@ -811,7 +811,7 @@ void BFloat16GraphicsInstance<FloatTy>::copyImageToResultBuffer()
 
     const auto range   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const auto iBefore = makeImageMemoryBarrier(
-        VK_ACCESS_COLOR_ATTACHMENT_READ_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
         VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **this->m_image, range, queueIndex, queueIndex);
     const auto bBefore = makeBufferMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, **this->m_resultBuffer,
                                                  0u, VK_WHOLE_SIZE, queueIndex, queueIndex);

@@ -932,6 +932,10 @@ public:
     void QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void decodeFramesOutOfOrder();
     void reinitializeFormatsForProfile(const VkVideoCoreProfile *profile);
+    bool getVideoLogPrintEnable()
+    {
+        return m_videoLogPrintEnable;
+    }
 
     DeviceContext *m_deviceContext{};
     VkVideoCoreProfile m_profile{};
@@ -1019,6 +1023,7 @@ public:
     bool m_useImageViewArray{false};
     bool m_useSeparateOutputImages{false};
     bool m_resetDecoder{false};
+    bool m_videoLogPrintEnable{false};
 };
 
 using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;

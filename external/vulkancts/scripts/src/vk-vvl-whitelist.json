@@ -1,6 +1,6 @@
 {
     "$schema": "https://json-schema.org/draft/2020-12/schema",
-    "description": "The whitelist includes cases where certain validation errors or warnings are permitted. The message outlines the validation error/warning that is allowed, while the description provides a justification for why these errors/warnings are deemed acceptable.",
+    "description": "The whitelist includes cases where certain validation errors or warnings are permitted. The message outlines the validation error/warning that is allowed, while the description provides a justification for why these errors/warnings are deemed acceptable",
     "whitelist": [
         {
             "groups": [
@@ -10,7 +10,7 @@
             "messages": [
                 "Undefined-Value-ShaderInputNotProduced-DynamicRendering"
             ],
-            "description": "Warning about attachments not being written in FS, however, this behavior is intentional."
+            "description": "Warning about attachments not being written in FS, however, this behavior is intentional"
         },
         {
             "groups": [
@@ -19,16 +19,17 @@
             "messages": [
                 "Undefined-Layer-Written"
             ],
-            "description": "Warning when writing to gl_Layer while FramebufferCreateInfo::layer is set to 1. In these cases, tests are designed to write exclusively to layer 0. However, VVL does not recognize this distinction and incorrectly assumes that gl_Layer should not be used when there's only a single layer."
+            "description": "Warning when writing to gl_Layer while FramebufferCreateInfo::layer is set to 1. In these cases, tests are designed to write exclusively to layer 0. However, VVL does not recognize this distinction and incorrectly assumes that gl_Layer should not be used when there's only a single layer"
         },
         {
             "groups": [
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.unused.*"
+                "dEQP-VK.inding_model.unused_invalid_descriptor.write.unused.*",
+                "dEQP-VK.binding_model.unused_invalid_descriptor.copy.*"
             ],
             "messages": [
                 "VUID-vkCmdDispatch-None-08114"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline, is declared in pipeline layout and not written to descriptor set. Producing this error is intentional."
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline, is declared in pipeline layout and not written to descriptor set or was destroyed before copying to destination set. Producing this error is intentional"
         },
         {
             "groups": [
@@ -37,35 +38,233 @@
             "messages": [
                 "VUID-vkCmdDispatch-format-07753"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional."
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional"
         },
         {
             "groups": [
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.sampled_image",
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.combined_image_sampler"
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.sampled_image",
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.combined_image_sampler"
             ],
             "messages": [
-                "VUID-RuntimeSpirv-samples-08725"
+                "VUID-RuntimeSpirv-samples-08725",
+                "VUID-VkImageCreateInfo-samples-02258"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional."
-        },
-        {
-            "groups": [
-                "dEQP-VK.binding_model.unused_invalid_descriptor.copy.*"
-            ],
-            "messages": [
-                "VUID-vkCmdDispatch-None-08114"
-            ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline was destroyed before copying to destination set. Producing this error is intentional."
+            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional"
         },
         {
             "groups": [
                 "dEQP-VK.image.mismatched_formats.image_read.*"
-             ],
+            ],
             "messages": [
                 "Undefined-Value-StorageImage-FormatMismatch-ImageView"
-             ],
-            "description": "Warning about mismatched format handling in storage images. This is intentional for testing purposes."
+            ],
+            "description": "Warning about mismatched format handling in storage images. This is intentional for testing purposes"
+        },
+        {
+            "groups": [
+                "dEQP-VK.api.device_init.create_device_unsupported_features.mesh_shader_features_ext"
+            ],
+            "messages": [
+                "VUID-VkPhysicalDeviceMeshShaderFeaturesEXT-primitiveFragmentShadingRateMeshShader-07033"
+            ],
+            "description": "Warning about not enabled VkPhysicalDeviceMultiviewFeaturesKHR::multiview feature, however, this behavior is intentional"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.mesh_shader.*.null_*"
+            ],
+            "messages": [
+                "vkCreateGraphicsPipelines(): pCreateInfos[0].pMultisampleState is NULL, but pipeline is being created with fragment shader that uses samples"
+            ],
+            "description": "Warning about null at pMultisampleState  with pipeline that uses samples, however, this behavior is intentional"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.*.null_multisample_state*"
+            ],
+            "messages": [
+                "VUID-VkGraphicsPipelineCreateInfo-renderpass-06631"
+            ],
+            "description": "Warning about null pMultisampleState when alphaToOne feature is disabled but VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT is not dynamic, this behavior is intentional"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.*.null_multisample_state_no_alpha_to_one"
+            ],
+            "messages": [
+                "VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853"
+            ],
+            "description": "Warning about sample count mismatch between static pipeline (4 samples) and renderpass (1 sample) for 'to_one' sample transitions, however, this behavior is intentional"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.multisample.multisampled_render_to_single_sampled.*"
+            ],
+            "messages": [
+                "VUID-VkSubpassDescription2-externalFormatResolve-09338"
+            ],
+            "description": "TODO raport validaiton layers issue. VK_EXT_multisampled_render_to_single_sampled extension IS allowing single-sampled attachments to be used as resolve targets in multisampled rendering contexts including VK_SAMPLE_COUNT_1_BIT"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.pipeline_library.graphics_library.misc.bind_null_descriptor_set.*"
+            ],
+            "messages": [
+                "VUID-VkGraphicsPipelineCreateInfo-pLibraries-06681"
+            ],
+            "description": "Testing edge cases in pipeline library linking. These tests intentionally create graphics pipeline libraries with NULL descriptor set in the same index to verify descriptor set binding functionality"
+        },
+        {
+            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.cmd_buffer_start.*_bind_unused_ms"
+            ],
+            "messages": [
+                "VUID-vkCmdDraw-pStrides-04913"
+            ],
+            "description": "Tests bind unused mesh shading pipeline before graphics pipeline, intentionally invalidating dynamic stride state to test pipeline binding edge cases"
+        },
+        {
+            "groups": [
+                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.switch_from_descriptor_buffer_to_legacy",
+                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.invalidation_rules.use_legacy_and_bind_descriptor_buffer"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-None-08115"
+            ],
+            "description": "Intentional use of VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT in conjunction with legacy descriptor set."
+        },
+        {
+            "groups": [
+                "dEQP-VK.ycbcr.query.lod.*"
+            ],
+            "messages": [
+                "VUID-RuntimeSpirv-None-10716"
+            ],
+            "description": "These tests query lod levels on ycbcr images with ycbcr conversion, which intentionally validates the rule of using nothing except image sample and sparse sample operations on them"
+        },
+        {
+            "groups": [
+                "dEQP-VK.dynamic_state.*.general_state.double_static_bind"
+            ],
+            "messages": [
+                "UNASSIGNED-vkCmdBindPipeline-Pipeline-Rebind"
+            ],
+            "description": "Test intentionally rebinds the same pipeline after setting dynamic state that is actually static in the pipeline"
+        },
+        {
+            "groups": [
+                "dEQP-VK.ray_query.advanced.null_as.vert.*",
+                "dEQP-VK.ray_query.advanced.null_as.frag.*"
+            ],
+            "messages": [
+                "Undefined-Value-ShaderInputNotProduced"
+            ],
+            "description": "Warning about not saving data in attachments by fragment shader. Fixing this is not necessary for the test to work, and implementing it would make the test case unnecessarily complicated"
+        },
+        {
+            "groups": [
+                "dEQP-VK.geometry.layered.3d.*",
+                "dEQP-VK.renderpasses.renderpass1.remaining_array_layers.*"
+            ],
+            "messages": [
+                "VUID-VkImageMemoryBarrier-subresourceRange-01488",
+                "VUID-VkImageMemoryBarrier-subresourceRange-01725",
+                "VUID-vkCmdDraw-None-09600"
+            ],
+            "description": "TODO raport validaiton layers issue in 3D layered rendering tests when using 3D images with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT"
+        },
+        {
+            "groups": [
+                "dEQP-VK.shader_object.pipeline_interaction.max_pipeline_shader_object_max_pipeline",
+                "dEQP-VK.shader_object.pipeline_interaction.shader_object_max_pipeline_shader_object"
+            ],
+            "messages": [
+                "VUID-vkCmdDraw-None-07630"
+            ],
+            "description": "Tests intentionally mix pipelines and shader objects to test state management edge cases. The VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT state gets invalidated when binding pipelines without this dynamic state"
+        },
+        {
+            "groups": [
+                "dEQP-VK.shader_object.misc.state.*"
+            ],
+            "messages": [
+                "VUID-vkCmdDraw-None-07841",
+                "VUID-vkCmdDraw-None-07627",
+                "VUID-vkCmdDraw-None-07629",
+                "VUID-vkCmdDraw-None-07626",
+                "VUID-vkCmdDrawMeshTasksEXT-None-07841",
+                "VUID-vkCmdDrawMeshTasksEXT-None-07627",
+                "VUID-vkCmdDrawMeshTasksEXT-None-07629"
+            ],
+            "description": "Validation layer requires set state calls when the respective dynamic states are enabled. Tests intentionally skips setting certain dynamic states"
+        },
+        {
+            "groups": [
+                "dEQP-VK.memory.binding.regular.overallocated.*"
+            ],
+            "messages": [
+                "VUID-VkMemoryDedicatedAllocateInfo-image-02964"
+            ],
+            "description": "Overallocated memory binding tests intentionally allocate more memory than required to test implementation behavior with oversized dedicated allocations"
+        },
+        {
+            "groups": [
+                "dEQP-VK.ray_tracing_pipeline.amber.basic",
+                "dEQP-VK.ray_tracing_pipeline.amber.basic2",
+                "dEQP-VK.draw.renderpass.basic_draw.misc.flat_b_sat_error",
+                "dEQP-VK.draw.renderpass.depth_bias.depth_bias_triangle_list_fill",
+                "dEQP-VK.glsl.builtin.precision.determinant.highp.mat3",
+                "dEQP-VK.glsl.builtin.precision.determinant.highp.mat4",
+                "dEQP-VK.texture.shadow.texel_replacement.d32_sfloat",
+                "dEQP-VK.robustness.non_robust_buffer_access.unexecuted_oob_underflow",
+                "dEQP-VK.binding_model.dynamic_offset.shader_reuse_differing_layout_compute"
+            ],
+            "messages": [
+                "VUID-vkCmdPipelineBarrier-srcAccessMask-02815",
+                "VUID-vkCmdPipelineBarrier-dstAccessMask-02816"
+            ],
+            "description": "TODO report validation layers issue in google amber shader test framework. Amber tests use incorrect pipeline barrier access masks with VK_PIPELINE_STAGE_ALL_COMMANDS_BIT that include unsupported VK_ACCESS_HOST_READ_BIT and VK_ACCESS_HOST_WRITE_BIT flags"
+        },
+        {
+            "groups": [
+                "dEQP-VK.query_pool.statistics_query.*.*_with_no_color_attachments"
+            ],
+            "messages": [
+                "Undefined-Value-ShaderOutputNotConsumed"
+            ],
+            "description": "Query pool statistics tests intentionally create pipelines with no color attachments while fragment shaders still write to output"
+        },
+        {
+            "groups": [
+                "dEQP-VK.texture.shadow.1d.*.sparse_*"
+            ],
+            "messages": [
+                "VUID-VkImageCreateInfo-imageType-00970"
+            ],
+            "description": "1D texture images  created  with VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT, which intentionally breaks validation rule"
+        },
+        {
+            "groups": [
+                "dEQP-VK.robustness.robustness2.bind.*.r64i.*.uniform_texel_buffer.*",
+                "dEQP-VK.robustness.robustness2.bind.*.r64i.dontunroll.nonvolatile.uniform_texel_buffer.*"
+            ],
+            "messages": [
+                "VUID-vkCmdDispatch-SampledType-04472",
+                "VUID-vkCmdTraceRaysKHR-SampledType-04472",
+                "VUID-vkCmdDraw-SampledType-04472"
+            ],
+            "description": "The validation error occurs because the shader tries to read a 64-bit texel buffer using a 32-bit data type, which violates Vulkan's type matching rules. The issue should have been detected by checking if the buffer format supports property as a uniform texel buffer. Certain implementations erroneously indicate that this format is compatible with uniform texel buffer property, which leads to a mismatch between the declared format and the shader's expected data type"
+        },
+        {
+            "groups": [
+                "dEQP-VK.drm_format_modifiers.export_import.*",
+                "dEQP-VK.drm_format_modifiers.export_import_explicit.*"
+            ],
+            "messages": [
+                "VUID-vkCmdCopyImage-srcImage-01995",
+                "VUID-vkCmdCopyImage-dstImage-01996"
+            ],
+            "description": "TODO report lavapipe driver limitation where DRM format modifier enumeration reports transfer feature support during vkGetPhysicalDeviceFormatProperties2, but actual image creation with VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT returns VkFormatFeatureFlags2(0)"
         }
     ]
 }

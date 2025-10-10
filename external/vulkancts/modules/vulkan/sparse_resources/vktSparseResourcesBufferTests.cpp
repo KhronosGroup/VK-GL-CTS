@@ -42,6 +42,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuTestLog.hpp"
 
@@ -85,8 +86,22 @@ enum TestFlagBits
     TEST_FLAG_NON_RESIDENT_STRICT  = 1u << 2, //!< residencyNonResidentStrict
     TEST_FLAG_ENABLE_DEVICE_GROUPS = 1u << 3, //!< device groups are enabled
     TEST_FLAG_TRANSFORM_FEEDBACK   = 1u << 4, //!< require transform feedback extension
+    TEST_FLAG_USE_COPY_INDIRECT    = 1u << 5, //!< use VK_KHR_copy_memory_indirect
+    TEST_FLAG_USE_BUFFER_ADDRESS   = 1u << 6, //!< use VK_KHR_buffer_device_address
 };
 typedef uint32_t TestFlags;
+
+enum class BufferObjectType
+{
+    BO_TYPE_UNIFORM = 0,
+    BO_TYPE_STORAGE
+};
+
+struct TestParams
+{
+    TestFlags flags;
+    BufferObjectType bufferType;
+};
 
 //! SparseAllocationBuilder output. Owns the allocated memory.
 struct SparseAllocation
@@ -605,7 +620,13 @@ public:
             requirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
             requirements.push_back(QueueRequirements(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u));
 
-            createDeviceSupportingQueues(requirements, false, false, flags & TEST_FLAG_TRANSFORM_FEEDBACK);
+            // Check if we need to enable additional extensions for indirect copy or buffer device address
+            const bool useTransformFeedback = (flags & TEST_FLAG_TRANSFORM_FEEDBACK) != 0;
+            const bool useCopyIndirect      = (flags & TEST_FLAG_USE_COPY_INDIRECT) != 0;
+            const bool useBufferAddress     = (flags & TEST_FLAG_USE_BUFFER_ADDRESS) != 0;
+
+            createDeviceSupportingQueues(requirements, false, false, useTransformFeedback, useCopyIndirect,
+                                         useBufferAddress);
         }
 
         const DeviceInterface &vk = getDeviceInterface();
@@ -698,7 +719,7 @@ private:
     uint32_t m_sharedQueueFamilyIndices[2];
 };
 
-void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const TestFlags flags)
+void initProgramsDrawWithBufferObject(vk::SourceCollections &programCollection, const TestParams testParams)
 {
     // Vertex shader
     {
@@ -721,11 +742,16 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
 
     // Fragment shader
     {
+        const TestFlags flags        = testParams.flags;
         const bool aliased           = (flags & TEST_FLAG_ALIASED) != 0;
         const bool residency         = (flags & TEST_FLAG_RESIDENCY) != 0;
         const bool nonResidentStrict = (flags & TEST_FLAG_NON_RESIDENT_STRICT) != 0;
         const std::string valueExpr =
             (aliased ? "ivec4(3*(ndx % nonAliasedSize) ^ 127, 0, 0, 0)" : "ivec4(3*ndx ^ 127, 0, 0, 0)");
+        const bool isReadWriteOp          = (testParams.bufferType == BufferObjectType::BO_TYPE_STORAGE);
+        const std::string bufferTypeStr   = isReadWriteOp ? "buffer" : "uniform";
+        const std::string bufferLayoutStr = isReadWriteOp ? "std430" : "std140";
+        const std::string volatileStr     = isReadWriteOp ? "volatile " : "";
 
         std::ostringstream src;
         src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -735,9 +761,9 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
             << "layout(constant_id = 1) const int dataSize  = 1;\n"
             << "layout(constant_id = 2) const int chunkSize = 1;\n"
             << "\n"
-            << "layout(set = 0, binding = 0, std140) uniform SparseBuffer {\n"
-            << "    ivec4 data[dataSize];\n"
-            << "} ubo;\n"
+            << "layout(set = 0, binding = 0, " << bufferLayoutStr << ") " << bufferTypeStr << " SparseBuffer {\n"
+            << "    " << volatileStr << "ivec4 data[dataSize];\n"
+            << "} buff;\n"
             << "\n"
             << "void main(void)\n"
             << "{\n"
@@ -753,21 +779,38 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
             << "    for (int ndx = fragNdx; ndx < dataSize; ndx += pageSize)\n"
             << "    {\n";
 
+        src << "        ivec4 readData = buff.data[ndx];\n"
+            << "\n";
+
+        if (isReadWriteOp)
+        {
+            src << "        // Write a new value based on index\n"
+                << "        ivec4 newData = ivec4(ndx * 2 + 1, ndx ^ 0x55, ndx, 1);\n"
+                << "        buff.data[ndx] = newData;\n"
+                << "        ivec4 verifyData = buff.data[ndx];\n"
+                << "\n";
+        }
+
         if (residency && nonResidentStrict)
         {
-            src << "        if (ndx >= chunkSize && ndx < 2*chunkSize)\n"
-                << "            ok = ok && (ubo.data[ndx] == ivec4(0));\n"
+            // Accessing non-resident regions
+            src << "        if (ndx >= chunkSize && ndx < 2 * chunkSize)\n"
+                << "            ok = ok && (readData == ivec4(0))"
+                << (isReadWriteOp ? " && (verifyData == ivec4(0))" : "") << ";\n"
                 << "        else\n"
-                << "            ok = ok && (ubo.data[ndx] == " + valueExpr + ");\n";
+                << "            ok = ok && (readData == " + valueExpr + ")"
+                << (isReadWriteOp ? " && (verifyData == newData)" : "") << ";\n";
         }
         else if (residency)
         {
             src << "        if (ndx >= chunkSize && ndx < 2*chunkSize)\n"
                 << "            continue;\n"
-                << "        ok = ok && (ubo.data[ndx] == " << valueExpr << ");\n";
+                << "        ok = ok && (readData == " << valueExpr << ")"
+                << (isReadWriteOp ? " && (verifyData == newData)" : "") << ";\n";
         }
         else
-            src << "        ok = ok && (ubo.data[ndx] == " << valueExpr << ");\n";
+            src << "        ok = ok && (readData == " << valueExpr << ")"
+                << (isReadWriteOp ? " && (verifyData == newData)" : "") << ";\n";
 
         src << "    }\n"
             << "\n"
@@ -781,11 +824,13 @@ void initProgramsDrawWithUBO(vk::SourceCollections &programCollection, const Tes
     }
 }
 
-//! Sparse buffer backing a UBO
-class UBOTestInstance : public SparseBufferTestInstance
+//! Sparse buffer backing a UBO or SSBO
+class BufferObjectTestInstance : public SparseBufferTestInstance
 {
 public:
-    UBOTestInstance(Context &context, const TestFlags flags) : SparseBufferTestInstance(context, flags)
+    BufferObjectTestInstance(Context &context, const TestParams testParams)
+        : SparseBufferTestInstance(context, testParams.flags)
+        , m_bufferType(testParams.bufferType)
     {
     }
 
@@ -807,7 +852,16 @@ public:
         MovePtr<SparseAllocation> sparseAllocation;
         Move<VkBuffer> sparseBuffer;
         Move<VkBuffer> sparseBufferAliased;
-        bool setupDescriptors = true;
+        bool setupDescriptors                     = true;
+        const VkBufferUsageFlags bufferUsageFlags = (m_bufferType == BufferObjectType::BO_TYPE_UNIFORM) ?
+                                                        VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
+                                                        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        const uint32_t maxBufferTypeRange         = (m_bufferType == BufferObjectType::BO_TYPE_UNIFORM) ?
+                                                        m_context.getDeviceProperties().limits.maxUniformBufferRange :
+                                                        m_context.getDeviceProperties().limits.maxStorageBufferRange;
+        const VkDescriptorType descriptorType     = (m_bufferType == BufferObjectType::BO_TYPE_UNIFORM) ?
+                                                        VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
         // Go through all physical devices
         for (uint32_t physDevID = 0; physDevID < m_numPhysicalDevices; physDevID++)
@@ -817,21 +871,18 @@ public:
 
             // Set up the sparse buffer
             {
-                VkBufferCreateInfo referenceBufferCreateInfo =
-                    getSparseBufferCreateInfo(VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+                VkBufferCreateInfo referenceBufferCreateInfo = getSparseBufferCreateInfo(bufferUsageFlags);
                 const VkDeviceSize minChunkSize = 512u; // make sure the smallest allocation is at least this big
                 uint32_t numMaxChunks           = 0u;
 
-                // Check how many chunks we can allocate given the alignment and size requirements of UBOs
+                // Check how many chunks we can allocate given the alignment and size requirements of UBOs or SSBOs
                 {
                     const UniquePtr<SparseAllocation> minAllocation(SparseAllocationBuilder().addMemoryBind().build(
                         instance, getPhysicalDevice(secondDeviceID), vk, getDevice(), getAllocator(),
                         referenceBufferCreateInfo, minChunkSize));
 
                     numMaxChunks =
-                        deMaxu32(static_cast<uint32_t>(m_context.getDeviceProperties().limits.maxUniformBufferRange /
-                                                       minAllocation->resourceSize),
-                                 1u);
+                        deMaxu32(static_cast<uint32_t>(maxBufferTypeRange / minAllocation->resourceSize), 1u);
                 }
 
                 if (numMaxChunks < 4)
@@ -856,8 +907,7 @@ public:
 
                     sparseAllocation = builder.build(instance, getPhysicalDevice(secondDeviceID), vk, getDevice(),
                                                      getAllocator(), referenceBufferCreateInfo, minChunkSize);
-                    DE_ASSERT(sparseAllocation->resourceSize <=
-                              m_context.getDeviceProperties().limits.maxUniformBufferRange);
+                    DE_ASSERT(sparseAllocation->resourceSize <= maxBufferTypeRange);
                 }
 
                 if (firstDeviceID != secondDeviceID)
@@ -930,22 +980,21 @@ public:
             }
 
             // Make sure that we don't try to access a larger range than is allowed. This only applies to a single chunk case.
-            const uint32_t maxBufferRange = deMinu32(static_cast<uint32_t>(sparseAllocation->resourceSize),
-                                                     m_context.getDeviceProperties().limits.maxUniformBufferRange);
+            const uint32_t maxBufferRange =
+                deMinu32(static_cast<uint32_t>(sparseAllocation->resourceSize), maxBufferTypeRange);
 
             // Descriptor sets
             {
                 // Setup only once
                 if (setupDescriptors)
                 {
-                    m_descriptorSetLayout =
-                        DescriptorSetLayoutBuilder()
-                            .addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, VK_SHADER_STAGE_FRAGMENT_BIT)
-                            .build(vk, getDevice());
+                    m_descriptorSetLayout = DescriptorSetLayoutBuilder()
+                                                .addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT)
+                                                .build(vk, getDevice());
 
                     m_descriptorPool =
                         DescriptorPoolBuilder()
-                            .addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER)
+                            .addType(descriptorType)
                             .build(vk, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
                     m_descriptorSet  = makeDescriptorSet(vk, getDevice(), *m_descriptorPool, *m_descriptorSetLayout);
@@ -956,8 +1005,8 @@ public:
                 const VkDescriptorBufferInfo sparseBufferInfo = makeDescriptorBufferInfo(buffer, 0ull, maxBufferRange);
 
                 DescriptorSetUpdateBuilder()
-                    .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
-                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, &sparseBufferInfo)
+                    .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
+                                 &sparseBufferInfo)
                     .update(vk, getDevice());
             }
 
@@ -1025,6 +1074,7 @@ public:
     }
 
 private:
+    const BufferObjectType m_bufferType;
     Move<VkBuffer> m_vertexBuffer;
     MovePtr<Allocation> m_vertexBufferAlloc;
 
@@ -1425,6 +1475,218 @@ private:
     MovePtr<Allocation> m_vertexBufferAlloc;
 };
 
+//! Test using copy memory indirect command
+class IndirectMemoryCopyTestInstance : public DrawGridTestInstance
+{
+public:
+    IndirectMemoryCopyTestInstance(Context &context, const TestFlags flags)
+        : DrawGridTestInstance(context, flags, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                               GRID_SIZE * GRID_SIZE * 6 * sizeof(Vec4))
+    {
+        // Check for extension requirements
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
+        {
+            TCU_THROW(NotSupportedError, "VK_KHR_copy_memory_indirect not supported");
+        }
+
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+        {
+            TCU_THROW(NotSupportedError, "VK_KHR_buffer_device_address not supported");
+        }
+    }
+
+    void rendererDraw(const VkPipelineLayout pipelineLayout, const VkCommandBuffer cmdBuffer) const
+    {
+        DE_UNREF(pipelineLayout);
+
+        m_context.getTestContext().getLog() << tcu::TestLog::Message
+                                            << "Drawing a grid of triangles backed by a sparse vertex buffer using "
+                                               "indirect memory copy. There should be no red pixels visible."
+                                            << tcu::TestLog::EndMessage;
+
+        const DeviceInterface &vk  = getDeviceInterface();
+        const uint32_t vertexCount = 6 * (GRID_SIZE * GRID_SIZE) / 2;
+        VkDeviceSize vertexOffset  = 0ull;
+
+        vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_sparseBuffer.get(), &vertexOffset);
+        vk.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+
+        vertexOffset += m_perDrawBufferOffset * (m_residency ? 2 : 1);
+
+        vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_sparseBuffer.get(), &vertexOffset);
+        vk.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+    }
+
+    void initializeBuffers(void)
+    {
+        uint8_t *pData   = static_cast<uint8_t *>(m_stagingBufferAlloc->getHostPtr());
+        const float step = 2.0f / static_cast<float>(GRID_SIZE);
+
+        // Prepare data for two draw calls
+        generateGrid(pData, step, -1.0f, -1.0f, GRID_SIZE, GRID_SIZE / 2);
+        generateGrid(pData + m_perDrawBufferOffset, step, -1.0f, 0.0f, GRID_SIZE, GRID_SIZE / 2);
+    }
+
+    tcu::TestStatus iterate(void)
+    {
+        const DeviceInterface &vk = getDeviceInterface();
+
+        for (uint32_t physDevID = 0; physDevID < m_numPhysicalDevices; physDevID++)
+        {
+            const uint32_t firstDeviceID  = physDevID;
+            const uint32_t secondDeviceID = (firstDeviceID + 1) % m_numPhysicalDevices;
+
+            createResources(secondDeviceID);
+
+            if (firstDeviceID != secondDeviceID)
+            {
+                VkPeerMemoryFeatureFlags peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+                vk.getDeviceGroupPeerMemoryFeatures(getDevice(), m_sparseAllocation->heapIndex, firstDeviceID,
+                                                    secondDeviceID, &peerMemoryFeatureFlags);
+
+                if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT) == 0) ||
+                    ((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) == 0))
+                {
+                    TCU_THROW(NotSupportedError, "Peer memory does not support COPY_DST and GENERIC_SRC");
+                }
+            }
+
+            // Make sure the sparse buffer has device address capability
+            VkBufferCreateInfo sparseBufferCreateInfo = getSparseBufferCreateInfo(
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+            sparseBufferCreateInfo.size = m_sparseAllocation->resourceSize;
+            m_sparseBuffer              = makeBuffer(vk, getDevice(), sparseBufferCreateInfo);
+
+            // Bind the memory
+            bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *m_sparseBuffer, *m_sparseAllocation,
+                             usingDeviceGroups(), firstDeviceID, secondDeviceID);
+
+            initializeBuffers();
+
+            // Recreate staging buffer with device address capability
+            const VkBufferCreateInfo stagingBufferCreateInfo = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
+                nullptr,                              // const void*            pNext
+                0,                                    // VkBufferCreateFlags    flags
+                m_stagingBufferSize,                  // VkDeviceSize           size
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT |    // VkBufferUsageFlags     usage
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode          sharingMode
+                0u,                        // uint32_t               queueFamilyIndexCount
+                nullptr,                   // const uint32_t*        pQueueFamilyIndices
+            };
+
+            Move<VkBuffer> stagingBufferWithAddress = makeBuffer(vk, getDevice(), stagingBufferCreateInfo);
+            MovePtr<Allocation> stagingBufferWithAddressAlloc =
+                bindBuffer(vk, getDevice(), getAllocator(), *stagingBufferWithAddress, MemoryRequirement::HostVisible);
+
+            // Copy data from original staging buffer
+            deMemcpy(stagingBufferWithAddressAlloc->getHostPtr(), m_stagingBufferAlloc->getHostPtr(),
+                     static_cast<size_t>(m_stagingBufferSize));
+            flushAlloc(vk, getDevice(), *stagingBufferWithAddressAlloc);
+
+            // Create an indirect buffer for memory copy commands
+            const VkDeviceSize indirectBufferSize = 2 * sizeof(VkCopyMemoryIndirectCommandKHR);
+            Move<VkBuffer> indirectBuffer =
+                makeBuffer(vk, getDevice(), indirectBufferSize,
+                           VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+            MovePtr<Allocation> indirectBufferAlloc =
+                bindBuffer(vk, getDevice(), getAllocator(), *indirectBuffer, MemoryRequirement::HostVisible);
+
+            // Fill the indirect buffer with copy commands
+            VkCopyMemoryIndirectCommandKHR *indirectCommands =
+                static_cast<VkCopyMemoryIndirectCommandKHR *>(indirectBufferAlloc->getHostPtr());
+
+            VkDeviceSize firstChunkOffset  = 0ull;
+            VkDeviceSize secondChunkOffset = m_perDrawBufferOffset;
+
+            if (m_residency)
+                secondChunkOffset += m_perDrawBufferOffset;
+
+            if (m_aliased)
+                firstChunkOffset = secondChunkOffset + m_perDrawBufferOffset;
+
+            indirectCommands[0].srcAddress = getBufferDeviceAddress(vk, getDevice(), *stagingBufferWithAddress);
+            indirectCommands[0].dstAddress =
+                getBufferDeviceAddress(vk, getDevice(), *m_sparseBuffer) + firstChunkOffset;
+            indirectCommands[0].size = m_perDrawBufferOffset;
+
+            indirectCommands[1].srcAddress =
+                getBufferDeviceAddress(vk, getDevice(), *stagingBufferWithAddress) + m_perDrawBufferOffset;
+            indirectCommands[1].dstAddress =
+                getBufferDeviceAddress(vk, getDevice(), *m_sparseBuffer) + secondChunkOffset;
+            indirectCommands[1].size = m_perDrawBufferOffset;
+
+            flushAlloc(vk, getDevice(), *indirectBufferAlloc);
+
+            // Copy using indirect memory copy
+            flushAlloc(vk, getDevice(), *stagingBufferWithAddressAlloc);
+
+            const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
+            const Unique<VkCommandBuffer> cmdBuffer(
+                allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+            beginCommandBuffer(vk, *cmdBuffer);
+
+            // Get device address of indirect buffer
+            VkDeviceAddress indirectBufferAddress = getBufferDeviceAddress(vk, getDevice(), *indirectBuffer);
+
+            // Set up the indirect copy info
+            VkStridedDeviceAddressRangeKHR addressRange = {
+                indirectBufferAddress,                      // VkDeviceAddress deviceAddress
+                2 * sizeof(VkCopyMemoryIndirectCommandKHR), // VkDeviceSize size
+                sizeof(VkCopyMemoryIndirectCommandKHR)      // VkDeviceSize stride
+            };
+
+            VkCopyMemoryIndirectInfoKHR copyMemoryIndirectKHR = {};
+            copyMemoryIndirectKHR.sType                       = VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR;
+            copyMemoryIndirectKHR.pNext                       = nullptr;
+            copyMemoryIndirectKHR.copyAddressRange            = addressRange;
+            copyMemoryIndirectKHR.srcCopyFlags                = VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
+            copyMemoryIndirectKHR.dstCopyFlags                = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
+            copyMemoryIndirectKHR.copyCount                   = 2;
+
+            // Perform the indirect memory copy
+            vk.cmdCopyMemoryIndirectKHR(*cmdBuffer, &copyMemoryIndirectKHR);
+
+            // Memory barrier to ensure copy completes before rendering
+            VkBufferMemoryBarrier bufferBarrier = {};
+            bufferBarrier.sType                 = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            bufferBarrier.srcAccessMask         = VK_ACCESS_TRANSFER_WRITE_BIT;
+            bufferBarrier.dstAccessMask         = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+            bufferBarrier.buffer                = *m_sparseBuffer;
+            bufferBarrier.offset                = 0;
+            bufferBarrier.size                  = VK_WHOLE_SIZE;
+
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0,
+                                  nullptr, 1, &bufferBarrier, 0, nullptr);
+
+            endCommandBuffer(vk, *cmdBuffer);
+
+            submitCommandsAndWait(vk, getDevice(), m_universalQueue.queueHandle, *cmdBuffer, 0u, nullptr, nullptr, 0,
+                                  nullptr, usingDeviceGroups(), firstDeviceID);
+
+            // Draw and verify
+            Renderer::SpecializationMap specMap;
+            draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_NULL_HANDLE, specMap, usingDeviceGroups(), firstDeviceID);
+
+            if (!isResultCorrect())
+                return tcu::TestStatus::fail("Some buffer values were incorrect");
+        }
+        return tcu::TestStatus::pass("Pass");
+    }
+
+private:
+    // Helper function to get buffer device address
+    VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, VkDevice device, VkBuffer buffer)
+    {
+        VkBufferDeviceAddressInfo addressInfo = {};
+        addressInfo.sType                     = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        addressInfo.buffer                    = buffer;
+        return vk.getBufferDeviceAddress(device, &addressInfo);
+    }
+};
+
 //! Use sparse transform feedback buffer
 class TransformFeedbackTestInstance : public DrawGridTestInstance
 {
@@ -1734,7 +1996,7 @@ private:
     const Function m_func;
 };
 
-void checkSupport(Context &context, const TestFlags flags)
+void commonCheckSupport(Context &context, const TestFlags flags)
 {
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
 
@@ -1751,6 +2013,373 @@ void checkSupport(Context &context, const TestFlags flags)
     if (flags & TEST_FLAG_TRANSFORM_FEEDBACK)
         context.requireDeviceFunctionality(VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME);
 }
+
+void checkSupport(Context &context, const TestFlags flags)
+{
+    commonCheckSupport(context, flags);
+}
+
+void checkSupport(Context &context, const TestParams testParams)
+{
+    commonCheckSupport(context, testParams.flags);
+}
+
+#ifndef CTS_USES_VULKANSC
+
+class NullAddressReadInstance : public vkt::TestInstance
+{
+public:
+    struct Params
+    {
+        bool useLocalInvocationIndex; // This may affect the implementation/compiler.
+        bool useDescriptor;           // Instead of a buffer address for the read buffer.
+
+        uint32_t getValueCount() const
+        {
+            return 64u;
+        }
+
+        uint32_t getWorkGroupSize() const
+        {
+            // We will launch a single workgroup with multiple invocations or multiple workgroups with a single
+            // invocation depending on useLocalInvocationIndex.
+            return (useLocalInvocationIndex ? getValueCount() : 1u);
+        }
+
+        uint32_t getWorkGroupCount() const
+        {
+            return (useLocalInvocationIndex ? 1u : getValueCount());
+        }
+    };
+
+    NullAddressReadInstance(Context &context, const Params &params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~NullAddressReadInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const Params m_params;
+};
+
+class NullAddressReadCase : public vkt::TestCase
+{
+public:
+    NullAddressReadCase(tcu::TestContext &testCtx, const std::string &name,
+                        const NullAddressReadInstance::Params &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~NullAddressReadCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new NullAddressReadInstance(context, m_params);
+    }
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+protected:
+    const NullAddressReadInstance::Params m_params;
+};
+
+void NullAddressReadCase::checkSupport(Context &context) const
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
+
+    if (!m_params.useDescriptor)
+        context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+
+    const auto &sparseProperties = context.getDeviceProperties().sparseProperties;
+    if (!sparseProperties.residencyNonResidentStrict)
+        TCU_THROW(NotSupportedError, "residencyNonResidentStrict not supported");
+}
+
+void NullAddressReadCase::initPrograms(vk::SourceCollections &dst) const
+{
+    const auto wgSize     = m_params.getWorkGroupSize();
+    const auto arrayIndex = (m_params.useLocalInvocationIndex ? "gl_LocalInvocationIndex" : "gl_WorkGroupID.x");
+
+    std::ostringstream bufferDecls;
+    std::string srcBufferExpr;
+    std::string dstBufferExpr;
+
+    if (m_params.useDescriptor)
+    {
+        bufferDecls << "layout (set=0, binding=0, std430) readonly buffer SrcBufferBlock {\n"
+                    << "    uint values[];\n"
+                    << "} srcBuffer;\n"
+                    << "\n"
+                    << "layout (set=0, binding=1, std430) writeonly buffer DstBufferBlock {\n"
+                    << "    uint values[];\n"
+                    << "} dstBuffer;\n"
+                    << "\n";
+        srcBufferExpr = "srcBuffer";
+        dstBufferExpr = "dstBuffer";
+    }
+    else
+    {
+        bufferDecls << "layout (buffer_reference) buffer srcBuffer;\n"
+                    << "layout (buffer_reference, buffer_reference_align=4, std430) readonly buffer srcBuffer\n"
+                    << "{\n"
+                    << "    uint values[];\n"
+                    << "};\n"
+                    << "\n"
+                    << "layout (buffer_reference) buffer dstBuffer;\n"
+                    << "layout (buffer_reference, buffer_reference_align=4, std430) writeonly buffer dstBuffer\n"
+                    << "{\n"
+                    << "    uint values[];\n"
+                    << "};\n"
+                    << "\n"
+                    << "layout(push_constant, std430) uniform push_cb\n"
+                    << "{\n"
+                    << "    uvec2 srcBufferAddress;\n"
+                    << "    uvec2 dstBufferAddress;\n"
+                    << "} pc;\n"
+                    << "\n";
+        srcBufferExpr = "srcBuffer(pc.srcBufferAddress)";
+        dstBufferExpr = "dstBuffer(pc.dstBufferAddress)";
+    }
+
+    std::ostringstream comp;
+    comp << "#version 450\n"
+         << "#extension GL_EXT_buffer_reference2 : require\n"
+         << "#extension GL_EXT_buffer_reference_uvec2 : require\n"
+         << "layout (local_size_x=" << wgSize << ", local_size_y=1, local_size_z=1) in;\n"
+         << "\n"
+         << bufferDecls.str() << "void main()\n"
+         << "{\n"
+         << "    const uint idx = " << arrayIndex << ";\n"
+         << "    " << dstBufferExpr << ".values[idx] = " << srcBufferExpr << ".values[idx];\n"
+         << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+tcu::TestStatus NullAddressReadInstance::iterate()
+{
+    const auto ctx        = m_context.getContextCommonData();
+    const auto valueCount = m_params.getValueCount();
+    const std::vector<uint32_t> emptyQueueFamilyIndexList;
+
+    // Destination buffer, filled with non-zero values.
+    std::vector<uint32_t> stagingValues(valueCount, std::numeric_limits<uint32_t>::max());
+    const auto bufferSize = static_cast<VkDeviceSize>(de::dataSize(stagingValues));
+
+    const auto dstBufferUsage = (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto dstBufferInfo  = vk::makeBufferCreateInfo(bufferSize, dstBufferUsage);
+    BufferWithMemory dstBuffer(ctx.vkd, ctx.device, ctx.allocator, dstBufferInfo, MemoryRequirement::DeviceAddress);
+
+    // Staging host-visible write buffer.
+    const auto stagingDstBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto stagingDstBufferInfo  = vk::makeBufferCreateInfo(bufferSize, stagingDstBufferUsage);
+    BufferWithMemory stagingDstBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingDstBufferInfo,
+                                      MemoryRequirement::HostVisible);
+    {
+        auto &alloc = stagingDstBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(stagingValues), de::dataSize(stagingValues));
+    }
+
+    // Source buffer, sparse and bound to the null address, which should result in reads returning zeros.
+    const auto srcBufferUsage = (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto srcBufferFlags = (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
+    const VkBufferCreateInfo srcBufferInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+        nullptr,
+        srcBufferFlags,
+        bufferSize, // Same size.
+        srcBufferUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+    };
+    const auto srcBuffer = createBuffer(ctx.vkd, ctx.device, &srcBufferInfo);
+    // IMPORTANT: note we do not bind any memory to this buffer.
+
+    // Pipeline, passing buffer addresses as push constants.
+    struct PushConstants
+    {
+        tcu::UVec2 srcAddress;
+        tcu::UVec2 dstAddress;
+    };
+
+    VkBufferDeviceAddressInfo srcAddressInfo = initVulkanStructure();
+    VkBufferDeviceAddressInfo dstAddressInfo = initVulkanStructure();
+
+    srcAddressInfo.buffer = *srcBuffer;
+    dstAddressInfo.buffer = *dstBuffer;
+
+    const auto srcBufferAddress = ctx.vkd.getBufferDeviceAddress(ctx.device, &srcAddressInfo);
+    const auto dstBufferAddress = ctx.vkd.getBufferDeviceAddress(ctx.device, &dstAddressInfo);
+
+    const auto shaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
+    const auto descType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+
+    const PushConstants pcValue = {
+        tcu::UVec2(static_cast<uint32_t>(srcBufferAddress & 0xFFFFFFFFull),
+                   static_cast<uint32_t>((srcBufferAddress >> 32) & 0xFFFFFFFFull)),
+        tcu::UVec2(static_cast<uint32_t>(dstBufferAddress & 0xFFFFFFFFull),
+                   static_cast<uint32_t>((dstBufferAddress >> 32) & 0xFFFFFFFFull)),
+    };
+    const auto pcSize     = DE_SIZEOF32(pcValue);
+    const auto pcRange    = makePushConstantRange(shaderStages, 0u, pcSize);
+    const auto pcRangePtr = (m_params.useDescriptor ? nullptr : &pcRange);
+
+    Move<VkDescriptorSetLayout> setLayout;
+
+    if (m_params.useDescriptor)
+    {
+        DescriptorSetLayoutBuilder setLayoutBuilder;
+        setLayoutBuilder.addSingleBinding(descType, shaderStages);
+        setLayoutBuilder.addSingleBinding(descType, shaderStages);
+        setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    }
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, pcRangePtr);
+    const auto compModule     = createShaderModule(ctx.vkd, ctx.device, m_context.getBinaryCollection().get("comp"));
+    const auto pipeline       = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compModule);
+
+    Move<VkDescriptorPool> descriptorPool;
+    Move<VkDescriptorSet> descriptorSet;
+
+    if (m_params.useDescriptor)
+    {
+        DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(descType, 2u);
+        descriptorPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+        const auto srcBufferDescInfo = makeDescriptorBufferInfo(*srcBuffer, 0ull, VK_WHOLE_SIZE);
+        const auto dstBufferDescInfo = makeDescriptorBufferInfo(*dstBuffer, 0ull, VK_WHOLE_SIZE);
+
+        DescriptorSetUpdateBuilder updateBuilder;
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                                  &srcBufferDescInfo);
+        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), descType,
+                                  &dstBufferDescInfo);
+        updateBuilder.update(ctx.vkd, ctx.device);
+    }
+
+    const auto bufferCopy = makeBufferCopy(0ull, 0ull, bufferSize);
+    const auto bindPoint  = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+    const CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        // Prepare destination buffer with non-zero contents.
+        ctx.vkd.cmdCopyBuffer(cmdBuffer, *stagingDstBuffer, *dstBuffer, 1u, &bufferCopy);
+
+        // Transfer before other writes in the shader.
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &barrier);
+    }
+    {
+        const auto wgCount = m_params.getWorkGroupCount();
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+        if (m_params.useDescriptor)
+            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
+                                          nullptr);
+        else
+            ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, shaderStages, 0u, pcSize, &pcValue);
+        ctx.vkd.cmdDispatch(cmdBuffer, wgCount, 1u, 1u);
+    }
+    {
+        // Copy values back to staging buffer.
+        const auto preCopy = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                 VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopy);
+
+        ctx.vkd.cmdCopyBuffer(cmdBuffer, *dstBuffer, *stagingDstBuffer, 1u, &bufferCopy);
+
+        const auto postCopy = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &postCopy);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    vk::submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    {
+        auto &alloc = stagingDstBuffer.getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, alloc);
+        memcpy(de::dataOrNull(stagingValues), alloc.getHostPtr(), de::dataSize(stagingValues));
+    }
+
+    bool fail = false;
+    auto &log = m_context.getTestContext().getLog();
+
+    for (uint32_t i = 0u; i < valueCount; ++i)
+    {
+        const auto &result = stagingValues.at(i);
+
+        if (result != 0u)
+        {
+            std::ostringstream msg;
+            msg << "Unexpected non-zero value found in output buffer at position " << i << ": " << result;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Invalid values found in output buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+#endif // CTS_USES_VULKANSC
+
+void checkSupportForMemoryCopyTest(Context &context, const TestFlags flags)
+{
+    // Check basic sparse functionality requirements first
+    checkSupport(context, flags);
+
+    // Now check for required extensions
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
+        TCU_THROW(NotSupportedError, "Extension VK_KHR_copy_memory_indirect not supported");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+        TCU_THROW(NotSupportedError, "Extension VK_KHR_buffer_device_address not supported");
+}
+
+// Custom TestCase that will enable required extensions
+class IndirectMemoryCopyTestCase : public TestCase
+{
+public:
+    IndirectMemoryCopyTestCase(tcu::TestContext &testCtx, const std::string &name, const TestFlags flags)
+        : TestCase(testCtx, name)
+        , m_flags(flags)
+    {
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const
+    {
+        initProgramsDrawGrid(programCollection, m_flags);
+    }
+
+    void checkSupport(Context &context) const
+    {
+        checkSupportForMemoryCopyTest(context, m_flags);
+    }
+
+    TestInstance *createInstance(Context &context) const
+    {
+        std::vector<std::string> requiredExtensions;
+        requiredExtensions.push_back("VK_KHR_copy_memory_indirect");
+        requiredExtensions.push_back("VK_KHR_buffer_device_address");
+
+        return new IndirectMemoryCopyTestInstance(context, m_flags);
+    }
+
+private:
+    const TestFlags m_flags;
+};
 
 //! Convenience function to create a TestCase based on a freestanding initPrograms and a TestInstance implementation
 template <typename TestInstanceT, typename Arg0>
@@ -1841,6 +2470,17 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
             addBufferSparseResidencyTests(subGroupDeviceGroups.get(), true);
             group->addChild(subGroupDeviceGroups.release());
         }
+
+        // Read and write sparse storage buffers in shaders
+        {
+            MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(parentGroup->getTestContext(), "read_write"));
+            const TestParams testParams = {TestFlags(TEST_FLAG_RESIDENCY | TEST_FLAG_NON_RESIDENT_STRICT),
+                                           BufferObjectType::BO_TYPE_STORAGE};
+            subGroup->addChild(createTestInstanceWithPrograms<BufferObjectTestInstance>(
+                subGroup->getTestContext(), "sparse_residency_non_resident_strict", initProgramsDrawWithBufferObject,
+                testParams));
+            group->addChild(subGroup.release());
+        }
         parentGroup->addChild(group.release());
     }
 
@@ -1850,15 +2490,17 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
 
         for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
         {
-            group->addChild(
-                createTestInstanceWithPrograms<UBOTestInstance>(group->getTestContext(), groups[groupNdx].name.c_str(),
-                                                                initProgramsDrawWithUBO, groups[groupNdx].flags));
+            const TestParams testParams = {groups[groupNdx].flags, BufferObjectType::BO_TYPE_UNIFORM};
+            group->addChild(createTestInstanceWithPrograms<BufferObjectTestInstance>(
+                group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawWithBufferObject, testParams));
         }
         for (int groupNdx = 0u; groupNdx < numGroupsIncludingNonResidentStrict; ++groupNdx)
         {
-            group->addChild(createTestInstanceWithPrograms<UBOTestInstance>(
-                group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(), initProgramsDrawWithUBO,
-                groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS));
+            const TestParams testParams = {groups[groupNdx].flags | TEST_FLAG_ENABLE_DEVICE_GROUPS,
+                                           BufferObjectType::BO_TYPE_UNIFORM};
+            group->addChild(createTestInstanceWithPrograms<BufferObjectTestInstance>(
+                group->getTestContext(), (devGroupPrefix + groups[groupNdx].name).c_str(),
+                initProgramsDrawWithBufferObject, testParams));
         }
         parentGroup->addChild(group.release());
     }
@@ -1935,6 +2577,46 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
         group->addChild(createTestInstanceWithPrograms<IndirectDispatchTestInstance>(
             group->getTestContext(), std::string("sparse_residency"), initIndirectDispatchProgram,
             TestFlags(TEST_FLAG_RESIDENCY)));
+        parentGroup->addChild(group.release());
+    }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        auto &testCtx = parentGroup->getTestContext();
+        de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+
+        for (const auto useLocalInvocationIndex : {false, true})
+            for (const auto useDescriptors : {false, true})
+            {
+                const NullAddressReadInstance::Params params{
+                    useLocalInvocationIndex,
+                    useDescriptors,
+                };
+                const auto testName = std::string("null_address_read") +
+                                      (useLocalInvocationIndex ? "_local_inv_idx" : "") +
+                                      (useDescriptors ? "_descriptors" : "");
+
+                miscGroup->addChild(new NullAddressReadCase(testCtx, testName, params));
+            }
+
+        parentGroup->addChild(miscGroup.release());
+    }
+#endif // CTS_USES_VULKANSC
+
+    // Memory copy indirect
+    {
+        MovePtr<tcu::TestCaseGroup> group(
+            new tcu::TestCaseGroup(parentGroup->getTestContext(), "memory_copy_indirect"));
+
+        for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+        {
+            // Add the required extensions flags
+            TestFlags testFlags = groups[groupNdx].flags | TEST_FLAG_USE_COPY_INDIRECT | TEST_FLAG_USE_BUFFER_ADDRESS;
+
+            group->addChild(createTestInstanceWithPrograms<IndirectMemoryCopyTestInstance>(
+                group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawGrid, testFlags));
+        }
+
         parentGroup->addChild(group.release());
     }
 }

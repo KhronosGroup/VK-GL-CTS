@@ -2167,7 +2167,7 @@ void beginCommandBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, Vk
 
         pInheritanceInfo.pNext = &inheritanceRenderingInfo;
 
-        if (subpassIndex > 0)
+        if (pRenderPassInfo->getSubpasses().size() > 1)
         {
             prepareAttachmentRemapping(subpass, allAttachments, colorAttachmentIndices, colorAttachmentLocations,
                                        colorAttachmentInputIndices, localDepthAttachmentIndex,
@@ -3515,7 +3515,7 @@ void pushDynamicRenderingCommands(const DeviceInterface &vk, VkCommandBuffer com
 
             if (subpassRenderers[subpassNdx]->isSecondary())
             {
-                if (subpassNdx > 0)
+                if (subpassRenderers.size() > 1)
                 {
                     std::vector<uint32_t> colorAttachmentIndices;
                     std::vector<VkFormat> colorAttachmentFormats;
@@ -8612,6 +8612,22 @@ tcu::TestCaseGroup *createDynamicRenderingTests(tcu::TestContext &testCtx, const
         })));
 
     return dynamicRenderingGroup.release();
+}
+
+void createChildren(tcu::TestCaseGroup *group)
+{
+    tcu::TestContext &testCtx = group->getTestContext();
+
+    group->addChild(createRenderPassTests(testCtx, "renderpass1"));
+    group->addChild(createRenderPass2Tests(testCtx, "renderpass2"));
+#ifndef CTS_USES_VULKANSC
+    group->addChild(createDynamicRenderingTests(testCtx, "dynamic_rendering"));
+#endif
+}
+
+tcu::TestCaseGroup *createRenderPassesTests(tcu::TestContext &testCtx, const std::string &name)
+{
+    return createTestGroup(testCtx, name, createChildren);
 }
 
 } // namespace vkt
