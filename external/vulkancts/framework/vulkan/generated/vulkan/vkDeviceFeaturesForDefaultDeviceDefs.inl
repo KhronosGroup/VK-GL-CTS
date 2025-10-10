@@ -180,6 +180,7 @@ const VkPhysicalDeviceShaderExpectAssumeFeatures&						getShaderExpectAssumeFeat
 const VkPhysicalDeviceShaderFloat16Int8Features&						getShaderFloat16Int8Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderFloat16Int8Features>();						}
 const VkPhysicalDeviceShaderFloat8FeaturesEXT&							getShaderFloat8FeaturesEXT							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderFloat8FeaturesEXT>();						}
 const VkPhysicalDeviceShaderFloatControls2Features&						getShaderFloatControls2Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderFloatControls2Features>();					}
+const VkPhysicalDeviceShaderFmaFeaturesKHR&								getShaderFmaFeatures								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderFmaFeaturesKHR>();							}
 const VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>();				}
 const VkPhysicalDeviceShaderImageFootprintFeaturesNV&					getShaderImageFootprintFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderImageFootprintFeaturesNV>();				}
 const VkPhysicalDeviceShaderIntegerDotProductFeatures&					getShaderIntegerDotProductFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceShaderIntegerDotProductFeatures>();				}

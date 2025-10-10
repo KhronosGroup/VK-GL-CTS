@@ -49,7 +49,7 @@ sys.path.insert(0, vulkanObjectPath)
 
 from reg import Registry
 from base_generator import BaseGenerator, BaseGeneratorOptions, SetTargetApiName, SetOutputDirectory, SetMergedApiNames, OutputGenerator
-from vulkan_object import Queues, Struct, Member, Enum, EnumField, Extension
+from vulkan_object import Struct, Member, Enum, EnumField, Extension
 
 # list of KHR and EXT extensions that are tested by CTS and that were not promoted to core
 # (core extensions are implicitly in that list because if they are core we know that tests
@@ -1064,7 +1064,7 @@ class FuncPtrInterfaceImplGenerator(BaseGenerator):
     def generate(self):
         # populate compute only forbidden commands
         for fun in self.vk.commands.values():
-            if fun.queues & Queues.GRAPHICS and not (fun.queues & Queues.COMPUTE):
+            if "VK_QUEUE_GRAPHICS_BIT" in fun.queues and not ("VK_QUEUE_COMPUTE_BIT" in fun.queues):
                 # remove the 'vk' prefix and change the first character of the remaining string to lowercase
                 commandName = fun.name[2:3].lower() + fun.name[3:]
                 computeOnlyForbiddenCommands.append(commandName)

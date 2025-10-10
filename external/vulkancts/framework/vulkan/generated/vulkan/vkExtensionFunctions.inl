@@ -1219,6 +1219,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_fma")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_integer_dot_product")
 	{
 		return;
@@ -3483,6 +3487,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_fma")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_shader_integer_dot_product")
 	{
 		return;
@@ -4336,6 +4344,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_shader_relaxed_extended_instruction",
 	"VK_KHR_maintenance7",
 	"VK_KHR_maintenance8",
+	"VK_KHR_shader_fma",
 	"VK_KHR_maintenance9",
 	"VK_KHR_video_maintenance2",
 	"VK_KHR_depth_clamp_zero_one",

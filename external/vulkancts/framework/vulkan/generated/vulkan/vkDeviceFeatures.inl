@@ -386,6 +386,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceShaderCoreBuiltinsFeaturesAR
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD>(VkPhysicalDeviceShaderEarlyAndLateFragmentTestsFeaturesAMD&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderEnqueueFeaturesAMDX>(VkPhysicalDeviceShaderEnqueueFeaturesAMDX&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderFloat8FeaturesEXT>(VkPhysicalDeviceShaderFloat8FeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderFmaFeaturesKHR>(VkPhysicalDeviceShaderFmaFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>(VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderImageFootprintFeaturesNV>(VkPhysicalDeviceShaderImageFootprintFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL>(VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL&, const AllFeaturesBlobs&) {}
@@ -603,6 +604,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderExpectAssumeFeature
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderFloat16Int8Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT16_INT8_FEATURES, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderFloat8FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT, VK_EXT_SHADER_FLOAT8_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderFloatControls2Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT_CONTROLS_2_FEATURES, VK_KHR_SHADER_FLOAT_CONTROLS_2_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderFmaFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FMA_FEATURES_KHR, VK_KHR_SHADER_FMA_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_ATOMIC_INT64_FEATURES_EXT, VK_EXT_SHADER_IMAGE_ATOMIC_INT64_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderImageFootprintFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_IMAGE_FOOTPRINT_FEATURES_NV, VK_NV_SHADER_IMAGE_FOOTPRINT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderIntegerDotProductFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_FEATURES, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME}; }
@@ -835,6 +837,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderFloat16Int8Features>, VK_KHR_SHADER_FLOAT16_INT8_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderFloat8FeaturesEXT>, VK_EXT_SHADER_FLOAT8_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderFloatControls2Features>, VK_KHR_SHADER_FLOAT_CONTROLS_2_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderFmaFeaturesKHR>, VK_KHR_SHADER_FMA_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT>, VK_EXT_SHADER_IMAGE_ATOMIC_INT64_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderImageFootprintFeaturesNV>, VK_NV_SHADER_IMAGE_FOOTPRINT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderIntegerDotProductFeatures>, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME },

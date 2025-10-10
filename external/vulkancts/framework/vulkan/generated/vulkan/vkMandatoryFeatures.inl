@@ -891,6 +891,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_float_controls2"))
 		addFeatures(&physicalDeviceShaderFloatControls2Features);
 
+	// VkPhysicalDeviceShaderFmaFeaturesKHR for ext [VK_KHR_shader_fma]
+	vk::VkPhysicalDeviceShaderFmaFeaturesKHR physicalDeviceShaderFmaFeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_fma"))
+		addFeatures(&physicalDeviceShaderFmaFeaturesKHR);
+
 	// VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT for ext [VK_EXT_shader_image_atomic_int64]
 	vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT physicalDeviceShaderImageAtomicInt64FeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_image_atomic_int64"))

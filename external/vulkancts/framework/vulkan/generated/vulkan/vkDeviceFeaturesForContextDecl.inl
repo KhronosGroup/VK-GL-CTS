@@ -180,6 +180,7 @@ const vk::VkPhysicalDeviceShaderExpectAssumeFeatures&						getShaderExpectAssume
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&						getShaderFloat16Int8Features						(void) const;
 const vk::VkPhysicalDeviceShaderFloat8FeaturesEXT&							getShaderFloat8FeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceShaderFloatControls2Features&						getShaderFloatControls2Features						(void) const;
+const vk::VkPhysicalDeviceShaderFmaFeaturesKHR&								getShaderFmaFeatures								(void) const;
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&					getShaderImageFootprintFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					getShaderIntegerDotProductFeatures					(void) const;

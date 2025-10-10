@@ -4691,6 +4691,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_KHR_shader_float16_int8"),
 	std::make_tuple(1, 0, "VK_KHR_shader_float_controls"),
 	std::make_tuple(1, 1, "VK_KHR_shader_float_controls2"),
+	std::make_tuple(1, 0, "VK_KHR_shader_fma"),
 	std::make_tuple(1, 0, "VK_KHR_shader_integer_dot_product"),
 	std::make_tuple(1, 1, "VK_KHR_shader_maximal_reconvergence"),
 	std::make_tuple(1, 0, "VK_KHR_shader_non_semantic_info"),

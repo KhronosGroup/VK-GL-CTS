@@ -8168,6 +8168,15 @@ struct VkPhysicalDeviceShaderFloatControls2Features
 	VkBool32		shaderFloatControls2;
 };
 
+struct VkPhysicalDeviceShaderFmaFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFmaFloat16;
+	VkBool32		shaderFmaFloat32;
+	VkBool32		shaderFmaFloat64;
+};
+
 struct VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT
 {
 	VkStructureType	sType;

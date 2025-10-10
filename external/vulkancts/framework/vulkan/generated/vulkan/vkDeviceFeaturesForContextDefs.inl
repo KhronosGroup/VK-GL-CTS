@@ -180,6 +180,7 @@ const vk::VkPhysicalDeviceShaderExpectAssumeFeatures&						Context::getShaderExp
 const vk::VkPhysicalDeviceShaderFloat16Int8Features&						Context::getShaderFloat16Int8Features						(void) const { return m_device->getShaderFloat16Int8Features();						}
 const vk::VkPhysicalDeviceShaderFloat8FeaturesEXT&							Context::getShaderFloat8FeaturesEXT							(void) const { return m_device->getShaderFloat8FeaturesEXT();						}
 const vk::VkPhysicalDeviceShaderFloatControls2Features&						Context::getShaderFloatControls2Features					(void) const { return m_device->getShaderFloatControls2Features();					}
+const vk::VkPhysicalDeviceShaderFmaFeaturesKHR&								Context::getShaderFmaFeatures								(void) const { return m_device->getShaderFmaFeatures();								}
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				Context::getShaderImageAtomicInt64FeaturesEXT				(void) const { return m_device->getShaderImageAtomicInt64FeaturesEXT();				}
 const vk::VkPhysicalDeviceShaderImageFootprintFeaturesNV&					Context::getShaderImageFootprintFeatures					(void) const { return m_device->getShaderImageFootprintFeatures();					}
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					Context::getShaderIntegerDotProductFeatures					(void) const { return m_device->getShaderIntegerDotProductFeatures();				}

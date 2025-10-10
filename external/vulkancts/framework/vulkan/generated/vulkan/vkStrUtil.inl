@@ -1465,6 +1465,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderExpectAss
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloat16Int8Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloat8FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFloatControls2Features& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderFmaFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderImageFootprintFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceShaderIntegerDotProductFeatures& value);
