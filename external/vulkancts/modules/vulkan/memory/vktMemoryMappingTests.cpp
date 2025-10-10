@@ -1554,6 +1554,12 @@ public:
 
             for (uint32_t memoryTypeNdx = 0; memoryTypeNdx < memoryProperties.memoryTypeCount; memoryTypeNdx++)
             {
+                // VUID-vkAllocateMemory-deviceCoherentMemory-02790
+                if ((memoryProperties.memoryTypes[memoryTypeNdx].propertyFlags &
+                     VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD) &&
+                    !context.getCoherentMemoryFeaturesAMD().deviceCoherentMemory)
+                    continue;
+
                 if (memoryProperties.memoryTypes[memoryTypeNdx].propertyFlags & VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT)
                     memoryTypes[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].push_back(
                         MemoryType(memoryTypeNdx, memoryProperties.memoryTypes[memoryTypeNdx]));

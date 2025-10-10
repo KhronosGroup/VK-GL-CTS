@@ -234,12 +234,14 @@
         },
         {
             "groups": [
-                "dEQP-VK.query_pool.statistics_query.*.*_with_no_color_attachments"
+                "dEQP-VK.query_pool.statistics_query.*.*_with_no_color_attachments",
+                "dEQP-VK.shader_object.rendering.color_attachment_count_0.*.extra_output_*"
             ],
             "messages": [
-                "Undefined-Value-ShaderOutputNotConsumed"
+                "Undefined-Value-ShaderOutputNotConsumed",
+                "Undefined-Value-ShaderOutputNotConsumed-DynamicRendering"
             ],
-            "description": "Query pool statistics tests intentionally create pipelines with no color attachments while fragment shaders still write to output"
+            "description": "Tests intentionally create pipelines with no color attachments while fragment shaders still write to output"
         },
         {
             "groups": [
@@ -321,6 +323,26 @@
                 "VUID-vkGetRayTracingCaptureReplayShaderGroupHandlesKHR-pipeline-03607"
             ],
             "description": "Validation layer bug when checking VK_PIPELINE_CREATE_RAY_TRACING_SHADER_GROUP_HANDLE_CAPTURE_REPLAY_BIT_KHR with VK_KHR_maintenance5. When VkPipelineCreateFlags2CreateInfoKHR is used in the pNext chain, the spec states its flags field is used INSTEAD of VkRayTracingPipelineCreateInfoKHR::flags. The validation layers incorrectly check the base flags field (which is set to 0) rather than checking the VkPipelineCreateFlags2CreateInfoKHR::flags in the pNext chain where the actual flags are stored"
+        },
+        {
+            "groups": [
+                "dEQP-VK.sparse_resources.buffer.misc.null_address_read*"
+            ],
+            "messages": [
+                "VUID-vkFreeCommandBuffers-pCommandBuffers-00047"
+            ],
+            "description": "Test intentionally reads from sparse buffers with no memory bound. On some drivers this causes device loss, leaving command buffers in pending state during cleanup"
+        },
+        {
+            "groups": [
+                "dEQP-VK.renderpasses.dynamic_rendering.*.unused_attachments.bad_formats.*"
+            ],
+            "messages": [
+                "VUID-VkGraphicsPipelineCreateInfo-renderPass-06585",
+                "VUID-VkGraphicsPipelineCreateInfo-renderPass-06586",
+                "VUID-VkGraphicsPipelineCreateInfo-renderPass-06579"
+            ],
+            "description": "TODO report validation layers issue when handeling VK_EXT_dynamic_rendering_unused_attachments extenion. Tests that intentionally use wrong  formats in VkPipelineRenderingCreateInfo when the corresponding image view handles are VK_NULL_HANDLE to verify implementations handle unused attachments correctly"
         }
     ]
 }

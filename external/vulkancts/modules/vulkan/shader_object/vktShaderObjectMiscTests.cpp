@@ -1427,9 +1427,22 @@ tcu::TestStatus ShaderObjectStateInstance::iterate(void)
             m_params.depthClip                                           // VkBool32 depthClipEnable;
         };
 
+        // VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639
+        const vk::VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterizationState = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, // VkStructureType sType;
+            m_params.depthClip ? &depthClipState : nullptr,                                  // const void* pNext;
+            (vk::VkPipelineRasterizationConservativeStateCreateFlagsEXT)0u, // VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
+            m_params.conservativeRasterizationOverestimate ?
+                vk::VK_CONSERVATIVE_RASTERIZATION_MODE_OVERESTIMATE_EXT :
+                vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT, // VkConservativeRasterizationModeEXT conservativeRasterizationMode;
+            0.0f                                                     // float extraPrimitiveOverestimationSize;
+        };
+
         const vk::VkPipelineRasterizationStateCreateInfo rasterizationState = {
             vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType sType;
-            m_params.depthClip ? &depthClipState : nullptr,                 // const void* pNext;
+            m_params.conservativeRasterization ?
+                static_cast<const void *>(&conservativeRasterizationState) :
+                (m_params.depthClip ? static_cast<const void *>(&depthClipState) : nullptr), // const void* pNext;
             (vk::VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
             m_params.depthClamp,                            // VkBool32 depthClampEnable;
             m_params.rasterizerDiscardEnable,               // VkBool32 rasterizerDiscardEnable;
