@@ -2632,6 +2632,7 @@ tcu::TestStatus runTest(Context &context, Params params)
         auto &alloc = vtxBuffer.getAllocation();
         void *data  = alloc.getHostPtr();
         memcpy(data, de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
     const VkDeviceSize vtxBufferOffset = 0ull;
 

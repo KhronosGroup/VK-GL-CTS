@@ -3999,7 +3999,9 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
 
         if (!depthAndStencil)
         {
-            const vk::VkBufferImageCopy bufferImageCopy = {
+            const auto preBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                                  **srcBuffer, 0u, bufferSize);
+            const VkBufferImageCopy bufferImageCopy{
                 0u,                // VkDeviceSize bufferOffset;
                 0u,                // uint32_t bufferRowLength;
                 0u,                // uint32_t bufferImageHeight;
@@ -4008,6 +4010,8 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
                 imageSize          // VkExtent3D imageExtent;
             };
             vk::beginCommandBuffer(vk, *cmdBuffer);
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &preBufferBarrier, 0, nullptr);
             vk.cmdCopyBufferToImage(*cmdBuffer, **srcBuffer, **image2, m_params.dstLayout, 1u, &bufferImageCopy);
             vk::endCommandBuffer(vk, *cmdBuffer);
             submitCommandsAndWait(vk, device, queue, *cmdBuffer);
