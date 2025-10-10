@@ -375,6 +375,7 @@ tcu::TestStatus RemainingArrayLayersTestInstance::iterate(void)
     vk::endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
     tcu::ConstPixelBufferAccess resultBuffer =
         tcu::ConstPixelBufferAccess(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), render_size, render_size, instanceCount,
                                     (const void *)colorOutputBuffer->getAllocation().getHostPtr());

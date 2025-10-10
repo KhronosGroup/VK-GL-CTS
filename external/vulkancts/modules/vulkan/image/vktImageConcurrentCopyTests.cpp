@@ -459,6 +459,7 @@ tcu::TestStatus ConcurrentCopyTestInstance::iterate(void)
     vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
     auto &dstBufferAlloc = dstBuffer->getAllocation();
+    invalidateAlloc(vk, device, dstBufferAlloc);
     if (memcmp(srcBufferAlloc.getHostPtr(), dstBufferAlloc.getHostPtr(), bufferSize) != 0)
     {
         uint8_t remainingFails = 10;
@@ -511,6 +512,11 @@ void ConcurrentCopyTestCase::checkSupport(vkt::Context &context) const
     const auto &vki           = context.getInstanceInterface();
     const auto physicalDevice = context.getPhysicalDevice();
 
+#ifndef CTS_USES_VULKANSC
+    if (m_parameters.hostCopy)
+        context.requireDeviceFunctionality("VK_EXT_host_image_copy");
+#endif
+
     vk::VkImageUsageFlags usage = vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.hostCopy)
@@ -529,8 +535,6 @@ void ConcurrentCopyTestCase::checkSupport(vkt::Context &context) const
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.hostCopy)
     {
-        context.requireDeviceFunctionality("VK_EXT_host_image_copy");
-
         const vk::VkImageLayout requiredDstLayout =
             m_parameters.read ? vk::VK_IMAGE_LAYOUT_GENERAL : vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 

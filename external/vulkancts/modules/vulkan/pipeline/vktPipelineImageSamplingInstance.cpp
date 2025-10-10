@@ -354,6 +354,18 @@ void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstancePa
     {
         TCU_THROW(NotSupportedError, "formatRgba10x6WithoutYCbCrSampler not supported");
     }
+
+    bool is_format_exception_for_opaque_black =
+        params.imageFormat == VK_FORMAT_R4G4B4A4_UNORM_PACK16 || params.imageFormat == VK_FORMAT_B4G4R4A4_UNORM_PACK16;
+    bool uses_border_color = params.samplerParams.addressModeU == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER ||
+                             params.samplerParams.addressModeV == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER ||
+                             params.samplerParams.addressModeW == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    bool uses_opaque_black = params.samplerParams.borderColor == VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK ||
+                             params.samplerParams.borderColor == VK_BORDER_COLOR_INT_OPAQUE_BLACK;
+
+    if (is_format_exception_for_opaque_black && uses_border_color && uses_opaque_black &&
+        !context.getCustomBorderColorFeaturesEXT().customBorderColorWithoutFormat)
+        TCU_THROW(NotSupportedError, "customBorderColorWithoutFormat feature is not supported");
 }
 
 ImageSamplingInstance::ImageSamplingInstance(Context &context, ImageSamplingInstanceParams params)
