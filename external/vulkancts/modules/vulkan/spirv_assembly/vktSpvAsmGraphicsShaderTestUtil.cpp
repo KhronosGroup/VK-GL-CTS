@@ -3152,6 +3152,10 @@ void defaultCheckSupport(Context &context, InstanceContext instance)
 #ifndef CTS_USES_VULKANSC
     if (instance.resources.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+    if (instance.resources.usesLongVector && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "longVector not supported");
+    }
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
     {

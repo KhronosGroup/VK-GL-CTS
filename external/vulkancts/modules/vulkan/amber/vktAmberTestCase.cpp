@@ -144,6 +144,8 @@ static bool isFeatureSupported(const vkt::Context &ctx, const std::string &featu
         return ctx.getBufferDeviceAddressFeatures().bufferDeviceAddress;
     if (feature == "DepthClampZeroOneFeatures.depthClampZeroOne")
         return ctx.getDepthClampZeroOneFeatures().depthClampZeroOne;
+    if (feature == "ShaderLongVectorFeaturesEXT.longVector")
+        return ctx.getShaderLongVectorFeaturesEXT().longVector;
 
     std::string message = std::string("Unexpected feature name: ") + feature;
     TCU_THROW(InternalError, message.c_str());

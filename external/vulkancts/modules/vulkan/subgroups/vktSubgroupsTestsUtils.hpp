@@ -62,6 +62,16 @@ typedef bool (*CheckResultFragment)(const void *internalData, std::vector<const 
 typedef bool (*CheckResultCompute)(const void *internalData, std::vector<const void *> datas,
                                    const uint32_t numWorkgroups[3], const uint32_t localSize[3], uint32_t subgroupSize);
 
+struct VecType
+{
+    glu::DataType type;
+    uint32_t components;
+
+    VecType(glu::DataType t, uint32_t c) : type(t), components(c)
+    {
+    }
+};
+
 // A struct to represent input data to a shader
 struct SSBOData
 {
@@ -88,7 +98,7 @@ struct SSBOData
     SSBOData()
         : initializeType(InitializeNone)
         , layout(LayoutStd140)
-        , format(vk::VK_FORMAT_UNDEFINED)
+        , vecType(VecType{glu::TYPE_UINT, 1})
         , numElements(0)
         , bindingType(BindingSSBO)
         , binding(0u)
@@ -96,12 +106,12 @@ struct SSBOData
     {
     }
 
-    SSBOData(InputDataInitializeType initializeType_, InputDataLayoutType layout_, vk::VkFormat format_,
+    SSBOData(InputDataInitializeType initializeType_, InputDataLayoutType layout_, VecType vecType_,
              vk::VkDeviceSize numElements_, BindingType bindingType_ = BindingSSBO, uint32_t binding_ = 0u,
              vk::VkShaderStageFlags stages_ = static_cast<vk::VkShaderStageFlags>(0u))
         : initializeType(initializeType_)
         , layout(layout_)
-        , format(format_)
+        , vecType(vecType_)
         , numElements(numElements_)
         , bindingType(bindingType_)
         , binding(binding_)
@@ -121,9 +131,18 @@ struct SSBOData
         return (bindingType == BindingUBO);
     }
 
+    vk::VkFormat format() const
+    {
+        if (vecType.components == 1 && vecType.type == glu::TYPE_UINT)
+        {
+            return vk::VK_FORMAT_R32_UINT;
+        }
+        TCU_THROW(InternalError, "Unhandled format");
+    }
+
     InputDataInitializeType initializeType;
     InputDataLayoutType layout;
-    vk::VkFormat format;
+    VecType vecType;
     vk::VkDeviceSize numElements;
     BindingType bindingType;
     uint32_t binding;
@@ -147,12 +166,12 @@ std::string getSubgroupFeatureName(vk::VkSubgroupFeatureFlagBits bit);
 void addNoSubgroupShader(vk::SourceCollections &programCollection);
 
 void initStdFrameBufferPrograms(vk::SourceCollections &programCollection, const vk::ShaderBuildOptions &buildOptions,
-                                vk::VkShaderStageFlags shaderStage, vk::VkFormat format, bool gsPointSize,
+                                vk::VkShaderStageFlags shaderStage, VecType vecType, bool gsPointSize,
                                 const std::string &extHeader, const std::string &testSrc, const std::string &helperStr,
                                 const std::vector<std::string> &declarations = std::vector<std::string>());
 
 void initStdPrograms(vk::SourceCollections &programCollection, const vk::ShaderBuildOptions &buildOptions,
-                     vk::VkShaderStageFlags shaderStage, vk::VkFormat format, bool gsPointSize,
+                     vk::VkShaderStageFlags shaderStage, VecType vecType, bool gsPointSize,
                      const std::string &extHeader, const std::string &testSrc, const std::string &helperStr,
                      const std::vector<std::string> &declarations = std::vector<std::string>(),
                      const bool avoidHelperInvocations = false, const std::string &tempRes = "  uint tempRes;\n");
@@ -169,7 +188,7 @@ bool isFragmentSSBOSupportedForDevice(Context &context);
 
 bool isVertexSSBOSupportedForDevice(Context &context);
 
-bool isFormatSupportedForDevice(Context &context, vk::VkFormat format);
+bool isFormatSupportedForDevice(Context &context, VecType vecType);
 
 bool isInt64SupportedForDevice(Context &context);
 
@@ -183,18 +202,19 @@ bool isSubgroupBroadcastDynamicIdSupported(Context &context);
 
 bool isSubgroupRotateSpecVersionValid(Context &context);
 
-std::string getFormatNameForGLSL(vk::VkFormat format);
+std::string getFormatNameForGLSL(VecType vecType);
+std::string getFormatNameForTest(VecType vecType);
 
-std::string getAdditionalExtensionForFormat(vk::VkFormat format);
+std::string getAdditionalExtensionForFormat(VecType vecType);
 
-const std::vector<vk::VkFormat> getAllFormats();
+const std::vector<VecType> getAllFormats();
 
-bool isFormatSigned(vk::VkFormat format);
-bool isFormatUnsigned(vk::VkFormat format);
-bool isFormatFloat(vk::VkFormat format);
-bool isFormatBool(vk::VkFormat format);
-bool isFormat8bitTy(vk::VkFormat format);
-bool isFormat16BitTy(vk::VkFormat format);
+bool isFormatSigned(VecType vecType);
+bool isFormatUnsigned(VecType vecType);
+bool isFormatFloat(VecType vecType);
+bool isFormatBool(VecType vecType);
+bool isFormat8bitTy(VecType vecType);
+bool isFormat16BitTy(VecType vecType);
 
 void addGeometryShadersFromTemplate(const std::string &glslTemplate, const vk::ShaderBuildOptions &options,
                                     vk::GlslSourceCollection &collection);
@@ -323,7 +343,7 @@ tcu::TestStatus makeMeshTestRequiredSubgroupSize(Context &context, vk::VkFormat 
 
 void supportedCheckShader(Context &context, const vk::VkShaderStageFlags shaderStage);
 
-const std::vector<vk::VkFormat> getAllRayTracingFormats();
+const std::vector<VecType> getAllRayTracingFormats();
 
 void addRayTracingNoSubgroupShader(vk::SourceCollections &programCollection);
 

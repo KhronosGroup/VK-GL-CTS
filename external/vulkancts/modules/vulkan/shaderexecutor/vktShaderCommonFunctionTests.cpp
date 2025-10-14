@@ -355,8 +355,27 @@ std::ostream &operator<<(std::ostream &str, const VarValue &varValue)
 
 static std::string getCommonFuncCaseName(glu::DataType baseType, glu::Precision precision)
 {
-    const bool isDouble = glu::isDataTypeDoubleOrDVec(baseType);
-    return string(glu::getDataTypeName(baseType)) + (isDouble ? "" : getPrecisionPostfix(precision)) + "_compute";
+    const bool isDouble  = glu::isDataTypeDoubleOrDVec(baseType);
+    std::string baseName = glu::getDataTypeName(baseType);
+    switch (baseType)
+    {
+    case glu::TYPE_INT_VEC5:
+        baseName = "ivec5";
+        break;
+    case glu::TYPE_UINT_VEC5:
+        baseName = "uvec5";
+        break;
+    case glu::TYPE_FLOAT_VEC5:
+        baseName = "vec5";
+        break;
+    case glu::TYPE_DOUBLE_VEC5:
+        baseName = "dvec5";
+        break;
+    default:
+        baseName = glu::getDataTypeName(baseType);
+        break;
+    }
+    return baseName + (isDouble ? "" : getPrecisionPostfix(precision)) + "_compute";
 }
 
 template <class TestClass>
@@ -372,7 +391,12 @@ static void addFunctionCases(tcu::TestCaseGroup *parent, const char *functionNam
         const int lowestPrec  = (isDouble ? glu::PRECISION_LAST : glu::PRECISION_MEDIUMP);
         const int highestPrec = (isDouble ? glu::PRECISION_LAST : glu::PRECISION_HIGHP);
 
-        for (int vecSize = 1; vecSize <= 4; vecSize++)
+#ifndef CTS_USES_VULKANSC
+        int maxVecSize = 5;
+#else
+        int maxVecSize = 4;
+#endif
+        for (int vecSize = 1; vecSize <= maxVecSize; vecSize++)
         {
             for (int prec = lowestPrec; prec <= highestPrec; prec++)
             {
@@ -390,12 +414,14 @@ class CommonFunctionCase : public TestCase
 public:
     CommonFunctionCase(tcu::TestContext &testCtx, const char *name);
     ~CommonFunctionCase(void);
-    virtual void initPrograms(vk::SourceCollections &programCollection) const
+    void initPrograms(vk::SourceCollections &programCollection) const override
     {
         generateSources(glu::SHADERTYPE_COMPUTE, m_spec, programCollection);
     }
 
-    virtual TestInstance *createInstance(Context &context) const = 0;
+    TestInstance *createInstance(Context &context) const override = 0;
+
+    void checkSupport(Context &context) const override;
 
 protected:
     CommonFunctionCase(const CommonFunctionCase &);
@@ -413,6 +439,27 @@ CommonFunctionCase::CommonFunctionCase(tcu::TestContext &testCtx, const char *na
 
 CommonFunctionCase::~CommonFunctionCase(void)
 {
+}
+
+void CommonFunctionCase::checkSupport(Context &context) const
+{
+    DE_UNREF(context);
+#ifndef CTS_USES_VULKANSC
+    bool usesVec5Types = false;
+    for (const auto &symbol : m_spec.inputs)
+    {
+        usesVec5Types = usesVec5Types || (getDataTypeScalarSize(symbol.varType.getBasicType()) == 5);
+    }
+
+    for (const auto &symbol : m_spec.outputs)
+    {
+        usesVec5Types = usesVec5Types || (getDataTypeScalarSize(symbol.varType.getBasicType()) == 5);
+    }
+    if (usesVec5Types && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "longVector not supported");
+    }
+#endif
 }
 
 // CommonFunctionTestInstance
@@ -781,12 +828,13 @@ public:
         m_spec.source = "out0 = isnan(in0);";
     }
 
-    void checkSupport(Context &context) const
+    void checkSupport(Context &context) const override
     {
         checkTypeSupport(context, m_spec.inputs[0].varType.getBasicType());
+        CommonFunctionCase::checkSupport(context);
     }
 
-    TestInstance *createInstance(Context &ctx) const
+    TestInstance *createInstance(Context &ctx) const override
     {
         return new IsnanCaseInstance(ctx, m_spec, m_numValues, getName());
     }
@@ -868,12 +916,13 @@ public:
         m_spec.source = "out0 = isinf(in0);";
     }
 
-    void checkSupport(Context &context) const
+    void checkSupport(Context &context) const override
     {
         checkTypeSupport(context, m_spec.inputs[0].varType.getBasicType());
+        CommonFunctionCase::checkSupport(context);
     }
 
-    TestInstance *createInstance(Context &ctx) const
+    TestInstance *createInstance(Context &ctx) const override
     {
         return new IsinfCaseInstance(ctx, m_spec, m_numValues, getName());
     }
@@ -1068,7 +1117,12 @@ void ShaderCommonFunctionTests::init(void)
         addChild(intGroup);
         addChild(uintGroup);
 
-        for (int vecSize = 1; vecSize < 4; vecSize++)
+#ifndef CTS_USES_VULKANSC
+        int maxVecSize = 5;
+#else
+        int maxVecSize = 4;
+#endif
+        for (int vecSize = 1; vecSize <= maxVecSize; vecSize++)
         {
             const glu::DataType intType  = vecSize > 1 ? glu::getDataTypeIntVec(vecSize) : glu::TYPE_INT;
             const glu::DataType uintType = vecSize > 1 ? glu::getDataTypeUintVec(vecSize) : glu::TYPE_UINT;

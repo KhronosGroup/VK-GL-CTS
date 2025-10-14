@@ -7062,6 +7062,20 @@ struct VkPhysicalDeviceShaderIntegerDotProductProperties
 	VkBool32		integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated;
 };
 
+struct VkPhysicalDeviceShaderLongVectorFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		longVector;
+};
+
+struct VkPhysicalDeviceShaderLongVectorPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxVectorComponents;
+};
+
 struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR
 {
 	VkStructureType	sType;

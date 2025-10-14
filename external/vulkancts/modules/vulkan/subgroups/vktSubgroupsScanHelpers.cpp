@@ -33,6 +33,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 string getScanOpName(string prefix, string suffix, Operator op, ScanType scanType)
 {
@@ -76,7 +78,7 @@ string getScanOpName(string prefix, string suffix, Operator op, ScanType scanTyp
     return prefix + n + suffix;
 }
 
-string getOpOperation(Operator op, VkFormat format, string lhs, string rhs)
+string getOpOperation(Operator op, VecType vecType, string lhs, string rhs)
 {
     switch (op)
     {
@@ -88,105 +90,136 @@ string getOpOperation(Operator op, VkFormat format, string lhs, string rhs)
     case OPERATOR_MUL:
         return lhs + " * " + rhs;
     case OPERATOR_MIN:
-        switch (format)
+        switch (vecType.type)
         {
         default:
             return "min(" + lhs + ", " + rhs + ")";
-        case VK_FORMAT_R16_SFLOAT:
-        case VK_FORMAT_R32_SFLOAT:
-        case VK_FORMAT_R64_SFLOAT:
-            return "(isnan(" + lhs + ") ? " + rhs + " : (isnan(" + rhs + ") ? " + lhs + " : min(" + lhs + ", " + rhs +
-                   ")))";
-        case VK_FORMAT_R16G16_SFLOAT:
-        case VK_FORMAT_R16G16B16_SFLOAT:
-        case VK_FORMAT_R16G16B16A16_SFLOAT:
-        case VK_FORMAT_R32G32_SFLOAT:
-        case VK_FORMAT_R32G32B32_SFLOAT:
-        case VK_FORMAT_R32G32B32A32_SFLOAT:
-        case VK_FORMAT_R64G64_SFLOAT:
-        case VK_FORMAT_R64G64B64_SFLOAT:
-        case VK_FORMAT_R64G64B64A64_SFLOAT:
-            return "mix(mix(min(" + lhs + ", " + rhs + "), " + lhs + ", isnan(" + rhs + ")), " + rhs + ", isnan(" +
-                   lhs + "))";
+        case TYPE_FLOAT16:
+        case TYPE_FLOAT:
+        case TYPE_DOUBLE:
+        {
+            if (vecType.components == 1)
+            {
+                return "(isnan(" + lhs + ") ? " + rhs + " : (isnan(" + rhs + ") ? " + lhs + " : min(" + lhs + ", " +
+                       rhs + ")))";
+            }
+            else
+            {
+                return "mix(mix(min(" + lhs + ", " + rhs + "), " + lhs + ", isnan(" + rhs + ")), " + rhs + ", isnan(" +
+                       lhs + "))";
+            }
+        }
         }
     case OPERATOR_MAX:
-        switch (format)
+        switch (vecType.type)
         {
         default:
             return "max(" + lhs + ", " + rhs + ")";
-        case VK_FORMAT_R16_SFLOAT:
-        case VK_FORMAT_R32_SFLOAT:
-        case VK_FORMAT_R64_SFLOAT:
-            return "(isnan(" + lhs + ") ? " + rhs + " : (isnan(" + rhs + ") ? " + lhs + " : max(" + lhs + ", " + rhs +
-                   ")))";
-        case VK_FORMAT_R16G16_SFLOAT:
-        case VK_FORMAT_R16G16B16_SFLOAT:
-        case VK_FORMAT_R16G16B16A16_SFLOAT:
-        case VK_FORMAT_R32G32_SFLOAT:
-        case VK_FORMAT_R32G32B32_SFLOAT:
-        case VK_FORMAT_R32G32B32A32_SFLOAT:
-        case VK_FORMAT_R64G64_SFLOAT:
-        case VK_FORMAT_R64G64B64_SFLOAT:
-        case VK_FORMAT_R64G64B64A64_SFLOAT:
-            return "mix(mix(max(" + lhs + ", " + rhs + "), " + lhs + ", isnan(" + rhs + ")), " + rhs + ", isnan(" +
-                   lhs + "))";
+
+        case TYPE_FLOAT16:
+        case TYPE_FLOAT:
+        case TYPE_DOUBLE:
+            if (vecType.components == 1)
+            {
+                return "(isnan(" + lhs + ") ? " + rhs + " : (isnan(" + rhs + ") ? " + lhs + " : max(" + lhs + ", " +
+                       rhs + ")))";
+            }
+            else
+            {
+                return "mix(mix(max(" + lhs + ", " + rhs + "), " + lhs + ", isnan(" + rhs + ")), " + rhs + ", isnan(" +
+                       lhs + "))";
+            }
         }
     case OPERATOR_AND:
-        switch (format)
+        switch (vecType.type)
         {
         default:
             return lhs + " & " + rhs;
-        case VK_FORMAT_R8_USCALED:
-            return lhs + " && " + rhs;
-        case VK_FORMAT_R8G8_USCALED:
-            return "bvec2(" + lhs + ".x && " + rhs + ".x, " + lhs + ".y && " + rhs + ".y)";
-        case VK_FORMAT_R8G8B8_USCALED:
-            return "bvec3(" + lhs + ".x && " + rhs + ".x, " + lhs + ".y && " + rhs + ".y, " + lhs + ".z && " + rhs +
-                   ".z)";
-        case VK_FORMAT_R8G8B8A8_USCALED:
-            return "bvec4(" + lhs + ".x && " + rhs + ".x, " + lhs + ".y && " + rhs + ".y, " + lhs + ".z && " + rhs +
-                   ".z, " + lhs + ".w && " + rhs + ".w)";
+        case TYPE_BOOL:
+            switch (vecType.components)
+            {
+            case 1:
+                return lhs + " && " + rhs;
+            case 2:
+                return "bvec2(" + lhs + ".x && " + rhs + ".x, " + lhs + ".y && " + rhs + ".y)";
+            case 3:
+                return "bvec3(" + lhs + ".x && " + rhs + ".x, " + lhs + ".y && " + rhs + ".y, " + lhs + ".z && " + rhs +
+                       ".z)";
+            case 4:
+                return "bvec4(" + lhs + ".x && " + rhs + ".x, " + lhs + ".y && " + rhs + ".y, " + lhs + ".z && " + rhs +
+                       ".z, " + lhs + ".w && " + rhs + ".w)";
+            case 8:
+                return "vector<bool, 8>(" + lhs + "[0] && " + rhs + "[0], " + lhs + "[1] && " + rhs + "[1], " + lhs +
+                       "[2] && " + rhs + "[2], " + lhs + "[3] && " + rhs + "[3], " + lhs + "[4] && " + rhs + "[4], " +
+                       lhs + "[5] && " + rhs + "[5], " + lhs + "[6] && " + rhs + "[6], " + lhs + "[7] && " + rhs +
+                       "[7])";
+            }
+            break;
         }
+        break;
     case OPERATOR_OR:
-        switch (format)
+        switch (vecType.type)
         {
         default:
             return lhs + " | " + rhs;
-        case VK_FORMAT_R8_USCALED:
-            return lhs + " || " + rhs;
-        case VK_FORMAT_R8G8_USCALED:
-            return "bvec2(" + lhs + ".x || " + rhs + ".x, " + lhs + ".y || " + rhs + ".y)";
-        case VK_FORMAT_R8G8B8_USCALED:
-            return "bvec3(" + lhs + ".x || " + rhs + ".x, " + lhs + ".y || " + rhs + ".y, " + lhs + ".z || " + rhs +
-                   ".z)";
-        case VK_FORMAT_R8G8B8A8_USCALED:
-            return "bvec4(" + lhs + ".x || " + rhs + ".x, " + lhs + ".y || " + rhs + ".y, " + lhs + ".z || " + rhs +
-                   ".z, " + lhs + ".w || " + rhs + ".w)";
+        case TYPE_BOOL:
+            switch (vecType.components)
+            {
+            case 1:
+                return lhs + " || " + rhs;
+            case 2:
+                return "bvec2(" + lhs + ".x || " + rhs + ".x, " + lhs + ".y || " + rhs + ".y)";
+            case 3:
+                return "bvec3(" + lhs + ".x || " + rhs + ".x, " + lhs + ".y || " + rhs + ".y, " + lhs + ".z || " + rhs +
+                       ".z)";
+            case 4:
+                return "bvec4(" + lhs + ".x || " + rhs + ".x, " + lhs + ".y || " + rhs + ".y, " + lhs + ".z || " + rhs +
+                       ".z, " + lhs + ".w || " + rhs + ".w)";
+            case 8:
+                return "vector<bool, 8>(" + lhs + "[0] || " + rhs + "[0], " + lhs + "[1] || " + rhs + "[1], " + lhs +
+                       "[2] || " + rhs + "[2], " + lhs + "[3] || " + rhs + "[3], " + lhs + "[4] || " + rhs + "[4], " +
+                       lhs + "[5] || " + rhs + "[5], " + lhs + "[6] || " + rhs + "[6], " + lhs + "[7] || " + rhs +
+                       "[7])";
+            }
+            break;
         }
+        break;
     case OPERATOR_XOR:
-        switch (format)
+        switch (vecType.type)
         {
         default:
             return lhs + " ^ " + rhs;
-        case VK_FORMAT_R8_USCALED:
-            return lhs + " ^^ " + rhs;
-        case VK_FORMAT_R8G8_USCALED:
-            return "bvec2(" + lhs + ".x ^^ " + rhs + ".x, " + lhs + ".y ^^ " + rhs + ".y)";
-        case VK_FORMAT_R8G8B8_USCALED:
-            return "bvec3(" + lhs + ".x ^^ " + rhs + ".x, " + lhs + ".y ^^ " + rhs + ".y, " + lhs + ".z ^^ " + rhs +
-                   ".z)";
-        case VK_FORMAT_R8G8B8A8_USCALED:
-            return "bvec4(" + lhs + ".x ^^ " + rhs + ".x, " + lhs + ".y ^^ " + rhs + ".y, " + lhs + ".z ^^ " + rhs +
-                   ".z, " + lhs + ".w ^^ " + rhs + ".w)";
+        case TYPE_BOOL:
+            switch (vecType.components)
+            {
+            case 1:
+                return lhs + " ^^ " + rhs;
+            case 2:
+                return "bvec2(" + lhs + ".x ^^ " + rhs + ".x, " + lhs + ".y ^^ " + rhs + ".y)";
+            case 3:
+                return "bvec3(" + lhs + ".x ^^ " + rhs + ".x, " + lhs + ".y ^^ " + rhs + ".y, " + lhs + ".z ^^ " + rhs +
+                       ".z)";
+            case 4:
+                return "bvec4(" + lhs + ".x ^^ " + rhs + ".x, " + lhs + ".y ^^ " + rhs + ".y, " + lhs + ".z ^^ " + rhs +
+                       ".z, " + lhs + ".w ^^ " + rhs + ".w)";
+            case 8:
+                return "vector<bool, 8>(" + lhs + "[0] ^^ " + rhs + "[0], " + lhs + "[1] ^^ " + rhs + "[1], " + lhs +
+                       "[2] ^^ " + rhs + "[2], " + lhs + "[3] ^^ " + rhs + "[3], " + lhs + "[4] ^^ " + rhs + "[4], " +
+                       lhs + "[5] ^^ " + rhs + "[5], " + lhs + "[6] ^^ " + rhs + "[6], " + lhs + "[7] ^^ " + rhs +
+                       "[7])";
+            }
+            break;
         }
+        break;
     }
+    return "";
 }
 
-string getIdentity(Operator op, VkFormat format)
+string getIdentity(Operator op, VecType vecType)
 {
-    const bool isFloat    = subgroups::isFormatFloat(format);
-    const bool isInt      = subgroups::isFormatSigned(format);
-    const bool isUnsigned = subgroups::isFormatUnsigned(format);
+    const bool isFloat    = subgroups::isFormatFloat(vecType);
+    const bool isInt      = subgroups::isFormatSigned(vecType);
+    const bool isUnsigned = subgroups::isFormatUnsigned(vecType);
 
     switch (op)
     {
@@ -194,52 +227,34 @@ string getIdentity(Operator op, VkFormat format)
         DE_FATAL("Unsupported op type");
         return "";
     case OPERATOR_ADD:
-        return subgroups::getFormatNameForGLSL(format) + "(0)";
+        return subgroups::getFormatNameForGLSL(vecType) + "(0)";
     case OPERATOR_MUL:
-        return subgroups::getFormatNameForGLSL(format) + "(1)";
+        return subgroups::getFormatNameForGLSL(vecType) + "(1)";
     case OPERATOR_MIN:
         if (isFloat)
         {
-            return subgroups::getFormatNameForGLSL(format) + "(intBitsToFloat(0x7f800000))";
+            return subgroups::getFormatNameForGLSL(vecType) + "(intBitsToFloat(0x7f800000))";
         }
         else if (isInt)
         {
-            switch (format)
+            switch (vecType.type)
             {
             default:
-                return subgroups::getFormatNameForGLSL(format) + "(0x7fffffff)";
-            case VK_FORMAT_R8_SINT:
-            case VK_FORMAT_R8G8_SINT:
-            case VK_FORMAT_R8G8B8_SINT:
-            case VK_FORMAT_R8G8B8A8_SINT:
-            case VK_FORMAT_R8_UINT:
-            case VK_FORMAT_R8G8_UINT:
-            case VK_FORMAT_R8G8B8_UINT:
-            case VK_FORMAT_R8G8B8A8_UINT:
-                return subgroups::getFormatNameForGLSL(format) + "(0x7f)";
-            case VK_FORMAT_R16_SINT:
-            case VK_FORMAT_R16G16_SINT:
-            case VK_FORMAT_R16G16B16_SINT:
-            case VK_FORMAT_R16G16B16A16_SINT:
-            case VK_FORMAT_R16_UINT:
-            case VK_FORMAT_R16G16_UINT:
-            case VK_FORMAT_R16G16B16_UINT:
-            case VK_FORMAT_R16G16B16A16_UINT:
-                return subgroups::getFormatNameForGLSL(format) + "(0x7fff)";
-            case VK_FORMAT_R64_SINT:
-            case VK_FORMAT_R64G64_SINT:
-            case VK_FORMAT_R64G64B64_SINT:
-            case VK_FORMAT_R64G64B64A64_SINT:
-            case VK_FORMAT_R64_UINT:
-            case VK_FORMAT_R64G64_UINT:
-            case VK_FORMAT_R64G64B64_UINT:
-            case VK_FORMAT_R64G64B64A64_UINT:
-                return subgroups::getFormatNameForGLSL(format) + "(0x7fffffffffffffffUL)";
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x7fffffff)";
+            case TYPE_INT8:
+            case TYPE_UINT8:
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x7f)";
+            case TYPE_INT16:
+            case TYPE_UINT16:
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x7fff)";
+            case TYPE_INT64:
+            case TYPE_UINT64:
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x7fffffffffffffffUL)";
             }
         }
         else if (isUnsigned)
         {
-            return subgroups::getFormatNameForGLSL(format) + "(-1)";
+            return subgroups::getFormatNameForGLSL(vecType) + "(-1)";
         }
         else
         {
@@ -249,46 +264,28 @@ string getIdentity(Operator op, VkFormat format)
     case OPERATOR_MAX:
         if (isFloat)
         {
-            return subgroups::getFormatNameForGLSL(format) + "(intBitsToFloat(0xff800000))";
+            return subgroups::getFormatNameForGLSL(vecType) + "(intBitsToFloat(0xff800000))";
         }
         else if (isInt)
         {
-            switch (format)
+            switch (vecType.type)
             {
             default:
-                return subgroups::getFormatNameForGLSL(format) + "(0x80000000)";
-            case VK_FORMAT_R8_SINT:
-            case VK_FORMAT_R8G8_SINT:
-            case VK_FORMAT_R8G8B8_SINT:
-            case VK_FORMAT_R8G8B8A8_SINT:
-            case VK_FORMAT_R8_UINT:
-            case VK_FORMAT_R8G8_UINT:
-            case VK_FORMAT_R8G8B8_UINT:
-            case VK_FORMAT_R8G8B8A8_UINT:
-                return subgroups::getFormatNameForGLSL(format) + "(0x80)";
-            case VK_FORMAT_R16_SINT:
-            case VK_FORMAT_R16G16_SINT:
-            case VK_FORMAT_R16G16B16_SINT:
-            case VK_FORMAT_R16G16B16A16_SINT:
-            case VK_FORMAT_R16_UINT:
-            case VK_FORMAT_R16G16_UINT:
-            case VK_FORMAT_R16G16B16_UINT:
-            case VK_FORMAT_R16G16B16A16_UINT:
-                return subgroups::getFormatNameForGLSL(format) + "(0x8000)";
-            case VK_FORMAT_R64_SINT:
-            case VK_FORMAT_R64G64_SINT:
-            case VK_FORMAT_R64G64B64_SINT:
-            case VK_FORMAT_R64G64B64A64_SINT:
-            case VK_FORMAT_R64_UINT:
-            case VK_FORMAT_R64G64_UINT:
-            case VK_FORMAT_R64G64B64_UINT:
-            case VK_FORMAT_R64G64B64A64_UINT:
-                return subgroups::getFormatNameForGLSL(format) + "(0x8000000000000000UL)";
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x80000000)";
+            case TYPE_INT8:
+            case TYPE_UINT8:
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x80)";
+            case TYPE_INT16:
+            case TYPE_UINT16:
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x8000)";
+            case TYPE_INT64:
+            case TYPE_UINT64:
+                return subgroups::getFormatNameForGLSL(vecType) + "(0x8000000000000000UL)";
             }
         }
         else if (isUnsigned)
         {
-            return subgroups::getFormatNameForGLSL(format) + "(0)";
+            return subgroups::getFormatNameForGLSL(vecType) + "(0)";
         }
         else
         {
@@ -296,61 +293,57 @@ string getIdentity(Operator op, VkFormat format)
             return "";
         }
     case OPERATOR_AND:
-        return subgroups::getFormatNameForGLSL(format) + "(~0)";
+        return subgroups::getFormatNameForGLSL(vecType) + "(~0)";
     case OPERATOR_OR:
-        return subgroups::getFormatNameForGLSL(format) + "(0)";
+        return subgroups::getFormatNameForGLSL(vecType) + "(0)";
     case OPERATOR_XOR:
-        return subgroups::getFormatNameForGLSL(format) + "(0)";
+        return subgroups::getFormatNameForGLSL(vecType) + "(0)";
     }
 }
 
-string getCompare(Operator op, VkFormat format, string lhs, string rhs)
+string getCompare(Operator op, VecType vecType, string lhs, string rhs)
 {
-    const string formatName = subgroups::getFormatNameForGLSL(format);
+    const string formatName = subgroups::getFormatNameForGLSL(vecType);
     const bool isMinMax     = (op == OPERATOR_MIN || op == OPERATOR_MAX);
 
-    switch (format)
+    if (vecType.components == 1)
     {
-    default:
-        return "all(equal(" + lhs + ", " + rhs + "))";
-    case VK_FORMAT_R8_USCALED:
-    case VK_FORMAT_R8_UINT:
-    case VK_FORMAT_R8_SINT:
-    case VK_FORMAT_R16_UINT:
-    case VK_FORMAT_R16_SINT:
-    case VK_FORMAT_R32_UINT:
-    case VK_FORMAT_R32_SINT:
-    case VK_FORMAT_R64_UINT:
-    case VK_FORMAT_R64_SINT:
-        return "(" + lhs + " == " + rhs + ")";
-    case VK_FORMAT_R16_SFLOAT:
-        if (isMinMax)
+        switch (vecType.type)
+        {
+        default:
             return "(" + lhs + " == " + rhs + ")";
-        else
-            return "(abs(" + lhs + " - " + rhs + ") < " + formatName + "(gl_SubgroupSize==128 ? 0.2: 0.1))";
-    case VK_FORMAT_R32_SFLOAT:
-    case VK_FORMAT_R64_SFLOAT:
-        if (isMinMax)
-            return "(" + lhs + " == " + rhs + ")";
-        else
-            return "(abs(" + lhs + " - " + rhs + ") < (gl_SubgroupSize==128 ? 0.00002:0.00001))";
-    case VK_FORMAT_R16G16_SFLOAT:
-    case VK_FORMAT_R16G16B16_SFLOAT:
-    case VK_FORMAT_R16G16B16A16_SFLOAT:
-        if (isMinMax)
+        case TYPE_FLOAT16:
+            if (isMinMax)
+                return "(" + lhs + " == " + rhs + ")";
+            else
+                return "(abs(" + lhs + " - " + rhs + ") < " + formatName + "(gl_SubgroupSize==128 ? 0.2: 0.1))";
+        case TYPE_FLOAT:
+        case TYPE_DOUBLE:
+            if (isMinMax)
+                return "(" + lhs + " == " + rhs + ")";
+            else
+                return "(abs(" + lhs + " - " + rhs + ") < (gl_SubgroupSize==128 ? 0.00002:0.00001))";
+        }
+    }
+    else
+    {
+        switch (vecType.type)
+        {
+        default:
             return "all(equal(" + lhs + ", " + rhs + "))";
-        else
-            return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName + "(gl_SubgroupSize==128 ? 0.2: 0.1)))";
-    case VK_FORMAT_R32G32_SFLOAT:
-    case VK_FORMAT_R32G32B32_SFLOAT:
-    case VK_FORMAT_R32G32B32A32_SFLOAT:
-    case VK_FORMAT_R64G64_SFLOAT:
-    case VK_FORMAT_R64G64B64_SFLOAT:
-    case VK_FORMAT_R64G64B64A64_SFLOAT:
-        if (isMinMax)
-            return "all(equal(" + lhs + ", " + rhs + "))";
-        else
-            return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName +
-                   "(gl_SubgroupSize==128 ? 0.00002: 0.00001)))";
+        case TYPE_FLOAT16:
+            if (isMinMax)
+                return "all(equal(" + lhs + ", " + rhs + "))";
+            else
+                return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName +
+                       "(gl_SubgroupSize==128 ? 0.2: 0.1)))";
+        case TYPE_FLOAT:
+        case TYPE_DOUBLE:
+            if (isMinMax)
+                return "all(equal(" + lhs + ", " + rhs + "))";
+            else
+                return "all(lessThan(abs(" + lhs + " - " + rhs + "), " + formatName +
+                       "(gl_SubgroupSize==128 ? 0.00002: 0.00001)))";
+        }
     }
 }

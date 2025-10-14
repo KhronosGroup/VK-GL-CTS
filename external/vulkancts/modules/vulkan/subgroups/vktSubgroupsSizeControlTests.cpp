@@ -35,6 +35,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -463,7 +465,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
     const string testSrc                  = getTestSource(caseDef);
     const vector<string> headDeclarations = getPerStageHeadDeclarations(caseDef);
 
-    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VK_FORMAT_R32_UINT,
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, VecType(TYPE_UINT, 1),
                                *caseDef.geometryPointSizeSupported, extHeader, testSrc, "", headDeclarations);
 }
 

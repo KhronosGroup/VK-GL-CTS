@@ -34,6 +34,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -68,7 +70,7 @@ struct CaseDefinition
     Operator op;
     ScanType scanType;
     VkShaderStageFlags shaderStage;
-    VkFormat format;
+    VecType vecType;
     de::SharedPtr<bool> geometryPointSizeSupported;
     bool requiredSubgroupSize;
     bool requires8BitUniformBuffer;
@@ -171,7 +173,7 @@ string getExtHeader(const CaseDefinition &caseDef)
 {
     return "#extension GL_KHR_shader_subgroup_arithmetic: enable\n"
            "#extension GL_KHR_shader_subgroup_ballot: enable\n" +
-           subgroups::getAdditionalExtensionForFormat(caseDef.format);
+           subgroups::getAdditionalExtensionForFormat(caseDef.vecType);
 }
 
 string getIndexVars(const CaseDefinition &caseDef)
@@ -194,8 +196,8 @@ string getTestSrc(const CaseDefinition &caseDef)
     const string indexVars = getIndexVars(caseDef);
 
     string shader = "  uvec4 mask = subgroupBallot(true);\n" + indexVars + "  " +
-                    subgroups::getFormatNameForGLSL(caseDef.format) +
-                    " ref = " + getIdentity(caseDef.op, caseDef.format) +
+                    subgroups::getFormatNameForGLSL(caseDef.vecType) +
+                    " ref = " + getIdentity(caseDef.op, caseDef.vecType) +
                     ";\n"
                     "  tempRes = 0;\n"
                     "  uint identityOnly = 0x3;\n"
@@ -204,33 +206,33 @@ string getTestSrc(const CaseDefinition &caseDef)
                     "    if (subgroupBallotBitExtract(mask, index))\n"
                     "    {\n"
                     "      ref = " +
-                    getOpOperation(caseDef.op, caseDef.format, "ref", "data[index]") +
+                    getOpOperation(caseDef.op, caseDef.vecType, "ref", "data[index]") +
                     ";\n"
                     "      identityOnly &= ~0x1;\n"
                     "    }\n"
                     "  }\n"
                     "  tempRes = " +
-                    getCompare(caseDef.op, caseDef.format, "ref",
+                    getCompare(caseDef.op, caseDef.vecType, "ref",
                                getOpTypeName(caseDef.op, caseDef.scanType) + "(data[gl_SubgroupInvocationID])") +
                     " ? 0x1 : 0;\n"
                     "  if (1 == (gl_SubgroupInvocationID % 2))\n"
                     "  {\n"
                     "    mask = subgroupBallot(true);\n"
                     "    ref = " +
-                    getIdentity(caseDef.op, caseDef.format) +
+                    getIdentity(caseDef.op, caseDef.vecType) +
                     ";\n"
                     "    for (uint index = start; index < end; index++)\n"
                     "    {\n"
                     "      if (subgroupBallotBitExtract(mask, index))\n"
                     "      {\n"
                     "        ref = " +
-                    getOpOperation(caseDef.op, caseDef.format, "ref", "data[index]") +
+                    getOpOperation(caseDef.op, caseDef.vecType, "ref", "data[index]") +
                     ";\n"
                     "        identityOnly &= ~0x2;\n"
                     "      }\n"
                     "    }\n"
                     "    tempRes |= " +
-                    getCompare(caseDef.op, caseDef.format, "ref",
+                    getCompare(caseDef.op, caseDef.vecType, "ref",
                                getOpTypeName(caseDef.op, caseDef.scanType) + "(data[gl_SubgroupInvocationID])") +
                     " ? 0x2 : 0;\n"
                     "  }\n"
@@ -241,7 +243,7 @@ string getTestSrc(const CaseDefinition &caseDef)
 
     // Can't test max or min identity as they are +/-inf, which the SPIR-V
     // compiler is allowed to assume don't occur in the program
-    if ((caseDef.op == OPERATOR_MIN || caseDef.op == OPERATOR_MAX) && subgroups::isFormatFloat(caseDef.format))
+    if ((caseDef.op == OPERATOR_MIN || caseDef.op == OPERATOR_MAX) && subgroups::isFormatFloat(caseDef.vecType))
         shader += "  tempRes |= identityOnly;\n";
 
     return shader;
@@ -253,7 +255,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
     const string extHeader = getExtHeader(caseDef);
     const string testSrc   = getTestSrc(caseDef);
 
-    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
+    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType,
                                           *caseDef.geometryPointSizeSupported, extHeader, testSrc, "");
 }
 
@@ -270,7 +272,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
     const string extHeader = getExtHeader(caseDef);
     const string testSrc   = getTestSrc(caseDef);
 
-    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType,
                                *caseDef.geometryPointSizeSupported, extHeader, testSrc, "");
 }
 
@@ -282,7 +284,7 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     if (!subgroups::isSubgroupFeatureSupportedForDevice(context, VK_SUBGROUP_FEATURE_ARITHMETIC_BIT))
         TCU_THROW(NotSupportedError, "Device does not support subgroup arithmetic operations");
 
-    if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
+    if (!subgroups::isFormatSupportedForDevice(context, caseDef.vecType))
         TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
     if (caseDef.requires16BitUniformBuffer)
@@ -347,7 +349,7 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     const subgroups::SSBOData inputData = {
         subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
         subgroups::SSBOData::LayoutStd140,      //  InputDataLayoutType layout;
-        caseDef.format,                         //  vk::VkFormat format;
+        caseDef.vecType,                        //  VecType vectype
         subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
         subgroups::SSBOData::BindingUBO,        //  BindingType bindingType;
     };
@@ -388,7 +390,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData       = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            caseDef.format,                         //  vk::VkFormat format;
+            caseDef.vecType,                        //  VecType vectype
             subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
         };
 
@@ -433,7 +435,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            caseDef.format,                         //  vk::VkFormat format;
+            caseDef.vecType,                        //  VecType vectype
             subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,       //  bool isImage;
             4u,                                     //  uint32_t binding;
@@ -450,7 +452,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            caseDef.format,                         //  vk::VkFormat format;
+            caseDef.vecType,                        //  VecType vectype
             subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,       //  bool isImage;
             6u,                                     //  uint32_t binding;
@@ -497,12 +499,12 @@ TestCaseGroup *createSubgroupsArithmeticTests(TestContext &testCtx)
     const bool boolValues[] = {false, true};
 
     {
-        const vector<VkFormat> formats = subgroups::getAllFormats();
+        const vector<VecType> formats = subgroups::getAllFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format           = formats[formatIndex];
-            const string formatName         = subgroups::getFormatNameForGLSL(format);
+            const VecType format            = formats[formatIndex];
+            const string formatName         = subgroups::getFormatNameForTest(format);
             const bool isBool               = subgroups::isFormatBool(format);
             const bool isFloat              = subgroups::isFormatFloat(format);
             const bool needs8BitUBOStorage  = isFormat8bitTy(format);
@@ -607,12 +609,12 @@ TestCaseGroup *createSubgroupsArithmeticTests(TestContext &testCtx)
 
 #ifndef CTS_USES_VULKANSC
     {
-        const vector<VkFormat> formats = subgroups::getAllRayTracingFormats();
+        const vector<VecType> formats = subgroups::getAllRayTracingFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format   = formats[formatIndex];
-            const string formatName = subgroups::getFormatNameForGLSL(format);
+            const VecType format    = formats[formatIndex];
+            const string formatName = subgroups::getFormatNameForTest(format);
             const bool isBool       = subgroups::isFormatBool(format);
             const bool isFloat      = subgroups::isFormatFloat(format);
 

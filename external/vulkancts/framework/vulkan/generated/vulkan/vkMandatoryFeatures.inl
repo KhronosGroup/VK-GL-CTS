@@ -761,6 +761,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_integer_dot_product"))
 		addFeatures(&physicalDeviceShaderIntegerDotProductFeatures);
 
+	// VkPhysicalDeviceShaderLongVectorFeaturesEXT for ext [VK_EXT_shader_long_vector]
+	vk::VkPhysicalDeviceShaderLongVectorFeaturesEXT physicalDeviceShaderLongVectorFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_long_vector"))
+		addFeatures(&physicalDeviceShaderLongVectorFeaturesEXT);
+
 	// VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR for ext [VK_KHR_shader_maximal_reconvergence]
 	vk::VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR physicalDeviceShaderMaximalReconvergenceFeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_maximal_reconvergence"))
@@ -2524,6 +2529,27 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceCustomResolveFeaturesEXT.customResolve == VK_FALSE )
 			failMesages.push_back("customResolve");
+	}
+
+	// VkPhysicalDeviceShaderLongVectorFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_long_vector")) )
+	{
+		if ( physicalDeviceShaderLongVectorFeaturesEXT.longVector == VK_FALSE )
+			failMesages.push_back("longVector");
+	}
+
+	// VkPhysicalDeviceVulkan12Features
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_long_vector")) )
+	{
+		if ( physicalDeviceVulkan12Features.scalarBlockLayout == VK_FALSE )
+			failMesages.push_back("scalarBlockLayout");
+	}
+
+	// VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_long_vector")) && isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_workgroup_memory_explicit_layout")) )
+	{
+		if ( physicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR.workgroupMemoryExplicitLayoutScalarBlockLayout == VK_FALSE )
+			failMesages.push_back("workgroupMemoryExplicitLayoutScalarBlockLayout");
 	}
 
 	// VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT

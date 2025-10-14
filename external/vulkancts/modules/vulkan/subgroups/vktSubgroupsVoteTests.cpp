@@ -33,6 +33,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -52,7 +54,7 @@ struct CaseDefinition
 {
     OpType opType;
     VkShaderStageFlags shaderStage;
-    VkFormat format;
+    VecType vecType;
     de::SharedPtr<bool> geometryPointSizeSupported;
     bool requiredSubgroupSize;
     bool requires8BitUniformBuffer;
@@ -125,11 +127,9 @@ string getOpTypeName(int opType)
     }
 }
 
-bool fmtIsBoolean(VkFormat format)
+bool fmtIsBoolean(VecType vecType)
 {
-    // For reasons unknown, the tests use R8_USCALED as the boolean format
-    return format == VK_FORMAT_R8_USCALED || format == VK_FORMAT_R8G8_USCALED || format == VK_FORMAT_R8G8B8_USCALED ||
-           format == VK_FORMAT_R8G8B8A8_USCALED;
+    return vecType.type == TYPE_BOOL;
 }
 
 const string getExtensions(bool arbFunctions)
@@ -141,9 +141,9 @@ const string getExtensions(bool arbFunctions)
 
 const string getStageTestSource(const CaseDefinition &caseDef)
 {
-    const bool formatIsBoolean = fmtIsBoolean(caseDef.format);
+    const bool formatIsBoolean = fmtIsBoolean(caseDef.vecType);
     const string op            = getOpTypeName(caseDef.opType);
-    const string fmt           = subgroups::getFormatNameForGLSL(caseDef.format);
+    const string fmt           = subgroups::getFormatNameForGLSL(caseDef.vecType);
     const string computePart =
         isAllComputeStages(caseDef.shaderStage) ? op + "(data[gl_SubgroupInvocationID] > 0) ? 0x4 : 0x0" : "0x4";
 
@@ -195,18 +195,18 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
     const SpirvVersion spirvVersion = spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
     const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
     const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
-    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
+    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.vecType);
     const bool pointSize    = *caseDef.geometryPointSizeSupported;
 
-    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
+    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType,
                                           pointSize, extensions, getStageTestSource(caseDef), "");
 }
 
 const string getStageTestSourceFrag(const CaseDefinition &caseDef)
 {
-    const bool formatIsBoolean = fmtIsBoolean(caseDef.format);
+    const bool formatIsBoolean = fmtIsBoolean(caseDef.vecType);
     const string op            = getOpTypeName(caseDef.opType);
-    const string fmt           = subgroups::getFormatNameForGLSL(caseDef.format);
+    const string fmt           = subgroups::getFormatNameForGLSL(caseDef.vecType);
 
     return (OPTYPE_ALL == caseDef.opType || OPTYPE_ALL_ARB == caseDef.opType) ?
                "  tempRes |= " + op +
@@ -254,7 +254,7 @@ void initFrameBufferProgramsFrag(SourceCollections &programCollection, CaseDefin
     const SpirvVersion spirvVersion = spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
     const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
     const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
-    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
+    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.vecType);
 
     DE_ASSERT(VK_SHADER_STAGE_FRAGMENT_BIT == caseDef.shaderStage);
 
@@ -277,7 +277,7 @@ void initFrameBufferProgramsFrag(SourceCollections &programCollection, CaseDefin
                        << extensions << "layout(location = 0) out uint out_color;\n"
                        << "layout(set = 0, binding = 0) uniform Buffer1\n"
                        << "{\n"
-                       << "  " << subgroups::getFormatNameForGLSL(caseDef.format) << " data["
+                       << "  " << subgroups::getFormatNameForGLSL(caseDef.vecType) << " data["
                        << subgroups::maxSupportedSubgroupSize() << "];\n"
                        << "};\n"
                        << ""
@@ -313,10 +313,10 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
     const SpirvVersion spirvVersion = spirv14required ? SPIRV_VERSION_1_4 : SPIRV_VERSION_1_3;
     const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u, spirv14required);
     const bool arbFunctions = caseDef.opType > OPTYPE_LAST_NON_ARB;
-    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.format);
+    const string extensions = getExtensions(arbFunctions) + subgroups::getAdditionalExtensionForFormat(caseDef.vecType);
     const bool pointSize    = *caseDef.geometryPointSizeSupported;
 
-    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format, pointSize,
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType, pointSize,
                                extensions, getStageTestSource(caseDef), "");
 }
 
@@ -330,7 +330,7 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
         TCU_THROW(NotSupportedError, "Device does not support subgroup vote operations");
     }
 
-    if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
+    if (!subgroups::isFormatSupportedForDevice(context, caseDef.vecType))
         TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
     if (caseDef.requires16BitUniformBuffer)
@@ -410,7 +410,7 @@ TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
     const subgroups::SSBOData inputData{
         initializeType,                        //  InputDataInitializeType initializeType;
         subgroups::SSBOData::LayoutStd140,     //  InputDataLayoutType layout;
-        caseDef.format,                        //  vk::VkFormat format;
+        caseDef.vecType,                       //  vk::VkFormat format;
         subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
         subgroups::SSBOData::BindingUBO,       //  BindingType bindingType;
     };
@@ -459,7 +459,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData{
             initializeType,                        //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,     //  InputDataLayoutType layout;
-            caseDef.format,                        //  vk::VkFormat format;
+            caseDef.vecType,                       //  vk::VkFormat format;
             subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
         };
 
@@ -504,7 +504,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             initializeType,                        //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,     //  InputDataLayoutType layout;
-            caseDef.format,                        //  vk::VkFormat format;
+            caseDef.vecType,                       //  vk::VkFormat format;
             subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,      //  bool isImage;
             4u,                                    //  uint32_t binding;
@@ -521,7 +521,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             initializeType,                        //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,     //  InputDataLayoutType layout;
-            caseDef.format,                        //  vk::VkFormat format;
+            caseDef.vecType,                       //  vk::VkFormat format;
             subgroups::maxSupportedSubgroupSize(), //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,      //  bool isImage;
             6u,                                    //  uint32_t binding;
@@ -574,16 +574,14 @@ TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
             VK_SHADER_STAGE_TASK_BIT_EXT,
         };
 #endif // CTS_USES_VULKANSC
-        const vector<VkFormat> formats = subgroups::getAllFormats();
+        const vector<VecType> formats = subgroups::getAllFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format           = formats[formatIndex];
+            const VecType format            = formats[formatIndex];
             const bool needs8BitUBOStorage  = isFormat8bitTy(format);
             const bool needs16BitUBOStorage = isFormat16BitTy(format);
-            const bool formatIsNotVector    = format == VK_FORMAT_R8_USCALED || format == VK_FORMAT_R32_UINT ||
-                                           format == VK_FORMAT_R32_SINT || format == VK_FORMAT_R32_SFLOAT ||
-                                           format == VK_FORMAT_R64_SFLOAT;
+            const bool formatIsNotVector    = format.components == 1;
 
             for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
             {
@@ -600,17 +598,18 @@ TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
                 // Skip non-boolean formats when testing allInvocationsEqualARB(bool value), because it requires a boolean
                 // argument that should have the same value for all invocations. For the rest of formats, it won't be a boolean argument,
                 // so it may give wrong results when converting to bool.
-                if (opType == OPTYPE_ALLEQUAL_ARB && format != VK_FORMAT_R8_USCALED)
+                if (opType == OPTYPE_ALLEQUAL_ARB && !(format.type == TYPE_BOOL && format.components == 1))
                     continue;
 
                 // Skip the typed tests for all but subgroupAllEqual() and allInvocationsEqualARB()
-                if ((VK_FORMAT_R32_UINT != format) && (OPTYPE_ALLEQUAL != opType) && (OPTYPE_ALLEQUAL_ARB != opType))
+                if (!(format.type == TYPE_UINT && format.components == 1) && (OPTYPE_ALLEQUAL != opType) &&
+                    (OPTYPE_ALLEQUAL_ARB != opType))
                 {
                     continue;
                 }
 
                 const string op                    = de::toLower(getOpTypeName(opType));
-                const string name                  = op + "_" + subgroups::getFormatNameForGLSL(format);
+                const string name                  = op + "_" + subgroups::getFormatNameForTest(format);
                 const bool opNonARB                = (opType < OPTYPE_LAST_NON_ARB);
                 TestCaseGroup *computeGroupPtr     = opNonARB ? computeGroup.get() : computeGroupARB.get();
                 TestCaseGroup *graphicGroupPtr     = opNonARB ? graphicGroup.get() : graphicGroupARB.get();
@@ -713,24 +712,24 @@ TestCaseGroup *createSubgroupsVoteTests(TestContext &testCtx)
 
 #ifndef CTS_USES_VULKANSC
     {
-        const vector<VkFormat> formats = subgroups::getAllRayTracingFormats();
+        const vector<VecType> formats = subgroups::getAllRayTracingFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format = formats[formatIndex];
+            const VecType format = formats[formatIndex];
 
             for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST_NON_ARB; ++opTypeIndex)
             {
                 const OpType opType = static_cast<OpType>(opTypeIndex);
 
                 // Skip the typed tests for all but subgroupAllEqual()
-                if ((VK_FORMAT_R32_UINT != format) && (OPTYPE_ALLEQUAL != opType))
+                if (!(format.type == TYPE_UINT && format.components == 1) && (OPTYPE_ALLEQUAL != opType))
                 {
                     continue;
                 }
 
                 const string op              = de::toLower(getOpTypeName(opType));
-                const string name            = op + "_" + subgroups::getFormatNameForGLSL(format);
+                const string name            = op + "_" + subgroups::getFormatNameForTest(format);
                 const CaseDefinition caseDef = {
                     opType,                        //  OpType opType;
                     SHADER_STAGE_ALL_RAY_TRACING,  //  VkShaderStageFlags shaderStage;

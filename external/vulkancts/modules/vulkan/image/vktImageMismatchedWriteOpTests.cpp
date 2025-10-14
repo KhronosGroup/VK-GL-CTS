@@ -75,7 +75,7 @@ public:
 
     virtual void checkSupport(Context &context) const override;
     virtual TextureFormat getBufferFormat(void) const;
-    void getProgramCodeAndVariables(StringTemplate &code, strings &variables) const;
+    void getProgramCodeAndVariables(StringTemplate &code, strings &variables, int sourceWidth) const;
 
     template <class TestParams>
     void getParams(TestParams &);
@@ -95,6 +95,7 @@ public:
         DE_ASSERT(getNumUsedChannels(params->vkFormat) <= sourceWidth);
     }
 
+    virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
     virtual TestInstance *createInstance(Context &context) const override;
 
@@ -590,7 +591,7 @@ TextureFormat MismatchedWriteOpTest::getBufferFormat(void) const
     return makeBufferFormat(getTextureChannelClass(texFormat.type), is64BitIntegerFormat(m_params->vkFormat));
 }
 
-void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, strings &variables) const
+void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, strings &variables, int sourceWidth) const
 {
     std::string shaderTemplate(R"(
 
@@ -598,8 +599,10 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, str
                               OpCapability StorageImageExtendedFormats
 
                               ${CAPABILITY_INT64}
+                              ${CAPABILITY_VEC5}
                               OpExtension      "SPV_KHR_variable_pointers"
                               OpExtension      "SPV_KHR_storage_buffer_storage_class"
+                              OpExtension      "SPV_EXT_long_vector"
                               ${EXTENSIONS}
 
                     %std450 = OpExtInstImport  "GLSL.std.450"
@@ -627,6 +630,8 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, str
                      %float = OpTypeFloat 32
                       %sint = OpTypeInt 32 1
                       %uint = OpTypeInt 32 0
+
+                    ${TYPES_VEC5}
 
                    %v4float = OpTypeVector %float 4
                    %v3float = OpTypeVector %float 3
@@ -720,19 +725,42 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, str
                    %v2ulong = OpTypeVector %ulong 2
     )");
 
+    const std::string typesVec5(R"(
+                   %v5float = OpTypeVector %float 5
+                    %v5sint = OpTypeVector %sint 5
+                    %v5uint = OpTypeVector %uint 5
+    )");
+
+    const std::string typesVec5_64(R"(
+                   %v5slong = OpTypeVector %slong 5
+                   %v5ulong = OpTypeVector %ulong 5
+    )");
+
     const tcu::TextureFormat buffFormat = getBufferFormat();
 
     variables["SPIRV_IMAGE_FORMAT"] = getSpirvFormat(m_params->vkFormat);
     variables["CAPABILITY_INT64"]   = "";
+    variables["CAPABILITY_VEC5"]    = "";
     variables["EXTENSIONS"]         = "";
     variables["TYPES_INT64"]        = "";
+    variables["TYPES_VEC5"]         = "";
 
     if (is64BitIntegerFormat(m_params->vkFormat))
     {
-        variables["EXTENSIONS"]       = "OpExtension       \"SPV_EXT_shader_image_int64\"";
+        variables["EXTENSIONS"]       = "OpExtension       \"SPV_EXT_shader_image_int64\"\n";
         variables["CAPABILITY_INT64"] = "OpCapability Int64ImageEXT\n"
                                         "OpCapability Int64";
         variables["TYPES_INT64"]      = typesInt64;
+    }
+    if (sourceWidth == 5)
+    {
+        variables["EXTENSIONS"] += "OpExtension       \"SPV_EXT_shader_image_int64\"";
+        variables["CAPABILITY_VEC5"] = "OpCapability LongVectorEXT\n";
+        variables["TYPES_VEC5"]      = typesVec5;
+        if (is64BitIntegerFormat(m_params->vkFormat))
+        {
+            variables["TYPES_VEC5"] += typesVec5_64;
+        }
     }
 
     variables["SAMPLED_TYPE"] = getChannelStr(buffFormat.type);
@@ -742,6 +770,17 @@ void MismatchedWriteOpTest::getProgramCodeAndVariables(StringTemplate &code, str
         std::to_string(tcu::getChannelSize(buffFormat.type) * tcu::getNumUsedChannels(buffFormat.order));
 
     code.setString(shaderTemplate);
+}
+
+void MismatchedVectorSizesTest::checkSupport(Context &context) const
+{
+    MismatchedWriteOpTest::checkSupport(context);
+#ifndef CTS_USES_VULKANSC
+    if (m_sourceWidth == 5 && !context.getShaderLongVectorFeaturesEXT().longVector)
+    {
+        TCU_THROW(NotSupportedError, "Device feature longVector is not supported");
+    }
+#endif
 }
 
 void MismatchedVectorSizesTest::initPrograms(SourceCollections &programCollection) const
@@ -765,13 +804,18 @@ void MismatchedVectorSizesTest::initPrograms(SourceCollections &programCollectio
              %rgba = OpCompositeConstruct %v4${SAMPLED_TYPE} %red %green %blue %alpha
                      OpImageWrite %img %id_xy %rgba
     )");
+    const StringTemplate writeFromFiveComponents(R"(
+             %rgbaa = OpCompositeConstruct %v5${SAMPLED_TYPE} %red %green %blue %alpha %alpha
+                      OpImageWrite %img %id_xy %rgbaa
+    )");
 
-    getProgramCodeAndVariables(shaderTemplate, variables);
+    getProgramCodeAndVariables(shaderTemplate, variables, m_sourceWidth);
 
     variables["WRITE_TO_IMAGE"] = (m_sourceWidth == 1 ? writeFromSingleComponent :
                                    m_sourceWidth == 2 ? writeFromTwoComponents :
                                    m_sourceWidth == 3 ? writeFromThreeComponents :
-                                                        writeFromFourComponents)
+                                   m_sourceWidth == 4 ? writeFromFourComponents :
+                                                        writeFromFiveComponents)
                                       .specialize(variables);
     programCollection.spirvAsmSources.add("comp")
         << shaderTemplate.specialize(variables)
@@ -788,7 +832,7 @@ void MismatchedSignednessAndTypeTest::initPrograms(SourceCollections &programCol
                      OpImageWrite %img %id_xy %color
     )");
 
-    getProgramCodeAndVariables(shaderTemplate, variables);
+    getProgramCodeAndVariables(shaderTemplate, variables, 4);
 
     variables["WRITE_TO_IMAGE"] = writeToImage.specialize(variables);
 
@@ -1053,11 +1097,16 @@ tcu::TestCaseGroup *createImageWriteOpTests(tcu::TestContext &testCtx)
                 new MismatchedSignednessAndTypeTest(testCtx, testName, MismatchedVectorSizesTest::ParamsSp(params)));
         }
 
-        for (int sourceWidth = 4; sourceWidth > 0; --sourceWidth)
+#ifndef CTS_USES_VULKANSC
+        const int largestWidth = 5;
+#else
+        const int largestWidth = 4;
+#endif
+        for (int sourceWidth = largestWidth; sourceWidth > 0; --sourceWidth)
         {
             if (sourceWidth >= getNumUsedChannels(f))
             {
-                auto params = new MismatchedWriteOpTest::Params{f, 12 * sourceWidth, 8 * (4 - sourceWidth + 1), f};
+                auto params = new MismatchedWriteOpTest::Params{f, 12 * sourceWidth, 8 * (6 - sourceWidth + 1), f};
                 testGroupMismatchedVectorSizes->addChild(
                     new MismatchedVectorSizesTest(testCtx, genVectorSizesTestName(f, sourceWidth),
                                                   MismatchedVectorSizesTest::ParamsSp(params), sourceWidth));

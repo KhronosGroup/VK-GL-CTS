@@ -275,6 +275,7 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceRayTracingPipelinePropertie
 template<> void initPropertyFromBlob<VkPhysicalDeviceRayTracingPropertiesNV>(VkPhysicalDeviceRayTracingPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceRobustness2PropertiesKHR>(VkPhysicalDeviceRobustness2PropertiesKHR&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceSampleLocationsPropertiesEXT>(VkPhysicalDeviceSampleLocationsPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceShaderLongVectorPropertiesEXT>(VkPhysicalDeviceShaderLongVectorPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>(VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderObjectPropertiesEXT>(VkPhysicalDeviceShaderObjectPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>(VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&, const AllPropertiesBlobs&) {}
@@ -355,6 +356,7 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceRobustness2PropertiesKH
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSampleLocationsPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLE_LOCATIONS_PROPERTIES_EXT, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceSamplerFilterMinmaxProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES, VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderIntegerDotProductProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_INTEGER_DOT_PRODUCT_PROPERTIES, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderLongVectorPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_PROPERTIES_EXT, VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_MODULE_IDENTIFIER_PROPERTIES_EXT, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderObjectPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_PROPERTIES_EXT, VK_EXT_SHADER_OBJECT_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_PROPERTIES_NV, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME}; }
@@ -443,6 +445,7 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceSampleLocationsPropertiesEXT>, VK_EXT_SAMPLE_LOCATIONS_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceSamplerFilterMinmaxProperties>, VK_EXT_SAMPLER_FILTER_MINMAX_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderIntegerDotProductProperties>, VK_KHR_SHADER_INTEGER_DOT_PRODUCT_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceShaderLongVectorPropertiesEXT>, VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT>, VK_EXT_SHADER_MODULE_IDENTIFIER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderObjectPropertiesEXT>, VK_EXT_SHADER_OBJECT_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceShaderSMBuiltinsPropertiesNV>, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME },

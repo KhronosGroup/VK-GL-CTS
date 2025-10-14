@@ -33,6 +33,8 @@ using namespace tcu;
 using namespace std;
 using namespace vk;
 using namespace vkt;
+using namespace glu;
+using vkt::subgroups::VecType;
 
 namespace
 {
@@ -50,7 +52,7 @@ struct CaseDefinition
 {
     OpType opType;
     VkShaderStageFlags shaderStage;
-    VkFormat format;
+    VecType vecType;
     de::SharedPtr<bool> geometryPointSizeSupported;
     bool requiredSubgroupSize;
     bool requires8BitUniformBuffer;
@@ -110,11 +112,11 @@ string getOpTypeCaseName(OpType opType)
     }
 }
 
-string getExtHeader(VkFormat format)
+string getExtHeader(VecType vecType)
 {
     return "#extension GL_KHR_shader_subgroup_quad: enable\n"
            "#extension GL_KHR_shader_subgroup_ballot: enable\n" +
-           subgroups::getAdditionalExtensionForFormat(format);
+           subgroups::getAdditionalExtensionForFormat(vecType);
 }
 
 string getTestSrc(const CaseDefinition &caseDef)
@@ -128,7 +130,7 @@ string getTestSrc(const CaseDefinition &caseDef)
     };
     const string validate = "  if (subgroupBallotBitExtract(mask, otherID) && op !=data[otherID])\n"
                             "    tempRes = 0;\n";
-    const string fmt      = subgroups::getFormatNameForGLSL(caseDef.format);
+    const string fmt      = subgroups::getFormatNameForGLSL(caseDef.vecType);
     const string op       = getOpTypeName(caseDef.opType);
     ostringstream testSrc;
 
@@ -183,8 +185,8 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
         (caseDef.opType == OPTYPE_QUAD_BROADCAST_NONCONST) ? SPIRV_VERSION_1_5 : SPIRV_VERSION_1_3;
     const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u);
 
-    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
-                                          *caseDef.geometryPointSizeSupported, getExtHeader(caseDef.format),
+    subgroups::initStdFrameBufferPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType,
+                                          *caseDef.geometryPointSizeSupported, getExtHeader(caseDef.vecType),
                                           getTestSrc(caseDef), "");
 }
 
@@ -202,10 +204,10 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
                                                         SPIRV_VERSION_1_3;
     const ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, spirvVersion, 0u,
                                           (spirv14required && !spirv15required));
-    const string extHeader = getExtHeader(caseDef.format);
+    const string extHeader = getExtHeader(caseDef.vecType);
     const string testSrc   = getTestSrc(caseDef);
 
-    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.format,
+    subgroups::initStdPrograms(programCollection, buildOptions, caseDef.shaderStage, caseDef.vecType,
                                *caseDef.geometryPointSizeSupported, extHeader, testSrc, "");
 }
 
@@ -217,7 +219,7 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
     if (!subgroups::areQuadOperationsSupportedForStages(context, caseDef.shaderStage))
         TCU_THROW(NotSupportedError, "Device does not support subgroup quad operations in this shader stage");
 
-    if (!subgroups::isFormatSupportedForDevice(context, caseDef.format))
+    if (!subgroups::isFormatSupportedForDevice(context, caseDef.vecType))
         TCU_THROW(NotSupportedError, "Device does not support the specified format in subgroup operations");
 
     if (caseDef.requires16BitUniformBuffer)
@@ -284,7 +286,7 @@ void supportedCheck(Context &context, CaseDefinition caseDef)
 TestStatus noSSBOtest(Context &context, const CaseDefinition caseDef)
 {
     subgroups::SSBOData inputData;
-    inputData.format         = caseDef.format;
+    inputData.vecType        = caseDef.vecType;
     inputData.layout         = subgroups::SSBOData::LayoutStd140;
     inputData.numElements    = subgroups::maxSupportedSubgroupSize();
     inputData.initializeType = subgroups::SSBOData::InitializeNonZero;
@@ -326,7 +328,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData{
             subgroups::SSBOData::InitializeNonZero, // InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      // InputDataLayoutType layout;
-            caseDef.format,                         // vk::VkFormat format;
+            caseDef.vecType,                        // vk::VkFormat format;
             subgroups::maxSupportedSubgroupSize(),  // vk::VkDeviceSize numElements;
         };
 
@@ -370,7 +372,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const VkShaderStageFlags stages = subgroups::getPossibleGraphicsSubgroupStages(context, caseDef.shaderStage);
         subgroups::SSBOData inputData;
 
-        inputData.format         = caseDef.format;
+        inputData.vecType        = caseDef.vecType;
         inputData.layout         = subgroups::SSBOData::LayoutStd430;
         inputData.numElements    = subgroups::maxSupportedSubgroupSize();
         inputData.initializeType = subgroups::SSBOData::InitializeNonZero;
@@ -387,7 +389,7 @@ TestStatus test(Context &context, const CaseDefinition caseDef)
         const subgroups::SSBOData inputData = {
             subgroups::SSBOData::InitializeNonZero, //  InputDataInitializeType initializeType;
             subgroups::SSBOData::LayoutStd430,      //  InputDataLayoutType layout;
-            caseDef.format,                         //  vk::VkFormat format;
+            caseDef.vecType,                        //  VecType vectype
             subgroups::maxSupportedSubgroupSize(),  //  vk::VkDeviceSize numElements;
             subgroups::SSBOData::BindingSSBO,       //  bool isImage;
             6u,                                     //  uint32_t binding;
@@ -432,12 +434,12 @@ TestCaseGroup *createSubgroupsQuadTests(TestContext &testCtx)
     const bool boolValues[] = {false, true};
 
     {
-        const vector<VkFormat> formats = subgroups::getAllFormats();
+        const vector<VecType> formats = subgroups::getAllFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format           = formats[formatIndex];
-            const string formatName         = subgroups::getFormatNameForGLSL(format);
+            const VecType format            = formats[formatIndex];
+            const string formatName         = subgroups::getFormatNameForTest(format);
             const bool needs8BitUBOStorage  = isFormat8bitTy(format);
             const bool needs16BitUBOStorage = isFormat16BitTy(format);
 
@@ -525,12 +527,12 @@ TestCaseGroup *createSubgroupsQuadTests(TestContext &testCtx)
 
 #ifndef CTS_USES_VULKANSC
     {
-        const vector<VkFormat> formats = subgroups::getAllRayTracingFormats();
+        const vector<VecType> formats = subgroups::getAllRayTracingFormats();
 
         for (size_t formatIndex = 0; formatIndex < formats.size(); ++formatIndex)
         {
-            const VkFormat format   = formats[formatIndex];
-            const string formatName = subgroups::getFormatNameForGLSL(format);
+            const VecType format    = formats[formatIndex];
+            const string formatName = subgroups::getFormatNameForTest(format);
 
             for (int opTypeIndex = 0; opTypeIndex < OPTYPE_LAST; ++opTypeIndex)
             {
