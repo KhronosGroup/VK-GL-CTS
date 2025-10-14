@@ -66,7 +66,7 @@ VariablePointerFeatures.variablePointers
      %uint_2 = OpConstant %uint 2
      %uint_0 = OpConstant %uint 0
     %uint_16 = OpConstant %uint 16
-   %uint_336 = OpConstant %uint 336
+   %uint_264 = OpConstant %uint 264
          %20 = OpVariable %_ptr_Workgroup__arr_uint_uint_17 Workgroup
 %gl_LocalInvocationID = OpVariable %_ptr_Input_v3uint Input
          %22 = OpVariable %_ptr_StorageBuffer__struct_3 StorageBuffer
@@ -98,7 +98,7 @@ VariablePointerFeatures.variablePointers
                OpStore %42 %uint_0
                OpBranch %43
          %43 = OpLabel
-               OpControlBarrier %uint_2 %uint_1 %uint_336
+               OpControlBarrier %uint_2 %uint_1 %uint_264
          %44 = OpFunctionCall %uint %25 %39
          %45 = OpAccessChain %_ptr_StorageBuffer_uint %24 %uint_0 %33
                OpStore %45 %44
