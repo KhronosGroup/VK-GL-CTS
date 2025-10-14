@@ -164,6 +164,7 @@ VK_KHR_ray_tracing_position_fetch
 VK_KHR_robustness2
 VK_KHR_shader_bfloat16
 VK_KHR_shader_clock
+VK_KHR_shader_fma
 VK_KHR_shader_maximal_reconvergence
 VK_KHR_shader_quad_control
 VK_KHR_shader_relaxed_extended_instruction

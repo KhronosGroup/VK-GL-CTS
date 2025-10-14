@@ -1607,6 +1607,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("maintenance8");
 	}
 
+	// VkPhysicalDeviceShaderFmaFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_fma")) )
+	{
+		if ( physicalDeviceShaderFmaFeaturesKHR.shaderFmaFloat32 == VK_FALSE )
+			failMesages.push_back("shaderFmaFloat32");
+	}
+
 	// VkPhysicalDeviceMaintenance9FeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance9")) )
 	{

@@ -223,6 +223,7 @@ typedef std::variant<
     , VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT
     , VkPhysicalDeviceMaintenance8FeaturesKHR
     , VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+    , VkPhysicalDeviceShaderFmaFeaturesKHR
     , VkPhysicalDeviceDepthClampControlFeaturesEXT
     , VkPhysicalDeviceMaintenance9FeaturesKHR
     , VkPhysicalDeviceVideoMaintenance2FeaturesKHR

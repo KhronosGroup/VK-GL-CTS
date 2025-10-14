@@ -591,6 +591,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControls2Tests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControlsExtensionlessTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFloatControlsTests.cpp",
+        "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFmaTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmFromHlslTests.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmGraphicsShaderTestUtil.cpp",
         "external/vulkancts/modules/vulkan/spirv_assembly/vktSpvAsmImageSamplerTests.cpp",
