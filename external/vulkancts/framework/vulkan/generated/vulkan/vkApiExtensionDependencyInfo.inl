@@ -894,6 +894,18 @@ bool check_VK_EXT_conservative_rasterization(const tcu::UVec2& v, const ExtPropV
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_EXT_cooperative_matrix_maintenance1(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_cooperative_matrix_maintenance1"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_cooperative_matrix
+	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
+}
+
 bool check_VK_EXT_custom_border_color(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4885,6 +4897,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_color_write_enable",								&check_VK_EXT_color_write_enable),
 	std::make_pair("VK_EXT_conditional_rendering",							&check_VK_EXT_conditional_rendering),
 	std::make_pair("VK_EXT_conservative_rasterization",						&check_VK_EXT_conservative_rasterization),
+	std::make_pair("VK_EXT_cooperative_matrix_maintenance1",				&check_VK_EXT_cooperative_matrix_maintenance1),
 	std::make_pair("VK_EXT_custom_border_color",							&check_VK_EXT_custom_border_color),
 	std::make_pair("VK_EXT_custom_resolve",									&check_VK_EXT_custom_resolve),
 	std::make_pair("VK_EXT_debug_marker",									&check_VK_EXT_debug_marker),
@@ -5272,6 +5285,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_color_write_enable"),
 	std::make_tuple(1, 0, "VK_EXT_conditional_rendering"),
 	std::make_tuple(1, 0, "VK_EXT_conservative_rasterization"),
+	std::make_tuple(1, 0, "VK_EXT_cooperative_matrix_maintenance1"),
 	std::make_tuple(1, 0, "VK_EXT_custom_border_color"),
 	std::make_tuple(1, 0, "VK_EXT_custom_resolve"),
 	std::make_tuple(1, 0, "VK_EXT_debug_marker"),

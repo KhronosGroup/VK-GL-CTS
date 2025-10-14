@@ -45,6 +45,7 @@ virtual VkResult		getDisplayPlaneSupportedDisplaysKHR									(VkPhysicalDevice 
 virtual VkResult		getDrmDisplayEXT													(VkPhysicalDevice physicalDevice, int32_t drmFd, uint32_t connectorId, VkDisplayKHR* display) const = 0;
 virtual VkResult		getPhysicalDeviceCalibrateableTimeDomainsKHR						(VkPhysicalDevice physicalDevice, uint32_t* pTimeDomainCount, VkTimeDomainKHR* pTimeDomains) const = 0;
 virtual VkResult		getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV	(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixFlexibleDimensionsPropertiesNV* pProperties) const = 0;
+virtual VkResult		getPhysicalDeviceCooperativeMatrixProperties2EXT					(VkPhysicalDevice physicalDevice, const VkPhysicalDeviceCooperativeMatrixInfo2EXT* pCooperativeMatrixInfo, uint32_t* pPropertyCount, VkCooperativeMatrixProperties2EXT* pProperties) const = 0;
 virtual VkResult		getPhysicalDeviceCooperativeMatrixPropertiesKHR						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties) const = 0;
 virtual VkResult		getPhysicalDeviceCooperativeMatrixPropertiesNV						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesNV* pProperties) const = 0;
 virtual VkResult		getPhysicalDeviceCooperativeVectorPropertiesNV						(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeVectorPropertiesNV* pProperties) const = 0;

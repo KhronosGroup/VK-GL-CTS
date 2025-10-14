@@ -1510,6 +1510,7 @@ const char* getDriverIdName (VkDriverId value)
 		case VK_DRIVER_ID_MOLTENVK:							return "VK_DRIVER_ID_MOLTENVK";
 		case VK_DRIVER_ID_NVIDIA_PROPRIETARY:				return "VK_DRIVER_ID_NVIDIA_PROPRIETARY";
 		case VK_DRIVER_ID_QUALCOMM_PROPRIETARY:				return "VK_DRIVER_ID_QUALCOMM_PROPRIETARY";
+		case VK_DRIVER_ID_RESERVED_31:						return "VK_DRIVER_ID_RESERVED_31";
 		case VK_DRIVER_ID_SAMSUNG_PROPRIETARY:				return "VK_DRIVER_ID_SAMSUNG_PROPRIETARY";
 		case VK_DRIVER_ID_VERISILICON_PROPRIETARY:			return "VK_DRIVER_ID_VERISILICON_PROPRIETARY";
 		case VK_DRIVER_ID_VULKAN_SC_EMULATION_ON_VULKAN:	return "VK_DRIVER_ID_VULKAN_SC_EMULATION_ON_VULKAN";
@@ -3183,6 +3184,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT:									return "VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT";
 		case VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV:								return "VK_STRUCTURE_TYPE_CONVERT_COOPERATIVE_VECTOR_MATRIX_INFO_NV";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV:					return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_FLEXIBLE_DIMENSIONS_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_2_EXT:										return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_2_EXT";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR:										return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV:										return "VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_COOPERATIVE_VECTOR_PROPERTIES_NV:										return "VK_STRUCTURE_TYPE_COOPERATIVE_VECTOR_PROPERTIES_NV";
@@ -3585,6 +3587,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_DECODE_VECTOR_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_DECODE_VECTOR_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_INFO_2_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_INFO_2_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_MAINTENANCE_1_FEATURES_EXT:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_MAINTENANCE_1_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV";
@@ -4924,6 +4928,16 @@ tcu::Format::Bitfield<32> getConditionalRenderingFlagsEXTStr (VkConditionalRende
 	static const tcu::Format::BitDesc s_desc[] =
 	{
 		tcu::Format::BitDesc(VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT,	"VK_CONDITIONAL_RENDERING_INVERTED_BIT_EXT"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<32> getCooperativeMatrixFlagsEXTStr (VkCooperativeMatrixFlagsEXT value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_COOPERATIVE_MATRIX_SATURATING_ACCUMULATION_BIT_EXT,	"VK_COOPERATIVE_MATRIX_SATURATING_ACCUMULATION_BIT_EXT"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
@@ -8473,6 +8487,22 @@ std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixFlexibleDime
 	s << "\tsaturatingAccumulation = " << value.saturatingAccumulation << '\n';
 	s << "\tscope = " << value.scope << '\n';
 	s << "\tworkgroupInvocations = " << value.workgroupInvocations << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkCooperativeMatrixProperties2EXT& value)
+{
+	s << "VkCooperativeMatrixProperties2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tMGranularity = " << value.MGranularity << '\n';
+	s << "\tNGranularity = " << value.NGranularity << '\n';
+	s << "\tKGranularity = " << value.KGranularity << '\n';
+	s << "\tAType = " << value.AType << '\n';
+	s << "\tBType = " << value.BType << '\n';
+	s << "\tCType = " << value.CType << '\n';
+	s << "\tResultType = " << value.ResultType << '\n';
 	s << '}';
 	return s;
 }
@@ -13181,6 +13211,33 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatr
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tcooperativeMatrix = " << value.cooperativeMatrix << '\n';
 	s << "\tcooperativeMatrixRobustBufferAccess = " << value.cooperativeMatrixRobustBufferAccess << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixInfo2EXT& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixInfo2EXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tscope = " << value.scope << '\n';
+	s << "\tinvocations = " << value.invocations << '\n';
+	s << "\tsubgroupSize = " << value.subgroupSize << '\n';
+	s << "\tflags = " << getCooperativeMatrixFlagsEXTStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcooperativeMatrixProperties2 = " << value.cooperativeMatrixProperties2 << '\n';
+	s << "\tcooperativeMatrixReductions = " << value.cooperativeMatrixReductions << '\n';
+	s << "\tcooperativeMatrixConversions = " << value.cooperativeMatrixConversions << '\n';
+	s << "\tcooperativeMatrixPerElementOperations = " << value.cooperativeMatrixPerElementOperations << '\n';
+	s << "\tcooperativeMatrixGetCoordinate = " << value.cooperativeMatrixGetCoordinate << '\n';
 	s << '}';
 	return s;
 }

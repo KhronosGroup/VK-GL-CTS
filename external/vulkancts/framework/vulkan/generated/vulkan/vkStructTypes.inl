@@ -2028,6 +2028,19 @@ struct VkCooperativeMatrixFlexibleDimensionsPropertiesNV
 	uint32_t			workgroupInvocations;
 };
 
+struct VkCooperativeMatrixProperties2EXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			MGranularity;
+	uint32_t			NGranularity;
+	uint32_t			KGranularity;
+	VkComponentTypeKHR	AType;
+	VkComponentTypeKHR	BType;
+	VkComponentTypeKHR	CType;
+	VkComponentTypeKHR	ResultType;
+};
+
 struct VkCooperativeMatrixPropertiesKHR
 {
 	VkStructureType		sType;
@@ -5536,6 +5549,27 @@ struct VkPhysicalDeviceCooperativeMatrixFeaturesNV
 	void*			pNext;
 	VkBool32		cooperativeMatrix;
 	VkBool32		cooperativeMatrixRobustBufferAccess;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixInfo2EXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkScopeKHR					scope;
+	uint32_t					invocations;
+	uint32_t					subgroupSize;
+	VkCooperativeMatrixFlagsEXT	flags;
+};
+
+struct VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		cooperativeMatrixProperties2;
+	VkBool32		cooperativeMatrixReductions;
+	VkBool32		cooperativeMatrixConversions;
+	VkBool32		cooperativeMatrixPerElementOperations;
+	VkBool32		cooperativeMatrixGetCoordinate;
 };
 
 struct VkPhysicalDeviceCooperativeMatrixPropertiesKHR

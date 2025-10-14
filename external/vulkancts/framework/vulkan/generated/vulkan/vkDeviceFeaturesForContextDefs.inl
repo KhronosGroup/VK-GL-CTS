@@ -23,6 +23,7 @@ const vk::VkPhysicalDeviceConditionalRenderingFeaturesEXT&					Context::getCondi
 const vk::VkPhysicalDeviceCooperativeMatrix2FeaturesNV&						Context::getCooperativeMatrix2FeaturesNV					(void) const { return m_device->getCooperativeMatrix2FeaturesNV();					}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR&						Context::getCooperativeMatrixFeatures						(void) const { return m_device->getCooperativeMatrixFeatures();						}
 const vk::VkPhysicalDeviceCooperativeMatrixFeaturesNV&						Context::getCooperativeMatrixFeaturesNV						(void) const { return m_device->getCooperativeMatrixFeaturesNV();					}
+const vk::VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT&			Context::getCooperativeMatrixMaintenance1FeaturesEXT		(void) const { return m_device->getCooperativeMatrixMaintenance1FeaturesEXT();		}
 const vk::VkPhysicalDeviceCooperativeVectorFeaturesNV&						Context::getCooperativeVectorFeaturesNV						(void) const { return m_device->getCooperativeVectorFeaturesNV();					}
 const vk::VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&					Context::getCopyMemoryIndirectFeatures						(void) const { return m_device->getCopyMemoryIndirectFeatures();					}
 const vk::VkPhysicalDeviceCornerSampledImageFeaturesNV&						Context::getCornerSampledImageFeatures						(void) const { return m_device->getCornerSampledImageFeatures();					}

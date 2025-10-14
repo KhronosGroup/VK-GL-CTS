@@ -3930,6 +3930,15 @@ VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixFlexibleDimensi
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixProperties2EXT (VkPhysicalDevice physicalDevice, const VkPhysicalDeviceCooperativeMatrixInfo2EXT* pCooperativeMatrixInfo, uint32_t* pPropertyCount, VkCooperativeMatrixProperties2EXT* pProperties)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(pCooperativeMatrixInfo);
+	DE_UNREF(pPropertyCount);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPhysicalDeviceCooperativeMatrixPropertiesKHR (VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkCooperativeMatrixPropertiesKHR* pProperties)
 {
 	DE_UNREF(physicalDevice);
@@ -5349,6 +5358,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetDrmDisplayEXT,														getDrmDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCalibrateableTimeDomainsKHR,							getPhysicalDeviceCalibrateableTimeDomainsKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV,		getPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixProperties2EXT,						getPhysicalDeviceCooperativeMatrixProperties2EXT),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesKHR,						getPhysicalDeviceCooperativeMatrixPropertiesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeMatrixPropertiesNV,						getPhysicalDeviceCooperativeMatrixPropertiesNV),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceCooperativeVectorPropertiesNV,						getPhysicalDeviceCooperativeVectorPropertiesNV),

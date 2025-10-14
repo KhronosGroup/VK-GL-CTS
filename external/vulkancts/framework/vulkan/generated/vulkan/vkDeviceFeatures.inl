@@ -258,6 +258,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceConditionalRenderingFeatures
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>(VkPhysicalDeviceCooperativeMatrix2FeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>(VkPhysicalDeviceCooperativeMatrixFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrixFeaturesNV>(VkPhysicalDeviceCooperativeMatrixFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT>(VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCooperativeVectorFeaturesNV>(VkPhysicalDeviceCooperativeVectorFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>(VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCornerSampledImageFeaturesNV>(VkPhysicalDeviceCornerSampledImageFeaturesNV&, const AllFeaturesBlobs&) {}
@@ -430,6 +431,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceConditionalRenderingFeatu
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrixFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_MAINTENANCE_1_FEATURES_EXT, VK_EXT_COOPERATIVE_MATRIX_MAINTENANCE_1_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCooperativeVectorFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_VECTOR_FEATURES_NV, VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCornerSampledImageFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CORNER_SAMPLED_IMAGE_FEATURES_NV, VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME}; }
@@ -646,6 +648,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrix2FeaturesNV>, VK_NV_COOPERATIVE_MATRIX_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrixFeaturesKHR>, VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrixFeaturesNV>, VK_NV_COOPERATIVE_MATRIX_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT>, VK_EXT_COOPERATIVE_MATRIX_MAINTENANCE_1_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCooperativeVectorFeaturesNV>, VK_NV_COOPERATIVE_VECTOR_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR>, VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCornerSampledImageFeaturesNV>, VK_NV_CORNER_SAMPLED_IMAGE_EXTENSION_NAME },

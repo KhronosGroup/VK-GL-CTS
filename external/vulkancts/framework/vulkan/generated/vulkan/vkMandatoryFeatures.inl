@@ -121,6 +121,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_matrix"))
 		addFeatures(&physicalDeviceCooperativeMatrixFeaturesNV);
 
+	// VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT for ext [VK_EXT_cooperative_matrix_maintenance1]
+	vk::VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT physicalDeviceCooperativeMatrixMaintenance1FeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_cooperative_matrix_maintenance1"))
+		addFeatures(&physicalDeviceCooperativeMatrixMaintenance1FeaturesEXT);
+
 	// VkPhysicalDeviceCooperativeVectorFeaturesNV for ext [VK_NV_cooperative_vector]
 	vk::VkPhysicalDeviceCooperativeVectorFeaturesNV physicalDeviceCooperativeVectorFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_cooperative_vector"))
@@ -2759,6 +2764,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT.shaderUniformBufferUnsizedArray == VK_FALSE )
 			failMesages.push_back("shaderUniformBufferUnsizedArray");
+	}
+
+	// VkPhysicalDeviceCooperativeMatrixMaintenance1FeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_cooperative_matrix_maintenance1")) )
+	{
+		if ( physicalDeviceCooperativeMatrixMaintenance1FeaturesEXT.cooperativeMatrixProperties2 == VK_FALSE )
+			failMesages.push_back("cooperativeMatrixProperties2");
 	}
 
 	// VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT
