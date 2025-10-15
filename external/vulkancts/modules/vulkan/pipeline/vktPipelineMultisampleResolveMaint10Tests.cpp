@@ -1353,8 +1353,9 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             const auto resLayer =
                 tcu::getSubregion(*depthResult, 0, 0, static_cast<int>(i), fullExtent.x(), fullExtent.y(), 1);
 
-            // Choose a threshold according to the format. The threshold will be more than 1 unit but less than 2 for
-            // UNORM formats. For SFLOAT, which has 24 mantissa bits (23 explicitly stored), we make it similar to D24.
+            // Choose a threshold according to the format. The threshold will generally be more than 1 unit but less
+            // than 2 for UNORM formats. For SFLOAT, which has 24 mantissa bits (23 explicitly stored), we make it
+            // similar to D24.
             float depthThreshold = 0.0f;
             switch (m_params.imageFormat)
             {
@@ -1365,7 +1366,16 @@ tcu::TestStatus Maint10ResolveInstance::iterate(void)
             case VK_FORMAT_D24_UNORM_S8_UINT:
             case VK_FORMAT_D32_SFLOAT:
             case VK_FORMAT_D32_SFLOAT_S8_UINT:
-                depthThreshold = 0.000000075f;
+                // In practice, we detected that the original threshold here (0.000000075f) was not enough in some
+                // cases. We need to take into account that the reference value is calculated using floats, which have
+                // their own precission issues, and the spec does not specify how the implementation calculates the
+                // average. If the implementation is storing the sample values first as D24s and sampling them later,
+                // it's losing precission already in that step, on top of the average and final store.
+                //
+                // Increasing the threshold to 2 units for D24 and D32 is still reasonable.
+                //
+                //depthThreshold = 0.000000075f;
+                depthThreshold = 0.000000125f;
                 break;
             default:
                 DE_ASSERT(false);
