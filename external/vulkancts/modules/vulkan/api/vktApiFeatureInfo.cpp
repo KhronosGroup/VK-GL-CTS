@@ -1212,6 +1212,12 @@ tcu::TestStatus validateLimits14(Context &context)
         {PN(checkAlways), PN(limits.subTexelPrecisionBits), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.mipmapPrecisionBits), LIM_MIN_UINT32(6)},
         {PN(checkAlways), PN(limits.maxSamplerLodBias), LIM_MIN_FLOAT(14.0f)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[0]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxViewportDimensions[1]), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[0]), LIM_MAX_FLOAT(-15360.0f)},
+        {PN(checkAlways), PN(limits.viewportBoundsRange[1]), LIM_MIN_FLOAT(15359.0f)},
+        {PN(checkAlways), PN(limits.maxFramebufferWidth), LIM_MIN_UINT32(7680)},
+        {PN(checkAlways), PN(limits.maxFramebufferHeight), LIM_MIN_UINT32(7680)},
         {PN(checkAlways), PN(limits.maxColorAttachments), LIM_MIN_UINT32(8)},
         {PN(checkAlways), PN(limits.timestampComputeAndGraphics), LIM_MIN_UINT32(1)},
         {PN(checkAlways), PN(limits.standardSampleLocations), LIM_MIN_UINT32(1)},
@@ -1646,37 +1652,39 @@ tcu::TestStatus validateLimitsExtInlineUniformBlock(Context &context)
         return tcu::TestStatus::fail("fail");
 }
 
-#endif // CTS_USES_VULKANSC
-
 void checkSupportExtVertexAttributeDivisorEXT(Context &context)
 {
     context.requireDeviceFunctionality("VK_EXT_vertex_attribute_divisor");
 }
+
+#endif // CTS_USES_VULKANSC
 
 void checkSupportExtVertexAttributeDivisorKHR(Context &context)
 {
     context.requireDeviceFunctionality("VK_KHR_vertex_attribute_divisor");
 }
 
+#ifndef CTS_USES_VULKANSC
+// VK_EXT_vertex_attribute_divisor is not supported for Vulkan SC
 tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
 {
     const VkBool32 checkAlways            = VK_TRUE;
     const InstanceInterface &vk           = context.getInstanceInterface();
     const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
-    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR vertexAttributeDivisorPropertiesKHR =
+    vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesEXT vertexAttributeDivisorPropertiesEXT =
         vk::initVulkanStructure();
-    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesKHR);
+    vk::VkPhysicalDeviceProperties2 properties2 = vk::initVulkanStructure(&vertexAttributeDivisorPropertiesEXT);
     TestLog &log                                = context.getTestContext().getLog();
     bool limitsOk                               = true;
 
     vk.getPhysicalDeviceProperties2(physicalDevice, &properties2);
 
     FeatureLimitTableItem featureLimitTable[] = {
-        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesKHR.maxVertexAttribDivisor),
+        {PN(checkAlways), PN(vertexAttributeDivisorPropertiesEXT.maxVertexAttribDivisor),
          LIM_MIN_UINT32((1 << 16) - 1)},
     };
 
-    log << TestLog::Message << vertexAttributeDivisorPropertiesKHR << TestLog::EndMessage;
+    log << TestLog::Message << vertexAttributeDivisorPropertiesEXT << TestLog::EndMessage;
 
     for (uint32_t ndx = 0; ndx < DE_LENGTH_OF_ARRAY(featureLimitTable); ndx++)
         limitsOk = validateLimit(featureLimitTable[ndx], log) && limitsOk;
@@ -1686,6 +1694,7 @@ tcu::TestStatus validateLimitsExtVertexAttributeDivisorEXT(Context &context)
     else
         return tcu::TestStatus::fail("fail");
 }
+#endif
 
 tcu::TestStatus validateLimitsExtVertexAttributeDivisorKHR(Context &context)
 {
@@ -3654,7 +3663,11 @@ namespace
 
 tcu::TestStatus deviceMandatoryFeatures(Context &context)
 {
-    bool result = checkBasicMandatoryFeatures(context);
+    std::vector<std::string> failMesages;
+    checkBasicMandatoryFeatures(context, failMesages);
+
+    tcu::TestLog &log           = context.getTestContext().getLog();
+    bool additionalChecksPassed = true;
 
 #if defined(CTS_USES_VULKAN)
     // for vulkan 1.4+ we need to check complex cases that were not generated in vkMandatoryFeatures.inl
@@ -3664,7 +3677,6 @@ tcu::TestStatus deviceMandatoryFeatures(Context &context)
         VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
         const auto &cmdLine             = context.getTestContext().getCommandLine();
         const auto &vulkan14Features    = context.getDeviceVulkan14Features();
-        tcu::TestLog &log               = context.getTestContext().getLog();
 
         if (!cmdLine.isComputeOnly() && (vulkan14Features.hostImageCopy == VK_FALSE))
         {
@@ -3687,16 +3699,31 @@ tcu::TestStatus deviceMandatoryFeatures(Context &context)
                     << "Implementation that has a VK_QUEUE_GRAPHICS_BIT queue must support "
                        "either the hostImageCopy feature or an additional queue that supports VK_QUEUE_TRANSFER_BIT"
                     << tcu::TestLog::EndMessage;
-                result = false;
+                additionalChecksPassed = false;
             }
         }
     }
 #endif // defined(CTS_USES_VULKAN)
 
-    if (result)
-        return tcu::TestStatus::pass("Passed");
+    if (additionalChecksPassed)
+    {
+        if (failMesages.empty())
+            return tcu::TestStatus::pass("Passed");
 
-    return tcu::TestStatus::fail("Not all mandatory features are supported ( see: vkspec.html#features-requirements )");
+        auto constructMessage = [](const std::string &failMesage)
+        { return std::string("Mandatory feature ") + failMesage + " not supported"; };
+
+        // if there is only one failure return the exact message
+        if (failMesages.size() == 1)
+            return tcu::TestStatus::fail(constructMessage(failMesages[0]));
+
+        // log all failures
+        for (const auto &fm : failMesages)
+            log << tcu::TestLog::Message << constructMessage(fm) << tcu::TestLog::EndMessage;
+    }
+
+    return tcu::TestStatus::fail(
+        "Not all mandatory features are supported, see log and vkspec.html#features-requirements");
 }
 
 VkFormatFeatureFlags getBaseRequiredOptimalTilingFeatures(VkFormat format)
@@ -4607,7 +4634,9 @@ bool isRequiredImageParameterCombination(const VkPhysicalDeviceFeatures &deviceF
 
 VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLimits &deviceLimits, bool hasVulkan12,
                                                         const VkPhysicalDeviceVulkan12Properties &vulkan12Properties,
-                                                        const VkFormat format, const VkImageUsageFlags usageFlags)
+                                                        const VkPhysicalDeviceFeatures &deviceFeatures,
+                                                        const VkImageCreateFlags createFlags, const VkFormat format,
+                                                        const VkImageUsageFlags usageFlags)
 {
     if (isCompressedFormat(format))
         return VK_SAMPLE_COUNT_1_BIT;
@@ -4675,6 +4704,26 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
 
         if (hasStencilComp)
             sampleCounts &= deviceLimits.framebufferStencilSampleCounts;
+    }
+
+    if ((createFlags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT) != 0)
+    {
+        const VkSampleCountFlags sparseSampleCounts =
+            VK_SAMPLE_COUNT_1_BIT | (deviceFeatures.sparseResidency2Samples ? VK_SAMPLE_COUNT_2_BIT : 0) |
+            (deviceFeatures.sparseResidency4Samples ? VK_SAMPLE_COUNT_4_BIT : 0) |
+            (deviceFeatures.sparseResidency8Samples ? VK_SAMPLE_COUNT_8_BIT : 0) |
+            (deviceFeatures.sparseResidency16Samples ? VK_SAMPLE_COUNT_16_BIT : 0);
+
+        sampleCounts &= sparseSampleCounts;
+
+        // Vulkan spec says:
+        //     A sparse image created using VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT supports all non-compressed
+        //     color formats with power-of-two element size that non-sparse usage supports. Additional formats
+        //     may also be supported and can be queried via vkGetPhysicalDeviceSparseImageFormatProperties.
+        //
+        // So for non-color formats, just require VK_SAMPLE_COUNT_1_BIT.
+        if (!isColorFormat)
+            sampleCounts &= VK_SAMPLE_COUNT_1_BIT;
     }
 
     // If there is no usage flag set that would have corresponding device limit,
@@ -4812,8 +4861,9 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
                     (supportedFeatures &
                      (VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT)))
                 {
-                    const VkSampleCountFlags requiredSampleCounts = getRequiredOptimalTilingSampleCounts(
-                        deviceLimits, hasVulkan12, vulkan12Properties, format, curUsageFlags);
+                    const VkSampleCountFlags requiredSampleCounts =
+                        getRequiredOptimalTilingSampleCounts(deviceLimits, hasVulkan12, vulkan12Properties,
+                                                             deviceFeatures, curCreateFlags, format, curUsageFlags);
                     results.check((properties.sampleCounts & requiredSampleCounts) == requiredSampleCounts,
                                   "Required sample counts not supported");
                 }
@@ -8594,9 +8644,9 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
         // Removed from Vulkan SC test set: VK_EXT_inline_uniform_block extension removed from Vulkan SC
         addFunctionCase(limitsValidationTests.get(), "ext_inline_uniform_block", checkSupportExtInlineUniformBlock,
                         validateLimitsExtInlineUniformBlock);
-#endif // CTS_USES_VULKANSC
         addFunctionCase(limitsValidationTests.get(), "ext_vertex_attribute_divisor",
                         checkSupportExtVertexAttributeDivisorEXT, validateLimitsExtVertexAttributeDivisorEXT);
+#endif // CTS_USES_VULKANSC
         addFunctionCase(limitsValidationTests.get(), "khr_vertex_attribute_divisor",
                         checkSupportExtVertexAttributeDivisorKHR, validateLimitsExtVertexAttributeDivisorKHR);
 #ifndef CTS_USES_VULKANSC

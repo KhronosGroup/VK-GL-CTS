@@ -32,7 +32,6 @@
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
-#include "vkImageWithMemory.hpp"
 #include "vkTypeUtil.hpp"
 
 #include "vkRayTracingUtil.hpp"
@@ -7943,9 +7942,14 @@ RayTracingMiscTestInstance::~RayTracingMiscTestInstance(void)
 
 void RayTracingMiscTestInstance::checkSupport(void) const
 {
+    // Checks if the buffer size is within the limits of the device.
     if (m_testPtr->getResultBufferSize() > m_context.getDeviceVulkan11Properties().maxMemoryAllocationSize)
         TCU_THROW(NotSupportedError,
                   "VkPhysicalDeviceVulkan11Properties::maxMemoryAllocationSize too small, allocation might fail");
+
+    if (m_testPtr->getResultBufferSize() > m_context.getDeviceProperties().limits.maxStorageBufferRange)
+        TCU_THROW(NotSupportedError,
+                  "VkPhysicalDeviceLimits::maxStorageBufferRange too small, updating descriptor might fail");
 }
 
 de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)
@@ -9225,6 +9229,721 @@ tcu::TestStatus reuseScratchBufferInstance(Context &context)
     return tcu::TestStatus::pass("Pass");
 }
 
+void initEmptyASPrograms(vk::SourceCollections &programCollection)
+{
+    const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::ostringstream rgen;
+    rgen << "#version 460 core\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (location=0) rayPayloadEXT vec4 payload;\n"
+         << "layout (set=0, binding=0) uniform accelerationStructureEXT topLevelAS;\n"
+         << "layout (set=0, binding=1) buffer BufferBlock { vec4 color; } outBuffer;\n"
+         << "void main()\n"
+         << "{\n"
+         << "    const uint  rayFlags  = gl_RayFlagsNoneEXT;\n"
+         << "    const vec3  origin    = vec3(0.0, 0.0, 0.0);\n"
+         << "    const vec3  direction = vec3(0.0, 0.0, 1.0);\n"
+         << "    const float tMin      = 1.0;\n"
+         << "    const float tMax      = 100.0;\n"
+         << "    const uint  missIndex = 0u;\n"
+         << "    const uint  cullMask  = 0xFFu;\n"
+         << "    const uint  sbtOffset = 0u;\n"
+         << "    const uint  sbtStride = 0u;\n"
+         << "\n"
+         << "    traceRayEXT(topLevelAS, rayFlags, cullMask, sbtOffset, sbtStride, missIndex, origin, tMin, direction, "
+            "tMax, 0);\n"
+         << "    outBuffer.color = payload;\n"
+         << "}\n";
+    programCollection.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
+
+    std::ostringstream chit;
+    chit << "#version 460 core\n"
+         //<< "#extension GL_EXT_debug_printf : enable\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (location=0) rayPayloadInEXT vec4 payload;\n"
+         << "void main(void) {\n"
+         //<< "    debugPrintfEXT(\"Hit for %u %u\\n\", gl_LaunchIDEXT.x, gl_LaunchIDEXT.y);\n"
+         << "    payload = vec4(1.0, 0.0, 0.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("chit") << glu::ClosestHitSource(chit.str()) << buildOptions;
+
+    std::ostringstream miss;
+    miss << "#version 460 core\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         //<< "#extension GL_EXT_debug_printf : enable\n"
+         << "layout (location=0) rayPayloadInEXT vec4 payload;\n"
+         << "void main(void) {\n"
+         //<< "    debugPrintfEXT(\"Miss for %u %u\\n\", gl_LaunchIDEXT.x, gl_LaunchIDEXT.y);\n"
+         << "    payload = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("miss") << glu::MissSource(miss.str()) << buildOptions;
+}
+
+// Auxiliar function to fill a buffer with pseudorandom bytes.
+void fillBufferRandomly(const DeviceInterface &vkd, VkDevice device, const BufferWithMemory &buffer, de::Random &rnd)
+{
+    DE_ASSERT(buffer.getBufferSize() <= std::numeric_limits<size_t>::max());
+
+    auto &alloc    = buffer.getAllocation();
+    uint8_t *bytes = reinterpret_cast<uint8_t *>(alloc.getHostPtr());
+
+    for (size_t i = 0; i < static_cast<size_t>(buffer.getBufferSize()); ++i)
+        *(bytes + i) = rnd.getUint8();
+
+    flushAlloc(vkd, device, alloc);
+}
+
+tcu::TestStatus updateEmptyBottomASInstance(Context &context)
+{
+    const auto ctx                    = context.getContextCommonData();
+    constexpr uint32_t kPaddingFactor = 8u;
+    de::Random rnd(1748512952u);
+    const auto scratchBufferUsage = (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    const auto asBufferUsage =
+        (VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    const auto scratchBufferMemReqs =
+        (MemoryRequirement::Coherent | MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const auto asBufferMemReqs =
+        (MemoryRequirement::Coherent | MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const auto asReadAccess   = static_cast<VkAccessFlags>(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR);
+    const auto asModifyAccess = (asReadAccess | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR);
+    const auto asBuildStage   = VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+    const auto asUsageStage   = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Bottom structure sizes.
+    const VkAccelerationStructureBuildGeometryInfoKHR blasGeometryInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+        VK_NULL_HANDLE,
+        VK_NULL_HANDLE,
+        0u,
+        nullptr,
+        nullptr,
+        makeDeviceOrHostAddressKHR(nullptr),
+    };
+
+    VkDeviceSize blasBufferSize = 0ull;
+    VkDeviceSize blasBuildSize  = 0ull;
+    VkDeviceSize blasUpdateSize = 0ull;
+
+    {
+        VkAccelerationStructureBuildSizesInfoKHR bottomBuildSizes = initVulkanStructure();
+        ctx.vkd.getAccelerationStructureBuildSizesKHR(ctx.device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                                                      &blasGeometryInfo, nullptr, &bottomBuildSizes);
+        blasBufferSize = bottomBuildSizes.accelerationStructureSize * kPaddingFactor;
+        blasBuildSize  = bottomBuildSizes.buildScratchSize * kPaddingFactor;
+        blasUpdateSize = bottomBuildSizes.updateScratchSize * kPaddingFactor;
+    }
+
+    // Top structure sizes.
+    VkAccelerationStructureGeometryDataKHR geometryData;
+    geometryData.instances = initVulkanStructure();
+
+    const VkAccelerationStructureGeometryKHR tlasGeometry = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+        nullptr,
+        VK_GEOMETRY_TYPE_INSTANCES_KHR,
+        geometryData,
+        0u,
+    };
+
+    const VkAccelerationStructureBuildGeometryInfoKHR tlasGeometryInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        0u,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+        VK_NULL_HANDLE,
+        VK_NULL_HANDLE,
+        1u,
+        &tlasGeometry,
+        nullptr,
+        makeDeviceOrHostAddressKHR(nullptr),
+    };
+
+    VkAccelerationStructureBuildSizesInfoKHR tlasBuildSizes = initVulkanStructure();
+    const uint32_t tlasPrimitiveCount                       = 1u;
+    ctx.vkd.getAccelerationStructureBuildSizesKHR(ctx.device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                                                  &tlasGeometryInfo, &tlasPrimitiveCount, &tlasBuildSizes);
+
+    // This is not in the spec, but it would point to an implementation bug, very likely.
+    if (blasBufferSize > std::numeric_limits<size_t>::max())
+        TCU_FAIL("Empty acceleration structure size too large");
+
+    if (blasBuildSize > std::numeric_limits<size_t>::max())
+        TCU_FAIL("Empty acceleration structure size too large");
+
+    if (blasUpdateSize > std::numeric_limits<size_t>::max())
+        TCU_FAIL("Empty acceleration structure size too large");
+
+    // Acceleration structure storage buffers.
+    const auto blasBufferInfo = makeBufferCreateInfo(blasBufferSize, asBufferUsage);
+    BufferWithMemory blasBuffer(ctx.vkd, ctx.device, ctx.allocator, blasBufferInfo, asBufferMemReqs);
+    fillBufferRandomly(ctx.vkd, ctx.device, blasBuffer, rnd);
+
+    const auto tlasBufferInfo = makeBufferCreateInfo(tlasBuildSizes.accelerationStructureSize, asBufferUsage);
+    BufferWithMemory tlasBuffer(ctx.vkd, ctx.device, ctx.allocator, tlasBufferInfo, asBufferMemReqs);
+
+    // Scratch buffers for the build operation.
+    const auto blasScratchBuildBufferInfo = makeBufferCreateInfo(blasBuildSize, scratchBufferUsage);
+    BufferWithMemory blasScratchBuildBuffer(ctx.vkd, ctx.device, ctx.allocator, blasScratchBuildBufferInfo,
+                                            scratchBufferMemReqs);
+    fillBufferRandomly(ctx.vkd, ctx.device, blasScratchBuildBuffer, rnd);
+
+    const auto tlasScratchBuildBufferInfo = makeBufferCreateInfo(tlasBuildSizes.buildScratchSize, scratchBufferUsage);
+    BufferWithMemory tlasScratchBuildBuffer(ctx.vkd, ctx.device, ctx.allocator, tlasScratchBuildBufferInfo,
+                                            scratchBufferMemReqs);
+
+    // Scratch buffer for the update operation.
+    const auto scratchUpdateBufferInfo = makeBufferCreateInfo(blasUpdateSize, scratchBufferUsage);
+    BufferWithMemory scratchUpdateBuffer(ctx.vkd, ctx.device, ctx.allocator, scratchUpdateBufferInfo,
+                                         scratchBufferMemReqs);
+    fillBufferRandomly(ctx.vkd, ctx.device, scratchUpdateBuffer, rnd);
+
+    // Create empty bottom-level acceleration structure with the previous buffer.
+    const VkAccelerationStructureCreateInfoKHR blasCreateInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR, nullptr, 0u, blasBuffer.get(), 0ull, blasBufferSize,
+        VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,          0ull,
+    };
+    const auto blas = createAccelerationStructureKHR(ctx.vkd, ctx.device, &blasCreateInfo);
+
+    // Create top-level acceleration structure to contain it.
+    const VkAccelerationStructureCreateInfoKHR tlasCreateInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+        nullptr,
+        0u,
+        tlasBuffer.get(),
+        0ull,
+        tlasBuildSizes.accelerationStructureSize,
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        0ull,
+    };
+    const auto tlas = createAccelerationStructureKHR(ctx.vkd, ctx.device, &tlasCreateInfo);
+
+    // Build the empty acceleration structure.
+    const VkAccelerationStructureBuildGeometryInfoKHR blasGeometryBuildInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+        VK_NULL_HANDLE,
+        *blas,
+        0u,
+        nullptr,
+        nullptr,
+        makeDeviceOrHostAddressKHR(ctx.vkd, ctx.device, *blasScratchBuildBuffer, 0ull),
+    };
+
+    const VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo = {
+        0u,
+        0u,
+        0u,
+        0u,
+    };
+    const auto buildRangeInfoPtr = &buildRangeInfo;
+
+    ctx.vkd.cmdBuildAccelerationStructuresKHR(cmdBuffer, 1u, &blasGeometryBuildInfo, &buildRangeInfoPtr);
+
+    // Sync build and update steps.
+    {
+        const auto barrier = makeMemoryBarrier(asModifyAccess, asModifyAccess);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, asBuildStage, asBuildStage, &barrier);
+    }
+
+    // Update acceleration structure in place.
+    const VkAccelerationStructureBuildGeometryInfoKHR geometryUpdateInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR,
+        *blas,
+        *blas,
+        0u,
+        nullptr,
+        nullptr,
+        makeDeviceOrHostAddressKHR(ctx.vkd, ctx.device, *scratchUpdateBuffer, 0ull),
+    };
+
+    ctx.vkd.cmdBuildAccelerationStructuresKHR(cmdBuffer, 1u, &geometryUpdateInfo, &buildRangeInfoPtr);
+
+    // Sync build bottom and build top steps.
+    {
+        const auto barrier = makeMemoryBarrier(asModifyAccess, asModifyAccess);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, asBuildStage, asBuildStage, &barrier);
+    }
+
+    // Build the top acceleration structure.
+    const VkAccelerationStructureDeviceAddressInfoKHR blasAddressInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DEVICE_ADDRESS_INFO_KHR,
+        nullptr,
+        *blas,
+    };
+    const auto blasDeviceAddress = ctx.vkd.getAccelerationStructureDeviceAddressKHR(ctx.device, &blasAddressInfo);
+
+    // Instances buffer for the top acceleration structure.
+    const VkAccelerationStructureInstanceKHR instanceInfo = {
+        identityMatrix3x4, 0u, 0xFFu, 0u, 0u, static_cast<uint64_t>(blasDeviceAddress),
+    };
+
+    const auto instancesBufferSize  = static_cast<VkDeviceSize>(sizeof(instanceInfo));
+    const auto instancesBufferUsage = (VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+                                       VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    const auto instancesBufferInfo  = makeBufferCreateInfo(instancesBufferSize, instancesBufferUsage);
+    BufferWithMemory instancesBuffer(ctx.vkd, ctx.device, ctx.allocator, instancesBufferInfo,
+                                     (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress));
+    {
+        auto &alloc = instancesBuffer.getAllocation();
+        memcpy(alloc.getHostPtr(), &instanceInfo, sizeof(instanceInfo));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+    const auto instancesBufferAddress = getBufferDeviceAddress(ctx.vkd, ctx.device, *instancesBuffer, 0ull);
+
+    geometryData.instances.data.deviceAddress = instancesBufferAddress;
+
+    const VkAccelerationStructureGeometryKHR tlasBuildGeometry = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+        nullptr,
+        VK_GEOMETRY_TYPE_INSTANCES_KHR,
+        geometryData,
+        0u,
+    };
+
+    const VkAccelerationStructureBuildGeometryInfoKHR tlasGeometryBuildInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        0u,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+        VK_NULL_HANDLE,
+        *tlas,
+        1u,
+        &tlasBuildGeometry,
+        nullptr,
+        makeDeviceOrHostAddressKHR(ctx.vkd, ctx.device, *tlasScratchBuildBuffer, 0ull),
+    };
+    ctx.vkd.cmdBuildAccelerationStructuresKHR(cmdBuffer, 1u, &tlasGeometryBuildInfo, &buildRangeInfoPtr);
+
+    // Sync build top and use top steps.
+    {
+        const auto barrier = makeMemoryBarrier(asModifyAccess, asReadAccess);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, asBuildStage, asUsageStage, &barrier);
+    }
+
+    // Prepare pipeline to use the acceleration structure.
+    const auto storageBufferSize = static_cast<VkDeviceSize>(sizeof(tcu::Vec4));
+    const auto storageBufferInfo = makeBufferCreateInfo(storageBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory storageBuffer(ctx.vkd, ctx.device, ctx.allocator, storageBufferInfo,
+                                   MemoryRequirement::HostVisible);
+    auto &storageBufferAlloc = storageBuffer.getAllocation();
+    {
+        memset(storageBufferAlloc.getHostPtr(), 0, sizeof(tcu::Vec4));
+        flushAlloc(ctx.vkd, ctx.device, storageBufferAlloc);
+    }
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1u);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descritorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descritorPool, *setLayout);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    using Location = DescriptorSetUpdateBuilder::Location;
+    {
+        const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            nullptr,
+            1u,
+            &tlas.get(),
+        };
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(0u),
+                                     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructure);
+
+        const auto bufferDescInfo = makeDescriptorBufferInfo(*storageBuffer, 0ull, VK_WHOLE_SIZE);
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                     &bufferDescInfo);
+    }
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries = context.getBinaryCollection();
+    auto rgenModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("rgen"), 0);
+    auto missModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("miss"), 0);
+    auto chitModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("chit"), 0);
+
+    uint32_t shaderGroupHandleSize    = 0u;
+    uint32_t shaderGroupBaseAlignment = 1u;
+    {
+        const auto rayTracingPropertiesKHR = makeRayTracingProperties(ctx.vki, ctx.physicalDevice);
+        shaderGroupHandleSize              = rayTracingPropertiesKHR->getShaderGroupHandleSize();
+        shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+    }
+
+    // Create raytracing pipeline and shader binding tables.
+    Move<VkPipeline> pipeline;
+    de::MovePtr<BufferWithMemory> raygenSBT;
+    de::MovePtr<BufferWithMemory> missSBT;
+    de::MovePtr<BufferWithMemory> hitSBT;
+    de::MovePtr<BufferWithMemory> callableSBT;
+
+    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+
+    {
+        const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, 1);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 2);
+
+        pipeline = rayTracingPipeline->createPipeline(ctx.vkd, ctx.device, pipelineLayout.get());
+
+        raygenSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                 shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+        raygenSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, raygenSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        missSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                               shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+        missSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, missSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        hitSBT       = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                    shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+        hitSBTRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, hitSBT->get(), 0),
+                                                         shaderGroupHandleSize, shaderGroupHandleSize);
+    }
+
+    // Trace rays.
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipeline.get());
+    ctx.vkd.cmdTraceRaysKHR(cmdBuffer, &raygenSBTRegion, &missSBTRegion, &hitSBTRegion, &callableSBTRegion, 1u, 1u, 1u);
+    {
+        // Sync storage buffer writes with host reads.
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, asUsageStage, VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Check we got a miss.
+    invalidateAlloc(ctx.vkd, ctx.device, storageBufferAlloc);
+
+    tcu::Vec4 outputColor(0.0f);
+    memcpy((void *)(&outputColor), storageBufferAlloc.getHostPtr(), sizeof(outputColor));
+    const tcu::Vec4 expectedColor(0.0f, 0.0f, 1.0f, 1.0f); // Must match the payload in the miss shader.
+
+    if (outputColor != expectedColor)
+    {
+        std::ostringstream msg;
+        msg << "Unexpected result in output buffer: expected " << expectedColor << " but found " << outputColor;
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+tcu::TestStatus updateEmptyTopASInstance(Context &context)
+{
+    const auto ctx                    = context.getContextCommonData();
+    constexpr uint32_t kPaddingFactor = 8u;
+    de::Random rnd(1748512952u);
+    const auto scratchBufferUsage = (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    const auto asBufferUsage =
+        (VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    const auto scratchBufferMemReqs =
+        (MemoryRequirement::Coherent | MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const auto asBufferMemReqs =
+        (MemoryRequirement::Coherent | MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const auto asReadAccess   = static_cast<VkAccessFlags>(VK_ACCESS_ACCELERATION_STRUCTURE_READ_BIT_KHR);
+    const auto asModifyAccess = (asReadAccess | VK_ACCESS_ACCELERATION_STRUCTURE_WRITE_BIT_KHR);
+    const auto asBuildStage   = VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR;
+    const auto asUsageStage   = VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR;
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Top structure sizes.
+    VkAccelerationStructureGeometryDataKHR geometry;
+    geometry.instances                    = initVulkanStructure();
+    geometry.instances.data.deviceAddress = 0ull;
+
+    const VkAccelerationStructureGeometryKHR tlasGeometry = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR,
+        nullptr,
+        vk::VK_GEOMETRY_TYPE_INSTANCES_KHR,
+        geometry,
+        0u,
+    };
+
+    const VkAccelerationStructureBuildGeometryInfoKHR tlasGeometryInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+        VK_NULL_HANDLE,
+        VK_NULL_HANDLE,
+        1u,
+        &tlasGeometry,
+        nullptr,
+        makeDeviceOrHostAddressKHR(nullptr),
+    };
+
+    VkDeviceSize tlasBufferSize = 0ull;
+    VkDeviceSize tlasBuildSize  = 0ull;
+    VkDeviceSize tlasUpdateSize = 0ull;
+
+    {
+        const uint32_t maxGeometries                            = 1u;
+        VkAccelerationStructureBuildSizesInfoKHR tlasBuildSizes = initVulkanStructure();
+        ctx.vkd.getAccelerationStructureBuildSizesKHR(ctx.device, VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR,
+                                                      &tlasGeometryInfo, &maxGeometries, &tlasBuildSizes);
+
+        tlasBufferSize = tlasBuildSizes.accelerationStructureSize * kPaddingFactor;
+        tlasBuildSize  = tlasBuildSizes.buildScratchSize * kPaddingFactor;
+        tlasUpdateSize = tlasBuildSizes.updateScratchSize * kPaddingFactor;
+    }
+
+    // This is not in the spec, but it would point to an implementation bug, very likely.
+    if (tlasBufferSize > std::numeric_limits<size_t>::max())
+        TCU_FAIL("Empty acceleration structure size too large");
+
+    if (tlasBuildSize > std::numeric_limits<size_t>::max())
+        TCU_FAIL("Empty acceleration structure size too large");
+
+    if (tlasUpdateSize > std::numeric_limits<size_t>::max())
+        TCU_FAIL("Empty acceleration structure size too large");
+
+    // Acceleration structure storage buffer.
+    const auto tlasBufferInfo = makeBufferCreateInfo(tlasBufferSize, asBufferUsage);
+    BufferWithMemory tlasBuffer(ctx.vkd, ctx.device, ctx.allocator, tlasBufferInfo, asBufferMemReqs);
+    fillBufferRandomly(ctx.vkd, ctx.device, tlasBuffer, rnd);
+
+    // Scratch buffer for the build operation.
+    const auto tlasScratchBuildBufferInfo = makeBufferCreateInfo(tlasBuildSize, scratchBufferUsage);
+    BufferWithMemory tlasScratchBuildBuffer(ctx.vkd, ctx.device, ctx.allocator, tlasScratchBuildBufferInfo,
+                                            scratchBufferMemReqs);
+    fillBufferRandomly(ctx.vkd, ctx.device, tlasScratchBuildBuffer, rnd);
+
+    // Scratch buffer for the update operation.
+    const auto scratchUpdateBufferInfo = makeBufferCreateInfo(tlasUpdateSize, scratchBufferUsage);
+    BufferWithMemory scratchUpdateBuffer(ctx.vkd, ctx.device, ctx.allocator, scratchUpdateBufferInfo,
+                                         scratchBufferMemReqs);
+    fillBufferRandomly(ctx.vkd, ctx.device, scratchUpdateBuffer, rnd);
+
+    // Create empty top-level acceleration structure.
+    const VkAccelerationStructureCreateInfoKHR tlasCreateInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR,
+        nullptr,
+        0u,
+        tlasBuffer.get(),
+        0ull,
+        tlasBufferSize,
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        0ull,
+    };
+    const auto tlas = createAccelerationStructureKHR(ctx.vkd, ctx.device, &tlasCreateInfo);
+
+    // Build the empty acceleration structure: by empty we mean a single NULL-address instance.
+    const VkAccelerationStructureBuildGeometryInfoKHR tlasGeometryBuildInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_BUILD_KHR,
+        VK_NULL_HANDLE,
+        *tlas,
+        1u,
+        &tlasGeometry,
+        nullptr,
+        makeDeviceOrHostAddressKHR(ctx.vkd, ctx.device, *tlasScratchBuildBuffer, 0ull),
+    };
+
+    const VkAccelerationStructureBuildRangeInfoKHR buildRangeInfo = {
+        0u,
+        0u,
+        0u,
+        0u,
+    };
+    const auto buildRangeInfoPtr = &buildRangeInfo;
+
+    ctx.vkd.cmdBuildAccelerationStructuresKHR(cmdBuffer, 1u, &tlasGeometryBuildInfo, &buildRangeInfoPtr);
+
+    // Sync build and update steps.
+    {
+        const auto barrier = makeMemoryBarrier(asModifyAccess, asModifyAccess);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, asBuildStage, asBuildStage, &barrier);
+    }
+
+    // Update empty acceleration structure.
+    const VkAccelerationStructureBuildGeometryInfoKHR geometryUpdateInfo = {
+        VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_BUILD_GEOMETRY_INFO_KHR,
+        nullptr,
+        VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_UPDATE_BIT_KHR,
+        VK_BUILD_ACCELERATION_STRUCTURE_MODE_UPDATE_KHR,
+        *tlas,
+        *tlas,
+        1u,
+        &tlasGeometry,
+        nullptr,
+        makeDeviceOrHostAddressKHR(ctx.vkd, ctx.device, *scratchUpdateBuffer, 0ull),
+    };
+
+    ctx.vkd.cmdBuildAccelerationStructuresKHR(cmdBuffer, 1u, &geometryUpdateInfo, &buildRangeInfoPtr);
+
+    // Sync build and use steps.
+    {
+        const auto barrier = makeMemoryBarrier(asModifyAccess, asReadAccess);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, asBuildStage, asUsageStage, &barrier);
+    }
+
+    // Prepare pipeline to use the acceleration structure.
+    const auto storageBufferSize = static_cast<VkDeviceSize>(sizeof(tcu::Vec4));
+    const auto storageBufferInfo = makeBufferCreateInfo(storageBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory storageBuffer(ctx.vkd, ctx.device, ctx.allocator, storageBufferInfo,
+                                   MemoryRequirement::HostVisible);
+    auto &storageBufferAlloc = storageBuffer.getAllocation();
+    {
+        memset(storageBufferAlloc.getHostPtr(), 0, sizeof(tcu::Vec4));
+        flushAlloc(ctx.vkd, ctx.device, storageBufferAlloc);
+    }
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, 1u);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descritorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_RAYGEN_BIT_KHR);
+    const auto setLayout      = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    const auto descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descritorPool, *setLayout);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    using Location = DescriptorSetUpdateBuilder::Location;
+    {
+        const VkWriteDescriptorSetAccelerationStructureKHR accelerationStructure = {
+            VK_STRUCTURE_TYPE_WRITE_DESCRIPTOR_SET_ACCELERATION_STRUCTURE_KHR,
+            nullptr,
+            1u,
+            &tlas.get(),
+        };
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(0u),
+                                     VK_DESCRIPTOR_TYPE_ACCELERATION_STRUCTURE_KHR, &accelerationStructure);
+
+        const auto bufferDescInfo = makeDescriptorBufferInfo(*storageBuffer, 0ull, VK_WHOLE_SIZE);
+        setUpdateBuilder.writeSingle(*descriptorSet, Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                                     &bufferDescInfo);
+    }
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    const auto &binaries = context.getBinaryCollection();
+    auto rgenModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("rgen"), 0);
+    auto missModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("miss"), 0);
+    auto chitModule      = createShaderModule(ctx.vkd, ctx.device, binaries.get("chit"), 0);
+
+    uint32_t shaderGroupHandleSize    = 0u;
+    uint32_t shaderGroupBaseAlignment = 1u;
+    {
+        const auto rayTracingPropertiesKHR = makeRayTracingProperties(ctx.vki, ctx.physicalDevice);
+        shaderGroupHandleSize              = rayTracingPropertiesKHR->getShaderGroupHandleSize();
+        shaderGroupBaseAlignment           = rayTracingPropertiesKHR->getShaderGroupBaseAlignment();
+    }
+
+    // Create raytracing pipeline and shader binding tables.
+    Move<VkPipeline> pipeline;
+    de::MovePtr<BufferWithMemory> raygenSBT;
+    de::MovePtr<BufferWithMemory> missSBT;
+    de::MovePtr<BufferWithMemory> hitSBT;
+    de::MovePtr<BufferWithMemory> callableSBT;
+
+    auto raygenSBTRegion   = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto missSBTRegion     = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto hitSBTRegion      = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    auto callableSBTRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+
+    {
+        const auto rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missModule, 1);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, chitModule, 2);
+
+        pipeline = rayTracingPipeline->createPipeline(ctx.vkd, ctx.device, pipelineLayout.get());
+
+        raygenSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                 shaderGroupHandleSize, shaderGroupBaseAlignment, 0, 1);
+        raygenSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, raygenSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        missSBT = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                               shaderGroupHandleSize, shaderGroupBaseAlignment, 1, 1);
+        missSBTRegion =
+            makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, missSBT->get(), 0),
+                                              shaderGroupHandleSize, shaderGroupHandleSize);
+
+        hitSBT       = rayTracingPipeline->createShaderBindingTable(ctx.vkd, ctx.device, pipeline.get(), ctx.allocator,
+                                                                    shaderGroupHandleSize, shaderGroupBaseAlignment, 2, 1);
+        hitSBTRegion = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(ctx.vkd, ctx.device, hitSBT->get(), 0),
+                                                         shaderGroupHandleSize, shaderGroupHandleSize);
+    }
+
+    // Trace rays.
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, pipeline.get());
+    ctx.vkd.cmdTraceRaysKHR(cmdBuffer, &raygenSBTRegion, &missSBTRegion, &hitSBTRegion, &callableSBTRegion, 1u, 1u, 1u);
+    {
+        // Sync storage buffer writes with host reads.
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, asUsageStage, VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Check we got a miss.
+    invalidateAlloc(ctx.vkd, ctx.device, storageBufferAlloc);
+
+    tcu::Vec4 outputColor(0.0f);
+    memcpy((void *)(&outputColor), storageBufferAlloc.getHostPtr(), sizeof(outputColor));
+    const tcu::Vec4 expectedColor(0.0f, 0.0f, 1.0f, 1.0f); // Must match the payload in the miss shader.
+
+    if (outputColor != expectedColor)
+    {
+        std::ostringstream msg;
+        msg << "Unexpected result in output buffer: expected " << expectedColor << " but found " << outputColor;
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 class RayTracingTestCase : public TestCase
@@ -10043,6 +10762,10 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
                                     initReuseCreationBufferPrograms, reuseCreationBufferInstance, false /*top*/);
         addFunctionCaseWithPrograms(groupPtr, "reuse_scratch_buffer", checkReuseScratchBufferSupport,
                                     initReuseScratchBufferPrograms, reuseScratchBufferInstance);
+        addFunctionCaseWithPrograms(groupPtr, "update_empty_bottom", checkRTPipelineSupport, initEmptyASPrograms,
+                                    updateEmptyBottomASInstance);
+        addFunctionCaseWithPrograms(groupPtr, "update_empty_top", checkRTPipelineSupport, initEmptyASPrograms,
+                                    updateEmptyTopASInstance);
     }
 
     return miscGroupPtr.release();

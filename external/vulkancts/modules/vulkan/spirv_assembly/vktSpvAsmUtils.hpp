@@ -259,10 +259,18 @@ struct VulkanFeatures
     vk::VkPhysicalDevice16BitStorageFeatures ext16BitStorage;
     vk::VkPhysicalDeviceVariablePointersFeatures extVariablePointers;
     vk::VkPhysicalDeviceVulkanMemoryModelFeatures extVulkanMemoryModel;
+    vk::VkPhysicalDeviceShaderAtomicInt64Features extShaderAtomicInt64;
+    vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT extShaderAtomicFloat;
 #ifndef CTS_USES_VULKANSC
     vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR extIntegerDotProduct;
+    vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR extWorkgroupMemoryExplicitLayout;
+    vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT extShaderAtomicFloat2;
+    vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR extShaderUntypedPointers;
     vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR extFloatControls2;
+    vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR extCooperativeMatrix;
     vk::VkPhysicalDeviceMaintenance8FeaturesKHR extMaintenance8;
+    vk::VkPhysicalDeviceMaintenance9FeaturesKHR maint9Features;
+    vk::VkPhysicalDeviceShaderFmaFeaturesKHR extFma;
 #endif // CTS_USES_VULKANSC
     vk::VkPhysicalDeviceFloatControlsProperties floatControlsProperties;
 
@@ -274,10 +282,19 @@ struct VulkanFeatures
         deMemset(&ext16BitStorage, 0, sizeof(vk::VkPhysicalDevice16BitStorageFeatures));
         deMemset(&extVariablePointers, 0, sizeof(vk::VkPhysicalDeviceVariablePointersFeatures));
         deMemset(&extVulkanMemoryModel, 0, sizeof(vk::VkPhysicalDeviceVulkanMemoryModelFeatures));
+        deMemset(&extShaderAtomicInt64, 0, sizeof(vk::VkPhysicalDeviceShaderAtomicInt64Features));
+        deMemset(&extShaderAtomicFloat, 0, sizeof(vk::VkPhysicalDeviceShaderAtomicFloatFeaturesEXT));
 #ifndef CTS_USES_VULKANSC
         deMemset(&extIntegerDotProduct, 0, sizeof(vk::VkPhysicalDeviceShaderIntegerDotProductFeaturesKHR));
+        deMemset(&extWorkgroupMemoryExplicitLayout, 0,
+                 sizeof(vk::VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR));
+        deMemset(&extShaderAtomicFloat2, 0, sizeof(vk::VkPhysicalDeviceShaderAtomicFloat2FeaturesEXT));
+        deMemset(&extShaderUntypedPointers, 0, sizeof(vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR));
         deMemset(&extFloatControls2, 0, sizeof(vk::VkPhysicalDeviceShaderFloatControls2FeaturesKHR));
+        deMemset(&extCooperativeMatrix, 0, sizeof(vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR));
         deMemset(&extMaintenance8, 0, sizeof(vk::VkPhysicalDeviceMaintenance8FeaturesKHR));
+        deMemset(&maint9Features, 0, sizeof(maint9Features));
+        deMemset(&extFma, 0, sizeof(vk::VkPhysicalDeviceShaderFmaFeaturesKHR));
 #endif // CTS_USES_VULKANSC
         deMemset(&floatControlsProperties, 0, sizeof(vk::VkPhysicalDeviceFloatControlsProperties));
         floatControlsProperties.denormBehaviorIndependence = vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;
@@ -323,21 +340,25 @@ Dest bitwiseCast(Src source)
 //
 // Expected count to be at least 16.
 std::vector<int64_t> getInt64s(de::Random &rnd, const uint32_t count);
+std::vector<uint64_t> getUint64s(de::Random &rnd, const uint32_t count);
 
 // Generate and return 32-bit integers.
 //
 // Expected count to be at least 16.
 std::vector<int32_t> getInt32s(de::Random &rnd, const uint32_t count);
+std::vector<uint32_t> getUint32s(de::Random &rnd, const uint32_t count);
 
 // Generate and return 16-bit integers.
 //
 // Expected count to be at least 8.
 std::vector<int16_t> getInt16s(de::Random &rnd, const uint32_t count);
+std::vector<uint16_t> getUint16s(de::Random &rnd, const uint32_t count);
 
 // Generate and return 8-bit integers.
 //
 // Expected count to be at least 8.
 std::vector<int8_t> getInt8s(de::Random &rnd, const uint32_t count);
+std::vector<uint8_t> getUint8s(de::Random &rnd, const uint32_t count);
 
 // Generate and return 64-bit floats
 //

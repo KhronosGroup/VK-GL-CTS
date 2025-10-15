@@ -2429,6 +2429,11 @@ TestInstance *UniformBlockCase::createInstance(Context &context) const
         (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing ||
          !context.getDescriptorIndexingFeatures().runtimeDescriptorArray))
         TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
+#ifndef CTS_USES_VULKANSC
+    if (hasUnsizedArray(m_interface) &&
+        !context.getShaderUniformBufferUnsizedArrayFeaturesEXT().shaderUniformBufferUnsizedArray)
+        TCU_THROW(NotSupportedError, "shaderUniformBufferUnsizedArray not supported");
+#endif
 
     return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
 }

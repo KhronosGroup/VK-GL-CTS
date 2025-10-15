@@ -1293,7 +1293,7 @@ void RayTracingConfiguration::initPrograms(SourceCollections &programCollection,
                    "{\n"
                 << testBody
                 << "  hitAttribute = vec3(0.0f, 0.0f, 0.0f);\n"
-                   "  reportIntersectionEXT(1.0f, 0);\n"
+                   "  reportIntersectionEXT(gl_RayTminEXT, 0);\n"
                    "}\n";
 
             programCollection.glslSources.add("sect")
@@ -4179,125 +4179,6 @@ void TestConfigurationNullASStruct::checkSupport(Context &context, const TestPar
     if (!robustness2Features.nullDescriptor)
         TCU_THROW(NotSupportedError, "VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor not supported");
 }
-/*
-<<<<<<< HEAD
-void TestConfigurationNullASStruct::prepareTestEnvironment(Context &context)
-{
-    // Check if the physical device supports VK_EXT_robustness2 and the nullDescriptor feature.
-    const auto &vkp             = context.getPlatformInterface();
-    const auto &vki             = context.getInstanceInterface();
-    const auto instance         = context.getInstance();
-    const auto physicalDevice   = context.getPhysicalDevice();
-    const auto queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-    const auto queuePriority    = 1.0f;
-    bool accelStructSupport     = false;
-
-    // Add anything that's supported and may be needed, including nullDescriptor.
-    VkPhysicalDeviceFeatures2 features2                                            = initVulkanStructure();
-    VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceAddressFeatures           = initVulkanStructure();
-    VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = initVulkanStructure();
-    VkPhysicalDeviceRayQueryFeaturesKHR rayQueryFeatures                           = initVulkanStructure();
-    VkPhysicalDeviceRayTracingPipelineFeaturesKHR raytracingPipelineFeatures       = initVulkanStructure();
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features                     = initVulkanStructure();
-    std::vector<const char *> deviceExtensions;
-
-    if (context.isDeviceFunctionalitySupported("VK_KHR_deferred_host_operations"))
-    {
-        deviceExtensions.push_back("VK_KHR_deferred_host_operations");
-    }
-    if (context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
-    {
-        deviceAddressFeatures.pNext = features2.pNext;
-        features2.pNext             = &deviceAddressFeatures;
-        deviceExtensions.push_back("VK_KHR_buffer_device_address");
-    }
-    if (context.isDeviceFunctionalitySupported("VK_KHR_acceleration_structure"))
-    {
-        accelerationStructureFeatures.pNext = features2.pNext;
-        features2.pNext                     = &accelerationStructureFeatures;
-        deviceExtensions.push_back("VK_KHR_acceleration_structure");
-        accelStructSupport = true;
-    }
-
-    if (context.isDeviceFunctionalitySupported("VK_KHR_ray_query"))
-    {
-        rayQueryFeatures.pNext = features2.pNext;
-        features2.pNext        = &rayQueryFeatures;
-        deviceExtensions.push_back("VK_KHR_ray_query");
-    }
-
-    if (context.isDeviceFunctionalitySupported("VK_KHR_ray_tracing_pipeline"))
-    {
-        raytracingPipelineFeatures.pNext = features2.pNext;
-        features2.pNext                  = &raytracingPipelineFeatures;
-        deviceExtensions.push_back("VK_KHR_ray_tracing_pipeline");
-    }
-
-    vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-
-    // Add robustness2 features to the chain and make sure robustBufferAccess is consistent with robustBufferAccess2.
-    features2.features.robustBufferAccess = VK_FALSE;
-    robustness2Features.nullDescriptor    = VK_TRUE;
-    robustness2Features.pNext             = features2.pNext;
-    features2.pNext                       = &robustness2Features;
-
-    // Add more needed extensions.
-    deviceExtensions.push_back(context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ? "VK_KHR_robustness2" :
-                                                                                              "VK_EXT_robustness2");
-    if (accelStructSupport)
-    {
-        // Not promoted yet in Vulkan 1.1.
-        deviceExtensions.push_back("VK_EXT_descriptor_indexing");
-        deviceExtensions.push_back("VK_KHR_spirv_1_4");
-        deviceExtensions.push_back("VK_KHR_shader_float_controls");
-    }
-
-    const VkDeviceQueueCreateInfo queueInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                    // const void* pNext;
-        0u,                                         // VkDeviceQueueCreateFlags flags;
-        queueFamilyIndex,                           // uint32_t queueFamilyIndex;
-        1u,                                         // uint32_t queueCount;
-        &queuePriority,                             // const float* pQueuePriorities;
-    };
-
-    const VkDeviceCreateInfo createInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,           // VkStructureType sType;
-        features2.pNext,                                // const void* pNext;
-        0u,                                             // VkDeviceCreateFlags flags;
-        1u,                                             // uint32_t queueCreateInfoCount;
-        &queueInfo,                                     // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-        0u,                                             // uint32_t enabledLayerCount;
-        nullptr,                                        // const char* const* ppEnabledLayerNames;
-        static_cast<uint32_t>(deviceExtensions.size()), // uint32_t enabledExtensionCount;
-        deviceExtensions.data(),                        // const char* const* ppEnabledExtensionNames;
-        &features2.features,                            // const VkPhysicalDeviceFeatures* pEnabledFeatures;
-    };
-
-    m_device = createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(), vkp, instance, vki,
-                                  physicalDevice, &createInfo);
-    m_vkd    = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, m_device.get(), context.getUsedApiVersion(),
-                                                          context.getTestContext().getCommandLine()));
-    const auto queue = getDeviceQueue(*m_vkd, *m_device, queueFamilyIndex, 0u);
-    m_allocator      = de::MovePtr<SimpleAllocator>(
-        new SimpleAllocator(*m_vkd, m_device.get(), getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
-
-    m_testEnvironment = de::MovePtr<TestEnvironment>(new TestEnvironment{
-        &vki,                               // const InstanceInterface* vki;
-        physicalDevice,                     // VkPhysicalDevice physicalDevice;
-        m_vkd.get(),                        // const DeviceInterface* vkd;
-        m_device.get(),                     // VkDevice device;
-        m_allocator.get(),                  // Allocator* allocator;
-        queue,                              // VkQueue queue;
-        queueFamilyIndex,                   // uint32_t queueFamilyIndex;
-        &context.getBinaryCollection(),     // BinaryCollection* binaryCollection;
-        &context.getTestContext().getLog(), // tcu::TestLog* log;
-    });
-}
-
-=======
->>>>>>> cb033b4df (Port selected tests to new capabilities system)
-*/
 
 const std::string TestConfigurationNullASStruct::getShaderBodyText(const TestParams &testParams)
 {

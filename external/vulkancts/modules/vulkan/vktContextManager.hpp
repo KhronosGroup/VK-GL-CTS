@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkTypeUtil.hpp"
+#include "vkMemUtil.hpp"
 #include "vkPlatform.hpp"
 #include "vkDeviceFeatures.hpp"
 #include "vkDeviceProperties.hpp"
@@ -125,10 +126,79 @@ struct DevFeaturesAndPropertiesImpl
 #endif // CTS_USES_VULKANSC
 };
 
-namespace dc
+#define MAKE_FEATURE_DECL(clazz) \
+    template <>                  \
+    FeatureDesc makeFeatureDesc<clazz>();
+
+#define INIT_FEATURE_DECL(clazz) \
+    template <>                  \
+    void initFeatureFromBlob<clazz>(clazz &, const AllFeaturesBlobs &);
+
+MAKE_FEATURE_DECL(VkPhysicalDeviceFeatures)
+INIT_FEATURE_DECL(VkPhysicalDeviceFeatures)
+MAKE_FEATURE_DECL(VkPhysicalDeviceFeatures2)
+INIT_FEATURE_DECL(VkPhysicalDeviceFeatures2)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan11Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan11Features)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan12Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan12Features)
+#ifndef CTS_USES_VULKANSC
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan13Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan13Features)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan14Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan14Features)
+#endif
+
+#ifdef CTS_USES_VULKANSC
+MAKE_FEATURE_DECL(VkFaultCallbackInfo)
+INIT_FEATURE_DECL(VkFaultCallbackInfo)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkanSC10Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkanSC10Features)
+MAKE_FEATURE_DECL(VkDeviceObjectReservationCreateInfo)
+INIT_FEATURE_DECL(VkDeviceObjectReservationCreateInfo)
+#endif
+
+template <>
+class FeatureStructWrapper<VkPhysicalDeviceFeatures> : public FeatureStructWrapperBase
 {
-#include "vkDeviceFeaturesVariantDecl.inl"
-}
+public:
+    FeatureStructWrapper(const FeatureDesc &featureDesc) : m_featureDesc(featureDesc), m_featureType()
+    {
+    }
+    void initializeFeatureFromBlob(const AllFeaturesBlobs &allFeaturesBlobs)
+    {
+        initFeatureFromBlobWrapper(m_featureType, allFeaturesBlobs);
+    }
+    const FeatureDesc &getFeatureDesc() const
+    {
+        return m_featureDesc;
+    }
+    void **getFeatureTypeNext()
+    {
+        return nullptr;
+    }
+    void *getFeatureTypeRaw()
+    {
+        return &m_featureType;
+    }
+    VkPhysicalDeviceFeatures &getFeatureTypeRef()
+    {
+        return m_featureType;
+    }
+    FeatureStructWrapperBase *clone()
+    {
+        FeatureStructWrapperBase *p                           = new FeatureStructWrapper(m_featureDesc);
+        static_cast<FeatureStructWrapper *>(p)->m_featureType = m_featureType;
+        return p;
+    }
+
+public:
+    // metadata about feature structure
+    const FeatureDesc m_featureDesc;
+
+    // actual vulkan feature structure
+    VkPhysicalDeviceFeatures m_featureType;
+};
 
 } // namespace vk
 
@@ -144,6 +214,18 @@ namespace vkt
 class TestCase;
 class Context;
 class ContextManager;
+class TestCaseExecutor;
+
+template <class, class = void>
+struct hasPnextOfVoidPtr : std::false_type
+{
+};
+template <class X>
+struct hasPnextOfVoidPtr<X, std::void_t<decltype(std::declval<X>().pNext)>>
+    : std::integral_constant<bool, std::is_same<decltype(std::declval<X>().pNext), void *>::value ||
+                                       std::is_same<decltype(std::declval<X>().pNext), const void *>::value>
+{
+};
 
 // The DevCaps class encapsulates the requirements for creating a new device.
 // A key attribute is the DevCaps::id field, which the framework relies on to
@@ -174,12 +256,14 @@ class DevCaps
         uint32_t count;
         float priority;
     };
+    using AllocatorParams_ = typename vk::SimpleAllocator::OptionalOffsetParams;
     struct RuntimeData_
     {
         friend class ContextManager;
         void verify() const;
         QueueInfo_ getQueue(const vk::DeviceInterface &, vk::VkDevice, uint32_t queueIndex,
                             bool isDefaultContext) const;
+        const AllocatorParams_ &getAllocatorCreateParams() const;
         RuntimeData_() = default;
         RuntimeData_(const DevCaps &caps); // calls resetQueues
 
@@ -188,15 +272,7 @@ class DevCaps
         // index in familyToQueueIndices refers to programmer queue index
         // familyToQueueIndices[] refers to a pair of {queueFamilyIndex, queueIndex in family}
         std::vector<std::pair<uint32_t, uint32_t>> familyToQueueIndices;
-    };
-    struct FeatureInfo_
-    {
-        vk::VkStructureType sType;
-        void *address;
-        uint32_t index;
-        uint32_t size;
-        FeatureInfo_();
-        void reset();
+        AllocatorParams_ allocatorCreateParams;
     };
 
     // Helper container for two lambdas
@@ -228,36 +304,27 @@ class DevCaps
     strings m_extensions;
     ExtensionsRef m_extensionsRef;
     const ContextManager *const m_contextManager;
-    using FeaturesVar_ = vk::dc::FullFeaturesVariant;
-    using Features_    = std::vector<FeaturesVar_>;
+    using Features_ = std::vector<vk::FeatureStructWrapperBase *>;
     Features_ m_features;
     std::vector<QueueCreateInfo_> m_queueCreateInfos;
     bool m_hasInheritedExtensions;
     tcu::TestContext &m_testContext;
-
-    template <class FeatureStruct>
-    void prepareFeature(FeatureStruct &feature, vk::VkStructureType sType)
-    {
-        static_cast<void>(sType);
-        static_cast<void>(feature);
-        if constexpr (vk::dc::hasPnextOfVoidPtr<FeatureStruct>::value)
-        {
-            feature.pNext = nullptr;
-            feature.sType = sType;
-        }
-    }
+    AllocatorParams_ m_allocatorParams;
 
     template <class FeatureStruct, class FieldType>
     bool _addFeatureSet(const FeatureStruct *pSource, FieldType FeatureStruct::*pField, const FieldType &setToValue,
                         const FieldType &expectedValue = {}, bool enableExpected = false)
     {
         FeatureStruct expected          = FeatureStruct{};
-        FeatureStruct desired           = pSource ? *pSource : expected;
-        const vk::VkStructureType sType = vk::dc::getFeatureSType<FeatureStruct>();
+        const vk::FeatureDesc desc      = vk::makeFeatureDesc<FeatureStruct>();
+        const vk::VkStructureType sType = desc.sType;
 
         // make sure sType has correct value and pNext is nullptr
-        prepareFeature(desired, sType);
-        prepareFeature(expected, sType);
+        if constexpr (hasPnextOfVoidPtr<FeatureStruct>::value)
+        {
+            expected.pNext = nullptr;
+            expected.sType = sType;
+        }
 
         // lambda function that updates a specified field in a feature struct to a
         // desired value and returns success upon completion
@@ -282,9 +349,9 @@ class DevCaps
         auto addFeature = [&]() -> void *
         {
             verifyFeature(sType, true);
-            prepareFeature(desired, sType);
-            m_features.emplace_back(desired);
-            return std::get_if<FeatureStruct>(&m_features.back());
+            vk::FeatureStructWrapperBase *feature = vk::createFeatureStructWrapper<FeatureStruct>();
+            m_features.push_back(feature);
+            return feature->getFeatureTypeRaw();
         };
 
         LambdaCaller caller(compareExchange, addFeature);
@@ -292,32 +359,11 @@ class DevCaps
                                 static_cast<uint32_t>(sizeof(FeatureStruct)), caller);
     }
 
-    template <class FeatureStruct>
-    bool getFeature(FeatureStruct &feature) const
-    {
-        const vk::VkStructureType sType = vk::dc::getFeatureSType<FeatureStruct>();
-        FeatureInfo_ info               = getFeatureInfo(sType, m_features);
-        if (info.address)
-        {
-            feature = *reinterpret_cast<FeatureStruct *>(info.address);
-            return true;
-        }
-        return false;
-    }
-
-    template <class FeatureStruct>
-    bool hasFeature() const
-    {
-        const vk::VkStructureType sType = vk::dc::getFeatureSType<FeatureStruct>();
-        FeatureInfo_ info               = getFeatureInfo(sType, m_features);
-        return info.address != nullptr;
-    }
-
     bool addUpdateFeature(vk::VkStructureType sType, void *pExpected, const void *pSource, uint32_t featureSize,
                           Caller &caller);
     void updateDeviceCreateInfo(vk::VkDeviceCreateInfo &createInfo, vk::VkPhysicalDeviceFeatures2 *opt, Features_ &aux,
                                 void *pNext) const;
-    FeatureInfo_ getFeatureInfo(vk::VkStructureType sType, const Features_ &others) const;
+    void *getFeatureInfo(vk::VkStructureType sType, const Features_ &others) const;
     void fillFeatureFromInstance(void *pNext, bool isVkPhysicalDeviceFeatures10) const;
     void resetQueues(const QueueCreateInfo_ *pInfos, uint32_t infoCount);
 
@@ -332,9 +378,8 @@ public:
     using QueueInfo       = QueueInfo_;
     using RuntimeData     = RuntimeData_;
     using QueueCreateInfo = QueueCreateInfo_;
-    using FeatureInfo     = FeatureInfo_;
-    using FeaturesVar     = FeaturesVar_;
     using Features        = Features_;
+    using AllocatorParams = AllocatorParams_;
 
     friend class ContextManager;
     const ContextManager &getContextManager() const;
@@ -344,6 +389,7 @@ public:
     DevCaps(const std::string &id_, const ContextManager *mgr, tcu::TestContext &testContext);
     DevCaps(const DevCaps &caps);
     DevCaps(DevCaps &&caps) noexcept;
+    virtual ~DevCaps();
 
     void verifyFeature(vk::VkStructureType feature, bool checkRuntimeApiVersion = true) const;
 
@@ -404,6 +450,11 @@ public:
     void resetQueues(const QueueCreateInfo (&infos)[N])
     {
         resetQueues(infos, N);
+    }
+
+    void setAllocatorParams(const AllocatorParams &allocatorCreateParams)
+    {
+        m_allocatorParams = allocatorCreateParams;
     }
 };
 
@@ -483,6 +534,7 @@ class ContextManager
     std::vector<Item> m_contexts;
     std::deque<de::SharedPtr<ContextManager>> m_customManagers;
 
+    friend class TestCaseExecutor;
     typedef std::tuple<int, int, int> Det_;
     ContextManager(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine,
                    de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, const InstCaps &,
@@ -491,6 +543,7 @@ class ContextManager
                    de::SharedPtr<vk::ResourceInterface> resourceInterface, int maxCustomDevices, const InstCaps &icaps);
     void keepMaxCustomDeviceCount();
     void print(tcu::TestLog &log, const vk::VkDeviceCreateInfo &createInfo) const;
+    void setContextManager(de::SharedPtr<const ContextManager> cm, vkt::TestCase *testCase);
 
 public:
     const std::string id;

@@ -23,6 +23,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktDGCGraphicsXfbTestsExt.hpp"
+#include "util/vktShaderObjectUtil.hpp"
 #include "vkBarrierUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -672,9 +673,9 @@ tcu::TestStatus XfbTestInstance::iterate(void)
     if (m_params.useShaderObjects)
     {
         bindShaders(m_context, m_params, cmdBuffer, vertShader, fragShader, tescShader, teseShader, geomShader);
-        bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors, xfbTopology,
-                              patchControlPoints, &vertexInputStateCreateInfo, &rasterizationXfbState, nullptr, nullptr,
-                              nullptr);
+        vkt::shaderobjutil::bindShaderObjectState(
+            ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors, xfbTopology, patchControlPoints,
+            &vertexInputStateCreateInfo, &rasterizationXfbState, nullptr, nullptr, nullptr);
     }
     else
     {
@@ -743,9 +744,9 @@ tcu::TestStatus XfbTestInstance::iterate(void)
     if (m_params.useShaderObjects)
     {
         bindShaders(m_context, m_params, cmdBuffer, vertShader, fragShader, tescShader, teseShader, geomShader);
-        bindShaderObjectState(ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors,
-                              indirectDrawTopology, patchControlPoints, &vertexInputStateCreateInfo,
-                              &rasterizationDrawState, nullptr, nullptr, nullptr);
+        vkt::shaderobjutil::bindShaderObjectState(
+            ctx.vkd, m_context.getDeviceExtensions(), cmdBuffer, viewports, scissors, indirectDrawTopology,
+            patchControlPoints, &vertexInputStateCreateInfo, &rasterizationDrawState, nullptr, nullptr, nullptr);
     }
     else
     {

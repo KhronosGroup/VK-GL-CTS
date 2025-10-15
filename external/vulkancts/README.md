@@ -20,6 +20,9 @@ The following tools must be installed and present in the PATH variable:
  * Git (for checking out sources)
  * Python 3.x (for the build related scripts, some other scripts still use Python 2.7.x)
  * CMake 3.20.0 or newer
+ * The `lxml` Python module.
+     * It can be installed using `pip` with `python3 -m pip install lxml`.
+     * On Linux, many distributions already package the module as `python3-lxml`.
 
 ### Win32
 
@@ -28,9 +31,21 @@ The following tools must be installed and present in the PATH variable:
 ### Linux
 
  * Standard toolchain (make, gcc/clang)
- * If you have X11 installed, then the build assumes you also have the `GL/glx.h` header
-   file.
-    * You can get this from the `mesa-common-dev` Ubuntu package.
+     * For Ubuntu, the `build-essential` package will provide most tools.
+     * For Fedora, `dnf group install development-tools` and the `g++` package
+       will cover the basics.
+ * If you want to use Ninja as the CMake backend, you will need the
+   `ninja-build` package.
+ * If you have X11 installed, then the build assumes you also have the
+   `GL/glx.h` header file.
+    * You can get this from the `mesa-common-devl` Ubuntu package.
+    * For Fedora, this is provided by the `libglvnd-devel` package.
+ * If you prefer to use the `wayland` dEQP target (`-DDEQP_TARGET=wayland` with
+   CMake) you will need some Wayland development packages.
+    * On most distributions, installing the Mesa build dependencies is a good
+      way to get all the required packages.
+       * For Fedora, `dnf builddep mesa` can be used.
+       * For Ubuntu, `apt-get build-dep mesa` can be used.
 
 ### MacOS
 
@@ -55,19 +70,16 @@ you can install the necessary components by running:
 Building CTS
 ------------
 
-To build dEQP, you need first to download sources for zlib, libpng, jsoncpp, glslang,
-vulkan-docs, spirv-headers, and spirv-tools.
+To build dEQP, you need first to download sources for zlib, libpng, jsoncpp,
+glslang, vulkan-docs, spirv-tools and others.
 
 To download sources, run:
 
 	python3 external/fetch_sources.py
 
-You may need to re-run `fetch_sources.py` to update to the latest glslang,
-vulkan-docs and spirv-tools revisions occasionally.
-
-You also need to install lxml python module by running:
-
-	python3 -m pip install lxml
+The required versions of external sources may change from time to time, so you
+should run `fetch_sources.py` when switching branches or pulling changes to make
+sure you have the right versions.
 
 With CMake out-of-source builds are always recommended. Create a build directory
 of your choosing, and in that directory generate Makefiles or IDE project
@@ -868,8 +880,12 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     default: '1'
 
   --deqp-log-images=[enable|disable]
-    Enable or disable logging of result images
+    When disabled, prevent any image from being logged into the test results file
     default: 'enable'
+
+  --deqp-log-all-images=[enable|disable]
+    When enabled, log all images from image comparison routines as if COMPARE_LOG_EVERYTHING was used in the code
+    default: 'disable'
 
   --deqp-log-shader-sources=[enable|disable]
     Enable or disable logging of shader sources
@@ -1024,6 +1040,18 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
   --deqp-pipeline-prefix=<value>
     Prefix for input pipeline compiler files (Vulkan SC only, do not use manually)
     default: ''
+
+  --deqp-vk-video-log-print=[enable|disable]
+    Print log messages of vulkan video tests to stdout
+    default: 'disable'
+
+  --deqp-vk-video-decode-dump=[disable|single|separate]
+    Dump mode for output of vulkan video decoding tests
+    default: 'disable'
+
+  --deqp-vk-video-encode-dump=[disable|yuv|bitstream|all]
+    Dump mode for output of vulkan video encoding tests
+    default: 'disable'
 
 Full list of parameters for the `vksc-server` application:
 

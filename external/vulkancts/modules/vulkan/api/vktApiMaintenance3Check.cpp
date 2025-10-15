@@ -635,8 +635,10 @@ public:
 struct CountLayoutSupportParams
 {
     const VkDescriptorType descriptorType;
+    const uint32_t bindingOffset; // Apply an offset to each binding number.
     const bool extraBindings;
     const bool useVariableSize;
+    const bool createLayout; // Actually attempt to create the layout.
 };
 
 void checkSupportCountLayoutSupport(Context &context, CountLayoutSupportParams params)
@@ -711,6 +713,8 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
     std::vector<VkDescriptorSetLayoutBinding> bindings;
     std::vector<VkDescriptorBindingFlags> bindingFlags;
 
+    const auto &offset = params.bindingOffset;
+
     if (params.extraBindings)
     {
         // Add a few uniform buffers to the mix.
@@ -719,7 +723,7 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
         for (uint32_t i = 0u; i < extraBindingCount; ++i)
         {
             bindings.emplace_back(VkDescriptorSetLayoutBinding{
-                de::sizeU32(bindings),             // uint32_t binding;
+                de::sizeU32(bindings) + offset,    // uint32_t binding;
                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, // VkDescriptorType descriptorType;
                 1u,                                // uint32_t descriptorCount;
                 stages,                            // VkShaderStageFlags stageFlags;
@@ -758,11 +762,11 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
     }
 
     bindings.emplace_back(VkDescriptorSetLayoutBinding{
-        de::sizeU32(bindings), // uint32_t binding;
-        params.descriptorType, // VkDescriptorType descriptorType;
-        descriptorCount,       // uint32_t descriptorCount;
-        stages,                // VkShaderStageFlags stageFlags;
-        nullptr,               // const VkSampler* pImmutableSamplers;
+        de::sizeU32(bindings) + offset, // uint32_t binding;
+        params.descriptorType,          // VkDescriptorType descriptorType;
+        descriptorCount,                // uint32_t descriptorCount;
+        stages,                         // VkShaderStageFlags stageFlags;
+        nullptr,                        // const VkSampler* pImmutableSamplers;
     });
     bindingFlags.push_back(params.useVariableSize ? static_cast<VkDescriptorBindingFlags>(
                                                         VK_DESCRIPTOR_BINDING_VARIABLE_DESCRIPTOR_COUNT_BIT) :
@@ -795,6 +799,20 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
     }
     else
     {
+#ifndef CTS_USES_VULKANSC
+        // Check that the reported number makes sense.
+        if (params.descriptorType == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK)
+        {
+            const auto &iubProperties = context.getInlineUniformBlockProperties();
+            if (normalValues.maxVariableDescriptorCount > iubProperties.maxInlineUniformBlockSize)
+                TCU_FAIL("Implementation supports a max IUB size larger than maxInlineUniformBlockSize");
+
+            // The number needs to make sense for VUID-VkDescriptorSetLayoutBinding-descriptorType-02209 too.
+            if (normalValues.maxVariableDescriptorCount % 4u != 0u)
+                TCU_FAIL("Implementation reports a max IUB size that is not a multiple of 4");
+        }
+#endif
+
         // Verify if we switch from one to zero descriptors we get the same reply back.
         bindings.back().descriptorCount = 0u;
         const auto zeroDescriptorValues = getSetLayoutSupportAndCount(context, &layoutCreateInfo);
@@ -814,6 +832,17 @@ tcu::TestStatus testCountLayoutSupport(Context &context, CountLayoutSupportParam
 
         if (maxDescriptorValues.maxVariableDescriptorCount != normalValues.maxVariableDescriptorCount)
             TCU_FAIL("Mismatch in maxVariableDescriptorCount when using one and the maximum descriptor counts");
+    }
+
+    if (params.createLayout)
+    {
+        const auto ctx                  = context.getContextCommonData();
+        VkDescriptorSetLayout setLayout = VK_NULL_HANDLE;
+
+        // This should work.
+        VK_CHECK(ctx.vkd.createDescriptorSetLayout(ctx.device, &layoutCreateInfo, nullptr, &setLayout));
+        if (setLayout != VK_NULL_HANDLE)
+            ctx.vkd.destroyDescriptorSetLayout(ctx.device, setLayout, nullptr);
     }
 
     return tcu::TestStatus::pass("Pass");
@@ -855,20 +884,26 @@ tcu::TestCaseGroup *createMaintenance3Tests(tcu::TestContext &testCtx)
         for (const auto &descriptorType : descriptorTypes)
             for (const auto &extraBindings : {false, true})
                 for (const auto &useVariableSize : {false, true})
-                {
-                    if (useVariableSize && (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
-                                            descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC))
-                        continue;
+                    for (const auto &bindingOffset : {0u, 1u})
+                        for (const auto &createLayout : {false, true})
+                        {
+                            if (useVariableSize && (descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC ||
+                                                    descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC))
+                                continue;
 
-                    const auto extraBindingsSuffix = (extraBindings ? "_extra_bindings" : "");
-                    const auto variableSizeSuffix  = (useVariableSize ? "" : "_no_variable_size");
-                    const auto caseName            = "support_count_" + getDescriptorTypeShortName(descriptorType) +
-                                          extraBindingsSuffix + variableSizeSuffix;
-                    const CountLayoutSupportParams params{descriptorType, extraBindings, useVariableSize};
+                            const auto extraBindingsSuffix = (extraBindings ? "_extra_bindings" : "");
+                            const auto variableSizeSuffix  = (useVariableSize ? "" : "_no_variable_size");
+                            const auto offsetSuffix        = (bindingOffset != 0u ? "_nonzero_binding_offset" : "");
+                            const auto creationSuffix      = (createLayout ? "_create_layout" : "");
+                            const auto caseName = "support_count_" + getDescriptorTypeShortName(descriptorType) +
+                                                  extraBindingsSuffix + variableSizeSuffix + offsetSuffix +
+                                                  creationSuffix;
+                            const CountLayoutSupportParams params{descriptorType, bindingOffset, extraBindings,
+                                                                  useVariableSize, createLayout};
 
-                    addFunctionCase(main3Tests.get(), caseName.c_str(), checkSupportCountLayoutSupport,
-                                    testCountLayoutSupport, params);
-                }
+                            addFunctionCase(main3Tests.get(), caseName.c_str(), checkSupportCountLayoutSupport,
+                                            testCountLayoutSupport, params);
+                        }
     }
 
     return main3Tests.release();

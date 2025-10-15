@@ -29,6 +29,7 @@
 #include "gl3cGLSLnoperspectiveTests.hpp"
 #include "gl3cGPUShader5Tests.hpp"
 #include "gl3cPrimitiveRestart.hpp"
+#include "gl3cTextureFilterMinmaxTests.hpp"
 #include "gl3cTextureSizePromotion.hpp"
 #include "gl3cTextureSwizzleTests.hpp"
 #include "gl3cTransformFeedbackOverflowQueryTests.hpp"
@@ -332,6 +333,7 @@ void GL33TestPackage::init(void)
         addChild(new gl3cts::TextureSwizzleTests(getContext()));
         addChild(new glcts::NearestEdgeCases(getContext()));
         addChild(new glcts::PixelStorageModesTests(getContext(), glu::GLSL_VERSION_330));
+        addChild(new gl3cts::TextureFilterMinmax(getContext()));
     }
     catch (...)
     {

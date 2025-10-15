@@ -166,7 +166,12 @@ void checkTextureSupport(Context &context, const TextureCubeFilteringTestCasePar
         context.requireDeviceFunctionality("VK_EXT_non_seamless_cube_map");
 #else
     DE_UNREF(context);
-    DE_UNREF(testParameters);
+
+    if (testParameters.format == VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16)
+        TCU_THROW(NotSupportedError, "VK_EXT_rgba10x6_formats not supported in Vulkan SC");
+
+    if (testParameters.seamless == false)
+        TCU_THROW(NotSupportedError, "VK_EXT_non_seamless_cube_map not supported in Vulkan SC");
 #endif
 }
 

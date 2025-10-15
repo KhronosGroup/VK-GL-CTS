@@ -267,11 +267,10 @@ public:
                          uint32_t vertexAttributeDescriptionCount                                  = 0,
                          const vk::VkVertexInputAttributeDescription *pVertexAttributeDescriptions = NULL);
 
-        VertexInputState &addDivisors(
-            uint32_t vertexBindingDivisorCount                                          = 0,
-            const vk::VkVertexInputBindingDivisorDescriptionEXT *pVertexBindingDivisors = NULL);
+        VertexInputState &addDivisors(uint32_t vertexBindingDivisorCount                                       = 0,
+                                      const vk::VkVertexInputBindingDivisorDescription *pVertexBindingDivisors = NULL);
 
-        vk::VkPipelineVertexInputDivisorStateCreateInfoEXT m_divisorState;
+        vk::VkPipelineVertexInputDivisorStateCreateInfo m_divisorState;
     };
 
     class InputAssemblerState : public vk::VkPipelineInputAssemblyStateCreateInfo

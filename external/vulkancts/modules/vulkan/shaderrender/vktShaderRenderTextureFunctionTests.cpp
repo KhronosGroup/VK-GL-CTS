@@ -2304,11 +2304,15 @@ enum QueryFunction
 // test mode used to alter test behaviour
 using TestMode = uint32_t;
 
+using MinMaxLodT = tcu::Maybe<TextureBinding::MinMaxLod>;
+
 enum QueryLodTestModes
 {
     QLODTM_DEFAULT = 0,   // uv coords have different values
     QLODTM_ZERO_UV_WIDTH, // all uv coords are 0; there were implementations that incorrectly returned 0 in that case instead of -maxSamplerLodBias or less
     QLODTM_WITH_NON_ZERO_BASE_LEVEL, // test texture LoD query in combination with base leve that is != 0
+    QLODTM_CLAMP_MIN,                // clamp with minLod
+    QLODTM_CLAMP_MAX,                // clamp with maxLod
 };
 
 class TextureQueryInstance : public ShaderRenderCaseInstance
@@ -2444,10 +2448,12 @@ static bool isValidCase(TextureType type, const tcu::IVec3 &textureSize, int lod
 }
 
 static TextureBindingSp createEmptyTexture(uint32_t format, TextureType type, const tcu::IVec3 &textureSize,
-                                           int numLevels, int lodBase, const tcu::Sampler &sampler)
+                                           int numLevels, int lodBase, const tcu::Sampler &sampler,
+                                           MinMaxLodT minMaxLod = tcu::Nothing)
 {
     const tcu::TextureFormat texFmt = glu::mapGLInternalFormat(format);
-    const TextureBinding::Parameters params(lodBase);
+    const TextureBinding::Parameters params(lodBase, vk::makeComponentMappingRGBA(), vk::VK_SAMPLE_COUNT_1_BIT,
+                                            TextureBinding::INIT_UPLOAD_DATA, minMaxLod);
     TextureBindingSp textureBinding;
 
     switch (type)
@@ -3460,8 +3466,8 @@ protected:
     virtual void setupDefaultInputs(void);
 
 private:
-    void initTexture(int baseMipLevel);
-    float computeLevelFromLod(float computedLod) const;
+    void initTexture(int baseMipLevel, MinMaxLodT minMaxLod);
+    float computeLevelFromLod(float computedLod, MinMaxLodT minMaxLod) const;
     vector<float> computeQuadTexCoord(void) const;
 
     const TestMode m_mode;
@@ -3483,8 +3489,19 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
     int lodBase    = (m_mode == QLODTM_WITH_NON_ZERO_BASE_LEVEL) ? 2 : 0;
     float lodBaseF = float(lodBase);
 
+    tcu::Maybe<TextureBinding::MinMaxLod> minMaxLod;
+    if (m_mode == QLODTM_CLAMP_MIN)
+    {
+        minMaxLod = tcu::just(TextureBinding::MinMaxLod(5.0f, std::numeric_limits<float>::infinity()));
+    }
+
+    if (m_mode == QLODTM_CLAMP_MAX)
+    {
+        minMaxLod = tcu::just(TextureBinding::MinMaxLod(-std::numeric_limits<float>::infinity(), 1.0f));
+    }
+
     // setup texture
-    initTexture(lodBase);
+    initTexture(lodBase, minMaxLod);
 
     if (m_mode != QLODTM_ZERO_UV_WIDTH)
     {
@@ -3569,8 +3586,8 @@ TextureQueryLodInstance::TextureQueryLodInstance(Context &context, const bool is
             break;
         }
 
-        m_levelBounds[0] = computeLevelFromLod(m_lodBounds[0]);
-        m_levelBounds[1] = computeLevelFromLod(m_lodBounds[1]);
+        m_levelBounds[0] = computeLevelFromLod(m_lodBounds[0], minMaxLod);
+        m_levelBounds[1] = computeLevelFromLod(m_lodBounds[1], minMaxLod);
 
         return;
     }
@@ -3648,7 +3665,7 @@ void TextureQueryLodInstance::setupDefaultInputs(void)
                  texCoord.data());
 }
 
-void TextureQueryLodInstance::initTexture(int baseMipLevel)
+void TextureQueryLodInstance::initTexture(int baseMipLevel, MinMaxLodT minMaxLod)
 {
     tcu::TestLog &log = m_context.getTestContext().getLog();
     tcu::IVec3 textureSize(m_textureSpec.width, m_textureSpec.height, m_textureSpec.depth);
@@ -3660,14 +3677,18 @@ void TextureQueryLodInstance::initTexture(int baseMipLevel)
         << tcu::TestLog::EndMessage;
 
     textureBinding = createEmptyTexture(m_textureSpec.format, m_textureSpec.type, textureSize, m_textureSpec.numLevels,
-                                        baseMipLevel, m_textureSpec.sampler);
+                                        baseMipLevel, m_textureSpec.sampler, minMaxLod);
 
     m_textures.push_back(textureBinding);
 }
 
-float TextureQueryLodInstance::computeLevelFromLod(float computedLod) const
+float TextureQueryLodInstance::computeLevelFromLod(float computedLod, MinMaxLodT minMaxLod) const
 {
     const int maxAccessibleLevel = m_textureSpec.numLevels - 1;
+
+    // Clamp the computed lod with minLod and maxLod
+    if (minMaxLod)
+        computedLod = deFloatClamp(computedLod, minMaxLod.get().minLod, minMaxLod.get().maxLod);
 
     // Clamp the computed LOD to the range of accessible levels.
     computedLod = deFloatClamp(computedLod, 0.0f, (float)maxAccessibleLevel);
@@ -4538,6 +4559,10 @@ void ShaderTextureFunctionTests::init(void)
         tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR_MIPMAP_NEAREST,
         tcu::Sampler::LINEAR, 0.0f /* LOD threshold */, true /* normalized coords */, tcu::Sampler::COMPAREMODE_NONE,
         0 /* cmp channel */, tcu::Vec4(0.0f) /* border color */, true /* seamless cube map */);
+    static const tcu::Sampler samplerTriLinearMipmap(
+        tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::LINEAR_MIPMAP_LINEAR,
+        tcu::Sampler::LINEAR, 0.0f /* LOD threshold */, true /* normalized coords */, tcu::Sampler::COMPAREMODE_NONE,
+        0 /* cmp channel */, tcu::Vec4(0.0f) /* border color */, true /* seamless cube map */);
 
     static const tcu::Sampler samplerShadowNoMipmap(
         tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::REPEAT_GL, tcu::Sampler::NEAREST,
@@ -4563,6 +4588,8 @@ void ShaderTextureFunctionTests::init(void)
     static const TextureSpec tex2DMipmapFloat(TEXTURETYPE_2D, GL_RGBA16F, 256, 256, 1, 9, samplerLinearMipmap);
     static const TextureSpec tex2DMipmapInt(TEXTURETYPE_2D, GL_RGBA8I, 256, 256, 1, 9, samplerNearestMipmap);
     static const TextureSpec tex2DMipmapUint(TEXTURETYPE_2D, GL_RGBA8UI, 256, 256, 1, 9, samplerNearestMipmap);
+    static const TextureSpec tex2DMipmapTriFixed(TEXTURETYPE_2D, GL_RGBA8, 256, 256, 1, 9, samplerTriLinearMipmap);
+    static const TextureSpec tex2DMipmapTriFloat(TEXTURETYPE_2D, GL_RGBA16F, 256, 256, 1, 9, samplerTriLinearMipmap);
 
     static const TextureSpec tex2DShadow(TEXTURETYPE_2D, GL_DEPTH_COMPONENT16, 256, 256, 1, 1, samplerShadowNoMipmap);
     static const TextureSpec tex2DMipmapShadow(TEXTURETYPE_2D, GL_DEPTH_COMPONENT16, 256, 256, 1, 9,
@@ -7387,6 +7414,10 @@ void ShaderTextureFunctionTests::init(void)
             const TexQueryFuncCaseSpec textureQueryLodCases[] = {
                 {"sampler2d_fixed", "sampler2D", tex2DMipmapFixed},
                 {"sampler2d_float", "sampler2D", tex2DMipmapFloat},
+                {"sampler2d_fixed_nomipmap", "sampler2D", tex2DFixed},
+                {"sampler2d_float_nomipmap", "sampler2D", tex2DFloat},
+                {"sampler2d_fixed_trilinear", "sampler2D", tex2DMipmapTriFixed},
+                {"sampler2d_float_trilinear", "sampler2D", tex2DMipmapTriFloat},
                 {"isampler2d", "isampler2D", tex2DMipmapInt},
                 {"usampler2d", "usampler2D", tex2DMipmapUint},
                 {"sampler2dshadow", "sampler2DShadow", tex2DMipmapShadow},
@@ -7438,6 +7469,14 @@ void ShaderTextureFunctionTests::init(void)
                 group->addChild(new TextureQueryCase(
                     m_testCtx, (std::string(caseSpec.name) + "non_zero_base_level_fragment"), caseSpec.samplerName,
                     caseSpec.textureSpec, false, QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_WITH_NON_ZERO_BASE_LEVEL));
+
+                group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_clamp_min"),
+                                                     caseSpec.samplerName, caseSpec.textureSpec, false,
+                                                     QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_CLAMP_MIN));
+
+                group->addChild(new TextureQueryCase(m_testCtx, (std::string(caseSpec.name) + "_clamp_max"),
+                                                     caseSpec.samplerName, caseSpec.textureSpec, false,
+                                                     QUERYFUNCTION_TEXTUREQUERYLOD, QLODTM_CLAMP_MAX));
             }
 
             queryGroup->addChild(group.release());

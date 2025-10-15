@@ -39,6 +39,7 @@
 #include <functional>
 #include <iostream>
 #include <iomanip>
+#include <memory>
 #include <numeric>
 #include <sstream>
 #include <tuple>
@@ -46,12 +47,107 @@
 #include <variant>
 #include <vector>
 
+namespace vk
+{
+
+#define MAKE_FEATURE_IMPL(clazz, enume)  \
+    template <>                          \
+    FeatureDesc makeFeatureDesc<clazz>() \
+    {                                    \
+        return FeatureDesc{enume, ""};   \
+    }
+
+#define INIT_FEATURE_IMPL(clazz, enume)                                \
+    template <>                                                        \
+    void initFeatureFromBlob<clazz>(clazz &, const AllFeaturesBlobs &) \
+    {                                                                  \
+    }
+
+MAKE_FEATURE_IMPL(VkPhysicalDeviceFeatures, VK_STRUCTURE_TYPE_MAX_ENUM)
+INIT_FEATURE_IMPL(VkPhysicalDeviceFeatures, VK_STRUCTURE_TYPE_MAX_ENUM)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
+INIT_FEATURE_IMPL(VkPhysicalDeviceFeatures2, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan11Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan11Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_1_FEATURES)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan12Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan12Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_2_FEATURES)
+#ifndef CTS_USES_VULKANSC
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan13Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan13Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_3_FEATURES)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkan14Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkan14Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_1_4_FEATURES)
+#endif
+
+#ifdef CTS_USES_VULKANSC
+MAKE_FEATURE_IMPL(VkFaultCallbackInfo, VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO)
+INIT_FEATURE_IMPL(VkFaultCallbackInfo, VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO)
+MAKE_FEATURE_IMPL(VkPhysicalDeviceVulkanSC10Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
+INIT_FEATURE_IMPL(VkPhysicalDeviceVulkanSC10Features, VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VULKAN_SC_1_0_FEATURES)
+MAKE_FEATURE_IMPL(VkDeviceObjectReservationCreateInfo, VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO)
+INIT_FEATURE_IMPL(VkDeviceObjectReservationCreateInfo, VK_STRUCTURE_TYPE_DEVICE_OBJECT_RESERVATION_CREATE_INFO)
+#endif
+
+} // namespace vk
+
 namespace vkt
 {
 using namespace vk;
 namespace fs = std::filesystem;
 
-constexpr uint32_t INVALID_UINT32 = std::numeric_limits<uint32_t>::max();
+namespace
+{
+
+using Comparer = std::function<bool(vk::VkStructureType, vk::VkStructureType, uint32_t, const void *, bool)>;
+
+void traverseFeatures(const DevCaps::Features &features,
+                      VkStructureType breakType,     // sType to searching for, it is first parameter of doContinue
+                      Comparer doContinue = nullptr) // if lhs == rhs return false to break looking for
+{
+    bool continueFlag = true;
+
+    if (doContinue)
+    {
+        for (uint32_t i = 0u; continueFlag && i < features.size(); ++i)
+        {
+            const VkStructureType sType = features[i]->getFeatureDesc().sType;
+            continueFlag =
+                doContinue(breakType, sType, i, features[i]->getFeatureTypeRaw(), sType != VK_STRUCTURE_TYPE_MAX_ENUM);
+        }
+    }
+}
+
+void freeFeatures(DevCaps::Features *features, bool free)
+{
+    for (FeatureStructWrapperBase *feature : *features)
+        delete feature;
+    features->clear();
+    if (free)
+    {
+        delete features;
+    }
+}
+
+std::unique_ptr<DevCaps::Features, std::function<void(DevCaps::Features *)>> chainFeatures(
+    const DevCaps::Features &features, void **head)
+{
+    DE_ASSERT(head);
+    std::unique_ptr<DevCaps::Features, std::function<void(DevCaps::Features *)>> chain(
+        new DevCaps::Features(features.size()), std::bind(&freeFeatures, std::placeholders::_1, true));
+    for (uint32_t i = 0u; i < features.size(); ++i)
+    {
+        DevCaps::Features::value_type clone = features[i]->clone();
+        void **ppNext                       = clone->getFeatureTypeNext();
+        if (ppNext != nullptr)
+        {
+            *head = clone->getFeatureTypeRaw();
+            head  = ppNext;
+        }
+        chain->at(i) = clone;
+    }
+    return chain;
+}
+
+} // unnamed namespace
 
 DevCaps::DevCaps(const std::string &id_, const ContextManager *mgr, tcu::TestContext &testContext)
     : m_extensions()
@@ -61,6 +157,7 @@ DevCaps::DevCaps(const std::string &id_, const ContextManager *mgr, tcu::TestCon
     , m_queueCreateInfos()
     , m_hasInheritedExtensions(false) // don't add all extensions that are available on the device
     , m_testContext(testContext)
+    , m_allocatorParams(tcu::Nothing)
     , id(id_)
 {
     reset();
@@ -70,12 +167,18 @@ DevCaps::DevCaps(const DevCaps &caps)
     : m_extensions(caps.m_extensions)
     , m_extensionsRef(caps.m_hasInheritedExtensions ? caps.m_extensionsRef.extensions : m_extensions)
     , m_contextManager(caps.m_contextManager)
-    , m_features(caps.m_features)
+    , m_features()
     , m_queueCreateInfos(caps.m_queueCreateInfos)
     , m_hasInheritedExtensions(caps.m_hasInheritedExtensions)
     , m_testContext(caps.m_testContext)
+    , m_allocatorParams(caps.m_allocatorParams)
     , id(caps.id)
 {
+    m_features.resize(caps.m_features.size());
+    for (uint32_t i = 0u; i < m_features.size(); ++i)
+    {
+        m_features[i] = caps.m_features[i]->clone();
+    }
 }
 
 DevCaps::DevCaps(DevCaps &&caps) noexcept
@@ -86,8 +189,14 @@ DevCaps::DevCaps(DevCaps &&caps) noexcept
     , m_queueCreateInfos(std::move(caps.m_queueCreateInfos))
     , m_hasInheritedExtensions(caps.m_hasInheritedExtensions)
     , m_testContext(caps.m_testContext)
+    , m_allocatorParams(caps.m_allocatorParams)
     , id(caps.id)
 {
+}
+
+DevCaps::~DevCaps()
+{
+    freeFeatures(&m_features, false);
 }
 
 void DevCaps::RuntimeData_::verify() const
@@ -190,146 +299,6 @@ void DevCaps::reset()
     resetQueues({{requiredFlags, 0, 1u, 1.0f}});
 }
 
-DevCaps::FeatureInfo_::FeatureInfo_()
-{
-    reset();
-}
-
-void DevCaps::FeatureInfo_::reset()
-{
-    // VkAtructureType that is not feture structure type enumeration.
-    sType   = vk::VK_STRUCTURE_TYPE_APPLICATION_INFO;
-    address = nullptr;
-    index   = INVALID_UINT32;
-    size    = 0u;
-}
-
-namespace
-{
-
-// Helper visitor to traverse vector of variants.
-// It works in few modes - it can search for specified feature in the list
-// or build a chain out of all feature structures that were added.
-struct FeatureVisitor
-{
-    enum Mode
-    {
-        Searching,
-        Chaining,
-        Iterate
-    };
-
-    using FeatureInfo = DevCaps::FeatureInfo;
-    using FeaturesVar = DevCaps::FeaturesVar;
-    using Comparer    = std::function<bool(vk::VkStructureType, vk::VkStructureType, uint32_t, const void *, bool)>;
-
-    Comparer m_doContinue; // determines if we need to go to the next element
-    const DevCaps::Features &m_features;
-    const Mode m_mode;
-    VkStructureType m_breakType;
-    bool &m_continueFlag;
-    const uint32_t &m_featureIndex;
-    FeatureInfo &m_featureInfo;
-    DevCaps::Features m_chain;
-
-    template <class FeatureStruct>
-    void processFeature(const FeatureStruct &feature)
-    {
-        const VkStructureType sType = vk::dc::getFeatureSType<FeatureStruct>();
-        const bool hasPnext         = dc::hasPnextOfVoidPtr<FeatureStruct>::value;
-
-        if (m_mode == Mode::Chaining)
-        {
-            m_continueFlag          = true;
-            FeaturesVar &var        = m_chain.emplace_back(feature);
-            FeatureStruct *pFeature = std::get_if<FeatureStruct>(&var);
-
-            DE_UNREF(pFeature);
-
-            if constexpr (hasPnext)
-            {
-                DE_ASSERT(sType == pFeature->sType);
-                pFeature->pNext       = m_featureInfo.address;
-                m_featureInfo.address = pFeature;
-            }
-        }
-        else if (m_mode == Mode::Searching)
-        {
-            if (m_continueFlag = (m_breakType != sType); (false == m_continueFlag))
-            {
-                m_featureInfo.address = (void *)(&feature);
-                m_featureInfo.size    = uint32_t(sizeof(feature));
-                m_featureInfo.index   = m_featureIndex;
-                m_featureInfo.sType   = sType;
-            }
-        }
-        else
-        {
-            m_continueFlag = m_doContinue ? m_doContinue(m_breakType, sType, m_featureIndex, &feature, hasPnext) : true;
-        }
-    }
-
-#ifdef CTS_USES_VULKANSC
-    void operator()(const vk::VkPhysicalDeviceVulkanSC10Features &feature)
-    {
-        processFeature(feature);
-    }
-#endif
-
-    template <class FeatureStruct>
-    void operator()(const FeatureStruct &feature)
-    {
-        processFeature(feature);
-    }
-
-    FeatureVisitor(Comparer doContinue, const DevCaps::Features &features, Mode mode, VkStructureType breakType,
-                   const uint32_t &featureIndex, bool &continueFlag, DevCaps::FeatureInfo &featureInfo)
-        : m_doContinue(doContinue)
-        , m_features(features)
-        , m_mode(mode)
-        , m_breakType(breakType)
-        , m_continueFlag(continueFlag)
-        , m_featureIndex(featureIndex)
-        , m_featureInfo(featureInfo)
-        , m_chain()
-    {
-        featureInfo.reset();
-        if (Mode::Chaining == m_mode)
-        {
-            m_chain.reserve(features.size());
-        }
-    }
-};
-
-DevCaps::Features traverseFeatures(
-    const FeatureVisitor::Mode mode, const DevCaps::Features &features,
-    VkStructureType breakType, // sType to searching for, it is first parameter of doContinue
-    FeatureVisitor::FeatureInfo &featureInfo,
-    FeatureVisitor::Comparer doContinue = nullptr) // if lhs == rhs return false to break looking for
-{
-    bool continueFlag     = false;
-    uint32_t featureIndex = 0;
-
-    FeatureVisitor visitor(doContinue, features, mode, breakType, featureIndex, continueFlag, featureInfo);
-
-    for (auto begin = features.cbegin(), var = begin; var != features.cend(); ++var)
-    {
-        featureIndex = static_cast<uint32_t>(std::distance(begin, var));
-        std::visit(visitor, *var);
-        if (false == continueFlag)
-            break;
-    }
-
-    if (mode == FeatureVisitor::Mode::Chaining)
-    {
-        return std::move(visitor.m_chain);
-    }
-
-    return {};
-}
-
-} // namespace
-
 template <class Stream>
 Stream &printPhysicalDeviceFeatures(const VkPhysicalDeviceFeatures &features, Stream &str, uint32_t indent);
 template <class Stream>
@@ -346,11 +315,10 @@ bool DevCaps::addUpdateFeature(vk::VkStructureType sType, void *pExpected, const
 
         if (caller.compareExchange(pExpected, nullptr))
         {
-            const FeatureInfo fi = getFeatureInfo(sType, m_features);
-            if (fi.size)
+            void *fi = getFeatureInfo(sType, m_features);
+            if (fi)
             {
-                DE_ASSERT(fi.size == featureSize);
-                caller.compareExchange(pExpected, fi.address);
+                caller.compareExchange(pExpected, fi);
             }
             else
             {
@@ -363,15 +331,13 @@ bool DevCaps::addUpdateFeature(vk::VkStructureType sType, void *pExpected, const
     }
     else
     {
-        const FeatureInfo fi = getFeatureInfo(sType, m_features);
-        if (fi.size)
+        void *fi = getFeatureInfo(sType, m_features);
+        if (fi)
         {
-            DE_UNREF(featureSize);
-            DE_ASSERT(fi.size == featureSize);
             if (nullptr == pSource)
-                fillFeatureFromInstance(fi.address, isVkPhysicalDeviceFeatures10);
+                fillFeatureFromInstance(fi, isVkPhysicalDeviceFeatures10);
             else
-                deMemcpy(fi.address, pSource, size_t(featureSize));
+                deMemcpy(fi, pSource, size_t(featureSize));
         }
         else
         {
@@ -505,20 +471,17 @@ void DevCaps::verifyFeature(vk::VkStructureType sType, bool checkRuntimeApiVersi
         return true;
     };
 
-    DevCaps::FeatureInfo fi;
-    traverseFeatures(FeatureVisitor::Iterate, m_features, sType, fi, alreadyExists);
+    traverseFeatures(m_features, sType, alreadyExists);
 
     if (newFeatureIsBlob && Status::Ok == status)
     {
-        DevCaps::FeatureInfo irr;
-        traverseFeatures(FeatureVisitor::Iterate, m_features, sType, irr, featureInBlob);
+        traverseFeatures(m_features, sType, featureInBlob);
     }
     else if (Status::Ok == status)
     {
-        DevCaps::FeatureInfo irr;
         auto blob = apiToBlob.find(newFeatureBlobVersion);
         DE_ASSERT(apiToBlob.end() != blob);
-        traverseFeatures(FeatureVisitor::Iterate, m_features, blob->second, irr, blobInFeatures);
+        traverseFeatures(m_features, blob->second, blobInFeatures);
     }
 
     if (Status::Ok != status)
@@ -527,22 +490,24 @@ void DevCaps::verifyFeature(vk::VkStructureType sType, bool checkRuntimeApiVersi
     }
 }
 
-DevCaps::FeatureInfo_ DevCaps::getFeatureInfo(VkStructureType sType, const Features_ &others) const
+void *DevCaps::getFeatureInfo(VkStructureType sType, const Features_ &others) const
 {
-    FeatureInfo_ info;
-    traverseFeatures(FeatureVisitor::Mode::Searching, others, sType, info);
-    return info;
+    for (FeatureStructWrapperBase *feature : others)
+    {
+        if (feature->getFeatureDesc().sType == sType)
+            return feature->getFeatureTypeRaw();
+    }
+    return nullptr;
 }
 
 void DevCaps::updateDeviceCreateInfo(vk::VkDeviceCreateInfo &createInfo, VkPhysicalDeviceFeatures2 *opt, Features &aux,
                                      void *pNext) const
 {
+    void *fi10        = getFeatureInfo(VK_STRUCTURE_TYPE_MAX_ENUM, aux);
+    const bool hasF10 = fi10 != nullptr;
 
-    const FeatureInfo fi10 = getFeatureInfo(VK_STRUCTURE_TYPE_MAX_ENUM, aux);
-    const bool hasF10      = 0u != fi10.size;
-
-    const FeatureInfo fi11 = getFeatureInfo(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, aux);
-    const bool hasF11      = 0u != fi11.size;
+    void *fi11        = getFeatureInfo(VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2, aux);
+    const bool hasF11 = fi11 != nullptr;
 
     // Handle the special case involving VkPhysicalDeviceFeatures, which lacks an sType,
     // and VkPhysicalDeviceFeatures2, which encapsulates VkPhysicalDeviceFeatures.
@@ -550,10 +515,10 @@ void DevCaps::updateDeviceCreateInfo(vk::VkDeviceCreateInfo &createInfo, VkPhysi
 
     if (hasF10)
     {
-        VkPhysicalDeviceFeatures2 *pf2 = hasF11 ? reinterpret_cast<VkPhysicalDeviceFeatures2 *>(fi11.address) : opt;
-        const VkBool32 *src            = reinterpret_cast<const VkBool32 *>(fi10.address);
+        VkPhysicalDeviceFeatures2 *pf2 = hasF11 ? reinterpret_cast<VkPhysicalDeviceFeatures2 *>(fi11) : opt;
+        const VkBool32 *src            = reinterpret_cast<const VkBool32 *>(fi10);
         VkBool32 *dst                  = reinterpret_cast<VkBool32 *>(&pf2->features);
-        const uint32_t N               = fi10.size / uint32_t(sizeof(VkBool32));
+        const uint32_t N               = uint32_t(sizeof(VkPhysicalDeviceFeatures) / sizeof(VkBool32));
         for (uint32_t i = 0u; i < N; ++i)
         {
             // UNASSIGNED-GeneralParameterError-UnrecognizedBool32
@@ -753,6 +718,8 @@ de::SharedPtr<Context> ContextManager::findContext(de::SharedPtr<const ContextMa
 }
 
 DevCaps::RuntimeData_::RuntimeData_(const DevCaps &caps)
+    : familyToQueueIndices()
+    , allocatorCreateParams(caps.m_allocatorParams)
 {
     std::vector<float> queuePriorities;
     std::vector<VkDeviceQueueCreateInfo> queueInfos;
@@ -762,28 +729,39 @@ DevCaps::RuntimeData_::RuntimeData_(const DevCaps &caps)
 void DevCaps::RuntimeData_::resetQueues(const DevCaps &caps, std::vector<VkDeviceQueueCreateInfo> &infos,
                                         std::vector<float> &priorities)
 {
-    const ContextManager &mgr = caps.getContextManager();
-    uint32_t allQueueCount    = 0;
+    const ContextManager &mgr    = caps.getContextManager();
+    uint32_t requestedQueueCount = 0;
 
     const auto &queueCreateInfos = caps.getQueueCreateInfos();
     for (const auto &qci : queueCreateInfos)
-        allQueueCount += qci.count;
+        requestedQueueCount += qci.count;
 
     infos.clear();
     priorities.clear();
     infos.reserve(queueCreateInfos.size());
-    priorities.reserve(allQueueCount);
+    priorities.reserve(requestedQueueCount);
 
     familyToQueueIndices.clear();
-    familyToQueueIndices.reserve(allQueueCount);
+    familyToQueueIndices.reserve(requestedQueueCount);
 
-    uint32_t whatever = 0u;
+    uint32_t whatever            = 0u;
+    uint32_t availableQueueCount = 0u;
     std::multimap<uint32_t, uint32_t> familyToQueueIndicesMap;
 
     for (const DevCaps::QueueCreateInfo &qci : queueCreateInfos)
     {
         const uint32_t queueFamilyIndex = findQueueFamilyIndexWithCaps(
-            mgr.getInstanceInterface(), mgr.getPhysicalDevice(), qci.required, qci.excluded);
+            mgr.getInstanceInterface(), mgr.getPhysicalDevice(), qci.required, qci.excluded, &availableQueueCount);
+        if (qci.count > availableQueueCount)
+        {
+            std::ostringstream os;
+            os << "Requested queue count (" << qci.count << ") exceeds available queue count (" << availableQueueCount
+               << "), ";
+            os << __func__ << "(requiredCaps=0x" << std::hex << uint32_t(qci.required);
+            os << ", excludedCaps=0x" << std::hex << uint32_t(qci.excluded) << ')';
+            os.flush();
+            TCU_THROW(NotSupportedError, os.str());
+        }
 
         priorities.emplace_back(qci.priority);
 
@@ -800,8 +778,8 @@ void DevCaps::RuntimeData_::resetQueues(const DevCaps &caps, std::vector<VkDevic
         }
     }
 
-    DE_ASSERT(priorities.size() == allQueueCount);
-    DE_ASSERT(familyToQueueIndices.size() == allQueueCount);
+    DE_ASSERT(priorities.size() == requestedQueueCount);
+    DE_ASSERT(familyToQueueIndices.size() == requestedQueueCount);
 }
 
 #ifdef CTS_USES_VULKANSC
@@ -845,7 +823,9 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
     // devices created for Vulkan SC must have VkDeviceObjectReservationCreateInfo
     // structure defined in VkDeviceCreateInfo::pNext chain
     VkDeviceObjectReservationCreateInfo dorCI = resetDeviceObjectReservationCreateInfo();
-    const bool hasReservationCreateInfo       = createCaps.getFeature(dorCI);
+    const bool hasReservationCreateInfo =
+        createCaps.getFeatureInfo(makeFeatureDesc<VkDeviceObjectReservationCreateInfo>().sType,
+                                  createCaps.m_features) != nullptr;
     if (hasReservationCreateInfo == false)
         createCaps.addFeature(dorCI);
 
@@ -890,10 +870,11 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
     }
 
     VkPhysicalDeviceVulkanSC10Features sc10Features = createDefaultSC10Features();
-    if (false == createCaps.getFeature(sc10Features))
+    if (false == (createCaps.getFeatureInfo(sc10Features.sType, createCaps.m_features) != nullptr))
         createCaps.addFeature(sc10Features);
 
-    if (cmdLine.isSubProcess() && false == createCaps.hasFeature<VkFaultCallbackInfo>())
+    if (cmdLine.isSubProcess() &&
+        false == (createCaps.getFeatureInfo(VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, createCaps.m_features) != nullptr))
     {
         const VkFaultCallbackInfo faultCallbackInfo{
             VK_STRUCTURE_TYPE_FAULT_CALLBACK_INFO, // VkStructureType sType;
@@ -905,12 +886,12 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
         createCaps.addFeature(faultCallbackInfo);
     }
 
-    DevCaps::FeatureInfo chain;
+    void *chain                   = nullptr;
     VkPhysicalDeviceFeatures2 opt = initVulkanStructure();
 
-    DevCaps::Features features = traverseFeatures(FeatureVisitor::Chaining, createCaps.m_features, chain.sType, chain);
+    auto features = chainFeatures(createCaps.m_features, &chain);
 
-    caps.updateDeviceCreateInfo(deviceParams, &opt, features, chain.address);
+    caps.updateDeviceCreateInfo(deviceParams, &opt, *features, chain);
 
     std::vector<VkApplicationParametersEXT> appParams;
     if (readApplicationParameters(appParams, cmdLine, false))
@@ -948,12 +929,12 @@ Move<VkDevice> ContextManager::createDevice(const DevCaps &caps, DevCaps::Runtim
                                        nullptr}; // pEnabledFeatures
 
     // features block
-    DevCaps::FeatureInfo chain;
+    void *chain                   = nullptr;
     VkPhysicalDeviceFeatures2 opt = initVulkanStructure();
 
-    DevCaps::Features features = traverseFeatures(FeatureVisitor::Chaining, caps.m_features, chain.sType, chain);
+    auto features = chainFeatures(caps.m_features, &chain);
 
-    caps.updateDeviceCreateInfo(deviceParams, &opt, features, chain.address);
+    caps.updateDeviceCreateInfo(deviceParams, &opt, *features, chain);
 
     print(caps.m_testContext.getLog(), deviceParams);
 
@@ -976,6 +957,11 @@ DevCaps::QueueInfo DevCaps::RuntimeData_::getQueue(const DeviceInterface &di, vk
     return info;
 }
 
+const DevCaps::AllocatorParams &DevCaps::RuntimeData_::getAllocatorCreateParams() const
+{
+    return allocatorCreateParams;
+}
+
 void ContextManager::print(tcu::TestLog &log, const VkDeviceCreateInfo &createInfo) const
 {
     const std::string logFile = fs::path(m_commandLine.getLogFileName()).filename().string();
@@ -985,6 +971,11 @@ void ContextManager::print(tcu::TestLog &log, const VkDeviceCreateInfo &createIn
         printDeviceCreateInfo(msg, createInfo);
         msg << tcu::TestLog::EndMessage << tcu::TestLog::EndSection;
     }
+}
+
+void ContextManager::setContextManager(de::SharedPtr<const ContextManager> cm, vkt::TestCase *testCase)
+{
+    testCase->setContextManager(cm);
 }
 
 template <class Stream>

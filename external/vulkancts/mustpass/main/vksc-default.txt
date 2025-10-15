@@ -11,6 +11,7 @@ vksc-default/fragment-shader-interlock.txt
 vksc-default/fragment-shading-rate.txt
 vksc-default/geometry.txt
 vksc-default/glsl.txt
+vksc-default/image/2d-array-compatible.txt
 vksc-default/image/astc-decode-mode.txt
 vksc-default/image/atomic-operations.txt
 vksc-default/image/concurrent-copy.txt
@@ -21,6 +22,7 @@ vksc-default/image/extend-operands-spirv1p4.txt
 vksc-default/image/extended-usage-bit.txt
 vksc-default/image/extended-usage-bit-compatibility.txt
 vksc-default/image/format-reinterpret.txt
+vksc-default/image/general-layout.txt
 vksc-default/image/image-size.txt
 vksc-default/image/load-store.txt
 vksc-default/image/load-store-lod.txt
@@ -47,8 +49,7 @@ vksc-default/pipeline/monolithic.txt
 vksc-default/protected-memory.txt
 vksc-default/query-pool.txt
 vksc-default/rasterization.txt
-vksc-default/renderpass.txt
-vksc-default/renderpass2.txt
+vksc-default/renderpasses.txt
 vksc-default/robustness.txt
 vksc-default/sc.txt
 vksc-default/spirv-assembly.txt

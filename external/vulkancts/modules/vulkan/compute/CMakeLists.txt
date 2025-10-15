@@ -24,6 +24,7 @@ set(DEQP_VK_COMPUTE_SRCS
 	vktComputeCooperativeMatrixTests.hpp
 	vktComputeWorkgroupMemoryExplicitLayoutTests.cpp
 	vktComputeWorkgroupMemoryExplicitLayoutTests.hpp
+	vktComputeCooperativeMatrixOpConstantNullTests.cpp
 	)
 
 PCH(DEQP_VK_COMPUTE_SRCS ../pch.cpp)

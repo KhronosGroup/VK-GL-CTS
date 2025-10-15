@@ -142,6 +142,11 @@ struct TestParameters
                 (TEST_TYPE_INPUT_ATTACHMENTS_GEOMETRY == viewIndex) ||
                 (TEST_TYPE_SECONDARY_CMD_BUFFER_GEOMETRY == viewIndex));
     }
+
+    bool isPointSize(void) const
+    {
+        return (TEST_TYPE_POINT_SIZE == viewIndex);
+    }
 };
 
 const int TEST_POINT_SIZE_SMALL = 2;
@@ -1266,7 +1271,7 @@ bool MultiViewRenderTestInstance::checkImage(tcu::ConstPixelBufferAccess &render
             tcu::ConstPixelBufferAccess dst(tcuVerifFormat, m_parameters.extent.width, m_parameters.extent.height, 1u,
                                             renderedFrame.getPixelPtr(0, 0, layerNdx));
             tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Result", "Image comparison result", ref,
-                                       dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_EVERYTHING);
+                                       dst, tcu::Vec4(0.01f), tcu::COMPARE_LOG_ON_ERROR);
         }
 
     return result;
@@ -1612,7 +1617,7 @@ MovePtr<tcu::Texture2DArray> MultiViewRenderTestInstance::imageData(void) const
                             referenceFrame->getLevel(0).setPixel(color, x, y, layerNdx);
                 }
 
-                if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+                if (m_parameters.isPointSize())
                 {
                     const uint32_t vertexPerPrimitive = 1u;
                     const uint32_t unusedQuarterNdx   = 0u;
@@ -2548,7 +2553,6 @@ public:
     MultiViewPointSizeTestInstance(Context &context, const TestParameters &parameters);
 
 protected:
-    void validatePointSize(const VkPhysicalDeviceLimits &limits, const uint32_t pointSize);
     void createVertexData(void);
     void draw(const uint32_t subpassCount, VkRenderPass renderPass, VkFramebuffer frameBuffer,
               vector<PipelineSp> &pipelines);
@@ -2557,30 +2561,6 @@ protected:
 MultiViewPointSizeTestInstance::MultiViewPointSizeTestInstance(Context &context, const TestParameters &parameters)
     : MultiViewRenderTestInstance(context, parameters)
 {
-    const auto &vki                     = m_context.getInstanceInterface();
-    const auto physDevice               = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceLimits limits = getPhysicalDeviceProperties(vki, physDevice).limits;
-
-    validatePointSize(limits, static_cast<uint32_t>(TEST_POINT_SIZE_WIDE));
-    validatePointSize(limits, static_cast<uint32_t>(TEST_POINT_SIZE_SMALL));
-}
-
-void MultiViewPointSizeTestInstance::validatePointSize(const VkPhysicalDeviceLimits &limits, const uint32_t pointSize)
-{
-    const float testPointSizeFloat = static_cast<float>(pointSize);
-    float granuleCount             = 0.0f;
-
-    if (!de::inRange(testPointSizeFloat, limits.pointSizeRange[0], limits.pointSizeRange[1]))
-        TCU_THROW(NotSupportedError, "Required point size is outside of the the limits range");
-
-    granuleCount = static_cast<float>(
-        deCeilFloatToInt32((testPointSizeFloat - limits.pointSizeRange[0]) / limits.pointSizeGranularity));
-
-    if (limits.pointSizeRange[0] + granuleCount * limits.pointSizeGranularity != testPointSizeFloat)
-        TCU_THROW(NotSupportedError, "Granuliraty does not allow to get required point size");
-
-    DE_ASSERT(pointSize + 1 <= m_parameters.extent.width / 2);
-    DE_ASSERT(pointSize + 1 <= m_parameters.extent.height / 2);
 }
 
 void MultiViewPointSizeTestInstance::createVertexData(void)
@@ -3286,6 +3266,7 @@ void MultiViewQueriesTestInstance::draw(const uint32_t subpassCount, VkRenderPas
 
     if (m_cmdCopyQueryPoolResults)
     {
+        invalidateAlloc(m_context.getDeviceInterface(), m_logicalDevice, queryBuffer.getAllocation());
         memcpy(occlusionQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
                de::dataSize(occlusionQueryResultsBuffer));
         memcpy(timestampStartQueryResultsBuffer.data(), queryBuffer.getAllocation().getHostPtr(),
@@ -4498,7 +4479,7 @@ private:
             TEST_TYPE_NESTED_CMD_BUFFER == m_parameters.viewIndex)
             return new MultiViewSecondaryCommandBufferTestInstance(context, m_parameters);
 
-        if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+        if (m_parameters.isPointSize())
             return new MultiViewPointSizeTestInstance(context, m_parameters);
 
         if (TEST_TYPE_MULTISAMPLE == m_parameters.viewIndex)
@@ -4580,6 +4561,40 @@ private:
 #endif // CTS_USES_VULKANSC
         }
 
+        if (m_parameters.viewIndex == TEST_TYPE_POINT_SIZE)
+        {
+            context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_LARGE_POINTS);
+
+            std::vector<uint32_t> usedPointSizes;
+            usedPointSizes.reserve(2);
+
+            // The small (still large) point size is always used.
+            // The large point size is only used for views other than the first one.
+            usedPointSizes.push_back(static_cast<uint32_t>(TEST_POINT_SIZE_SMALL));
+            if (m_parameters.extent.depth > 1u)
+                usedPointSizes.push_back(static_cast<uint32_t>(TEST_POINT_SIZE_WIDE));
+
+            const auto &limits = context.getDeviceProperties().limits;
+
+            for (const auto pointSize : usedPointSizes)
+            {
+                const float testPointSizeFloat = static_cast<float>(pointSize);
+                float granuleCount             = 0.0f;
+
+                if (!de::inRange(testPointSizeFloat, limits.pointSizeRange[0], limits.pointSizeRange[1]))
+                    TCU_THROW(NotSupportedError, "Required point size is outside of the the limits range");
+
+                granuleCount = static_cast<float>(
+                    deCeilFloatToInt32((testPointSizeFloat - limits.pointSizeRange[0]) / limits.pointSizeGranularity));
+
+                if (limits.pointSizeRange[0] + granuleCount * limits.pointSizeGranularity != testPointSizeFloat)
+                    TCU_THROW(NotSupportedError, "Granuliraty does not allow to get required point size");
+
+                DE_ASSERT(pointSize + 1 <= m_parameters.extent.width / 2);
+                DE_ASSERT(pointSize + 1 <= m_parameters.extent.height / 2);
+            }
+        }
+
 #ifdef CTS_USES_VULKANSC
         const InstanceInterface &instance                       = context.getInstanceInterface();
         const VkPhysicalDevice physicalDevice                   = context.getPhysicalDevice();
@@ -4652,7 +4667,7 @@ private:
                    << "}\n";
             programCollection.glslSources.add("vertex") << glu::VertexSource(source.str());
         }
-        else if (TEST_TYPE_POINT_SIZE == m_parameters.viewIndex)
+        else if (m_parameters.isPointSize())
         {
             std::ostringstream source;
             source << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
@@ -4844,7 +4859,8 @@ private:
 
     std::string getRequiredCapabilitiesId() const
     {
-        return typeid(MultiViewRenderTestsCase).name();
+        const std::string suffix = (m_parameters.isPointSize() ? "-PointSize" : "");
+        return typeid(MultiViewRenderTestsCase).name() + suffix;
     }
 
     void initDeviceCapabilities(DevCaps &caps);
@@ -4872,6 +4888,9 @@ void MultiViewRenderTestsCase::initDeviceCapabilities(DevCaps &caps)
     caps.addFeature(&VkPhysicalDeviceNestedCommandBufferFeaturesEXT::nestedCommandBufferRendering);
     caps.addFeature(&VkPhysicalDeviceNestedCommandBufferFeaturesEXT::nestedCommandBuffer);
 #endif // CTS_USES_VULKANSC
+
+    if (m_parameters.isPointSize())
+        caps.addFeature(&VkPhysicalDeviceFeatures::largePoints);
 }
 
 } // namespace

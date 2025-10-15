@@ -235,7 +235,7 @@ void TestHierarchyIterator::next(void)
                 if (isTestNodeTypeExecutable(childNode->getNodeType()))
                 {
                     const std::string testName = m_nodePath + "." + childNode->getName();
-                    if (!m_caseListFilter.checkCaseFraction(m_groupNumber, testName))
+                    if (!m_caseListFilter.checkCaseFraction(m_groupNumber, testName, node->getUseFraction0()))
                         break;
                 }
                 m_sessionStack.push_back(NodeIter(childNode));

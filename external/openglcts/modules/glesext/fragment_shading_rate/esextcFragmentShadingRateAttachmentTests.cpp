@@ -86,12 +86,16 @@ void FragmentShadingRateAttachment::init(void)
     {
         const glw::Functions &gl = m_context.getRenderContext().getFunctions();
         glw::GLint maxLayers     = 1;
-        gl.getIntegerv(GL_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_LAYERS_EXT, &maxLayers);
-        GLU_EXPECT_NO_ERROR(gl.getError(), "Error getting MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_LAYERS");
-
-        if (static_cast<glw::GLint>(m_tcParam.layerCount) > maxLayers)
+        if (m_tcParam.attachmentShadingRate)
         {
-            throw tcu::NotSupportedError("Number of layers in FSR attachment exceeds limit", "", __FILE__, __LINE__);
+            gl.getIntegerv(GL_MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_LAYERS_EXT, &maxLayers);
+            GLU_EXPECT_NO_ERROR(gl.getError(), "Error getting MAX_FRAGMENT_SHADING_RATE_ATTACHMENT_LAYERS");
+
+            if (static_cast<glw::GLint>(m_tcParam.layerCount) > maxLayers)
+            {
+                throw tcu::NotSupportedError("Number of layers in FSR attachment exceeds limit", "", __FILE__,
+                                             __LINE__);
+            }
         }
     }
 }

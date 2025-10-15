@@ -1,0 +1,6 @@
+{
+    "register_extension": {
+        "type": "instance",
+        "core": ""
+    }
+}

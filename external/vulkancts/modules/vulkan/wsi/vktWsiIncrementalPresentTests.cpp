@@ -88,6 +88,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-VkSwapchainCreateInfoKHR-imageColorSpace-parameter
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
+        extensions.push_back("VK_EXT_swapchain_colorspace");
+
     checkAllSupported(supportedExtensions, extensions);
 
     return vkt::createCustomInstanceWithExtensions(context, extensions);
@@ -111,7 +115,15 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
     const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
-    const char *const extensions[]                 = {"VK_KHR_swapchain", "VK_KHR_incremental_present"};
+
+    std::vector<const char *> extensions;
+    extensions.push_back("VK_KHR_swapchain");
+    if (requiresIncrementalPresent)
+        extensions.push_back("VK_KHR_incremental_present");
+
+    // VUID-VkSwapchainCreateInfoKHR-imageColorSpace-parameter
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
+        extensions.push_back("VK_EXT_swapchain_colorspace");
 
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
                                                  nullptr,
@@ -120,11 +132,11 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                  &queueInfos[0],
                                                  0u,
                                                  nullptr,
-                                                 requiresIncrementalPresent ? 2u : 1u,
-                                                 DE_ARRAY_BEGIN(extensions),
+                                                 static_cast<uint32_t>(extensions.size()),
+                                                 extensions.data(),
                                                  &features};
 
-    for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(extensions); ++ndx)
+    for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
     {
         if (!isExtensionStructSupported(supportedExtensions, vk::RequiredExtension(extensions[ndx])))
             TCU_THROW(NotSupportedError, (string(extensions[ndx]) + " is not supported").c_str());
@@ -430,6 +442,12 @@ vk::Move<vk::VkPipeline> createPipeline(const vk::DeviceInterface &vkd, vk::VkDe
     const std::vector<vk::VkViewport> viewports(1, vk::makeViewport(tcu::UVec2(width, height)));
     const std::vector<vk::VkRect2D> scissors(1, vk::makeRect2D(tcu::UVec2(width, height)));
 
+    // VUID-vkCmdDraw-None-08608
+    const vk::VkDynamicState dynamicStates[]                          = {vk::VK_DYNAMIC_STATE_SCISSOR};
+    const vk::VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO, nullptr, 0u, DE_LENGTH_OF_ARRAY(dynamicStates),
+        dynamicStates};
+
     return vk::makeGraphicsPipeline(
         vkd,                  // const DeviceInterface&                        vk
         device,               // const VkDevice                                device
@@ -445,7 +463,12 @@ vk::Move<vk::VkPipeline> createPipeline(const vk::DeviceInterface &vkd, vk::VkDe
         vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, // const VkPrimitiveTopology                     topology
         0u,                                      // const uint32_t                                subpass
         0u,                                      // const uint32_t                                patchControlPoints
-        &vertexInputState); // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+        &vertexInputState,        // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
+        nullptr,                  // const VkPipelineRasterizationStateCreateInfo* rasterizationStateCreateInfo
+        nullptr,                  // const VkPipelineMultisampleStateCreateInfo*   multisampleStateCreateInfo
+        nullptr,                  // const VkPipelineDepthStencilStateCreateInfo*  depthStencilStateCreateInfo
+        nullptr,                  // const VkPipelineColorBlendStateCreateInfo*    colorBlendStateCreateInfo
+        &dynamicStateCreateInfo); // const VkPipelineDynamicStateCreateInfo*       dynamicStateCreateInfo
 }
 
 vk::Move<vk::VkPipelineLayout> createPipelineLayout(const vk::DeviceInterface &vkd, vk::VkDevice device)
@@ -786,7 +809,8 @@ void IncrementalPresentTestInstance::deinitSwapchainResources(void)
 
 void IncrementalPresentTestInstance::render(void)
 {
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t foreverNs = 1000000000ul;
     const vk::VkFence fence  = m_fences[m_frameNdx % m_fences.size()];
     const uint32_t width     = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.width;
     const uint32_t height    = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.height;
@@ -873,6 +897,9 @@ void IncrementalPresentTestInstance::render(void)
         VK_CHECK_WSI(m_vkd.queuePresentKHR(m_queue, &presentInfo));
         VK_CHECK_WSI(result);
     }
+
+    // VUID-vkAcquireNextImageKHR-semaphore-01779
+    VK_CHECK(m_vkd.queueWaitIdle(m_queue));
 
     {
         m_freeAcquireSemaphore          = m_acquireSemaphores[imageIndex];
@@ -1021,7 +1048,7 @@ void createIncrementalPresentTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type 
                         {vk::VK_PRESENT_MODE_MAILBOX_KHR, "mailbox"},
                         {vk::VK_PRESENT_MODE_FIFO_KHR, "fifo"},
                         {vk::VK_PRESENT_MODE_FIFO_RELAXED_KHR, "fifo_relaxed"},
-                        {vk::VK_PRESENT_MODE_FIFO_LATEST_READY_EXT, "fifo_latest_ready"}};
+                        {vk::VK_PRESENT_MODE_FIFO_LATEST_READY_KHR, "fifo_latest_ready"}};
     const struct
     {
         vk::VkSurfaceTransformFlagsKHR transform;

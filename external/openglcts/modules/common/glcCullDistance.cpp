@@ -2874,40 +2874,6 @@ void CullDistance::FunctionalTest::test()
         return;
     }
 
-    gl.genTextures(1, &m_to_id);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() call failed.");
-
-    gl.bindTexture(GL_TEXTURE_2D, m_to_id);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture() call failed.");
-
-    gl.texStorage2D(GL_TEXTURE_2D, 1, /* levels */
-                    GL_R32F, m_to_width, m_to_height);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glTexStorage2D() call failed.");
-
-    /* Set up the draw/read FBO */
-    gl.genFramebuffers(1, &m_fbo_id);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers() call failed.");
-
-    gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer() call failed.");
-
-    gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_to_id, 0); /* level */
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D() call failed.");
-
-    /* Prepare a buffer object */
-    gl.genBuffers(1, &m_bo_id);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() call failed.");
-
-    /* Prepare a VAO. We will configure separately for each iteration. */
-    gl.genVertexArrays(1, &m_vao_id);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenVertexArrays() call failed.");
-
-    gl.viewport(0, 0, m_to_width, m_to_height);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport() call failed.");
-
-    gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "glClearColor() call failed.");
-
     /* Check for OpenGL feature support */
     if (m_test_item.use_passthrough_ts)
     {
@@ -2946,6 +2912,12 @@ void CullDistance::FunctionalTest::test()
         }
     }
 
+    if (m_test_item.fetch_culldistances && (m_primitive_mode != PRIMITIVE_MODE_POINTS))
+    {
+        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
+        return;
+    }
+
     glw::GLuint clipdistances_array_size = 0;
     glw::GLuint culldistances_array_size = 0;
 
@@ -2970,11 +2942,39 @@ void CullDistance::FunctionalTest::test()
         return;
     }
 
-    if (m_test_item.fetch_culldistances && (m_primitive_mode != PRIMITIVE_MODE_POINTS))
-    {
-        m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
-        return;
-    }
+    gl.genTextures(1, &m_to_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenTextures() call failed.");
+
+    gl.bindTexture(GL_TEXTURE_2D, m_to_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glBindTexture() call failed.");
+
+    gl.texStorage2D(GL_TEXTURE_2D, 1, /* levels */
+                    GL_R32F, m_to_width, m_to_height);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glTexStorage2D() call failed.");
+
+    /* Set up the draw/read FBO */
+    gl.genFramebuffers(1, &m_fbo_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenFramebuffers() call failed.");
+
+    gl.bindFramebuffer(GL_FRAMEBUFFER, m_fbo_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glBindFramebuffer() call failed.");
+
+    gl.framebufferTexture2D(GL_FRAMEBUFFER, GL_COLOR_ATTACHMENT0, GL_TEXTURE_2D, m_to_id, 0); /* level */
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glFramebufferTexture2D() call failed.");
+
+    /* Prepare a buffer object */
+    gl.genBuffers(1, &m_bo_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenBuffers() call failed.");
+
+    /* Prepare a VAO. We will configure separately for each iteration. */
+    gl.genVertexArrays(1, &m_vao_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glGenVertexArrays() call failed.");
+
+    gl.viewport(0, 0, m_to_width, m_to_height);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glViewport() call failed.");
+
+    gl.clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "glClearColor() call failed.");
 
     /* Create a program to run */
     buildPO(clipdistances_array_size, culldistances_array_size, m_test_item.dynamic_index_writes, m_primitive_mode,
