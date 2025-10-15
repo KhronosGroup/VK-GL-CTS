@@ -324,8 +324,8 @@ PACKAGES = [
         "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
         "zlib"),
     SourcePackage(
-        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.33.tar.gz",
-        "0b0681ed912f8f6b0175fc4ebe4b05367dfbfcd4a6f23b8f2498db42eca998d4",
+        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.tar.gz",
+        "71158e53cfdf2877bc99bcab33641d78df3f48e6e0daad030afe9cb8c031aa46",
         "libpng",
         postExtract = postExtractLibpng),
     SourceFile(
