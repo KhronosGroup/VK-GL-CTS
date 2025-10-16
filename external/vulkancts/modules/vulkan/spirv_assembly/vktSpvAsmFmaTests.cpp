@@ -339,6 +339,18 @@ bool isDenorm(deFloat16 f)
 }
 
 template <typename T>
+bool IsInfNan(T x)
+{
+    return (std::isinf(x) || std::isnan(x));
+}
+
+template <>
+bool IsInfNan(deFloat16 x)
+{
+    return (deHalfIsInf(x) || deHalfIsIEEENaN(x));
+}
+
+template <typename T>
 T negate(T x)
 {
     return -x;
@@ -477,8 +489,20 @@ static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool 
 }
 
 template <typename T>
+bool UsesInfNan(const vector<T> &r, T a, T b, T c)
+{
+    if (IsInfNan(a) || IsInfNan(b) || IsInfNan(c))
+        return true;
+    for (T res : r)
+        if (IsInfNan(res))
+            return true;
+
+    return false;
+}
+
+template <typename T>
 static bool verifyResult(const std::vector<Resource> &inputs, const std::vector<AllocationSp> &outputAllocations,
-                         RoundingMode m, DenormMode d, bool signedZero, tcu::TestLog &log)
+                         RoundingMode m, DenormMode d, bool szInfNan, tcu::TestLog &log)
 {
     vector<uint8_t> aBytes, bBytes, cBytes;
     inputs[0].getBuffer()->getBytes(aBytes);
@@ -498,7 +522,12 @@ static bool verifyResult(const std::vector<Resource> &inputs, const std::vector<
 
     for (size_t ndx = 0; ndx < count; ++ndx)
     {
-        vector<T> refValues = getRefValues(a[ndx], b[ndx], c[ndx], m, d, signedZero);
+        vector<T> refValues = getRefValues(a[ndx], b[ndx], c[ndx], m, d, szInfNan);
+
+        // If not using the SignedZeroInfNanPreserve execution mode then any input our output
+        // that is inf/nan means that any value may be returned. Skip checking that case.
+        if (!szInfNan && UsesInfNan(refValues, a[ndx], b[ndx], c[ndx]))
+            continue;
 
         bool ok = false;
         for (T ref : refValues)
@@ -539,12 +568,12 @@ static bool verifyResult(const std::vector<Resource> &inputs, const std::vector<
     return (errors == 0);
 }
 
-template <typename T, RoundingMode m, DenormMode d, bool signedZero>
+template <typename T, RoundingMode m, DenormMode d, bool szInfNan>
 static bool verify(const std::vector<Resource> &inputs, const std::vector<AllocationSp> &outputAllocations,
                    const std::vector<Resource> &expectedOutputs, tcu::TestLog &log)
 {
     (void)expectedOutputs;
-    return verifyResult<T>(inputs, outputAllocations, m, d, signedZero, log);
+    return verifyResult<T>(inputs, outputAllocations, m, d, szInfNan, log);
 }
 
 enum InputMode
@@ -582,59 +611,6 @@ void FillInputsRandom(vector<T> &a, vector<T> &b, vector<T> &c)
         b[ndx] = getRandomVal<T>(rnd);
         c[ndx] = getRandomVal<T>(rnd);
     }
-}
-
-template <typename T>
-bool IsInfNan(T x)
-{
-    return (std::isinf(x) || std::isnan(x));
-}
-
-template <>
-bool IsInfNan(deFloat16 x)
-{
-    return (deHalfIsInf(x) || deHalfIsIEEENaN(x));
-}
-
-template <typename T>
-bool Signbit(T x)
-{
-    return std::signbit(x);
-}
-
-template <>
-bool Signbit(deFloat16 x)
-{
-    return deHalfSign(x);
-}
-
-template <typename T>
-void AddDirectedCase(vector<std::array<T, 3>> &cases, T a, T b, T c, RoundingMode m, DenormMode d, bool useSZInfNan)
-{
-    bool usesInfNan    = IsInfNan(a) || IsInfNan(b) || IsInfNan(c);
-    bool usesPlusZero  = false;
-    bool usesMinusZero = false;
-
-    // Get the reference values treating signedZero as important
-    vector<T> ref = getRefValues(a, b, c, m, d, true);
-    for (T r : ref)
-    {
-        usesInfNan = usesInfNan || IsInfNan(r);
-        if (r == 0.0f && Signbit(r))
-            usesMinusZero = true;
-        if (r == 0.0f && !Signbit(r))
-            usesPlusZero = true;
-    }
-
-    // If there are no inf/nan then the relaxed case will be correct, so add that.
-    if (!useSZInfNan && !usesInfNan)
-        cases.push_back({a, b, c});
-
-    // If there are inf/nan, or if the sign of zero is significant in the result then add the strict case
-    // as well. Note that this doesn't check any non-zero reference values, so would not be correct for
-    // operations where the sign of zero can affect any non-zero results (eg. recip, etc).
-    if (useSZInfNan && (usesInfNan || (usesPlusZero != usesMinusZero)))
-        cases.push_back({a, b, c});
 }
 
 template <typename T>
@@ -791,8 +767,7 @@ deFloat16 getCancellationValue(deFloat16 a, deFloat16 b)
 }
 
 template <typename T>
-void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz, RoundingMode m, DenormMode d,
-                        bool useSZInfNan)
+void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz)
 {
     vector<T> values;
     for (T f : GetSpecialValues<T>())
@@ -811,15 +786,14 @@ void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz
     for (T inA : values)
         for (T inB : values)
             for (T inC : values)
-                AddDirectedCase(cases, inA, inB, inC, m, d, useSZInfNan);
+                cases.push_back({inA, inB, inC});
 
     // Add cancellation cases (of the form a * b - (a*b)), which should give non-zero results
     // with FMA, returning the rounding error in calculating a*b (on the CPU -- the GPU may
     // round differently, but that doesn't affect the coverage of the test). We add at least a
     // minimum number (because they're a good test of fma), but we also use this to round up to
     // a valid work size (ie. a multiple of 65536), which we need in order to be able to launch
-    // all the work in a single 2D dispatch. Because of this rounding up, we add these cases to
-    // both tests regardless of useSZInfNan.
+    // all the work in a single 2D dispatch.
     size_t minCancellationCases = 100;
     size_t numCancellationCases = minCancellationCases;
     if ((cases.size() + numCancellationCases) % vecSz != 0)
@@ -849,17 +823,14 @@ void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz
 }
 
 template <typename T>
-void FillInputs(vector<T> &a, vector<T> &b, vector<T> &c, InputMode mode, uint32_t vecSz, RoundingMode m, DenormMode d,
-                bool useSZInfNan)
+void FillInputs(vector<T> &a, vector<T> &b, vector<T> &c, InputMode mode, uint32_t vecSz)
 {
     assert(mode == INPUTS_RANDOM || mode == INPUTS_DIRECTED);
-    // Don't try to create random tests for SZInfNan because we don't generate those values anyway
-    assert(mode != INPUTS_RANDOM || !useSZInfNan);
 
     if (mode == INPUTS_RANDOM)
         FillInputsRandom(a, b, c);
     else
-        FillInputsDirected(a, b, c, vecSz, m, d, useSZInfNan);
+        FillInputsDirected(a, b, c, vecSz);
 }
 
 static inline uint32_t divRoundUp(uint32_t x, uint32_t y)
@@ -904,12 +875,11 @@ void FillFloatControlsProps(vk::VkPhysicalDeviceFloatControlsProperties *props, 
 }
 
 template <typename T>
-size_t addInputOutputBuffers(ComputeShaderSpec &spec, InputMode inputMode, uint32_t vecSz, RoundingMode m, DenormMode d,
-                             bool useSZInfNan)
+size_t addInputOutputBuffers(ComputeShaderSpec &spec, InputMode inputMode, uint32_t vecSz)
 {
     vector<T> inputs1, inputs2, inputs3;
 
-    FillInputs(inputs1, inputs2, inputs3, inputMode, vecSz, m, d, useSZInfNan);
+    FillInputs(inputs1, inputs2, inputs3, inputMode, vecSz);
 
     // A buffer must be provided for the outputs (probably?) but they're not going to be used, so nothing
     // is filled in here. The reference value is computed from the inputs in the verification function.
@@ -944,11 +914,11 @@ ComputeShaderSpec createFmaTestSpec(uint32_t bitDepth, uint32_t vecSz, RoundingM
 
     size_t numElements;
     if (bitDepth == 16)
-        numElements = addInputOutputBuffers<deFloat16>(spec, inputMode, vecSz, m, d, useSZInfNan);
+        numElements = addInputOutputBuffers<deFloat16>(spec, inputMode, vecSz);
     else if (bitDepth == 32)
-        numElements = addInputOutputBuffers<float>(spec, inputMode, vecSz, m, d, useSZInfNan);
+        numElements = addInputOutputBuffers<float>(spec, inputMode, vecSz);
     else
-        numElements = addInputOutputBuffers<double>(spec, inputMode, vecSz, m, d, useSZInfNan);
+        numElements = addInputOutputBuffers<double>(spec, inputMode, vecSz);
 
     assert(numElements % vecSz == 0);
     assert(numElements <= UINT32_MAX);
