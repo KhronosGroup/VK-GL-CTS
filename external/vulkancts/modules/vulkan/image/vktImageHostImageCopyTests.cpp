@@ -1459,15 +1459,21 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        createInfo.usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
@@ -1805,6 +1811,12 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
