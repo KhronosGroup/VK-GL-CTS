@@ -595,25 +595,6 @@ deFloat16 getRandomVal(de::Random &rnd)
 }
 
 template <typename T>
-void FillInputsRandom(vector<T> &a, vector<T> &b, vector<T> &c)
-{
-    de::Random rnd(deStringHash("fma.random_inputs"));
-
-    const int numElements = 768;
-
-    a.resize(numElements);
-    b.resize(numElements);
-    c.resize(numElements);
-
-    for (int ndx = 0; ndx < numElements; ndx++)
-    {
-        a[ndx] = getRandomVal<T>(rnd);
-        b[ndx] = getRandomVal<T>(rnd);
-        c[ndx] = getRandomVal<T>(rnd);
-    }
-}
-
-template <typename T>
 vector<T> GetSpecialValues();
 
 template <>
@@ -767,70 +748,186 @@ deFloat16 getCancellationValue(deFloat16 a, deFloat16 b)
 }
 
 template <typename T>
-void FillInputsDirected(vector<T> &a, vector<T> &b, vector<T> &c, uint32_t vecSz)
+class RandomBuffer : public BufferInterface
 {
-    vector<T> values;
-    for (T f : GetSpecialValues<T>())
+public:
+    RandomBuffer(uint32_t numValues_, uint32_t seed_) : numValues(numValues_), seed(seed_)
     {
-        values.push_back(f);
-        values.push_back(negate(f));
     }
 
-    vector<std::array<T, 3>> cases;
-
-    // Test all combinations of the special values, dividing them according to whether we're
-    // creating a test using signed-zero-inf-nan-preserve or not. We create one test with the
-    // feature and one without, so divide the values up according to whether the feature is
-    // required to get correct results or not. This means every combination gets tested in one
-    // test and every implementation runs as many cases as it says it supports.
-    for (T inA : values)
-        for (T inB : values)
-            for (T inC : values)
-                cases.push_back({inA, inB, inC});
-
-    // Add cancellation cases (of the form a * b - (a*b)), which should give non-zero results
-    // with FMA, returning the rounding error in calculating a*b (on the CPU -- the GPU may
-    // round differently, but that doesn't affect the coverage of the test). We add at least a
-    // minimum number (because they're a good test of fma), but we also use this to round up to
-    // a valid work size (ie. a multiple of 65536), which we need in order to be able to launch
-    // all the work in a single 2D dispatch.
-    size_t minCancellationCases = 100;
-    size_t numCancellationCases = minCancellationCases;
-    if ((cases.size() + numCancellationCases) % vecSz != 0)
-        numCancellationCases += (vecSz - ((cases.size() + numCancellationCases) % vecSz));
-
-    if ((cases.size() + minCancellationCases) / vecSz > 65536)
-        numCancellationCases += vecSz * 65536 - ((cases.size() + numCancellationCases) % (vecSz * 65536));
-
-    de::Random rnd(deStringHash("fma.directed_inputs_cancellation"));
-    for (unsigned i = 0; i < numCancellationCases; i++)
+    virtual void getBytes(std::vector<uint8_t> &bytes) const override
     {
-        T inA = getRandomVal<T>(rnd);
-        T inB = getRandomVal<T>(rnd);
-        cases.push_back({inA, inB, getCancellationValue(inA, inB)});
+        de::Random rnd(seed);
+
+        std::vector<T> v(numValues);
+        for (uint32_t ndx = 0; ndx < numValues; ndx++)
+            v[ndx] = getRandomVal<T>(rnd);
+
+        bytes.resize(getByteSize());
+        memcpy(bytes.data(), v.data(), getByteSize());
     }
 
-    a.resize(cases.size());
-    b.resize(cases.size());
-    c.resize(cases.size());
-
-    for (size_t i = 0; i < cases.size(); i++)
+    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const override
     {
-        a[i] = cases[i][0];
-        b[i] = cases[i][1];
-        c[i] = cases[i][2];
+        getBytes(bytes);
     }
-}
+
+    virtual size_t getByteSize(void) const override
+    {
+        return numValues * sizeof(T);
+    }
+
+private:
+    uint32_t numValues;
+    uint32_t seed;
+};
 
 template <typename T>
-void FillInputs(vector<T> &a, vector<T> &b, vector<T> &c, InputMode mode, uint32_t vecSz)
+class DirectedBuffer : public BufferInterface
 {
-    assert(mode == INPUTS_RANDOM || mode == INPUTS_DIRECTED);
+public:
+    DirectedBuffer(uint32_t channel_, uint32_t vecSz_) : channel(channel_), vecSz(vecSz_)
+    {
+    }
 
-    if (mode == INPUTS_RANDOM)
-        FillInputsRandom(a, b, c);
+    virtual void getBytes(std::vector<uint8_t> &bytes) const override
+    {
+        // Test all combinations of SpecialValues.
+        std::vector<T> s;
+        FillSpecialValueInputs(s);
+
+        // Add cancellation cases (of the form a * b - (a*b)), which should give non-zero results
+        // with FMA, returning the rounding error in calculating a*b (on the CPU -- the GPU may
+        // round differently, but that doesn't affect the coverage of the test).
+        std::vector<T> c;
+        FillCancellationInputs(c);
+
+        size_t sz = (s.size() + c.size()) * sizeof(T);
+        bytes.resize(sz);
+        memcpy(bytes.data(), s.data(), s.size() * sizeof(T));
+        memcpy(bytes.data() + s.size() * sizeof(T), c.data(), c.size() * sizeof(T));
+    }
+
+    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const override
+    {
+        getBytes(bytes);
+    }
+
+    virtual size_t getByteSize(void) const override
+    {
+        return (NumSpecialValueCases() + NumCancellationCases()) * sizeof(T);
+    }
+
+private:
+    static size_t NumSpecialValueCases()
+    {
+        // SpecialValues only contains positive values, so *2 to include negative as well.
+        size_t numValues = 2 * GetSpecialValues<T>().size();
+        // FMA is a ternary op, so the total number of these cases is numValues ^ 3.
+        return numValues * numValues * numValues;
+    }
+
+    size_t NumCancellationCases() const
+    {
+        // Add at least a minimum number (because they're a good test of fma), but this is also
+        // used to round up to a valid work size (ie. a multiple of 65536), which is needed in
+        // order to be able to launch all the work in a single 2D dispatch.
+        size_t minCancellationCases = 100;
+
+        size_t totalCases = NumSpecialValueCases() + minCancellationCases;
+        if (totalCases % vecSz != 0)
+            totalCases += (vecSz - (totalCases % vecSz));
+
+        if (totalCases / vecSz > 65536)
+            totalCases += vecSz * 65536 - (totalCases % (vecSz * 65536));
+
+        assert(totalCases % vecSz == 0);
+        assert((totalCases / vecSz <= 65536) || ((totalCases / vecSz) % 65536) == 0);
+
+        return totalCases - NumSpecialValueCases();
+    }
+
+    void FillSpecialValueInputs(std::vector<T> &inputs) const
+    {
+        vector<T> values;
+        for (T f : GetSpecialValues<T>())
+        {
+            values.push_back(f);
+            values.push_back(negate(f));
+        }
+
+        // The different channels iterate over the values at different speeds so that all combinations are tested.
+        size_t numConsecutive = (channel == 0) ? values.size() * values.size() : (channel == 1) ? values.size() : 1;
+        size_t numReps        = values.size() * values.size() / numConsecutive;
+        for (size_t i = 0; i < numReps; i++)
+            for (T v : values)
+                inputs.insert(inputs.end(), numConsecutive, v);
+
+        assert(inputs.size() == NumSpecialValueCases());
+    }
+
+    void FillCancellationInputs(std::vector<T> &inputs) const
+    {
+        // Cancellation cases are very simple, (a, b, -(a*b)), but because the buffers are
+        // generated separately and the random numbers must match, generating them is more complex.
+        size_t numCancellationCases = NumCancellationCases();
+        std::vector<T> c[2];
+        for (uint32_t i = 0; i < 2; i++)
+        {
+            if (channel != i && channel != 2)
+                continue;
+
+            de::Random rnd(deStringHash("fma.directed_inputs_cancellation") + i);
+            c[i].resize(numCancellationCases);
+            for (unsigned j = 0; j < numCancellationCases; j++)
+                c[i][j] = getRandomVal<T>(rnd);
+        }
+
+        if (channel == 2)
+        {
+            inputs.resize(numCancellationCases);
+            for (unsigned j = 0; j < numCancellationCases; j++)
+                inputs[j] = getCancellationValue(c[0][j], c[1][j]);
+        }
+        else
+            inputs = c[channel];
+    }
+
+    uint32_t channel;
+    uint32_t vecSz;
+};
+
+template <typename T>
+size_t addInputOutputBuffers(ComputeShaderSpec &spec, InputMode inputMode, uint32_t vecSz)
+{
+    BufferSp aBuf, bBuf, cBuf;
+
+    assert(inputMode == INPUTS_RANDOM || inputMode == INPUTS_DIRECTED);
+
+    if (inputMode == INPUTS_RANDOM)
+    {
+        const size_t numRandomInputs = 768;
+        de::Random rnd(deStringHash("fma.random_inputs"));
+        aBuf = BufferSp(new RandomBuffer<T>(numRandomInputs, rnd.getUint32()));
+        bBuf = BufferSp(new RandomBuffer<T>(numRandomInputs, rnd.getUint32()));
+        cBuf = BufferSp(new RandomBuffer<T>(numRandomInputs, rnd.getUint32()));
+    }
     else
-        FillInputsDirected(a, b, c, vecSz);
+    {
+        aBuf = BufferSp(new DirectedBuffer<T>(0, vecSz));
+        bBuf = BufferSp(new DirectedBuffer<T>(1, vecSz));
+        cBuf = BufferSp(new DirectedBuffer<T>(2, vecSz));
+    }
+
+    spec.inputs.push_back(aBuf);
+    spec.inputs.push_back(bBuf);
+    spec.inputs.push_back(cBuf);
+
+    size_t bufSize = aBuf->getByteSize();
+    // Not used. The reference value is computed from the inputs in the verification function.
+    spec.outputs.push_back(BufferSp(new UninitializedBuffer(bufSize)));
+
+    return bufSize / sizeof(T);
 }
 
 static inline uint32_t divRoundUp(uint32_t x, uint32_t y)
@@ -872,22 +969,6 @@ void FillFloatControlsProps(vk::VkPhysicalDeviceFloatControlsProperties *props, 
 
         props->shaderSignedZeroInfNanPreserveFloat64 = useSZInfNan;
     }
-}
-
-template <typename T>
-size_t addInputOutputBuffers(ComputeShaderSpec &spec, InputMode inputMode, uint32_t vecSz)
-{
-    vector<T> inputs1, inputs2, inputs3;
-
-    FillInputs(inputs1, inputs2, inputs3, inputMode, vecSz);
-
-    spec.inputs.push_back(BufferSp(new Buffer<T>(inputs1)));
-    spec.inputs.push_back(BufferSp(new Buffer<T>(inputs2)));
-    spec.inputs.push_back(BufferSp(new Buffer<T>(inputs3)));
-    // Not used. The reference value is computed from the inputs in the verification function.
-    spec.outputs.push_back(BufferSp(new UninitializedBuffer(inputs1.size() * sizeof(T))));
-
-    return inputs1.size();
 }
 
 ComputeShaderSpec createFmaTestSpec(uint32_t bitDepth, uint32_t vecSz, RoundingMode m, DenormMode d, bool useSZInfNan,
