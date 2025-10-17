@@ -727,6 +727,7 @@ public:
     {
         vector<const char *> extensions;
         extensions.push_back("VK_KHR_present_id2");
+        extensions.push_back("VK_KHR_present_wait2");
         return extensions;
     }
 

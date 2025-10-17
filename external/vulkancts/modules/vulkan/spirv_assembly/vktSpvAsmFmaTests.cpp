@@ -455,10 +455,10 @@ static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool 
             assert(underflowBeforeRounding || !underflowAfterRounding);
 
             // If denorms are allowed to be preserved or if this might not have underflowed
-            // (because of rounding) then the CPU-generated correctly-rounded result is allowed.
+            // (because of rounding) then the CPU-generated correctly rounded result is allowed.
             if (d != DENORM_FLUSH || !underflowAfterRounding)
                 ret.push_back(r);
-            // If denorms are allowed to be flushed and this might have underflowed then flushing
+            // If denorms are allowed to be flushed and this might have underflowed, then flushing
             // is allowed.
             if (d != DENORM_PRESERVE && underflowBeforeRounding)
             {
@@ -467,11 +467,11 @@ static vector<T> getRefValues(T a, T b, T c, RoundingMode m, DenormMode d, bool 
                 ret.push_back(negate(T(0)));
             }
             if (isZero(r) && !signedZero)
-                ret.push_back(-r);
+                ret.push_back(static_cast<T>(-r)); // Casting otherwise GCC gives warning
         }
     }
 
-    // Restore the mode we recorded before beginning.
+    // Restore the mode we recorded before the beginning.
     deSetRoundingMode(rm);
     return ret;
 }
