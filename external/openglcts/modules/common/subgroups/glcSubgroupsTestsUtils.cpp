@@ -172,12 +172,32 @@ de::MovePtr<glu::ShaderProgram> makeGraphicsPipeline(glc::Context &context, cons
 
     map<string, string> templateArgs;
     string versionDecl(getGLSLVersionDeclaration(context.getGLSLVersion()));
-    string tessExtension =
-        context.getDeqpContext().getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ?
-            "#extension GL_EXT_tessellation_shader : require" :
-            "";
+
+    /* Note that for tessellation and geometry shaders extensions, not
+     * all the drivers supporting the GL_OES would support the GL_EXT,
+     * so we need to check for both. We prioritize the GL_OES one.
+     */
+    string tessExtension = "";
+    if (context.getDeqpContext().getContextInfo().isExtensionSupported("GL_EXT_tessellation_shader") ||
+        context.getDeqpContext().getContextInfo().isExtensionSupported("GL_OES_tessellation_shader"))
+    {
+        tessExtension = context.getDeqpContext().getContextInfo().isExtensionSupported("GL_OES_tessellation_shader") ?
+                            "#extension GL_OES_tessellation_shader : require" :
+                            "#extension GL_EXT_tessellation_shader : require";
+    }
+
+    string geomExtension = "";
+    if (context.getDeqpContext().getContextInfo().isExtensionSupported("GL_EXT_geometry_shader") ||
+        context.getDeqpContext().getContextInfo().isExtensionSupported("GL_OES_geometry_shader"))
+    {
+        geomExtension = context.getDeqpContext().getContextInfo().isExtensionSupported("GL_OES_geometry_shader") ?
+                            "#extension GL_OES_geometry_shader : require" :
+                            "#extension GL_EXT_geometry_shader : require";
+    }
+
     templateArgs.insert(pair<string, string>("VERSION_DECL", versionDecl));
     templateArgs.insert(pair<string, string>("TESS_EXTENSION", tessExtension));
+    templateArgs.insert(pair<string, string>("GEOM_EXTENSION", geomExtension));
 
     string vertSource, tescSource, teseSource, geomSource, fragSource;
     if (vshader)
@@ -962,9 +982,11 @@ void glc::subgroups::addGeometryShadersFromTemplate(const std::string &glslTempl
     map<string, string> pointsParams;
     pointsParams.insert(pair<string, string>("TOPOLOGY", "points"));
 
-    collection.add("geometry_lines") << glu::GeometrySource("${VERSION_DECL}\n" +
+    collection.add("geometry_lines") << glu::GeometrySource("${VERSION_DECL}\n"
+                                                            "${GEOM_EXTENSION}\n" +
                                                             geometryTemplate.specialize(linesParams));
-    collection.add("geometry_points") << glu::GeometrySource("${VERSION_DECL}\n" +
+    collection.add("geometry_points") << glu::GeometrySource("${VERSION_DECL}\n"
+                                                             "${GEOM_EXTENSION}\n" +
                                                              geometryTemplate.specialize(pointsParams));
 }
 
