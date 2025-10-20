@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.20.0)
 
 option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
 option(DEQP_ANDROID_EXE "Build dEQP modules as executables rather than a library on Android" OFF)
+option(DEQP_ANDROID_EXE_LOGCAT "Enable logging of dEQP output to logcat when using Android executables" OFF)
 option(DEQP_LOG_NODE_SOURCE "Log source code file and line where nodes are being added" OFF)
 
 # Target selection:
@@ -213,6 +214,10 @@ if (DE_OS_IS_ANDROID)
 	if (DEQP_ANDROID_EXE)
 		message(STATUS "DEQP_ANDROID_BUILD      = EXE")
 		set(DEQP_ANDROID_APP OFF)
+		if (DEQP_ANDROID_EXE_LOGCAT)
+			message(STATUS "DEQP_ANDROID_EXE_LOGCAT = ON")
+			add_definitions(-DDEQP_ANDROID_EXE_LOGCAT)
+		endif ()
 	else ()
 		message(STATUS "DEQP_ANDROID_BUILD      = APP")
 		set(DEQP_ANDROID_APP ON)
