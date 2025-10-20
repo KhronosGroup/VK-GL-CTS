@@ -41,10 +41,6 @@
 
 #include "ycbcr/vktYCbCrUtil.hpp"
 
-#ifndef STREAM_DUMP_DEBUG
-#define STREAM_DUMP_DEBUG 0
-#endif
-
 namespace vkt
 {
 namespace video
@@ -418,7 +414,9 @@ VkVideoComponentBitDepthFlagBitsKHR getBitDepth(enum BitDepth bitDepth)
 
 tcu::TestStatus VideoTestInstance::iterate(void)
 {
-    tcu::TestStatus status = tcu::TestStatus::fail("Unable to encode any frames");
+    tcu::TestStatus status            = tcu::TestStatus::fail("Unable to encode any frames");
+    tcu::VideoEncodeOutput dumpOutput = m_context.getTestContext().getCommandLine().getVideoDumpEncodeOutput();
+
 #ifdef DE_BUILD_VIDEO
     int64_t frameNumEncoded = 0;
 
@@ -455,9 +453,9 @@ tcu::TestStatus VideoTestInstance::iterate(void)
     DE_UNREF(m_expectedOutputExtent);
     status = tcu::TestStatus::fail("Vulkan video is not supported on this platform");
 #endif
-#if STREAM_DUMP_DEBUG == 0
-    removeClip(m_outputClipFilename);
-#endif
+
+    if (!(dumpOutput & tcu::DUMP_ENC_BITSTREAM))
+        removeClip(m_outputClipFilename);
 
     return status;
 }
@@ -510,12 +508,17 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
     {
         args.push_back(param.c_str());
     }
-#if STREAM_DUMP_DEBUG
-    std::cerr << "TEST ARGS: ";
-    for (auto &arg : args)
-        std::cerr << arg << " ";
-    std::cerr << endl;
-#endif
+
+    if (m_testCtx.getCommandLine().getVideoLogPrint())
+    {
+        args.push_back("--verbose");
+
+        std::cerr << "TEST ARGS: ";
+        for (auto &arg : args)
+            std::cerr << arg << " ";
+        std::cerr << endl;
+    }
+
     if (!checkClipFileExists(inputClipName))
     {
 #ifdef DE_BUILD_VIDEO
@@ -788,7 +791,7 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
     switch (m_definition.gop.gop)
     {
     case GOP_IDR_P_B:
-        params.push_back("30");
+        params.push_back(de::toString(m_definition.gop.gopFrameCount));
         break;
     default:
         params.push_back("0");
@@ -843,8 +846,12 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
     params.push_back("--consecutiveBFrameCount");
     params.push_back(de::toString(m_definition.gop.consecutiveBFrames));
 
-    params.push_back("--gopFrameCount");
-    params.push_back(de::toString(m_definition.gop.frameCount));
+    if (!m_definition.gop.open)
+    {
+        params.push_back("--gopFrameCount");
+        params.push_back(de::toString(m_definition.gop.gopFrameCount));
+        params.push_back("--closedGop");
+    }
 
     params.push_back("--qpI");
     params.push_back(de::toString(m_definition.quantization.qIndex));
@@ -864,7 +871,7 @@ void VideoTestCase::buildEncoderParams(std::vector<std::string> &params) const
     if (m_definition.loopRestore.lr == LR_ON)
         params.push_back("--lr");
 
-    if (m_definition.loopRestore.lr == LR_ON)
+    if (m_definition.cdef.cdef == CDEF_ON)
         params.push_back("--cdef");
 
     switch (m_definition.dpbMode.mode)
@@ -1165,8 +1172,8 @@ static const std::vector<ChromaSubsamplingDef> subsamplingTests = {
 
 static const std::vector<GOPDef> gopTests = {
     {15, GOP_I, false, 1, 0, "i"},
-    {15, GOP_I_P, false, 2, 0, "i_p"},
-    {15, GOP_I_P, true, 2, 0, "i_p_open"},
+    {15, GOP_I_P, false, 15, 0, "i_p"},
+    {15, GOP_I_P, true, 15, 0, "i_p_open"},
     {15, GOP_I_P_B, false, 13, 3, "i_p_b3_13"},
     {15, GOP_IDR_P_B, false, 13, 3, "idr_p_b3_13"},
 };

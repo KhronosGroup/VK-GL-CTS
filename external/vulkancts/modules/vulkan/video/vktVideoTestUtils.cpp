@@ -50,10 +50,6 @@
 #include "video_generator.h"
 #endif
 
-#ifndef STREAM_DUMP_DEBUG
-#define STREAM_DUMP_DEBUG 0
-#endif
-
 using namespace vk;
 using namespace std;
 
@@ -64,18 +60,6 @@ namespace video
 
 using namespace vk;
 using namespace std;
-
-bool videoLoggingEnabled()
-{
-    static int debuggingEnabled = -1; // -1 means it hasn't been checked yet
-    if (debuggingEnabled == -1)
-    {
-        const char *s    = getenv("CTS_DEBUG_VIDEO");
-        debuggingEnabled = s != nullptr;
-    }
-
-    return debuggingEnabled > 0;
-}
 
 void cmdPipelineImageMemoryBarrier2(const DeviceInterface &vk, const VkCommandBuffer commandBuffer,
                                     const VkImageMemoryBarrier2KHR *pImageMemoryBarriers,
@@ -94,7 +78,8 @@ void cmdPipelineImageMemoryBarrier2(const DeviceInterface &vk, const VkCommandBu
         pImageMemoryBarriers,                  //  const VkImageMemoryBarrier2KHR* pImageMemoryBarriers;
     };
 
-    DE_ASSERT(imageMemoryBarrierCount == imageMemoryBarrierCount32);
+    TCU_CHECK_AND_THROW(InternalError, imageMemoryBarrierCount == imageMemoryBarrierCount32,
+                        "Image memory barrier count overflow when casting to uint32_t");
 
     vk.cmdPipelineBarrier2(commandBuffer, &dependencyInfoKHR);
 }
@@ -380,6 +365,8 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
         tcu::TestStatus::fail("Unable to validate the encoded content, the decode operation is not supported.");
     };
 
+    tcu::VideoEncodeOutput dumpOutput = m_context.getTestContext().getCommandLine().getVideoDumpEncodeOutput();
+
     VideoDevice::VideoDeviceFlags videoDeviceFlags = VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED;
     const VkPhysicalDevice physicalDevice          = m_context.getPhysicalDevice();
     const VkDevice videoDevice =
@@ -445,12 +432,13 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
                 vkt::ycbcr::YCbCrContent<uint8_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
             psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
                                           expectedOutputExtent.height);
-#if STREAM_DUMP_DEBUG
-            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
-            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint8_t>::save(*inputFrame, refFileName);
-#endif
+            if (dumpOutput & tcu::DUMP_ENC_YUV)
+            {
+                const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint8_t>::save(*out, outputFileName);
+                const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint8_t>::save(*inputFrame, refFileName);
+            }
         }
         else
         {
@@ -460,16 +448,17 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
                 vkt::ycbcr::YCbCrContent<uint16_t>::getFrame(yuvFileName, inputWidth, inputHeight, frameIdx);
             psnr = util::PSNRImplicitCrop(*inputFrame, inputWidth, inputHeight, *out, expectedOutputExtent.width,
                                           expectedOutputExtent.height);
-#if STREAM_DUMP_DEBUG
-            const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint16_t>::save(*out, outputFileName);
-            const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
-            vkt::ycbcr::YCbCrContent<uint16_t>::save(*inputFrame, refFileName);
-#endif
+            if (dumpOutput & tcu::DUMP_ENC_YUV)
+            {
+                const string outputFileName = "out_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint16_t>::save(*out, outputFileName);
+                const string refFileName = "ref_" + std::to_string(frameIdx) + ".yuv";
+                vkt::ycbcr::YCbCrContent<uint16_t>::save(*inputFrame, refFileName);
+            }
         }
-#if STREAM_DUMP_DEBUG
-        cout << "Current PSNR: " << psnr << endl;
-#endif
+
+        if (m_context.getTestContext().getCommandLine().getVideoLogPrint())
+            cout << "Current PSNR: " << psnr << endl;
 
         string failMessage;
 
@@ -838,7 +827,7 @@ vector<AllocationPtr> getAndBindVideoSessionMemory(const DeviceInterface &vkd, c
 {
     uint32_t videoSessionMemoryRequirementsCount = 0;
 
-    DE_ASSERT(videoSession != VK_NULL_HANDLE);
+    TCU_CHECK_AND_THROW(InternalError, videoSession != VK_NULL_HANDLE, "Video session must be valid");
 
     VK_CHECK(
         vkd.getVideoSessionMemoryRequirementsKHR(device, videoSession, &videoSessionMemoryRequirementsCount, nullptr));
@@ -919,7 +908,8 @@ de::MovePtr<vector<VkFormat>> getSupportedFormats(const InstanceInterface &vk, c
     VK_CHECK(vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo, &videoFormatPropertiesCount,
                                                           videoFormatProperties.data()));
 
-    DE_ASSERT(videoFormatPropertiesCount == videoFormatProperties.size());
+    TCU_CHECK_AND_THROW(InternalError, videoFormatPropertiesCount == videoFormatProperties.size(),
+                        "Video format properties count mismatch");
 
     result = de::MovePtr<vector<VkFormat>>(new vector<VkFormat>);
 
@@ -965,7 +955,8 @@ VkVideoFormatPropertiesKHR getSupportedFormatProperties(const InstanceInterface 
     VK_CHECK(vk.getPhysicalDeviceVideoFormatPropertiesKHR(physicalDevice, &videoFormatInfo, &videoFormatPropertiesCount,
                                                           videoFormatProperties.data()));
 
-    DE_ASSERT(videoFormatPropertiesCount == videoFormatProperties.size());
+    TCU_CHECK_AND_THROW(InternalError, videoFormatPropertiesCount == videoFormatProperties.size(),
+                        "Video format properties count mismatch");
 
     for (const auto &videoFormatProperty : videoFormatProperties)
     {
@@ -2283,7 +2274,8 @@ de::MovePtr<VkVideoEncodeInfoKHR> getVideoEncodeInfo(const void *pNext, const Vk
 
 std::vector<uint8_t> semiplanarToYV12(const ycbcr::MultiPlaneImageData &multiPlaneImageData)
 {
-    DE_ASSERT(multiPlaneImageData.getFormat() == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM);
+    TCU_CHECK_AND_THROW(InternalError, multiPlaneImageData.getFormat() == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
+                        "Unexpected format for semiplanarToYV12 (expected G8_B8R8_2PLANE_420)");
 
     std::vector<uint8_t> YV12Buffer;
     size_t plane0Size = multiPlaneImageData.getPlaneSize(0);
@@ -2335,7 +2327,7 @@ void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, 
 
     if (!outFile.is_open())
     {
-        TCU_THROW(NotSupportedError, "Unable to create the file to generate the YUV content");
+        TCU_THROW(ResourceError, "Unable to create the file to generate the YUV content");
     }
 
     max_frames = n_frames;
@@ -2347,7 +2339,7 @@ void generateYCbCrFile(std::string fileName, uint32_t n_frames, uint32_t width, 
 
     if (video_generator_init(&cfg, &gen))
     {
-        TCU_THROW(NotSupportedError, "Unable to create the video generator");
+        TCU_THROW(ResourceError, "Unable to create the video generator");
     }
 
     while (gen.frame < max_frames)
@@ -2398,7 +2390,7 @@ const char *getVideoChromaFormatString(VkVideoChromaSubsamplingFlagBitsKHR chrom
     case VK_VIDEO_CHROMA_SUBSAMPLING_444_BIT_KHR:
         return "YCbCr 444";
     default:
-        DE_ASSERT(false && "Unknown Chroma sub-sampled format");
+        TCU_THROW(InternalError, "Unknown Chroma sub-sampled format");
     };
 
     return "Unknown";
@@ -2424,7 +2416,8 @@ VkVideoCodecOperationFlagsKHR getSupportedCodecs(DeviceContext &devCtx, uint32_t
     }
     vkif.getPhysicalDeviceQueueFamilyProperties2(devCtx.phys, &count, queues.data());
 
-    TCU_CHECK(selectedVideoQueueFamily < queues.size());
+    TCU_CHECK_AND_THROW(InternalError, selectedVideoQueueFamily < queues.size(),
+                        "Selected video queue family index out of range");
 
     const VkQueueFamilyProperties2 &q                 = queues[selectedVideoQueueFamily];
     const VkQueueFamilyVideoPropertiesKHR &videoQueue = videoQueues[selectedVideoQueueFamily];
@@ -2459,8 +2452,8 @@ VkResult getVideoFormats(DeviceContext &devCtx, const VkVideoCoreProfile &videoP
     uint32_t supportedFormatCount = 0;
     VkResult result =
         vkif.getPhysicalDeviceVideoFormatPropertiesKHR(devCtx.phys, &videoFormatInfo, &supportedFormatCount, nullptr);
-    DE_ASSERT(result == VK_SUCCESS);
-    DE_ASSERT(supportedFormatCount);
+    TCU_CHECK_AND_THROW(InternalError, result == VK_SUCCESS, "Failed to query video format properties");
+    TCU_CHECK_AND_THROW(InternalError, supportedFormatCount > 0, "No supported video formats returned");
 
     VkVideoFormatPropertiesKHR *pSupportedFormats = new VkVideoFormatPropertiesKHR[supportedFormatCount];
     memset(pSupportedFormats, 0x00, supportedFormatCount * sizeof(VkVideoFormatPropertiesKHR));
@@ -2471,7 +2464,7 @@ VkResult getVideoFormats(DeviceContext &devCtx, const VkVideoCoreProfile &videoP
 
     result = vkif.getPhysicalDeviceVideoFormatPropertiesKHR(devCtx.phys, &videoFormatInfo, &supportedFormatCount,
                                                             pSupportedFormats);
-    DE_ASSERT(result == VK_SUCCESS);
+    TCU_CHECK_AND_THROW(InternalError, result == VK_SUCCESS, "Failed to enumerate video format properties");
     if (dumpData)
     {
         std::cout << "\t"
@@ -2522,7 +2515,7 @@ VkResult getSupportedVideoFormats(DeviceContext &devCtx, const VkVideoCoreProfil
         result = util::getVideoFormats(devCtx, videoProfile, VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR, formatCount,
                                        supportedDpbFormats);
 
-        DE_ASSERT(result == VK_SUCCESS);
+        TCU_CHECK_AND_THROW(InternalError, result == VK_SUCCESS, "Failed to get DPB video formats");
 
         result = util::getVideoFormats(devCtx, videoProfile,
                                        VK_IMAGE_USAGE_VIDEO_DECODE_DST_BIT_KHR | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
@@ -2537,14 +2530,17 @@ VkResult getSupportedVideoFormats(DeviceContext &devCtx, const VkVideoCoreProfil
         return VK_ERROR_VIDEO_PROFILE_FORMAT_NOT_SUPPORTED_KHR;
     }
 
-    DE_ASSERT(result == VK_SUCCESS);
+    TCU_CHECK_AND_THROW(InternalError, result == VK_SUCCESS, "Failed to get video formats for decode capability");
     if (result != VK_SUCCESS)
     {
         fprintf(stderr, "\nERROR: GetVideoFormats() result: 0x%x\n", result);
     }
 
-    DE_ASSERT((referencePicturesFormat != VK_FORMAT_UNDEFINED) && (pictureFormat != VK_FORMAT_UNDEFINED));
-    DE_ASSERT(referencePicturesFormat == pictureFormat);
+    TCU_CHECK_AND_THROW(InternalError,
+                        (referencePicturesFormat != VK_FORMAT_UNDEFINED) && (pictureFormat != VK_FORMAT_UNDEFINED),
+                        "Undefined picture/reference formats reported");
+    TCU_CHECK_AND_THROW(InternalError, referencePicturesFormat == pictureFormat,
+                        "Picture and reference formats mismatch");
 
     return result;
 }
@@ -2579,6 +2575,8 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
 {
     auto &vkif = devCtx.context->getInstanceInterface();
     DE_ASSERT(pVideoCapabilities->sType == VK_STRUCTURE_TYPE_VIDEO_CAPABILITIES_KHR);
+
+    bool videoLogPrintEnabled = devCtx.context->getTestContext().getCommandLine().getVideoLogPrint();
 
     VkVideoDecodeCapabilitiesKHR *pVideoDecodeCapabilities{};
     VkVideoDecodeH264CapabilitiesKHR *pH264DecodeCapabilities{};
@@ -2631,8 +2629,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
     }
     else
     {
-        DE_ASSERT(false && "Unsupported codec");
-        return VK_ERROR_FORMAT_NOT_SUPPORTED;
+        TCU_THROW(NotSupportedError, "Unsupported codec");
     }
 
     // For silencing unused variables static analysis error
@@ -2652,7 +2649,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
         return result;
     }
 
-    if (videoLoggingEnabled())
+    if (videoLogPrintEnabled)
     {
         if (pVideoCapabilities->flags & VK_VIDEO_CAPABILITY_SEPARATE_REFERENCE_IMAGES_BIT_KHR)
             tcu::print("\tseparate reference images\n");
@@ -2680,7 +2677,7 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
 
     if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevelIdc: " << pH264DecodeCapabilities->maxLevelIdc << std::endl;
@@ -2695,13 +2692,12 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
                     sizeof(pVideoCapabilities->stdHeaderVersion.extensionName) - 1U) ||
             (pVideoCapabilities->stdHeaderVersion.specVersion != VK_STD_VULKAN_VIDEO_CODEC_H264_DECODE_SPEC_VERSION))
         {
-            DE_ASSERT(false && "Unsupported AVC extension specification");
-            return VK_ERROR_INCOMPATIBLE_DRIVER;
+            TCU_THROW(InternalError, "Unsupported AVC extension specification");
         }
     }
     else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_H265_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevelIdc: " << pH265DecodeCapabilities->maxLevelIdc << std::endl;
@@ -2711,13 +2707,12 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
                     sizeof(pVideoCapabilities->stdHeaderVersion.extensionName) - 1U) ||
             (pVideoCapabilities->stdHeaderVersion.specVersion != VK_STD_VULKAN_VIDEO_CODEC_H265_DECODE_SPEC_VERSION))
         {
-            DE_ASSERT(false && "Unsupported HEVC extension specification");
-            return VK_ERROR_INCOMPATIBLE_DRIVER;
+            TCU_THROW(InternalError, "Unsupported HEVC extension specification");
         }
     }
     else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevel: " << pAV1DecodeCapabilities->maxLevel << std::endl;
@@ -2727,13 +2722,12 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
                      sizeof(pVideoCapabilities->stdHeaderVersion.extensionName) - 1U) ||
              (pVideoCapabilities->stdHeaderVersion.specVersion != VK_STD_VULKAN_VIDEO_CODEC_AV1_DECODE_SPEC_VERSION)))
         {
-            DE_ASSERT(false && "Unsupported AV1 extension specification");
-            return VK_ERROR_INCOMPATIBLE_DRIVER;
+            TCU_THROW(InternalError, "Unsupported AV1 extension specification");
         }
     }
     else if (videoProfile.GetCodecType() == VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR)
     {
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << "\t"
                       << "maxLevel: " << pVP9DecodeCapabilities->maxLevel << std::endl;
@@ -2743,13 +2737,12 @@ VkResult getVideoCapabilities(DeviceContext &devCtx, const VkVideoCoreProfile &v
                      sizeof(pVideoCapabilities->stdHeaderVersion.extensionName) - 1U) ||
              (pVideoCapabilities->stdHeaderVersion.specVersion != VK_STD_VULKAN_VIDEO_CODEC_VP9_DECODE_SPEC_VERSION)))
         {
-            DE_ASSERT(false && "Unsupported VP9 extension specification");
-            return VK_ERROR_INCOMPATIBLE_DRIVER;
+            TCU_THROW(InternalError, "Unsupported VP9 extension specification");
         }
     }
     else
     {
-        DE_ASSERT(false && "Unsupported codec extension");
+        TCU_THROW(InternalError, "Unsupported codec extension");
     }
 
     return result;
@@ -2798,8 +2791,7 @@ VkResult getVideoDecodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProf
     }
     else
     {
-        DE_ASSERT(false && "Unsupported codec");
-        return VK_ERROR_VIDEO_PROFILE_CODEC_NOT_SUPPORTED_KHR;
+        TCU_THROW(NotSupportedError, "Unsupported codec");
     }
     VkResult result = util::getVideoCapabilities(devCtx, videoProfile, &videoCapabilities);
 
@@ -2841,11 +2833,7 @@ VkResult getVideoEncodeCapabilities(DeviceContext &devCtx, const VkVideoCoreProf
     }
 
     VkResult result = util::getVideoCapabilities(devCtx, videoProfile, &videoCapabilities);
-    DE_ASSERT(result == VK_SUCCESS);
-    if (result != VK_SUCCESS)
-    {
-        fprintf(stderr, "\nERROR: Input is not supported. GetVideoCapabilities() result: 0x%x\n", result);
-    }
+    TCU_CHECK_AND_THROW(InternalError, result == VK_SUCCESS, "GetVideoCapabilities failed");
     return result;
 }
 
@@ -2900,8 +2888,10 @@ double calculatePSNRdifference(const std::vector<uint8_t> &inVector, const std::
 std::vector<uint8_t> cropImage(const std::vector<uint8_t> &imageData, int imageWidth, int imageHeight, int roiX,
                                int roiY, int roiWidth, int roiHeight)
 {
-    DE_ASSERT(roiX >= 0 && roiY >= 0 && roiWidth > 0 && roiHeight > 0);
-    DE_ASSERT(roiX + roiWidth <= imageWidth && roiY + roiHeight <= imageHeight);
+    TCU_CHECK_AND_THROW(InternalError, roiX >= 0 && roiY >= 0 && roiWidth > 0 && roiHeight > 0,
+                        "Invalid crop ROI dimensions");
+    TCU_CHECK_AND_THROW(InternalError, roiX + roiWidth <= imageWidth && roiY + roiHeight <= imageHeight,
+                        "Crop ROI out of image bounds");
     DE_UNREF(imageHeight);
 
     std::vector<uint8_t> croppedImage;
@@ -3039,11 +3029,12 @@ de::MovePtr<VkVideoEncodeRateControlLayerInfoKHR> getVideoEncodeRateControlLayer
     const VkVideoEncodeRateControlLayerInfoKHR videoEncodeRateControlLayerInfo = {
         VK_STRUCTURE_TYPE_VIDEO_ENCODE_RATE_CONTROL_LAYER_INFO_KHR, //  VkStructureType sType;
         pNext,                                                      //  const void* pNext;
-        50000,                                                      //  uint64_t averageBitrate;
-        static_cast<uint64_t>(
-            rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR ? 50000 : 75000), //  uint64_t maxBitrate;
-        frameRateNumerator, //  uint32_t frameRateNumerator;
-        1,                  //  uint32_t frameRateDenominator;
+        100000,                                                     //  uint64_t averageBitrate;
+        static_cast<uint64_t>(rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_CBR_BIT_KHR ?
+                                  100000 :
+                                  150000), //  uint64_t maxBitrate;
+        frameRateNumerator,                //  uint32_t frameRateNumerator;
+        1,                                 //  uint32_t frameRateDenominator;
     };
 
     return de::MovePtr<VkVideoEncodeRateControlLayerInfoKHR>(

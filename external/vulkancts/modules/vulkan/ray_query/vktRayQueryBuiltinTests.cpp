@@ -1293,7 +1293,7 @@ void RayTracingConfiguration::initPrograms(SourceCollections &programCollection,
                    "{\n"
                 << testBody
                 << "  hitAttribute = vec3(0.0f, 0.0f, 0.0f);\n"
-                   "  reportIntersectionEXT(1.0f, 0);\n"
+                   "  reportIntersectionEXT(gl_RayTminEXT, 0);\n"
                    "}\n";
 
             programCollection.glslSources.add("sect")

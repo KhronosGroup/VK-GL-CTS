@@ -1408,11 +1408,17 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
         css << type << " combineOp(const in " << type << " a, const in " << type << " b) {\n";
         if (isReduceSum(m_data.testType))
         {
-            css << "    return a + b;\n";
+            if (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                css << "    return " << type << "(float(a) + float(b));\n"; // GLSL does not support adding bfloat16_t
+            else
+                css << "    return a + b;\n";
         }
         else if (isReduceMin(m_data.testType))
         {
-            css << "    return min(a, b);\n";
+            if (m_data.inputType == VK_COMPONENT_TYPE_BFLOAT16_KHR)
+                css << "    return " << type << "(min(float(a), float(b)));\n"; // GLSL does not support min bfloat16_t
+            else
+                css << "    return min(a, b);\n";
         }
         css << "}\n";
     }
@@ -1696,12 +1702,6 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
     {
         if (m_data.addrMethod != ADDR_LINEAR)
         {
-
-            if (m_data.testType == TT_MATRIXMULADD_STRIDE0)
-            {
-                heights[0] = heights[1] = heights[2] = "1";
-            }
-
             if (isClampTest(m_data.testType))
             {
                 css << "   tensorLayoutNV<2, " << clampString << "> tensorLayout0 = createTensorLayoutNV(2, "
@@ -3650,129 +3650,130 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
             {
                 // Store results as double, which has enough range to hold all the other types exactly.
                 double inputA, output;
+                tcu::RoundingDirection rd[2] = {tcu::ROUND_DOWNWARD, tcu::ROUND_UPWARD};
+                double inputAConverted[2];
 
-                // This loads the data according to dataTypes[0], and then converts to the template parameter type
-                switch (dataTypes[3])
+                for (uint32_t j = 0; j < 2; ++j)
                 {
-                case VK_COMPONENT_TYPE_UINT8_KHR:
-                    inputA = getDataConvertedToT<uint8_t>(ptrs[0], dataTypes[0], i);
-                    break;
-                case VK_COMPONENT_TYPE_UINT16_KHR:
-                    inputA = getDataConvertedToT<uint16_t>(ptrs[0], dataTypes[0], i);
-                    break;
-                case VK_COMPONENT_TYPE_UINT32_KHR:
-                    inputA = getDataConvertedToT<uint32_t>(ptrs[0], dataTypes[0], i);
-                    break;
-                case VK_COMPONENT_TYPE_SINT8_KHR:
-                    inputA = getDataConvertedToT<int8_t>(ptrs[0], dataTypes[0], i);
-                    break;
-                case VK_COMPONENT_TYPE_SINT16_KHR:
-                    inputA = getDataConvertedToT<int16_t>(ptrs[0], dataTypes[0], i);
-                    break;
-                case VK_COMPONENT_TYPE_SINT32_KHR:
-                    inputA = getDataConvertedToT<int32_t>(ptrs[0], dataTypes[0], i);
-                    break;
-                case VK_COMPONENT_TYPE_FLOAT32_KHR:
-                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
-                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
-                case VK_COMPONENT_TYPE_FLOAT16_KHR:
-                    inputA = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
-                    break;
-#ifndef CTS_USES_VULKANSC
-                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
-                {
-                    float temp = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
-                    inputA     = BFloat16(temp).asDouble();
-                    break;
-                }
-#endif //CTS_USES_VULKANSC
-                default:
-                    TCU_THROW(InternalError, "Unexpected type");
-                }
-
-                double inputAConverted = inputA;
-
-                switch (dataTypes[3])
-                {
-                case VK_COMPONENT_TYPE_UINT8_KHR:
-                    output = getDataConvertedToT<uint8_t>(ptrs[3], dataTypes[3], i);
-                    break;
-                case VK_COMPONENT_TYPE_UINT16_KHR:
-                    output = getDataConvertedToT<uint16_t>(ptrs[3], dataTypes[3], i);
-                    break;
-                case VK_COMPONENT_TYPE_UINT32_KHR:
-                    output = getDataConvertedToT<uint32_t>(ptrs[3], dataTypes[3], i);
-                    break;
-                case VK_COMPONENT_TYPE_SINT8_KHR:
-                    output = getDataConvertedToT<int8_t>(ptrs[3], dataTypes[3], i);
-                    break;
-                case VK_COMPONENT_TYPE_SINT16_KHR:
-                    output = getDataConvertedToT<int16_t>(ptrs[3], dataTypes[3], i);
-                    break;
-                case VK_COMPONENT_TYPE_SINT32_KHR:
-                    output = getDataConvertedToT<int32_t>(ptrs[3], dataTypes[3], i);
-                    break;
-                case VK_COMPONENT_TYPE_FLOAT32_KHR:
-                    output = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                    break;
-                case VK_COMPONENT_TYPE_FLOAT16_KHR:
-                {
-                    output          = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                    inputAConverted = tcu::Float16(inputAConverted).asDouble();
-                    break;
-                }
-                case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
-                {
-                    output          = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                    inputAConverted = tcu::FloatE5M2(inputAConverted).asDouble();
-                    break;
-                }
-                case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
-                {
-                    output          = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                    inputAConverted = tcu::FloatE4M3(inputAConverted).asDouble();
-                    break;
-                }
-#ifndef CTS_USES_VULKANSC
-                case VK_COMPONENT_TYPE_BFLOAT16_KHR:
-                {
-                    float temp = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
-                    output     = BFloat16(temp).asDouble();
-                    break;
-                }
-#endif //CTS_USES_VULKANSC
-                default:
-                    TCU_THROW(InternalError, "Unexpected type");
-                }
-
-                if (m_data.testType == TT_CONVERT_SAT)
-                {
+                    // This loads the data according to dataTypes[0], and then converts to the template parameter type
                     switch (dataTypes[3])
                     {
+                    case VK_COMPONENT_TYPE_UINT8_KHR:
+                        inputA = getDataConvertedToT<uint8_t>(ptrs[0], dataTypes[0], i);
+                        break;
+                    case VK_COMPONENT_TYPE_UINT16_KHR:
+                        inputA = getDataConvertedToT<uint16_t>(ptrs[0], dataTypes[0], i);
+                        break;
+                    case VK_COMPONENT_TYPE_UINT32_KHR:
+                        inputA = getDataConvertedToT<uint32_t>(ptrs[0], dataTypes[0], i);
+                        break;
+                    case VK_COMPONENT_TYPE_SINT8_KHR:
+                        inputA = getDataConvertedToT<int8_t>(ptrs[0], dataTypes[0], i);
+                        break;
+                    case VK_COMPONENT_TYPE_SINT16_KHR:
+                        inputA = getDataConvertedToT<int16_t>(ptrs[0], dataTypes[0], i);
+                        break;
+                    case VK_COMPONENT_TYPE_SINT32_KHR:
+                        inputA = getDataConvertedToT<int32_t>(ptrs[0], dataTypes[0], i);
+                        break;
+                    case VK_COMPONENT_TYPE_FLOAT32_KHR:
+                    case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                    case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                    case VK_COMPONENT_TYPE_FLOAT16_KHR:
+#ifndef CTS_USES_VULKANSC
+                    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+#endif //CTS_USES_VULKANSC
+                        inputA = getDataConvertedToT<float>(ptrs[0], dataTypes[0], i);
+                        break;
+                    default:
+                        TCU_THROW(InternalError, "Unexpected type");
+                    }
+
+                    inputAConverted[j] = inputA;
+
+                    switch (dataTypes[3])
+                    {
+                    case VK_COMPONENT_TYPE_UINT8_KHR:
+                        output = getDataConvertedToT<uint8_t>(ptrs[3], dataTypes[3], i);
+                        break;
+                    case VK_COMPONENT_TYPE_UINT16_KHR:
+                        output = getDataConvertedToT<uint16_t>(ptrs[3], dataTypes[3], i);
+                        break;
+                    case VK_COMPONENT_TYPE_UINT32_KHR:
+                        output = getDataConvertedToT<uint32_t>(ptrs[3], dataTypes[3], i);
+                        break;
+                    case VK_COMPONENT_TYPE_SINT8_KHR:
+                        output = getDataConvertedToT<int8_t>(ptrs[3], dataTypes[3], i);
+                        break;
+                    case VK_COMPONENT_TYPE_SINT16_KHR:
+                        output = getDataConvertedToT<int16_t>(ptrs[3], dataTypes[3], i);
+                        break;
+                    case VK_COMPONENT_TYPE_SINT32_KHR:
+                        output = getDataConvertedToT<int32_t>(ptrs[3], dataTypes[3], i);
+                        break;
+                    case VK_COMPONENT_TYPE_FLOAT32_KHR:
+                        output = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                        break;
+                    case VK_COMPONENT_TYPE_FLOAT16_KHR:
+                    {
+                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                        inputAConverted[j] = tcu::Float16(inputAConverted[j], rd[j]).asDouble();
+                        break;
+                    }
                     case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
                     {
-                        if (fabs(inputA) > tcu::FloatE5M2::largestNormal(1).asFloat())
-                        {
-                            inputAConverted = tcu::FloatE5M2::largestNormal(inputA > 0 ? 1 : -1).asFloat();
-                        }
+                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                        inputAConverted[j] = tcu::FloatE5M2(inputAConverted[j], rd[j]).asDouble();
                         break;
                     }
                     case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
                     {
-                        if (fabs(inputA) > tcu::FloatE4M3::largestNormal(1).asFloat())
-                        {
-                            inputAConverted = tcu::FloatE4M3::largestNormal(inputA > 0 ? 1 : -1).asFloat();
-                        }
+                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                        inputAConverted[j] = tcu::FloatE4M3(inputAConverted[j], rd[j]).asDouble();
                         break;
                     }
-                    default:
+#ifndef CTS_USES_VULKANSC
+                    case VK_COMPONENT_TYPE_BFLOAT16_KHR:
+                    {
+                        output             = getDataConvertedToT<float>(ptrs[3], dataTypes[3], i);
+                        inputAConverted[j] = BFloat16(inputAConverted[j], rd[j]).asDouble();
                         break;
+                    }
+#endif //CTS_USES_VULKANSC
+                    default:
+                        TCU_THROW(InternalError, "Unexpected type");
+                    }
+
+                    if (m_data.testType == TT_CONVERT_SAT)
+                    {
+                        switch (dataTypes[3])
+                        {
+                        case VK_COMPONENT_TYPE_FLOAT_E5M2_NV:
+                        {
+                            if (fabs(inputA) > tcu::FloatE5M2::largestNormal(1).asFloat())
+                            {
+                                inputAConverted[j] = tcu::FloatE5M2::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                            }
+                            break;
+                        }
+                        case VK_COMPONENT_TYPE_FLOAT_E4M3_NV:
+                        {
+                            if (fabs(inputA) > tcu::FloatE4M3::largestNormal(1).asFloat())
+                            {
+                                inputAConverted[j] = tcu::FloatE4M3::largestNormal(inputA > 0 ? 1 : -1).asFloat();
+                            }
+                            break;
+                        }
+                        default:
+                            break;
+                        }
                     }
                 }
 
-                if (inputAConverted != output && !(std::isnan(inputAConverted) && std::isnan(output)))
+                if (inputAConverted[0] != output && inputAConverted[1] != output &&
+                    !((std::isnan(inputAConverted[0]) || std::isnan(inputAConverted[1])) && std::isnan(output)))
                 {
-                    //printf("i %d inputA %f inputAConverted %f output %f\n", i, inputA, inputAConverted, output);
+                    //printf("i %d inputA %f inputAConverted[RD] %f inputAConverted[RU] %f output %f\n", i, inputA, inputAConverted[0], inputAConverted[1], output);
                     res = QP_TEST_RESULT_FAIL;
                     break;
                 }

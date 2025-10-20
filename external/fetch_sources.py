@@ -336,23 +336,23 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "b8b90dba56eb8c75050a712188d662fd51c953df",
+        "6d43afe9a0ef71712d8cec5b0ce0cd3570d1fd41",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "38f6708b6b6f213010c51ffa8f577a7751e12ce7",
+        "8e1494f9d742a27b54193ecd9475dcb2ef23b8b7",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "97e96f9e9defeb4bba3cfbd034dec516671dd7a3",
+        "9268f3057354a2cb65991ba5f38b16d81e803692",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "72cd1f587fe55c80873fe6430d667056048a5113",
+        "ac3d0660c45ecf86b2952b298d125270228150d1",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
@@ -373,7 +373,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "v0.3.4",
+        "v0.3.5",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(

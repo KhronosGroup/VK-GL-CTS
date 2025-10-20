@@ -141,6 +141,18 @@ PACKAGES = [
         "6e0e1a026717237f9546dfbd29d5e2ebbad0a993cdab38921bb43291a464ccd4",
         "vulkancts/data/vulkan/video/yuv",
         ""),
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/yuv/720x480_420_8le.yuv",
+        "720x480_420_8le.yuv",
+        "8868cdd209695ae8156009d55ae54143403d84d3526ca48c434865ac1f4c99ae",
+        "vulkancts/data/vulkan/video/yuv",
+        ""),
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/yuv/1920x1080_420_8le.yuv",
+        "1920x1080_420_8le.yuv",
+        "9cdc96522bd15977445459aa144d019029e65e76c1893c11f89666645e8afc1e",
+        "vulkancts/data/vulkan/video/yuv",
+        ""),
 ]
 
 def parseArgs ():

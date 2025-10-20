@@ -308,6 +308,18 @@ bool isMaintenance9FeaturesSupported(const Context &context, const vk::VkPhysica
 
     return true;
 }
+
+bool isFmaFeaturesSupported(const Context &context, const vk::VkPhysicalDeviceShaderFmaFeaturesKHR &toCheck,
+                            const char **missingFeature)
+{
+    const VkPhysicalDeviceShaderFmaFeaturesKHR &extensionFeatures = context.getShaderFmaFeatures();
+
+    IS_AVAIL("ShaderFma.", shaderFmaFloat16);
+    IS_AVAIL("ShaderFma.", shaderFmaFloat32);
+    IS_AVAIL("ShaderFma.", shaderFmaFloat64);
+
+    return true;
+}
 #endif // CTS_USES_VULKANSC
 
 #undef IS_AVAIL
@@ -438,6 +450,9 @@ bool isVulkanFeaturesSupported(const Context &context, const VulkanFeatures &req
         return false;
 
     if (!isMaintenance9FeaturesSupported(context, requested.maint9Features, missingFeature))
+        return false;
+
+    if (!isFmaFeaturesSupported(context, requested.extFma, missingFeature))
         return false;
 #endif // CTS_USES_VULKANSC
 

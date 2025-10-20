@@ -153,6 +153,7 @@ INIT_FEATURE_DECL(VkPhysicalDeviceVulkan14Features)
 MAKE_FEATURE_DECL(VkFaultCallbackInfo)
 INIT_FEATURE_DECL(VkFaultCallbackInfo)
 MAKE_FEATURE_DECL(VkPhysicalDeviceVulkanSC10Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkanSC10Features)
 MAKE_FEATURE_DECL(VkDeviceObjectReservationCreateInfo)
 INIT_FEATURE_DECL(VkDeviceObjectReservationCreateInfo)
 #endif

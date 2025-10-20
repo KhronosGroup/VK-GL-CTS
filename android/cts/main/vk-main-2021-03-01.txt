@@ -20,8 +20,7 @@ vk-main-2021-03-01/query-pool.txt
 vk-main-2021-03-01/rasterization.txt
 vk-main-2021-03-01/ray-query.txt
 vk-main-2021-03-01/ray-tracing-pipeline.txt
-vk-main-2021-03-01/renderpass.txt
-vk-main-2021-03-01/renderpass2.txt
+vk-main-2021-03-01/renderpasses.txt
 vk-main-2021-03-01/robustness.txt
 vk-main-2021-03-01/sparse-resources.txt
 vk-main-2021-03-01/spirv-assembly.txt

@@ -1496,15 +1496,21 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        createInfo.usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
@@ -1842,6 +1848,12 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
@@ -1875,6 +1887,7 @@ tcu::TestStatus PropertiesTestInstance::iterate(void)
     vk::VkInstance instance(m_context.getInstance());
     vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), instance);
     vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    tcu::TestLog &log                   = m_context.getTestContext().getLog();
 
     vk::VkPhysicalDeviceHostImageCopyPropertiesEXT hostImageCopyProperties = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HOST_IMAGE_COPY_PROPERTIES_EXT, // VkStructureType sType;
@@ -1926,6 +1939,89 @@ tcu::TestStatus PropertiesTestInstance::iterate(void)
     }
     if (UUIDZero)
         return tcu::TestStatus::fail("All bytes of optimalTilingLayoutUUID are 0");
+
+    if (m_context.getUnifiedImageLayoutsFeatures().unifiedImageLayouts)
+    {
+        std::vector<vk::VkImageLayout> interchangeableLayouts = {
+            vk::VK_IMAGE_LAYOUT_GENERAL,
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+        };
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_fragment_shading_rate"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_FRAGMENT_SHADING_RATE_ATTACHMENT_OPTIMAL_KHR);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_EXT_fragment_density_map"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_dynamic_rendering_local_read"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL);
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL);
+        }
+        if (m_context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
+        {
+            interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT);
+        }
+        if (m_context.getUnifiedImageLayoutsFeatures().unifiedImageLayoutsVideo)
+        {
+            if (m_context.isDeviceFunctionalitySupported("VK_KHR_video_decode_queue"))
+            {
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_DECODE_SRC_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR);
+            }
+            if (m_context.isDeviceFunctionalitySupported("VK_KHR_video_encode_queue"))
+            {
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_DST_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_SRC_KHR);
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_DPB_KHR);
+            }
+            if (m_context.isDeviceFunctionalitySupported("VK_KHR_video_encode_quantization_map"))
+            {
+                interchangeableLayouts.push_back(vk::VK_IMAGE_LAYOUT_VIDEO_ENCODE_QUANTIZATION_MAP_KHR);
+            }
+        }
+
+        for (const auto layout : interchangeableLayouts)
+        {
+            if (std::find(srcLayouts.begin(), srcLayouts.end(), layout) == srcLayouts.end())
+            {
+                log << tcu::TestLog::Message << "unifiedImageLayouts feature is supported, but layout " << layout
+                    << " was not included in VkPhysicalDeviceHostImageCopyProperties::pCopySrcLayouts"
+                    << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+            if (std::find(dstLayouts.begin(), dstLayouts.end(), layout) == dstLayouts.end())
+            {
+                log << tcu::TestLog::Message << "unifiedImageLayouts feature is supported, but layout " << layout
+                    << " was not included in VkPhysicalDeviceHostImageCopyProperties::pCopyDstLayouts"
+                    << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+        }
+    }
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -3915,7 +4011,9 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
 
         if (!depthAndStencil)
         {
-            const vk::VkBufferImageCopy bufferImageCopy = {
+            const auto preBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                                  **srcBuffer, 0u, bufferSize);
+            const VkBufferImageCopy bufferImageCopy{
                 0u,                // VkDeviceSize bufferOffset;
                 0u,                // uint32_t bufferRowLength;
                 0u,                // uint32_t bufferImageHeight;
@@ -3924,6 +4022,8 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
                 imageSize          // VkExtent3D imageExtent;
             };
             vk::beginCommandBuffer(vk, *cmdBuffer);
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &preBufferBarrier, 0, nullptr);
             vk.cmdCopyBufferToImage(*cmdBuffer, **srcBuffer, **image2, m_params.dstLayout, 1u, &bufferImageCopy);
             vk::endCommandBuffer(vk, *cmdBuffer);
             submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -3945,27 +4045,27 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
     }
     {
         VkImageCopy2 region = {
-            VK_STRUCTURE_TYPE_IMAGE_COPY_2, // VkStructureType				sType;
-            nullptr,                        // const void*					pNext;
-            subresourceLayers,              // VkImageSubresourceLayers	srcSubresource;
-            {0, 0, 0},                      // VkOffset3D					srcOffset;
-            subresourceLayers,              // VkImageSubresourceLayers	dstSubresource;
-            {0, 0, 0},                      // VkOffset3D					dstOffset;
-            imageSize                       // VkExtent3D					extent;
+            VK_STRUCTURE_TYPE_IMAGE_COPY_2, // VkStructureType sType;
+            nullptr,                        // const void* pNext;
+            subresourceLayers,              // VkImageSubresourceLayers srcSubresource;
+            {0, 0, 0},                      // VkOffset3D srcOffset;
+            subresourceLayers,              // VkImageSubresourceLayers dstSubresource;
+            {0, 0, 0},                      // VkOffset3D dstOffset;
+            imageSize                       // VkExtent3D extent;
         };
 
         VkImage srcImage = depthAndStencil ? **image : **image2;
 
         VkCopyImageToImageInfo imageToImageCopy = {
-            VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO, // VkStructureType			sType;
-            nullptr,                                    // const void*				pNext;
-            0u,                                         // VkHostImageCopyFlags	flags;
-            srcImage,                                   // VkImage					srcImage;
-            m_params.srcLayout,                         // VkImageLayout			srcImageLayout;
-            **image3,                                   // VkImage					dstImage;
-            m_params.dstLayout,                         // VkImageLayout			dstImageLayout;
-            1u,                                         // uint32_t				regionCount;
-            &region                                     // const VkImageCopy2*		pRegions;
+            VK_STRUCTURE_TYPE_COPY_IMAGE_TO_IMAGE_INFO, // VkStructureType sType;
+            nullptr,                                    // const void* pNext;
+            0u,                                         // VkHostImageCopyFlags flags;
+            srcImage,                                   // VkImage srcImage;
+            m_params.srcLayout,                         // VkImageLayout srcImageLayout;
+            **image3,                                   // VkImage dstImage;
+            m_params.dstLayout,                         // VkImageLayout dstImageLayout;
+            1u,                                         // uint32_t regionCount;
+            &region                                     // const VkImageCopy2* pRegions;
         };
 
         vk.copyImageToImage(device, &imageToImageCopy);

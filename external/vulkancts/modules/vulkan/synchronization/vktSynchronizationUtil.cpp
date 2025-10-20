@@ -1158,21 +1158,31 @@ const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &devi
         return device->getDeviceDriver();
 }
 
-uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &context)
+uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &context, bool computeQueue)
 {
     if (!device)
-        return context.getUniversalQueueFamilyIndex();
-    else
-        return device->getQueueFamilyVideo();
+        return (computeQueue ? context.getComputeQueueFamilyIndex() : context.getUniversalQueueFamilyIndex());
+
+    DE_ASSERT(!computeQueue);
+    return device->getQueueFamilyVideo();
 }
 
-vk::VkQueue getSyncQueue(de::MovePtr<VideoDevice> &device, Context &context)
+vk::VkQueue getSyncQueue(de::MovePtr<VideoDevice> &device, Context &context, bool computeQueue)
 {
     if (!device)
-        return context.getUniversalQueue();
-    else
-        return getDeviceQueue(device->getDeviceDriver(), device->getDeviceSupportingQueue(),
-                              device->getQueueFamilyVideo(), 0u);
+        return (computeQueue ? context.getComputeQueue() : context.getUniversalQueue());
+
+    DE_ASSERT(!computeQueue);
+    return getDeviceQueue(device->getDeviceDriver(), device->getDeviceSupportingQueue(), device->getQueueFamilyVideo(),
+                          0u);
+}
+
+bool resourceSupportsComputeQueue(const ResourceDescription &resource)
+{
+    if (resource.type == RESOURCE_TYPE_IMAGE &&
+        (resource.imageAspect & (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT)))
+        return false;
+    return true;
 }
 
 } // namespace synchronization
