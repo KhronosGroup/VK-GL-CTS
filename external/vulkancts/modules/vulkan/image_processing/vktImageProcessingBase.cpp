@@ -128,15 +128,9 @@ void ImageProcessingTest::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "Feature textureSampleWeighted not supported");
 
         if ((m_params.sampledImageParams.tiling == VK_IMAGE_TILING_OPTIMAL) &&
-            (formatProperties3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_WEIGHT_IMAGE_BIT_QCOM) == 0)
-            TCU_THROW(NotSupportedError, "Format feature weight image bit not supported for optimal tiling.");
-        if ((m_params.sampledImageParams.tiling == VK_IMAGE_TILING_OPTIMAL) &&
             (formatProperties3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_WEIGHT_SAMPLED_IMAGE_BIT_QCOM) == 0)
             TCU_THROW(NotSupportedError, "Format feature weight sampled image bit not supported for optimal tiling.");
 
-        if ((m_params.sampledImageParams.tiling == VK_IMAGE_TILING_LINEAR) &&
-            (formatProperties3.linearTilingFeatures & VK_FORMAT_FEATURE_2_WEIGHT_IMAGE_BIT_QCOM) == 0)
-            TCU_THROW(NotSupportedError, "Format feature weight image bit not supported for linear tiling.");
         if ((m_params.sampledImageParams.tiling == VK_IMAGE_TILING_LINEAR) &&
             (formatProperties3.linearTilingFeatures & VK_FORMAT_FEATURE_2_WEIGHT_SAMPLED_IMAGE_BIT_QCOM) == 0)
             TCU_THROW(NotSupportedError, "Format feature weight sampled image bit not supported for linear tiling.");

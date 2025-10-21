@@ -23,6 +23,7 @@
 
 #include "vktImageProcessingTestsUtil.hpp"
 
+#include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 
 #include "deDefs.h"
@@ -43,6 +44,20 @@ namespace vkt
 {
 namespace ImageProcessing
 {
+
+float quantize(const float number, const uint32_t bits)
+{
+    const float scale = static_cast<float>(1 << bits);
+
+    return static_cast<float>(deFloor(static_cast<double>(number * scale)) / scale);
+}
+
+float quantizeUp(const float number, const uint32_t bits)
+{
+    const float scale = static_cast<float>(1 << bits);
+
+    return static_cast<float>(deCeil(static_cast<double>(number) * scale) / scale);
+}
 
 Vec4 applySubstitution(const TextureFormat format, const Vec4 &value)
 {
@@ -115,8 +130,8 @@ const Vec4 ImageProcessingResult::getBlockMatchingResult(const bool isSSD, const
     const uint32_t tgtHeight = targetPixels.getHeight();
 
     Vec4 sum      = Vec4(0.0f);
-    Vec4 minValue = Vec4(1.0f);
-    Vec4 maxValue = Vec4(0.0f);
+    Vec4 minValue = Vec4(1.0f); // TODO: currently only normalized values supported
+    Vec4 maxValue = Vec4(0.0f); // TODO: currently only unsigned normalized values supported
 
     for (uint32_t w = 0; w < blockWidth; w++)
     {
@@ -196,6 +211,379 @@ const Vec4 ImageProcessingResult::getBlockMatchingResult(const bool isSSD, const
             pba.setPixel(outColor, x, y);
 
     return blockMatchingError;
+}
+
+const Vec4 ImageProcessingResult::getBoxFilterSamplingResult(const bool isUnnormCoord,
+                                                             const PixelBufferAccess &texturePixels,
+                                                             const Vec2 &textureCoord, const Vec2 &boxSize,
+                                                             const uint32_t precisionBits,
+                                                             const VkComponentMapping &componentMapping)
+{
+    const int32_t texWidth  = texturePixels.getWidth();
+    const int32_t texHeight = texturePixels.getHeight();
+
+    const float u = isUnnormCoord ? textureCoord.x() : (textureCoord.x() * static_cast<float>(texWidth));
+    const float v = isUnnormCoord ? textureCoord.y() : (textureCoord.y() * static_cast<float>(texHeight));
+
+    const float boxWidth  = boxSize.x();
+    const float boxHeight = boxSize.y();
+
+    const int32_t i0 = deFloorFloatToInt32(u - (boxWidth / 2.0f));
+    const int32_t j0 = deFloorFloatToInt32(v - (boxHeight / 2.0f));
+
+    const float startFracU = quantize(deFloatFrac(u - (boxWidth / 2.0f)), precisionBits);
+    const float startFracV = quantize(deFloatFrac(v - (boxHeight / 2.0f)), precisionBits);
+
+    const float endFracU = quantize(deFloatFrac(startFracU + boxWidth), precisionBits);
+    const float endFracV = quantize(deFloatFrac(startFracV + boxHeight), precisionBits);
+
+    const int32_t filterWidth  = deCeilFloatToInt32(startFracU + boxWidth);
+    const int32_t filterHeight = deCeilFloatToInt32(startFracV + boxHeight);
+
+    const Vec4 borderColor(0.0f); // VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK
+
+    Vec4 sum      = Vec4(0.0f);
+    Vec4 minValue = Vec4(1.0f); // TODO: currently only normalized values supported
+    Vec4 maxValue = Vec4(0.0f); // TODO: currently only unsigned normalized values supported
+
+    for (int32_t w = 0; w < filterWidth; w++)
+    {
+        for (int32_t h = 0; h < filterHeight; h++)
+        {
+            int32_t texPixCoordX = i0 + w;
+            int32_t texPixCoordY = j0 + h;
+
+            bool useBorderColor = false;
+
+            if (!de::inBounds(texPixCoordX, 0, texWidth))
+            {
+                if (m_addressMode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                    texPixCoordX = de::clamp(texPixCoordX, 0, texWidth - 1);
+                else // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+                    useBorderColor = true;
+            }
+
+            if (!de::inBounds(texPixCoordY, 0, texHeight))
+            {
+                if (m_addressMode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                    texPixCoordY = de::clamp(texPixCoordY, 0, texHeight - 1);
+                else // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+                    useBorderColor = true;
+            }
+
+            const Vec4 texPix = useBorderColor ? borderColor : texturePixels.getPixel(texPixCoordX, texPixCoordY);
+            const float currWeightX =
+                (w == 0) ? (1.0f - startFracU) : (((w == (filterWidth - 1)) && (endFracU != 0.0f)) ? endFracU : 1.0f);
+            const float currWeightY =
+                (h == 0) ? (1.0f - startFracV) : (((h == (filterHeight - 1)) && (endFracV != 0.0f)) ? endFracV : 1.0f);
+
+            const Vec4 currWeightedPix = currWeightX * currWeightY * texPix;
+
+            switch (m_reductionMode)
+            {
+            case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE:
+                sum += currWeightedPix;
+                break;
+            case VK_SAMPLER_REDUCTION_MODE_MIN:
+                minValue = min(texPix, minValue);
+                break;
+            case VK_SAMPLER_REDUCTION_MODE_MAX:
+                maxValue = max(texPix, maxValue);
+                break;
+            default:
+                DE_ASSERT(false);
+            }
+        }
+    }
+
+    // Select metric
+    Vec4 metric = Vec4(0.0f);
+
+    switch (m_reductionMode)
+    {
+    case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE:
+        metric = sum / (boxWidth * boxHeight);
+        break;
+    case VK_SAMPLER_REDUCTION_MODE_MIN:
+        metric = minValue;
+        break;
+    case VK_SAMPLER_REDUCTION_MODE_MAX:
+        metric = maxValue;
+        break;
+    default:
+        DE_ASSERT(false);
+    }
+
+    metric = applySubstitution(texturePixels.getFormat(), metric);
+
+    const Vec4 boxFilterValue = applySwizzle(metric, componentMapping);
+
+    auto pba = getAccess();
+    const Vec4 outColor =
+        (boxFilterValue != Vec4(0.0f)) ? RGBA::green().toVec() : RGBA::red().toVec(); // red on mismatch, green on match
+
+    for (int x = 0; x < getWidth(); ++x)
+        for (int y = 0; y < getHeight(); ++y)
+            pba.setPixel(outColor, x, y);
+
+    return boxFilterValue;
+}
+
+uint32_t mapPhase(float frac, uint32_t phaseCount)
+{
+    const int32_t p = deFloorFloatToInt32(frac * static_cast<float>(phaseCount));
+    return static_cast<uint32_t>(de::clamp(p, 0, static_cast<int32_t>(phaseCount))) % phaseCount;
+}
+
+uint32_t getUniquePhasePairs(std::vector<UVec2> &uniquePhasePairs, const std::vector<uint32_t> &hPhaseCandidates,
+                             const std::vector<uint32_t> &vPhaseCandidates)
+{
+    const uint32_t numHPhaseCandidates = de::sizeU32(hPhaseCandidates);
+    const uint32_t numVPhaseCandidates = de::sizeU32(vPhaseCandidates);
+
+    uniquePhasePairs.reserve(numHPhaseCandidates * numVPhaseCandidates);
+
+    uint32_t numUniquePairs = 0;
+
+    for (uint32_t hIdx = 0; hIdx < numHPhaseCandidates; ++hIdx)
+    {
+        for (uint32_t vIdx = 0; vIdx < numVPhaseCandidates; ++vIdx)
+        {
+            const uint32_t hp = hPhaseCandidates[hIdx];
+            const uint32_t vp = vPhaseCandidates[vIdx];
+            bool found        = false;
+            for (uint32_t pairIdx = 0; pairIdx < numUniquePairs; ++pairIdx)
+                if (uniquePhasePairs[pairIdx].x() == hp && uniquePhasePairs[pairIdx].y() == vp)
+                {
+                    found = true;
+                    break;
+                }
+            if (!found)
+                uniquePhasePairs[numUniquePairs++] = UVec2(hp, vp);
+        }
+    }
+
+    return numUniquePairs;
+}
+
+std::vector<Vec4> ImageProcessingResult::getWeightSamplingResultCandidates(
+    const bool isUnnormCoord, const bool isNonSeparableFilter, const PixelBufferAccess &texturePixels,
+    const Vec2 &textureCoord, const PixelBufferAccess &weightPixels, const VkOffset2D &filterCenter,
+    const VkExtent2D &filterSize, const uint32_t numPhases, const VkSamplerAddressMode &weightAddressMode,
+    const VkSamplerReductionMode &weightReductionMode, const VkComponentMapping &componentMapping)
+{
+    DE_UNREF(weightReductionMode);
+
+    const int32_t texWidth  = texturePixels.getWidth();
+    const int32_t texHeight = texturePixels.getHeight();
+
+    const float u = isUnnormCoord ? textureCoord.x() : (textureCoord.x() * static_cast<float>(texWidth));
+    const float v = isUnnormCoord ? textureCoord.y() : (textureCoord.y() * static_cast<float>(texHeight));
+
+    const int32_t filterCenterX = filterCenter.x;
+    const int32_t filterCenterY = filterCenter.y;
+
+    const int32_t filterWidth  = filterSize.width;
+    const int32_t filterHeight = filterSize.height;
+
+    const int32_t weightWidth  = weightPixels.getWidth();
+    const int32_t weightHeight = weightPixels.getHeight();
+
+    const Vec4 borderColor =
+        applySubstitution(texturePixels.getFormat(), Vec4(0.0f)); // VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK
+
+    const float phaseCalcConst    = 0.5f;
+    const uint32_t phaseCountSqrt = static_cast<uint32_t>(deSqrt(numPhases));
+    const uint32_t phaseCountH    = phaseCountSqrt;
+    const uint32_t phaseCountV    = phaseCountH;
+    const uint32_t phaseBits      = deLog2Floor32(phaseCountSqrt);
+
+    // UV uncertainty interval: 1 LSB
+    const float uLSB = (u > 0.0f) ? (deUint32BitsToFloat(deFloatBitsToUint32(u) + 1u) - u) : deUint32BitsToFloat(1u);
+    const float vLSB = (v > 0.0f) ? (deUint32BitsToFloat(deFloatBitsToUint32(v) + 1u) - v) : deUint32BitsToFloat(1u);
+
+    const float uVals[3] = {u - uLSB, u, u + uLSB};
+    const float vVals[3] = {v - vLSB, v, v + vLSB};
+
+    struct FilterCandidate
+    {
+        int32_t i0, j0;
+        uint32_t hPhase, vPhase;
+    };
+
+    std::vector<FilterCandidate> candidates;
+
+    for (const float uVal : uVals)
+    {
+        const int32_t i0Cand      = deFloorFloatToInt32(uVal - static_cast<float>(filterCenterX));
+        const float rawFracU      = deFloatFrac(uVal - phaseCalcConst);
+        const uint32_t hPhases[2] = {mapPhase(quantize(rawFracU, phaseBits), phaseCountH),
+                                     mapPhase(quantizeUp(rawFracU, phaseBits), phaseCountH)};
+
+        for (const float vVal : vVals)
+        {
+            const int32_t j0Cand      = deFloorFloatToInt32(vVal - static_cast<float>(filterCenterY));
+            const float rawFracV      = deFloatFrac(vVal - phaseCalcConst);
+            const uint32_t vPhases[2] = {mapPhase(quantize(rawFracV, phaseBits), phaseCountV),
+                                         mapPhase(quantizeUp(rawFracV, phaseBits), phaseCountV)};
+
+            for (const uint32_t hp : hPhases)
+            {
+                for (const uint32_t vp : vPhases)
+                {
+                    bool found = false;
+                    for (const FilterCandidate &c : candidates)
+                        if (c.i0 == i0Cand && c.j0 == j0Cand && c.hPhase == hp && c.vPhase == vp)
+                        {
+                            found = true;
+                            break;
+                        }
+                    if (!found)
+                        candidates.push_back({i0Cand, j0Cand, hp, vp});
+                }
+            }
+        }
+    }
+
+    // Compute the weight sampling result for each unique candidate
+    std::vector<Vec4> results;
+    results.reserve(candidates.size());
+
+    for (const FilterCandidate &cand : candidates)
+    {
+        const int32_t i0          = cand.i0;
+        const int32_t j0          = cand.j0;
+        const uint32_t hPhase     = cand.hPhase;
+        const uint32_t vPhase     = cand.vPhase;
+        const uint32_t layerIndex = (vPhase * phaseCountH) + hPhase;
+
+        Vec4 sum       = Vec4(0.0f);
+        Vec4 minValue  = Vec4(1.0f); // currently only normalized values supported
+        Vec4 maxValue  = Vec4(0.0f); // currently only unsigned normalized values supported
+        Vec4 weightSum = Vec4(0.0f);
+
+        for (int32_t w = 0; w < filterWidth; w++)
+        {
+            for (int32_t h = 0; h < filterHeight; h++)
+            {
+                // Texture coordinates
+                int32_t texPixCoordX = i0 + w;
+                int32_t texPixCoordY = j0 + h;
+
+                bool useBorderColor = false;
+
+                if (!de::inBounds(texPixCoordX, 0, texWidth))
+                {
+                    if (m_addressMode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        texPixCoordX = de::clamp(texPixCoordX, 0, texWidth - 1);
+                    else // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+                        useBorderColor = true;
+                }
+
+                if (!de::inBounds(texPixCoordY, 0, texHeight))
+                {
+                    if (m_addressMode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                        texPixCoordY = de::clamp(texPixCoordY, 0, texHeight - 1);
+                    else // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+                        useBorderColor = true;
+                }
+
+                const Vec4 texPix = useBorderColor ? borderColor : texturePixels.getPixel(texPixCoordX, texPixCoordY);
+
+                // Weight coordinates
+                int32_t wPacked =
+                    (phaseCountH * 4 * deFloorFloatToInt32(static_cast<float>(w) / 4.0f)) + (hPhase * 4) + (w % 4);
+                int32_t hPacked =
+                    (phaseCountV * 4 * deFloorFloatToInt32(static_cast<float>(h) / 4.0f)) + (vPhase * 4) + (h % 4);
+
+                int32_t weightPixCoordX = isNonSeparableFilter ? w : wPacked;
+                int32_t weightPixCoordY = isNonSeparableFilter ? h : hPacked;
+
+                Vec4 weight = Vec4(0.0f);
+
+                if (isNonSeparableFilter)
+                {
+                    bool useBorderWeight = false;
+
+                    if (!de::inBounds(weightPixCoordX, 0, weightWidth))
+                    {
+                        if (weightAddressMode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            weightPixCoordX = de::clamp(weightPixCoordX, 0, weightWidth - 1);
+                        else // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+                            useBorderWeight = true;
+                    }
+
+                    if (!de::inBounds(weightPixCoordY, 0, weightHeight))
+                    {
+                        if (weightAddressMode == VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE)
+                            weightPixCoordY = de::clamp(weightPixCoordY, 0, weightHeight - 1);
+                        else // VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER
+                            useBorderWeight = true;
+                    }
+
+                    const Vec4 weightPix = useBorderWeight ?
+                                               borderColor :
+                                               weightPixels.getPixel(weightPixCoordX, weightPixCoordY, layerIndex);
+                    weight               = Vec4(weightPix.x());
+                }
+                else // separable
+                {
+                    // TODO: borders
+                    const Vec4 weightPixX = weightPixels.getPixel(weightPixCoordX, 0, 0 /* layer index */);
+                    const Vec4 weightPixY = weightPixels.getPixel(weightPixCoordY, 0, 1 /* layer index */);
+                    const Vec4 weightPix  = weightPixX * weightPixY;
+                    weight                = Vec4(weightPix.x());
+                }
+
+                const Vec4 currWeightedPix = weight * texPix;
+
+                switch (m_reductionMode)
+                {
+                case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE:
+                    sum += currWeightedPix;
+                    weightSum += weight;
+                    break;
+                case VK_SAMPLER_REDUCTION_MODE_MIN:
+                    minValue = min(currWeightedPix, minValue);
+                    break;
+                case VK_SAMPLER_REDUCTION_MODE_MAX:
+                    maxValue = max(currWeightedPix, maxValue);
+                    break;
+                default:
+                    DE_ASSERT(false);
+                }
+            }
+        }
+
+        Vec4 metric = Vec4(0.0f);
+
+        switch (m_reductionMode)
+        {
+        case VK_SAMPLER_REDUCTION_MODE_WEIGHTED_AVERAGE:
+            metric = sum;
+            break;
+        case VK_SAMPLER_REDUCTION_MODE_MIN:
+            metric = minValue;
+            break;
+        case VK_SAMPLER_REDUCTION_MODE_MAX:
+            metric = maxValue;
+            break;
+        default:
+            DE_ASSERT(false);
+        }
+
+        results.push_back(applySwizzle(metric, componentMapping));
+    }
+
+    // Update the reference result image based on the (floor/floor) candidate
+    auto pba            = getAccess();
+    const Vec4 outColor = (!results.empty() && results[0] != Vec4(0.0f)) ? RGBA::green().toVec() : RGBA::red().toVec();
+
+    for (int x = 0; x < getWidth(); ++x)
+        for (int y = 0; y < getHeight(); ++y)
+            pba.setPixel(outColor, x, y);
+
+    return results;
 }
 
 DescriptorSetLayoutExtBuilder::DescriptorSetLayoutExtBuilder(void)
@@ -305,7 +693,7 @@ VkImageType mapImageType(const ImageType imageType)
 
 VkImageCreateInfo makeImageCreateInfo(const ImageType &imageType, const UVec2 imageSize, const VkFormat format,
                                       const VkImageUsageFlags usage, const VkImageCreateFlags flags,
-                                      const VkImageTiling tiling)
+                                      const VkImageTiling tiling, uint32_t arrayLayers)
 {
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,            // VkStructureType sType;
@@ -315,7 +703,7 @@ VkImageCreateInfo makeImageCreateInfo(const ImageType &imageType, const UVec2 im
         format,                                         // VkFormat format;
         makeExtent3D(imageSize.x(), imageSize.y(), 1u), // VkExtent3D extent;
         1u,                                             // uint32_t mipLevels;
-        1u,                                             // uint32_t arrayLayers;
+        arrayLayers,                                    // uint32_t arrayLayers;
         VK_SAMPLE_COUNT_1_BIT,                          // VkSampleCountFlagBits samples;
         tiling,                                         // VkImageTiling tiling;
         usage,                                          // VkImageUsageFlags usage;
@@ -427,6 +815,93 @@ std::vector<VkFormat> getOpSupportedFormats(const ImageProcOp op)
         };
     }
     break;
+    case ImageProcOp::IMAGE_PROC_OP_BOX_FILTER:
+    case ImageProcOp::IMAGE_PROC_OP_SAMPLE_WEIGHTED:
+    {
+        supportedFormats = {
+            VK_FORMAT_R8_UNORM,       VK_FORMAT_R8_SNORM,       VK_FORMAT_R8G8_UNORM,
+            VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R8G8B8A8_SNORM,
+            // TODO: special formats - packed, 422, compressed
+            // VK_FORMAT_A8B8G8R8_UNORM_PACK32,
+            // VK_FORMAT_A8B8G8R8_SNORM_PACK32,
+            // VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+            // VK_FORMAT_R16_SFLOAT,
+            // VK_FORMAT_R16G16_SFLOAT,
+            // VK_FORMAT_R16G16B16A16_SFLOAT,
+            // VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+            // VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
+            // VK_FORMAT_BC1_RGB_UNORM_BLOCK,
+            // VK_FORMAT_BC1_RGB_SRGB_BLOCK,
+            // VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
+            // VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
+            // VK_FORMAT_BC2_SRGB_BLOCK,
+            // VK_FORMAT_BC3_UNORM_BLOCK,
+            // VK_FORMAT_BC3_SRGB_BLOCK,
+            // VK_FORMAT_BC4_UNORM_BLOCK,
+            // VK_FORMAT_BC4_SNORM_BLOCK,
+            // VK_FORMAT_BC5_UNORM_BLOCK,
+            // VK_FORMAT_BC5_SNORM_BLOCK,
+            // VK_FORMAT_BC6H_UFLOAT_BLOCK,
+            // VK_FORMAT_BC6H_SFLOAT_BLOCK,
+            // VK_FORMAT_BC7_UNORM_BLOCK,
+            // VK_FORMAT_BC7_SRGB_BLOCK,
+            // VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
+            // VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
+            // VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
+            // VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
+            // VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
+            // VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
+            // VK_FORMAT_EAC_R11_UNORM_BLOCK,
+            // VK_FORMAT_EAC_R11_SNORM_BLOCK,
+            // VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
+            // VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
+            // VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
+            // VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
+            // VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+            // VK_FORMAT_G8B8G8R8_422_UNORM,
+            // VK_FORMAT_B8G8R8G8_422_UNORM,
+            // VK_FORMAT_A4B4G4R4_UNORM_PACK16,
+            // VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK,
+            // VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK,
+        };
+    }
+    break;
     default:
         DE_ASSERT(false);
     }
@@ -457,6 +932,11 @@ const std::string getStageNames(const VkShaderStageFlags stageMask)
         names += (mask ? "_" : "");
     }
     return names;
+}
+
+bool isSignedFormat(const VkFormat format)
+{
+    return isIntFormat(format) || isSnormFormat(format) || isSfloatFormat(format);
 }
 
 } // namespace ImageProcessing

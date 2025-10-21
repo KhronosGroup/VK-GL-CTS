@@ -361,7 +361,7 @@ void ImageProcessingBlockMatchGraphicsTest::initPrograms(SourceCollections &sour
                  << "layout(location = 0) out vec4 fragColor;\n"
                  << "\n"
                  << "void main() {\n"
-                 << "    fragColor = inColor;"
+                 << "    fragColor = inColor;\n"
                  << "}\n";
         }
     }

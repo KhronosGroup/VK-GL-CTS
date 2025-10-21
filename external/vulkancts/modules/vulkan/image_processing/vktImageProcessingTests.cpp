@@ -24,6 +24,8 @@
 #include "vktImageProcessingTests.hpp"
 #include "vktImageProcessingApiTests.hpp"
 #include "vktImageProcessingBlockMatchingTests.hpp"
+#include "vktImageProcessingBoxFilterSamplingTests.hpp"
+#include "vktImageProcessingWeightImageSamplingTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 #include "vkPipelineConstructionUtil.hpp"
@@ -60,6 +62,10 @@ void createChildren(tcu::TestCaseGroup *imageProcessingTests)
             GroupPtr gfxPipelineGroup(new tcu::TestCaseGroup(testCtx, pipelineConstructionType.name));
             gfxPipelineGroup->addChild(
                 createImageProcessingBlockMatchingGraphicsTests(testCtx, pipelineConstructionType.constructionType));
+            gfxPipelineGroup->addChild(createImageProcessingBoxFilterSamplingGraphicsTests(
+                testCtx, pipelineConstructionType.constructionType));
+            gfxPipelineGroup->addChild(createImageProcessingWeightImageSamplingGraphicsTests(
+                testCtx, pipelineConstructionType.constructionType));
             graphicsGroup->addChild(gfxPipelineGroup.release());
         }
 
@@ -74,6 +80,8 @@ void createChildren(tcu::TestCaseGroup *imageProcessingTests)
     {
         GroupPtr computeGroup(new tcu::TestCaseGroup(testCtx, "compute"));
         computeGroup->addChild(createImageProcessingBlockMatchingComputeTests(testCtx));
+        computeGroup->addChild(createImageProcessingBoxFilterSamplingComputeTests(testCtx));
+        computeGroup->addChild(createImageProcessingWeightImageSamplingComputeTests(testCtx));
         imageProcessingTests->addChild(computeGroup.release());
     }
 }
