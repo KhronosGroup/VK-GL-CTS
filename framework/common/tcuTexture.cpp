@@ -1537,8 +1537,11 @@ Vec4 ConstPixelBufferAccess::getPixel(int x, int y, int z) const
                          TextureFormat::RGBA)
             .cast<float>();
     case TextureFormat::SSCALED_INT_1010102_REV:
-    case TextureFormat::SIGNED_INT_1010102_REV:
         return swizzleGe(UVec4(SI32(0, 10), SI32(10, 10), SI32(20, 10), SI32(30, 2)), m_format.order,
+                         TextureFormat::RGBA)
+            .cast<float>();
+    case TextureFormat::SIGNED_INT_1010102_REV:
+        return swizzleGe(IVec4(SI32(0, 10), SI32(10, 10), SI32(20, 10), SI32(30, 2)), m_format.order,
                          TextureFormat::RGBA)
             .cast<float>();
     case TextureFormat::UNSIGNED_INT_999_E5_REV:

@@ -3346,10 +3346,6 @@ class FormatListsGenerator(BaseGenerator):
                 return False
             if '64' in f.name:
                 return False
-            # skip formats that would not be correctly handled in tcuTexture.cpp for
-            # sampling_type tests that operate on large negative values
-            if 'A2R10G10B10_SINT' in f.name or 'A2B10G10R10_SINT' in f.name:
-                return False
             return True
         self.writeList(f'pipelineImageFormats', pipelineImageCheckFun)
 
