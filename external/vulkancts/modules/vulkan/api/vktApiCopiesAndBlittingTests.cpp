@@ -18030,12 +18030,14 @@ void addImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGro
     addTestGroup(group, "3d_images", add3dImageToBufferTests, testGroupParams);
 }
 
+#ifndef CTS_USES_VULKANSC
 void addImageToBufferIndirectTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
 {
     addTestGroup(group, "1d_images", add1dImageToBufferTests, testGroupParams);
     // 2D images are exercised with addMemoryToImageTests
     addTestGroup(group, "3d_images", add3dImageToBufferTests, testGroupParams);
 }
+#endif
 
 void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationKind allocationKind,
                                           uint32_t extensionFlags)
