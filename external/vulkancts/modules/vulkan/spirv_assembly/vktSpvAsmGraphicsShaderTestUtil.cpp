@@ -4711,8 +4711,6 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     // Check the contents in output resources match with expected.
     for (uint32_t outputNdx = 0; outputNdx < numOutResources; ++outputNdx)
     {
-        const BufferSp &expected = instance.resources.outputs[outputNdx].getBuffer();
-
         if (instance.resources.verifyIO != nullptr)
         {
             if (!(*instance.resources.verifyIO)(instance.resources.inputs, outResourceMemories,
@@ -4722,7 +4720,7 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         else
         {
             vector<uint8_t> expectedBytes;
-            expected->getBytes(expectedBytes);
+            instance.resources.outputs[outputNdx].getBytes(expectedBytes);
 
             if (deMemCmp(&expectedBytes.front(), outResourceMemories[outputNdx]->getHostPtr(), expectedBytes.size()))
             {

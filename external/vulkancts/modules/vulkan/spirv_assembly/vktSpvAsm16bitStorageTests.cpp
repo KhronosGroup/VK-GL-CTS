@@ -196,7 +196,7 @@ bool graphicsCheck16BitFloats(const std::vector<Resource> &originalFloats, const
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
+        originalFloats[outputNdx].getPackedBytes(originalBytes);
 
         const uint16_t *returned   = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
         const float *original      = reinterpret_cast<const float *>(&originalBytes.front());
@@ -221,7 +221,7 @@ bool graphicsCheck16BitFloats64(const std::vector<Resource> &originalFloats, con
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
+        originalFloats[outputNdx].getPackedBytes(originalBytes);
 
         const uint16_t *returned = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
         const double *original   = reinterpret_cast<const double *>(&originalBytes.front());
@@ -239,7 +239,7 @@ bool computeCheckBuffersFloats(const std::vector<Resource> &originalFloats, cons
                                const std::vector<Resource> & /*expectedOutputs*/, tcu::TestLog & /*log*/)
 {
     std::vector<uint8_t> result;
-    originalFloats.front().getBuffer()->getPackedBytes(result);
+    originalFloats.front().getPackedBytes(result);
 
     const uint16_t *results  = reinterpret_cast<const uint16_t *>(&result[0]);
     const uint16_t *expected = reinterpret_cast<const uint16_t *>(outputAllocs.front()->getHostPtr());
@@ -268,7 +268,7 @@ bool computeCheck16BitFloats(const std::vector<Resource> &originalFloats, const 
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
+        originalFloats[outputNdx].getPackedBytes(originalBytes);
 
         const uint16_t *returned   = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
         const float *original      = reinterpret_cast<const float *>(&originalBytes.front());
@@ -293,7 +293,7 @@ bool computeCheck16BitFloats64(const std::vector<Resource> &originalFloats, cons
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
+        originalFloats[outputNdx].getPackedBytes(originalBytes);
 
         const uint16_t *returned = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
         const double *original   = reinterpret_cast<const double *>(&originalBytes.front());
@@ -320,7 +320,7 @@ bool check64BitFloats(const std::vector<Resource> & /* originalFloats */, const 
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getBuffer()->getPackedBytes(expectedBytes);
+        expectedOutputs[outputNdx].getPackedBytes(expectedBytes);
 
         const double *returnedAsDouble = static_cast<const double *>(outputAllocs[outputNdx]->getHostPtr());
         const double *expectedAsDouble = reinterpret_cast<const double *>(&expectedBytes.front());
@@ -347,7 +347,7 @@ bool check32BitFloats(const std::vector<Resource> & /* originalFloats */, const 
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getBuffer()->getPackedBytes(expectedBytes);
+        expectedOutputs[outputNdx].getPackedBytes(expectedBytes);
 
         const float *returnedAsFloat = static_cast<const float *>(outputAllocs[outputNdx]->getHostPtr());
         const float *expectedAsFloat = reinterpret_cast<const float *>(&expectedBytes.front());
@@ -887,7 +887,7 @@ bool computeCheckStruct(const std::vector<Resource> &originalFloats, const vecto
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
+        originalFloats[outputNdx].getPackedBytes(originalBytes);
 
         const resultType *returned = static_cast<const resultType *>(outputAllocs[outputNdx]->getHostPtr());
         const originType *original = reinterpret_cast<const originType *>(&originalBytes.front());
@@ -905,7 +905,7 @@ bool graphicsCheckStruct(const std::vector<Resource> &originalFloats, const vect
     for (uint32_t outputNdx = 0; outputNdx < static_cast<uint32_t>(outputAllocs.size()); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getBuffer()->getPackedBytes(originalBytes);
+        originalFloats[outputNdx].getPackedBytes(originalBytes);
 
         const resultType *returned = static_cast<const resultType *>(outputAllocs[outputNdx]->getHostPtr());
         const originType *original = reinterpret_cast<const originType *>(&originalBytes.front());

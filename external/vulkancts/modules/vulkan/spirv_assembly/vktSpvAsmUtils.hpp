@@ -192,6 +192,10 @@ public:
     {
         buffer->getBytes(bytes);
     }
+    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const
+    {
+        buffer->getPackedBytes(bytes);
+    }
     virtual size_t getByteSize(void) const
     {
         return buffer->getByteSize();

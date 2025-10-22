@@ -593,10 +593,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         // Buffer
         if (!hasImage && !hasSampler)
         {
-            const BufferSp &input = m_shaderSpec.inputs[inputNdx].getBuffer();
             vector<uint8_t> inputBytes;
 
-            input->getBytes(inputBytes);
+            m_shaderSpec.inputs[inputNdx].getBytes(inputBytes);
 
             const size_t numBytes = inputBytes.size();
 
@@ -612,10 +611,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         // Image
         else if (hasImage)
         {
-            const BufferSp &input = m_shaderSpec.inputs[inputNdx].getBuffer();
             vector<uint8_t> inputBytes;
 
-            input->getBytes(inputBytes);
+            m_shaderSpec.inputs[inputNdx].getBytes(inputBytes);
 
             const size_t numBytes = inputBytes.size();
 
@@ -807,10 +805,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
         descriptorTypes.push_back(m_shaderSpec.outputs[outputNdx].getDescriptorType());
 
         AllocationMp alloc;
-        const BufferSp &output = m_shaderSpec.outputs[outputNdx].getBuffer();
         vector<uint8_t> outputBytes;
-
-        output->getBytes(outputBytes);
+        m_shaderSpec.outputs[outputNdx].getBytes(outputBytes);
 
         const size_t numBytes  = outputBytes.size();
         BufferHandleUp *buffer = new BufferHandleUp(
@@ -951,10 +947,8 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
     {
         for (size_t outputNdx = 0; outputNdx < m_shaderSpec.outputs.size(); ++outputNdx)
         {
-            const BufferSp &expectedOutput = m_shaderSpec.outputs[outputNdx].getBuffer();
             vector<uint8_t> expectedBytes;
-
-            expectedOutput->getBytes(expectedBytes);
+            m_shaderSpec.outputs[outputNdx].getBytes(expectedBytes);
 
             if (deMemCmp(&expectedBytes.front(), outputAllocs[outputNdx]->getHostPtr(), expectedBytes.size()))
             {
