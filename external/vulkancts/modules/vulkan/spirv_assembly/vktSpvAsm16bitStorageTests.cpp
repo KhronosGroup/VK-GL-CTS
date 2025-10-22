@@ -196,11 +196,12 @@ bool graphicsCheck16BitFloats(const std::vector<Resource> &originalFloats, const
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getPackedBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getPackedBytes(originalBytes);
 
-        const uint16_t *returned   = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
-        const float *original      = reinterpret_cast<const float *>(&originalBytes.front());
-        const uint32_t count       = static_cast<uint32_t>(expectedOutputs[outputNdx].getByteSize() / sizeof(uint16_t));
+        const uint16_t *returned = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
+        const float *original    = reinterpret_cast<const float *>(&originalBytes.front());
+        const uint32_t count =
+            static_cast<uint32_t>(expectedOutputs[outputNdx].buffer->getByteSize() / sizeof(uint16_t));
         const uint32_t inputStride = static_cast<uint32_t>(originalBytes.size() / sizeof(float)) / count;
 
         for (uint32_t numNdx = 0; numNdx < count; ++numNdx)
@@ -221,7 +222,7 @@ bool graphicsCheck16BitFloats64(const std::vector<Resource> &originalFloats, con
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getPackedBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getPackedBytes(originalBytes);
 
         const uint16_t *returned = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
         const double *original   = reinterpret_cast<const double *>(&originalBytes.front());
@@ -239,7 +240,7 @@ bool computeCheckBuffersFloats(const std::vector<Resource> &originalFloats, cons
                                const std::vector<Resource> & /*expectedOutputs*/, tcu::TestLog & /*log*/)
 {
     std::vector<uint8_t> result;
-    originalFloats.front().getPackedBytes(result);
+    originalFloats.front().buffer->getPackedBytes(result);
 
     const uint16_t *results  = reinterpret_cast<const uint16_t *>(&result[0]);
     const uint16_t *expected = reinterpret_cast<const uint16_t *>(outputAllocs.front()->getHostPtr());
@@ -268,11 +269,12 @@ bool computeCheck16BitFloats(const std::vector<Resource> &originalFloats, const 
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getPackedBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getPackedBytes(originalBytes);
 
-        const uint16_t *returned   = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
-        const float *original      = reinterpret_cast<const float *>(&originalBytes.front());
-        const uint32_t count       = static_cast<uint32_t>(expectedOutputs[outputNdx].getByteSize() / sizeof(uint16_t));
+        const uint16_t *returned = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
+        const float *original    = reinterpret_cast<const float *>(&originalBytes.front());
+        const uint32_t count =
+            static_cast<uint32_t>(expectedOutputs[outputNdx].buffer->getByteSize() / sizeof(uint16_t));
         const uint32_t inputStride = static_cast<uint32_t>(originalBytes.size() / sizeof(float)) / count;
 
         for (uint32_t numNdx = 0; numNdx < count; ++numNdx)
@@ -293,7 +295,7 @@ bool computeCheck16BitFloats64(const std::vector<Resource> &originalFloats, cons
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getPackedBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getPackedBytes(originalBytes);
 
         const uint16_t *returned = static_cast<const uint16_t *>(outputAllocs[outputNdx]->getHostPtr());
         const double *original   = reinterpret_cast<const double *>(&originalBytes.front());
@@ -320,7 +322,7 @@ bool check64BitFloats(const std::vector<Resource> & /* originalFloats */, const 
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getPackedBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getPackedBytes(expectedBytes);
 
         const double *returnedAsDouble = static_cast<const double *>(outputAllocs[outputNdx]->getHostPtr());
         const double *expectedAsDouble = reinterpret_cast<const double *>(&expectedBytes.front());
@@ -347,7 +349,7 @@ bool check32BitFloats(const std::vector<Resource> & /* originalFloats */, const 
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getPackedBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getPackedBytes(expectedBytes);
 
         const float *returnedAsFloat = static_cast<const float *>(outputAllocs[outputNdx]->getHostPtr());
         const float *expectedAsFloat = reinterpret_cast<const float *>(&expectedBytes.front());
@@ -887,7 +889,7 @@ bool computeCheckStruct(const std::vector<Resource> &originalFloats, const vecto
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getPackedBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getPackedBytes(originalBytes);
 
         const resultType *returned = static_cast<const resultType *>(outputAllocs[outputNdx]->getHostPtr());
         const originType *original = reinterpret_cast<const originType *>(&originalBytes.front());
@@ -905,7 +907,7 @@ bool graphicsCheckStruct(const std::vector<Resource> &originalFloats, const vect
     for (uint32_t outputNdx = 0; outputNdx < static_cast<uint32_t>(outputAllocs.size()); ++outputNdx)
     {
         vector<uint8_t> originalBytes;
-        originalFloats[outputNdx].getPackedBytes(originalBytes);
+        originalFloats[outputNdx].buffer->getPackedBytes(originalBytes);
 
         const resultType *returned = static_cast<const resultType *>(outputAllocs[outputNdx]->getHostPtr());
         const originType *original = reinterpret_cast<const originType *>(&originalBytes.front());
@@ -2189,10 +2191,9 @@ void addGraphics16BitStorageUniformInt32To16Group(tcu::TestCaseGroup *testGroup)
                 VulkanFeatures features;
 
                 resources.inputs.push_back(
-                    Resource(BufferSp(new Int32Buffer(inputsPadded)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                    Resource(BufferSp(new Int32Buffer(inputsPadded)), CAPABILITIES[capIdx].dtype));
                 resources.outputs.push_back(
                     Resource(BufferSp(new Int16Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
                 features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
                 features.coreFeatures.vertexPipelineStoresAndAtomics = true;
@@ -2204,9 +2205,8 @@ void addGraphics16BitStorageUniformInt32To16Group(tcu::TestCaseGroup *testGroup)
     }
     // Vector
     {
-        GraphicsResources resources;
-        resources.inputs.push_back(Resource(BufferSp(new Int32Buffer(inputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
-        resources.outputs.push_back(Resource(BufferSp(new Int16Buffer(outputs)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+        BufferSp inputBuffer(new Int32Buffer(inputs));
+        BufferSp outputBuffer(new Int16Buffer(outputs));
 
         for (uint32_t capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
             for (uint32_t factIdx = 0; factIdx < DE_LENGTH_OF_ARRAY(intFacts); ++factIdx)
@@ -2228,7 +2228,9 @@ void addGraphics16BitStorageUniformInt32To16Group(tcu::TestCaseGroup *testGroup)
                 fragments["capability"] = capabilities.specialize(specs);
                 fragments["decoration"] = vecDecoration.specialize(specs);
 
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
+                GraphicsResources resources;
+                resources.inputs.push_back(Resource(inputBuffer, CAPABILITIES[capIdx].dtype));
+                resources.outputs.push_back(Resource(outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
                 features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
                 features.coreFeatures.vertexPipelineStoresAndAtomics = true;
@@ -3384,7 +3386,7 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
 
                 resources.inputs.push_back(
                     Resource(BufferSp(new Float32Buffer(arrayStrides[capIdx] == 4 ? float32Data : float32DataPadded)),
-                             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                             CAPABILITIES[capIdx].dtype));
                 // We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
                 resources.outputs.push_back(
                     Resource(BufferSp(new UninitializedBuffer(numDataPoints * sizeof(deFloat16))),
@@ -3398,7 +3400,6 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
                 fragments["capability"] = capabilities.specialize(specs);
                 fragments["decoration"] = decoration.specialize(specs);
 
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
                 resources.verifyIO = rndModes[rndModeIdx].f;
 
                 features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
@@ -3411,11 +3412,9 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
     }
 
     // Non-scalar cases can use the same resources.
-    GraphicsResources resources;
-    resources.inputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    BufferSp inputBuffer(new Float32Buffer(float32Data));
     // We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
-    resources.outputs.push_back(Resource(BufferSp(new UninitializedBuffer(numDataPoints * sizeof(deFloat16))),
-                                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    BufferSp outputBuffer(new UninitializedBuffer(numDataPoints * sizeof(deFloat16)));
 
     { // vector cases
         fragments["pre_main"] = "      %f16 = OpTypeFloat 16\n"
@@ -3500,7 +3499,10 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
                 fragments["capability"] = capabilities.specialize(specs);
                 fragments["decoration"] = decoration.specialize(specs);
 
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
+                GraphicsResources resources;
+                resources.inputs.push_back(Resource(inputBuffer, CAPABILITIES[capIdx].dtype));
+                resources.outputs.push_back(Resource(outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
                 resources.verifyIO = rndModes[rndModeIdx].f;
 
                 features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
@@ -3621,7 +3623,10 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
                 fragments["capability"] = capabilities.specialize(specs);
                 fragments["decoration"] = decoration.specialize(specs);
 
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
+                GraphicsResources resources;
+                resources.inputs.push_back(Resource(inputBuffer, CAPABILITIES[capIdx].dtype));
+                resources.outputs.push_back(Resource(outputBuffer, VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+
                 resources.verifyIO = rndModes[rndModeIdx].f;
 
                 features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
@@ -5586,7 +5591,7 @@ void addGraphics16BitStorageUniformInt16To32Group(tcu::TestCaseGroup *testGroup)
                     }
 
                     resources.inputs.push_back(
-                        Resource(BufferSp(new Int16Buffer(inputsPadded)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                        Resource(BufferSp(new Int16Buffer(inputsPadded)), CAPABILITIES[capIdx].dtype));
 
                     vector<int32_t> constIdxOutputs;
                     if (useConstIdx)
@@ -5599,7 +5604,6 @@ void addGraphics16BitStorageUniformInt16To32Group(tcu::TestCaseGroup *testGroup)
                         }
                     }
 
-                    resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
                     resources.outputs.clear();
                     if (useConstIdx)
                         resources.outputs.push_back(
@@ -5745,11 +5749,10 @@ void addGraphics16BitStorageUniformFloat16To32Group(tcu::TestCaseGroup *testGrou
                     float32Data.push_back(deFloat16To32(float16Data[useConstIdx ? constIdx : numIdx]));
 
                 resources.inputs.push_back(
-                    Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                    Resource(BufferSp(new Float16Buffer(inputData)), CAPABILITIES[capIdx].dtype));
                 resources.outputs.push_back(
                     Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
                 resources.verifyIO = check32BitFloats;
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
                 features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
                 features.coreFeatures.vertexPipelineStoresAndAtomics = true;
@@ -5871,11 +5874,10 @@ void addGraphics16BitStorageUniformFloat16To32Group(tcu::TestCaseGroup *testGrou
                                                       numIdx]));
 
                 resources.inputs.push_back(
-                    Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                    Resource(BufferSp(new Float16Buffer(inputData)), CAPABILITIES[capIdx].dtype));
                 resources.outputs.push_back(
                     Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
                 resources.verifyIO = check32BitFloats;
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
                 features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
                 features.coreFeatures.vertexPipelineStoresAndAtomics = true;
@@ -6000,12 +6002,10 @@ void addGraphics16BitStorageUniformFloat16To32Group(tcu::TestCaseGroup *testGrou
             for (uint32_t numIdx = 0; numIdx < numDataPoints; ++numIdx)
                 float32Data.push_back(deFloat16To32(float16Data[numIdx]));
 
-            resources.inputs.push_back(
-                Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+            resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputData)), CAPABILITIES[capIdx].dtype));
             resources.outputs.push_back(
                 Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
             resources.verifyIO = check32BitFloats;
-            resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
             features                                             = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
             features.coreFeatures.vertexPipelineStoresAndAtomics = true;
@@ -6994,12 +6994,11 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
                 for (uint32_t numIdx = 0; numIdx < numDataPoints; ++numIdx)
                     float64Data.push_back(deFloat16To64(float16Data[useConstIdx ? constIdx : numIdx]));
 
-                resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data, isUBO ? 14 : 0)),
-                                                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                resources.inputs.push_back(
+                    Resource(BufferSp(new Float16Buffer(float16Data, isUBO ? 14 : 0)), CAPABILITIES[capIdx].dtype));
                 resources.outputs.push_back(
                     Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
                 resources.verifyIO = check64BitFloats;
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
                 if (useConstIdx)
                     testName += string("_const_idx_") + de::toString(constIdx);
@@ -7120,11 +7119,10 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
                 }
                 typedef Buffer<tcu::Vector<deFloat16, 2>> Float16Vec2Buffer;
                 resources.inputs.push_back(Resource(BufferSp(new Float16Vec2Buffer(float16Vec2Data, isUBO ? 12 : 0)),
-                                                    VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                                                    CAPABILITIES[capIdx].dtype));
                 resources.outputs.push_back(
                     Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
                 resources.verifyIO = check64BitFloats;
-                resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
                 if (constantIndices[constIndexIdx].useConstantIndex)
                     testName += string("_const_idx_") + de::toString(constantIndices[constIndexIdx].constantIndex);
@@ -7251,12 +7249,10 @@ void addGraphics16BitStorageUniformFloat16To64Group(tcu::TestCaseGroup *testGrou
             for (uint32_t numIdx = 0; numIdx < numDataPoints; ++numIdx)
                 float64Data.push_back(deFloat16To64(float16Data[numIdx]));
 
-            resources.inputs.push_back(
-                Resource(BufferSp(new Float16Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+            resources.inputs.push_back(Resource(BufferSp(new Float16Buffer(inputData)), CAPABILITIES[capIdx].dtype));
             resources.outputs.push_back(
                 Resource(BufferSp(new Float64Buffer(float64Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
             resources.verifyIO = check64BitFloats;
-            resources.inputs.back().setDescriptorType(CAPABILITIES[capIdx].dtype);
 
             VulkanFeatures features = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 

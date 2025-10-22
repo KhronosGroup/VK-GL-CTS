@@ -127,7 +127,7 @@ bool verifyComputeSwitchResult(const vector<Resource> &, const vector<Allocation
     DE_ASSERT(expectedOutputs.size() == 1);
 
     vector<uint8_t> expectedBytes;
-    expectedOutputs[0].getBytes(expectedBytes);
+    expectedOutputs[0].buffer->getBytes(expectedBytes);
     DE_ASSERT(expectedBytes.size() == sizeof(int32_t));
 
     const int32_t *obtained = reinterpret_cast<const int32_t *>(outputAllocations[0]->getHostPtr());
@@ -2038,14 +2038,14 @@ bool SpvAsmTypeTests<T>::verifyResult(const vector<Resource> &inputs, const vect
     vector<uint8_t> inputBytes[4];
     vector<uint8_t> expectedBytes;
 
-    expectedOutputs[0].getBytes(expectedBytes);
+    expectedOutputs[0].buffer->getBytes(expectedBytes);
     const uint32_t count = static_cast<uint32_t>(expectedBytes.size() / sizeof(T));
     const T *obtained    = static_cast<const T *>(outputAllocations[0]->getHostPtr());
     const T *expected    = reinterpret_cast<const T *>(&expectedBytes.front());
 
     for (uint32_t ndxCount = 0; ndxCount < inputs.size(); ndxCount++)
     {
-        inputs[ndxCount].getBytes(inputBytes[ndxCount]);
+        inputs[ndxCount].buffer->getBytes(inputBytes[ndxCount]);
         input[ndxCount] = reinterpret_cast<const T *>(&inputBytes[ndxCount].front());
     }
 

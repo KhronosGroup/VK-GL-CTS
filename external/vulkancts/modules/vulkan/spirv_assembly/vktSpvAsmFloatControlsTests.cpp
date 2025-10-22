@@ -3539,7 +3539,7 @@ bool checkFloats(const vector<Resource> &, const vector<AllocationSp> &outputAll
     for (uint32_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getBytes(expectedBytes);
 
         if (!compareBytes<TYPE, FLOAT_TYPE>(expectedBytes, outputAllocs[outputNdx], log))
             return false;
@@ -3570,9 +3570,9 @@ bool checkMixedFloats(const vector<Resource> &, const vector<AllocationSp> &outp
 
     while (resultIndex--)
     {
-        expectedOutputs[resultIndex].getBytes(expectedBytes);
+        expectedOutputs[resultIndex].buffer->getBytes(expectedBytes);
         BufferDataType type =
-            static_cast<BufferDataType>(reinterpret_cast<std::uintptr_t>(expectedOutputs[resultIndex].getUserData()));
+            static_cast<BufferDataType>(reinterpret_cast<std::uintptr_t>(expectedOutputs[resultIndex].userData));
         allResultsAreCorrect &= compareMap.at(type)(expectedBytes, outputAllocs[resultIndex], log);
     }
 

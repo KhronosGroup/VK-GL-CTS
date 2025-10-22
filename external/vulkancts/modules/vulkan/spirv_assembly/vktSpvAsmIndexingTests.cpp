@@ -231,8 +231,10 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
                     break;
                 }
 
-                spec.inputs.push_back(BufferSp(new Float32Buffer(inputData)));
-                spec.inputs.push_back(BufferSp(new Buffer<UVec4>(indexSelectorData)));
+                spec.inputs.push_back(
+                    Resource(BufferSp(new Float32Buffer(inputData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                spec.inputs.push_back(
+                    Resource(BufferSp(new Buffer<UVec4>(indexSelectorData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
                 outputData.reserve(numItems);
                 for (uint32_t numIdx = 0; numIdx < numItems; ++numIdx)
@@ -268,8 +270,6 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
                 spec.assembly                = shaderSource.specialize(specs);
                 spec.numWorkGroups           = IVec3(numItems, 1, 1);
                 spec.requestedVulkanFeatures = vulkanFeatures;
-                spec.inputs[0].setDescriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-                spec.inputs[1].setDescriptorType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
 
                 spec.outputs.push_back(BufferSp(new Float32Buffer(outputData)));
 

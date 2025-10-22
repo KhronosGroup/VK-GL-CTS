@@ -1269,9 +1269,9 @@ bool compareFUnord(const std::vector<Resource> &inputs, const vector<AllocationS
     vector<uint8_t> input2Bytes;
     vector<uint8_t> expectedBytes;
 
-    inputs[0].getBytes(input1Bytes);
-    inputs[1].getBytes(input2Bytes);
-    expectedOutputs[0].getBytes(expectedBytes);
+    inputs[0].buffer->getBytes(input1Bytes);
+    inputs[1].buffer->getBytes(input2Bytes);
+    expectedOutputs[0].buffer->getBytes(expectedBytes);
 
     const int32_t *const expectedOutputAsInt = reinterpret_cast<const int32_t *>(&expectedBytes.front());
     const int32_t *const outputAsInt         = static_cast<const int32_t *>(outputAllocs[0]->getHostPtr());
@@ -1916,7 +1916,7 @@ bool compareNoContractCase(const std::vector<Resource> &, const vector<Allocatio
         return false;
 
     // Only size is needed because we are not comparing the exact values.
-    size_t byteSize = expectedOutputs[0].getByteSize();
+    size_t byteSize = expectedOutputs[0].buffer->getByteSize();
 
     const float *outputAsFloat = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
@@ -2027,7 +2027,7 @@ bool compareFRem(const std::vector<Resource> &, const vector<AllocationSp> &outp
         return false;
 
     vector<uint8_t> expectedBytes;
-    expectedOutputs[0].getBytes(expectedBytes);
+    expectedOutputs[0].buffer->getBytes(expectedBytes);
 
     const float *expectedOutputAsFloat = reinterpret_cast<const float *>(&expectedBytes.front());
     const float *outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
@@ -2129,12 +2129,12 @@ bool compareNMin(const std::vector<Resource> &, const vector<AllocationSp> &outp
 
     const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput.getBytes(data);
+    expectedOutput.buffer->getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float); ++idx)
+    for (size_t idx = 0; idx < expectedOutput.buffer->getByteSize() / sizeof(float); ++idx)
     {
         const float f0 = expectedOutputAsFloat[idx];
         const float f1 = outputAsFloat[idx];
@@ -2253,12 +2253,12 @@ bool compareNMax(const std::vector<Resource> &, const vector<AllocationSp> &outp
 
     const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput.getBytes(data);
+    expectedOutput.buffer->getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float); ++idx)
+    for (size_t idx = 0; idx < expectedOutput.buffer->getByteSize() / sizeof(float); ++idx)
     {
         const float f0 = expectedOutputAsFloat[idx];
         const float f1 = outputAsFloat[idx];
@@ -2376,12 +2376,12 @@ bool compareNClamp(const std::vector<Resource> &, const vector<AllocationSp> &ou
 
     const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput.getBytes(data);
+    expectedOutput.buffer->getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float) / 2; ++idx)
+    for (size_t idx = 0; idx < expectedOutput.buffer->getByteSize() / sizeof(float) / 2; ++idx)
     {
         const float e0  = expectedOutputAsFloat[idx * 2];
         const float e1  = expectedOutputAsFloat[idx * 2 + 1];
@@ -5998,7 +5998,7 @@ bool compareOpQuantizeF16ComputeExactCase(const std::vector<Resource> &, const v
     assert(outputAllocs.size() == 1);
 
     // Only size is needed because we cannot compare Nans.
-    size_t byteSize = expectedOutputs[0].getByteSize();
+    size_t byteSize = expectedOutputs[0].buffer->getByteSize();
 
     const float *outputAsFloat = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
@@ -6044,7 +6044,7 @@ bool compareNan(const std::vector<Resource> &, const vector<AllocationSp> &outpu
     assert(outputAllocs.size() == 1);
 
     // Only size is needed because we cannot compare Nans.
-    size_t byteSize = expectedOutputs[0].getByteSize();
+    size_t byteSize = expectedOutputs[0].buffer->getByteSize();
 
     const float *const output_as_float = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
@@ -6064,7 +6064,7 @@ bool compareZeros(const std::vector<Resource> &, const vector<AllocationSp> &out
     assert(outputAllocs.size() == 1);
 
     // Only size is needed because all the results are supposed to be zero.
-    size_t byteSize = expectedOutputs[0].getByteSize();
+    size_t byteSize = expectedOutputs[0].buffer->getByteSize();
 
     const float *const output_as_float = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
@@ -7705,8 +7705,8 @@ bool compareFP16Logical(const std::vector<Resource> &inputs, const vector<Alloca
     vector<uint8_t> input1Bytes;
     vector<uint8_t> input2Bytes;
 
-    inputs[0].getBytes(input1Bytes);
-    inputs[1].getBytes(input2Bytes);
+    inputs[0].buffer->getBytes(input1Bytes);
+    inputs[1].buffer->getBytes(input2Bytes);
 
     const uint32_t denormModesCount     = 2;
     const deFloat16 float16one          = tcu::Float16(1.0f).bits();
@@ -12378,7 +12378,7 @@ bool compareFP16FunctionSetFunc(const std::vector<Resource> &inputs, const vecto
 
     vector<uint8_t> input1Bytes;
 
-    inputs[0].getBytes(input1Bytes);
+    inputs[0].buffer->getBytes(input1Bytes);
 
     const uint16_t *const input1AsFP16 = (const uint16_t *)&input1Bytes[0];
     const uint16_t *const outputAsFP16 = (const uint16_t *)outputAllocs[0]->getHostPtr();
@@ -12565,8 +12565,8 @@ bool compareFP16VectorExtractFunc(const std::vector<Resource> &inputs, const vec
     vector<uint8_t> input1Bytes;
     vector<uint8_t> input2Bytes;
 
-    inputs[0].getBytes(input1Bytes);
-    inputs[1].getBytes(input2Bytes);
+    inputs[0].buffer->getBytes(input1Bytes);
+    inputs[1].buffer->getBytes(input2Bytes);
 
     DE_ASSERT(input1Bytes.size() > 0);
     DE_ASSERT(input2Bytes.size() > 0);
@@ -12798,8 +12798,8 @@ bool compareFP16VectorInsertFunc(const std::vector<Resource> &inputs, const vect
     vector<uint8_t> input1Bytes;
     vector<uint8_t> input2Bytes;
 
-    inputs[0].getBytes(input1Bytes);
-    inputs[1].getBytes(input2Bytes);
+    inputs[0].buffer->getBytes(input1Bytes);
+    inputs[1].buffer->getBytes(input2Bytes);
 
     DE_ASSERT(input1Bytes.size() > 0);
     DE_ASSERT(input2Bytes.size() > 0);
@@ -13072,8 +13072,8 @@ bool compareFP16VectorShuffleFunc(const std::vector<Resource> &inputs, const vec
     vector<uint8_t> input1Bytes;
     vector<uint8_t> input2Bytes;
 
-    inputs[0].getBytes(input1Bytes);
-    inputs[1].getBytes(input2Bytes);
+    inputs[0].buffer->getBytes(input1Bytes);
+    inputs[1].buffer->getBytes(input2Bytes);
 
     DE_ASSERT(input1Bytes.size() > 0);
     DE_ASSERT(input2Bytes.size() > 0);
@@ -13433,7 +13433,7 @@ bool compareFP16CompositeFunc(const std::vector<Resource> &inputs, const vector<
 
     vector<uint8_t> input1Bytes;
 
-    inputs[0].getBytes(input1Bytes);
+    inputs[0].buffer->getBytes(input1Bytes);
 
     DE_ASSERT(input1Bytes.size() > 0);
     DE_ASSERT(input1Bytes.size() % sizeof(deFloat16) == 0);
@@ -18023,20 +18023,21 @@ bool compareFP16ArithmeticFunc(const std::vector<Resource> &inputs, const vector
         return false;
 
     const size_t resultStep      = (RES_COMPONENTS == 3) ? 4 : RES_COMPONENTS;
-    const size_t iterationsCount = expectedOutputs[0].getByteSize() / (sizeof(deFloat16) * resultStep);
+    const size_t iterationsCount = expectedOutputs[0].buffer->getByteSize() / (sizeof(deFloat16) * resultStep);
     const size_t inputsSteps[3]  = {
         (ARG0_COMPONENTS == 3) ? 4 : ARG0_COMPONENTS,
         (ARG1_COMPONENTS == 3) ? 4 : ARG1_COMPONENTS,
         (ARG2_COMPONENTS == 3) ? 4 : ARG2_COMPONENTS,
     };
 
-    DE_ASSERT(expectedOutputs[0].getByteSize() > 0);
-    DE_ASSERT(expectedOutputs[0].getByteSize() == sizeof(deFloat16) * iterationsCount * resultStep);
+    DE_ASSERT(expectedOutputs[0].buffer->getByteSize() > 0);
+    DE_ASSERT(expectedOutputs[0].buffer->getByteSize() == sizeof(deFloat16) * iterationsCount * resultStep);
 
     for (size_t inputNdx = 0; inputNdx < inputs.size(); ++inputNdx)
     {
-        DE_ASSERT(inputs[inputNdx].getByteSize() > 0);
-        DE_ASSERT(inputs[inputNdx].getByteSize() == sizeof(deFloat16) * iterationsCount * inputsSteps[inputNdx]);
+        DE_ASSERT(inputs[inputNdx].buffer->getByteSize() > 0);
+        DE_ASSERT(inputs[inputNdx].buffer->getByteSize() ==
+                  sizeof(deFloat16) * iterationsCount * inputsSteps[inputNdx]);
     }
 
     const deFloat16 *const outputAsFP16 = (const deFloat16 *)outputAllocs[0]->getHostPtr();
@@ -18058,7 +18059,7 @@ bool compareFP16ArithmeticFunc(const std::vector<Resource> &inputs, const vector
     vector<uint8_t> inputBytes[3];
 
     for (size_t inputNdx = 0; inputNdx < inputs.size(); ++inputNdx)
-        inputs[inputNdx].getBytes(inputBytes[inputNdx]);
+        inputs[inputNdx].buffer->getBytes(inputBytes[inputNdx]);
 
     const deFloat16 *const inputsAsFP16[3] = {
         inputs.size() >= 1 ? (const deFloat16 *)&inputBytes[0][0] : nullptr,
@@ -20232,7 +20233,7 @@ bool compareFloats(const std::vector<Resource> &, const vector<AllocationSp> &ou
         float expected;
         float actual;
 
-        expectedOutputs[outputNdx].getBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getBytes(expectedBytes);
         memcpy(&expected, &expectedBytes.front(), expectedBytes.size());
         memcpy(&actual, outputAllocs[outputNdx]->getHostPtr(), expectedBytes.size());
 
@@ -20258,7 +20259,7 @@ bool passthruVerify(const std::vector<Resource> &, const vector<AllocationSp> &o
     for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getBytes(expectedBytes);
 
         const size_t width = expectedBytes.size();
         vector<char> data(width);

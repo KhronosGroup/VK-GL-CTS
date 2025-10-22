@@ -39,7 +39,7 @@ bool verifyOutputWithEpsilon(const std::vector<AllocationSp> &outputAllocs,
     for (size_t outputNdx = 0; outputNdx < outputAllocs.size(); ++outputNdx)
     {
         std::vector<uint8_t> expectedBytes;
-        expectedOutputs[outputNdx].getBytes(expectedBytes);
+        expectedOutputs[outputNdx].buffer->getBytes(expectedBytes);
 
         std::vector<float> expectedFloats(expectedBytes.size() / sizeof(float));
         std::vector<float> actualFloats(expectedBytes.size() / sizeof(float));

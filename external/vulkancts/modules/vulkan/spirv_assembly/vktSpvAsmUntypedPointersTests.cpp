@@ -11664,8 +11664,8 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         desc.fillType  = FillingTypes::INCREMENTED;
         Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        std::vector<uint8_t> inputBytes(input.getByteSize());
-        input.getBytes(inputBytes);
+        std::vector<uint8_t> inputBytes(input.buffer->getByteSize());
+        input.buffer->getBytes(inputBytes);
 
         const uint32_t byteOffset =                     // calculating byte offset returned bu OpUntypedAccessChainKHR
             4 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]) // 4 elem offset in first array
@@ -12101,7 +12101,7 @@ tcu::TestStatus CooperativeMatrixInteractionTestInstance::iterate(void)
     desc.value           = 1;
     Resource inputOutput = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
     std::vector<uint8_t> expectedBytes;
-    inputOutput.getBytes(expectedBytes);
+    inputOutput.buffer->getBytes(expectedBytes);
 
     // Storage buffers
     const BufferWithMemory inputBuffer(vk, device, allocator,

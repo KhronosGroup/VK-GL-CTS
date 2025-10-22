@@ -506,9 +506,9 @@ static bool verifyResult(const std::vector<Resource> &inputs, const std::vector<
                          RoundingMode m, DenormMode d, bool szInfNan, tcu::TestLog &log)
 {
     vector<uint8_t> aBytes, bBytes, cBytes;
-    inputs[0].getBytes(aBytes);
-    inputs[1].getBytes(bBytes);
-    inputs[2].getBytes(cBytes);
+    inputs[0].buffer->getBytes(aBytes);
+    inputs[1].buffer->getBytes(bBytes);
+    inputs[2].buffer->getBytes(cBytes);
 
     const T *a = reinterpret_cast<T *>(aBytes.data());
     const T *b = reinterpret_cast<T *>(bBytes.data());
