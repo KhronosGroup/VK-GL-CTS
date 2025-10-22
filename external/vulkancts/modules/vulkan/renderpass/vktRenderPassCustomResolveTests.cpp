@@ -187,20 +187,32 @@ struct AttachmentInfo
     VkSampleCountFlagBits sampleCount;
     VkFormat resolveFormat;
     uint32_t resolveLocation;
+    alignas(
+        uint8_t) bool usedInResolvePipeline; // Is it used in the resolve pipeline? Only applies to color attachments and DR.
+    alignas(
+        uint8_t) bool usedInResolveRendering; // Is it used in the resolve render pass? Only applies to color attachments and DR.
+    uint16_t padding; // This is needed to get a stable seed with getRandomSeed, by making it zero.
 
     AttachmentInfo()
         : attachmentFormat(VK_FORMAT_UNDEFINED)
         , sampleCount(VK_SAMPLE_COUNT_FLAG_BITS_MAX_ENUM)
         , resolveFormat(VK_FORMAT_UNDEFINED)
         , resolveLocation(std::numeric_limits<uint32_t>::max())
+        , usedInResolvePipeline(true)
+        , usedInResolveRendering(true)
+        , padding(0)
     {
     }
 
-    AttachmentInfo(VkFormat format, VkSampleCountFlagBits samples, VkFormat resolveFmt, uint32_t location)
+    AttachmentInfo(VkFormat format, VkSampleCountFlagBits samples, VkFormat resolveFmt, uint32_t location,
+                   bool usedInPipeline_, bool usedInRendering_)
         : attachmentFormat(format)
         , sampleCount(samples)
         , resolveFormat(resolveFmt)
         , resolveLocation(location)
+        , usedInResolvePipeline(usedInPipeline_)
+        , usedInResolveRendering(usedInRendering_)
+        , padding(0)
     {
     }
 
@@ -514,8 +526,13 @@ void CustomResolveCase::checkSupport(Context &context) const
     const auto imageType   = m_params.getImageType();
     const auto imageTiling = m_params.getImageTiling();
 
+    bool unusedAttachments = false;
+
     for (const auto &att : m_params.attachmentList)
     {
+        if (!att.usedInResolvePipeline || !att.usedInResolvePipeline)
+            unusedAttachments = true;
+
         const auto formats = att.getFormats();
         const auto usage   = (att.getSingleSampleUsageFlags(useDynamicRendering) |
                             (att.isMultiSample() ? att.getMultiSampleUsageFlags(useDynamicRendering) : 0u));
@@ -552,6 +569,12 @@ void CustomResolveCase::checkSupport(Context &context) const
                 TCU_THROW(NotSupportedError, msg.str());
             }
         }
+    }
+
+    if (unusedAttachments)
+    {
+        DE_ASSERT(m_params.useDynamicRendering());
+        context.requireDeviceFunctionality("VK_EXT_dynamic_rendering_unused_attachments");
     }
 
     bool stencilExport = false;
@@ -763,7 +786,7 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
                 << "    ivec4 extent; // .xyz is the size and should be the same for all, .w is the sample count\n"
                 << "} attInfo" << attIndex << ";\n";
 
-            if (resolveColor)
+            if (resolveColor && attInfo.usedInResolvePipeline)
                 descriptors << "layout (set=1, binding=" << attIndex << ", input_attachment_index=" << attIndex
                             << ") uniform subpassInputMS inColor" << attIndex << ";\n";
             if (resolveDepth)
@@ -783,7 +806,7 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
             // We may be remapping the index for this attachment, so its location will vary.
             const auto attLocation = attInfo.resolveLocation;
 
-            if (resolveColor)
+            if (resolveColor && attInfo.usedInResolvePipeline)
             {
                 attachments << "layout (location=" << attLocation << ") out vec4 outColor" << attLocation << ";\n";
 
@@ -854,6 +877,7 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
                 else
                     DE_ASSERT(false);
             }
+
             if (resolveStencil && m_params.disableStencilExport)
                 DE_ASSERT(attResolve.resolveType == ResolveType::FIXED_VALUE);
         }
@@ -965,7 +989,13 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         DE_ASSERT(!m_params.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass);
     }
 
-    de::Random rnd(m_params.getRandomSeed());
+    const auto seed = m_params.getRandomSeed();
+    {
+        std::ostringstream msg;
+        msg << "RNG seed: " << seed << " (should be stable for the same test across multiple executions)";
+        log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+    }
+    de::Random rnd(seed);
 
     // Input buffers for the upload phase.
     std::vector<BufferWithMemoryPtr> pixelBuffers;
@@ -1120,10 +1150,12 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     // RenderingCreateInfo for each pipeline in the upload and resolve passes.
     std::vector<FormatVecPtr> uploadColorFormats;
     std::vector<FormatVecPtr> resolveColorFormats;
-    std::vector<FormatVecPtr> customResolveColorFormats; // Starting to have naming issues here...
+    std::vector<FormatVecPtr> pipelineCustomResolveColorFormats;
+    std::vector<FormatVecPtr> inheritanceCustomResolveColorFormats;
     std::vector<VkPipelineRenderingCreateInfo> uploadAttFormats;
     std::vector<VkPipelineRenderingCreateInfo> resolveAttFormats;
-    std::vector<VkCustomResolveCreateInfoEXT> customResolveAttFormats;
+    std::vector<VkCustomResolveCreateInfoEXT> pipelineCustomResolveCreateInfo;
+    std::vector<VkCustomResolveCreateInfoEXT> inheritanceCustomResolveCreateInfo;
 
     // Rendering attachment location info for the resolve pipelines.
     std::vector<U32VecPtr> resolveColorLocations;
@@ -1137,6 +1169,18 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     std::vector<RenderingAttachmentInfoVecPtr> resolveColorRenderingAttachmentInfos;
     std::vector<RenderingAttachmentInfoVecPtr> resolveDepthRenderingAttachmentInfos;
     std::vector<RenderingAttachmentInfoVecPtr> resolveStencilRenderingAttachmentInfos;
+
+    // When using secondaries with inheritance, the inheritance rendering info needs a list of formats that matches the
+    // list of attachments from the render pass rendering info. This may be different from the list of formats that the
+    // pipeline will use, because of unused attachments. When we save an attachment info for the render pass begin, we
+    // want to store its format too for the inheritance. These need to match the attachment info vectors above.
+    std::vector<FormatVecPtr> uploadColorRenderingAttachmentFormats;
+    std::vector<FormatVecPtr> uploadDepthRenderingAttachmentFormats;
+    std::vector<FormatVecPtr> uploadStencilRenderingAttachmentFormats;
+
+    std::vector<FormatVecPtr> resolveColorRenderingAttachmentFormats;
+    std::vector<FormatVecPtr> resolveDepthRenderingAttachmentFormats;
+    std::vector<FormatVecPtr> resolveStencilRenderingAttachmentFormats;
 
     RenderingInfoVec uploadRenderingInfos;
     RenderingInfoVec resolveRenderingInfos;
@@ -1549,11 +1593,19 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             });
 
             uploadDepthRenderingAttachmentInfos.emplace_back(new RenderingAttachmentInfoVec);
+            uploadDepthRenderingAttachmentFormats.emplace_back(new FormatVec);
+
             uploadStencilRenderingAttachmentInfos.emplace_back(new RenderingAttachmentInfoVec);
+            uploadStencilRenderingAttachmentFormats.emplace_back(new FormatVec);
 
             uploadColorRenderingAttachmentInfos.emplace_back(new RenderingAttachmentInfoVec);
-            auto &colorRenderingAttachmentInfos = *uploadColorRenderingAttachmentInfos.back();
+            uploadColorRenderingAttachmentFormats.emplace_back(new FormatVec);
+
+            auto &colorRenderingAttachmentInfos   = *uploadColorRenderingAttachmentInfos.back();
+            auto &colorRenderingAttachmentFormats = *uploadColorRenderingAttachmentFormats.back();
+
             colorRenderingAttachmentInfos.reserve(lastAttIndex + 1u);
+            colorRenderingAttachmentFormats.reserve(lastAttIndex + 1u);
 
             for (uint32_t j = 0u; j <= lastAttIndex; ++j)
             {
@@ -1578,10 +1630,16 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                     };
 
                     if (itr->second->aspects & VK_IMAGE_ASPECT_DEPTH_BIT)
+                    {
                         uploadDepthRenderingAttachmentInfos.back()->push_back(dsRenderingAttachmentInfo);
+                        uploadDepthRenderingAttachmentFormats.back()->push_back(attInfo.attachmentFormat);
+                    }
 
                     if (itr->second->aspects & VK_IMAGE_ASPECT_STENCIL_BIT)
+                    {
                         uploadStencilRenderingAttachmentInfos.back()->push_back(dsRenderingAttachmentInfo);
+                        uploadStencilRenderingAttachmentFormats.back()->push_back(attInfo.attachmentFormat);
+                    }
                 }
                 else
                 {
@@ -1603,6 +1661,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                         VK_ATTACHMENT_STORE_OP_STORE,
                         makeClearValueColor(tcu::Vec4(0.0f)),
                     });
+                    colorRenderingAttachmentFormats.push_back(isUsed ? attInfo.attachmentFormat : VK_FORMAT_UNDEFINED);
                 }
             }
 
@@ -1610,7 +1669,10 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             // the end due to mixing color and depth/stencil attachment uploads.
             while (!colorRenderingAttachmentInfos.empty() &&
                    colorRenderingAttachmentInfos.back().imageView == VK_NULL_HANDLE)
+            {
                 colorRenderingAttachmentInfos.pop_back();
+                colorRenderingAttachmentFormats.pop_back();
+            }
 
             // Note the upload passes don't have any special flags.
             VkRenderingFlags renderingFlags = 0u;
@@ -1630,14 +1692,15 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 de::dataOrNull(*uploadStencilRenderingAttachmentInfos.back()),
             });
 
-            colorAttCounts.insert(uploadRenderingInfos.back().colorAttachmentCount);
+            colorAttCounts.insert(uploadAttFormats.back().colorAttachmentCount);
         }
 
         // Resolve passes are a bit more tricky because frag shader locations use the resolve location for the
         // attachment.
         resolveColorFormats.reserve(m_params.resolvePasses.size());
         resolveAttFormats.reserve(m_params.resolvePasses.size());
-        customResolveColorFormats.reserve(m_params.resolvePasses.size());
+        pipelineCustomResolveColorFormats.reserve(m_params.resolvePasses.size());
+        inheritanceCustomResolveColorFormats.reserve(m_params.resolvePasses.size());
 
         for (uint32_t i = 0u; i < de::sizeU32(m_params.resolvePasses); ++i)
         {
@@ -1663,15 +1726,15 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
                     resolveDepth   = (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_DEPTH_BIT);
                     resolveStencil = (depthStencilAttIndexAspects->aspects & VK_IMAGE_ASPECT_STENCIL_BIT);
-
-                    continue;
                 }
+                else
+                {
+                    const auto &location         = m_params.attachmentList.at(attIndex).resolveLocation;
+                    locationToAttIndex[location] = attIndex;
 
-                const auto &location         = m_params.attachmentList.at(attIndex).resolveLocation;
-                locationToAttIndex[location] = attIndex;
-
-                if (attIndex != location && m_params.locationRemapping)
-                    remappingNeeded = true;
+                    if (attIndex != location && m_params.locationRemapping)
+                        remappingNeeded = true;
+                }
             }
             const bool hasColorAtt = !locationToAttIndex.empty();
             const auto topLocation = (hasColorAtt ? locationToAttIndex.rbegin()->first : 0u);
@@ -1679,8 +1742,11 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             resolveColorFormats.emplace_back(new FormatVec);
             auto &resolveFormatVec = *resolveColorFormats.back();
 
-            customResolveColorFormats.emplace_back(new FormatVec);
-            auto &customResolveFormatVec = *customResolveColorFormats.back();
+            pipelineCustomResolveColorFormats.emplace_back(new FormatVec);
+            inheritanceCustomResolveColorFormats.emplace_back(new FormatVec);
+
+            auto &pipelineCustomResolveFormatVec    = *pipelineCustomResolveColorFormats.back();
+            auto &inheritanceCustomResolveFormatVec = *inheritanceCustomResolveColorFormats.back();
 
             resolveColorLocations.emplace_back(nullptr);
             resolveAttLocations.emplace_back(nullptr);
@@ -1693,7 +1759,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             if (remappingNeeded)
             {
                 resolveFormatVec.reserve(resolvePass.attachmentResolves.size());
-                customResolveFormatVec.reserve(resolvePass.attachmentResolves.size());
+                pipelineCustomResolveFormatVec.reserve(resolvePass.attachmentResolves.size());
+                inheritanceCustomResolveFormatVec.reserve(resolvePass.attachmentResolves.size());
 
                 resolveColorLocations.back().reset(new U32Vec);
                 auto &locationsVec = *resolveColorLocations.back();
@@ -1702,8 +1769,16 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 for (const auto &attResolve : resolvePass.attachmentResolves)
                 {
                     const auto &attInfo = m_params.attachmentList.at(attResolve.attachment.index);
-                    resolveFormatVec.push_back(attInfo.attachmentFormat);
-                    customResolveFormatVec.push_back(attInfo.resolveFormat);
+                    const auto resolveFormat =
+                        (attInfo.usedInResolvePipeline ? attInfo.attachmentFormat : VK_FORMAT_UNDEFINED);
+                    const auto pipelineCustomResolveFormat =
+                        (attInfo.usedInResolvePipeline ? attInfo.resolveFormat : VK_FORMAT_UNDEFINED);
+                    const auto inheritanceCustomResolveFormat =
+                        (attInfo.usedInResolveRendering ? attInfo.resolveFormat : VK_FORMAT_UNDEFINED);
+
+                    resolveFormatVec.push_back(resolveFormat);
+                    pipelineCustomResolveFormatVec.push_back(pipelineCustomResolveFormat);
+                    inheritanceCustomResolveFormatVec.push_back(inheritanceCustomResolveFormat);
                     locationsVec.push_back(attInfo.resolveLocation);
                 }
 
@@ -1717,20 +1792,33 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             else
             {
                 resolveFormatVec.reserve(topLocation + 1u);
-                customResolveFormatVec.reserve(topLocation + 1u);
+                pipelineCustomResolveFormatVec.reserve(topLocation + 1u);
+                inheritanceCustomResolveFormatVec.reserve(topLocation + 1u);
 
                 for (uint32_t j = 0u; hasColorAtt && j <= topLocation; ++j)
                 {
                     const auto itr = locationToAttIndex.find(j);
-                    if (itr != locationToAttIndex.end())
+                    if (itr != locationToAttIndex.end() &&
+                        (m_params.attachmentList.at(itr->second).usedInResolvePipeline))
                     {
                         resolveFormatVec.push_back(m_params.attachmentList.at(itr->second).attachmentFormat);
-                        customResolveFormatVec.push_back(m_params.attachmentList.at(itr->second).resolveFormat);
+                        pipelineCustomResolveFormatVec.push_back(m_params.attachmentList.at(itr->second).resolveFormat);
                     }
                     else
                     {
                         resolveFormatVec.push_back(VK_FORMAT_UNDEFINED);
-                        customResolveFormatVec.push_back(VK_FORMAT_UNDEFINED);
+                        pipelineCustomResolveFormatVec.push_back(VK_FORMAT_UNDEFINED);
+                    }
+
+                    if (itr != locationToAttIndex.end() &&
+                        m_params.attachmentList.at(itr->second).usedInResolveRendering)
+                    {
+                        inheritanceCustomResolveFormatVec.push_back(
+                            m_params.attachmentList.at(itr->second).resolveFormat);
+                    }
+                    else
+                    {
+                        inheritanceCustomResolveFormatVec.push_back(VK_FORMAT_UNDEFINED);
                     }
                 }
             }
@@ -1758,6 +1846,19 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 }
             }
 
+            // Trim trailing undefined formats in both lists, in case we have unused attachments in the resolve pipeline
+            // and the last items are not needed. This helps us test DR unused attachments with custom resolves.
+            while (!resolveFormatVec.empty() && resolveFormatVec.back() == VK_FORMAT_UNDEFINED)
+                resolveFormatVec.pop_back();
+
+            while (!pipelineCustomResolveFormatVec.empty() &&
+                   pipelineCustomResolveFormatVec.back() == VK_FORMAT_UNDEFINED)
+                pipelineCustomResolveFormatVec.pop_back();
+
+            while (!inheritanceCustomResolveFormatVec.empty() &&
+                   inheritanceCustomResolveFormatVec.back() == VK_FORMAT_UNDEFINED)
+                inheritanceCustomResolveFormatVec.pop_back();
+
             resolveAttFormats.emplace_back(VkPipelineRenderingCreateInfo{
                 VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,
                 nullptr,
@@ -1768,66 +1869,94 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 stencilRenderingFormat,
             });
 
-            customResolveAttFormats.emplace_back(VkCustomResolveCreateInfoEXT{
+            pipelineCustomResolveCreateInfo.emplace_back(VkCustomResolveCreateInfoEXT{
                 VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT,
                 nullptr,
                 VK_TRUE,
-                de::sizeU32(customResolveFormatVec),
-                de::dataOrNull(customResolveFormatVec),
+                de::sizeU32(pipelineCustomResolveFormatVec),
+                de::dataOrNull(pipelineCustomResolveFormatVec),
+                depthResolveFormat,
+                stencilResolveFormat,
+            });
+
+            inheritanceCustomResolveCreateInfo.emplace_back(VkCustomResolveCreateInfoEXT{
+                VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT,
+                nullptr,
+                VK_TRUE,
+                de::sizeU32(inheritanceCustomResolveFormatVec),
+                de::dataOrNull(inheritanceCustomResolveFormatVec),
                 depthResolveFormat,
                 stencilResolveFormat,
             });
 
             resolveDepthRenderingAttachmentInfos.emplace_back(new RenderingAttachmentInfoVec);
+            resolveDepthRenderingAttachmentFormats.emplace_back(new FormatVec);
+
             resolveStencilRenderingAttachmentInfos.emplace_back(new RenderingAttachmentInfoVec);
+            resolveStencilRenderingAttachmentFormats.emplace_back(new FormatVec);
 
             resolveColorRenderingAttachmentInfos.emplace_back(new RenderingAttachmentInfoVec);
-            auto &colorRenderingAttachmentInfos = *resolveColorRenderingAttachmentInfos.back();
+            resolveColorRenderingAttachmentFormats.emplace_back(new FormatVec);
+
+            auto &colorRenderingAttachmentInfos   = *resolveColorRenderingAttachmentInfos.back();
+            auto &colorRenderingAttachmentFormats = *resolveColorRenderingAttachmentFormats.back();
 
             if (remappingNeeded)
             {
                 colorRenderingAttachmentInfos.reserve(resolvePass.attachmentResolves.size());
+                colorRenderingAttachmentFormats.reserve(resolvePass.attachmentResolves.size());
 
                 for (const auto &attResolve : resolvePass.attachmentResolves)
                 {
                     const auto attIndex = attResolve.attachment.index;
+                    const auto &attInfo = m_params.attachmentList.at(attIndex);
+
+                    const auto imageView = (attInfo.usedInResolveRendering ? *attViews.at(attIndex) : VK_NULL_HANDLE);
+                    const auto resolveImageView =
+                        (attInfo.usedInResolveRendering ? resolveViews.at(attIndex)->get() : VK_NULL_HANDLE);
 
                     colorRenderingAttachmentInfos.push_back(VkRenderingAttachmentInfo{
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                         nullptr,
-                        *attViews.at(attIndex),
+                        imageView,
                         VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
                         VK_RESOLVE_MODE_CUSTOM_BIT_EXT,
-                        resolveViews.at(attIndex)->get(),
+                        resolveImageView,
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                         VK_ATTACHMENT_LOAD_OP_LOAD,
                         VK_ATTACHMENT_STORE_OP_STORE,
                         makeClearValueColor(tcu::Vec4(0.0f)),
                     });
+                    colorRenderingAttachmentFormats.push_back(attInfo.attachmentFormat);
                 }
             }
             else
             {
                 colorRenderingAttachmentInfos.reserve(topLocation + 1u);
+                colorRenderingAttachmentInfos.reserve(topLocation + 1u);
 
                 for (uint32_t j = 0u; hasColorAtt && j <= topLocation; ++j)
                 {
-                    const auto itr      = locationToAttIndex.find(j);
-                    const bool isUsed   = (itr != locationToAttIndex.end());
-                    const auto attIndex = (isUsed ? itr->second : std::numeric_limits<uint32_t>::max());
+                    const auto itr           = locationToAttIndex.find(j);
+                    const bool isUsed        = (itr != locationToAttIndex.end());
+                    const auto attIndex      = (isUsed ? itr->second : std::numeric_limits<uint32_t>::max());
+                    const auto attInfoPtr    = (isUsed ? &m_params.attachmentList.at(attIndex) : nullptr);
+                    const auto usedInResolve = (isUsed && attInfoPtr->usedInResolveRendering);
 
                     colorRenderingAttachmentInfos.push_back(VkRenderingAttachmentInfo{
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                         nullptr,
-                        (isUsed ? *attViews.at(attIndex) : VK_NULL_HANDLE),
+                        ((isUsed && usedInResolve) ? *attViews.at(attIndex) : VK_NULL_HANDLE),
                         (isUsed ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED),
                         (isUsed ? VK_RESOLVE_MODE_CUSTOM_BIT_EXT : VK_RESOLVE_MODE_NONE),
-                        (isUsed ? resolveViews.at(attIndex)->get() : VK_NULL_HANDLE),
+                        ((isUsed && usedInResolve) ? resolveViews.at(attIndex)->get() : VK_NULL_HANDLE),
                         (isUsed ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED),
                         VK_ATTACHMENT_LOAD_OP_LOAD,
                         VK_ATTACHMENT_STORE_OP_STORE,
                         makeClearValueColor(tcu::Vec4(0.0f)),
                     });
+                    colorRenderingAttachmentFormats.push_back((isUsed && usedInResolve) ? attInfoPtr->attachmentFormat :
+                                                                                          VK_FORMAT_UNDEFINED);
                 }
             }
 
@@ -1846,17 +1975,33 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                     makeClearValueDepthStencil(0.0f, 0u), // Not used.
                 };
 
+                const auto &attFormat = m_params.attachmentList.at(depthStencilAttIndexAspects->index).attachmentFormat;
+
                 if (resolveDepth)
+                {
                     resolveDepthRenderingAttachmentInfos.back()->push_back(dsRenderingAttachmentInfo);
+                    resolveDepthRenderingAttachmentFormats.back()->push_back(attFormat);
+                }
 
                 if (resolveStencil)
+                {
                     resolveStencilRenderingAttachmentInfos.back()->push_back(dsRenderingAttachmentInfo);
+                    resolveStencilRenderingAttachmentFormats.back()->push_back(attFormat);
+                }
             }
 
             // Mark as doing a custom resolve here.
             VkRenderingFlags renderingFlags = static_cast<VkRenderingFlags>(VK_RENDERING_CUSTOM_RESOLVE_BIT_EXT);
             if (useSecondaries)
                 renderingFlags |= VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT;
+
+            // Trim color rendering attachment infos in case the last attachments are not used in the resolve part.
+            while (!colorRenderingAttachmentInfos.empty() &&
+                   colorRenderingAttachmentInfos.back().imageView == VK_NULL_HANDLE)
+            {
+                colorRenderingAttachmentInfos.pop_back();
+                colorRenderingAttachmentFormats.pop_back();
+            }
 
             resolveRenderingInfos.push_back(VkRenderingInfo{
                 VK_STRUCTURE_TYPE_RENDERING_INFO,
@@ -1871,7 +2016,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 de::dataOrNull(*resolveStencilRenderingAttachmentInfos.back()),
             });
 
-            const auto colorAttachmentCount = resolveRenderingInfos.back().colorAttachmentCount;
+            const auto colorAttachmentCount = resolveAttFormats.back().colorAttachmentCount;
             colorAttCounts.insert(colorAttachmentCount);
 
             resolveInputAttachmentIndexInfos.emplace_back(nullptr);
@@ -2145,7 +2290,11 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         std::set<AttachmentIndexAspect> firstResolveAttachments;
         const auto &resolves = m_params.resolvePasses.front().attachmentResolves;
         for (const auto &attResolve : resolves)
-            firstResolveAttachments.insert(attResolve.attachment);
+        {
+            const auto &attInfo = m_params.attachmentList.at(attResolve.attachment.index);
+            if (attInfo.usedInResolvePipeline && attInfo.usedInResolveRendering)
+                firstResolveAttachments.insert(attResolve.attachment);
+        }
 
         if (lastUploadAttachments == firstResolveAttachments)
         {
@@ -2217,7 +2366,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
         if (mergeThisPass)
         {
-            customResolveCreateInfo               = customResolveAttFormats.front();
+            customResolveCreateInfo               = pipelineCustomResolveCreateInfo.front();
             customResolveCreateInfo.customResolve = VK_FALSE;
             pCustomResolveCreateInfo              = &customResolveCreateInfo;
         }
@@ -2257,12 +2406,12 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         if (dynamicRendering)
         {
             pRenderingCreateInfo               = &resolveAttFormats.at(i);
-            pCustomResolveCreateInfo           = &customResolveAttFormats.at(i);
+            pCustomResolveCreateInfo           = &pipelineCustomResolveCreateInfo.at(i);
             pRenderingAttachmentLocationInfo   = resolveAttLocations.at(i).get();
             pRenderingInputAttachmentIndexInfo = resolveInputAttachmentIndexInfos.at(i).get();
         }
 
-        const auto colorAttachmentCount = (dynamicRendering ? resolveRenderingInfos.at(i).colorAttachmentCount :
+        const auto colorAttachmentCount = (dynamicRendering ? pRenderingCreateInfo->colorAttachmentCount :
                                                               subpassDescriptions.at(subpassIdx).colorAttachmentCount);
 
         VkBool32 depthTestEnable   = VK_FALSE;
@@ -2427,10 +2576,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
             if (mergeThisPass)
             {
-                // As these were used to create the pipeline, their chains may have been modified so we reset them.
-                customResolveCreateInfo               = customResolveAttFormats.front();
+                customResolveCreateInfo               = inheritanceCustomResolveCreateInfo.front();
                 customResolveCreateInfo.customResolve = VK_FALSE;
-                customResolveCreateInfo.pNext         = nullptr;
                 pCustomResolveCreateInfo              = &customResolveCreateInfo;
 
                 pInputAttachmentIndexInfo = resolveInputAttachmentIndexInfos.front().get();
@@ -2443,10 +2590,14 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 nullptr,
                 renderingFlags,
                 pRenderingCreateInfo->viewMask,
-                pRenderingCreateInfo->colorAttachmentCount,
-                pRenderingCreateInfo->pColorAttachmentFormats,
-                pRenderingCreateInfo->depthAttachmentFormat,
-                pRenderingCreateInfo->stencilAttachmentFormat,
+                de::sizeU32(*uploadColorRenderingAttachmentFormats.at(i)),
+                de::dataOrNull(*uploadColorRenderingAttachmentFormats.at(i)),
+                (uploadDepthRenderingAttachmentFormats.at(i)->empty() ?
+                     VK_FORMAT_UNDEFINED :
+                     uploadDepthRenderingAttachmentFormats.at(i)->front()),
+                (uploadStencilRenderingAttachmentFormats.at(i)->empty() ?
+                     VK_FORMAT_UNDEFINED :
+                     uploadStencilRenderingAttachmentFormats.at(i)->front()),
                 sampleCount,
             };
 
@@ -2498,9 +2649,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 m_params.attachmentList.at(m_params.resolvePasses.at(i).attachmentResolves.front().attachment.index)
                     .sampleCount;
 
-            // As these chains were used to create the pipeline, their chains may have been modified so we reset them.
-            VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo = &customResolveAttFormats.at(i);
-            pCustomResolveCreateInfo->pNext                        = nullptr;
+            VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo = &inheritanceCustomResolveCreateInfo.at(i);
 
             VkRenderingInputAttachmentIndexInfo *pInputAttachmentIndexInfo =
                 resolveInputAttachmentIndexInfos.at(i).get();
@@ -2516,10 +2665,14 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 nullptr,
                 renderingFlags,
                 pRenderingCreateInfo->viewMask,
-                pRenderingCreateInfo->colorAttachmentCount,
-                pRenderingCreateInfo->pColorAttachmentFormats,
-                pRenderingCreateInfo->depthAttachmentFormat,
-                pRenderingCreateInfo->stencilAttachmentFormat,
+                de::sizeU32(*resolveColorRenderingAttachmentFormats.at(i)),
+                de::dataOrNull(*resolveColorRenderingAttachmentFormats.at(i)),
+                (resolveDepthRenderingAttachmentFormats.at(i)->empty() ?
+                     VK_FORMAT_UNDEFINED :
+                     resolveDepthRenderingAttachmentFormats.at(i)->front()),
+                (resolveStencilRenderingAttachmentFormats.at(i)->empty() ?
+                     VK_FORMAT_UNDEFINED :
+                     resolveStencilRenderingAttachmentFormats.at(i)->front()),
                 sampleCount,
             };
 
@@ -2962,7 +3115,10 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 }
             }
             else
-                resultFormatToBufferIndex[resultTcuFormat] = idx;
+            {
+                if (attInfo.usedInResolvePipeline && attInfo.usedInResolveRendering)
+                    resultFormatToBufferIndex[resultTcuFormat] = idx;
+            }
 
             for (const auto &formatIndex : resultFormatToBufferIndex)
             {
@@ -3983,6 +4139,11 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+std::string yesNo(bool value)
+{
+    return (value ? "yes" : "no");
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx,
@@ -4028,7 +4189,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             TestParams params;
             params.groupParams = groupParams;
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 0u);
+                                               VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
             params.uploadPasses.push_back(UploadPass{
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT)},
@@ -4065,7 +4226,8 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
             TestParams params;
             params.groupParams = groupParams;
-            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u);
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
             params.uploadPasses.push_back(UploadPass{
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_DEPTH_BIT)},
@@ -4096,7 +4258,8 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
             TestParams params;
             params.groupParams = groupParams;
-            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u);
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
             params.uploadPasses.push_back(UploadPass{
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_STENCIL_BIT)},
@@ -4139,7 +4302,8 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
             TestParams params;
             params.groupParams = groupParams;
-            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u);
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
             params.uploadPasses.push_back(UploadPass{
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {AttachmentIndexAspect(0u, (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))},
@@ -4210,7 +4374,8 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
             TestParams params;
             params.groupParams = groupParams;
-            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u);
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
             params.uploadPasses.push_back(UploadPass{
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_DEPTH_BIT)},
@@ -4310,7 +4475,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             TestParams params;
             params.groupParams = groupParams;
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 1u);
+                                               VK_FORMAT_R8G8B8A8_UNORM, 1u, true, true);
             params.uploadPasses.push_back(UploadPass{
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT)},
@@ -4335,7 +4500,7 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             TestParams params;
             params.groupParams = groupParams;
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R16G16B16A16_UNORM, 0u);
+                                               VK_FORMAT_R16G16B16A16_UNORM, 0u, true, true);
             params.uploadPasses.push_back(UploadPass{
                 CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
                 {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT)},
@@ -4357,9 +4522,9 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             TestParams params;
             params.groupParams = groupParams;
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R16G16B16A16_UNORM, 1u);
+                                               VK_FORMAT_R16G16B16A16_UNORM, 1u, true, true);
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R16G16B16A16_UNORM, 0u);
+                                               VK_FORMAT_R16G16B16A16_UNORM, 0u, true, true);
             params.uploadPasses.push_back(UploadPass{
                 // Upload to top half.
                 CoveredArea(tcu::Vec2(2.0f, 1.0f), tcu::Vec2(-1.0f, -1.0f)),
@@ -4406,14 +4571,15 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             TestParams params;
             params.groupParams = groupParams;
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R16G16B16A16_UNORM, 1u);
+                                               VK_FORMAT_R16G16B16A16_UNORM, 1u, true, true);
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 2u);
+                                               VK_FORMAT_R8G8B8A8_UNORM, 2u, true, true);
             params.attachmentList.emplace_back(VK_FORMAT_R16G16B16A16_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 0u);
+                                               VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
 
             // The last attachment will be depth/stencil, but the format will be chosen below.
-            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u);
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
 
             // Last color attachment.
             params.uploadPasses.push_back(UploadPass{
@@ -4530,11 +4696,11 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             TestParams params;
             params.groupParams = groupParams;
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R16G16B16A16_UNORM, 1u);
+                                               VK_FORMAT_R16G16B16A16_UNORM, 1u, true, true);
             params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_1_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 2u);
+                                               VK_FORMAT_R8G8B8A8_UNORM, 2u, true, true);
             params.attachmentList.emplace_back(VK_FORMAT_R16G16B16A16_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 0u);
+                                               VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
 
             // Middle attachment. This needs to be separate because it's single-sampled.
             params.uploadPasses.push_back(UploadPass{
@@ -4569,6 +4735,60 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 params.attachmentList.at(i).resolveLocation = i;
             constructionGroup->addChild(
                 new CustomResolveCase(testCtx, "color_upload_resolve_multi_attachment_simple", params));
+        }
+
+        if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+        {
+            // Test unused attachments. The base configuration is two color attachments, both uploaded and resolved in
+            // a single upload and resolve pass. However, some variants will remap resolve locations, and the unused
+            // flag for one of the attachments will vary.
+            TestParams params;
+            params.groupParams = groupParams;
+            params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
+                                               VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
+            params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
+                                               VK_FORMAT_R8G8B8A8_UNORM, 1u, true, true);
+
+            // Upload both, and resolve both.
+            params.uploadPasses.push_back(UploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT),
+                 AttachmentIndexAspect(1u, VK_IMAGE_ASPECT_COLOR_BIT)},
+            });
+
+            params.resolvePasses.push_back(ResolvePass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {
+                    AttachmentResolve(0u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE, StrategyParams(1u)),
+                    AttachmentResolve(1u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE, StrategyParams(2u)),
+                },
+            });
+
+            for (const bool swapResolveLocations : {false, true})
+            {
+                if (swapResolveLocations)
+                    std::swap(params.attachmentList.front().resolveLocation,
+                              params.attachmentList.back().resolveLocation);
+
+                for (const auto unusedIndex : {0u, 1u})
+                    for (const bool usedInPipeline : {false, true})
+                        for (const bool usedInRenderPass : {false, true})
+                        {
+                            if (usedInPipeline && usedInRenderPass)
+                                continue;
+
+                            params.attachmentList.at(unusedIndex).usedInResolvePipeline       = usedInPipeline;
+                            params.attachmentList.at(unusedIndex).usedInResolveRendering      = usedInRenderPass;
+                            params.attachmentList.at(1u - unusedIndex).usedInResolvePipeline  = true;
+                            params.attachmentList.at(1u - unusedIndex).usedInResolveRendering = true;
+
+                            const auto testName = "unused_attachments_index_" + std::to_string(unusedIndex) +
+                                                  "_usage_pipe_" + yesNo(usedInPipeline) + "_render_" +
+                                                  yesNo(usedInRenderPass) +
+                                                  (swapResolveLocations ? "_swap_resolve_locations" : "");
+                            constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                        }
+            }
         }
 
         if (!origGroupParams->useSecondaryCmdBuffer)
