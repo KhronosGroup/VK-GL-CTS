@@ -4369,6 +4369,10 @@ public:
                        "gl_in[1].gl_Position + u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
             }
 
+            // VUID-VkGraphicsPipelineCreateInfo-TessellationEvaluation-07723
+            if (m_parametersGraphic.pointMode)
+                source_te << "    gl_PointSize = 1.0;\n";
+
             source_te << "    out_color = in_color[0];\n"
                       << "}\n";
 

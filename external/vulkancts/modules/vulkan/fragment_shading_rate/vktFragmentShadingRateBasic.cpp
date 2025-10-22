@@ -3099,8 +3099,11 @@ void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemo
     VkFlags allPipelineStages = VK_PIPELINE_STAGE_VERTEX_SHADER_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
                                 VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                                 VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
-                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT |
-                                VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
+                                VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT;
+
+    // VUID-vkCmdPipelineBarrier-dstStageMask-07318
+    if (m_data.useAttachment())
+        allPipelineStages |= VK_PIPELINE_STAGE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR;
 
     if (m_data.geometryShader)
         allPipelineStages |= VK_PIPELINE_STAGE_GEOMETRY_SHADER_BIT;
@@ -3243,9 +3246,11 @@ void FSRTestInstance::preRenderCommands(VkCommandBuffer cmdBuffer, ImageWithMemo
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
-                               VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR |
                                VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
                                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT;
+    // VUID-vkCmdPipelineBarrier-dstAccessMask-02816
+    if (m_data.useAttachment())
+        memBarrier.dstAccessMask |= VK_ACCESS_FRAGMENT_SHADING_RATE_ATTACHMENT_READ_BIT_KHR;
     vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, allPipelineStages, 0, 1, &memBarrier, 0, nullptr,
                           0, nullptr);
 }
@@ -3265,9 +3270,41 @@ void FSRTestInstance::beginLegacyRender(VkCommandBuffer cmdBuffer, RenderPassWra
     if (m_data.multiSubpasses)
         attachments.push_back(secCbImageView);
 
-    const VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo{
+    // VUID-vkCmdBindPipeline-variableSampleLocations-01525
+    std::vector<VkSampleLocationEXT> sampleLocations;
+    VkSampleLocationsInfoEXT sampleLocationsInfo                     = {};
+    VkSubpassSampleLocationsEXT subpassSampleLocations               = {};
+    VkRenderPassSampleLocationsBeginInfoEXT sampleLocationsBeginInfo = {};
+    const void *pNext                                                = nullptr;
+
+    if (m_data.sampleLocations)
+    {
+        // All samples at pixel center, matching pipeline configuration
+        sampleLocations.resize(m_data.samples, {0.5f, 0.5f});
+
+        sampleLocationsInfo.sType                   = VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT;
+        sampleLocationsInfo.pNext                   = nullptr;
+        sampleLocationsInfo.sampleLocationsPerPixel = (VkSampleCountFlagBits)m_data.samples;
+        sampleLocationsInfo.sampleLocationGridSize  = {1, 1};
+        sampleLocationsInfo.sampleLocationsCount    = (uint32_t)m_data.samples;
+        sampleLocationsInfo.pSampleLocations        = sampleLocations.data();
+
+        subpassSampleLocations.subpassIndex        = 0;
+        subpassSampleLocations.sampleLocationsInfo = sampleLocationsInfo;
+
+        sampleLocationsBeginInfo.sType = VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT;
+        sampleLocationsBeginInfo.pNext = nullptr;
+        sampleLocationsBeginInfo.attachmentInitialSampleLocationsCount = 0;
+        sampleLocationsBeginInfo.pAttachmentInitialSampleLocations     = nullptr;
+        sampleLocationsBeginInfo.postSubpassSampleLocationsCount       = 1;
+        sampleLocationsBeginInfo.pPostSubpassSampleLocations           = &subpassSampleLocations;
+
+        pNext = &sampleLocationsBeginInfo;
+    }
+
+    VkRenderPassAttachmentBeginInfo renderPassAttachmentBeginInfo{
         VK_STRUCTURE_TYPE_RENDER_PASS_ATTACHMENT_BEGIN_INFO, // VkStructureType sType;
-        nullptr,                                             // const void* pNext;
+        pNext,                                               // const void* pNext;
         (uint32_t)attachments.size(),                        // uint32_t attachmentCount;
         &attachments[0]                                      // const VkImageView* pAttachments;
     };
@@ -3287,7 +3324,7 @@ void FSRTestInstance::beginLegacyRender(VkCommandBuffer cmdBuffer, RenderPassWra
 
     renderPass.begin(vk, cmdBuffer, renderArea, m_data.dsClearOp ? static_cast<uint32_t>(clearVals.size()) : 0,
                      m_data.dsClearOp ? clearVals.data() : nullptr, VK_SUBPASS_CONTENTS_INLINE,
-                     imagelessFB ? &renderPassAttachmentBeginInfo : nullptr);
+                     imagelessFB ? &renderPassAttachmentBeginInfo : pNext);
 }
 
 void FSRTestInstance::drawCommandsOnNormalSubpass(

@@ -1091,6 +1091,8 @@ public:
         caps.addFeature(&vk::VkPhysicalDeviceMultiDrawFeaturesEXT::multiDraw);
 
         caps.addExtension(VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME);
+        // VUID-vkCmdDrawIndexedIndirectCount-None-04445
+        caps.addFeature(&vk::VkPhysicalDeviceVulkan12Features::drawIndirectCount);
 
         caps.addExtension(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
         caps.addFeature(&vk::VkPhysicalDeviceMaintenance6FeaturesKHR::maintenance6);
@@ -1104,6 +1106,11 @@ public:
         {
             caps.addExtension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
             caps.addFeature(&vk::VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor);
+        }
+        // VUID-RuntimeSpirv-NonWritable-06340
+        if (m_testSpec.testDrawCount)
+        {
+            caps.addFeature(&vk::VkPhysicalDeviceFeatures::fragmentStoresAndAtomics);
         }
     }
 #endif

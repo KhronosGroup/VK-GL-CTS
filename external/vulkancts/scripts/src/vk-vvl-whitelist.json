@@ -245,6 +245,15 @@
         },
         {
             "groups": [
+                "dEQP-VK.renderpasses.dynamic_rendering.primary_cmd_buff.basic.partial_binding_depth_stencil"
+            ],
+            "messages": [
+                "Undefined-Value-ShaderOutputNotConsumed-DynamicRendering"
+            ],
+            "description": "Partial binding depth/stencil test intentionally writes to color outputs when no color attachments are bound, testing depth/stencil-only rendering"
+        },
+        {
+            "groups": [
                 "dEQP-VK.texture.shadow.1d.*.sparse_*"
             ],
             "messages": [
@@ -343,6 +352,24 @@
                 "VUID-VkGraphicsPipelineCreateInfo-renderPass-06579"
             ],
             "description": "TODO report validation layers issue when handeling VK_EXT_dynamic_rendering_unused_attachments extenion. Tests that intentionally use wrong  formats in VkPipelineRenderingCreateInfo when the corresponding image view handles are VK_NULL_HANDLE to verify implementations handle unused attachments correctly"
+        },
+        {
+            "groups": [
+                "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.capture_replay.*"
+            ],
+            "messages": [
+                "VUID-VkOpaqueCaptureDescriptorDataCreateInfoEXT-opaqueCaptureDescriptorData-parameter"
+            ],
+            "description": "TODO clearyfy Vulkan spec .Capture/replay tests may pass NULL opaqueCaptureDescriptorData when imageViewCaptureReplayDescriptorDataSize is 0, indicating the implementation requires no capture data. Validation layer requires non-NULL pointer even when size is 0"
+        },
+        {
+            "groups": [
+                "dEQP-VK.protected_memory.image.access.misc.maintenance5_no_protected_access"
+            ],
+            "messages": [
+                "VUID-vkCmdDraw-None-09600"
+            ],
+            "description": "TODO report validation layer bug in maintenance5 protected memory test using VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT. Validation layer incorrectly reports image layout mismatch even though image is properly transitioned to GENERAL layout"
         }
     ]
 }
