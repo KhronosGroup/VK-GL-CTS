@@ -3374,7 +3374,7 @@ struct VkPhysicalDeviceSubgroupSizeControlProperties
 struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfo
 {
 	VkStructureType	sType;
-	void*			pNext;
+	const void*		pNext;
 	uint32_t		requiredSubgroupSize;
 };
 

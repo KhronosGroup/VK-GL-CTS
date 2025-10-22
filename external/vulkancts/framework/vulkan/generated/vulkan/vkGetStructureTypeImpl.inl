@@ -88,6 +88,16 @@ template<> VkStructureType getStructureType<VkBindSparseInfo> (void)
 	return VK_STRUCTURE_TYPE_BIND_SPARSE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkCopyMemoryIndirectInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyMemoryToImageIndirectInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INDIRECT_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkShaderModuleCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -1823,14 +1833,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDedicatedAllocationI
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV;
 }
 
-template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectPropertiesNV> (void)
+template<> VkStructureType getStructureType<VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR> (void)
 {
-	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV;
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceMemoryDecompressionFeaturesNV> (void)
@@ -3913,6 +3928,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceFragmentShaderBaryce
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_SHADER_BARYCENTRIC_PROPERTIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderFmaFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FMA_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV;
@@ -5128,6 +5148,16 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVertexAttributeRobus
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_ATTRIBUTE_ROBUSTNESS_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DENSE_GEOMETRY_FORMAT_TRIANGLES_DATA_AMDX;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDepthClampZeroOneFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_ZERO_ONE_FEATURES_KHR;
@@ -5358,9 +5388,9 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderFloat8Features
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FLOAT8_FEATURES_EXT;
 }
 
-template<> VkStructureType getStructureType<VkOHSurfaceCreateInfoOHOS> (void)
+template<> VkStructureType getStructureType<VkSurfaceCreateInfoOHOS> (void)
 {
-	return VK_STRUCTURE_TYPE_OH_SURFACE_CREATE_INFO_OHOS;
+	return VK_STRUCTURE_TYPE_SURFACE_CREATE_INFO_OHOS;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphFeaturesARM> (void)
@@ -5466,5 +5496,30 @@ template<> VkStructureType getStructureType<VkDataGraphProcessingEngineCreateInf
 template<> VkStructureType getStructureType<VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderUntypedPointersFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeRgbConversionCapabilitiesVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeProfileRgbConversionInfoVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeSessionRgbConversionCreateInfoVALVE> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE;
 }
 

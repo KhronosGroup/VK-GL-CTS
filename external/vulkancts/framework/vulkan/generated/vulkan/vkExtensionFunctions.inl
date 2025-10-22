@@ -1283,7 +1283,15 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_video_encode_rgb_conversion")
 	{
 		return;
 	}
@@ -1462,6 +1470,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_AMD_anti_lag")
+	{
+		return;
+	}
+	if (extName == "VK_AMDX_dense_geometry_format")
 	{
 		return;
 	}
@@ -1658,6 +1670,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_copy_memory_indirect")
+	{
+		return;
+	}
 	if (extName == "VK_NV_display_stereo")
 	{
 		return;
@@ -1723,6 +1739,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_MESA_image_alignment_control")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_fma")
 	{
 		return;
 	}
@@ -2709,8 +2729,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdDrawMeshTasksNV");
 		functions.push_back("vkCmdDrawMeshTasksIndirectNV");
-		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
+		// Dependencies: VK_VERSION_1_2,VK_KHR_draw_indirect_count,VK_AMD_draw_indirect_count
+		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || extensionIsSupported(vDEP, "VK_AMD_draw_indirect_count"))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountNV");
 		}
 		return;
@@ -3192,8 +3212,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkCmdDrawMeshTasksEXT");
 		functions.push_back("vkCmdDrawMeshTasksIndirectEXT");
-		// Dependencies: VK_KHR_draw_indirect_count,VK_VERSION_1_2
-		if ((extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || checkVersion(1, 2, apiVersion))) {
+		// Dependencies: VK_VERSION_1_2,VK_KHR_draw_indirect_count,VK_AMD_draw_indirect_count
+		if ((checkVersion(1, 2, apiVersion) || extensionIsSupported(vDEP, "VK_KHR_draw_indirect_count") || extensionIsSupported(vDEP, "VK_AMD_draw_indirect_count"))) {
 			functions.push_back("vkCmdDrawMeshTasksIndirectCountEXT");
 		}
 		return;
@@ -3371,7 +3391,15 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		}
 		return;
 	}
+	if (extName == "VK_KHR_shader_untyped_pointers")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_global_priority_query")
+	{
+		return;
+	}
+	if (extName == "VK_VALVE_video_encode_rgb_conversion")
 	{
 		return;
 	}
@@ -3683,6 +3711,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_AMD_anti_lag")
 	{
 		functions.push_back("vkAntiLagUpdateAMD");
+		return;
+	}
+	if (extName == "VK_AMDX_dense_geometry_format")
+	{
 		return;
 	}
 	if (extName == "VK_KHR_present_id2")
@@ -4017,6 +4049,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdBindTileMemoryQCOM");
 		return;
 	}
+	if (extName == "VK_KHR_copy_memory_indirect")
+	{
+		functions.push_back("vkCmdCopyMemoryIndirectKHR");
+		functions.push_back("vkCmdCopyMemoryToImageIndirectKHR");
+		return;
+	}
 	if (extName == "VK_NV_display_stereo")
 	{
 		return;
@@ -4097,6 +4135,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_MESA_image_alignment_control")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_shader_fma")
 	{
 		return;
 	}
@@ -4538,7 +4580,9 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_color_write_enable",
 	"VK_EXT_primitives_generated_query",
 	"VK_KHR_ray_tracing_maintenance1",
+	"VK_KHR_shader_untyped_pointers",
 	"VK_EXT_global_priority_query",
+	"VK_VALVE_video_encode_rgb_conversion",
 	"VK_EXT_image_view_min_lod",
 	"VK_EXT_multi_draw",
 	"VK_EXT_image_2d_view_of_3d",
@@ -4580,6 +4624,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_ANDROID_external_format_resolve",
 	"VK_KHR_maintenance5",
 	"VK_AMD_anti_lag",
+	"VK_AMDX_dense_geometry_format",
 	"VK_KHR_present_id2",
 	"VK_KHR_present_wait2",
 	"VK_KHR_ray_tracing_position_fetch",
@@ -4625,6 +4670,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_maintenance6",
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_QCOM_tile_memory_heap",
+	"VK_KHR_copy_memory_indirect",
 	"VK_KHR_video_encode_intra_refresh",
 	"VK_KHR_video_encode_quantization_map",
 	"VK_NV_raw_access_chains",
@@ -4641,6 +4687,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_device_generated_commands",
 	"VK_KHR_maintenance8",
 	"VK_MESA_image_alignment_control",
+	"VK_KHR_shader_fma",
 	"VK_EXT_depth_clamp_control",
 	"VK_KHR_maintenance9",
 	"VK_KHR_video_maintenance2",

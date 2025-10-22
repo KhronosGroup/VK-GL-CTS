@@ -187,9 +187,18 @@ inline VkSparseImageMemoryBindInfo makeSparseImageMemoryBindInfo (VkImage image,
 	return res;
 }
 
-inline VkCopyMemoryIndirectCommandNV makeCopyMemoryIndirectCommandNV (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize size)
+inline VkStridedDeviceAddressRangeKHR makeStridedDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize size, VkDeviceSize stride)
 {
-	VkCopyMemoryIndirectCommandNV res;
+	VkStridedDeviceAddressRangeKHR res;
+	res.address	= address;
+	res.size	= size;
+	res.stride	= stride;
+	return res;
+}
+
+inline VkCopyMemoryIndirectCommandKHR makeCopyMemoryIndirectCommandKHR (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize size)
+{
+	VkCopyMemoryIndirectCommandKHR res;
 	res.srcAddress	= srcAddress;
 	res.dstAddress	= dstAddress;
 	res.size		= size;

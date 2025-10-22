@@ -132,6 +132,8 @@ typedef std::variant<
     , VkPhysicalDeviceColorWriteEnableFeaturesEXT
     , VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
     , VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR
+    , VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
+    , VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE
     , VkPhysicalDeviceImageViewMinLodFeaturesEXT
     , VkPhysicalDeviceMultiDrawFeaturesEXT
     , VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
@@ -148,7 +150,6 @@ typedef std::variant<
     , VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE
     , VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT
     , VkPhysicalDeviceRenderPassStripedFeaturesARM
-    , VkPhysicalDeviceCopyMemoryIndirectFeaturesNV
     , VkPhysicalDeviceMemoryDecompressionFeaturesNV
     , VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV
     , VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV
@@ -168,6 +169,7 @@ typedef std::variant<
     , VkPhysicalDeviceExternalFormatResolveFeaturesANDROID
     , VkPhysicalDeviceMaintenance5Features
     , VkPhysicalDeviceAntiLagFeaturesAMD
+    , VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX
     , VkPhysicalDevicePresentId2FeaturesKHR
     , VkPhysicalDevicePresentWait2FeaturesKHR
     , VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
@@ -208,6 +210,7 @@ typedef std::variant<
     , VkPhysicalDeviceMaintenance6Features
     , VkPhysicalDeviceDescriptorPoolOverallocationFeaturesNV
     , VkPhysicalDeviceTileMemoryHeapFeaturesQCOM
+    , VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR
     , VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR
     , VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR
     , VkPhysicalDeviceRawAccessChainsFeaturesNV
@@ -223,6 +226,7 @@ typedef std::variant<
     , VkPhysicalDeviceDeviceGeneratedCommandsFeaturesEXT
     , VkPhysicalDeviceMaintenance8FeaturesKHR
     , VkPhysicalDeviceImageAlignmentControlFeaturesMESA
+    , VkPhysicalDeviceShaderFmaFeaturesKHR
     , VkPhysicalDeviceDepthClampControlFeaturesEXT
     , VkPhysicalDeviceMaintenance9FeaturesKHR
     , VkPhysicalDeviceVideoMaintenance2FeaturesKHR

@@ -363,55 +363,46 @@ void DeviceDriver::cmdBindPipeline (VkCommandBuffer commandBuffer, VkPipelineBin
 
 void DeviceDriver::cmdSetViewport (VkCommandBuffer commandBuffer, uint32_t firstViewport, uint32_t viewportCount, const VkViewport* pViewports) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetViewport(commandBuffer, firstViewport, viewportCount, pViewports);
 }
 
 void DeviceDriver::cmdSetScissor (VkCommandBuffer commandBuffer, uint32_t firstScissor, uint32_t scissorCount, const VkRect2D* pScissors) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetScissor(commandBuffer, firstScissor, scissorCount, pScissors);
 }
 
 void DeviceDriver::cmdSetLineWidth (VkCommandBuffer commandBuffer, float lineWidth) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetLineWidth(commandBuffer, lineWidth);
 }
 
 void DeviceDriver::cmdSetDepthBias (VkCommandBuffer commandBuffer, float depthBiasConstantFactor, float depthBiasClamp, float depthBiasSlopeFactor) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthBias(commandBuffer, depthBiasConstantFactor, depthBiasClamp, depthBiasSlopeFactor);
 }
 
 void DeviceDriver::cmdSetBlendConstants (VkCommandBuffer commandBuffer, const float blendConstants[4]) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetBlendConstants(commandBuffer, blendConstants);
 }
 
 void DeviceDriver::cmdSetDepthBounds (VkCommandBuffer commandBuffer, float minDepthBounds, float maxDepthBounds) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthBounds(commandBuffer, minDepthBounds, maxDepthBounds);
 }
 
 void DeviceDriver::cmdSetStencilCompareMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t compareMask) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetStencilCompareMask(commandBuffer, faceMask, compareMask);
 }
 
 void DeviceDriver::cmdSetStencilWriteMask (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t writeMask) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetStencilWriteMask(commandBuffer, faceMask, writeMask);
 }
 
 void DeviceDriver::cmdSetStencilReference (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, uint32_t reference) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetStencilReference(commandBuffer, faceMask, reference);
 }
 
@@ -422,37 +413,31 @@ void DeviceDriver::cmdBindDescriptorSets (VkCommandBuffer commandBuffer, VkPipel
 
 void DeviceDriver::cmdBindIndexBuffer (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkIndexType indexType) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBindIndexBuffer(commandBuffer, buffer, offset, indexType);
 }
 
 void DeviceDriver::cmdBindVertexBuffers (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBindVertexBuffers(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets);
 }
 
 void DeviceDriver::cmdDraw (VkCommandBuffer commandBuffer, uint32_t vertexCount, uint32_t instanceCount, uint32_t firstVertex, uint32_t firstInstance) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdDraw(commandBuffer, vertexCount, instanceCount, firstVertex, firstInstance);
 }
 
 void DeviceDriver::cmdDrawIndexed (VkCommandBuffer commandBuffer, uint32_t indexCount, uint32_t instanceCount, uint32_t firstIndex, int32_t vertexOffset, uint32_t firstInstance) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdDrawIndexed(commandBuffer, indexCount, instanceCount, firstIndex, vertexOffset, firstInstance);
 }
 
 void DeviceDriver::cmdDrawIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdDrawIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 
 void DeviceDriver::cmdDrawIndexedIndirect (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, uint32_t drawCount, uint32_t stride) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdDrawIndexedIndirect(commandBuffer, buffer, offset, drawCount, stride);
 }
 
@@ -478,7 +463,6 @@ void DeviceDriver::cmdCopyImage (VkCommandBuffer commandBuffer, VkImage srcImage
 
 void DeviceDriver::cmdBlitImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageBlit* pRegions, VkFilter filter) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBlitImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions, filter);
 }
 
@@ -509,19 +493,16 @@ void DeviceDriver::cmdClearColorImage (VkCommandBuffer commandBuffer, VkImage im
 
 void DeviceDriver::cmdClearDepthStencilImage (VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearDepthStencilValue* pDepthStencil, uint32_t rangeCount, const VkImageSubresourceRange* pRanges) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdClearDepthStencilImage(commandBuffer, image, imageLayout, pDepthStencil, rangeCount, pRanges);
 }
 
 void DeviceDriver::cmdClearAttachments (VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkClearAttachment* pAttachments, uint32_t rectCount, const VkClearRect* pRects) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdClearAttachments(commandBuffer, attachmentCount, pAttachments, rectCount, pRects);
 }
 
 void DeviceDriver::cmdResolveImage (VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkImageResolve* pRegions) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdResolveImage(commandBuffer, srcImage, srcImageLayout, dstImage, dstImageLayout, regionCount, pRegions);
 }
 
@@ -577,19 +558,16 @@ void DeviceDriver::cmdPushConstants (VkCommandBuffer commandBuffer, VkPipelineLa
 
 void DeviceDriver::cmdBeginRenderPass (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, VkSubpassContents contents) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBeginRenderPass(commandBuffer, pRenderPassBegin, contents);
 }
 
 void DeviceDriver::cmdNextSubpass (VkCommandBuffer commandBuffer, VkSubpassContents contents) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdNextSubpass(commandBuffer, contents);
 }
 
 void DeviceDriver::cmdEndRenderPass (VkCommandBuffer commandBuffer) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdEndRenderPass(commandBuffer);
 }
 
@@ -765,25 +743,21 @@ VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR sw
 
 void DeviceDriver::cmdSetDiscardRectangleEXT (VkCommandBuffer commandBuffer, uint32_t firstDiscardRectangle, uint32_t discardRectangleCount, const VkRect2D* pDiscardRectangles) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDiscardRectangleEXT(commandBuffer, firstDiscardRectangle, discardRectangleCount, pDiscardRectangles);
 }
 
 void DeviceDriver::cmdSetDiscardRectangleEnableEXT (VkCommandBuffer commandBuffer, VkBool32 discardRectangleEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDiscardRectangleEnableEXT(commandBuffer, discardRectangleEnable);
 }
 
 void DeviceDriver::cmdSetDiscardRectangleModeEXT (VkCommandBuffer commandBuffer, VkDiscardRectangleModeEXT discardRectangleMode) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDiscardRectangleModeEXT(commandBuffer, discardRectangleMode);
 }
 
 void DeviceDriver::cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetSampleLocationsEXT(commandBuffer, pSampleLocationsInfo);
 }
 
@@ -875,19 +849,16 @@ VkResult DeviceDriver::createRenderPass2 (VkDevice device, const VkRenderPassCre
 
 void DeviceDriver::cmdBeginRenderPass2 (VkCommandBuffer commandBuffer, const VkRenderPassBeginInfo* pRenderPassBegin, const VkSubpassBeginInfo* pSubpassBeginInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBeginRenderPass2(commandBuffer, pRenderPassBegin, pSubpassBeginInfo);
 }
 
 void DeviceDriver::cmdNextSubpass2 (VkCommandBuffer commandBuffer, const VkSubpassBeginInfo* pSubpassBeginInfo, const VkSubpassEndInfo* pSubpassEndInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdNextSubpass2(commandBuffer, pSubpassBeginInfo, pSubpassEndInfo);
 }
 
 void DeviceDriver::cmdEndRenderPass2 (VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdEndRenderPass2(commandBuffer, pSubpassEndInfo);
 }
 
@@ -908,13 +879,11 @@ VkResult DeviceDriver::signalSemaphore (VkDevice device, const VkSemaphoreSignal
 
 void DeviceDriver::cmdDrawIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdDrawIndirectCount(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 
 void DeviceDriver::cmdDrawIndexedIndirectCount (VkCommandBuffer commandBuffer, VkBuffer buffer, VkDeviceSize offset, VkBuffer countBuffer, VkDeviceSize countBufferOffset, uint32_t maxDrawCount, uint32_t stride) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdDrawIndexedIndirectCount(commandBuffer, buffer, offset, countBuffer, countBufferOffset, maxDrawCount, stride);
 }
 
@@ -960,7 +929,6 @@ uint64_t DeviceDriver::getDeviceMemoryOpaqueCaptureAddress (VkDevice device, con
 
 void DeviceDriver::cmdSetLineStippleEXT (VkCommandBuffer commandBuffer, uint32_t lineStippleFactor, uint16_t lineStipplePattern) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetLineStippleEXT(commandBuffer, lineStippleFactor, lineStipplePattern);
 }
 
@@ -971,103 +939,86 @@ VkResult DeviceDriver::getFaultData (VkDevice device, VkFaultQueryBehavior fault
 
 void DeviceDriver::cmdSetCullModeEXT (VkCommandBuffer commandBuffer, VkCullModeFlags cullMode) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetCullModeEXT(commandBuffer, cullMode);
 }
 
 void DeviceDriver::cmdSetFrontFaceEXT (VkCommandBuffer commandBuffer, VkFrontFace frontFace) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetFrontFaceEXT(commandBuffer, frontFace);
 }
 
 void DeviceDriver::cmdSetPrimitiveTopologyEXT (VkCommandBuffer commandBuffer, VkPrimitiveTopology primitiveTopology) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetPrimitiveTopologyEXT(commandBuffer, primitiveTopology);
 }
 
 void DeviceDriver::cmdSetViewportWithCountEXT (VkCommandBuffer commandBuffer, uint32_t viewportCount, const VkViewport* pViewports) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetViewportWithCountEXT(commandBuffer, viewportCount, pViewports);
 }
 
 void DeviceDriver::cmdSetScissorWithCountEXT (VkCommandBuffer commandBuffer, uint32_t scissorCount, const VkRect2D* pScissors) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetScissorWithCountEXT(commandBuffer, scissorCount, pScissors);
 }
 
 void DeviceDriver::cmdBindVertexBuffers2EXT (VkCommandBuffer commandBuffer, uint32_t firstBinding, uint32_t bindingCount, const VkBuffer* pBuffers, const VkDeviceSize* pOffsets, const VkDeviceSize* pSizes, const VkDeviceSize* pStrides) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBindVertexBuffers2EXT(commandBuffer, firstBinding, bindingCount, pBuffers, pOffsets, pSizes, pStrides);
 }
 
 void DeviceDriver::cmdSetDepthTestEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthTestEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthTestEnableEXT(commandBuffer, depthTestEnable);
 }
 
 void DeviceDriver::cmdSetDepthWriteEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthWriteEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthWriteEnableEXT(commandBuffer, depthWriteEnable);
 }
 
 void DeviceDriver::cmdSetDepthCompareOpEXT (VkCommandBuffer commandBuffer, VkCompareOp depthCompareOp) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthCompareOpEXT(commandBuffer, depthCompareOp);
 }
 
 void DeviceDriver::cmdSetDepthBoundsTestEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthBoundsTestEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthBoundsTestEnableEXT(commandBuffer, depthBoundsTestEnable);
 }
 
 void DeviceDriver::cmdSetStencilTestEnableEXT (VkCommandBuffer commandBuffer, VkBool32 stencilTestEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetStencilTestEnableEXT(commandBuffer, stencilTestEnable);
 }
 
 void DeviceDriver::cmdSetStencilOpEXT (VkCommandBuffer commandBuffer, VkStencilFaceFlags faceMask, VkStencilOp failOp, VkStencilOp passOp, VkStencilOp depthFailOp, VkCompareOp compareOp) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetStencilOpEXT(commandBuffer, faceMask, failOp, passOp, depthFailOp, compareOp);
 }
 
 void DeviceDriver::cmdSetPatchControlPointsEXT (VkCommandBuffer commandBuffer, uint32_t patchControlPoints) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetPatchControlPointsEXT(commandBuffer, patchControlPoints);
 }
 
 void DeviceDriver::cmdSetRasterizerDiscardEnableEXT (VkCommandBuffer commandBuffer, VkBool32 rasterizerDiscardEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetRasterizerDiscardEnableEXT(commandBuffer, rasterizerDiscardEnable);
 }
 
 void DeviceDriver::cmdSetDepthBiasEnableEXT (VkCommandBuffer commandBuffer, VkBool32 depthBiasEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetDepthBiasEnableEXT(commandBuffer, depthBiasEnable);
 }
 
 void DeviceDriver::cmdSetLogicOpEXT (VkCommandBuffer commandBuffer, VkLogicOp logicOp) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetLogicOpEXT(commandBuffer, logicOp);
 }
 
 void DeviceDriver::cmdSetPrimitiveRestartEnableEXT (VkCommandBuffer commandBuffer, VkBool32 primitiveRestartEnable) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetPrimitiveRestartEnableEXT(commandBuffer, primitiveRestartEnable);
 }
 
@@ -1083,7 +1034,6 @@ void DeviceDriver::cmdCopyImage2KHR (VkCommandBuffer commandBuffer, const VkCopy
 
 void DeviceDriver::cmdBlitImage2KHR (VkCommandBuffer commandBuffer, const VkBlitImageInfo2* pBlitImageInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdBlitImage2KHR(commandBuffer, pBlitImageInfo);
 }
 
@@ -1099,7 +1049,6 @@ void DeviceDriver::cmdCopyImageToBuffer2KHR (VkCommandBuffer commandBuffer, cons
 
 void DeviceDriver::cmdResolveImage2KHR (VkCommandBuffer commandBuffer, const VkResolveImageInfo2* pResolveImageInfo) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdResolveImage2KHR(commandBuffer, pResolveImageInfo);
 }
 
@@ -1110,19 +1059,16 @@ void DeviceDriver::cmdRefreshObjectsKHR (VkCommandBuffer commandBuffer, const Vk
 
 void DeviceDriver::cmdSetFragmentShadingRateKHR (VkCommandBuffer commandBuffer, const VkExtent2D* pFragmentSize, const VkFragmentShadingRateCombinerOpKHR combinerOps[2]) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetFragmentShadingRateKHR(commandBuffer, pFragmentSize, combinerOps);
 }
 
 void DeviceDriver::cmdSetVertexInputEXT (VkCommandBuffer commandBuffer, uint32_t vertexBindingDescriptionCount, const VkVertexInputBindingDescription2EXT* pVertexBindingDescriptions, uint32_t vertexAttributeDescriptionCount, const VkVertexInputAttributeDescription2EXT* pVertexAttributeDescriptions) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetVertexInputEXT(commandBuffer, vertexBindingDescriptionCount, pVertexBindingDescriptions, vertexAttributeDescriptionCount, pVertexAttributeDescriptions);
 }
 
 void DeviceDriver::cmdSetColorWriteEnableEXT (VkCommandBuffer commandBuffer, uint32_t attachmentCount, const VkBool32* pColorWriteEnables) const
 {
-    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
     m_vk.cmdSetColorWriteEnableEXT(commandBuffer, attachmentCount, pColorWriteEnables);
 }
 

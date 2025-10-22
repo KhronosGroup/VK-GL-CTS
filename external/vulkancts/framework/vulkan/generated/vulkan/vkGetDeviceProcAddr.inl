@@ -614,6 +614,8 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdSetDescriptorBufferOffsets2EXT",
 		"vkCmdBindDescriptorBufferEmbeddedSamplers2EXT",
 		"vkCmdBindTileMemoryQCOM",
+		"vkCmdCopyMemoryIndirectKHR",
+		"vkCmdCopyMemoryToImageIndirectKHR",
 		"vkCreateExternalComputeQueueNV",
 		"vkDestroyExternalComputeQueueNV",
 		"vkGetExternalComputeQueueDataNV",

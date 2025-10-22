@@ -65,7 +65,6 @@ const vk::VkPhysicalDeviceMaintenance4Properties&						Context::getMaintenance4P
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&						Context::getShaderCorePropertiesARM							(void) const { return m_device->getShaderCorePropertiesARM();						}
 const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&				Context::getSchedulingControlsPropertiesARM					(void) const { return m_device->getSchedulingControlsPropertiesARM();				}
 const vk::VkPhysicalDeviceRenderPassStripedPropertiesARM&				Context::getRenderPassStripedPropertiesARM					(void) const { return m_device->getRenderPassStripedPropertiesARM();				}
-const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				Context::getCopyMemoryIndirectProperties					(void) const { return m_device->getCopyMemoryIndirectProperties();					}
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				Context::getMemoryDecompressionProperties					(void) const { return m_device->getMemoryDecompressionProperties();					}
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&				Context::getImageProcessingPropertiesQCOM					(void) const { return m_device->getImageProcessingPropertiesQCOM();					}
 const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&				Context::getNestedCommandBufferPropertiesEXT				(void) const { return m_device->getNestedCommandBufferPropertiesEXT();				}
@@ -90,6 +89,7 @@ const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&					Context::getLayeredDr
 const vk::VkPhysicalDeviceLineRasterizationProperties&					Context::getLineRasterizationProperties						(void) const { return m_device->getLineRasterizationProperties();					}
 const vk::VkPhysicalDeviceMaintenance6Properties&						Context::getMaintenance6Properties							(void) const { return m_device->getMaintenance6Properties();						}
 const vk::VkPhysicalDeviceTileMemoryHeapPropertiesQCOM&					Context::getTileMemoryHeapPropertiesQCOM					(void) const { return m_device->getTileMemoryHeapPropertiesQCOM();					}
+const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR&				Context::getCopyMemoryIndirectProperties					(void) const { return m_device->getCopyMemoryIndirectProperties();					}
 const vk::VkPhysicalDeviceExternalComputeQueuePropertiesNV&				Context::getExternalComputeQueuePropertiesNV				(void) const { return m_device->getExternalComputeQueuePropertiesNV();				}
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&					Context::getMaintenance7Properties							(void) const { return m_device->getMaintenance7Properties();						}
 const vk::VkPhysicalDeviceClusterAccelerationStructurePropertiesNV&		Context::getClusterAccelerationStructurePropertiesNV		(void) const { return m_device->getClusterAccelerationStructurePropertiesNV();		}

@@ -3113,6 +3113,11 @@ tcu::Format::Bitfield<32> getDirectDriverLoadingFlagsLUNARGStr (VkDirectDriverLo
 	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
+tcu::Format::Bitfield<32> getAddressCopyFlagsKHRStr (VkAddressCopyFlagsKHR value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
 tcu::Format::Bitfield<64> getTensorCreateFlagsARMStr (VkTensorCreateFlagsARM value)
 {
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
@@ -3136,6 +3141,21 @@ tcu::Format::Bitfield<64> getDataGraphPipelineSessionCreateFlagsARMStr (VkDataGr
 tcu::Format::Bitfield<64> getDataGraphPipelineDispatchFlagsARMStr (VkDataGraphPipelineDispatchFlagsARM value)
 {
 	return tcu::Format::Bitfield<64>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbModelConversionFlagsVALVEStr (VkVideoEncodeRgbModelConversionFlagsVALVE value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbRangeCompressionFlagsVALVEStr (VkVideoEncodeRgbRangeCompressionFlagsVALVE value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
+}
+
+tcu::Format::Bitfield<32> getVideoEncodeRgbChromaOffsetFlagsVALVEStr (VkVideoEncodeRgbChromaOffsetFlagsVALVE value)
+{
+	return tcu::Format::Bitfield<32>(value, nullptr, nullptr);
 }
 
 tcu::Format::Bitfield<32> getDisplayModeCreateFlagsKHRStr (VkDisplayModeCreateFlagsKHR value)

@@ -1504,6 +1504,46 @@ tcu::TestStatus testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR (Co
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureCopyMemoryIndirectFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR deviceCopyMemoryIndirectFeaturesKHR[count];
+    const bool                                    isCopyMemoryIndirectFeaturesKHR = checkExtension(properties, "VK_KHR_copy_memory_indirect");
+
+    if (!isCopyMemoryIndirectFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceCopyMemoryIndirectFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR));
+        deviceCopyMemoryIndirectFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR;
+        deviceCopyMemoryIndirectFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceCopyMemoryIndirectFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceCopyMemoryIndirectFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceCopyMemoryIndirectFeaturesKHR[0].indirectMemoryCopy != deviceCopyMemoryIndirectFeaturesKHR[1].indirectMemoryCopy ||
+        deviceCopyMemoryIndirectFeaturesKHR[0].indirectMemoryToImageCopy != deviceCopyMemoryIndirectFeaturesKHR[1].indirectMemoryToImageCopy)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureMeshShaderFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -4811,6 +4851,47 @@ tcu::TestStatus testPhysicalDeviceFeatureFragmentShaderBarycentricFeaturesKHR (C
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderFmaFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderFmaFeaturesKHR deviceShaderFmaFeaturesKHR[count];
+    const bool                           isShaderFmaFeaturesKHR = checkExtension(properties, "VK_KHR_shader_fma");
+
+    if (!isShaderFmaFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderFmaFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderFmaFeaturesKHR));
+        deviceShaderFmaFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FMA_FEATURES_KHR;
+        deviceShaderFmaFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderFmaFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderFmaFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderFmaFeaturesKHR[0].shaderFmaFloat16 != deviceShaderFmaFeaturesKHR[1].shaderFmaFloat16 ||
+        deviceShaderFmaFeaturesKHR[0].shaderFmaFloat32 != deviceShaderFmaFeaturesKHR[1].shaderFmaFloat32 ||
+        deviceShaderFmaFeaturesKHR[0].shaderFmaFloat64 != deviceShaderFmaFeaturesKHR[1].shaderFmaFloat64)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderFmaFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureRGBA10X6FormatsFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -6546,6 +6627,45 @@ tcu::TestStatus testPhysicalDeviceFeaturePipelineCacheIncrementalModeFeaturesSEC
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderUntypedPointersFeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderUntypedPointersFeaturesKHR deviceShaderUntypedPointersFeaturesKHR[count];
+    const bool                                       isShaderUntypedPointersFeaturesKHR = checkExtension(properties, "VK_KHR_shader_untyped_pointers");
+
+    if (!isShaderUntypedPointersFeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderUntypedPointersFeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderUntypedPointersFeaturesKHR));
+        deviceShaderUntypedPointersFeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR;
+        deviceShaderUntypedPointersFeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderUntypedPointersFeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderUntypedPointersFeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderUntypedPointersFeaturesKHR[0].shaderUntypedPointers != deviceShaderUntypedPointersFeaturesKHR[1].shaderUntypedPointers)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderUntypedPointersFeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus createDeviceWithPromoted11Structures (Context& context)
 {
     if (!context.contextSupports(vk::ApiVersion(0, 1, 1, 0)))
@@ -6842,6 +6962,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "astc_decode_features_ext", testPhysicalDeviceFeatureASTCDecodeFeaturesEXT);
 	addFunctionCase(testGroup, "transform_feedback_features_ext", testPhysicalDeviceFeatureTransformFeedbackFeaturesEXT);
 	addFunctionCase(testGroup, "compute_shader_derivatives_features_khr", testPhysicalDeviceFeatureComputeShaderDerivativesFeaturesKHR);
+	addFunctionCase(testGroup, "copy_memory_indirect_features_khr", testPhysicalDeviceFeatureCopyMemoryIndirectFeaturesKHR);
 	addFunctionCase(testGroup, "mesh_shader_features_ext", testPhysicalDeviceFeatureMeshShaderFeaturesEXT);
 	addFunctionCase(testGroup, "acceleration_structure_features_khr", testPhysicalDeviceFeatureAccelerationStructureFeaturesKHR);
 	addFunctionCase(testGroup, "ray_tracing_pipeline_features_khr", testPhysicalDeviceFeatureRayTracingPipelineFeaturesKHR);
@@ -6922,6 +7043,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "descriptor_buffer_features_ext", testPhysicalDeviceFeatureDescriptorBufferFeaturesEXT);
 	addFunctionCase(testGroup, "shader_integer_dot_product_features", testPhysicalDeviceFeatureShaderIntegerDotProductFeatures);
 	addFunctionCase(testGroup, "fragment_shader_barycentric_features_khr", testPhysicalDeviceFeatureFragmentShaderBarycentricFeaturesKHR);
+	addFunctionCase(testGroup, "shader_fma_features_khr", testPhysicalDeviceFeatureShaderFmaFeaturesKHR);
 	addFunctionCase(testGroup, "rgba10_x6_formats_features_ext", testPhysicalDeviceFeatureRGBA10X6FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "dynamic_rendering_features", testPhysicalDeviceFeatureDynamicRenderingFeatures);
 	addFunctionCase(testGroup, "image_view_min_lod_features_ext", testPhysicalDeviceFeatureImageViewMinLodFeaturesEXT);
@@ -6966,6 +7088,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR);
 	addFunctionCase(testGroup, "shader_float8_features_ext", testPhysicalDeviceFeatureShaderFloat8FeaturesEXT);
 	addFunctionCase(testGroup, "pipeline_cache_incremental_mode_features_sec", testPhysicalDeviceFeaturePipelineCacheIncrementalModeFeaturesSEC);
+	addFunctionCase(testGroup, "shader_untyped_pointers_features_khr", testPhysicalDeviceFeatureShaderUntypedPointersFeaturesKHR);
 	addFunctionCase(testGroup, "create_device_with_promoted11_structures", createDeviceWithPromoted11Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted12_structures", createDeviceWithPromoted12Structures);
 	addFunctionCase(testGroup, "create_device_with_promoted13_structures", createDeviceWithPromoted13Structures);

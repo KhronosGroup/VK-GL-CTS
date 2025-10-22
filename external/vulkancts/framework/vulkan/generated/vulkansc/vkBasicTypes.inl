@@ -40,6 +40,8 @@
 #define VK_MAX_VIDEO_VP9_REFERENCES_PER_FRAME_KHR						(static_cast<uint32_t>			(3))
 #define VK_SHADER_INDEX_UNUSED_AMDX										(static_cast<uint32_t>			((~0U)))
 #define VK_PARTITIONED_ACCELERATION_STRUCTURE_PARTITION_INDEX_GLOBAL_NV	(static_cast<uint32_t>			((~0U)))
+#define VK_COMPRESSED_TRIANGLE_FORMAT_DGF1_BYTE_ALIGNMENT_AMDX			(static_cast<uint32_t>			(128))
+#define VK_COMPRESSED_TRIANGLE_FORMAT_DGF1_BYTE_STRIDE_AMDX				(static_cast<uint32_t>			(128))
 #define VK_MAX_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_SET_NAME_SIZE_ARM	(static_cast<uint32_t>			(128))
 #define VKSC_API_MAX_FRAMEWORK_VERSION	VKSC_API_VERSION_1_0
 
@@ -3198,6 +3200,8 @@ typedef uint64_t VkBufferUsageFlags2;
 
 typedef VkBufferUsageFlags2 VkBufferUsageFlags2KHR;
 
+typedef uint32_t VkAddressCopyFlagsKHR;
+
 typedef uint64_t VkTensorCreateFlagsARM;
 
 typedef uint64_t VkTensorUsageFlagsARM;
@@ -3207,6 +3211,12 @@ typedef uint64_t VkTensorViewCreateFlagsARM;
 typedef uint64_t VkDataGraphPipelineSessionCreateFlagsARM;
 
 typedef uint64_t VkDataGraphPipelineDispatchFlagsARM;
+
+typedef uint32_t VkVideoEncodeRgbModelConversionFlagsVALVE;
+
+typedef uint32_t VkVideoEncodeRgbRangeCompressionFlagsVALVE;
+
+typedef uint32_t VkVideoEncodeRgbChromaOffsetFlagsVALVE;
 
 typedef uint32_t VkCompositeAlphaFlagsKHR;
 

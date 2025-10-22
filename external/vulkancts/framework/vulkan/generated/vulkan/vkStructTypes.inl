@@ -473,14 +473,31 @@ struct VkBufferImageCopy
 	VkExtent3D					imageExtent;
 };
 
-struct VkCopyMemoryIndirectCommandNV
+struct VkStridedDeviceAddressRangeKHR
+{
+	VkDeviceAddress	address;
+	VkDeviceSize	size;
+	VkDeviceSize	stride;
+};
+
+struct VkCopyMemoryIndirectCommandKHR
 {
 	VkDeviceAddress	srcAddress;
 	VkDeviceAddress	dstAddress;
 	VkDeviceSize	size;
 };
 
-struct VkCopyMemoryToImageIndirectCommandNV
+struct VkCopyMemoryIndirectInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAddressCopyFlagsKHR			srcCopyFlags;
+	VkAddressCopyFlagsKHR			dstCopyFlags;
+	uint32_t						copyCount;
+	VkStridedDeviceAddressRangeKHR	copyAddressRange;
+};
+
+struct VkCopyMemoryToImageIndirectCommandKHR
 {
 	VkDeviceAddress				srcAddress;
 	uint32_t					bufferRowLength;
@@ -488,6 +505,18 @@ struct VkCopyMemoryToImageIndirectCommandNV
 	VkImageSubresourceLayers	imageSubresource;
 	VkOffset3D					imageOffset;
 	VkExtent3D					imageExtent;
+};
+
+struct VkCopyMemoryToImageIndirectInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkAddressCopyFlagsKHR			srcCopyFlags;
+	uint32_t						copyCount;
+	VkStridedDeviceAddressRangeKHR	copyAddressRange;
+	VkImage							dstImage;
+	VkImageLayout					dstImageLayout;
+	const VkImageSubresourceLayers*	pImageSubresources;
 };
 
 struct VkImageResolve
@@ -4378,6 +4407,14 @@ struct VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV
 	VkBool32		dedicatedAllocationImageAliasing;
 };
 
+struct VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		indirectMemoryCopy;
+	VkBool32		indirectMemoryToImageCopy;
+};
+
 struct VkPhysicalDeviceCopyMemoryIndirectFeaturesNV
 {
 	VkStructureType	sType;
@@ -4385,7 +4422,7 @@ struct VkPhysicalDeviceCopyMemoryIndirectFeaturesNV
 	VkBool32		indirectCopy;
 };
 
-struct VkPhysicalDeviceCopyMemoryIndirectPropertiesNV
+struct VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR
 {
 	VkStructureType	sType;
 	void*			pNext;
@@ -5569,7 +5606,7 @@ struct VkPhysicalDeviceSubgroupSizeControlProperties
 struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfo
 {
 	VkStructureType	sType;
-	void*			pNext;
+	const void*		pNext;
 	uint32_t		requiredSubgroupSize;
 };
 
@@ -8547,6 +8584,15 @@ struct VkPhysicalDeviceFragmentShaderBarycentricPropertiesKHR
 	VkBool32		triStripVertexOrderIndependentOfProvokingVertex;
 };
 
+struct VkPhysicalDeviceShaderFmaFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFmaFloat16;
+	VkBool32		shaderFmaFloat32;
+	VkBool32		shaderFmaFloat64;
+};
+
 struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
 {
 	VkStructureType	sType;
@@ -10781,6 +10827,26 @@ struct VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT
 	VkBool32		vertexAttributeRobustness;
 };
 
+struct VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		denseGeometryFormat;
+};
+
+struct VkAccelerationStructureDenseGeometryFormatTrianglesDataAMDX
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceOrHostAddressConstKHR	compressedData;
+	VkDeviceSize					dataSize;
+	uint32_t						numTriangles;
+	uint32_t						numVertices;
+	uint32_t						maxPrimitiveIndex;
+	uint32_t						maxGeometryIndex;
+	VkCompressedTriangleFormatAMDX	format;
+};
+
 struct VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
 {
 	VkStructureType	sType;
@@ -11190,7 +11256,7 @@ struct VkPhysicalDeviceShaderFloat8FeaturesEXT
 	VkBool32		shaderFloat8CooperativeMatrix;
 };
 
-struct VkOHSurfaceCreateInfoOHOS
+struct VkSurfaceCreateInfoOHOS
 {
 	VkStructureType				sType;
 	const void*					pNext;
@@ -11389,6 +11455,47 @@ struct VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		pipelineCacheIncrementalMode;
+};
+
+struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderUntypedPointers;
+};
+
+struct VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoEncodeRgbConversion;
+};
+
+struct VkVideoEncodeRgbConversionCapabilitiesVALVE
+{
+	VkStructureType								sType;
+	void*										pNext;
+	VkVideoEncodeRgbModelConversionFlagsVALVE	rgbModels;
+	VkVideoEncodeRgbRangeCompressionFlagsVALVE	rgbRanges;
+	VkVideoEncodeRgbChromaOffsetFlagsVALVE		xChromaOffsets;
+	VkVideoEncodeRgbChromaOffsetFlagsVALVE		yChromaOffsets;
+};
+
+struct VkVideoEncodeProfileRgbConversionInfoVALVE
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		performEncodeRgbConversion;
+};
+
+struct VkVideoEncodeSessionRgbConversionCreateInfoVALVE
+{
+	VkStructureType									sType;
+	const void*										pNext;
+	VkVideoEncodeRgbModelConversionFlagBitsVALVE	rgbModel;
+	VkVideoEncodeRgbRangeCompressionFlagBitsVALVE	rgbRange;
+	VkVideoEncodeRgbChromaOffsetFlagBitsVALVE		xChromaOffset;
+	VkVideoEncodeRgbChromaOffsetFlagBitsVALVE		yChromaOffset;
 };
 
 struct StdVideoH264SpsVuiFlags
@@ -12931,6 +13038,10 @@ struct VkVideoEncodeAV1DpbSlotInfoKHR
 
 typedef VkBufferUsageFlags2CreateInfo VkBufferUsageFlags2CreateInfoKHR;
 
+typedef VkCopyMemoryIndirectCommandKHR VkCopyMemoryIndirectCommandNV;
+
+typedef VkCopyMemoryToImageIndirectCommandKHR VkCopyMemoryToImageIndirectCommandNV;
+
 typedef VkPipelineCreateFlags2CreateInfo VkPipelineCreateFlags2CreateInfoKHR;
 
 typedef VkDevicePrivateDataCreateInfo VkDevicePrivateDataCreateInfoEXT;
@@ -13193,6 +13304,8 @@ typedef VkSubpassDescriptionDepthStencilResolve VkSubpassDescriptionDepthStencil
 
 typedef VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR VkPhysicalDeviceComputeShaderDerivativesFeaturesNV;
 
+typedef VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR VkPhysicalDeviceCopyMemoryIndirectPropertiesNV;
+
 typedef VkImageStencilUsageCreateInfo VkImageStencilUsageCreateInfoEXT;
 
 typedef VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT VkPhysicalDeviceFragmentDensityMapOffsetFeaturesQCOM;
@@ -13444,6 +13557,4 @@ typedef VkRenderingInputAttachmentIndexInfo VkRenderingInputAttachmentIndexInfoK
 typedef VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT;
 
 typedef VkPhysicalDeviceDepthClampZeroOneFeaturesKHR VkPhysicalDeviceDepthClampZeroOneFeaturesEXT;
-
-typedef VkOHSurfaceCreateInfoOHOS VkSurfaceCreateInfoOHOS;
 

@@ -120,7 +120,9 @@ virtual void				cmdBlitImage											(VkCommandBuffer commandBuffer, VkImage s
 virtual void				cmdCopyBufferToImage									(VkCommandBuffer commandBuffer, VkBuffer srcBuffer, VkImage dstImage, VkImageLayout dstImageLayout, uint32_t regionCount, const VkBufferImageCopy* pRegions) const = 0;
 virtual void				cmdCopyImageToBuffer									(VkCommandBuffer commandBuffer, VkImage srcImage, VkImageLayout srcImageLayout, VkBuffer dstBuffer, uint32_t regionCount, const VkBufferImageCopy* pRegions) const = 0;
 virtual void				cmdCopyMemoryIndirectNV									(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride) const = 0;
+virtual void				cmdCopyMemoryIndirectKHR								(VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo) const = 0;
 virtual void				cmdCopyMemoryToImageIndirectNV							(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources) const = 0;
+virtual void				cmdCopyMemoryToImageIndirectKHR							(VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo) const = 0;
 virtual void				cmdUpdateBuffer											(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData) const = 0;
 virtual void				cmdFillBuffer											(VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize size, uint32_t data) const = 0;
 virtual void				cmdClearColorImage										(VkCommandBuffer commandBuffer, VkImage image, VkImageLayout imageLayout, const VkClearColorValue* pColor, uint32_t rangeCount, const VkImageSubresourceRange* pRanges) const = 0;

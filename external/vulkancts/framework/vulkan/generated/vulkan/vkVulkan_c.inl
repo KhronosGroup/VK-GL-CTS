@@ -2181,7 +2181,7 @@ extern "C" {
 #define VK_API_VERSION_1_0 VK_MAKE_API_VERSION(0, 1, 0, 0)// Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 323
+#define VK_HEADER_VERSION 329
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -3081,6 +3081,11 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_COLOR_WRITE_CREATE_INFO_EXT = 1000381001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVES_GENERATED_QUERY_FEATURES_EXT = 1000382000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR = 1000386000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNTYPED_POINTERS_FEATURES_KHR = 1000387000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_RGB_CONVERSION_FEATURES_VALVE = 1000390000,
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_RGB_CONVERSION_CAPABILITIES_VALVE = 1000390001,
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_PROFILE_RGB_CONVERSION_INFO_VALVE = 1000390002,
+    VK_STRUCTURE_TYPE_VIDEO_ENCODE_SESSION_RGB_CONVERSION_CREATE_INFO_VALVE = 1000390003,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_MIN_LOD_FEATURES_EXT = 1000391000,
     VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT = 1000391001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTI_DRAW_FEATURES_EXT = 1000392000,
@@ -3129,7 +3134,6 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM = 1000424003,
     VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_SUBMIT_INFO_ARM = 1000424004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_NV = 1000426000,
-    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV = 1000426001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_FEATURES_NV = 1000427000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MEMORY_DECOMPRESSION_PROPERTIES_NV = 1000427001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_COMPUTE_FEATURES_NV = 1000428000,
@@ -3198,6 +3202,12 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ANTI_LAG_FEATURES_AMD = 1000476000,
     VK_STRUCTURE_TYPE_ANTI_LAG_DATA_AMD = 1000476001,
     VK_STRUCTURE_TYPE_ANTI_LAG_PRESENTATION_INFO_AMD = 1000476002,
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX = 1000478000,
+#endif
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_DENSE_GEOMETRY_FORMAT_TRIANGLES_DATA_AMDX = 1000478001,
+#endif
     VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_PRESENT_ID_2_KHR = 1000479000,
     VK_STRUCTURE_TYPE_PRESENT_ID_2_KHR = 1000479001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_2_FEATURES_KHR = 1000479002,
@@ -3335,6 +3345,10 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_TILE_MEMORY_REQUIREMENTS_QCOM = 1000547002,
     VK_STRUCTURE_TYPE_TILE_MEMORY_BIND_INFO_QCOM = 1000547003,
     VK_STRUCTURE_TYPE_TILE_MEMORY_SIZE_INFO_QCOM = 1000547004,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_FEATURES_KHR = 1000549000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR = 1000426001,
+    VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR = 1000549002,
+    VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INDIRECT_INFO_KHR = 1000549003,
     VK_STRUCTURE_TYPE_DISPLAY_SURFACE_STEREO_CREATE_INFO_NV = 1000551000,
     VK_STRUCTURE_TYPE_DISPLAY_MODE_STEREO_PROPERTIES_NV = 1000551001,
     VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_CAPABILITIES_KHR = 1000552000,
@@ -3401,6 +3415,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_FEATURES_MESA = 1000575000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA = 1000575001,
     VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA = 1000575002,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FMA_FEATURES_KHR = 1000579000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT = 1000582000,
     VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_DEPTH_CLAMP_CONTROL_CREATE_INFO_EXT = 1000582001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_9_FEATURES_KHR = 1000584000,
@@ -3410,7 +3425,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_VIDEO_DECODE_H264_INLINE_SESSION_PARAMETERS_INFO_KHR = 1000586001,
     VK_STRUCTURE_TYPE_VIDEO_DECODE_H265_INLINE_SESSION_PARAMETERS_INFO_KHR = 1000586002,
     VK_STRUCTURE_TYPE_VIDEO_DECODE_AV1_INLINE_SESSION_PARAMETERS_INFO_KHR = 1000586003,
-    VK_STRUCTURE_TYPE_OH_SURFACE_CREATE_INFO_OHOS = 1000587000,
+    VK_STRUCTURE_TYPE_SURFACE_CREATE_INFO_OHOS = 1000685000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_HDR_VIVID_FEATURES_HUAWEI = 1000590000,
     VK_STRUCTURE_TYPE_HDR_VIVID_DYNAMIC_METADATA_HUAWEI = 1000590001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV = 1000593000,
@@ -3669,6 +3684,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_QCOM = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_FEATURES_EXT,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_QCOM = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FRAGMENT_DENSITY_MAP_OFFSET_PROPERTIES_EXT,
     VK_STRUCTURE_TYPE_SUBPASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_QCOM = VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_NV = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COPY_MEMORY_INDIRECT_PROPERTIES_KHR,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES_EXT = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_PROTECTED_ACCESS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES_KHR = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_5_PROPERTIES,
@@ -9117,6 +9133,7 @@ static const VkPipelineStageFlagBits2 VK_PIPELINE_STAGE_2_CLUSTER_CULLING_SHADER
 static const VkPipelineStageFlagBits2 VK_PIPELINE_STAGE_2_OPTICAL_FLOW_BIT_NV = 0x20000000ULL;
 static const VkPipelineStageFlagBits2 VK_PIPELINE_STAGE_2_CONVERT_COOPERATIVE_VECTOR_MATRIX_BIT_NV = 0x100000000000ULL;
 static const VkPipelineStageFlagBits2 VK_PIPELINE_STAGE_2_DATA_GRAPH_BIT_ARM = 0x40000000000ULL;
+static const VkPipelineStageFlagBits2 VK_PIPELINE_STAGE_2_COPY_INDIRECT_BIT_KHR = 0x400000000000ULL;
 
 typedef VkFlags64 VkAccessFlags2;
 
@@ -9299,6 +9316,7 @@ static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_OPTICAL_FLOW_IMAGE_BIT
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_OPTICAL_FLOW_VECTOR_BIT_NV = 0x20000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_OPTICAL_FLOW_COST_BIT_NV = 0x40000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_TENSOR_DATA_GRAPH_BIT_ARM = 0x1000000000000ULL;
+static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR = 0x800000000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR = 0x2000000000000ULL;
 static const VkFormatFeatureFlagBits2 VK_FORMAT_FEATURE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR = 0x4000000000000ULL;
 
@@ -9656,7 +9674,7 @@ typedef struct VkPhysicalDeviceSubgroupSizeControlProperties {
 
 typedef struct VkPipelineShaderStageRequiredSubgroupSizeCreateInfo {
     VkStructureType    sType;
-    void*              pNext;
+    const void*        pNext;
     uint32_t           requiredSubgroupSize;
 } VkPipelineShaderStageRequiredSubgroupSizeCreateInfo;
 
@@ -10220,6 +10238,9 @@ static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_RESOURCE_DESCRIPTOR_BUFFER
 static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT = 0x04000000ULL;
 static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_MICROMAP_BUILD_INPUT_READ_ONLY_BIT_EXT = 0x00800000ULL;
 static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_MICROMAP_STORAGE_BIT_EXT = 0x01000000ULL;
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_COMPRESSED_DATA_DGF1_BIT_AMDX = 0x200000000ULL;
+#endif
 static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_DATA_GRAPH_FOREIGN_DESCRIPTOR_BIT_ARM = 0x20000000ULL;
 static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_TILE_MEMORY_BIT_QCOM = 0x08000000ULL;
 static const VkBufferUsageFlagBits2 VK_BUFFER_USAGE_2_PREPROCESS_BUFFER_BIT_EXT = 0x80000000ULL;
@@ -14472,6 +14493,18 @@ VKAPI_ATTR void VKAPI_CALL vkCmdTraceRaysIndirect2KHR(
 #endif
 
 
+// VK_KHR_shader_untyped_pointers is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_untyped_pointers 1
+#define VK_KHR_SHADER_UNTYPED_POINTERS_SPEC_VERSION 1
+#define VK_KHR_SHADER_UNTYPED_POINTERS_EXTENSION_NAME "VK_KHR_shader_untyped_pointers"
+typedef struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderUntypedPointers;
+} VkPhysicalDeviceShaderUntypedPointersFeaturesKHR;
+
+
+
 // VK_KHR_portability_enumeration is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_portability_enumeration 1
 #define VK_KHR_PORTABILITY_ENUMERATION_SPEC_VERSION 1
@@ -15537,6 +15570,90 @@ VKAPI_ATTR void VKAPI_CALL vkCmdBindDescriptorBufferEmbeddedSamplers2EXT(
 #endif
 
 
+// VK_KHR_copy_memory_indirect is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_copy_memory_indirect 1
+#define VK_KHR_COPY_MEMORY_INDIRECT_SPEC_VERSION 1
+#define VK_KHR_COPY_MEMORY_INDIRECT_EXTENSION_NAME "VK_KHR_copy_memory_indirect"
+
+typedef enum VkAddressCopyFlagBitsKHR {
+    VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR = 0x00000001,
+    VK_ADDRESS_COPY_SPARSE_BIT_KHR = 0x00000002,
+    VK_ADDRESS_COPY_PROTECTED_BIT_KHR = 0x00000004,
+    VK_ADDRESS_COPY_FLAG_BITS_MAX_ENUM_KHR = 0x7FFFFFFF
+} VkAddressCopyFlagBitsKHR;
+typedef VkFlags VkAddressCopyFlagsKHR;
+typedef struct VkStridedDeviceAddressRangeKHR {
+    VkDeviceAddress    address;
+    VkDeviceSize       size;
+    VkDeviceSize       stride;
+} VkStridedDeviceAddressRangeKHR;
+
+typedef struct VkCopyMemoryIndirectCommandKHR {
+    VkDeviceAddress    srcAddress;
+    VkDeviceAddress    dstAddress;
+    VkDeviceSize       size;
+} VkCopyMemoryIndirectCommandKHR;
+
+typedef struct VkCopyMemoryIndirectInfoKHR {
+    VkStructureType                   sType;
+    const void*                       pNext;
+    VkAddressCopyFlagsKHR             srcCopyFlags;
+    VkAddressCopyFlagsKHR             dstCopyFlags;
+    uint32_t                          copyCount;
+    VkStridedDeviceAddressRangeKHR    copyAddressRange;
+} VkCopyMemoryIndirectInfoKHR;
+
+typedef struct VkCopyMemoryToImageIndirectCommandKHR {
+    VkDeviceAddress             srcAddress;
+    uint32_t                    bufferRowLength;
+    uint32_t                    bufferImageHeight;
+    VkImageSubresourceLayers    imageSubresource;
+    VkOffset3D                  imageOffset;
+    VkExtent3D                  imageExtent;
+} VkCopyMemoryToImageIndirectCommandKHR;
+
+typedef struct VkCopyMemoryToImageIndirectInfoKHR {
+    VkStructureType                    sType;
+    const void*                        pNext;
+    VkAddressCopyFlagsKHR              srcCopyFlags;
+    uint32_t                           copyCount;
+    VkStridedDeviceAddressRangeKHR     copyAddressRange;
+    VkImage                            dstImage;
+    VkImageLayout                      dstImageLayout;
+    const VkImageSubresourceLayers*    pImageSubresources;
+} VkCopyMemoryToImageIndirectInfoKHR;
+
+typedef struct VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           indirectMemoryCopy;
+    VkBool32           indirectMemoryToImageCopy;
+} VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR;
+
+typedef struct VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkQueueFlags       supportedQueues;
+} VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR;
+
+typedef void (VKAPI_PTR *PFN_vkCmdCopyMemoryIndirectKHR)(VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo);
+typedef void (VKAPI_PTR *PFN_vkCmdCopyMemoryToImageIndirectKHR)(VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo);
+
+#ifndef VK_NO_PROTOTYPES
+#ifndef VK_ONLY_EXPORTED_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyMemoryIndirectKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkCopyMemoryIndirectInfoKHR*          pCopyMemoryIndirectInfo);
+#endif
+
+#ifndef VK_ONLY_EXPORTED_PROTOTYPES
+VKAPI_ATTR void VKAPI_CALL vkCmdCopyMemoryToImageIndirectKHR(
+    VkCommandBuffer                             commandBuffer,
+    const VkCopyMemoryToImageIndirectInfoKHR*   pCopyMemoryToImageIndirectInfo);
+#endif
+#endif
+
+
 // VK_KHR_video_encode_intra_refresh is a preprocessor guard. Do not pass it to API calls.
 #define VK_KHR_video_encode_intra_refresh 1
 #define VK_KHR_VIDEO_ENCODE_INTRA_REFRESH_SPEC_VERSION 1
@@ -15736,18 +15853,32 @@ typedef VkFlags64 VkAccessFlags3KHR;
 typedef VkFlags64 VkAccessFlagBits3KHR;
 static const VkAccessFlagBits3KHR VK_ACCESS_3_NONE_KHR = 0ULL;
 
-typedef struct VkPhysicalDeviceMaintenance8FeaturesKHR {
-    VkStructureType    sType;
-    void*              pNext;
-    VkBool32           maintenance8;
-} VkPhysicalDeviceMaintenance8FeaturesKHR;
-
 typedef struct VkMemoryBarrierAccessFlags3KHR {
     VkStructureType      sType;
     const void*          pNext;
     VkAccessFlags3KHR    srcAccessMask3;
     VkAccessFlags3KHR    dstAccessMask3;
 } VkMemoryBarrierAccessFlags3KHR;
+
+typedef struct VkPhysicalDeviceMaintenance8FeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           maintenance8;
+} VkPhysicalDeviceMaintenance8FeaturesKHR;
+
+
+
+// VK_KHR_shader_fma is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_shader_fma 1
+#define VK_KHR_SHADER_FMA_SPEC_VERSION    1
+#define VK_KHR_SHADER_FMA_EXTENSION_NAME  "VK_KHR_shader_fma"
+typedef struct VkPhysicalDeviceShaderFmaFeaturesKHR {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderFmaFloat16;
+    VkBool32           shaderFmaFloat32;
+    VkBool32           shaderFmaFloat64;
+} VkPhysicalDeviceShaderFmaFeaturesKHR;
 
 
 
@@ -17848,6 +17979,9 @@ typedef enum VkGeometryTypeKHR {
     VK_GEOMETRY_TYPE_INSTANCES_KHR = 2,
     VK_GEOMETRY_TYPE_SPHERES_NV = 1000429004,
     VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV = 1000429005,
+#ifdef VK_ENABLE_BETA_EXTENSIONS
+    VK_GEOMETRY_TYPE_DENSE_GEOMETRY_FORMAT_TRIANGLES_AMDX = 1000478000,
+#endif
     VK_GEOMETRY_TYPE_TRIANGLES_NV = VK_GEOMETRY_TYPE_TRIANGLES_KHR,
     VK_GEOMETRY_TYPE_AABBS_NV = VK_GEOMETRY_TYPE_AABBS_KHR,
     VK_GEOMETRY_TYPE_MAX_ENUM_KHR = 0x7FFFFFFF
@@ -20226,7 +20360,7 @@ typedef struct VkDeviceDiagnosticsConfigCreateInfoNV {
 
 // VK_QCOM_tile_shading is a preprocessor guard. Do not pass it to API calls.
 #define VK_QCOM_tile_shading 1
-#define VK_QCOM_TILE_SHADING_SPEC_VERSION 1
+#define VK_QCOM_TILE_SHADING_SPEC_VERSION 2
 #define VK_QCOM_TILE_SHADING_EXTENSION_NAME "VK_QCOM_tile_shading"
 
 typedef enum VkTileShadingRenderPassFlagBitsQCOM {
@@ -21454,6 +21588,66 @@ typedef VkQueueFamilyGlobalPriorityProperties VkQueueFamilyGlobalPriorityPropert
 
 
 
+// VK_VALVE_video_encode_rgb_conversion is a preprocessor guard. Do not pass it to API calls.
+#define VK_VALVE_video_encode_rgb_conversion 1
+#define VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION_SPEC_VERSION 1
+#define VK_VALVE_VIDEO_ENCODE_RGB_CONVERSION_EXTENSION_NAME "VK_VALVE_video_encode_rgb_conversion"
+
+typedef enum VkVideoEncodeRgbModelConversionFlagBitsVALVE {
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_RGB_IDENTITY_BIT_VALVE = 0x00000001,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_IDENTITY_BIT_VALVE = 0x00000002,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_709_BIT_VALVE = 0x00000004,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_601_BIT_VALVE = 0x00000008,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_YCBCR_2020_BIT_VALVE = 0x00000010,
+    VK_VIDEO_ENCODE_RGB_MODEL_CONVERSION_FLAG_BITS_MAX_ENUM_VALVE = 0x7FFFFFFF
+} VkVideoEncodeRgbModelConversionFlagBitsVALVE;
+typedef VkFlags VkVideoEncodeRgbModelConversionFlagsVALVE;
+
+typedef enum VkVideoEncodeRgbRangeCompressionFlagBitsVALVE {
+    VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FULL_RANGE_BIT_VALVE = 0x00000001,
+    VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_NARROW_RANGE_BIT_VALVE = 0x00000002,
+    VK_VIDEO_ENCODE_RGB_RANGE_COMPRESSION_FLAG_BITS_MAX_ENUM_VALVE = 0x7FFFFFFF
+} VkVideoEncodeRgbRangeCompressionFlagBitsVALVE;
+typedef VkFlags VkVideoEncodeRgbRangeCompressionFlagsVALVE;
+
+typedef enum VkVideoEncodeRgbChromaOffsetFlagBitsVALVE {
+    VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_COSITED_EVEN_BIT_VALVE = 0x00000001,
+    VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_MIDPOINT_BIT_VALVE = 0x00000002,
+    VK_VIDEO_ENCODE_RGB_CHROMA_OFFSET_FLAG_BITS_MAX_ENUM_VALVE = 0x7FFFFFFF
+} VkVideoEncodeRgbChromaOffsetFlagBitsVALVE;
+typedef VkFlags VkVideoEncodeRgbChromaOffsetFlagsVALVE;
+typedef struct VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           videoEncodeRgbConversion;
+} VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE;
+
+typedef struct VkVideoEncodeRgbConversionCapabilitiesVALVE {
+    VkStructureType                               sType;
+    void*                                         pNext;
+    VkVideoEncodeRgbModelConversionFlagsVALVE     rgbModels;
+    VkVideoEncodeRgbRangeCompressionFlagsVALVE    rgbRanges;
+    VkVideoEncodeRgbChromaOffsetFlagsVALVE        xChromaOffsets;
+    VkVideoEncodeRgbChromaOffsetFlagsVALVE        yChromaOffsets;
+} VkVideoEncodeRgbConversionCapabilitiesVALVE;
+
+typedef struct VkVideoEncodeProfileRgbConversionInfoVALVE {
+    VkStructureType    sType;
+    const void*        pNext;
+    VkBool32           performEncodeRgbConversion;
+} VkVideoEncodeProfileRgbConversionInfoVALVE;
+
+typedef struct VkVideoEncodeSessionRgbConversionCreateInfoVALVE {
+    VkStructureType                                  sType;
+    const void*                                      pNext;
+    VkVideoEncodeRgbModelConversionFlagBitsVALVE     rgbModel;
+    VkVideoEncodeRgbRangeCompressionFlagBitsVALVE    rgbRange;
+    VkVideoEncodeRgbChromaOffsetFlagBitsVALVE        xChromaOffset;
+    VkVideoEncodeRgbChromaOffsetFlagBitsVALVE        yChromaOffset;
+} VkVideoEncodeSessionRgbConversionCreateInfoVALVE;
+
+
+
 // VK_EXT_image_view_min_lod is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_image_view_min_lod 1
 #define VK_EXT_IMAGE_VIEW_MIN_LOD_SPEC_VERSION 1
@@ -22159,20 +22353,9 @@ typedef VkRenderPassFragmentDensityMapOffsetEndInfoEXT VkSubpassFragmentDensityM
 #define VK_NV_copy_memory_indirect 1
 #define VK_NV_COPY_MEMORY_INDIRECT_SPEC_VERSION 1
 #define VK_NV_COPY_MEMORY_INDIRECT_EXTENSION_NAME "VK_NV_copy_memory_indirect"
-typedef struct VkCopyMemoryIndirectCommandNV {
-    VkDeviceAddress    srcAddress;
-    VkDeviceAddress    dstAddress;
-    VkDeviceSize       size;
-} VkCopyMemoryIndirectCommandNV;
+typedef VkCopyMemoryIndirectCommandKHR VkCopyMemoryIndirectCommandNV;
 
-typedef struct VkCopyMemoryToImageIndirectCommandNV {
-    VkDeviceAddress             srcAddress;
-    uint32_t                    bufferRowLength;
-    uint32_t                    bufferImageHeight;
-    VkImageSubresourceLayers    imageSubresource;
-    VkOffset3D                  imageOffset;
-    VkExtent3D                  imageExtent;
-} VkCopyMemoryToImageIndirectCommandNV;
+typedef VkCopyMemoryToImageIndirectCommandKHR VkCopyMemoryToImageIndirectCommandNV;
 
 typedef struct VkPhysicalDeviceCopyMemoryIndirectFeaturesNV {
     VkStructureType    sType;
@@ -22180,11 +22363,7 @@ typedef struct VkPhysicalDeviceCopyMemoryIndirectFeaturesNV {
     VkBool32           indirectCopy;
 } VkPhysicalDeviceCopyMemoryIndirectFeaturesNV;
 
-typedef struct VkPhysicalDeviceCopyMemoryIndirectPropertiesNV {
-    VkStructureType    sType;
-    void*              pNext;
-    VkQueueFlags       supportedQueues;
-} VkPhysicalDeviceCopyMemoryIndirectPropertiesNV;
+typedef VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR VkPhysicalDeviceCopyMemoryIndirectPropertiesNV;
 
 typedef void (VKAPI_PTR *PFN_vkCmdCopyMemoryIndirectNV)(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride);
 typedef void (VKAPI_PTR *PFN_vkCmdCopyMemoryToImageIndirectNV)(VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources);

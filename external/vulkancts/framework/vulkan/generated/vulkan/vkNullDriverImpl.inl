@@ -1245,6 +1245,12 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryIndirectNV (VkCommandBuffer commandBuffe
 	DE_UNREF(stride);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryIndirectInfoKHR* pCopyMemoryIndirectInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyMemoryIndirectInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToImageIndirectNV (VkCommandBuffer commandBuffer, VkDeviceAddress copyBufferAddress, uint32_t copyCount, uint32_t stride, VkImage dstImage, VkImageLayout dstImageLayout, const VkImageSubresourceLayers* pImageSubresources)
 {
 	DE_UNREF(commandBuffer);
@@ -1254,6 +1260,12 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToImageIndirectNV (VkCommandBuffer comma
 	DE_UNREF(dstImage);
 	DE_UNREF(dstImageLayout);
 	DE_UNREF(pImageSubresources);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdCopyMemoryToImageIndirectKHR (VkCommandBuffer commandBuffer, const VkCopyMemoryToImageIndirectInfoKHR* pCopyMemoryToImageIndirectInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pCopyMemoryToImageIndirectInfo);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuffer dstBuffer, VkDeviceSize dstOffset, VkDeviceSize dataSize, const void* pData)
@@ -4870,7 +4882,9 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdCopyBufferToImage,										cmdCopyBufferToImage),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyImageToBuffer,										cmdCopyImageToBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryIndirectNV,									cmdCopyMemoryIndirectNV),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryIndirectKHR,									cmdCopyMemoryIndirectKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToImageIndirectNV,							cmdCopyMemoryToImageIndirectNV),
+	VK_NULL_FUNC_ENTRY(vkCmdCopyMemoryToImageIndirectKHR,							cmdCopyMemoryToImageIndirectKHR),
 	VK_NULL_FUNC_ENTRY(vkCmdUpdateBuffer,											cmdUpdateBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdFillBuffer,												cmdFillBuffer),
 	VK_NULL_FUNC_ENTRY(vkCmdClearColorImage,										cmdClearColorImage),

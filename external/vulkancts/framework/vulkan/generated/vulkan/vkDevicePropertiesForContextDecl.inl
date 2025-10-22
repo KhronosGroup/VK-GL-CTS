@@ -65,7 +65,6 @@ const vk::VkPhysicalDeviceMaintenance4Properties&						getMaintenance4Properties
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&						getShaderCorePropertiesARM						(void) const;
 const vk::VkPhysicalDeviceSchedulingControlsPropertiesARM&				getSchedulingControlsPropertiesARM				(void) const;
 const vk::VkPhysicalDeviceRenderPassStripedPropertiesARM&				getRenderPassStripedPropertiesARM				(void) const;
-const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesNV&				getCopyMemoryIndirectProperties					(void) const;
 const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				getMemoryDecompressionProperties				(void) const;
 const vk::VkPhysicalDeviceImageProcessingPropertiesQCOM&				getImageProcessingPropertiesQCOM				(void) const;
 const vk::VkPhysicalDeviceNestedCommandBufferPropertiesEXT&				getNestedCommandBufferPropertiesEXT				(void) const;
@@ -90,6 +89,7 @@ const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&					getLayeredDriverPrope
 const vk::VkPhysicalDeviceLineRasterizationProperties&					getLineRasterizationProperties					(void) const;
 const vk::VkPhysicalDeviceMaintenance6Properties&						getMaintenance6Properties						(void) const;
 const vk::VkPhysicalDeviceTileMemoryHeapPropertiesQCOM&					getTileMemoryHeapPropertiesQCOM					(void) const;
+const vk::VkPhysicalDeviceCopyMemoryIndirectPropertiesKHR&				getCopyMemoryIndirectProperties					(void) const;
 const vk::VkPhysicalDeviceExternalComputeQueuePropertiesNV&				getExternalComputeQueuePropertiesNV				(void) const;
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&					getMaintenance7Properties						(void) const;
 const vk::VkPhysicalDeviceClusterAccelerationStructurePropertiesNV&		getClusterAccelerationStructurePropertiesNV		(void) const;
