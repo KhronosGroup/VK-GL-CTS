@@ -3309,12 +3309,9 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                     for (int k = 0; k < decltype(threshold)::SIZE; ++k)
                         threshold[k] = std::max(resultThreshold[k], origThreshold[k]);
 
+                    // Widen thresholds a bit due to possible low-precision sRGB conversions.
                     if (tcu::isSRGB(resultTcuFormat) || tcu::isSRGB(origTcuFormat))
-                    {
-                        // Widen thresholds a bit due to possible low-precision sRGB conversions.
-                        for (int k = 0; k < decltype(threshold)::SIZE; ++k)
-                            threshold[k] *= 2.0f;
-                    }
+                        threshold = threshold * tcu::Vec4(2.0f);
 
                     const auto imageSetName = "Resolve" + std::to_string(i) + "_Attachment" + std::to_string(idx);
                     if (!tcu::floatThresholdCompare(log, imageSetName.c_str(), "", reference, levelResult, threshold,
@@ -4469,6 +4466,189 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
             }
         }
+        // Depth/stencil with resolve format not the same as the upload format.
+        // Upload depth and resolve depth using different formats.
+        {
+            TestParams params;
+            params.groupParams = groupParams;
+
+            const std::vector<VkFormat> depthFormats{
+                VK_FORMAT_D16_UNORM,         VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,
+                VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,   VK_FORMAT_D32_SFLOAT_S8_UINT,
+            };
+
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
+            params.uploadPasses.push_back(UploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_DEPTH_BIT)},
+            });
+            params.resolvePasses.push_back(ResolvePass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {
+                    AttachmentResolve(0u, VK_IMAGE_ASPECT_DEPTH_BIT, ResolveType::SELECTED_SAMPLE, StrategyParams(2u)),
+                },
+            });
+
+            for (const auto origFormat : depthFormats)
+                for (const auto resolveFormat : depthFormats)
+                {
+                    if (origFormat == resolveFormat)
+                        continue;
+
+                    params.attachmentList.front().attachmentFormat = origFormat;
+                    params.attachmentList.front().resolveFormat    = resolveFormat;
+
+                    const auto testName = "depth_format_change_" + dsFormatNames.at(origFormat) + "_to_" +
+                                          dsFormatNames.at(resolveFormat);
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                }
+        }
+        {
+            // Depth/stencil with resolve format not the same as the upload format.
+            // Upload stencil and resolve stencil using different formats.
+            TestParams params;
+            params.groupParams = groupParams;
+
+            const std::vector<VkFormat> stencilFormats{
+                VK_FORMAT_S8_UINT,
+                VK_FORMAT_D16_UNORM_S8_UINT,
+                VK_FORMAT_D24_UNORM_S8_UINT,
+                VK_FORMAT_D32_SFLOAT_S8_UINT,
+            };
+
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
+            params.uploadPasses.push_back(UploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_STENCIL_BIT)},
+            });
+            params.resolvePasses.push_back(ResolvePass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {
+                    AttachmentResolve(0u, VK_IMAGE_ASPECT_STENCIL_BIT, ResolveType::SELECTED_SAMPLE,
+                                      StrategyParams(3u)),
+                },
+            });
+
+            for (const auto origFormat : stencilFormats)
+                for (const auto resolveFormat : stencilFormats)
+                {
+                    if (origFormat == resolveFormat)
+                        continue;
+
+                    params.attachmentList.front().attachmentFormat = origFormat;
+                    params.attachmentList.front().resolveFormat    = resolveFormat;
+
+                    const auto testName = "stencil_format_change_" + dsFormatNames.at(origFormat) + "_to_" +
+                                          dsFormatNames.at(resolveFormat);
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                }
+        }
+        {
+            // Depth/stencil with resolve format not the same as the upload format.
+            // Upload depth and stencil together, and resolve them in different formats.
+            TestParams params;
+            params.groupParams = groupParams;
+
+            const std::vector<VkFormat> dsFormats{
+                VK_FORMAT_D16_UNORM_S8_UINT,
+                VK_FORMAT_D24_UNORM_S8_UINT,
+                VK_FORMAT_D32_SFLOAT_S8_UINT,
+            };
+
+            const UploadPass depthUploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_DEPTH_BIT)},
+            };
+
+            const UploadPass stencilUploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_STENCIL_BIT)},
+            };
+
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
+            params.uploadPasses.push_back(UploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT))},
+            });
+            params.resolvePasses.push_back(ResolvePass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {
+                    AttachmentResolve(0u, (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT),
+                                      ResolveType::SELECTED_SAMPLE, StrategyParams(2u)),
+                },
+            });
+
+            for (const auto origFormat : dsFormats)
+                for (const auto resolveFormat : dsFormats)
+                {
+                    if (origFormat == resolveFormat)
+                        continue;
+
+                    params.attachmentList.front().attachmentFormat = origFormat;
+                    params.attachmentList.front().resolveFormat    = resolveFormat;
+
+                    const auto testName = "depth_stencil_format_change_" + dsFormatNames.at(origFormat) + "_to_" +
+                                          dsFormatNames.at(resolveFormat);
+                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                }
+        }
+        {
+            // Depth/stencil with resolve format not the same as the upload format.
+            // Upload depth and stencil separately, and resolve them in different formats.
+            TestParams params;
+            params.groupParams = groupParams;
+
+            const std::vector<VkFormat> dsFormats{
+                VK_FORMAT_D16_UNORM_S8_UINT,
+                VK_FORMAT_D24_UNORM_S8_UINT,
+                VK_FORMAT_D32_SFLOAT_S8_UINT,
+            };
+
+            const UploadPass depthUploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_DEPTH_BIT)},
+            };
+
+            const UploadPass stencilUploadPass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_STENCIL_BIT)},
+            };
+
+            params.attachmentList.emplace_back(VK_FORMAT_UNDEFINED, VK_SAMPLE_COUNT_4_BIT, VK_FORMAT_UNDEFINED, 0u,
+                                               true, true);
+            params.resolvePasses.push_back(ResolvePass{
+                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                {
+                    AttachmentResolve(0u, (VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT),
+                                      ResolveType::SELECTED_SAMPLE, StrategyParams(2u)),
+                },
+            });
+
+            for (const auto origFormat : dsFormats)
+                for (const auto resolveFormat : dsFormats)
+                {
+                    if (origFormat == resolveFormat)
+                        continue;
+
+                    params.attachmentList.front().attachmentFormat = origFormat;
+                    params.attachmentList.front().resolveFormat    = resolveFormat;
+
+                    for (const bool uploadDepthFirst : {true, false})
+                    {
+                        params.uploadPasses.clear();
+                        params.uploadPasses.push_back(uploadDepthFirst ? depthUploadPass : stencilUploadPass);
+                        params.uploadPasses.push_back(uploadDepthFirst ? stencilUploadPass : depthUploadPass);
+
+                        const auto testName = "depth_stencil_format_change_" + dsFormatNames.at(origFormat) + "_to_" +
+                                              dsFormatNames.at(resolveFormat) + "_upload_" +
+                                              (uploadDepthFirst ? "depth" : "stencil") + "_first";
+                        constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                    }
+                }
+        }
         {
             // Attachment index tests: simple test but the resolve pipeline uses a different att index.
             // This will prevent the upload and resolve passes from being merged in dynamic rendering.
@@ -4808,10 +4988,10 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
         }
 
         mainGroup->addChild(constructionGroup.release());
-    }
+    } // namespace renderpass
 
     return mainGroup.release();
-}
+} // namespace vkt
 
 } // namespace renderpass
 } // namespace vkt
