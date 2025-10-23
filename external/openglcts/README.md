@@ -556,7 +556,7 @@ Full list of parameters for the `glcts` binary:
     Suppress messages to standard output
 
   -n, --deqp-case=<value>
-    Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
+    Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to separate multiple patterns
 
   --deqp-caselist=<value>
     Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})
