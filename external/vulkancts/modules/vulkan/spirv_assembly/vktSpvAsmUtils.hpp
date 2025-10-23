@@ -141,6 +141,30 @@ public:
     virtual size_t getByteSize(void) const                         = 0;
 };
 
+class UninitializedBuffer : public BufferInterface
+{
+public:
+    UninitializedBuffer(size_t sz) : size(sz)
+    {
+    }
+
+    virtual void getBytes(std::vector<uint8_t> &bytes) const override
+    {
+        bytes.resize(size);
+    }
+    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const override
+    {
+        bytes.resize(size);
+    }
+    virtual size_t getByteSize(void) const override
+    {
+        return size;
+    }
+
+private:
+    size_t size;
+};
+
 typedef de::SharedPtr<BufferInterface> BufferSp;
 typedef de::MovePtr<vk::Allocation> AllocationMp;
 typedef de::SharedPtr<vk::Allocation> AllocationSp;

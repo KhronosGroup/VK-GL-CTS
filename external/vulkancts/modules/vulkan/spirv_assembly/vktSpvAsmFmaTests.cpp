@@ -881,14 +881,11 @@ size_t addInputOutputBuffers(ComputeShaderSpec &spec, InputMode inputMode, uint3
 
     FillInputs(inputs1, inputs2, inputs3, inputMode, vecSz);
 
-    // A buffer must be provided for the outputs (probably?) but they're not going to be used, so nothing
-    // is filled in here. The reference value is computed from the inputs in the verification function.
-    vector<T> outputs(inputs1.size(), 0);
-
     spec.inputs.push_back(BufferSp(new Buffer<T>(inputs1)));
     spec.inputs.push_back(BufferSp(new Buffer<T>(inputs2)));
     spec.inputs.push_back(BufferSp(new Buffer<T>(inputs3)));
-    spec.outputs.push_back(BufferSp(new Buffer<T>(outputs)));
+    // Not used. The reference value is computed from the inputs in the verification function.
+    spec.outputs.push_back(BufferSp(new UninitializedBuffer(inputs1.size() * sizeof(T))));
 
     return inputs1.size();
 }

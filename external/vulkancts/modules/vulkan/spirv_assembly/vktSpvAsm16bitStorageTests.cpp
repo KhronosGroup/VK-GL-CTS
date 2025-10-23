@@ -2246,7 +2246,6 @@ void addCompute16bitStorageUniform16To16Group(tcu::TestCaseGroup *group)
     de::Random rnd(deStringHash(group->getName()));
     const int numElements               = 128;
     const vector<deFloat16> float16Data = getFloat16s(rnd, numElements);
-    const vector<deFloat16> float16UnusedData(numElements, 0);
     ComputeShaderSpec spec;
 
     std::ostringstream shaderTemplate;
@@ -2315,7 +2314,7 @@ void addCompute16bitStorageUniform16To16Group(tcu::TestCaseGroup *group)
     spec.verifyIO       = computeCheckBuffersFloats;
     spec.coherentMemory = true;
     spec.inputs.push_back(Resource(BufferSp(new Float16Buffer(float16Data))));
-    spec.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16UnusedData))));
+    spec.outputs.push_back(Resource(BufferSp(new UninitializedBuffer(numElements * sizeof(deFloat16)))));
     spec.extensions.push_back("VK_KHR_16bit_storage");
     spec.requestedVulkanFeatures = get16BitStorageFeatures("uniform_buffer_block");
 
@@ -2448,8 +2447,6 @@ void addCompute16bitStorageUniform32To16Group(tcu::TestCaseGroup *group)
              {"matrix", "v4f32", "v4f16",
               "OpDecorate %m2v4f32arr ArrayStride 32\nOpDecorate %m2v4f16arr ArrayStride 16\n", numElements / 8, 1}}};
 
-        vector<deFloat16> float16UnusedData(numElements, 0);
-
         for (uint32_t capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
             for (uint32_t tyIdx = 0; tyIdx < DE_LENGTH_OF_ARRAY(cTypes[capIdx]); ++tyIdx)
                 for (uint32_t rndModeIdx = 0; rndModeIdx < DE_LENGTH_OF_ARRAY(rndModes); ++rndModeIdx)
@@ -2501,7 +2498,8 @@ void addCompute16bitStorageUniform32To16Group(tcu::TestCaseGroup *group)
                         Resource(BufferSp(new Float32Buffer(float32Data)), CAPABILITIES[capIdx].dtype));
                     // We provided a custom verifyIO in the above in which inputs will be used for checking.
                     // So put unused data in the expected values.
-                    spec.outputs.push_back(Resource(BufferSp(new Float16Buffer(float16UnusedData))));
+                    spec.outputs.push_back(
+                        Resource(BufferSp(new UninitializedBuffer(numElements * sizeof(deFloat16)))));
                     spec.extensions.push_back("VK_KHR_16bit_storage");
                     spec.requestedVulkanFeatures = get16BitStorageFeatures(CAPABILITIES[capIdx].name);
 
@@ -3285,7 +3283,6 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
     RGBA defaultColors[4];
     const vector<float> float32Data = getFloat32s(rnd, numDataPoints);
     vector<float> float32DataPadded;
-    vector<deFloat16> float16UnusedData(numDataPoints, 0);
     const StringTemplate capabilities("OpCapability ${cap}\n");
 
     for (size_t dataIdx = 0; dataIdx < float32Data.size(); ++dataIdx)
@@ -3390,7 +3387,8 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
                              VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
                 // We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
                 resources.outputs.push_back(
-                    Resource(BufferSp(new Float16Buffer(float16UnusedData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+                    Resource(BufferSp(new UninitializedBuffer(numDataPoints * sizeof(deFloat16))),
+                             VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
                 specs["cap"]         = CAPABILITIES[capIdx].cap;
                 specs["indecor"]     = CAPABILITIES[capIdx].decor;
@@ -3416,8 +3414,8 @@ void addGraphics16BitStorageUniformFloat32To16Group(tcu::TestCaseGroup *testGrou
     GraphicsResources resources;
     resources.inputs.push_back(Resource(BufferSp(new Float32Buffer(float32Data)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
     // We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
-    resources.outputs.push_back(
-        Resource(BufferSp(new Float16Buffer(float16UnusedData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    resources.outputs.push_back(Resource(BufferSp(new UninitializedBuffer(numDataPoints * sizeof(deFloat16))),
+                                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
     { // vector cases
         fragments["pre_main"] = "      %f16 = OpTypeFloat 16\n"
@@ -7596,7 +7594,6 @@ void addCompute16bitStorageUniform64To16Group(tcu::TestCaseGroup *group)
         };
 
         vector<double> float64Data = getFloat64s(rnd, numElements);
-        vector<deFloat16> float16UnusedData(numElements, 0);
 
         for (uint32_t capIdx = 0; capIdx < DE_LENGTH_OF_ARRAY(CAPABILITIES); ++capIdx)
             for (uint32_t tyIdx = 0; tyIdx < DE_LENGTH_OF_ARRAY(cTypes); ++tyIdx)
@@ -7656,7 +7653,7 @@ void addCompute16bitStorageUniform64To16Group(tcu::TestCaseGroup *group)
 
                     // We provided a custom verifyIO in the above in which inputs will be used for checking.
                     // So put unused data in the expected values.
-                    spec.outputs.push_back(BufferSp(new Float16Buffer(float16UnusedData)));
+                    spec.outputs.push_back(BufferSp(new UninitializedBuffer(numElements * sizeof(deFloat16))));
 
                     spec.extensions.push_back("VK_KHR_16bit_storage");
 
@@ -7677,12 +7674,11 @@ void addGraphics16BitStorageUniformFloat64To16Group(tcu::TestCaseGroup *testGrou
     const uint32_t numDataPoints = 256;
     RGBA defaultColors[4];
     vector<double> float64Data = getFloat64s(rnd, numDataPoints);
-    vector<deFloat16> float16UnusedData(numDataPoints, 0);
     const StringTemplate capabilities("OpCapability Float64\n"
                                       "OpCapability ${cap}\n");
     // We use a custom verifyIO to check the result via computing directly from inputs; the contents in outputs do not matter.
-    resources.outputs.push_back(
-        Resource(BufferSp(new Float16Buffer(float16UnusedData)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
+    resources.outputs.push_back(Resource(BufferSp(new UninitializedBuffer(numDataPoints * sizeof(deFloat16))),
+                                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
 
     extensions.push_back("VK_KHR_16bit_storage");
 
