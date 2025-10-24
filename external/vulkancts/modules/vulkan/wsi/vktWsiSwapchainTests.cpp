@@ -128,13 +128,6 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     return vkt::createCustomInstanceWithExtensions(context, extensions, pAllocator);
 }
 
-VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
-{
-    VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(features));
-    return features;
-}
-
 Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVersion, VkInstance instance,
                                    const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
                                    const Extensions &supportedExtensions, const vector<string> &additionalExtensions,
@@ -169,14 +162,18 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
             TCU_THROW(NotSupportedError, extName + " is not supported");
     }
 
+    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
+
+    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesEXT fifoLatestReadyFeatures = initVulkanStructure();
+    fifoLatestReadyFeatures.presentModeFifoLatestReady                            = VK_TRUE;
     for (const auto &ext : supportedExtensions)
     {
         if (strcmp(ext.extensionName, "VK_KHR_present_mode_fifo_latest_ready") == 0)
+        {
             extensions.push_back("VK_KHR_present_mode_fifo_latest_ready");
+            features2.pNext = &fifoLatestReadyFeatures;
+        }
     }
-
-    const void *pNext                       = nullptr;
-    const VkPhysicalDeviceFeatures features = getDeviceFeaturesForWsi();
 
     VkDevicePrivateDataCreateInfoEXT pdci = initVulkanStructure();
     pdci.privateDataSlotRequestCount      = 4u;
@@ -186,7 +183,8 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
 
     if (de::contains(begin(extensions), end(extensions), "VK_EXT_private_data"))
     {
-        pNext = &privateDataFeatures;
+        privateDataFeatures.pNext = features2.pNext;
+        features2.pNext           = &privateDataFeatures;
     }
 
     // Convert from std::vector<std::string> to std::vector<const char*>.
@@ -196,7 +194,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                    [](const std::string &s) { return s.c_str(); });
 
     const VkDeviceCreateInfo deviceParams = {VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                             pNext,
+                                             &features2,
                                              (VkDeviceCreateFlags)0,
                                              static_cast<uint32_t>(queueInfos.size()),
                                              queueInfos.data(),
@@ -204,7 +202,7 @@ Move<VkDevice> createDeviceWithWsi(const PlatformInterface &vkp, uint32_t apiVer
                                              nullptr,                                      // ppEnabledLayerNames
                                              static_cast<uint32_t>(extensionsChar.size()), // enabledExtensionCount
                                              extensionsChar.data(),                        // ppEnabledExtensionNames
-                                             &features};
+                                             nullptr};
 
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }

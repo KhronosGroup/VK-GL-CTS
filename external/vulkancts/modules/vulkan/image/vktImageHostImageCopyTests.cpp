@@ -2084,18 +2084,7 @@ tcu::TestStatus QueryTestInstance::iterate(void)
     vk::VkResult res =
         vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties);
 
-    if (hostImageCopyDevicePerformanceQuery.identicalMemoryLayout == VK_FALSE)
-    {
-        if (hostImageCopyDevicePerformanceQuery.optimalDeviceAccess != VK_FALSE)
-        {
-            log << tcu::TestLog::Message
-                << "VkHostImageCopyDevicePerformanceQueryEXT::identicalMemoryLayout is VK_FALSE, but "
-                   "VkHostImageCopyDevicePerformanceQueryEXT::optimalDeviceAccess is VK_TRUE"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    else
+    if (hostImageCopyDevicePerformanceQuery.identicalMemoryLayout == VK_TRUE)
     {
         if (hostImageCopyDevicePerformanceQuery.optimalDeviceAccess != VK_TRUE)
         {

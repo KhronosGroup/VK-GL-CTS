@@ -142,6 +142,9 @@ tcu::TestCaseGroup *createSpirvVersion1p4Group(tcu::TestContext &testCtx)
     std::vector<std::string> Varptr_full = Varptr_ssbo;
     Varptr_full.push_back("VariablePointerFeatures.variablePointers");
 
+    std::vector<std::string> Varptr_full_explicitLayout = Varptr_full;
+    Varptr_full_explicitLayout.push_back("VK_KHR_workgroup_memory_explicit_layout");
+
     std::vector<std::string> Int16;
     Int16.push_back("Features.shaderInt16");
 
@@ -369,9 +372,9 @@ tcu::TestCaseGroup *createSpirvVersion1p4Group(tcu::TestContext &testCtx)
     // OpSelect vector with scalar selector, new in SPIR-V 1.4
     group.add("vector_select");
     // OpSelect Workgroup pointers to different buffers, verify SPIR-V 1.0
-    group.add("wg_pointers_2_select", Varptr_full);
+    group.add("wg_pointers_2_select", Varptr_full_explicitLayout);
     // OpSelect Workgroup pointers to same buffer, verify SPIR-V 1.0
-    group.add("wg_pointers_select", Varptr_full);
+    group.add("wg_pointers_select", Varptr_full_explicitLayout);
     // SPIR-V 1.4 OpSelect more cases
     spirv1p4Tests->addChild(createTestGroup(testCtx, "opselect", addTestsForAmberFiles, group));
 
