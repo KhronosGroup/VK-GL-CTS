@@ -95,6 +95,8 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesNV&								Context::getMeshShaderFea
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&								Context::getMultiDrawFeaturesEXT							(void) const { return m_device->getMultiDrawFeaturesEXT();							}
 const vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&		Context::getMultisampledRenderToSingleSampledFeaturesEXT	(void) const { return m_device->getMultisampledRenderToSingleSampledFeaturesEXT();	}
 const vk::VkPhysicalDeviceMultiviewFeatures&								Context::getMultiviewFeatures								(void) const { return m_device->getMultiviewFeatures();								}
+const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			Context::getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewRenderAreasFeaturesQCOM();		}
+const vk::VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM&			Context::getMultiviewPerViewViewportsFeaturesQCOM			(void) const { return m_device->getMultiviewPerViewViewportsFeaturesQCOM();			}
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					Context::getMutableDescriptorTypeFeaturesEXT				(void) const { return m_device->getMutableDescriptorTypeFeaturesEXT();				}
 const vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					Context::getNestedCommandBufferFeaturesEXT					(void) const { return m_device->getNestedCommandBufferFeaturesEXT();				}
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					Context::getNonSeamlessCubeMapFeaturesEXT					(void) const { return m_device->getNonSeamlessCubeMapFeaturesEXT();					}

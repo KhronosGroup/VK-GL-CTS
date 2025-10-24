@@ -95,6 +95,8 @@ const vk::VkPhysicalDeviceMeshShaderFeaturesNV&								getMeshShaderFeatures				
 const vk::VkPhysicalDeviceMultiDrawFeaturesEXT&								getMultiDrawFeaturesEXT								(void) const;
 const vk::VkPhysicalDeviceMultisampledRenderToSingleSampledFeaturesEXT&		getMultisampledRenderToSingleSampledFeaturesEXT		(void) const;
 const vk::VkPhysicalDeviceMultiviewFeatures&								getMultiviewFeatures								(void) const;
+const vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM&			getMultiviewPerViewRenderAreasFeaturesQCOM			(void) const;
+const vk::VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM&			getMultiviewPerViewViewportsFeaturesQCOM			(void) const;
 const vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT&					getMutableDescriptorTypeFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceNestedCommandBufferFeaturesEXT&					getNestedCommandBufferFeaturesEXT					(void) const;
 const vk::VkPhysicalDeviceNonSeamlessCubeMapFeaturesEXT&					getNonSeamlessCubeMapFeaturesEXT					(void) const;

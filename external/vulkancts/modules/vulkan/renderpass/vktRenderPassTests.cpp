@@ -56,6 +56,7 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktRenderPassCustomResolveTests.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vktRenderPassMultiviewPerViewTests.hpp"
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -8506,6 +8507,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
     case RENDERING_TYPE_RENDERPASS2:
 #ifndef CTS_USES_VULKANSC
         suballocationTestGroup->addChild(createRenderPassSubpassMergeFeedbackTests(testCtx, renderingType));
+        renderingTests->addChild(createRenderPassMultiviewPerViewTests(testCtx, groupParams));
 #endif // CTS_USES_VULKANSC
         renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
 #ifndef CTS_USES_VULKANSC
@@ -8532,6 +8534,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx));
             renderingTests->addChild(createDynamicRenderingLocalReadMaint10Tests(testCtx));
             renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
+            renderingTests->addChild(createRenderPassMultiviewPerViewTests(testCtx, groupParams));
         }
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {

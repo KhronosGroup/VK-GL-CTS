@@ -11222,6 +11222,17 @@ std::ostream& operator<< (std::ostream& s, const VkMultisampledRenderToSingleSam
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM& value)
+{
+	s << "VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperViewRenderAreaCount = " << value.perViewRenderAreaCount << '\n';
+	s << "\tpPerViewRenderAreas = " << value.pPerViewRenderAreas << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value)
 {
 	s << "VkMutableDescriptorTypeCreateInfoEXT = {\n";
@@ -13571,6 +13582,26 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewFeatur
 	s << "\tmultiview = " << value.multiview << '\n';
 	s << "\tmultiviewGeometryShader = " << value.multiviewGeometryShader << '\n';
 	s << "\tmultiviewTessellationShader = " << value.multiviewTessellationShader << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultiviewPerViewRenderAreas = " << value.multiviewPerViewRenderAreas << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmultiviewPerViewViewports = " << value.multiviewPerViewViewports << '\n';
 	s << '}';
 	return s;
 }

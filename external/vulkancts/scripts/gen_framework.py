@@ -275,6 +275,8 @@ VK_NV_shader_sm_builtins
 VK_NV_shading_rate_image
 VK_NV_viewport_swizzle
 VK_QCOM_image_processing
+VK_QCOM_multiview_per_view_viewports
+VK_QCOM_multiview_per_view_render_areas
 VK_QNX_external_memory_screen_buffer
 """.splitlines()
 

@@ -536,6 +536,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleResolveTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultisampleTests.cpp",
+        "external/vulkancts/modules/vulkan/renderpass/vktRenderPassMultiviewPerViewTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassNestedCommandBuffersTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassPerformanceCountersByRegionTests.cpp",
         "external/vulkancts/modules/vulkan/renderpass/vktRenderPassRemainingArrayLayersTests.cpp",

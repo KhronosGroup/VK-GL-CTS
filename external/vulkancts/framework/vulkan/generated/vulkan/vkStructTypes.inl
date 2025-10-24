@@ -6368,6 +6368,20 @@ struct VkPhysicalDeviceMultiviewFeatures
 	VkBool32		multiviewTessellationShader;
 };
 
+struct VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewRenderAreas;
+};
+
+struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewViewports;
+};
+
 struct VkPhysicalDeviceMultiviewProperties
 {
 	VkStructureType	sType;
@@ -8652,6 +8666,14 @@ struct VkDisplayPresentInfoKHR
 	VkRect2D		srcRect;
 	VkRect2D		dstRect;
 	VkBool32		persistent;
+};
+
+struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		perViewRenderAreaCount;
+	const VkRect2D*	pPerViewRenderAreas;
 };
 
 struct VkPipelineDiscardRectangleStateCreateInfoEXT

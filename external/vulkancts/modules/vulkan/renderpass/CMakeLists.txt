@@ -36,6 +36,8 @@ set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassMultipleSubpassesMultipleCommandBuffersTests.hpp
 	vktRenderPassRemainingArrayLayersTests.cpp
 	vktRenderPassRemainingArrayLayersTests.hpp
+	vktRenderPassMultiviewPerViewTests.cpp
+	vktRenderPassMultiviewPerViewTests.hpp
 	)
 
 set(DEQP_VK_RENDER_PASS_SRCS
