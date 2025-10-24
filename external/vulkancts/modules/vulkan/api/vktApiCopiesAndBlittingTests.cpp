@@ -14506,6 +14506,52 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                 group->addChild(
                     new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers" + testNameSuffix, params));
             }
+
+            // this test applies only to linear images we limit also repeating it to non-sparse images with standard layouts
+            if ((tiling == VK_IMAGE_TILING_LINEAR) && !testGroupParams->useSparseBinding &&
+                !testGroupParams->useGeneralLayout)
+            {
+                // check if padding bytes are not overwritten between rows or images
+                // when the rowPitch is larger than a row size of the copy, or the same for imageHeight
+
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = {2u, 2u, 1u}; // small extent to trigger padding bytes
+                params.src.image.extent.depth    = 1u;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                params.src.image.fillMode        = FILL_MODE_RED;
+                params.dst.buffer.size           = defaultSize * defaultSize;
+                params.dst.buffer.fillMode       = FILL_MODE_RANDOM_GRAY;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const VkImageSubresourceLayers defaultLayer{
+                    VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                    0u,                        // uint32_t mipLevel;
+                    0u,                        // uint32_t baseArrayLayer;
+                    1u                         // uint32_t layerCount;
+                };
+
+                const VkBufferImageCopy bufferImageCopy{
+                    0,                      // VkDeviceSize bufferOffset;
+                    8,                      // uint32_t bufferRowLength;
+                    8,                      // uint32_t bufferImageHeight;
+                    defaultLayer,           // VkImageSubresourceLayers imageSubresource;
+                    {0, 0, 0},              // VkOffset3D imageOffset;
+                    params.src.image.extent // VkExtent3D imageExtent;
+                };
+
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
+                params.regions.push_back(copyRegion);
+
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "padding_bytes" + testNameSuffix, params));
+            }
         }
 
     VkExtent3D extents[] = {
