@@ -2576,6 +2576,23 @@ struct VkDebugUtilsObjectTagInfoEXT
 	const void*		pTag;
 };
 
+struct VkDecompressMemoryRegionEXT
+{
+	VkDeviceAddress	srcAddress;
+	VkDeviceAddress	dstAddress;
+	VkDeviceSize	compressedSize;
+	VkDeviceSize	decompressedSize;
+};
+
+struct VkDecompressMemoryInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkMemoryDecompressionMethodFlagsEXT	decompressionMethod;
+	uint32_t							regionCount;
+	const VkDecompressMemoryRegionEXT*	pRegions;
+};
+
 struct VkDecompressMemoryRegionNV
 {
 	VkDeviceAddress						srcAddress;
@@ -5053,6 +5070,13 @@ struct VkMutableDescriptorTypeCreateInfoEXT
 	const VkMutableDescriptorTypeListEXT*	pMutableDescriptorTypeLists;
 };
 
+struct VkNativeBufferOHOS
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	struct OHBufferHandle*	handle;
+};
+
 struct VkOffset2D
 {
 	int32_t	x;
@@ -7100,6 +7124,22 @@ struct VkPhysicalDeviceLinearColorAttachmentFeaturesNV
 	VkBool32		linearColorAttachment;
 };
 
+struct VkPhysicalDeviceMaintenance10FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance10;
+};
+
+struct VkPhysicalDeviceMaintenance10PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rgba4OpaqueBlackSwizzled;
+	VkBool32		resolveSrgbFormatAppliesTransferFunction;
+	VkBool32		resolveSrgbFormatSupportsTransferFunctionControl;
+};
+
 struct VkPhysicalDeviceMaintenance3Properties
 {
 	VkStructureType	sType;
@@ -7224,18 +7264,18 @@ struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
 	VkDeviceSize	heapUsage[VK_MAX_MEMORY_HEAPS];
 };
 
-struct VkPhysicalDeviceMemoryDecompressionFeaturesNV
+struct VkPhysicalDeviceMemoryDecompressionFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		memoryDecompression;
 };
 
-struct VkPhysicalDeviceMemoryDecompressionPropertiesNV
+struct VkPhysicalDeviceMemoryDecompressionPropertiesEXT
 {
 	VkStructureType						sType;
 	void*								pNext;
-	VkMemoryDecompressionMethodFlagsNV	decompressionMethods;
+	VkMemoryDecompressionMethodFlagsEXT	decompressionMethods;
 	uint64_t							maxDecompressionIndirectCount;
 };
 
@@ -7685,6 +7725,13 @@ struct VkPhysicalDevicePresentWaitFeaturesKHR
 	VkBool32		presentWait;
 };
 
+struct VkPhysicalDevicePresentationPropertiesOHOS
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		sharedImage;
+};
+
 struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
 {
 	VkStructureType	sType;
@@ -7973,6 +8020,13 @@ struct VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		separateDepthStencilLayouts;
+};
+
+struct VkPhysicalDeviceShader64BitIndexingFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shader64BitIndexing;
 };
 
 struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
@@ -8359,6 +8413,13 @@ struct VkPhysicalDeviceShaderTileImagePropertiesEXT
 	VkBool32		shaderTileImageCoherentReadAccelerated;
 	VkBool32		shaderTileImageReadSampleFromPixelRateInvocation;
 	VkBool32		shaderTileImageReadFromHelperInvocation;
+};
+
+struct VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderUniformBufferUnsizedArray;
 };
 
 struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
@@ -10147,6 +10208,13 @@ struct VkRenderingAreaInfo
 	VkFormat		stencilAttachmentFormat;
 };
 
+struct VkRenderingAttachmentFlagsInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkRenderingAttachmentFlagsKHR	flags;
+};
+
 struct VkRenderingAttachmentInfo
 {
 	VkStructureType			sType;
@@ -10169,7 +10237,7 @@ struct VkRenderingAttachmentLocationInfo
 	const uint32_t*	pColorAttachmentLocations;
 };
 
-struct VkRenderingEndInfoEXT
+struct VkRenderingEndInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -10226,6 +10294,15 @@ struct VkResolveImageInfo2
 	VkImageLayout			dstImageLayout;
 	uint32_t				regionCount;
 	const VkImageResolve2*	pRegions;
+};
+
+struct VkResolveImageModeInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkResolveImageFlagsKHR	flags;
+	VkResolveModeFlagBits	resolveMode;
+	VkResolveModeFlagBits	stencilResolveMode;
 };
 
 struct VkSRTDataNV
@@ -11266,6 +11343,13 @@ struct VkSwapchainDisplayNativeHdrCreateInfoAMD
 	VkStructureType	sType;
 	const void*		pNext;
 	VkBool32		localDimmingEnable;
+};
+
+struct VkSwapchainImageCreateInfoOHOS
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkSwapchainImageUsageFlagsOHOS	usage;
 };
 
 struct VkSwapchainLatencyCreateInfoNV
@@ -13449,6 +13533,12 @@ typedef VkPhysicalDeviceMaintenance6Features VkPhysicalDeviceMaintenance6Feature
 typedef VkPhysicalDeviceMaintenance6Properties VkPhysicalDeviceMaintenance6PropertiesKHR;
 
 
+typedef VkPhysicalDeviceMemoryDecompressionFeaturesEXT VkPhysicalDeviceMemoryDecompressionFeaturesNV;
+
+
+typedef VkPhysicalDeviceMemoryDecompressionPropertiesEXT VkPhysicalDeviceMemoryDecompressionPropertiesNV;
+
+
 typedef VkPhysicalDeviceMemoryProperties2 VkPhysicalDeviceMemoryProperties2KHR;
 
 
@@ -13690,6 +13780,9 @@ typedef VkRenderingAttachmentInfo VkRenderingAttachmentInfoKHR;
 
 
 typedef VkRenderingAttachmentLocationInfo VkRenderingAttachmentLocationInfoKHR;
+
+
+typedef VkRenderingEndInfoKHR VkRenderingEndInfoEXT;
 
 
 typedef VkRenderingInfo VkRenderingInfoKHR;

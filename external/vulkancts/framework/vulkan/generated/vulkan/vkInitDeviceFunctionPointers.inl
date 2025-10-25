@@ -4,6 +4,7 @@
  */
 
 m_vk.acquireFullScreenExclusiveModeEXT = (AcquireFullScreenExclusiveModeEXTFunc) GET_PROC_ADDR("vkAcquireFullScreenExclusiveModeEXT");
+m_vk.acquireImageOHOS = (AcquireImageOHOSFunc) GET_PROC_ADDR("vkAcquireImageOHOS");
 m_vk.acquireNextImage2KHR = (AcquireNextImage2KHRFunc) GET_PROC_ADDR("vkAcquireNextImage2KHR");
 m_vk.acquireNextImageKHR = (AcquireNextImageKHRFunc) GET_PROC_ADDR("vkAcquireNextImageKHR");
 m_vk.acquirePerformanceConfigurationINTEL = (AcquirePerformanceConfigurationINTELFunc) GET_PROC_ADDR("vkAcquirePerformanceConfigurationINTEL");
@@ -126,6 +127,8 @@ m_vk.cmdDebugMarkerBeginEXT = (CmdDebugMarkerBeginEXTFunc) GET_PROC_ADDR("vkCmdD
 m_vk.cmdDebugMarkerEndEXT = (CmdDebugMarkerEndEXTFunc) GET_PROC_ADDR("vkCmdDebugMarkerEndEXT");
 m_vk.cmdDebugMarkerInsertEXT = (CmdDebugMarkerInsertEXTFunc) GET_PROC_ADDR("vkCmdDebugMarkerInsertEXT");
 m_vk.cmdDecodeVideoKHR = (CmdDecodeVideoKHRFunc) GET_PROC_ADDR("vkCmdDecodeVideoKHR");
+m_vk.cmdDecompressMemoryEXT = (CmdDecompressMemoryEXTFunc) GET_PROC_ADDR("vkCmdDecompressMemoryEXT");
+m_vk.cmdDecompressMemoryIndirectCountEXT = (CmdDecompressMemoryIndirectCountEXTFunc) GET_PROC_ADDR("vkCmdDecompressMemoryIndirectCountEXT");
 m_vk.cmdDecompressMemoryIndirectCountNV = (CmdDecompressMemoryIndirectCountNVFunc) GET_PROC_ADDR("vkCmdDecompressMemoryIndirectCountNV");
 m_vk.cmdDecompressMemoryNV = (CmdDecompressMemoryNVFunc) GET_PROC_ADDR("vkCmdDecompressMemoryNV");
 m_vk.cmdDispatch = (CmdDispatchFunc) GET_PROC_ADDR("vkCmdDispatch");
@@ -181,7 +184,9 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRendering");
 if (!m_vk.cmdEndRendering)
     m_vk.cmdEndRendering = (CmdEndRenderingFunc) GET_PROC_ADDR("vkCmdEndRenderingKHR");
-m_vk.cmdEndRendering2EXT = (CmdEndRendering2EXTFunc) GET_PROC_ADDR("vkCmdEndRendering2EXT");
+m_vk.cmdEndRendering2KHR = (CmdEndRendering2KHRFunc) GET_PROC_ADDR("vkCmdEndRendering2KHR");
+if (!m_vk.cmdEndRendering2KHR)
+    m_vk.cmdEndRendering2KHR = (CmdEndRendering2KHRFunc) GET_PROC_ADDR("vkCmdEndRendering2EXT");
 m_vk.cmdEndTransformFeedbackEXT = (CmdEndTransformFeedbackEXTFunc) GET_PROC_ADDR("vkCmdEndTransformFeedbackEXT");
 m_vk.cmdEndVideoCodingKHR = (CmdEndVideoCodingKHRFunc) GET_PROC_ADDR("vkCmdEndVideoCodingKHR");
 m_vk.cmdExecuteCommands = (CmdExecuteCommandsFunc) GET_PROC_ADDR("vkCmdExecuteCommands");
@@ -722,6 +727,7 @@ m_vk.getShaderInfoAMD = (GetShaderInfoAMDFunc) GET_PROC_ADDR("vkGetShaderInfoAMD
 m_vk.getShaderModuleCreateInfoIdentifierEXT = (GetShaderModuleCreateInfoIdentifierEXTFunc) GET_PROC_ADDR("vkGetShaderModuleCreateInfoIdentifierEXT");
 m_vk.getShaderModuleIdentifierEXT = (GetShaderModuleIdentifierEXTFunc) GET_PROC_ADDR("vkGetShaderModuleIdentifierEXT");
 m_vk.getSwapchainCounterEXT = (GetSwapchainCounterEXTFunc) GET_PROC_ADDR("vkGetSwapchainCounterEXT");
+m_vk.getSwapchainGrallocUsageOHOS = (GetSwapchainGrallocUsageOHOSFunc) GET_PROC_ADDR("vkGetSwapchainGrallocUsageOHOS");
 m_vk.getSwapchainImagesKHR = (GetSwapchainImagesKHRFunc) GET_PROC_ADDR("vkGetSwapchainImagesKHR");
 m_vk.getSwapchainStatusKHR = (GetSwapchainStatusKHRFunc) GET_PROC_ADDR("vkGetSwapchainStatusKHR");
 m_vk.getTensorMemoryRequirementsARM = (GetTensorMemoryRequirementsARMFunc) GET_PROC_ADDR("vkGetTensorMemoryRequirementsARM");
@@ -751,6 +757,7 @@ m_vk.queueInsertDebugUtilsLabelEXT = (QueueInsertDebugUtilsLabelEXTFunc) GET_PRO
 m_vk.queueNotifyOutOfBandNV = (QueueNotifyOutOfBandNVFunc) GET_PROC_ADDR("vkQueueNotifyOutOfBandNV");
 m_vk.queuePresentKHR = (QueuePresentKHRFunc) GET_PROC_ADDR("vkQueuePresentKHR");
 m_vk.queueSetPerformanceConfigurationINTEL = (QueueSetPerformanceConfigurationINTELFunc) GET_PROC_ADDR("vkQueueSetPerformanceConfigurationINTEL");
+m_vk.queueSignalReleaseImageOHOS = (QueueSignalReleaseImageOHOSFunc) GET_PROC_ADDR("vkQueueSignalReleaseImageOHOS");
 m_vk.queueSubmit = (QueueSubmitFunc) GET_PROC_ADDR("vkQueueSubmit");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.queueSubmit2 = (QueueSubmit2Func) GET_PROC_ADDR("vkQueueSubmit2");

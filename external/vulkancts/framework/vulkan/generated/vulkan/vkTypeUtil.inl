@@ -230,6 +230,16 @@ inline VkCopyMemoryIndirectCommandKHR makeCopyMemoryIndirectCommandKHR (VkDevice
 	return res;
 }
 
+inline VkDecompressMemoryRegionEXT makeDecompressMemoryRegionEXT (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize compressedSize, VkDeviceSize decompressedSize)
+{
+	VkDecompressMemoryRegionEXT res;
+	res.srcAddress			= srcAddress;
+	res.dstAddress			= dstAddress;
+	res.compressedSize		= compressedSize;
+	res.decompressedSize	= decompressedSize;
+	return res;
+}
+
 inline VkDecompressMemoryRegionNV makeDecompressMemoryRegionNV (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize compressedSize, VkDeviceSize decompressedSize, VkMemoryDecompressionMethodFlagsNV decompressionMethod)
 {
 	VkDecompressMemoryRegionNV res;

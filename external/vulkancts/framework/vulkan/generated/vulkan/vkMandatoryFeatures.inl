@@ -496,6 +496,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_linear_color_attachment"))
 		addFeatures(&physicalDeviceLinearColorAttachmentFeaturesNV);
 
+	// VkPhysicalDeviceMaintenance10FeaturesKHR for ext [VK_KHR_maintenance10]
+	vk::VkPhysicalDeviceMaintenance10FeaturesKHR physicalDeviceMaintenance10FeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance10"))
+		addFeatures(&physicalDeviceMaintenance10FeaturesKHR);
+
 	// VkPhysicalDeviceMaintenance4Features, VkPhysicalDeviceMaintenance4FeaturesKHR for ext [VK_KHR_maintenance4]
 	vk::VkPhysicalDeviceMaintenance4Features physicalDeviceMaintenance4Features = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance4"))
@@ -531,10 +536,10 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_map_memory_placed"))
 		addFeatures(&physicalDeviceMapMemoryPlacedFeaturesEXT);
 
-	// VkPhysicalDeviceMemoryDecompressionFeaturesNV for ext [VK_NV_memory_decompression]
-	vk::VkPhysicalDeviceMemoryDecompressionFeaturesNV physicalDeviceMemoryDecompressionFeaturesNV = initVulkanStructure();
-	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_memory_decompression"))
-		addFeatures(&physicalDeviceMemoryDecompressionFeaturesNV);
+	// VkPhysicalDeviceMemoryDecompressionFeaturesEXT, VkPhysicalDeviceMemoryDecompressionFeaturesNV for ext [VK_NV_memory_decompression, VK_EXT_memory_decompression]
+	vk::VkPhysicalDeviceMemoryDecompressionFeaturesEXT physicalDeviceMemoryDecompressionFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_memory_decompression", "VK_EXT_memory_decompression"))
+		addFeatures(&physicalDeviceMemoryDecompressionFeaturesEXT);
 
 	// VkPhysicalDeviceMemoryPriorityFeaturesEXT for ext [VK_EXT_memory_priority]
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT = initVulkanStructure();
@@ -816,6 +821,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_separate_depth_stencil_layouts"))
 		addFeatures(&physicalDeviceSeparateDepthStencilLayoutsFeatures);
 
+	// VkPhysicalDeviceShader64BitIndexingFeaturesEXT for ext [VK_EXT_shader_64bit_indexing]
+	vk::VkPhysicalDeviceShader64BitIndexingFeaturesEXT physicalDeviceShader64BitIndexingFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_64bit_indexing"))
+		addFeatures(&physicalDeviceShader64BitIndexingFeaturesEXT);
+
 	// VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV for ext [VK_NV_shader_atomic_float16_vector]
 	vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV physicalDeviceShaderAtomicFloat16VectorFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_shader_atomic_float16_vector"))
@@ -975,6 +985,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceShaderTileImageFeaturesEXT physicalDeviceShaderTileImageFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_tile_image"))
 		addFeatures(&physicalDeviceShaderTileImageFeaturesEXT);
+
+	// VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT for ext [VK_EXT_shader_uniform_buffer_unsized_array]
+	vk::VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT physicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_uniform_buffer_unsized_array"))
+		addFeatures(&physicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT);
 
 	// VkPhysicalDeviceShaderUntypedPointersFeaturesKHR for ext [VK_KHR_shader_untyped_pointers]
 	vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR physicalDeviceShaderUntypedPointersFeaturesKHR = initVulkanStructure();
@@ -2562,7 +2577,7 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	// VkPhysicalDeviceMemoryDecompressionFeaturesNV
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_memory_decompression")) )
 	{
-		if ( physicalDeviceMemoryDecompressionFeaturesNV.memoryDecompression == VK_FALSE )
+		if ( physicalDeviceMemoryDecompressionFeaturesEXT.memoryDecompression == VK_FALSE )
 			failMesages.push_back("memoryDecompression");
 	}
 

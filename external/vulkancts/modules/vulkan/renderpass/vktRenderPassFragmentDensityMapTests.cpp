@@ -3049,7 +3049,7 @@ void FragmentDensityMapTestInstance::endRendering(const DeviceInterface &vk, VkC
             de::dataOrNull(offsets),
         };
         const VkRenderingEndInfoEXT renderingEndInfo = initVulkanStructureConst(&offsetEndInfo);
-        vk.cmdEndRendering2EXT(cmdBuffer, &renderingEndInfo);
+        vk.cmdEndRendering2KHR(cmdBuffer, &renderingEndInfo);
     }
     else
     {
@@ -3911,7 +3911,7 @@ tcu::TestStatus FDMOffsetBaseInstance::iterate()
             else
             {
                 renderingEndInfo.pNext = fdmEnd;
-                vkd.cmdEndRendering2EXT(cmd, &renderingEndInfo);
+                vkd.cmdEndRendering2KHR(cmd, &renderingEndInfo);
             }
         }
         else

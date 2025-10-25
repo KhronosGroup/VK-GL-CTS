@@ -4,6 +4,7 @@
  */
 
 virtual VkResult			acquireFullScreenExclusiveModeEXT						(VkDevice device, VkSwapchainKHR swapchain) const = 0;
+virtual VkResult			acquireImageOHOS										(VkDevice device, VkImage image, int32_t nativeFenceFd, VkSemaphore semaphore, VkFence fence) const = 0;
 virtual VkResult			acquireNextImage2KHR									(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex) const = 0;
 virtual VkResult			acquireNextImageKHR										(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex) const = 0;
 virtual VkResult			acquirePerformanceConfigurationINTEL					(VkDevice device, const VkPerformanceConfigurationAcquireInfoINTEL* pAcquireInfo, VkPerformanceConfigurationINTEL* pConfiguration) const = 0;
@@ -90,6 +91,8 @@ virtual void				cmdDebugMarkerBeginEXT									(VkCommandBuffer commandBuffer, c
 virtual void				cmdDebugMarkerEndEXT									(VkCommandBuffer commandBuffer) const = 0;
 virtual void				cmdDebugMarkerInsertEXT									(VkCommandBuffer commandBuffer, const VkDebugMarkerMarkerInfoEXT* pMarkerInfo) const = 0;
 virtual void				cmdDecodeVideoKHR										(VkCommandBuffer commandBuffer, const VkVideoDecodeInfoKHR* pDecodeInfo) const = 0;
+virtual void				cmdDecompressMemoryEXT									(VkCommandBuffer commandBuffer, const VkDecompressMemoryInfoEXT* pDecompressMemoryInfoEXT) const = 0;
+virtual void				cmdDecompressMemoryIndirectCountEXT						(VkCommandBuffer commandBuffer, VkMemoryDecompressionMethodFlagsEXT decompressionMethod, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t maxDecompressionCount, uint32_t stride) const = 0;
 virtual void				cmdDecompressMemoryIndirectCountNV						(VkCommandBuffer commandBuffer, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride) const = 0;
 virtual void				cmdDecompressMemoryNV									(VkCommandBuffer commandBuffer, uint32_t decompressRegionCount, const VkDecompressMemoryRegionNV* pDecompressMemoryRegions) const = 0;
 virtual void				cmdDispatch												(VkCommandBuffer commandBuffer, uint32_t groupCountX, uint32_t groupCountY, uint32_t groupCountZ) const = 0;
@@ -126,7 +129,7 @@ virtual void				cmdEndQueryIndexedEXT									(VkCommandBuffer commandBuffer, Vk
 virtual void				cmdEndRenderPass										(VkCommandBuffer commandBuffer) const = 0;
 virtual void				cmdEndRenderPass2										(VkCommandBuffer commandBuffer, const VkSubpassEndInfo* pSubpassEndInfo) const = 0;
 virtual void				cmdEndRendering											(VkCommandBuffer commandBuffer) const = 0;
-virtual void				cmdEndRendering2EXT										(VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo) const = 0;
+virtual void				cmdEndRendering2KHR										(VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo) const = 0;
 virtual void				cmdEndTransformFeedbackEXT								(VkCommandBuffer commandBuffer, uint32_t firstCounterBuffer, uint32_t counterBufferCount, const VkBuffer* pCounterBuffers, const VkDeviceSize* pCounterBufferOffsets) const = 0;
 virtual void				cmdEndVideoCodingKHR									(VkCommandBuffer commandBuffer, const VkVideoEndCodingInfoKHR* pEndCodingInfo) const = 0;
 virtual void				cmdExecuteCommands										(VkCommandBuffer commandBuffer, uint32_t commandBufferCount, const VkCommandBuffer* pCommandBuffers) const = 0;
@@ -488,6 +491,7 @@ virtual VkResult			getShaderInfoAMD										(VkDevice device, VkPipeline pipeli
 virtual void				getShaderModuleCreateInfoIdentifierEXT					(VkDevice device, const VkShaderModuleCreateInfo* pCreateInfo, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
 virtual void				getShaderModuleIdentifierEXT							(VkDevice device, VkShaderModule shaderModule, VkShaderModuleIdentifierEXT* pIdentifier) const = 0;
 virtual VkResult			getSwapchainCounterEXT									(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue) const = 0;
+virtual VkResult			getSwapchainGrallocUsageOHOS							(VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, uint64_t* grallocUsage) const = 0;
 virtual VkResult			getSwapchainImagesKHR									(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages) const = 0;
 virtual VkResult			getSwapchainStatusKHR									(VkDevice device, VkSwapchainKHR swapchain) const = 0;
 virtual void				getTensorMemoryRequirementsARM							(VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
@@ -514,6 +518,7 @@ virtual void				queueInsertDebugUtilsLabelEXT							(VkQueue queue, const VkDebu
 virtual void				queueNotifyOutOfBandNV									(VkQueue queue, const VkOutOfBandQueueTypeInfoNV* pQueueTypeInfo) const = 0;
 virtual VkResult			queuePresentKHR											(VkQueue queue, const VkPresentInfoKHR* pPresentInfo) const = 0;
 virtual VkResult			queueSetPerformanceConfigurationINTEL					(VkQueue queue, VkPerformanceConfigurationINTEL configuration) const = 0;
+virtual VkResult			queueSignalReleaseImageOHOS								(VkQueue queue, uint32_t waitSemaphoreCount, const VkSemaphore* pWaitSemaphores, VkImage image, int32_t* pNativeFenceFd) const = 0;
 virtual VkResult			queueSubmit												(VkQueue queue, uint32_t submitCount, const VkSubmitInfo* pSubmits, VkFence fence) const = 0;
 virtual VkResult			queueSubmit2											(VkQueue queue, uint32_t submitCount, const VkSubmitInfo2* pSubmits, VkFence fence) const = 0;
 virtual VkResult			queueWaitIdle											(VkQueue queue) const = 0;

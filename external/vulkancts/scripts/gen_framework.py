@@ -2220,7 +2220,9 @@ class FeaturesOrPropertiesGenericGenerator(BaseGenerator):
                 nameString = ext.nameString
             descDefinitions.append(f"template<> {structGroupSingular}Desc make{structGroupSingular}Desc<{struct.name}>(void) " \
                                    f"{{ return {structGroupSingular}Desc{{{struct.sType}, {nameString}}}; }}")
-            structWrappers.append(f"\t{{ create{structGroupSingular}StructWrapper<{struct.name}>, {nameString} }},")
+            pnext = next((m for m in struct.members if m.name == "pNext"), None)
+            constStr = "// Contains const pNext " if pnext and getattr(pnext, "const", False) else ""
+            structWrappers.append(f"\t{constStr}{{ create{structGroupSingular}StructWrapper<{struct.name}>, {nameString} }},")
 
         blobChecker = f"uint32_t getBlob{self.structGroup}Version (VkStructureType sType)\n{{\n" \
                       "\tconst std::map<VkStructureType, uint32_t> sTypeBlobMap\n\t{\n"
@@ -2320,7 +2322,9 @@ class FeaturesOrPropertiesMethodsGenerator(BaseGenerator):
                 if (nameSubStr in UNSUFFIXED_STRUCTURES):
                     suffix = ""
                 nameSubStr = nameSubStr + infix + suffix
-            stream.append(self.pattern.format(fop.name, nameSubStr))
+            pnext = next((m for m in fop.members if m.name == "pNext"), None)
+            constStr = "// Contains const pNext " if pnext and getattr(pnext, "const", False) else ""
+            stream.append(constStr + self.pattern.format(fop.name, nameSubStr))
         self.write(combineLines(indentLines(stream), INL_HEADER))
 
 class DeviceFeatureTestGenerator(BaseGenerator):
