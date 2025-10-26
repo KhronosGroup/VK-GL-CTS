@@ -91,8 +91,9 @@ bool formatHasThreeComponents(VkFormat format)
 
 VkFormat getSingleComponentFormat(VkFormat format)
 {
-    tcu::TextureFormat texFormat = mapVkFormat(format);
-    texFormat                    = tcu::TextureFormat(tcu::TextureFormat::R, texFormat.type);
+    tcu::TextureFormat texFormat           = mapVkFormat(format);
+    tcu::TextureFormat::ChannelOrder order = isSrgbFormat(format) ? tcu::TextureFormat::sR : tcu::TextureFormat::R;
+    texFormat                              = tcu::TextureFormat(order, texFormat.type);
     return mapTextureFormat(texFormat);
 }
 
@@ -1285,6 +1286,8 @@ void LoadStoreTest::checkSupport(Context &context) const
 {
 #ifndef CTS_USES_VULKANSC
     if (m_format == VK_FORMAT_A8_UNORM_KHR || m_format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
+    if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     const VkFormatProperties3 formatProperties(context.getFormatProperties(m_format));

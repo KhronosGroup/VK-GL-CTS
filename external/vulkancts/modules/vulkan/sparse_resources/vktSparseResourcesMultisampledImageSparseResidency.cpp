@@ -260,6 +260,9 @@ void MultisampledImageSparseResidencyCase::checkSupport(Context &context) const
 
     if ((imageFormatProperties.sampleCounts & m_params.sampleCount) != m_params.sampleCount)
         TCU_THROW(NotSupportedError, "Requested sample count is not supported");
+
+    if (m_params.sampleCount != VK_SAMPLE_COUNT_1_BIT)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_STORAGE_IMAGE_MULTISAMPLE);
 }
 
 void MultisampledImageSparseResidencyCase::initPrograms(vk::SourceCollections &programCollection) const
