@@ -35,6 +35,7 @@
 #include "vktMemoryAddressBindingTests.hpp"
 #include "vktMemoryExternalMemoryAcquireUnmodifiedTests.hpp"
 #include "vktMemoryDeviceMemoryReportTests.hpp"
+#include "vktMemoryDecompressionTests.hpp"
 #include "vktMemoryZeroInitializeDeviceMemoryTests.hpp"
 #endif // CTS_USES_VULKANSC
 
@@ -67,6 +68,7 @@ void createChildren(tcu::TestCaseGroup *memoryTests)
 #ifndef CTS_USES_VULKANSC
     memoryTests->addChild(createDeviceMemoryReportTests(testCtx));
     memoryTests->addChild(createAddressBindingReportTests(testCtx));
+    memoryTests->addChild(createMemoryDecompressionTests(testCtx));
     memoryTests->addChild(createClearedAllocationControlTests(testCtx));
 #endif
 }

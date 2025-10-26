@@ -2903,6 +2903,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("tileMemoryHeap");
 	}
 
+	// VkPhysicalDeviceMemoryDecompressionFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_memory_decompression")) )
+	{
+		if ( physicalDeviceMemoryDecompressionFeaturesEXT.memoryDecompression == VK_FALSE )
+			failMesages.push_back("memoryDecompression");
+	}
+
 	// VkPhysicalDeviceRawAccessChainsFeaturesNV
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_raw_access_chains")) )
 	{

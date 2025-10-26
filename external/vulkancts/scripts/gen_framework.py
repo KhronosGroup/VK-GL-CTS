@@ -90,6 +90,7 @@ VK_EXT_index_type_uint8
 VK_EXT_legacy_dithering
 VK_EXT_legacy_vertex_attributes
 VK_EXT_line_rasterization
+VK_EXT_memory_decompression
 VK_EXT_memory_priority
 VK_EXT_mesh_shader
 VK_EXT_multi_draw

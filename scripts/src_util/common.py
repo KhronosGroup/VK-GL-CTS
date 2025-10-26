@@ -61,6 +61,7 @@ BINARY_FILE_EXTENSION = [
     ".ivf",
     ".obu",
     ".mp4",
+    ".gdef",
     ".yuv"
 ]
 

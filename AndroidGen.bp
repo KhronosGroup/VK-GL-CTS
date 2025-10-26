@@ -288,6 +288,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/memory/vktMemoryAllocationTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryBindingTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryConcurrentAccessTests.cpp",
+        "external/vulkancts/modules/vulkan/memory/vktMemoryDecompressionTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryDeviceMemoryReportTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryExternalMemoryAcquireUnmodifiedTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryExternalMemoryHostTests.cpp",
