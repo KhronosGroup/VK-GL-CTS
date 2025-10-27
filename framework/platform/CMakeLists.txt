@@ -34,6 +34,8 @@ if (NOT DEFINED TCUTIL_PLATFORM_SRCS)
 
 		include_directories(lnx)
 
+		find_package(PkgConfig REQUIRED)
+
 		if (DEQP_USE_X11)
 			add_definitions(-DDEQP_SUPPORT_X11=1)
 			include_directories(lnx/X11)
