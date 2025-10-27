@@ -2822,6 +2822,7 @@ struct Params
 {
     PipelineConstructionType constructionType;
     bool dynamicInputs;
+    bool integerInput;
 };
 
 void checkSupport(Context &context, Params params)
@@ -2835,16 +2836,17 @@ void checkSupport(Context &context, Params params)
     context.requireDeviceFunctionality("VK_KHR_maintenance9");
 }
 
-void initPrograms(SourceCollections &programCollection, Params)
+void initPrograms(SourceCollections &programCollection, Params params)
 {
     std::ostringstream vert;
     vert << "#version 460\n"
          << "layout (location=0) in vec4 inPos;\n"
-         << "layout (location=1) in vec4 inColor;\n"
+         << "layout (location=1) in " << (params.integerInput ? "i" : "") << "vec4 inColor;\n"
          << "layout (location=0) out vec4 outColor;\n"
          << "void main (void) {\n"
          << "    gl_Position = inPos;\n"
-         << "    outColor = inColor;\n"
+         << "    outColor = " << (params.integerInput ? "vec4(" : "") << "inColor" << (params.integerInput ? ")" : "")
+         << ";\n"
          << "}\n";
     programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 
@@ -3075,10 +3077,14 @@ void createMiscVertexInputTests(tcu::TestCaseGroup *miscTests, PipelineConstruct
             addFunctionCaseWithPrograms(miscTests, unusedBindingTestName, UnusedBinding::checkSupport,
                                         UnusedBinding::initPrograms, UnusedBinding::runTest, unusedBindingParams);
 #ifndef CTS_USES_VULKANSC
-            const auto unboundInputTestName = std::string("unbound_input") + (dynamic ? "_dynamic" : "");
-            const UnboundInput::Params unboundInputParams{pipelineConstructionType, dynamic};
-            addFunctionCaseWithPrograms(miscTests, unboundInputTestName, UnboundInput::checkSupport,
-                                        UnboundInput::initPrograms, UnboundInput::runTest, unboundInputParams);
+            for (const auto integerInput : {false, true})
+            {
+                const auto unboundInputTestName =
+                    std::string("unbound_input") + (dynamic ? "_dynamic" : "") + (integerInput ? "_integer" : "");
+                const UnboundInput::Params unboundInputParams{pipelineConstructionType, dynamic, integerInput};
+                addFunctionCaseWithPrograms(miscTests, unboundInputTestName, UnboundInput::checkSupport,
+                                            UnboundInput::initPrograms, UnboundInput::runTest, unboundInputParams);
+            }
 #endif
         }
     }
