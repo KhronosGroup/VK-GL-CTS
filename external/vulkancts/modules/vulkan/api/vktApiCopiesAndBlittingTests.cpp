@@ -20883,7 +20883,7 @@ UVec2 randomUVec2(de::Random &rng, const UVec2 &min, const UVec2 &max)
 }
 
 void genCopies(de::Random &rng, size_t copyCount, vk::VkFormat srcFormat, const UVec2 &srcSize, vk::VkFormat dstFormat,
-               const UVec2 &dstSize, std::vector<vk::VkImageCopy> *copies)
+               const UVec2 &dstSize, const UVec2 &granularity, std::vector<vk::VkImageCopy> *copies)
 {
     std::vector<std::pair<uint32_t, uint32_t>> pairs;
     const vk::PlanarFormatDescription srcPlaneInfo(vk::getPlanarFormatDescription(srcFormat));
@@ -20922,10 +20922,15 @@ void genCopies(de::Random &rng, size_t copyCount, vk::VkFormat srcFormat, const 
         const UVec2 dstPlaneExtent(getPlaneExtent(dstPlaneInfo, dstSize, dstPlaneNdx, 0));
         const UVec2 dstPlaneBlockExtent(dstPlaneExtent / dstBlockExtent);
 
-        const UVec2 copyBlockExtent(
-            randomUVec2(rng, UVec2(1u, 1u), tcu::min(srcPlaneBlockExtent, dstPlaneBlockExtent)));
-        const UVec2 srcOffset(srcBlockExtent * randomUVec2(rng, UVec2(0u, 0u), srcPlaneBlockExtent - copyBlockExtent));
-        const UVec2 dstOffset(dstBlockExtent * randomUVec2(rng, UVec2(0u, 0u), dstPlaneBlockExtent - copyBlockExtent));
+        UVec2 copyBlockExtent(randomUVec2(rng, UVec2(1u, 1u), tcu::min(srcPlaneBlockExtent, dstPlaneBlockExtent)));
+        copyBlockExtent[0] = deIntRoundToPow2(copyBlockExtent[0], granularity[0]);
+        copyBlockExtent[1] = deIntRoundToPow2(copyBlockExtent[1], granularity[1]);
+        UVec2 srcOffset(srcBlockExtent * randomUVec2(rng, UVec2(0u, 0u), srcPlaneBlockExtent - copyBlockExtent));
+        srcOffset[0] = srcOffset[0] & ~(granularity[0] - 1u);
+        srcOffset[1] = srcOffset[1] & ~(granularity[1] - 1u);
+        UVec2 dstOffset(dstBlockExtent * randomUVec2(rng, UVec2(0u, 0u), dstPlaneBlockExtent - copyBlockExtent));
+        dstOffset[0] = dstOffset[0] & ~(granularity[0] - 1u);
+        dstOffset[1] = dstOffset[1] & ~(granularity[1] - 1u);
         const UVec2 copyExtent(copyBlockExtent * srcBlockExtent);
         const vk::VkImageCopy copy = {
             // src
@@ -21143,6 +21148,15 @@ bool isCopyCompatible(vk::VkFormat srcFormat, vk::VkFormat dstFormat)
 
 tcu::TestStatus testCopies(Context &context, TestConfig config)
 {
+    const auto queueIndex = context.getTransferQueueFamilyIndex();
+    DE_ASSERT(queueIndex != -1);
+    const std::vector<VkQueueFamilyProperties> queueProps =
+        getPhysicalDeviceQueueFamilyProperties(context.getInstanceInterface(), context.getPhysicalDevice());
+    DE_ASSERT((int)queueProps.size() > queueIndex);
+    const VkQueueFamilyProperties *xferProps = &queueProps[queueIndex];
+    const UVec2 granularity(xferProps->minImageTransferGranularity.width,
+                            xferProps->minImageTransferGranularity.height);
+
     const size_t copyCount = 10;
     auto &log(context.getTestContext().getLog());
 
@@ -21157,7 +21171,8 @@ tcu::TestStatus testCopies(Context &context, TestConfig config)
 
     de::Random rng(builder.get());
     const bool noNan = true;
-    genCopies(rng, copyCount, config.src.format, config.src.size, config.dst.format, config.dst.size, &copies);
+    genCopies(rng, copyCount, config.src.format, config.src.size, config.dst.format, config.dst.size, granularity,
+              &copies);
     logTestCaseInfo(log, config, copies);
 
     // To avoid putting NaNs in dst in the image copy
@@ -21458,13 +21473,13 @@ tcu::TestCaseGroup *createMultiplaneCopyTests(tcu::TestContext &testCtx)
     for (size_t srcFormatNdx = 0; srcFormatNdx < de::arrayLength(multiplaneFormats); srcFormatNdx++)
     {
         const vk::VkFormat srcFormat(multiplaneFormats[srcFormatNdx]);
-        const UVec2 srcSize(isYCbCrFormat(srcFormat) ? UVec2(24u, 16u) : UVec2(23u, 17u));
+        const UVec2 srcSize(isYCbCrFormat(srcFormat) ? UVec2(64u, 64u) : UVec2(23u, 17u));
         const std::string srcFormatName(de::toLower(std::string(getFormatName(srcFormat)).substr(10)));
         de::MovePtr<tcu::TestCaseGroup> srcFormatGroup(new tcu::TestCaseGroup(testCtx, srcFormatName.c_str()));
         for (size_t dstFormatNdx = 0; dstFormatNdx < DE_LENGTH_OF_ARRAY(multiplaneFormats); dstFormatNdx++)
         {
             const vk::VkFormat dstFormat(multiplaneFormats[dstFormatNdx]);
-            const UVec2 dstSize(isYCbCrFormat(dstFormat) ? UVec2(24u, 16u) : UVec2(23u, 17u));
+            const UVec2 dstSize(isYCbCrFormat(dstFormat) ? UVec2(64u, 64u) : UVec2(23u, 17u));
             const std::string dstFormatName(de::toLower(std::string(getFormatName(dstFormat)).substr(10)));
 
             if ((!vk::isYCbCrFormat(srcFormat) && !vk::isYCbCrFormat(dstFormat)) ||

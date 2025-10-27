@@ -1322,6 +1322,24 @@ uint32_t Context::getUsedApiVersion(void) const
 {
     return m_device->getUsedApiVersion();
 }
+uint32_t Context::getEquivalentApiVersion(void) const
+{
+    const auto apiVersion = getUsedApiVersion();
+    auto apiVariant       = VK_API_VERSION_VARIANT(apiVersion);
+
+    // return apiVersion for normal Vulkan
+    if (apiVariant == 0)
+        return apiVersion;
+
+    auto major = VK_API_VERSION_MAJOR(apiVersion);
+    auto minor = VK_API_VERSION_MINOR(apiVersion);
+
+    // return 1.2 for Vulkan SC 1.0
+    if ((apiVariant == VKSC_API_VARIANT) && (major == 1) && (minor == 0))
+        return VK_API_VERSION_1_2;
+
+    TCU_THROW(InternalError, "Unsupported Vulkan version");
+}
 bool Context::contextSupports(const uint32_t variantNum, const uint32_t majorNum, const uint32_t minorNum,
                               const uint32_t patchNum) const
 {
