@@ -15149,13 +15149,13 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr 
                 copyDepthRegion.bufferImageCopy   = bufferDepthCopyOffset;
                 copyStencilRegion.bufferImageCopy = bufferStencilCopyOffset;
                 testName                          = "buffer_offset_" + testName;
-                params.dst.buffer.size = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultQuarterSize;
+                params.src.buffer.size = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultQuarterSize;
             }
             else
             {
                 copyDepthRegion.bufferImageCopy   = bufferDepthCopy;
                 copyStencilRegion.bufferImageCopy = bufferStencilCopy;
-                params.dst.buffer.size            = defaultSize * defaultSize;
+                params.src.buffer.size            = defaultSize * defaultSize;
             }
 
             params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
