@@ -41,6 +41,7 @@
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "vktDynamicRenderingTests.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
+#include "vktDynamicRenderingLocalReadMaint10Tests.hpp"
 #include "vktDynamicRenderingDepthStencilResolveTests.hpp"
 #include "vktRenderPassNestedCommandBuffersTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -8484,6 +8485,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, false));
             renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx));
+            renderingTests->addChild(createDynamicRenderingLocalReadMaint10Tests(testCtx));
         }
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {

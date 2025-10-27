@@ -60,6 +60,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineMultisampleImageTests.hpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.cpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.hpp
+	vktPipelineMultisampleResolveMaint10Tests.cpp
+	vktPipelineMultisampleResolveMaint10Tests.hpp
 	vktPipelineMultisampleResolveRenderAreaTests.cpp
 	vktPipelineMultisampleResolveRenderAreaTests.hpp
 	vktPipelineMultisampleSampleLocationsExtTests.cpp
@@ -123,6 +125,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineLegacyAttrTests.hpp
 	vktPipelineBlendTestsCommon.cpp
 	vktPipelineBlendTestsCommon.hpp
+	vktPipelineVertexInputSRGBTests.cpp
+	vktPipelineVertexInputSRGBTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS

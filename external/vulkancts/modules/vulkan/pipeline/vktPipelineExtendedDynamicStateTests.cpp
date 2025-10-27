@@ -3679,6 +3679,9 @@ void ExtendedDynamicStateTest::checkSupport(Context &context) const
     if (m_testConfig.sampleShadingEnable && !baseFeatures.sampleRateShading)
         TCU_THROW(NotSupportedError, "sampleRateShading not supported");
 
+    if (m_testConfig.sampleMaskConfig.dynamicValue && m_testConfig.sampleMaskConfig.dynamicValue->data() == nullptr)
+        context.requireDeviceFunctionality("VK_KHR_maintenance10");
+
     checkPipelineConstructionRequirements(vki, physicalDevice, m_testConfig.pipelineConstructionType);
 }
 
@@ -8207,6 +8210,16 @@ tcu::TestCaseGroup *createExtendedDynamicStateTests(tcu::TestContext &testCtx,
                     // Dynamically set a sample mask that allows drawing
                     orderingGroup->addChild(
                         new ExtendedDynamicStateTest(testCtx, namePrefix + "sample_mask_enable", config));
+                }
+                {
+                    TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);
+                    config.rasterizationSamplesConfig    = activeSampleCount;
+                    config.sampleMaskConfig.staticValue  = SampleMaskVec(1u, 0u);
+                    config.sampleMaskConfig.dynamicValue = SampleMaskVec(0u);
+
+                    // Dynamically set a sample mask that allows drawing
+                    orderingGroup->addChild(
+                        new ExtendedDynamicStateTest(testCtx, namePrefix + "sample_mask_enable_with_null", config));
                 }
                 {
                     TestConfig config(pipelineConstructionType, kOrdering, kUseMeshShaders);

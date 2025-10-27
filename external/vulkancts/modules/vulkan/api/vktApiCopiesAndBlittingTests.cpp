@@ -143,6 +143,7 @@ enum ExtensionUseBits
     SPARSE_BINDING                = (1 << 4),
     MAINTENANCE_8                 = (1 << 5),
     INDIRECT_COPY                 = (1 << 6),
+    MAINTENANCE_10                = (1 << 7),
 };
 
 template <typename Type>
@@ -537,6 +538,9 @@ void checkExtensionSupport(Context &context, uint32_t flags)
 
     if (flags & MAINTENANCE_8)
         context.requireDeviceFunctionality("VK_KHR_maintenance8");
+
+    if (flags & MAINTENANCE_10)
+        context.requireDeviceFunctionality("VK_KHR_maintenance10");
 }
 
 inline uint32_t getArraySize(const ImageParms &parms)
@@ -4510,8 +4514,81 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkExtensionSupport(context, m_params.extensionFlags);
+        context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
 
 #ifndef CTS_USES_VULKANSC
+        if (m_params.queueSelection != QueueSelectionOptions::Universal)
+        {
+            vk::VkFormatProperties3 formatProperties3{};
+            formatProperties3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+            vk::VkFormatProperties2 formatProperties{};
+            formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+            formatProperties.pNext = &formatProperties3;
+            context.getInstanceInterface().getPhysicalDeviceFormatProperties2(
+                context.getPhysicalDevice(), m_params.dst.image.format, &formatProperties);
+
+            VkImageAspectFlags requiredAspects = 0U;
+            for (auto const &region : m_params.regions)
+                requiredAspects |= region.bufferImageCopy.imageSubresource.aspectMask;
+
+            // The get*Queue() methods will throw NotSupportedError if the queue is not available.
+            if (m_params.queueSelection == QueueSelectionOptions::ComputeOnly)
+            {
+                context.getComputeQueue();
+
+                if (isDepthStencilFormat(m_params.dst.image.format))
+                {
+                    tcu::TextureFormat format = mapVkFormat(m_params.dst.image.format);
+                    if (tcu::hasDepthComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_DEPTH_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.dst.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+
+                    if (tcu::hasStencilComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_STENCIL_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.dst.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+                }
+            }
+            else if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+            {
+                context.getTransferQueue();
+
+                if (isDepthStencilFormat(m_params.dst.image.format))
+                {
+                    tcu::TextureFormat format = mapVkFormat(m_params.dst.image.format);
+                    if (tcu::hasDepthComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_DEPTH_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.dst.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+
+                    if (tcu::hasStencilComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_STENCIL_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.dst.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+                }
+            }
+        }
         if (m_params.extensionFlags & INDIRECT_COPY)
         {
             VkFormatProperties3 formatProps3;
@@ -4535,7 +4612,7 @@ public:
                     TCU_THROW(NotSupportedError, "Format feature is not supported on this format");
             }
         }
-#endif
+#endif // CTS_USES_VULKANSC
     }
 
 private:
@@ -4860,9 +4937,13 @@ tcu::TestStatus CopyDepthStencilToBuffer::iterate(void)
         }};
 
     // Copy from depth/stencil image to buffer
+    VkQueue queue                               = VK_NULL_HANDLE;
+    VkCommandBuffer commandBuffer               = VK_NULL_HANDLE;
+    VkCommandPool commandPool                   = VK_NULL_HANDLE;
+    std::tie(queue, commandBuffer, commandPool) = activeExecutionCtx();
 
-    beginCommandBuffer(vk, *m_universalCmdBuffer);
-    vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+    beginCommandBuffer(vk, commandBuffer);
+    vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
                           (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &imageBarrier);
 
     if (!(m_params.extensionFlags & COPY_COMMANDS_2))
@@ -4870,7 +4951,7 @@ tcu::TestStatus CopyDepthStencilToBuffer::iterate(void)
         if (m_params.singleCommand)
         {
             // Issue a single copy command with regions defined by the test.
-            vk.cmdCopyImageToBuffer(*m_universalCmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+            vk.cmdCopyImageToBuffer(commandBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                     m_destination.get(), (uint32_t)m_params.regions.size(), bufferImageCopies.data());
         }
         else
@@ -4879,11 +4960,10 @@ tcu::TestStatus CopyDepthStencilToBuffer::iterate(void)
             for (uint32_t i = 0; i < bufferImageCopies.size(); i++)
             {
                 if (i > 0)
-                    vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
-                                          1, &tempImageBarrier);
+                    vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &tempImageBarrier);
 
-                vk.cmdCopyImageToBuffer(*m_universalCmdBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                vk.cmdCopyImageToBuffer(commandBuffer, m_source.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                                         m_destination.get(), 1, &bufferImageCopies[i]);
             }
         }
@@ -4904,7 +4984,7 @@ tcu::TestStatus CopyDepthStencilToBuffer::iterate(void)
                 (uint32_t)m_params.regions.size(),                 // uint32_t regionCount;
                 bufferImageCopies2KHR.data()                       // const VkBufferImageCopy2KHR* pRegions;
             };
-            vk.cmdCopyImageToBuffer2(*m_universalCmdBuffer, &copyImageToBufferInfo2KHR);
+            vk.cmdCopyImageToBuffer2(commandBuffer, &copyImageToBufferInfo2KHR);
         }
         else
         {
@@ -4912,9 +4992,8 @@ tcu::TestStatus CopyDepthStencilToBuffer::iterate(void)
             for (uint32_t i = 0; i < bufferImageCopies2KHR.size(); i++)
             {
                 if (i > 0)
-                    vk.cmdPipelineBarrier(*m_universalCmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                          VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
-                                          1, &tempImageBarrier);
+                    vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          (VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &tempImageBarrier);
 
                 const VkCopyImageToBufferInfo2KHR copyImageToBufferInfo2KHR = {
                     VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2_KHR, // VkStructureType sType;
@@ -4926,16 +5005,16 @@ tcu::TestStatus CopyDepthStencilToBuffer::iterate(void)
                     &bufferImageCopies2KHR[i]                          // const VkBufferImageCopy2KHR* pRegions;
                 };
                 // Issue a single copy command with regions defined by the test.
-                vk.cmdCopyImageToBuffer2(*m_universalCmdBuffer, &copyImageToBufferInfo2KHR);
+                vk.cmdCopyImageToBuffer2(commandBuffer, &copyImageToBufferInfo2KHR);
             }
         }
     }
 
-    endCommandBuffer(vk, *m_universalCmdBuffer);
+    endCommandBuffer(vk, commandBuffer);
 
-    submitCommandsAndWaitWithTransferSync(vk, vkDevice, m_universalQueue, *m_universalCmdBuffer, &m_sparseSemaphore);
+    submitCommandsAndWaitWithTransferSync(vk, vkDevice, queue, commandBuffer, &m_sparseSemaphore);
 
-    m_context.resetCommandPoolForVKSC(vkDevice, *m_universalCmdPool);
+    m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
     // Read buffer data
     de::MovePtr<tcu::TextureLevel> resultLevel(
@@ -4995,6 +5074,83 @@ public:
     virtual void checkSupport(Context &context) const
     {
         checkExtensionSupport(context, m_params.extensionFlags);
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.queueSelection != QueueSelectionOptions::Universal)
+        {
+            context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
+
+            vk::VkFormatProperties3 formatProperties3{};
+            formatProperties3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+            vk::VkFormatProperties2 formatProperties{};
+            formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+            formatProperties.pNext = &formatProperties3;
+            context.getInstanceInterface().getPhysicalDeviceFormatProperties2(
+                context.getPhysicalDevice(), m_params.src.image.format, &formatProperties);
+
+            VkImageAspectFlags requiredAspects = 0U;
+            for (auto const &region : m_params.regions)
+                requiredAspects |= region.bufferImageCopy.imageSubresource.aspectMask;
+
+            // The get*Queue() methods will throw NotSupportedError if the queue is not available.
+            if (m_params.queueSelection == QueueSelectionOptions::ComputeOnly)
+            {
+                context.getComputeQueue();
+
+                if (isDepthStencilFormat(m_params.src.image.format))
+                {
+                    tcu::TextureFormat format = mapVkFormat(m_params.src.image.format);
+                    if (tcu::hasDepthComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_DEPTH_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.src.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+
+                    if (tcu::hasStencilComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_STENCIL_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.src.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+                }
+            }
+            else if (m_params.queueSelection == QueueSelectionOptions::TransferOnly)
+            {
+                context.getTransferQueue();
+
+                if (isDepthStencilFormat(m_params.src.image.format))
+                {
+                    tcu::TextureFormat format = mapVkFormat(m_params.src.image.format);
+                    if (tcu::hasDepthComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_DEPTH_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.src.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+
+                    if (tcu::hasStencilComponent(format.order) && (requiredAspects & VK_IMAGE_ASPECT_STENCIL_BIT) &&
+                        (formatProperties3.optimalTilingFeatures &
+                         VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                    {
+                        std::ostringstream msg;
+                        msg << "Format " << getFormatName(m_params.src.image.format)
+                            << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                        TCU_THROW(NotSupportedError, msg.str());
+                    }
+                }
+            }
+        }
+#endif // CTS_USES_VULKANSC
     }
 
 private:
@@ -14993,13 +15149,13 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr 
                 copyDepthRegion.bufferImageCopy   = bufferDepthCopyOffset;
                 copyStencilRegion.bufferImageCopy = bufferStencilCopyOffset;
                 testName                          = "buffer_offset_" + testName;
-                params.src.buffer.size = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultQuarterSize;
+                params.dst.buffer.size = (defaultHalfSize - 1u) * defaultSize + defaultHalfSize + defaultQuarterSize;
             }
             else
             {
                 copyDepthRegion.bufferImageCopy   = bufferDepthCopy;
                 copyStencilRegion.bufferImageCopy = bufferStencilCopy;
-                params.src.buffer.size            = defaultSize * defaultSize;
+                params.dst.buffer.size            = defaultSize * defaultSize;
             }
 
             params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
@@ -20615,6 +20771,30 @@ void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocat
     addTestGroup(group, "resolve_image", addResolveImageTests, allocationKind, extensionFlags);
     addTestGroup(group, "depth_stencil_msaa_copy", addDepthStencilCopyMSAATestGroup, allocationKind, extensionFlags);
 
+    TestGroupParamsPtr computeOnlyMaint10Group(new TestGroupParams{
+        allocationKind,
+        extensionFlags | MAINTENANCE_10,
+        QueueSelectionOptions::ComputeOnly,
+        false,
+        false,
+        false,
+    });
+    addTestGroup(group, "buffer_to_depthstencil_compute_queue", addBufferToDepthStencilTests, computeOnlyMaint10Group);
+    addTestGroup(group, "depthstencil_to_buffer_compute_queue", addDepthStencilToBufferTests, computeOnlyMaint10Group);
+
+    TestGroupParamsPtr transferOnlyMaint10Group(new TestGroupParams{
+        allocationKind,
+        extensionFlags | MAINTENANCE_10,
+        QueueSelectionOptions::TransferOnly,
+        false,
+        false,
+        false,
+    });
+    addTestGroup(group, "buffer_to_depthstencil_transfer_queue", addBufferToDepthStencilTests,
+                 transferOnlyMaint10Group);
+    addTestGroup(group, "depthstencil_to_buffer_transfer_queue", addDepthStencilToBufferTests,
+                 transferOnlyMaint10Group);
+
     TestGroupParamsPtr transferOnlyGroup(new TestGroupParams{
         allocationKind,
         extensionFlags,
@@ -20637,6 +20817,7 @@ void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocat
 
     if (extensionFlags == COPY_COMMANDS_2)
     {
+
         TestGroupParamsPtr transferWithSecondaryBuffer(new TestGroupParams{
             allocationKind,
             extensionFlags,

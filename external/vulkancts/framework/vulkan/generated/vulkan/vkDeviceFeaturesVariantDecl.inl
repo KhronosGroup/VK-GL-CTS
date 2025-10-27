@@ -232,13 +232,20 @@ typedef std::variant<
     , VkPhysicalDevicePipelineOpacityMicromapFeaturesARM
     , VkPhysicalDeviceDepthClampZeroOneFeaturesKHR
     , VkPhysicalDeviceFormatPackFeaturesARM
+<<<<<<< HEAD
     , VkPhysicalDeviceFragmentDensityMapLayeredFeaturesVALVE
+=======
+>>>>>>> vk-gl-cts/dev/VK_KHR_maintenance10
     , VkPhysicalDeviceRobustness2FeaturesKHR
     , VkPhysicalDevicePresentMeteringFeaturesNV
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
     , VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT
+<<<<<<< HEAD
     , VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR
     , VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
+=======
+    , VkPhysicalDeviceMaintenance10FeaturesKHR
+>>>>>>> vk-gl-cts/dev/VK_KHR_maintenance10
     , VkPhysicalDeviceProtectedMemoryFeatures
     , VkPhysicalDeviceShaderDrawParametersFeatures
 > ImplementedFeaturesVariant;
