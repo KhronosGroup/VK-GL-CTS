@@ -4171,6 +4171,12 @@ public:
                 // Position and color data from vertex buffer will be ignored.
                 // Vertex shader provides position and color for the quad.
                 std::ostringstream source;
+
+                // Use modulo based on primitive mode to ensure control points repeat per patch consistently.
+                // For isolines we intentionally use % 4 (not % 2) to keep patches distinct for query stability;
+                // TCS still declares layout(vertices = 2) and consumes only gl_in[0..1], so image output is unchanged.
+                const uint32_t vsModulo = m_parametersGraphic.primMode == TESS_PRIM_TRIANGLES ? 3u : 4u;
+
                 source << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
                        << "vec4 positions[4] = vec4[](\n"
                        << "    vec4(-1.0f, -1.0f, 0.0f, 1.0f),\n"
@@ -4182,7 +4188,7 @@ public:
                        << "layout(location = 0) out vec4 out_color;\n"
                        << "\n"
                        << "void main() {\n"
-                       << "    gl_Position = positions[gl_VertexIndex % 4];\n"
+                       << "    gl_Position = positions[gl_VertexIndex % " << vsModulo << "];\n"
                        << "    gl_PointSize = 1.0f;\n"
                        << "    out_color = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
                        << "}\n";
