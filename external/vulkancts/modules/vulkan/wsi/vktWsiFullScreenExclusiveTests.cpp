@@ -401,7 +401,7 @@ tcu::TestStatus fullScreenExclusiveTest(Context &context, TestParams testParams)
     Move<VkSwapchainKHR> swapchain;
     {
         VkSwapchainKHR object = VK_NULL_HANDLE;
-        VkResult result       = vkd.createSwapchainKHR(device, &swapchainInfo, nullptr, &object);
+        VkResult result       = createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo, nullptr, &object);
         if (result == VK_ERROR_INITIALIZATION_FAILED &&
             testParams.fseType == VK_FULL_SCREEN_EXCLUSIVE_APPLICATION_CONTROLLED_EXT)
         {

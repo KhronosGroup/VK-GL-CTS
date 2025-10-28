@@ -356,7 +356,7 @@ public:
     MovePtr<LibDrm::FdPtr::element_type, LibDrm::FdPtr::deleter_type> m_fdPtr;
     bool m_initialized = false;
 };
-#else
+#endif // DEQP_SUPPORT_DRM
 struct VulkanWindowDirect : public vk::wsi::Window
 {
 public:
@@ -407,7 +407,6 @@ public:
 
     bool m_initialized = false;
 };
-#endif // DEQP_SUPPORT_DRM
 #endif // !defined (CTS_USES_VULKANSC)
 
 class VulkanLibrary : public vk::Library
@@ -467,10 +466,9 @@ vk::wsi::Display *VulkanPlatform::createWsiDisplay(vk::wsi::Type wsiType) const
 #if DEQP_SUPPORT_DRM
     case vk::wsi::TYPE_DIRECT_DRM:
         return new VulkanDisplayDirectDrm();
-#else
+#endif // DEQP_SUPPORT_DRM
     case vk::wsi::TYPE_DIRECT:
         return new VulkanDisplayDirect();
-#endif // DEQP_SUPPORT_DRM
 #endif //!defined (CTS_USES_VULKANSC)
 
     default:
@@ -501,10 +499,9 @@ bool VulkanPlatform::hasDisplay(vk::wsi::Type wsiType) const
 #if DEQP_SUPPORT_DRM
     case vk::wsi::TYPE_DIRECT_DRM:
         return true;
-#else
+#endif // DEQP_SUPPORT_DRM
     case vk::wsi::TYPE_DIRECT:
         return true;
-#endif // DEQP_SUPPORT_DRM
 #endif // !defined (CTS_USES_VULKANSC)
     default:
         return false;

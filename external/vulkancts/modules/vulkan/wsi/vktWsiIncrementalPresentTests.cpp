@@ -513,6 +513,7 @@ private:
     const CustomInstance m_instance;
     const vk::InstanceDriver &m_vki;
     const vk::VkPhysicalDevice m_physicalDevice;
+    const vk::wsi::Type m_wsiType;
     const de::UniquePtr<vk::wsi::Display> m_nativeDisplay;
     const de::UniquePtr<vk::wsi::Window> m_nativeWindow;
     const vk::Unique<vk::VkSurfaceKHR> m_surface;
@@ -686,6 +687,7 @@ IncrementalPresentTestInstance::IncrementalPresentTestInstance(Context &context,
     , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_wsiType(testConfig.wsiType)
     , m_nativeDisplay(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions,
                                     testConfig.wsiType))
     , m_nativeWindow(createWindow(*m_nativeDisplay, tcu::Nothing))
@@ -743,7 +745,7 @@ void IncrementalPresentTestInstance::initSwapchainResources(void)
     const uint32_t imageHeight     = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.height;
     const vk::VkFormat imageFormat = m_swapchainConfigs[m_swapchainConfigNdx].imageFormat;
 
-    m_swapchain       = vk::createSwapchainKHR(m_vkd, *m_device, &m_swapchainConfigs[m_swapchainConfigNdx]);
+    m_swapchain       = createWsiSwapchain(m_wsiType, m_vkd, *m_device, &m_swapchainConfigs[m_swapchainConfigNdx]);
     m_swapchainImages = vk::wsi::getSwapchainImages(m_vkd, *m_device, *m_swapchain);
 
     m_imageNextFrames.resize(m_swapchainImages.size(), 0);

@@ -865,7 +865,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             swapchainInfo.back().pNext                 = &compatibleModesCreateInfo;
         }
 
-        swapchains.push_back(createSwapchainKHR(vkd, device, &swapchainInfo.back()));
+        swapchains.push_back(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo.back()));
         swapchainHandles.push_back(*swapchains.back());
 
         if (testParams.bindImageMemory)
@@ -1720,7 +1720,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     };
     swapchainInfo.pNext = &scalingInfo;
 
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
     std::vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
 
     const Unique<VkCommandPool> commandPool(
@@ -2220,7 +2220,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     };
     swapchainInfo.pNext = &scalingInfo;
 
-    Move<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+    Move<VkSwapchainKHR> swapchain(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
     std::vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
 
     const Unique<VkCommandPool> commandPool(
@@ -2307,7 +2307,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 }
 
                 swapchainInfo.oldSwapchain = *swapchain;
-                Move<VkSwapchainKHR> newSwapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+                Move<VkSwapchainKHR> newSwapchain(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
                 swapchain = std::move(newSwapchain);
 
                 const size_t previousImageCount = swapchainImages.size();
@@ -2491,7 +2491,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     }
 
                     swapchainInfo.oldSwapchain = *swapchain;
-                    Move<VkSwapchainKHR> newSwapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+                    Move<VkSwapchainKHR> newSwapchain(
+                        createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
 
                     if (!imagesReleased && !testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {

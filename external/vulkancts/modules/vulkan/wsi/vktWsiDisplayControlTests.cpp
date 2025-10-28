@@ -651,7 +651,7 @@ void SwapchainCounterTestInstance::initSwapchainResources(void)
     const uint32_t imageHeight = m_swapchainConfig.imageExtent.height;
     const VkFormat imageFormat = m_swapchainConfig.imageFormat;
 
-    m_swapchain       = createSwapchainKHR(m_vkd, *m_device, &m_swapchainConfig);
+    m_swapchain       = createWsiSwapchain(vk::wsi::Type::TYPE_DIRECT, m_vkd, *m_device, &m_swapchainConfig);
     m_swapchainImages = wsi::getSwapchainImages(m_vkd, *m_device, *m_swapchain);
 
     m_renderPass = makeRenderPass(m_vkd, *m_device, imageFormat, VK_FORMAT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_LOAD,

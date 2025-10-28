@@ -433,6 +433,7 @@ private:
     const CustomInstance m_instance;
     const vk::InstanceDriver &m_vki;
     const vk::VkPhysicalDevice m_physicalDevice;
+    const vk::wsi::Type m_wsiType;
     const de::UniquePtr<vk::wsi::Display> m_nativeDisplay;
     const de::UniquePtr<vk::wsi::Window> m_nativeWindow;
     const vk::Unique<vk::VkSurfaceKHR> m_surface;
@@ -581,6 +582,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance(Context &context, const Tes
     , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_wsiType(testConfig.wsiType)
     , m_nativeDisplay(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions,
                                     testConfig.wsiType))
     , m_nativeWindow(createWindow(*m_nativeDisplay, tcu::Nothing))
@@ -637,7 +639,7 @@ void DisplayTimingTestInstance::initSwapchainResources(void)
     const uint32_t imageHeight     = m_swapchainConfig.imageExtent.height;
     const vk::VkFormat imageFormat = m_swapchainConfig.imageFormat;
 
-    m_swapchain       = vk::createSwapchainKHR(m_vkd, *m_device, &m_swapchainConfig);
+    m_swapchain       = createWsiSwapchain(m_wsiType, m_vkd, *m_device, &m_swapchainConfig);
     m_swapchainImages = vk::wsi::getSwapchainImages(m_vkd, *m_device, *m_swapchain);
     m_isFirst.resize(m_swapchainImages.size(), true);
 
