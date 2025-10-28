@@ -1664,6 +1664,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("presentModeFifoLatestReady");
 	}
 
+	// VkPhysicalDeviceMaintenance10FeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance10")) )
+	{
+		if ( physicalDeviceMaintenance10FeaturesKHR.maintenance10 == VK_FALSE )
+			failMesages.push_back("maintenance10");
+	}
+
 	// VkPhysicalDeviceTransformFeedbackFeaturesEXT
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_transform_feedback")) )
 	{
