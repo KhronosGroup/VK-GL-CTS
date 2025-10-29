@@ -332,7 +332,7 @@ const string getClusteredTestSource(const CaseDefinition &caseDef)
 
     return testSource;
 }
-#endif
+#endif // CTS_USES_VULKANSC
 
 const string getTestSource(const CaseDefinition &caseDef)
 {
