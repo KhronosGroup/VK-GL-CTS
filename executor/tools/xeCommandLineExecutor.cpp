@@ -45,7 +45,7 @@
 #include <string>
 #include <vector>
 
-#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_WIN32)
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_WIN32) || (DE_OS == DE_OS_OHOS)
 #include <signal.h>
 #endif
 
@@ -504,7 +504,7 @@ xe::CommLink *createCommLink(const CommandLine &cmdLine)
     }
 }
 
-#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID)
+#if (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_ANDROID) || (DE_OS == DE_OS_OHOS)
 
 static xe::BatchExecutor *s_executor = nullptr;
 
