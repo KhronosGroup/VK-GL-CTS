@@ -133,8 +133,16 @@ Uniform::Uniform(const std::string &name, const VarType &type, uint32_t flags)
 
 // UniformBlock implementation.
 
-UniformBlock::UniformBlock(const std::string &blockName) : m_blockName(blockName), m_arraySize(0), m_flags(0)
+UniformBlock::UniformBlock(const std::string &blockName) : m_blockName(blockName), m_arraySize(-1), m_flags(0)
 {
+    setArraySize(0);
+}
+
+void UniformBlock::setArraySize(int arraySize)
+{
+    DE_ASSERT(arraySize >= 0);
+    m_lastUnsizedArraySizes.resize(arraySize == 0 ? 1 : arraySize, 0);
+    m_arraySize = arraySize;
 }
 
 std::ostream &operator<<(std::ostream &stream, const BlockLayoutEntry &entry)
@@ -551,9 +559,19 @@ inline uint32_t mergeLayoutFlags(uint32_t prevFlags, uint32_t newFlags)
     return mergedFlags;
 }
 
+// Get the size of an unsized array in a specific block and instance
+int getUnsizedArraySize(const ShaderInterface &interface, int blockNdx, int instanceNdx)
+{
+    if (blockNdx < 0 || blockNdx >= interface.getNumUniformBlocks())
+        return 0;
+
+    const UniformBlock &block = interface.getUniformBlock(blockNdx);
+    return block.getLastUnsizedArraySize(instanceNdx);
+}
+
 //! Appends all child elements to layout, returns value that should be appended to offset.
 int computeReferenceLayout(UniformLayout &layout, int curBlockNdx, int baseOffset, const std::string &curPrefix,
-                           const VarType &type, uint32_t layoutFlags)
+                           const VarType &type, uint32_t layoutFlags, const ShaderInterface &interface, int instanceNdx)
 {
     // HACK to make code match SSBO tests
     const int LAYOUT_RELAXED = 0;
@@ -619,6 +637,10 @@ int computeReferenceLayout(UniformLayout &layout, int curBlockNdx, int baseOffse
     {
         const VarType &elemType = type.getElementType();
 
+        int arraySize = type.getArraySize();
+        if (arraySize == glu::VarType::UNSIZED_ARRAY)
+            arraySize = getUnsizedArraySize(interface, curBlockNdx, instanceNdx);
+
         if (elemType.isBasicType() && !glu::isDataTypeMatrix(elemType.getBasicType()))
         {
             // Array of scalars or vectors.
@@ -630,13 +652,13 @@ int computeReferenceLayout(UniformLayout &layout, int curBlockNdx, int baseOffse
             entry.type                = elemBasicType;
             entry.blockNdx            = curBlockNdx;
             entry.offset              = curOffset;
-            entry.arraySize           = type.getArraySize();
+            entry.arraySize           = arraySize;
             entry.arrayStride         = stride;
             entry.matrixStride        = 0;
             entry.topLevelArraySize   = topLevelArraySize;
             entry.topLevelArrayStride = topLevelArrayStride;
 
-            curOffset += stride * type.getArraySize();
+            curOffset += stride * arraySize;
 
             layout.uniforms.push_back(entry);
         }
@@ -657,14 +679,14 @@ int computeReferenceLayout(UniformLayout &layout, int curBlockNdx, int baseOffse
             entry.type                = elemBasicType;
             entry.blockNdx            = curBlockNdx;
             entry.offset              = curOffset;
-            entry.arraySize           = type.getArraySize();
+            entry.arraySize           = arraySize;
             entry.arrayStride         = vecStride * numVecs;
             entry.matrixStride        = vecStride;
             entry.isRowMajor          = isRowMajor;
             entry.topLevelArraySize   = topLevelArraySize;
             entry.topLevelArrayStride = topLevelArrayStride;
 
-            curOffset += entry.arrayStride * type.getArraySize();
+            curOffset += entry.arrayStride * arraySize;
 
             layout.uniforms.push_back(entry);
         }
@@ -672,10 +694,10 @@ int computeReferenceLayout(UniformLayout &layout, int curBlockNdx, int baseOffse
         {
             DE_ASSERT(elemType.isStructType() || elemType.isArrayType());
 
-            for (int elemNdx = 0; elemNdx < type.getArraySize(); elemNdx++)
+            for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
                 curOffset += computeReferenceLayout(layout, curBlockNdx, curOffset,
                                                     curPrefix + "[" + de::toString(elemNdx) + "]",
-                                                    type.getElementType(), layoutFlags);
+                                                    type.getElementType(), layoutFlags, interface, instanceNdx);
         }
     }
     else
@@ -685,7 +707,7 @@ int computeReferenceLayout(UniformLayout &layout, int curBlockNdx, int baseOffse
         for (StructType::ConstIterator memberIter = type.getStructPtr()->begin();
              memberIter != type.getStructPtr()->end(); memberIter++)
             curOffset += computeReferenceLayout(layout, curBlockNdx, curOffset, curPrefix + "." + memberIter->getName(),
-                                                memberIter->getType(), layoutFlags);
+                                                memberIter->getType(), layoutFlags, interface, instanceNdx);
 
         if (!(layoutFlags & LAYOUT_SCALAR))
             curOffset = deAlign32(curOffset, baseAlignment);
@@ -703,25 +725,27 @@ void computeReferenceLayout(UniformLayout &layout, const ShaderInterface &interf
         const UniformBlock &block = interface.getUniformBlock(blockNdx);
         bool hasInstanceName      = block.hasInstanceName();
         std::string blockPrefix   = hasInstanceName ? (block.getBlockName() + ".") : "";
-        int curOffset             = 0;
-        int activeBlockNdx        = (int)layout.blocks.size();
-        int firstUniformNdx       = (int)layout.uniforms.size();
-
-        for (UniformBlock::ConstIterator uniformIter = block.begin(); uniformIter != block.end(); uniformIter++)
-        {
-            const Uniform &uniform = *uniformIter;
-            curOffset +=
-                computeReferenceLayout(layout, activeBlockNdx, curOffset, blockPrefix + uniform.getName(),
-                                       uniform.getType(), mergeLayoutFlags(block.getFlags(), uniform.getFlags()));
-        }
-
-        int uniformIndicesEnd = (int)layout.uniforms.size();
-        int blockSize         = curOffset;
-        int numInstances      = block.isArray() ? block.getArraySize() : 1;
+        int numInstances          = block.isArray() ? block.getArraySize() : 1;
 
         // Create block layout entries for each instance.
         for (int instanceNdx = 0; instanceNdx < numInstances; instanceNdx++)
         {
+            int curOffset       = 0;
+            int activeBlockNdx  = (int)layout.blocks.size();
+            int firstUniformNdx = (int)layout.uniforms.size();
+
+            // Process uniforms for this specific instance
+            for (UniformBlock::ConstIterator uniformIter = block.begin(); uniformIter != block.end(); uniformIter++)
+            {
+                const Uniform &uniform = *uniformIter;
+                curOffset += computeReferenceLayout(
+                    layout, activeBlockNdx, curOffset, blockPrefix + uniform.getName(), uniform.getType(),
+                    mergeLayoutFlags(block.getFlags(), uniform.getFlags()), interface, instanceNdx);
+            }
+
+            int uniformIndicesEnd = (int)layout.uniforms.size();
+            int blockSize         = curOffset;
+
             // Allocate entry for instance.
             layout.blocks.push_back(BlockLayoutEntry());
             BlockLayoutEntry &blockEntry = layout.blocks.back();
@@ -1122,7 +1146,12 @@ void generateDeclaration(std::ostringstream &src, const VarType &type, const std
         src << " " << name;
 
         for (std::vector<int>::const_iterator sizeIter = arraySizes.begin(); sizeIter != arraySizes.end(); sizeIter++)
-            src << "[" << *sizeIter << "]";
+        {
+            if (*sizeIter == glu::VarType::UNSIZED_ARRAY)
+                src << "[]"; // Handle unsized arrays
+            else
+                src << "[" << *sizeIter << "]";
+        }
     }
     else
     {
@@ -1700,6 +1729,26 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Sh
     }
 }
 
+// Check if any uniform block has an unsized array
+bool hasUnsizedArray(const ShaderInterface &interface)
+{
+    for (int blockNdx = 0; blockNdx < interface.getNumUniformBlocks(); blockNdx++)
+    {
+        const UniformBlock &block = interface.getUniformBlock(blockNdx);
+
+        for (UniformBlock::ConstIterator uniformIter = block.begin(); uniformIter != block.end(); uniformIter++)
+        {
+            const Uniform &uniform = *uniformIter;
+            const VarType &type    = uniform.getType();
+
+            // Check if this is a top-level unsized array
+            if (type.isArrayType() && type.getArraySize() == glu::VarType::UNSIZED_ARRAY)
+                return true;
+        }
+    }
+    return false;
+}
+
 std::string generateVertexShader(const ShaderInterface &interface, const UniformLayout &layout,
                                  const std::map<int, void *> &blockPointers, MatrixLoadFlags matrixLoadFlag,
                                  bool shuffleUniformMembers)
@@ -1710,6 +1759,9 @@ std::string generateVertexShader(const ShaderInterface &interface, const Uniform
     src << "#extension GL_EXT_shader_8bit_storage : enable\n";
     src << "#extension GL_EXT_scalar_block_layout : enable\n";
     src << "#extension GL_EXT_nonuniform_qualifier : enable\n";
+
+    if (hasUnsizedArray(interface))
+        src << "#extension GL_EXT_uniform_buffer_unsized_array : enable\n";
 
     src << "layout(location = 0) in highp vec4 a_position;\n";
     src << "layout(location = 0) out mediump float v_vtxResult;\n";
@@ -1757,6 +1809,9 @@ std::string generateFragmentShader(const ShaderInterface &interface, const Unifo
     src << "#extension GL_EXT_shader_8bit_storage : enable\n";
     src << "#extension GL_EXT_scalar_block_layout : enable\n";
     src << "#extension GL_EXT_nonuniform_qualifier : enable\n";
+
+    if (hasUnsizedArray(interface))
+        src << "#extension GL_EXT_uniform_buffer_unsized_array : enable\n";
 
     src << "layout(location = 0) in mediump float v_vtxResult;\n";
     src << "layout(location = 0) out mediump vec4 dEQP_FragColor;\n";
@@ -2374,6 +2429,11 @@ TestInstance *UniformBlockCase::createInstance(Context &context) const
         (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing ||
          !context.getDescriptorIndexingFeatures().runtimeDescriptorArray))
         TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
+#ifndef CTS_USES_VULKANSC
+    if (hasUnsizedArray(m_interface) &&
+        !context.getShaderUniformBufferUnsizedArrayFeaturesEXT().shaderUniformBufferUnsizedArray)
+        TCU_THROW(NotSupportedError, "shaderUniformBufferUnsizedArray not supported");
+#endif
 
     return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
 }

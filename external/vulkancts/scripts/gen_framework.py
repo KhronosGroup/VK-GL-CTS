@@ -117,6 +117,7 @@ VK_EXT_shader_tile_image
 VK_EXT_subpass_merge_feedback
 VK_EXT_swapchain_maintenance1
 VK_EXT_transform_feedback
+VK_EXT_uniform_buffer_unsized_array
 VK_EXT_vertex_attribute_divisor
 VK_EXT_vertex_input_dynamic_state
 VK_EXT_ycbcr_image_arrays
