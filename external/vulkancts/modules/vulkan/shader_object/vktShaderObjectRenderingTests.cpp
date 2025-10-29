@@ -794,9 +794,12 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 
     std::vector<tcu::ConstPixelBufferAccess> colorResultBuffers;
     for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        invalidateAlloc(vk, device, colorOutputBuffers[i]->getAllocation());
         colorResultBuffers.push_back(tcu::ConstPixelBufferAccess(
             vk::mapVkFormat(m_colorFormats[i]), m_renderArea.extent.width, m_renderArea.extent.height, 1,
             (const void *)colorOutputBuffers[i]->getAllocation().getHostPtr()));
+    }
 
     const uint32_t width   = m_renderArea.extent.width;
     const uint32_t height  = m_renderArea.extent.height;
