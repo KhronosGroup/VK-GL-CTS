@@ -1388,6 +1388,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/draw/vktDrawExplicitVertexParameterTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawImageObjectUtil.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawIndexedTest.cpp",
+        "external/vulkancts/modules/vulkan/draw/vktDrawIndirectInstancedTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawIndirectTest.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawInstancedTests.cpp",
         "external/vulkancts/modules/vulkan/draw/vktDrawInvertedDepthRangesTests.cpp",
