@@ -124,15 +124,11 @@
 #include "vktMeshShaderTests.hpp"
 #include "vktFragmentShadingBarycentricTests.hpp"
 #include "vktShaderBFloat16Tests.hpp"
-
-#ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
 #include "vktVideoTests.hpp"
-#endif // DEQP_EXCLUDE_VK_VIDEO_TESTS
 
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
-#include "vktVideoTests.hpp"
 #include "vktShaderObjectTests.hpp"
 #include "vktDGCTests.hpp"
 #include "vktCooperativeVectorTests.hpp"
@@ -1347,9 +1343,7 @@ void TestPackage::init(void)
     addRootChild("fragment_shading_barycentric", m_caseListFilter, FragmentShadingBarycentric::createTests);
     // Amber depth pipeline tests
     addRootChild("depth", m_caseListFilter, cts_amber::createAmberDepthGroup);
-#ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
     addRootChild("video", m_caseListFilter, video::createTests);
-#endif
     addRootChild("shader_object", m_caseListFilter, ShaderObject::createTests);
     addRootChild("dgc", m_caseListFilter, DGC::createTests);
     addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);

@@ -8,6 +8,7 @@ option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
 option(DEQP_ANDROID_EXE "Build dEQP modules as executables rather than a library on Android" OFF)
 option(DEQP_ANDROID_EXE_LOGCAT "Enable logging of dEQP output to logcat when using Android executables" OFF)
 option(DEQP_LOG_NODE_SOURCE "Log source code file and line where nodes are being added" OFF)
+option(DEQP_DISABLE_VK_VIDEO_TESTS "Disable Vulkan video tests (build but report as disabled)" OFF)
 
 # Target selection:
 # SELECTED_BUILD_TARGETS is a CMake option that can be set to a list of targets
@@ -152,13 +153,6 @@ include_directories(external/jsoncpp/src/include)
 # RenderDoc API
 include_directories(external/renderdoc/src)
 
-# Vulkan video support libraries
-if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-   # Video parser and encoder library
-   add_subdirectory(external/vulkan-video-samples EXCLUDE_FROM_ALL)
-   # YUV Video generator library
-   add_subdirectory(external/video_generator EXCLUDE_FROM_ALL)
-endif()
 
 include_directories(${PNG_INCLUDE_PATH})
 
@@ -254,6 +248,11 @@ if (DEQP_SUPPORT_DRM)
 	add_definitions(-DDEQP_SUPPORT_DRM=1)
 else ()
 	add_definitions(-DDEQP_SUPPORT_DRM=0)
+endif ()
+
+if (NOT DE_OS_IS_WIN32 AND NOT DE_OS_IS_UNIX)
+	message(STATUS "Unsupported OS for Video Tests, supported: Windows, Unix. Disabling Video tests from the build.")
+	set (DEQP_DISABLE_VK_VIDEO_TESTS ON)
 endif ()
 
 if (DE_COMPILER_IS_MSC)

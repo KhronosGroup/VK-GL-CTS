@@ -615,6 +615,12 @@ CustomInstanceWrapper::CustomInstanceWrapper(Context &context, const std::vector
 void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags videoCodecOperation)
 {
 #ifndef CTS_USES_VULKANSC
+
+#ifndef DE_BUILD_VIDEO
+    DE_UNREF(context);
+    DE_UNREF(videoCodecOperation);
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#else
     if (context.getTestContext().getCommandLine().isComputeOnly())
         TCU_THROW(NotSupportedError, "Video tests are not supported in compute-only mode");
 
@@ -649,6 +655,7 @@ void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags 
 
     if ((videoCodecOperation & vk::VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR) != 0)
         context.requireDeviceFunctionality("VK_KHR_video_decode_vp9");
+#endif
 #else
     DE_UNREF(context);
     DE_UNREF(videoCodecOperation);

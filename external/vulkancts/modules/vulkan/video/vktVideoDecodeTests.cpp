@@ -48,7 +48,7 @@
 #include <VulkanH264Decoder.h>
 #include <VulkanH265Decoder.h>
 #include <VulkanAV1Decoder.h>
-#endif
+#endif // DE_BUILD_VIDEO
 
 namespace vkt
 {
@@ -140,7 +140,7 @@ void FrameProcessor::bufferFrames(int framesToDecode)
     auto &cachedParams = m_decoder->m_cachedDecodeParams;
     TCU_CHECK_MSG(cachedParams.size() >= framesToDecode, "Unknown decoder failure");
 }
-#endif
+#endif // DE_BUILD_VIDEO
 
 namespace
 {
@@ -1291,6 +1291,7 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
 
     return downloadedFrame;
 }
+#endif // DE_BUILD_VIDEO
 
 class VideoDecodeTestInstance : public VideoBaseTestInstance
 {
@@ -1354,6 +1355,7 @@ VideoDecodeTestInstance::VideoDecodeTestInstance(Context &context, const TestDef
         getDeviceQueue(m_context.getDeviceInterface(), device, m_videoDevice.getQueueFamilyIndexTransfer(), 0));
 }
 
+#ifdef DE_BUILD_VIDEO
 static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition *td, DeviceContext *dctx,
                                                        bool forceDisableFilmGrain = false)
 {
@@ -1368,9 +1370,11 @@ static std::unique_ptr<FrameProcessor> createProcessor(const TestDefinition *td,
 
     return std::make_unique<FrameProcessor>(std::move(demuxer), decoder);
 }
+#endif // DE_BUILD_VIDEO
 
 tcu::TestStatus VideoDecodeTestInstance::iterate()
 {
+#ifdef DE_BUILD_VIDEO
     bool filmGrainPresent      = m_testDefinition->hasOption(DecoderOption::FilmGrainPresent);
     bool forceDisableFilmGrain = m_testDefinition->hasOption(DecoderOption::ForceDisableFilmGrain);
     std::unique_ptr<FrameProcessor> processor =
@@ -1545,10 +1549,14 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 
         return tcu::TestStatus::fail(ss.str());
     }
+#else
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif // DE_BUILD_VIDEO
 }
 
 tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
 {
+#ifdef DE_BUILD_VIDEO
     std::vector<std::unique_ptr<FrameProcessor>> processors;
     for (int i = 0; i < m_testDefinitions.size(); i++)
     {
@@ -1686,9 +1694,10 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
         }
         return tcu::TestStatus::fail(ss.str());
     }
+#else
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif // DE_BUILD_VIDEO
 }
-
-#endif // #ifdef DE_BUILD_VIDEO
 
 class VideoDecodeTestCase : public vkt::TestCase
 {
@@ -1718,11 +1727,7 @@ public:
 
     TestInstance *createInstance(Context &context) const override
     {
-#ifdef DE_BUILD_VIDEO
         return new InterleavingDecodeTestInstance(context, m_testDefinitions);
-#endif
-        DE_UNREF(context);
-        return nullptr;
     }
     void checkSupport(Context &context) const override;
 
@@ -1732,14 +1737,7 @@ private:
 
 TestInstance *VideoDecodeTestCase::createInstance(Context &context) const
 {
-#ifdef DE_BUILD_VIDEO
     return new VideoDecodeTestInstance(context, m_testDefinition.get());
-#endif
-
-#ifndef DE_BUILD_VIDEO
-    DE_UNREF(context);
-    return nullptr;
-#endif
 }
 
 void VideoDecodeTestCase::checkSupport(Context &context) const

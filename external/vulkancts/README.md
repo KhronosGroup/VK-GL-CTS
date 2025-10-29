@@ -95,6 +95,26 @@ download the required sample clips by running the two helper scripts in the
 Each script will pull down the necessary video files into the CTS data tree.
 Both scripts support the `--help` flag to list all available options.
 
+### Video Test Control
+
+The `DEQP_DISABLE_VK_VIDEO_TESTS` CMake option controls Vulkan video tests. When enabled, video tests are built but reported as "NotSupported" when run.
+
+When `DEQP_DISABLE_VK_VIDEO_TESTS=ON`, the following occurs:
+- Video tests are built but throw `NotSupportedError` when executed
+- Vulkan-Video-Samples and Video Generator external dependencies are not built.
+
+This option is automatically enabled (set to ON) when building on operating systems other than UNIX and WIN32, as video functionality may not be available or supported on those platforms.
+
+To control video test behavior:
+
+```bash
+# Disable video tests (build but report as not-supported)
+cmake -DDEQP_DISABLE_VK_VIDEO_TESTS=ON <path to vulkancts>
+
+# Enable video tests with full functionality (default on UNIX and WIN32)
+cmake -DDEQP_DISABLE_VK_VIDEO_TESTS=OFF <path to vulkancts>
+```
+
 ### Windows x86-32
 
 	cmake <path to vulkancts> -G"Visual Studio 14"
