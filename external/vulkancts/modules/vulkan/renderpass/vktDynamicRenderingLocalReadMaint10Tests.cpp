@@ -193,8 +193,7 @@ struct TestParams
     // not match any color attachment.
     uint32_t getDepthStencilInputAttachmentOffset() const
     {
-        DE_ASSERT(feedback.size() < 100);
-        return 100u;
+        return 0u;
     }
 
     // Returns the output attachment index for original attachment attIndex. If the attachment contains a feedback loop,
