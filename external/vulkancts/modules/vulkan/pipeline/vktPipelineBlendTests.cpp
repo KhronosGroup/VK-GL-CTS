@@ -46,6 +46,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuTextureUtil.hpp"
@@ -2020,6 +2021,351 @@ const VkColorComponentFlags *DynamicMaskBlendTestInstance::getColorWriteMasks() 
     return m_colorWriteMasks;
 }
 
+struct DynamicDualBlendDisableParams
+{
+    PipelineConstructionType constructionType;
+    uint32_t attachmentCount;
+    bool extraAttachment; // Used to have more dual blend attachments.
+
+    uint32_t getActualAttachmentCount() const
+    {
+        return attachmentCount + (extraAttachment ? 1u : 0u);
+    }
+
+    std::vector<tcu::Vec4> getOutColors() const
+    {
+        const std::vector<tcu::Vec4> outColors{
+            tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+            tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+            tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f), tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f), tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        };
+
+        return outColors;
+    }
+};
+
+class DynamicDualBlendDisableInstance : public vkt::TestInstance
+{
+public:
+    DynamicDualBlendDisableInstance(Context &context, const DynamicDualBlendDisableParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    virtual ~DynamicDualBlendDisableInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const DynamicDualBlendDisableParams m_params;
+};
+
+class DynamicDualBlendDisableCase : public vkt::TestCase
+{
+public:
+    DynamicDualBlendDisableCase(tcu::TestContext &testCtx, const std::string &name,
+                                const DynamicDualBlendDisableParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~DynamicDualBlendDisableCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new DynamicDualBlendDisableInstance(context, m_params);
+    }
+
+protected:
+    const DynamicDualBlendDisableParams m_params;
+};
+
+void DynamicDualBlendDisableCase::checkSupport(Context &context) const
+{
+#ifndef CTS_USES_VULKANSC
+    const auto &eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+
+    if (!eds3Features.extendedDynamicState3ColorBlendEnable)
+        TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEnable not supported");
+
+    if (!eds3Features.extendedDynamicState3ColorBlendEquation)
+        TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEquation not supported");
+
+    if (!eds3Features.extendedDynamicState3ColorWriteMask)
+        TCU_THROW(NotSupportedError, "extendedDynamicState3ColorWriteMask not supported");
+#endif // CTS_USES_VULKANSC
+
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
+
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DUAL_SRC_BLEND);
+
+    const auto &limits = context.getDeviceProperties().limits;
+    if (limits.maxFragmentDualSrcAttachments < m_params.attachmentCount)
+        TCU_THROW(NotSupportedError, "maxFragmentDualSrcAttachments too low");
+
+    if (limits.maxColorAttachments < m_params.getActualAttachmentCount())
+        TCU_THROW(NotSupportedError, "maxColorAttachments too low");
+}
+
+void DynamicDualBlendDisableCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "void main(void) {\n"
+         << "    // Full-screen clockwise triangle strip with 4 vertices.\n"
+         << "    const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+         << "    const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    const auto outColors = m_params.getOutColors();
+    DE_ASSERT(m_params.getActualAttachmentCount() <= outColors.size());
+
+    std::ostringstream frag;
+    frag << "#version 460\n";
+    for (uint32_t i = 0u; i < m_params.getActualAttachmentCount(); ++i)
+        frag << "layout (location=" << i << ") out vec4 outColor" << i << ";\n";
+    frag << "void main(void) {\n";
+    for (uint32_t i = 0u; i < m_params.getActualAttachmentCount(); ++i)
+        frag << "    outColor" << i << " = vec4" << outColors.at(i) << ";\n";
+    frag << "}\n";
+
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus DynamicDualBlendDisableInstance::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk        = makeExtent3D(extent);
+    const auto format          = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage      = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto imageType       = VK_IMAGE_TYPE_2D;
+    const auto sampleCount     = VK_SAMPLE_COUNT_1_BIT;
+    const auto bindPoint       = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto attachmentCount = m_params.getActualAttachmentCount();
+
+    using ImageWithBufferPtr = std::unique_ptr<ImageWithBuffer>;
+    std::vector<ImageWithBufferPtr> colorBuffers;
+    colorBuffers.reserve(attachmentCount);
+
+    for (uint32_t i = 0u; i < attachmentCount; ++i)
+        colorBuffers.emplace_back(
+            new ImageWithBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, colorUsage, imageType));
+
+    // Render pass and framebuffer. All attachments will be identical.
+    const auto attDesc =
+        makeAttachmentDescription(0u, format, sampleCount, VK_ATTACHMENT_LOAD_OP_CLEAR, VK_ATTACHMENT_STORE_OP_STORE,
+                                  VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                                  VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const std::vector<VkAttachmentDescription> attachmentDescriptions(attachmentCount, attDesc);
+
+    std::vector<VkAttachmentReference> attachmentReferences;
+    attachmentReferences.reserve(attachmentCount);
+    for (uint32_t i = 0u; i < attachmentCount; ++i)
+        attachmentReferences.push_back(makeAttachmentReference(i, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+
+    const VkSubpassDescription subpassDescription{
+        0u,      bindPoint, 0u, nullptr, de::sizeU32(attachmentReferences), de::dataOrNull(attachmentReferences),
+        nullptr, nullptr,   0u, nullptr,
+    };
+
+    const VkRenderPassCreateInfo renderPassCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(attachmentDescriptions),
+        de::dataOrNull(attachmentDescriptions),
+        1u,
+        &subpassDescription,
+        0u,
+        nullptr,
+    };
+    RenderPassWrapper renderPass(m_params.constructionType, ctx.vkd, ctx.device, &renderPassCreateInfo);
+
+    std::vector<VkImage> fbImages;
+    std::vector<VkImageView> fbViews;
+
+    fbImages.reserve(attachmentCount);
+    fbViews.reserve(attachmentCount);
+
+    for (const auto &colorBuffer : colorBuffers)
+    {
+        fbImages.push_back(colorBuffer->getImage());
+        fbViews.push_back(colorBuffer->getImageView());
+    }
+
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, de::sizeU32(fbImages), de::dataOrNull(fbImages),
+                                 de::dataOrNull(fbViews), extentVk.width, extentVk.height);
+
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttStates;
+    colorBlendAttStates.reserve(attachmentCount);
+
+    const VkColorComponentFlags staticColorWriteMask = 0u;
+    const VkColorComponentFlags dynamicColorWriteMask =
+        (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+
+    for (uint32_t i = 0u; i < attachmentCount; ++i)
+    {
+        // Static values.
+        colorBlendAttStates.push_back(VkPipelineColorBlendAttachmentState{
+            VK_TRUE,
+            VK_BLEND_FACTOR_SRC1_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+            VK_BLEND_OP_ADD,
+            VK_BLEND_FACTOR_SRC_ALPHA,
+            VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+            VK_BLEND_OP_ADD,
+            staticColorWriteMask,
+        });
+    }
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_LOGIC_OP_CLEAR,
+        de::sizeU32(colorBlendAttStates),
+        de::dataOrNull(colorBlendAttStates),
+        {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto &binaries = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    std::vector<VkDynamicState> dynamicStates;
+#ifndef CTS_USES_VULKANSC
+    dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT);
+    dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+    dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
+#endif // CTS_USES_VULKANSC
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                     m_params.constructionType);
+    pipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDynamicState(&dynamicStateCreateInfo)
+        .setupVertexInputState(&vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragShader)
+        .setupFragmentOutputState(renderPass.get(), 0u, &colorBlendStateCreateInfo)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto clearValueColor = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto clearValue      = makeClearValueColor(clearValueColor);
+    const std::vector<VkClearValue> clearValues(attachmentCount, clearValue);
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), de::sizeU32(clearValues), de::dataOrNull(clearValues));
+
+#ifndef CTS_USES_VULKANSC
+    const VkColorBlendEquationEXT dualColorBlendEquation = {
+        VK_BLEND_FACTOR_SRC1_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, VK_BLEND_OP_ADD,
+        VK_BLEND_FACTOR_SRC1_ALPHA, VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA, VK_BLEND_OP_ADD};
+
+    const VkColorBlendEquationEXT normalColorBlendEquation = {VK_BLEND_FACTOR_ONE,
+                                                              VK_BLEND_FACTOR_ZERO,
+                                                              VK_BLEND_OP_ADD,
+                                                              VK_BLEND_FACTOR_SRC_ALPHA,
+                                                              VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA,
+                                                              VK_BLEND_OP_ADD};
+#endif // CTS_USES_VULKANSC
+
+    std::vector<VkBool32> blendEnables;
+    blendEnables.reserve(attachmentCount);
+
+    for (uint32_t i = 0u; i < attachmentCount; ++i)
+    {
+        // When using an extra attachment, the last one can never have dual blending enabled.
+        const bool useDualBlendEq = (i % 2u == 0u) && (!m_params.extraAttachment || (i != attachmentCount - 1u));
+        const bool blendEnable    = !useDualBlendEq; // Disable blending for those attachments that use the dual eq.
+        blendEnables.push_back(makeVkBool(blendEnable));
+#ifndef CTS_USES_VULKANSC
+        ctx.vkd.cmdSetColorBlendEquationEXT(cmdBuffer, i, 1u,
+                                            (useDualBlendEq ? &dualColorBlendEquation : &normalColorBlendEquation));
+#endif // CTS_USES_VULKANSC
+    }
+
+    pipeline.bind(cmdBuffer);
+
+    // Disable blending for those attachments that use dual color blend equations.
+#ifndef CTS_USES_VULKANSC
+    ctx.vkd.cmdSetColorBlendEnableEXT(cmdBuffer, 0u, de::sizeU32(blendEnables), de::dataOrNull(blendEnables));
+#endif // CTS_USES_VULKANSC
+
+    // Enable color writes.
+    const std::vector<VkColorComponentFlags> colorWriteMasks(attachmentCount, dynamicColorWriteMask);
+#ifndef CTS_USES_VULKANSC
+    ctx.vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, de::sizeU32(colorWriteMasks), de::dataOrNull(colorWriteMasks));
+#endif // CTS_USES_VULKANSC
+
+    ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    renderPass.end(ctx.vkd, cmdBuffer);
+
+    // Copy color attachments to each buffer.
+    for (uint32_t i = 0u; i < attachmentCount; ++i)
+        copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffers.at(i)->getImage(), colorBuffers.at(i)->getBuffer(),
+                          extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // Verify colors.
+    bool fail            = false;
+    auto &log            = m_context.getTestContext().getLog();
+    const auto outColors = m_params.getOutColors();
+    const auto tcuFormat = mapVkFormat(format);
+    const tcu::Vec4 threshold(0.0f);
+
+    for (uint32_t i = 0u; i < attachmentCount; ++i)
+    {
+        auto &outBufferAlloc = colorBuffers.at(i)->getBufferAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, outBufferAlloc);
+
+        tcu::ConstPixelBufferAccess result(tcuFormat, extent, outBufferAlloc.getHostPtr());
+
+        tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+        tcu::PixelBufferAccess reference = refLevel.getAccess();
+        tcu::clear(reference, outColors.at(i));
+
+        const auto setName = "Result" + std::to_string(i);
+        if (!tcu::floatThresholdCompare(log, setName.c_str(), "", reference, result, threshold,
+                                        tcu::COMPARE_LOG_ON_ERROR))
+            fail = true;
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results in output buffers; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 std::string getBlendStateSetName(const VkPipelineColorBlendAttachmentState blendStates[BlendTest::QUAD_COUNT])
@@ -2324,6 +2670,28 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
 #endif
         blendTests->addChild(dualSourceBlendTests.release());
     }
+
+#ifndef CTS_USES_VULKANSC
+    if (genFormatTests)
+    {
+        using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
+        GroupPtr dynamicDualDisableGroup(new tcu::TestCaseGroup(testCtx, "dynamic_dual_disable"));
+
+        for (const uint32_t attCount : {1u, 2u, 8u})
+            for (const bool extraAttachment : {false, true})
+            {
+                const DynamicDualBlendDisableParams params{
+                    pipelineConstructionType,
+                    attCount,
+                    extraAttachment,
+                };
+                const auto testName = "att_count_" + std::to_string(attCount) + (extraAttachment ? "_plus_1" : "");
+                dynamicDualDisableGroup->addChild(new DynamicDualBlendDisableCase(testCtx, testName, params));
+            }
+
+        blendTests->addChild(dynamicDualDisableGroup.release());
+    }
+#endif
 
     return blendTests.release();
 }
