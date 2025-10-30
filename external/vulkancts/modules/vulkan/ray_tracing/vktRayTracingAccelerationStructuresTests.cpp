@@ -128,7 +128,8 @@ enum class UpdateCase
     NONE,
     VERTICES,
     INDICES,
-    TRANSFORM
+    TRANSFORM,
+    DEGENERATE,
 };
 
 static const uint32_t RTAS_DEFAULT_SIZE = 8u;
@@ -1040,14 +1041,30 @@ std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> UpdateableASConfigu
         de::SharedPtr<RaytracedGeometryBase> geometry;
         geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, testParams.vertexFormat, testParams.indexType);
 
-        for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
-            geometry->addVertex(*it);
+        if (testParams.updateCase == UpdateCase::DEGENERATE)
+        {
+            // Make second triangle degenerate by collapsing vertices 3, 4, 5
+            std::vector<tcu::Vec3> modifiedVertices = vertices;
+            tcu::Vec3 centerPoint                   = (vertices[3] + vertices[4] + vertices[5]) / 3.0f;
+            modifiedVertices[3]                     = centerPoint;
+            modifiedVertices[4]                     = centerPoint;
+            modifiedVertices[5]                     = centerPoint;
+
+            for (auto it = begin(modifiedVertices), eit = end(modifiedVertices); it != eit; ++it)
+                geometry->addVertex(*it);
+        }
+        else
+        {
+            for (auto it = begin(vertices), eit = end(vertices); it != eit; ++it)
+                geometry->addVertex(*it);
+        }
 
         if (testParams.indexType != VK_INDEX_TYPE_NONE_KHR)
         {
             for (auto it = begin(indices), eit = end(indices); it != eit; ++it)
                 geometry->addIndex(*it);
         }
+
         bottomLevelAccelerationStructure->addGeometry(geometry);
 
         result.push_back(de::SharedPtr<BottomLevelAccelerationStructure>(bottomLevelAccelerationStructure.release()));
@@ -5284,20 +5301,19 @@ TestStatus ASUpdateInstance::iterate(void)
         cmdPipelineMemoryBarrier(vkd, *cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                                  VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR, &postBuildBarrier);
 
+        auto config = static_cast<UpdateableASConfiguration *>(m_data.testConfiguration.get());
+        const std::vector<tcu::Vec3> vertices = config->vertices;
+        const std::vector<uint32_t> indices   = config->indices;
+
         if (m_data.updateCase == UpdateCase::VERTICES)
         {
             for (auto &blas : bottomLevelAccelerationStructures)
             {
-
                 const std::vector<tcu::Vec3> verticesUpdate = {
                     tcu::Vec3(0.0f, 0.0f, -0.5f),  tcu::Vec3(0.5f, 0.0f, -0.5f),  tcu::Vec3(0.0f, 0.5f, -0.5f),
                     tcu::Vec3(0.0f, 0.0f, -0.5f),  tcu::Vec3(0.5f, 0.0f, -0.5f),  tcu::Vec3(0.0f, 0.5f, -0.5f),
                     tcu::Vec3(-0.8f, 0.8f, -0.5f), tcu::Vec3(-0.3f, 0.8f, -0.5f), tcu::Vec3(-0.8f, 0.3f, -0.5f),
                     tcu::Vec3(-0.8f, 0.8f, -0.5f), tcu::Vec3(-0.3f, 0.8f, -0.5f), tcu::Vec3(-0.8f, 0.3f, -0.5f),
-                };
-
-                const std::vector<uint32_t> indices = {
-                    0, 1, 2, 6, 8, 7,
                 };
 
                 de::SharedPtr<RaytracedGeometryBase> geometry;
@@ -5319,16 +5335,10 @@ TestStatus ASUpdateInstance::iterate(void)
         {
             for (auto &blas : bottomLevelAccelerationStructures)
             {
-
-                const std::vector<tcu::Vec3> vertices = {
-                    tcu::Vec3(0.0f, 0.0f, 0.0f),    tcu::Vec3(0.5f, 0.0f, 0.0f),    tcu::Vec3(0.0f, 0.5f, 0.0f),
-                    tcu::Vec3(0.0f, 0.0f, -0.5f),   tcu::Vec3(0.5f, 0.0f, -0.5f),   tcu::Vec3(0.0f, 0.5f, -0.5f),
-                    tcu::Vec3(-0.9f, -0.9f, 0.0f),  tcu::Vec3(-0.4f, -0.9f, 0.0f),  tcu::Vec3(-0.9f, -0.4f, 0.0f),
-                    tcu::Vec3(-0.9f, -0.9f, -0.5f), tcu::Vec3(-0.4f, -0.9f, -0.5f), tcu::Vec3(-0.9f, -0.4f, -0.5f),
-                };
                 const std::vector<uint32_t> indicesUpdate = {
                     3, 4, 5, 3, 10, 9,
                 };
+
                 de::SharedPtr<RaytracedGeometryBase> geometry;
                 geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
 
@@ -5350,6 +5360,40 @@ TestStatus ASUpdateInstance::iterate(void)
                 {{1.0f, 0.0f, 0.0f, 0.0f}, {0.0f, 1.0f, 0.0f, 0.0f}, {0.0f, 0.0f, 1.0f, -0.5f}}};
             topLevelAccelerationStructure->updateInstanceMatrix(vkd, device, 0, translatedMatrix);
             topLevelAccelerationStructure->build(vkd, device, *cmdBuffer, topLevelAccelerationStructure.get());
+        }
+        else if (m_data.updateCase == UpdateCase::DEGENERATE)
+        {
+            for (auto &blas : bottomLevelAccelerationStructures)
+            {
+                // After update make first triangle degenerate
+                std::vector<tcu::Vec3> modifiedVertices = vertices;
+                tcu::Vec3 centerPoint = (config->vertices[0] + config->vertices[1] + config->vertices[2]) / 3.0f;
+                modifiedVertices[0]   = centerPoint;
+                modifiedVertices[1]   = centerPoint;
+                modifiedVertices[2]   = centerPoint;
+                // Restore second triangle
+                modifiedVertices[3] = config->vertices[3];
+                modifiedVertices[4] = config->vertices[4];
+                modifiedVertices[5] = config->vertices[5];
+
+                const std::vector<uint32_t> indicesUpdate = {
+                    0, 1, 2, 3, 4, 5,
+                };
+
+                de::SharedPtr<RaytracedGeometryBase> geometry;
+                geometry = makeRaytracedGeometry(VK_GEOMETRY_TYPE_TRIANGLES_KHR, m_data.vertexFormat, m_data.indexType);
+
+                for (auto it = begin(modifiedVertices), eit = end(modifiedVertices); it != eit; ++it)
+                    geometry->addVertex(*it);
+
+                if (m_data.indexType != VK_INDEX_TYPE_NONE_KHR)
+                {
+                    for (auto it = begin(indicesUpdate), eit = end(indicesUpdate); it != eit; ++it)
+                        geometry->addIndex(*it);
+                }
+                blas->updateGeometry(0, geometry);
+                blas->build(vkd, device, *cmdBuffer, blas.get());
+            }
         }
 
         const TopLevelAccelerationStructure *topLevelRayTracedPtr = topLevelAccelerationStructure.get();
@@ -6858,6 +6902,7 @@ void addUpdateTests(TestCaseGroup *group)
         {UpdateCase::VERTICES, "vertices"},
         {UpdateCase::INDICES, "indices"},
         {UpdateCase::TRANSFORM, "transform"},
+        {UpdateCase::DEGENERATE, "degenerate"},
     };
 
     struct

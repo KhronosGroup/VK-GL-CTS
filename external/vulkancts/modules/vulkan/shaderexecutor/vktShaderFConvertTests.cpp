@@ -1016,6 +1016,51 @@ void FConvertTestCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, VK_EXT_SHADER_FLOAT8_EXTENSION_NAME " not supported by device");
 #endif
     }
+
+    // VUID-vkCmdDispatch-groupCountX-00386
+    const InputGenerator &inputGenerator = InputGenerator::getInstance();
+    size_t numValues                     = 0;
+    switch (m_params.from)
+    {
+    case FLOAT_TYPE_16_BITS:
+        numValues = inputGenerator.getValues<tcu::Float16>().size();
+        break;
+    case FLOAT_TYPE_32_BITS:
+        numValues = inputGenerator.getValues<tcu::Float32>().size();
+        break;
+    case FLOAT_TYPE_64_BITS:
+        numValues = inputGenerator.getValues<tcu::Float64>().size();
+        break;
+    case BRAIN_FLOAT_16_BITS:
+        numValues = inputGenerator.getValues<BFloat16>().size();
+        break;
+    case FLOAT_TYPE_E5M2:
+        numValues = inputGenerator.getValues<tcu::FloatE5M2>().size();
+        break;
+    case FLOAT_TYPE_E4M3:
+        numValues = inputGenerator.getValues<tcu::FloatE4M3>().size();
+        break;
+    case SIGNED_INT_TYPE_32_BITS:
+        numValues = inputGenerator.getValues<int32_t>().size();
+        break;
+    case UNSIGNED_INT_TYPE_32_BITS:
+        numValues = inputGenerator.getValues<uint32_t>().size();
+        break;
+    default:
+        DE_ASSERT(false);
+        break;
+    }
+
+    const size_t totalVectors = numValues / m_params.vectorLength;
+    const auto &properties    = context.getDeviceProperties();
+
+    if (totalVectors > properties.limits.maxComputeWorkGroupCount[0])
+    {
+        std::ostringstream msg;
+        msg << "Test requires " << totalVectors << " compute work groups, but device limit is "
+            << properties.limits.maxComputeWorkGroupCount[0];
+        TCU_THROW(NotSupportedError, msg.str().c_str());
+    }
 }
 
 tcu::TestStatus FConvertTestInstance::iterate(void)

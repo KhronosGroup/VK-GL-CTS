@@ -107,6 +107,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_linear_color_attachment",
         "VK_NV_cooperative_matrix2",
         "VK_NV_cooperative_vector",
+        "VK_QCOM_fragment_density_map_offset",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
@@ -659,13 +660,27 @@ public:
     }
     VkQueue getComputeQueue(void) const;
 #ifndef CTS_USES_VULKANSC
-    bool hasDebugReportRecorder(void) const
+    bool hasDebugReportRecorders(void) const
     {
-        return m_debugReportRecorder.get() != nullptr;
+        return (m_debugReportRecorder.get() != nullptr || !m_externalDebugReportRecorders.empty());
     }
-    vk::DebugReportRecorder &getDebugReportRecorder(void) const
+    std::vector<vk::DebugReportRecorder *> getDebugReportRecorders(void) const
     {
-        return *m_debugReportRecorder.get();
+        std::vector<vk::DebugReportRecorder *> recorders;
+        recorders.reserve(m_externalDebugReportRecorders.size() + 1);
+        if (m_debugReportRecorder.get() != nullptr)
+            recorders.push_back(m_debugReportRecorder.get());
+        std::copy(begin(m_externalDebugReportRecorders), end(m_externalDebugReportRecorders),
+                  std::back_inserter(recorders));
+        return recorders;
+    }
+    void addExternalDebugReportRecorder(vk::DebugReportRecorder *recorder)
+    {
+        m_externalDebugReportRecorders.insert(recorder);
+    }
+    void removeExternalDebugReportRecorder(vk::DebugReportRecorder *recorder)
+    {
+        m_externalDebugReportRecorders.erase(recorder);
     }
 #endif // CTS_USES_VULKANSC
 
@@ -686,6 +701,7 @@ private:
 
 #ifndef CTS_USES_VULKANSC
     const DebugReportRecorderPtr m_debugReportRecorder;
+    std::set<vk::DebugReportRecorder *> m_externalDebugReportRecorders;
 #endif // CTS_USES_VULKANSC
     const vector<string> m_instanceExtensions;
     VkInstance m_instanceHandle;
@@ -1306,6 +1322,24 @@ uint32_t Context::getUsedApiVersion(void) const
 {
     return m_device->getUsedApiVersion();
 }
+uint32_t Context::getEquivalentApiVersion(void) const
+{
+    const auto apiVersion = getUsedApiVersion();
+    auto apiVariant       = VK_API_VERSION_VARIANT(apiVersion);
+
+    // return apiVersion for normal Vulkan
+    if (apiVariant == 0)
+        return apiVersion;
+
+    auto major = VK_API_VERSION_MAJOR(apiVersion);
+    auto minor = VK_API_VERSION_MINOR(apiVersion);
+
+    // return 1.2 for Vulkan SC 1.0
+    if ((apiVariant == VKSC_API_VARIANT) && (major == 1) && (minor == 0))
+        return VK_API_VERSION_1_2;
+
+    TCU_THROW(InternalError, "Unsupported Vulkan version");
+}
 bool Context::contextSupports(const uint32_t variantNum, const uint32_t majorNum, const uint32_t minorNum,
                               const uint32_t patchNum) const
 {
@@ -1654,14 +1688,23 @@ bool Context::isBufferDeviceAddressSupported(void) const
 
 #ifndef CTS_USES_VULKANSC
 
-bool Context::hasDebugReportRecorder() const
+bool Context::hasDebugReportRecorders() const
 {
-    return m_device->hasDebugReportRecorder();
+    return m_device->hasDebugReportRecorders();
 }
 
-vk::DebugReportRecorder &Context::getDebugReportRecorder() const
+std::vector<vk::DebugReportRecorder *> Context::getDebugReportRecorders() const
 {
-    return m_device->getDebugReportRecorder();
+    return m_device->getDebugReportRecorders();
+}
+
+void Context::addExternalDebugReportRecorder(vk::DebugReportRecorder *recorder)
+{
+    m_device->addExternalDebugReportRecorder(recorder);
+}
+void Context::removeExternalDebugReportRecorder(vk::DebugReportRecorder *recorder)
+{
+    m_device->removeExternalDebugReportRecorder(recorder);
 }
 
 #endif // CTS_USES_VULKANSC

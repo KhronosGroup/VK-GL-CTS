@@ -781,9 +781,9 @@ bool floatUlpThresholdCompare(TestLog &log, const char *imageSetName, const char
                 << ", threshold = " << threshold << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("Reference", imageSetName, reference, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -791,7 +791,7 @@ bool floatUlpThresholdCompare(TestLog &log, const char *imageSetName, const char
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return compareOk;
@@ -870,9 +870,9 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
                 << ", threshold = " << threshold << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("Reference", imageSetName, reference, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -880,7 +880,7 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return compareOk;
@@ -966,9 +966,9 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
                 << ", threshold = " << threshold << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("Reference", imageSetName, reference, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -976,7 +976,7 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return compareOk;
@@ -1053,8 +1053,8 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
                 << ", threshold = " << threshold << ", reference = " << reference << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -1062,7 +1062,7 @@ bool floatThresholdCompare(TestLog &log, const char *imageSetName, const char *i
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return compareOk;
@@ -1171,9 +1171,9 @@ bool intThresholdCompare(TestLog &log, const char *imageSetName, const char *ima
                 << ", threshold = " << threshold << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("Reference", imageSetName, reference, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -1181,7 +1181,7 @@ bool intThresholdCompare(TestLog &log, const char *imageSetName, const char *ima
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return compareOk;
@@ -1268,7 +1268,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
     const bool allDepthOk = (!hasDepth || (maxDiff <= threshold));
     bool compareOk        = allDepthOk && allStencilOk;
 
-    if (!compareOk || logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())
+    if (!compareOk || (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages()))
     {
         if (!compareOk)
         {
@@ -1281,7 +1281,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc);
 
-        if (!allDepthOk)
+        if (!allDepthOk || (hasDepth && (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())))
         {
             TextureLevel refDepthLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                        depth);
@@ -1300,12 +1300,12 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
                         resDepthAccess.setPixel(Vec4(resDepth, resDepth, resDepth, 1.0f), x, y, z);
                     }
 
-            log << TestLog::Image("ResultDepth", "", resDepthAccess)
-                << TestLog::Image("ReferenceDepth", "", refDepthAccess)
-                << TestLog::Image("ErrorMaskDepth", "", errorMaskDepth);
+            log << TestLog::Image("ResultDepth", imageSetName, resDepthAccess)
+                << TestLog::Image("ReferenceDepth", imageSetName, refDepthAccess)
+                << TestLog::Image("ErrorMaskDepth", imageSetName, errorMaskDepth);
         }
 
-        if (!allStencilOk)
+        if (!allStencilOk || (hasStencil && (logMode == COMPARE_LOG_EVERYTHING || log.logAllImages())))
         {
             TextureLevel refStencilLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                          depth);
@@ -1324,9 +1324,9 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
                         resStencilAccess.setPixel(Vec4(resStencil, resStencil, resStencil, 1.0f), x, y, z);
                     }
 
-            log << TestLog::Image("ResultStencil", "", resStencilAccess)
-                << TestLog::Image("ReferenceStencil", "", refStencilAccess)
-                << TestLog::Image("ErrorMaskStencil", "", errorMaskStencil);
+            log << TestLog::Image("ResultStencil", imageSetName, resStencilAccess)
+                << TestLog::Image("ReferenceStencil", imageSetName, refStencilAccess)
+                << TestLog::Image("ErrorMaskStencil", imageSetName, errorMaskStencil);
         }
 
         log << TestLog::EndImageSet;
@@ -1338,7 +1338,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
             << TestLog::EndImageSet;
 #endif
     }
@@ -1408,9 +1408,9 @@ bool intThresholdPositionDeviationCompare(TestLog &log, const char *imageSetName
                 << "\tcolor threshold = " << threshold << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("Reference", imageSetName, reference, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -1418,7 +1418,7 @@ bool intThresholdPositionDeviationCompare(TestLog &log, const char *imageSetName
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return compareOk;
@@ -1490,9 +1490,9 @@ bool intThresholdPositionDeviationErrorThresholdCompare(
             << ", max allowed = " << maxAllowedFailingPixels << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("Reference", imageSetName, reference, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -1500,7 +1500,7 @@ bool intThresholdPositionDeviationErrorThresholdCompare(
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return compareOk;
@@ -1569,9 +1569,9 @@ bool bilinearCompare(TestLog &log, const char *imageSetName, const char *imageSe
             log << TestLog::Message << "Image comparison failed, threshold = " << threshold << TestLog::EndMessage;
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias)
-            << TestLog::Image("Reference", "Reference", reference, pixelScale, pixelBias)
-            << TestLog::Image("ErrorMask", "Error mask", errorMask) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias)
+            << TestLog::Image("Reference", imageSetName, reference, pixelScale, pixelBias)
+            << TestLog::Image("ErrorMask", imageSetName, errorMask) << TestLog::EndImageSet;
     }
     else if (logMode == COMPARE_LOG_RESULT)
     {
@@ -1579,7 +1579,7 @@ bool bilinearCompare(TestLog &log, const char *imageSetName, const char *imageSe
             computePixelScaleBias(result, pixelScale, pixelBias);
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc)
-            << TestLog::Image("Result", "Result", result, pixelScale, pixelBias) << TestLog::EndImageSet;
+            << TestLog::Image("Result", imageSetName, result, pixelScale, pixelBias) << TestLog::EndImageSet;
     }
 
     return isOk;

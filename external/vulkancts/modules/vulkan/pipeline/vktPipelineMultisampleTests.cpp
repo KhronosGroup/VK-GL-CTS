@@ -32,6 +32,7 @@
 #include "vktPipelineMultisampleResolveRenderAreaTests.hpp"
 #include "vktPipelineMultisampleShaderFragmentMaskTests.hpp"
 #include "vktPipelineMultisampledRenderToSingleSampledTests.hpp"
+#include "vktPipelineMultisampleResolveMaint10Tests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -2036,6 +2037,11 @@ void SampleMaskWithConservativeTest::checkSupport(Context &context) const
 
     if (m_useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
         TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
+
+    if (m_useFragmentShadingRate &&
+        !context.getFragmentShadingRateProperties().fragmentShadingRateWithConservativeRasterization)
+        TCU_THROW(NotSupportedError,
+                  "fragmentShadingRateWithConservativeRasterization not supported with conservative rasterization");
 
     context.requireDeviceFunctionality("VK_EXT_conservative_rasterization");
 
@@ -7710,6 +7716,15 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         }
         multisampleTests->addChild(sampleMaskWithDepthTestGroup.release());
     }
+
+    if ((pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+         pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+         pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV) &&
+        !useFragmentShadingRate)
+    {
+        multisampleTests->addChild(createMultisampleResolveMaint10Tests(testCtx, pipelineConstructionType));
+    }
+
 #endif // CTS_USES_VULKANSC
 
     // Input attachments are not supported with dynamic rendering and shader objects

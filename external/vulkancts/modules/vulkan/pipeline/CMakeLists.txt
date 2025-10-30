@@ -60,6 +60,8 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineMultisampleImageTests.hpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.cpp
 	vktPipelineMultisampleMixedAttachmentSamplesTests.hpp
+	vktPipelineMultisampleResolveMaint10Tests.cpp
+	vktPipelineMultisampleResolveMaint10Tests.hpp
 	vktPipelineMultisampleResolveRenderAreaTests.cpp
 	vktPipelineMultisampleResolveRenderAreaTests.hpp
 	vktPipelineMultisampleSampleLocationsExtTests.cpp
@@ -121,6 +123,10 @@ set(DEQP_VK_VKSC_PIPELINE_SRCS
 	vktPipelineEmptyFSTests.hpp
 	vktPipelineLegacyAttrTests.cpp
 	vktPipelineLegacyAttrTests.hpp
+	vktPipelineBlendTestsCommon.cpp
+	vktPipelineBlendTestsCommon.hpp
+	vktPipelineVertexInputSRGBTests.cpp
+	vktPipelineVertexInputSRGBTests.hpp
 	)
 
 set(DEQP_VK_PIPELINE_SRCS
@@ -160,6 +166,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineRobustnessCacheTests.hpp
 	vktPipelineNoQueuesTests.cpp
 	vktPipelineNoQueuesTests.hpp
+	vktPipelineDualBlendTests.cpp
+	vktPipelineDualBlendTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR
@@ -188,6 +196,7 @@ target_include_directories(deqp-vk-pipeline
 		../../../../amber/src/include
 		../amber
 		../util
+		../shader_object
 		${DEQP_INL_DIR}
 )
 target_include_directories(deqp-vksc-pipeline

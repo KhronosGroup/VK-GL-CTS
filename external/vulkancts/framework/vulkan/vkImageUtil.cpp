@@ -4726,6 +4726,258 @@ void copyBufferToImage(const DeviceInterface &vk, VkDevice device, VkQueue queue
     }
 }
 
+#ifndef CTS_USES_VULKANSC
+// Indirect version of buffer to image copy using the KHR_copy_memory_indirect extension
+void copyBufferToImageIndirect(const DeviceInterface &vk, const InstanceInterface &vki,
+                               const VkPhysicalDevice vkPhysDevice, VkDevice device, VkQueue queue,
+                               uint32_t queueFamilyIndex, const VkBuffer &buffer, VkDeviceSize bufferSize,
+                               const std::vector<VkBufferImageCopy> &copyRegions, const VkSemaphore *waitSemaphore,
+                               VkImageAspectFlags imageAspectFlags, uint32_t mipLevels, uint32_t arrayLayers,
+                               VkImage destImage, VkImageLayout destImageLayout,
+                               VkPipelineStageFlags destImageDstStageFlags, VkAccessFlags destImageDstAccessMask,
+                               const VkCommandPool *externalCommandPool, uint32_t baseMipLevel)
+{
+    Move<VkCommandPool> cmdPool;
+    VkCommandPool activeCmdPool;
+    if (externalCommandPool == nullptr)
+    {
+        // Create local command pool
+        cmdPool       = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+        activeCmdPool = *cmdPool;
+    }
+    else
+    {
+        activeCmdPool = *externalCommandPool;
+    }
+
+    const VkCommandBufferAllocateInfo cmdBufferAllocateInfo = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // VkStructureType sType;
+        nullptr,                                        // const void* pNext;
+        activeCmdPool,                                  // VkCommandPool commandPool;
+        VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // VkCommandBufferLevel level;
+        1u                                              // uint32_t bufferCount;
+    };
+
+    Move<VkCommandBuffer> cmdBuffer = allocateCommandBuffer(vk, device, &cmdBufferAllocateInfo);
+    Move<VkFence> fence             = createFence(vk, device);
+
+    const VkCommandBufferBeginInfo cmdBufferBeginInfo = {
+        VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
+        nullptr,                                     // const void* pNext;
+        VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT, // VkCommandBufferUsageFlags flags;
+        nullptr,
+    };
+
+    VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &cmdBufferBeginInfo));
+
+    // Create indirect buffer for copy commands
+    const VkDeviceSize indirectBufferSize = copyRegions.size() * sizeof(VkCopyMemoryToImageIndirectCommandKHR);
+
+    const VkBufferCreateInfo indirectBufferCreateInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType
+        nullptr,                              // const void* pNext
+        0u,                                   // VkBufferCreateFlags flags
+        indirectBufferSize,                   // VkDeviceSize size
+        VK_BUFFER_USAGE_TRANSFER_SRC_BIT |    // VkBufferUsageFlags usage
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+        VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode
+        0u,                        // uint32_t queueFamilyIndexCount
+        nullptr                    // const uint32_t* pQueueFamilyIndices
+    };
+
+    Move<VkBuffer> indirectBuffer = createBuffer(vk, device, &indirectBufferCreateInfo);
+
+    // Allocate and bind memory for the indirect buffer
+    const VkMemoryPropertyFlags memoryPropertyFlags =
+        VK_MEMORY_PROPERTY_HOST_VISIBLE_BIT | VK_MEMORY_PROPERTY_HOST_COHERENT_BIT;
+
+    VkMemoryRequirements memReqs;
+    vk.getBufferMemoryRequirements(device, *indirectBuffer, &memReqs);
+
+    // Find appropriate memory type
+    uint32_t memoryTypeIndex                         = 0;
+    const VkPhysicalDeviceMemoryProperties &memProps = getPhysicalDeviceMemoryProperties(vki, vkPhysDevice);
+    for (uint32_t i = 0; i < memProps.memoryTypeCount; i++)
+    {
+        if ((memReqs.memoryTypeBits & (1 << i)) &&
+            (memProps.memoryTypes[i].propertyFlags & memoryPropertyFlags) == memoryPropertyFlags)
+        {
+            memoryTypeIndex = i;
+            break;
+        }
+    }
+
+    VkMemoryAllocateFlagsInfo memoryAllocateFlagsInfo = initVulkanStructure();
+    memoryAllocateFlagsInfo.flags                     = VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+    VkMemoryAllocateInfo allocInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType
+        &memoryAllocateFlagsInfo,               // const void* pNext
+        memReqs.size,                           // VkDeviceSize allocationSize
+        memoryTypeIndex                         // uint32_t memoryTypeIndex
+    };
+
+    Move<VkDeviceMemory> indirectBufferMemory = allocateMemory(vk, device, &allocInfo);
+    VK_CHECK(vk.bindBufferMemory(device, *indirectBuffer, *indirectBufferMemory, 0));
+
+    // Get buffer device address for source buffer
+    VkBufferDeviceAddressInfo bufferAddressInfo = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr, buffer};
+    VkDeviceAddress srcBufferAddress            = vk.getBufferDeviceAddress(device, &bufferAddressInfo);
+
+    // Get buffer device address for indirect buffer
+    bufferAddressInfo.buffer              = *indirectBuffer;
+    VkDeviceAddress indirectBufferAddress = vk.getBufferDeviceAddress(device, &bufferAddressInfo);
+
+    // Fill indirect buffer with copy commands
+    std::vector<VkCopyMemoryToImageIndirectCommandKHR> indirectCommands;
+    for (const auto &copyRegion : copyRegions)
+    {
+        VkCopyMemoryToImageIndirectCommandKHR command = {
+            srcBufferAddress + copyRegion.bufferOffset, // VkDeviceAddress srcAddress
+            copyRegion.bufferRowLength,                 // uint32_t bufferRowLength
+            copyRegion.bufferImageHeight,               // uint32_t bufferImageHeight
+            copyRegion.imageSubresource,                // VkImageSubresourceLayers imageSubresource
+            copyRegion.imageOffset,                     // VkOffset3D imageOffset
+            copyRegion.imageExtent                      // VkExtent3D imageExtent
+        };
+        indirectCommands.push_back(command);
+    }
+
+    // Map memory and copy data to indirect buffer
+    void *mappedData;
+    VK_CHECK(vk.mapMemory(device, *indirectBufferMemory, 0, indirectBufferSize, 0, &mappedData));
+    deMemcpy(mappedData, indirectCommands.data(), static_cast<size_t>(indirectBufferSize));
+    vk.unmapMemory(device, *indirectBufferMemory);
+
+    // Create barriers
+    const VkBufferMemoryBarrier preBufferBarrier = {
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType;
+        nullptr,                                 // const void* pNext;
+        VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask;
+        VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask;
+        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex;
+        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t dstQueueFamilyIndex;
+        buffer,                                  // VkBuffer buffer;
+        0u,                                      // VkDeviceSize offset;
+        bufferSize                               // VkDeviceSize size;
+    };
+
+    const VkImageMemoryBarrier preImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                                                  nullptr,                                // const void* pNext;
+                                                  0u,                                   // VkAccessFlags srcAccessMask;
+                                                  VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags dstAccessMask;
+                                                  VK_IMAGE_LAYOUT_UNDEFINED,            // VkImageLayout oldLayout;
+                                                  VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout newLayout;
+                                                  VK_QUEUE_FAMILY_IGNORED,              // uint32_t srcQueueFamilyIndex;
+                                                  VK_QUEUE_FAMILY_IGNORED,              // uint32_t dstQueueFamilyIndex;
+                                                  destImage,                            // VkImage image;
+                                                  {
+                                                      // VkImageSubresourceRange subresourceRange;
+                                                      imageAspectFlags, // VkImageAspectFlags aspect;
+                                                      baseMipLevel,     // uint32_t baseMipLevel;
+                                                      mipLevels,        // uint32_t mipLevels;
+                                                      0u,               // uint32_t baseArraySlice;
+                                                      arrayLayers       // uint32_t arraySize;
+                                                  }};
+
+    const VkImageMemoryBarrier postImageBarrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                                                   nullptr,                                // const void* pNext;
+                                                   VK_ACCESS_TRANSFER_WRITE_BIT,         // VkAccessFlags srcAccessMask;
+                                                   destImageDstAccessMask,               // VkAccessFlags dstAccessMask;
+                                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, // VkImageLayout oldLayout;
+                                                   destImageLayout,                      // VkImageLayout newLayout;
+                                                   VK_QUEUE_FAMILY_IGNORED, // uint32_t srcQueueFamilyIndex;
+                                                   VK_QUEUE_FAMILY_IGNORED, // uint32_t dstQueueFamilyIndex;
+                                                   destImage,               // VkImage image;
+                                                   {
+                                                       // VkImageSubresourceRange subresourceRange;
+                                                       imageAspectFlags, // VkImageAspectFlags aspect;
+                                                       baseMipLevel,     // uint32_t baseMipLevel;
+                                                       mipLevels,        // uint32_t mipLevels;
+                                                       0u,               // uint32_t baseArraySlice;
+                                                       arrayLayers       // uint32_t arraySize;
+                                                   }};
+
+    // Buffer barrier for indirect buffer
+    const VkBufferMemoryBarrier indirectBufferBarrier = {
+        VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType sType
+        nullptr,                                 // const void* pNext
+        VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags srcAccessMask
+        VK_ACCESS_TRANSFER_READ_BIT,             // VkAccessFlags dstAccessMask
+        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                 // uint32_t dstQueueFamilyIndex
+        *indirectBuffer,                         // VkBuffer buffer
+        0,                                       // VkDeviceSize offset
+        indirectBufferSize                       // VkDeviceSize size
+    };
+
+    // Collect image subresource layers for each copy region
+    std::vector<VkImageSubresourceLayers> imageSubresourceLayers;
+    for (const auto &copyRegion : copyRegions)
+    {
+        imageSubresourceLayers.push_back(copyRegion.imageSubresource);
+    }
+
+    // Pipeline barriers
+    const VkBufferMemoryBarrier bufferBarriers[] = {preBufferBarrier, indirectBufferBarrier};
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0,
+                          0, nullptr, 2, bufferBarriers, 1, &preImageBarrier);
+
+    // Set up address range struct
+    VkStridedDeviceAddressRangeKHR addressRange = {
+        indirectBufferAddress,                        // VkDeviceAddress deviceAddress
+        indirectBufferSize,                           // VkDeviceSize size
+        sizeof(VkCopyMemoryToImageIndirectCommandKHR) // VkDeviceSize stride
+    };
+
+    // Set up indirect info struct
+    VkCopyMemoryToImageIndirectInfoKHR memToImageIndirectInfoKHR = {
+        VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INDIRECT_INFO_KHR, // VkStructureType sType
+        nullptr,                                                  // const void* pNext
+        VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR,                     // VkCopyMemoryToImageAddressCopyFlagsKHR srcCopyFlags
+        static_cast<uint32_t>(copyRegions.size()),                // uint32_t copyCount
+        addressRange,                                             // VkStridedDeviceAddressRangeKHR copyAddressRange
+        destImage,                                                // VkImage dstImage
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,                     // VkImageLayout dstImageLayout
+        imageSubresourceLayers.data()                             // const VkImageSubresourceLayers* pImageSubresources
+    };
+
+    // Execute the indirect copy
+    vk.cmdCopyMemoryToImageIndirectKHR(*cmdBuffer, &memToImageIndirectInfoKHR);
+
+    // Final barrier to transition image to desired layout
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, destImageDstStageFlags, (VkDependencyFlags)0, 0,
+                          nullptr, 0, nullptr, 1, &postImageBarrier);
+
+    VK_CHECK(vk.endCommandBuffer(*cmdBuffer));
+
+    const VkPipelineStageFlags pipelineStageFlags = VK_PIPELINE_STAGE_TRANSFER_BIT;
+
+    const VkSubmitInfo submitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, // VkStructureType sType;
+        nullptr,                       // const void* pNext;
+        waitSemaphore ? 1u : 0u,       // uint32_t waitSemaphoreCount;
+        waitSemaphore,                 // const VkSemaphore* pWaitSemaphores;
+        &pipelineStageFlags,           // const VkPipelineStageFlags* pWaitDstStageMask;
+        1u,                            // uint32_t commandBufferCount;
+        &cmdBuffer.get(),              // const VkCommandBuffer* pCommandBuffers;
+        0u,                            // uint32_t signalSemaphoreCount;
+        nullptr                        // const VkSemaphore* pSignalSemaphores;
+    };
+
+    try
+    {
+        VK_CHECK(vk.queueSubmit(queue, 1, &submitInfo, *fence));
+        VK_CHECK(vk.waitForFences(device, 1, &fence.get(), true, ~(0ull) /* infinity */));
+    }
+    catch (...)
+    {
+        VK_CHECK(vk.deviceWaitIdle(device));
+        throw;
+    }
+}
+#endif
+
 void copyImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuffer, VkImage image, VkBuffer buffer,
                        tcu::IVec2 size, VkAccessFlags srcAccessMask, VkImageLayout oldLayout, uint32_t numLayers,
                        VkImageAspectFlags barrierAspect, VkImageAspectFlags copyAspect,

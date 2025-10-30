@@ -118,7 +118,10 @@ tcu::TestStatus testLongDebugLabelsTest(Context &context, TestParams params)
 
     beginCommandBuffer(vk, *cmdBuffer);
     vk.cmdInsertDebugUtilsLabelEXT(*cmdBuffer, &insertLabelInfo);
-    vk.cmdFillBuffer(*cmdBuffer, *testBuffer, 0, VK_WHOLE_SIZE, 1985);
+    if (params.required & (VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT | VK_QUEUE_TRANSFER_BIT))
+    {
+        vk.cmdFillBuffer(*cmdBuffer, *testBuffer, 0, VK_WHOLE_SIZE, 1985);
+    }
     endCommandBuffer(vk, *cmdBuffer);
 
     vk.queueInsertDebugUtilsLabelEXT(queue, &insertLabelInfo);

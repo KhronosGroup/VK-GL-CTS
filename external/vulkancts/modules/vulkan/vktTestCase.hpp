@@ -148,6 +148,7 @@ public:
     uint32_t getUniversalQueueFamilyIndex(void) const;
     vk::VkQueue getUniversalQueue(void) const;
     uint32_t getUsedApiVersion(void) const;
+    uint32_t getEquivalentApiVersion(void) const;
     uint32_t getSparseQueueFamilyIndex(void) const;
     vk::VkQueue getSparseQueue(void) const;
     int getComputeQueueFamilyIndex(void) const;
@@ -184,8 +185,10 @@ public:
     }
 
 #ifndef CTS_USES_VULKANSC
-    bool hasDebugReportRecorder() const;
-    vk::DebugReportRecorder &getDebugReportRecorder() const;
+    bool hasDebugReportRecorders() const;
+    std::vector<vk::DebugReportRecorder *> getDebugReportRecorders() const;
+    void addExternalDebugReportRecorder(vk::DebugReportRecorder *);
+    void removeExternalDebugReportRecorder(vk::DebugReportRecorder *);
 #endif // CTS_USES_VULKANSC
 
     void checkPipelineConstructionRequirements(const vk::PipelineConstructionType pipelineConstructionType);

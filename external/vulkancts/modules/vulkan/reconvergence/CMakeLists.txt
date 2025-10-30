@@ -7,6 +7,8 @@ include_directories(
 set(DEQP_VK_RECONVERGENCE_SRCS
 	vktReconvergenceTests.cpp
 	vktReconvergenceTests.hpp
+    vktReconvergenceTerminateInvocationTests.cpp
+    vktReconvergenceTerminateInvocationTests.hpp
 	)
 
 set(DEQP_VK_RECONVERGENCE_LIBS

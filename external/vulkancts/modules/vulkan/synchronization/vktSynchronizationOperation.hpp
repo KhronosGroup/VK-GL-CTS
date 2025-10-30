@@ -348,6 +348,7 @@ de::MovePtr<OperationSupport> makeOperationSupport(const OperationName opName, c
                                                    const bool specializedAccess = false);
 std::string getOperationName(const OperationName opName);
 bool isStageSupported(const vk::VkShaderStageFlagBits stage, const vk::VkQueueFlags queueFlags);
+bool opCanRunOnCompute(OperationName opName);
 
 } // namespace synchronization
 } // namespace vkt

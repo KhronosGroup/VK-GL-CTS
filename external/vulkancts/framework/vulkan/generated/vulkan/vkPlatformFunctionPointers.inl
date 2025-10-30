@@ -4,8 +4,7 @@
  */
 
 CreateInstanceFunc							createInstance;
-GetInstanceProcAddrFunc						getInstanceProcAddr;
-EnumerateInstanceVersionFunc				enumerateInstanceVersion;
-EnumerateInstanceLayerPropertiesFunc		enumerateInstanceLayerProperties;
 EnumerateInstanceExtensionPropertiesFunc	enumerateInstanceExtensionProperties;
-GetExternalComputeQueueDataNVFunc			getExternalComputeQueueDataNV;
+EnumerateInstanceLayerPropertiesFunc		enumerateInstanceLayerProperties;
+EnumerateInstanceVersionFunc				enumerateInstanceVersion;
+GetInstanceProcAddrFunc						getInstanceProcAddr;

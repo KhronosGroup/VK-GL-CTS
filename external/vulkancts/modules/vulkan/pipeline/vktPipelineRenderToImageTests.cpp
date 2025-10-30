@@ -30,6 +30,7 @@
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -743,16 +744,117 @@ void initPrograms(SourceCollections &programCollection, const CaseDef caseDef)
     }
 }
 
+class SingletonDevice
+{
+    SingletonDevice(Context &context) : m_context(context), m_logicalDevice()
+    {
+        const float queuePriority              = 1.0;
+        const VkDeviceQueueCreateInfo queues[] = {{
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, (VkDeviceQueueCreateFlags)0,
+            m_context.getUniversalQueueFamilyIndex(),
+            1u,             // queueCount
+            &queuePriority, // pQueuePriorities
+        }};
+
+        const auto &vkp                              = m_context.getPlatformInterface();
+        const auto &vki                              = m_context.getInstanceInterface();
+        const auto instance                          = m_context.getInstance();
+        const auto physicalDevice                    = m_context.getPhysicalDevice();
+        std::vector<const char *> creationExtensions = m_context.getDeviceCreationExtensions();
+
+        for (auto it = creationExtensions.begin(); it != creationExtensions.end(); ++it)
+        {
+            if (strcmp(*it, "VK_KHR_maintenance9") == 0)
+            {
+                creationExtensions.erase(it);
+                break;
+            }
+        }
+
+        auto features2 = m_context.getDeviceFeatures2();
+
+        VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
+        createInfo.flags                   = 0u;
+        createInfo.queueCreateInfoCount    = (uint32_t)de::arrayLength(queues);
+        createInfo.pQueueCreateInfos       = queues;
+        createInfo.enabledLayerCount       = 0u;
+        createInfo.ppEnabledLayerNames     = nullptr;
+        createInfo.enabledExtensionCount   = de::sizeU32(creationExtensions);
+        createInfo.ppEnabledExtensionNames = de::dataOrNull(creationExtensions);
+        createInfo.pEnabledFeatures        = nullptr;
+
+        m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp,
+                                             instance, vki, physicalDevice, &createInfo, nullptr);
+
+        m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(
+            vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
+
+        m_allocator = de::MovePtr<SimpleAllocator>(new SimpleAllocator(
+            *m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+    }
+
+public:
+    ~SingletonDevice()
+    {
+    }
+
+    static VkDevice getDevice(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return m_singletonDevice->m_logicalDevice.get();
+    }
+
+    static VkQueue getUniversalQueue(Context &context)
+    {
+        return getDeviceQueue(getDeviceInterface(context), getDevice(context), context.getUniversalQueueFamilyIndex(),
+                              0);
+    }
+
+    static const DeviceInterface &getDeviceInterface(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return *(m_singletonDevice->m_deviceDriver.get());
+    }
+
+    static Allocator *getAllocator(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return m_singletonDevice->m_allocator.get();
+    }
+
+    static void destroy()
+    {
+        m_singletonDevice.clear();
+    }
+
+private:
+    const Context &m_context;
+    Move<vk::VkDevice> m_logicalDevice;
+    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
+    de::MovePtr<vk::SimpleAllocator> m_allocator;
+    static SharedPtr<SingletonDevice> m_singletonDevice;
+};
+SharedPtr<SingletonDevice> SingletonDevice::m_singletonDevice;
+
 //! See testAttachmentSize() description
 tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 {
-    const DeviceInterface &vk         = context.getDeviceInterface();
     const InstanceInterface &vki      = context.getInstanceInterface();
-    const VkDevice device             = context.getDevice();
     const VkPhysicalDevice physDevice = context.getPhysicalDevice();
-    const VkQueue queue               = context.getUniversalQueue();
-    const uint32_t queueFamilyIndex   = context.getUniversalQueueFamilyIndex();
-    Allocator &allocator              = context.getDefaultAllocator();
+
+    bool needCustomDevice = (!caseDef.maintenance9 && context.isDeviceFunctionalitySupported("VK_KHR_maintenance9"));
+    const DeviceInterface &vk =
+        needCustomDevice ? SingletonDevice::getDeviceInterface(context) : context.getDeviceInterface();
+    const VkDevice device = needCustomDevice ? SingletonDevice::getDevice(context) : context.getDevice();
+    const VkQueue queue = needCustomDevice ? SingletonDevice::getUniversalQueue(context) : context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    Allocator &allocator = needCustomDevice ? *(SingletonDevice::getAllocator(context)) : context.getDefaultAllocator();
 
     IVec4 imageSize = getMaxImageSize(caseDef.viewType, caseDef.imageSizeHint);
 
@@ -847,11 +949,16 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             // Use the color image memory requirements, assume depth stencil uses the same memory type
             memoryTypeNdx =
                 selectMatchingMemoryType(memoryProperties, colorImageMemReqs.memoryTypeBits, MemoryRequirement::Any);
+#ifdef CTS_USES_VULKANSC // Don't artificially limit image size to totalSystemMemory in Vulkan SC
+            VkDeviceSize maxMemory =
+                memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size;
+#else
             tcu::PlatformMemoryLimits memoryLimits;
             context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
             VkDeviceSize maxMemory =
                 std::min(memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size,
                          VkDeviceSize(memoryLimits.totalSystemMemory));
+#endif
 
             if (neededMemory > maxMemory)
             {
@@ -864,6 +971,9 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             }
         }
 
+#ifdef CTS_USES_VULKANSC // Memory can't be freed in Vulkan SC, so don't waste any here doing a trial allocation
+        allocationPossible = true;
+#else
         // Attempt a memory allocation
         {
             VkDeviceMemory object                   = VK_NULL_HANDLE;
@@ -895,6 +1005,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
                 allocationPossible = true;
             }
         }
+#endif
     }
 
     context.getTestContext().getLog() << tcu::TestLog::Message
@@ -1506,11 +1617,11 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                 *colorImage,                              // VkImage                    image;
                 {
                     // VkImageSubresourceRange    subresourceRange;
-                    VK_IMAGE_ASPECT_COLOR_BIT,            // VkImageAspectFlags    aspectMask;
-                    0u,                                   // uint32_t              baseMipLevel;
-                    static_cast<uint32_t>(numMipLevels),  // uint32_t              levelCount;
-                    0u,                                   // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(imageSize.w()), // uint32_t              layerCount;
+                    VK_IMAGE_ASPECT_COLOR_BIT,           // VkImageAspectFlags    aspectMask;
+                    0u,                                  // uint32_t              baseMipLevel;
+                    static_cast<uint32_t>(numMipLevels), // uint32_t              levelCount;
+                    0u,                                  // uint32_t              baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS,           // uint32_t              layerCount;
                 },
             },
             {
@@ -1529,7 +1640,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                     0u,                                               // uint32_t              baseMipLevel;
                     static_cast<uint32_t>(numMipLevels),              // uint32_t              levelCount;
                     0u,                                               // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(numSlices),                 // uint32_t              layerCount;
+                    VK_REMAINING_ARRAY_LAYERS,                        // uint32_t              layerCount;
                 },
             }};
 
@@ -1576,11 +1687,11 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                 *colorImage,                              // VkImage                    image;
                 {
                     // VkImageSubresourceRange    subresourceRange;
-                    VK_IMAGE_ASPECT_COLOR_BIT,            // VkImageAspectFlags    aspectMask;
-                    0u,                                   // uint32_t              baseMipLevel;
-                    static_cast<uint32_t>(numMipLevels),  // uint32_t              levelCount;
-                    0u,                                   // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(imageSize.w()), // uint32_t              layerCount;
+                    VK_IMAGE_ASPECT_COLOR_BIT,           // VkImageAspectFlags    aspectMask;
+                    0u,                                  // uint32_t              baseMipLevel;
+                    static_cast<uint32_t>(numMipLevels), // uint32_t              levelCount;
+                    0u,                                  // uint32_t              baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS,           // uint32_t              layerCount;
                 },
             }};
 
@@ -1917,11 +2028,14 @@ tcu::TestCaseGroup *createRenderToImageTests(tcu::TestContext &testCtx,
 {
     de::MovePtr<tcu::TestCaseGroup> renderToImageTests(new tcu::TestCaseGroup(testCtx, "render_to_image"));
 
+    const auto cleanupGroup = [](tcu::TestCaseGroup *, PipelineConstructionType) { SingletonDevice::destroy(); };
     // Core render to image tests
-    renderToImageTests->addChild(createTestGroup(testCtx, "core", addCoreRenderToImageTests, pipelineConstructionType));
+    renderToImageTests->addChild(
+        createTestGroup(testCtx, "core", addCoreRenderToImageTests, pipelineConstructionType, cleanupGroup));
     // Render to image tests for dedicated memory allocation
     renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",
-                                                 addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
+                                                 addDedicatedAllocationRenderToImageTests, pipelineConstructionType,
+                                                 cleanupGroup));
 
     return renderToImageTests.release();
 }

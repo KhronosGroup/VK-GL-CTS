@@ -344,6 +344,13 @@ enum OcclusionQueryStride
     STRIDE_MAX,
 };
 
+enum ClearAttachments
+{
+    CLEAR_ATTACHMENTS_NONE,
+    CLEAR_ATTACHMENTS_ONLY,
+    CLEAR_ATTACHMENTS_WITH_DRAW,
+};
+
 struct OcclusionQueryTestVector
 {
     vk::VkQueryControlFlags queryControlFlags;
@@ -358,6 +365,7 @@ struct OcclusionQueryTestVector
     OcculusionQueryClearOp clearOp;
     bool noColorAttachments;
     OcclusionQueryStride stride;
+    ClearAttachments clearAttachments;
 };
 
 class BasicOcclusionQueryTestInstance : public vkt::TestInstance
@@ -367,6 +375,8 @@ public:
     ~BasicOcclusionQueryTestInstance(void)
     {
     }
+
+    void clearAttachments(vk::VkCommandBuffer cmdBuffer);
 
 private:
     tcu::TestStatus iterate(void);
@@ -413,6 +423,23 @@ BasicOcclusionQueryTestInstance::BasicOcclusionQueryTestInstance(vkt::Context &c
     vertices[1] = tcu::Vec4(0.5, 0.0, 0.0, 1.0);
     vertices[2] = tcu::Vec4(0.0, 0.5, 0.0, 1.0);
     m_stateObjects->setVertices(vk, vertices);
+}
+
+void BasicOcclusionQueryTestInstance::clearAttachments(vk::VkCommandBuffer cmdBuffer)
+{
+    const vk::DeviceInterface &vk = m_context.getDeviceInterface();
+
+    vk::VkClearAttachment attachment = {
+        vk::VK_IMAGE_ASPECT_COLOR_BIT,                    // VkImageAspectFlags	aspectMask;
+        0,                                                // uint32_t			    colorAttachment;
+        vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f}) // VkClearValue		    clearValue;
+    };
+    vk::VkClearRect rect = {
+        {{0, 0}, {StateObjects::WIDTH, StateObjects::HEIGHT}}, // VkRect2D	rect;
+        0u,                                                    // uint32_t	baseArrayLayer;
+        1u,                                                    // uint32_t	layerCount;
+    };
+    vk.cmdClearAttachments(cmdBuffer, 1u, &attachment, 1u, &rect);
 }
 
 tcu::TestStatus BasicOcclusionQueryTestInstance::iterate(void)
@@ -468,7 +495,16 @@ tcu::TestStatus BasicOcclusionQueryTestInstance::iterate(void)
     vk.cmdEndQuery(*cmdBuffer, *m_queryPool, QUERY_INDEX_CAPTURE_EMPTY);
 
     vk.cmdBeginQuery(*cmdBuffer, *m_queryPool, QUERY_INDEX_CAPTURE_DRAWCALL, m_testVector.queryControlFlags);
-    vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_DRAWCALL, 1, 0, 0);
+
+    if (m_testVector.clearAttachments != CLEAR_ATTACHMENTS_NONE)
+        clearAttachments(*cmdBuffer);
+
+    if (m_testVector.clearAttachments != CLEAR_ATTACHMENTS_ONLY)
+        vk.cmdDraw(*cmdBuffer, NUM_VERTICES_IN_DRAWCALL, 1, 0, 0);
+
+    if (m_testVector.clearAttachments == CLEAR_ATTACHMENTS_WITH_DRAW)
+        clearAttachments(*cmdBuffer);
+
     vk.cmdEndQuery(*cmdBuffer, *m_queryPool, QUERY_INDEX_CAPTURE_DRAWCALL);
 
     endRenderPass(vk, *cmdBuffer);
@@ -536,14 +572,19 @@ tcu::TestStatus BasicOcclusionQueryTestInstance::iterate(void)
 
         uint64_t expectedValue;
 
-        switch (queryNdx)
-        {
-        case QUERY_INDEX_CAPTURE_EMPTY:
+        if (m_testVector.clearAttachments == CLEAR_ATTACHMENTS_ONLY)
             expectedValue = 0;
-            break;
-        case QUERY_INDEX_CAPTURE_DRAWCALL:
-            expectedValue = NUM_VERTICES_IN_DRAWCALL;
-            break;
+        else
+        {
+            switch (queryNdx)
+            {
+            case QUERY_INDEX_CAPTURE_EMPTY:
+                expectedValue = 0;
+                break;
+            case QUERY_INDEX_CAPTURE_DRAWCALL:
+                expectedValue = NUM_VERTICES_IN_DRAWCALL;
+                break;
+            }
         }
 
         if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) || expectedValue == 0)
@@ -653,6 +694,15 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance(vkt::Context &context,
           (m_testVector.queryResultSize == RESULT_SIZE_64_BIT ? vk::VK_QUERY_RESULT_64_BIT : 0) |
           (m_testVector.queryResultsAvailability ? vk::VK_QUERY_RESULT_WITH_AVAILABILITY_BIT : 0))
 {
+#ifndef CTS_USES_VULKANSC
+    if (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
+    {
+        // Check VK_KHR_maintenance9 is supported
+        m_context.requireDeviceFunctionality("VK_KHR_maintenance9");
+        if (m_context.getMaintenance9Features().maintenance9 == VK_FALSE)
+            throw tcu::NotSupportedError(std::string("Implementation doesn't support creating reset queries").c_str());
+    }
+#endif
     const vk::VkDevice device     = m_context.getDevice();
     const vk::DeviceInterface &vk = m_context.getDeviceInterface();
 
@@ -711,15 +761,6 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
             throw tcu::NotSupportedError(
                 std::string("Implementation doesn't support resetting queries from the host").c_str());
     }
-#ifndef CTS_USES_VULKANSC
-    else if (m_testVector.queryResultsMode == RESULTS_MODE_GET_CREATE_RESET)
-    {
-        // Check VK_KHR_maintenance9 is supported
-        m_context.requireDeviceFunctionality("VK_KHR_maintenance9");
-        if (m_context.getMaintenance9Features().maintenance9 == VK_FALSE)
-            throw tcu::NotSupportedError(std::string("Implementation doesn't support creating reset queries").c_str());
-    }
-#endif
 
     // 1st triangle
     vertices[START_VERTEX + 0] = tcu::Vec4(0.5, 0.5, 0.5, 1.0);
@@ -1548,6 +1589,7 @@ void QueryPoolOcclusionTests::init(void)
     baseTestVector.clearOp                  = CLEAR_NOOP;
     baseTestVector.noColorAttachments       = false;
     baseTestVector.stride                   = STRIDE_RESULT_SIZE;
+    baseTestVector.clearAttachments         = CLEAR_ATTACHMENTS_NONE;
 
     //Basic tests
     {
@@ -1569,6 +1611,21 @@ void QueryPoolOcclusionTests::init(void)
             testVector.stride                   = queryStrides[queryStrideIdx];
             addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(
                 m_testCtx, queryStridesStr[queryStrideIdx], testVector));
+        }
+    }
+
+    {
+        // CLEAR_ATTACHMENTS_NONE is omitted because it is already covered in the basic tests above
+        const ClearAttachments clearAttachments[] = {CLEAR_ATTACHMENTS_ONLY, CLEAR_ATTACHMENTS_WITH_DRAW};
+        const char *const clearAttachmentsStr[]   = {"clear_attachments_only", "clear_attachments_with_draw"};
+        for (int clearAttachmentIdx = 0; clearAttachmentIdx < DE_LENGTH_OF_ARRAY(clearAttachments);
+             ++clearAttachmentIdx)
+        {
+            OcclusionQueryTestVector testVector = baseTestVector;
+            testVector.queryControlFlags        = vk::VK_QUERY_CONTROL_PRECISE_BIT;
+            testVector.clearAttachments         = clearAttachments[clearAttachmentIdx];
+            addChild(new QueryPoolOcclusionTest<BasicOcclusionQueryTestInstance>(
+                m_testCtx, clearAttachmentsStr[clearAttachmentIdx], testVector));
         }
     }
 

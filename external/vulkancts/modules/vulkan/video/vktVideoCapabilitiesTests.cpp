@@ -2031,8 +2031,7 @@ std::string getTestName(const TestParams &params)
         TCU_THROW(InternalError, "unsupported codec");
     }
 
-    std::string formatStr = de::toString(params.format);
-    formatStr             = formatStr.substr(strlen("vk_format_"));
+    std::string formatStr = getFormatSimpleName(params.format);
     ss << "_" << formatStr;
 
     switch (params.usage)
@@ -2242,6 +2241,7 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
 
             uint32_t nCnt = 1;
             std::vector<uint64_t> drmModifiers;
+            bool foundCompatibleModifier = false;
 
             if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT)
             {
@@ -2275,6 +2275,10 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
                 VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
                 VkResult r =
                     vki.getPhysicalDeviceImageFormatProperties2(phys, &imageFormatInfo2, &imageFormatProperties2);
+                // Modifier is not compatible
+                if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT &&
+                    r == VK_ERROR_FORMAT_NOT_SUPPORTED)
+                    continue;
                 if (r != VK_SUCCESS)
                     return tcu::TestStatus::fail(
                         "inconsistent return values from getPhysicalDeviceImageFormatProperties2 "
@@ -2285,7 +2289,11 @@ tcu::TestStatus test(Context &context, de::SharedPtr<TestParams> params)
                 if (formatProperty.imageTiling == VK_IMAGE_TILING_OPTIMAL &&
                     (formatProperties2.formatProperties.optimalTilingFeatures & features) == 0)
                     return tcu::TestStatus::fail("bad optimal features");
+                foundCompatibleModifier = true;
             }
+
+            if (formatProperty.imageTiling == VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT && !foundCompatibleModifier)
+                return tcu::TestStatus::fail("no compatible modifier found");
         }
     }
 

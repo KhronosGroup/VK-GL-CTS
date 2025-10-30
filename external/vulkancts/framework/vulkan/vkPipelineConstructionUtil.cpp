@@ -1519,33 +1519,72 @@ void RenderPassWrapper::end(const DeviceInterface &vk, const VkCommandBuffer com
     }
 }
 
+#ifndef CTS_USES_VULKANSC
+VkRenderingAttachmentFlagsKHR attDescriptionFlags2RenderingAttFlags(VkAttachmentDescriptionFlags flags)
+{
+    VkRenderingAttachmentFlagsKHR resultFlags = 0u;
+
+    if (flags & VK_ATTACHMENT_DESCRIPTION_RESOLVE_ENABLE_TRANSFER_FUNCTION_BIT_KHR)
+        resultFlags |= VK_RENDERING_ATTACHMENT_RESOLVE_ENABLE_TRANSFER_FUNCTION_BIT_KHR;
+
+    if (flags & VK_ATTACHMENT_DESCRIPTION_RESOLVE_SKIP_TRANSFER_FUNCTION_BIT_KHR)
+        resultFlags |= VK_RENDERING_ATTACHMENT_RESOLVE_SKIP_TRANSFER_FUNCTION_BIT_KHR;
+
+    return resultFlags;
+}
+#endif // CTS_USES_VULKANSC
+
 void RenderPassWrapper::beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const
 {
     DE_UNREF(vk);
     DE_UNREF(commandBuffer);
+
 #ifndef CTS_USES_VULKANSC
     const auto &subpass = m_subpasses[m_activeSubpass];
-    std::vector<vk::VkRenderingAttachmentInfo> colorAttachments;
-    for (uint32_t i = 0; i < (uint32_t)subpass.m_colorAttachments.size(); ++i)
+
+    std::vector<vk::VkRenderingAttachmentInfo> colorAttachments(subpass.m_colorAttachments.size());
+    std::vector<vk::VkRenderingAttachmentFlagsInfoKHR> colorAttachmentsFlags(colorAttachments.size());
+
+    for (uint32_t i = 0; i < colorAttachments.size(); ++i)
     {
-        colorAttachments.emplace_back();
-        auto &colorAttachment = colorAttachments.back();
-        colorAttachment       = vk::initVulkanStructure();
+        auto &colorAttachment      = colorAttachments.at(i);
+        auto &colorAttachmentFlags = colorAttachmentsFlags.at(i);
+
+        colorAttachment      = vk::initVulkanStructure();
+        colorAttachmentFlags = vk::initVulkanStructure();
+
         if (subpass.m_colorAttachments[i].index == VK_ATTACHMENT_UNUSED)
             continue;
+
         colorAttachment = subpass.m_colorAttachments[i].attachmentInfo;
         if (m_attachmentFeedbackLoopInfo.sType == VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT)
             colorAttachment.pNext = &m_attachmentFeedbackLoopInfo;
         colorAttachment.loadOp = vk::VK_ATTACHMENT_LOAD_OP_LOAD;
+
         if (!subpass.m_resolveAttachments.empty() && subpass.m_resolveAttachments[i].index != VK_ATTACHMENT_UNUSED)
         {
             if (isUintFormat(subpass.m_resolveAttachments[i].format) ||
                 isIntFormat(subpass.m_resolveAttachments[i].format))
+            {
                 colorAttachment.resolveMode = vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+            }
             else
+            {
                 colorAttachment.resolveMode = vk::VK_RESOLVE_MODE_AVERAGE_BIT;
+            }
             colorAttachment.resolveImageView   = subpass.m_resolveAttachments[i].attachmentInfo.imageView;
             colorAttachment.resolveImageLayout = subpass.m_resolveAttachments[i].attachmentInfo.imageLayout;
+
+            // Translate resolve attachment description flags to rendering attachment flags.
+            const auto &attFlags         = m_attachments[subpass.m_resolveAttachments[i].index].flags;
+            const auto renderingAttFlags = attDescriptionFlags2RenderingAttFlags(attFlags);
+
+            if (renderingAttFlags)
+            {
+                colorAttachmentFlags.flags   = renderingAttFlags;
+                const auto addAttachmentInfo = makeStructChainAdder(&colorAttachment);
+                addAttachmentInfo(&colorAttachmentFlags);
+            }
         }
     }
 
@@ -1945,7 +1984,9 @@ struct GraphicsPipelineWrapper::InternalData
 
 #ifndef CTS_USES_VULKANSC
     VkGraphicsPipelineLibraryCreateInfoEXT pipelinePartLibraryCreateInfo[4];
+    VkPipeline pipelineParts[4];
     VkPipelineLibraryCreateInfoKHR finalPipelineLibraryCreateInfo;
+    VkGraphicsPipelineCreateInfo finalPipelineCreateInfo;
     VkPipelineCreateFlags2CreateInfoKHR pipelinePartFlags2CreateInfo[4];
     VkPipelineCreateFlags2CreateInfoKHR finalPipelineFlags2CreateInfo;
 #endif
@@ -4110,26 +4151,21 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
     else
     {
 #ifndef CTS_USES_VULKANSC
-        VkGraphicsPipelineCreateInfo linkedCreateInfo = initVulkanStructure();
-        std::vector<VkPipeline> rawPipelines;
-        VkPipelineLibraryCreateInfoKHR linkingInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
-            creationFeedback.ptr,                               // const void* pNext;
-            0u,                                                 // uint32_t libraryCount;
-            nullptr,                                            // const VkPipeline* pLibraries;
-        };
-
         if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
         {
+            m_internalData->finalPipelineCreateInfo        = initVulkanStructure();
+            m_internalData->finalPipelineLibraryCreateInfo = initVulkanStructure(creationFeedback.ptr);
+
             for (const auto &pipelinePtr : m_pipelineParts)
             {
                 const auto &pipeline = pipelinePtr.get();
                 if (pipeline != VK_NULL_HANDLE)
-                    rawPipelines.push_back(pipeline);
+                    m_internalData->pipelineParts[m_internalData->finalPipelineLibraryCreateInfo.libraryCount++] =
+                        pipeline;
             }
 
-            linkingInfo.libraryCount = static_cast<uint32_t>(rawPipelines.size());
-            linkingInfo.pLibraries   = de::dataOrNull(rawPipelines);
+            m_internalData->finalPipelineLibraryCreateInfo.pLibraries =
+                (m_internalData->finalPipelineLibraryCreateInfo.libraryCount) ? m_internalData->pipelineParts : nullptr;
 
             // If a test hits the following assert, it's likely missing a call
             // to the setMonolithicPipelineLayout() method. Related VUs:
@@ -4139,17 +4175,19 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
             DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
-            linkedCreateInfo.layout = m_internalData->monolithicPipelineCreateInfo.layout;
-            linkedCreateInfo.flags  = m_internalData->pipelineFlags;
-            linkedCreateInfo.pNext  = &linkingInfo;
+            m_internalData->finalPipelineCreateInfo.layout = m_internalData->monolithicPipelineCreateInfo.layout;
+            m_internalData->finalPipelineCreateInfo.flags  = m_internalData->pipelineFlags;
+            m_internalData->finalPipelineCreateInfo.pNext  = &m_internalData->finalPipelineLibraryCreateInfo;
 
-            pointerToCreateInfo = &linkedCreateInfo;
+            pointerToCreateInfo      = &m_internalData->finalPipelineCreateInfo;
+            void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
+            addToChain(&firstStructInChain, pNext);
 
             if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
-                linkedCreateInfo.flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+                pointerToCreateInfo->flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
 
             if (m_internalData->failOnCompileWhenLinking)
-                linkedCreateInfo.flags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
+                pointerToCreateInfo->flags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
         }
         else
         {
@@ -4715,7 +4753,12 @@ vk::VkPipeline GraphicsPipelineWrapper::getPartialPipeline(uint32_t part) const
 const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPipelineCreateInfo(void) const
 {
     DE_ASSERT(m_internalData);
-    return m_internalData->monolithicPipelineCreateInfo;
+#ifndef CTS_USES_VULKANSC
+    if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
+        return m_internalData->finalPipelineCreateInfo;
+    else
+#endif
+        return m_internalData->monolithicPipelineCreateInfo;
 }
 const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPartialPipelineCreateInfo(uint32_t part) const
 {

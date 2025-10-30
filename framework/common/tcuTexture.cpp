@@ -774,24 +774,6 @@ inline uint32_t intToChannel(int32_t src, int bits)
     return (uint32_t)de::clamp(src, minVal, maxVal) & mask;
 }
 
-tcu::Vec4 unpackRGB999E5(uint32_t color)
-{
-    const int mBits = 9;
-    const int eBias = 15;
-
-    uint32_t exp = color >> 27;
-    uint32_t bs  = (color >> 18) & ((1 << 9) - 1);
-    uint32_t gs  = (color >> 9) & ((1 << 9) - 1);
-    uint32_t rs  = color & ((1 << 9) - 1);
-
-    float e = deFloatPow(2.0f, (float)((int)exp - eBias - mBits));
-    float r = (float)rs * e;
-    float g = (float)gs * e;
-    float b = (float)bs * e;
-
-    return tcu::Vec4(r, g, b, 1.0f);
-}
-
 bool isColorOrder(TextureFormat::ChannelOrder order)
 {
     DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
@@ -830,6 +812,24 @@ float getImageViewMinLod(ImageViewMinLod &l)
 }
 
 } // namespace
+
+tcu::Vec4 unpackRGB999E5(uint32_t color)
+{
+    const int mBits = 9;
+    const int eBias = 15;
+
+    uint32_t exp = color >> 27;
+    uint32_t bs  = (color >> 18) & ((1 << 9) - 1);
+    uint32_t gs  = (color >> 9) & ((1 << 9) - 1);
+    uint32_t rs  = color & ((1 << 9) - 1);
+
+    float e = deFloatPow(2.0f, (float)((int)exp - eBias - mBits));
+    float r = (float)rs * e;
+    float g = (float)gs * e;
+    float b = (float)bs * e;
+
+    return tcu::Vec4(r, g, b, 1.0f);
+}
 
 bool isValid(TextureFormat format)
 {

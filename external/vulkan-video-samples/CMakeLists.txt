@@ -6,15 +6,9 @@ cmake_minimum_required(VERSION 3.11)
 project(vk-video-samples-wrapper)
 
 set(CMAKE_POSITION_INDEPENDENT_CODE ON)
-include(FetchContent)
-include(src/cmake/FindVulkanSDK.cmake)
-set (VULKAN_SDK_MIN_MAJOR_VERSION 1)
-set (VULKAN_SDK_MIN_MINOR_VERSION 3)
-set (VULKAN_SDK_MIN_PATCH_VERSION 321)
-FIND_VULKAN_HEADERS(${VULKAN_SDK_MIN_MAJOR_VERSION} ${VULKAN_SDK_MIN_MINOR_VERSION} ${VULKAN_SDK_MIN_PATCH_VERSION})
 
 if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
-    set(COMMON_COMPILE_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers  -Wno-string-conversion -Wno-conversion -Wno-sign-compare")
+    set(COMMON_COMPILE_FLAGS "-Wall -Wextra -Wno-unused-parameter -Wno-missing-field-initializers  -Wno-string-conversion -Wno-conversion")
     set(COMMON_COMPILE_FLAGS "${COMMON_COMPILE_FLAGS} -fno-strict-aliasing -fno-builtin-memcmp")
 
 
@@ -36,7 +30,7 @@ set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/scripts")
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/common/include
-    ${VULKAN_HEADERS_INCLUDE_DIR}
+    ${CMAKE_CURRENT_SOURCE_DIR}/../../external/vulkancts/framework/vulkan/generated/vulkan
     )
 
 macro(generate_dispatch_table out)
@@ -101,22 +95,21 @@ else()
 endif()
 ############ VULKAN_VIDEO_ENCODER_LIB_PATH ######################################
 
-add_definitions(-DVK_USE_VIDEO_QUEUE)
-add_definitions(-DVK_USE_VIDEO_DECODE_QUEUE)
-add_definitions(-DVK_USE_VIDEO_ENCODE_QUEUE)
-add_definitions(-DVK_ENABLE_BETA_EXTENSIONS)
+add_compile_definitions(VK_USE_VIDEO_QUEUE VK_USE_VIDEO_DECODE_QUEUE VK_USE_VIDEO_ENCODE_QUEUE VVS_CTS_VULKAN_HEADER)
 
 if(CMAKE_SYSTEM_NAME STREQUAL "Windows")
-    add_definitions(-DVK_USE_PLATFORM_WIN32_KHR -DWIN32_LEAN_AND_MEAN -DNOMINMAX="1")
+# Do not set VK_USE_PLATFORM_WIN32_KHR as it will enable vulkan functions
+# such as CreateWin32SurfaceKHR and GetPhysicalDeviceWin32PresentationSupportKHR
+# which are not defined by vkVulkan_inl.c and not necessary in the context of CTS.
+    add_compile_definitions(WIN32_LEAN_AND_MEAN NOMINMAX="1")
 endif()
 
 add_subdirectory(src/vk_video_encoder/libs)
 
 get_target_property(ENCODER_INCLUDE_DIRS vkvideo-encoder-static INCLUDE_DIRECTORIES)
 
-set(NV_VIDEO_ENCODER_INCLUDE_DIRS ${ENCODER_INCLUDE_DIRS} CACHE INTERNAL "")
-set(NV_VIDEO_ENCODER_LIBRARY vkvideo-encoder-static CACHE INTERNAL "")
-#set(NV_VIDEO_ENCODER_LIBRARIES -L${SHADERC_LIB_SHARED_DIR} -l${SHADERC_LIB_SHARED} CACHE INTERNAL "")
+set(VULKAN_VIDEO_ENCODER_INCLUDE_DIRS ${ENCODER_INCLUDE_DIRS} CACHE INTERNAL "")
+set(VULKAN_VIDEO_ENCODER_LIBRARY vkvideo-encoder-static CACHE INTERNAL "")
 
 
 ############ VULKAN_VIDEO_PARSER_INCLUDE ######################################
@@ -150,8 +143,8 @@ else()
     set(VULKAN_VIDEO_PARSER_LIB_PATH  "${LIBNVPARSER_BINARY_ROOT}" CACHE PATH "Path to Vulkan Video Parser library directory")
 endif()
 
-set(VULKAN_VIDEO_PARSER_LIB nvidia-vkvideo-parser CACHE PATH "The name of Vulkan Video Parser library")
-set(VULKAN_VIDEO_PARSER_STATIC_LIB nvidia-vkvideo-parser-static CACHE PATH "The name of Vulkan Video Parser library")
+set(VULKAN_VIDEO_PARSER_LIB vkvideo-parser CACHE PATH "The name of Vulkan Video Parser library")
+set(VULKAN_VIDEO_PARSER_STATIC_LIB vkvideo-parser-static CACHE PATH "The name of Vulkan Video Parser library")
 set(VULKAN_VIDEO_PARSER_LIB_VERSION 1 CACHE PATH "The version of Vulkan Video Parser library")
 if (EXISTS "${CMAKE_CURRENT_SOURCE_DIR}/libs/NvVideoParser")
 
@@ -166,15 +159,12 @@ endif()
 
 add_subdirectory(src/vk_video_decoder/libs/NvVideoParser)
 
+get_target_property(PARSER_INCLUDE_DIRS vkvideo-parser-static INCLUDE_DIRECTORIES)
 
-get_target_property(PARSER_INCLUDE_DIRS nvidia-vkvideo-parser-static INCLUDE_DIRECTORIES)
+set(VULKAN_VIDEO_PARSER_INCLUDE_DIRS ${PARSER_INCLUDE_DIRS} CACHE INTERNAL "")
+set(VULKAN_VIDEO_PARSER_LIBRARY vkvideo-parser-static CACHE INTERNAL "")
 
-set(NV_VIDEO_PARSER_INCLUDE_DIRS ${PARSER_INCLUDE_DIRS} CACHE INTERNAL "")
-set(NV_VIDEO_PARSER_LIBRARY nvidia-vkvideo-parser-static CACHE INTERNAL "")
-
-
-message(STATUS "NV_VIDEO_ENCODER_INCLUDE_DIRS: ${NV_VIDEO_ENCODER_INCLUDE_DIRS}")
-message(STATUS "NV_VIDEO_ENCODER_LIBRARY: ${NV_VIDEO_ENCODER_LIBRARY}")
-message(STATUS "NV_VIDEO_ENCODER_LIBRARIES: ${NV_VIDEO_ENCODER_LIBRARIES}")
-message(STATUS "NV_VIDEO_PARSER_INCLUDE_DIRS: ${NV_VIDEO_PARSER_INCLUDE_DIRS}")
-message(STATUS "NV_VIDEO_PARSER_LIBRARY: ${NV_VIDEO_PARSER_LIBRARY}")
+message(STATUS "VULKAN_VIDEO_ENCODER_INCLUDE_DIRS: ${VULKAN_VIDEO_ENCODER_INCLUDE_DIRS}")
+message(STATUS "VULKAN_VIDEO_ENCODER_LIBRARY: ${VULKAN_VIDEO_ENCODER_LIBRARY}")
+message(STATUS "VULKAN_VIDEO_PARSER_INCLUDE_DIRS: ${VULKAN_VIDEO_PARSER_INCLUDE_DIRS}")
+message(STATUS "VULKAN_VIDEO_PARSER_LIBRARY: ${VULKAN_VIDEO_PARSER_LIBRARY}")

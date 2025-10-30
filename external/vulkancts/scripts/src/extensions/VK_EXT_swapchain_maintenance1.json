@@ -2,5 +2,17 @@
     "register_extension": {
         "type": "device",
         "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceSwapchainMaintenance1FeaturesEXT": [
+            {
+                "features": [
+                    "swapchainMaintenance1"
+                ],
+                "requirements": [
+                    "VK_EXT_swapchain_maintenance1"
+                ]
+            }
+        ]
     }
 }

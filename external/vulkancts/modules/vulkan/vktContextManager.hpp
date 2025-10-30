@@ -126,10 +126,79 @@ struct DevFeaturesAndPropertiesImpl
 #endif // CTS_USES_VULKANSC
 };
 
-namespace dc
+#define MAKE_FEATURE_DECL(clazz) \
+    template <>                  \
+    FeatureDesc makeFeatureDesc<clazz>();
+
+#define INIT_FEATURE_DECL(clazz) \
+    template <>                  \
+    void initFeatureFromBlob<clazz>(clazz &, const AllFeaturesBlobs &);
+
+MAKE_FEATURE_DECL(VkPhysicalDeviceFeatures)
+INIT_FEATURE_DECL(VkPhysicalDeviceFeatures)
+MAKE_FEATURE_DECL(VkPhysicalDeviceFeatures2)
+INIT_FEATURE_DECL(VkPhysicalDeviceFeatures2)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan11Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan11Features)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan12Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan12Features)
+#ifndef CTS_USES_VULKANSC
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan13Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan13Features)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkan14Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkan14Features)
+#endif
+
+#ifdef CTS_USES_VULKANSC
+MAKE_FEATURE_DECL(VkFaultCallbackInfo)
+INIT_FEATURE_DECL(VkFaultCallbackInfo)
+MAKE_FEATURE_DECL(VkPhysicalDeviceVulkanSC10Features)
+INIT_FEATURE_DECL(VkPhysicalDeviceVulkanSC10Features)
+MAKE_FEATURE_DECL(VkDeviceObjectReservationCreateInfo)
+INIT_FEATURE_DECL(VkDeviceObjectReservationCreateInfo)
+#endif
+
+template <>
+class FeatureStructWrapper<VkPhysicalDeviceFeatures> : public FeatureStructWrapperBase
 {
-#include "vkDeviceFeaturesVariantDecl.inl"
-}
+public:
+    FeatureStructWrapper(const FeatureDesc &featureDesc) : m_featureDesc(featureDesc), m_featureType()
+    {
+    }
+    void initializeFeatureFromBlob(const AllFeaturesBlobs &allFeaturesBlobs)
+    {
+        initFeatureFromBlobWrapper(m_featureType, allFeaturesBlobs);
+    }
+    const FeatureDesc &getFeatureDesc() const
+    {
+        return m_featureDesc;
+    }
+    void **getFeatureTypeNext()
+    {
+        return nullptr;
+    }
+    void *getFeatureTypeRaw()
+    {
+        return &m_featureType;
+    }
+    VkPhysicalDeviceFeatures &getFeatureTypeRef()
+    {
+        return m_featureType;
+    }
+    FeatureStructWrapperBase *clone()
+    {
+        FeatureStructWrapperBase *p                           = new FeatureStructWrapper(m_featureDesc);
+        static_cast<FeatureStructWrapper *>(p)->m_featureType = m_featureType;
+        return p;
+    }
+
+public:
+    // metadata about feature structure
+    const FeatureDesc m_featureDesc;
+
+    // actual vulkan feature structure
+    VkPhysicalDeviceFeatures m_featureType;
+};
 
 } // namespace vk
 
@@ -146,6 +215,17 @@ class TestCase;
 class Context;
 class ContextManager;
 class TestCaseExecutor;
+
+template <class, class = void>
+struct hasPnextOfVoidPtr : std::false_type
+{
+};
+template <class X>
+struct hasPnextOfVoidPtr<X, std::void_t<decltype(std::declval<X>().pNext)>>
+    : std::integral_constant<bool, std::is_same<decltype(std::declval<X>().pNext), void *>::value ||
+                                       std::is_same<decltype(std::declval<X>().pNext), const void *>::value>
+{
+};
 
 // The DevCaps class encapsulates the requirements for creating a new device.
 // A key attribute is the DevCaps::id field, which the framework relies on to
@@ -194,15 +274,6 @@ class DevCaps
         std::vector<std::pair<uint32_t, uint32_t>> familyToQueueIndices;
         AllocatorParams_ allocatorCreateParams;
     };
-    struct FeatureInfo_
-    {
-        vk::VkStructureType sType;
-        void *address;
-        uint32_t index;
-        uint32_t size;
-        FeatureInfo_();
-        void reset();
-    };
 
     // Helper container for two lambdas
     struct Caller
@@ -233,37 +304,27 @@ class DevCaps
     strings m_extensions;
     ExtensionsRef m_extensionsRef;
     const ContextManager *const m_contextManager;
-    using FeaturesVar_ = vk::dc::FullFeaturesVariant;
-    using Features_    = std::vector<FeaturesVar_>;
+    using Features_ = std::vector<vk::FeatureStructWrapperBase *>;
     Features_ m_features;
     std::vector<QueueCreateInfo_> m_queueCreateInfos;
     bool m_hasInheritedExtensions;
     tcu::TestContext &m_testContext;
     AllocatorParams_ m_allocatorParams;
 
-    template <class FeatureStruct>
-    void prepareFeature(FeatureStruct &feature, vk::VkStructureType sType)
-    {
-        static_cast<void>(sType);
-        static_cast<void>(feature);
-        if constexpr (vk::dc::hasPnextOfVoidPtr<FeatureStruct>::value)
-        {
-            feature.pNext = nullptr;
-            feature.sType = sType;
-        }
-    }
-
     template <class FeatureStruct, class FieldType>
     bool _addFeatureSet(const FeatureStruct *pSource, FieldType FeatureStruct::*pField, const FieldType &setToValue,
                         const FieldType &expectedValue = {}, bool enableExpected = false)
     {
         FeatureStruct expected          = FeatureStruct{};
-        FeatureStruct desired           = pSource ? *pSource : expected;
-        const vk::VkStructureType sType = vk::dc::getFeatureSType<FeatureStruct>();
+        const vk::FeatureDesc desc      = vk::makeFeatureDesc<FeatureStruct>();
+        const vk::VkStructureType sType = desc.sType;
 
         // make sure sType has correct value and pNext is nullptr
-        prepareFeature(desired, sType);
-        prepareFeature(expected, sType);
+        if constexpr (hasPnextOfVoidPtr<FeatureStruct>::value)
+        {
+            expected.pNext = nullptr;
+            expected.sType = sType;
+        }
 
         // lambda function that updates a specified field in a feature struct to a
         // desired value and returns success upon completion
@@ -288,9 +349,9 @@ class DevCaps
         auto addFeature = [&]() -> void *
         {
             verifyFeature(sType, true);
-            prepareFeature(desired, sType);
-            m_features.emplace_back(desired);
-            return std::get_if<FeatureStruct>(&m_features.back());
+            vk::FeatureStructWrapperBase *feature = vk::createFeatureStructWrapper<FeatureStruct>();
+            m_features.push_back(feature);
+            return feature->getFeatureTypeRaw();
         };
 
         LambdaCaller caller(compareExchange, addFeature);
@@ -298,32 +359,11 @@ class DevCaps
                                 static_cast<uint32_t>(sizeof(FeatureStruct)), caller);
     }
 
-    template <class FeatureStruct>
-    bool getFeature(FeatureStruct &feature) const
-    {
-        const vk::VkStructureType sType = vk::dc::getFeatureSType<FeatureStruct>();
-        FeatureInfo_ info               = getFeatureInfo(sType, m_features);
-        if (info.address)
-        {
-            feature = *reinterpret_cast<FeatureStruct *>(info.address);
-            return true;
-        }
-        return false;
-    }
-
-    template <class FeatureStruct>
-    bool hasFeature() const
-    {
-        const vk::VkStructureType sType = vk::dc::getFeatureSType<FeatureStruct>();
-        FeatureInfo_ info               = getFeatureInfo(sType, m_features);
-        return info.address != nullptr;
-    }
-
     bool addUpdateFeature(vk::VkStructureType sType, void *pExpected, const void *pSource, uint32_t featureSize,
                           Caller &caller);
     void updateDeviceCreateInfo(vk::VkDeviceCreateInfo &createInfo, vk::VkPhysicalDeviceFeatures2 *opt, Features_ &aux,
                                 void *pNext) const;
-    FeatureInfo_ getFeatureInfo(vk::VkStructureType sType, const Features_ &others) const;
+    void *getFeatureInfo(vk::VkStructureType sType, const Features_ &others) const;
     void fillFeatureFromInstance(void *pNext, bool isVkPhysicalDeviceFeatures10) const;
     void resetQueues(const QueueCreateInfo_ *pInfos, uint32_t infoCount);
 
@@ -338,8 +378,6 @@ public:
     using QueueInfo       = QueueInfo_;
     using RuntimeData     = RuntimeData_;
     using QueueCreateInfo = QueueCreateInfo_;
-    using FeatureInfo     = FeatureInfo_;
-    using FeaturesVar     = FeaturesVar_;
     using Features        = Features_;
     using AllocatorParams = AllocatorParams_;
 
@@ -351,6 +389,7 @@ public:
     DevCaps(const std::string &id_, const ContextManager *mgr, tcu::TestContext &testContext);
     DevCaps(const DevCaps &caps);
     DevCaps(DevCaps &&caps) noexcept;
+    virtual ~DevCaps();
 
     void verifyFeature(vk::VkStructureType feature, bool checkRuntimeApiVersion = true) const;
 

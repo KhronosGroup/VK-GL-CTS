@@ -47,6 +47,7 @@ struct TestParameters
     uint32_t secondLayer;
     uint32_t totalLayers;
     VkImageTiling tiling;
+    VkImageViewType imageViewType;
 };
 
 class ArrayCompatibleTestInstance : public vkt::TestInstance
@@ -61,8 +62,9 @@ public:
 private:
     VkImageSubresourceRange makeSubresourceRange(uint32_t base);
     VkImageSubresourceLayers makeSubresourceLayers(uint32_t base);
-    void transitionUnusedLayers(const DeviceInterface &vk, VkCommandBuffer commandBuffer, VkImage image,
-                                uint32_t depth);
+    void transitionUnusedLayers(const DeviceInterface &vk, VkCommandBuffer commandBuffer, VkImage image);
+    void transitionAllLayers(const DeviceInterface &vk, VkCommandBuffer commandBuffer, VkImage image,
+                             VkImageLayout layout);
     tcu::TestStatus iterate(void);
 
     const TestParameters m_parameters;
@@ -79,9 +81,9 @@ VkImageSubresourceLayers ArrayCompatibleTestInstance::makeSubresourceLayers(uint
 }
 
 void ArrayCompatibleTestInstance::transitionUnusedLayers(const DeviceInterface &vk, VkCommandBuffer commandBuffer,
-                                                         VkImage image, uint32_t depth)
+                                                         VkImage image)
 {
-    for (uint32_t i = 0; i < depth; ++i)
+    for (uint32_t i = 0; i < m_parameters.totalLayers; ++i)
     {
         if (i != m_parameters.firstLayer && i != m_parameters.secondLayer)
         {
@@ -91,6 +93,19 @@ void ArrayCompatibleTestInstance::transitionUnusedLayers(const DeviceInterface &
             vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
                                   0u, nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
         }
+    }
+}
+
+void ArrayCompatibleTestInstance::transitionAllLayers(const DeviceInterface &vk, VkCommandBuffer commandBuffer,
+                                                      VkImage image, VkImageLayout layout)
+{
+    for (uint32_t i = 0; i < m_parameters.totalLayers; ++i)
+    {
+        VkImageMemoryBarrier imageMemoryBarrier =
+            makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, layout,
+                                   image, makeSubresourceRange(i));
+        vk.cmdPipelineBarrier(commandBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
+                              nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
     }
 }
 
@@ -108,17 +123,23 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
     const VkExtent3D copyExtent               = {extent.width, extent.height, 1u};
     const VkComponentMapping componentMapping = makeComponentMappingRGBA();
 
+    VkImageCreateFlags createFlags = VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
+#ifndef CTS_USES_VULKANSC
+    if (m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_2D)
+        createFlags |= VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT;
+#endif
+
     VkImageCreateInfo imageCreateInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,     // VkStructureType          sType
-        nullptr,                                 // const void*              pNext
-        VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT, // VkImageCreateFlags       flags
-        VK_IMAGE_TYPE_3D,                        // VkImageType              imageType
-        format,                                  // VkFormat                 format
-        extent,                                  // VkExtent3D               extent
-        1u,                                      // uint32_t                 mipLevels
-        1u,                                      // uint32_t                 arrayLayers
-        VK_SAMPLE_COUNT_1_BIT,                   // VkSampleCountFlagBits    samples
-        m_parameters.tiling,                     // VkImageTiling            tiling
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
+        nullptr,                             // const void*              pNext
+        createFlags,                         // VkImageCreateFlags       flags
+        VK_IMAGE_TYPE_3D,                    // VkImageType              imageType
+        format,                              // VkFormat                 format
+        extent,                              // VkExtent3D               extent
+        1u,                                  // uint32_t                 mipLevels
+        1u,                                  // uint32_t                 arrayLayers
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples
+        m_parameters.tiling,                 // VkImageTiling            tiling
         VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
             VK_IMAGE_USAGE_SAMPLED_BIT, // VkImageUsageFlags        usage
         VK_SHARING_MODE_EXCLUSIVE,      // VkSharingMode            sharingMode
@@ -130,15 +151,19 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
     de::MovePtr<ImageWithMemory> image =
         de::MovePtr<ImageWithMemory>(new ImageWithMemory(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any));
 
+    const VkImageSubresourceRange imageViewSubresourceRange = m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_3D ?
+                                                                  makeSubresourceRange(0u) :
+                                                                  makeSubresourceRange(m_parameters.secondLayer);
+
     VkImageViewCreateInfo imageViewCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO, // VkStructureType sType;
         nullptr,                                  // const void* pNext;
         (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
         **image,                                  // VkImage image;
-        VK_IMAGE_VIEW_TYPE_3D,                    // VkImageViewType viewType;
+        m_parameters.imageViewType,               // VkImageViewType viewType;
         format,                                   // VkFormat format;
         componentMapping,                         // VkComponentMapping components;
-        makeSubresourceRange(0u)                  // VkImageSubresourceRange subresourceRange;
+        imageViewSubresourceRange                 // VkImageSubresourceRange subresourceRange;
     };
     auto sampledImageView = createImageView(vk, device, &imageViewCreateInfo, nullptr);
 
@@ -254,7 +279,7 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
         region.imageExtent       = {extent.width, extent.height, 1u};
         vk.cmdCopyBufferToImage(*cmdBuffer, **srcBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u, &region);
     }
-    transitionUnusedLayers(vk, *cmdBuffer, **image, extent.depth);
+    transitionUnusedLayers(vk, *cmdBuffer, **image);
     {
         VkImageMemoryBarrier imageMemoryBarriers[2];
         imageMemoryBarriers[0] = makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
@@ -274,10 +299,17 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
         region.extent         = copyExtent;
         vk.cmdCopyImage(*cmdBuffer, **image, VK_IMAGE_LAYOUT_GENERAL, **image, VK_IMAGE_LAYOUT_GENERAL, 1u, &region);
     }
-    transitionUnusedLayers(vk, *cmdBuffer, **image, extent.depth);
+    transitionUnusedLayers(vk, *cmdBuffer, **image);
+    if (m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_3D)
+        transitionAllLayers(vk, *cmdBuffer, **image, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
     {
+        VkImageLayout previousLayout = m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_3D ?
+                                           VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
+                                           VK_IMAGE_LAYOUT_GENERAL;
+
         VkImageMemoryBarrier imageMemoryBarrier = makeImageMemoryBarrier(
-            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, previousLayout,
             VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, **image, makeSubresourceRange(m_parameters.secondLayer));
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u,
                               nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
@@ -287,12 +319,12 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
         vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *computePipeline);
         vk.cmdDispatch(*cmdBuffer, extent.width, extent.height, 1u);
     }
-    transitionUnusedLayers(vk, *cmdBuffer, **image, extent.depth);
+    transitionUnusedLayers(vk, *cmdBuffer, **image);
     {
         VkImageSubresourceRange subresourceRange = makeSubresourceRange(m_parameters.secondLayer);
-        VkImageMemoryBarrier imageMemoryBarrier =
-            makeImageMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_GENERAL,
-                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
+        VkImageMemoryBarrier imageMemoryBarrier  = makeImageMemoryBarrier(
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+            VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **image, subresourceRange);
         vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                               nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
 
@@ -305,10 +337,10 @@ tcu::TestStatus ArrayCompatibleTestInstance::iterate(void)
         region.imageExtent       = {extent.width, extent.height, 1u};
         vk.cmdCopyImageToBuffer(*cmdBuffer, **image, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **dstBuffer, 1u, &region);
     }
-    transitionUnusedLayers(vk, *cmdBuffer, **image, extent.depth);
+    transitionUnusedLayers(vk, *cmdBuffer, **image);
 
     VkBufferMemoryBarrier bufferMemoryBarrier = makeBufferMemoryBarrier(
-        VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **dstBuffer, 0u, ssboSize);
+        VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, **dstBuffer, 0u, layerSize);
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT | VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
                           VK_PIPELINE_STAGE_HOST_BIT, 0u, 0u, nullptr, 1u, &bufferMemoryBarrier, 0u, nullptr);
 
@@ -381,10 +413,19 @@ void ArrayCompatibleTestCase::checkSupport(vkt::Context &context) const
 
     vk::VkImageFormatProperties imageFormatProperties;
     if (vki.getPhysicalDeviceImageFormatProperties(
-            physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, vk::VK_IMAGE_TYPE_2D, m_parameters.tiling,
+            physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, vk::VK_IMAGE_TYPE_3D, m_parameters.tiling,
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT,
             VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT, &imageFormatProperties) == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
         TCU_THROW(NotSupportedError, "Image format not supported.");
+
+#ifndef CTS_USES_VULKANSC
+    if (m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_2D)
+    {
+        context.requireDeviceFunctionality("VK_EXT_image_2d_view_of_3d");
+        if (!context.getImage2DViewOf3DFeaturesEXT().sampler2DViewOf3D)
+            TCU_THROW(NotSupportedError, "sampler2DViewOf3D not supported.");
+    }
+#endif
 }
 
 void ArrayCompatibleTestCase::initPrograms(SourceCollections &programCollection) const
@@ -392,16 +433,26 @@ void ArrayCompatibleTestCase::initPrograms(SourceCollections &programCollection)
     std::ostringstream comp;
     comp << "#version 450\n"
          << "\n"
-         << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n"
-         << "layout (set = 0, binding = 0) uniform sampler3D inputImage;\n"
-         << "layout (set = 0, binding = 1) buffer outputBuffer {\n"
+         << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+    if (m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_3D)
+        comp << "layout (set = 0, binding = 0) uniform sampler3D inputImage;\n";
+    else
+        comp << "layout (set = 0, binding = 0) uniform sampler2D inputImage;\n";
+    comp << "layout (set = 0, binding = 1) buffer outputBuffer {\n"
          << "    vec4 color[];\n"
          << "} data;\n"
          << "\n"
-         << "void main() {\n"
-         << "    vec3 pixelCoords = vec3(gl_GlobalInvocationID.xy / vec2(32.0f, 32.0f), " << m_parameters.secondLayer
-         << ".0f / " << m_parameters.totalLayers << ".0f);\n"
-         << "    uint index = gl_GlobalInvocationID.y * 32 + gl_GlobalInvocationID.x;\n"
+         << "void main() {\n";
+    if (m_parameters.imageViewType == VK_IMAGE_VIEW_TYPE_3D)
+    {
+        comp << "    vec3 pixelCoords = vec3(gl_GlobalInvocationID.xy / vec2(32.0f, 32.0f), "
+             << m_parameters.secondLayer << ".0f / " << m_parameters.totalLayers << ".0f);\n";
+    }
+    else
+    {
+        comp << "    vec2 pixelCoords = vec2(gl_GlobalInvocationID.xy / vec2(32.0f, 32.0f));\n";
+    }
+    comp << "    uint index = gl_GlobalInvocationID.y * 32 + gl_GlobalInvocationID.x;\n"
          << "    data.color[index] = texture(inputImage, pixelCoords);\n"
          << "}\n";
 
@@ -435,18 +486,35 @@ tcu::TestCaseGroup *createImage2dArrayCompatibleTests(tcu::TestContext &testCtx)
         {VK_IMAGE_TILING_OPTIMAL, "optimal"},
     };
 
+    struct ImageViewTypeTest
+    {
+        VkImageViewType imageViewType;
+        const char *name;
+    } imageViewTypeTests[] = {
+#ifndef CTS_USES_VULKANSC
+        {VK_IMAGE_VIEW_TYPE_2D, "2d"},
+#endif
+        {VK_IMAGE_VIEW_TYPE_3D, "3d"},
+    };
+
     for (const auto &test : tests)
     {
         de::MovePtr<tcu::TestCaseGroup> testLayerGroup(new tcu::TestCaseGroup(testCtx, test.name));
         for (const auto &tiling : tilingTests)
         {
-            TestParameters parameters;
-            parameters.firstLayer  = test.first;
-            parameters.secondLayer = test.second;
-            parameters.totalLayers = test.total;
-            parameters.tiling      = tiling.tiling;
+            de::MovePtr<tcu::TestCaseGroup> tilingGroup(new tcu::TestCaseGroup(testCtx, tiling.name));
+            for (const auto &imageViewType : imageViewTypeTests)
+            {
+                TestParameters parameters;
+                parameters.firstLayer    = test.first;
+                parameters.secondLayer   = test.second;
+                parameters.totalLayers   = test.total;
+                parameters.tiling        = tiling.tiling;
+                parameters.imageViewType = imageViewType.imageViewType;
 
-            testLayerGroup->addChild(new ArrayCompatibleTestCase(testCtx, tiling.name, parameters));
+                tilingGroup->addChild(new ArrayCompatibleTestCase(testCtx, imageViewType.name, parameters));
+            }
+            testLayerGroup->addChild(tilingGroup.release());
         }
 
         testGroup->addChild(testLayerGroup.release());

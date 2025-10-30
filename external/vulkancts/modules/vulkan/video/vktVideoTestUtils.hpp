@@ -120,10 +120,6 @@ struct DeviceContext
 
 typedef de::MovePtr<Allocation> AllocationPtr;
 
-bool videoLoggingEnabled();
-
-bool videoLoggingEnabled();
-
 VkVideoDecodeH264ProfileInfoKHR getProfileOperationH264Decode(
     StdVideoH264ProfileIdc stdProfileIdc = STD_VIDEO_H264_PROFILE_IDC_MAIN,
     VkVideoDecodeH264PictureLayoutFlagBitsKHR pictureLayout =

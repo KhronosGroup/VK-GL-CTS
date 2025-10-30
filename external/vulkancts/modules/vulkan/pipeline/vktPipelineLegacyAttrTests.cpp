@@ -809,20 +809,12 @@ tcu::TestStatus LegacyVertexAttributesInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
-std::string getFormatShortName(VkFormat format)
-{
-    const std::string longName = getFormatName(format);
-    DE_ASSERT(de::beginsWith(longName, "VK_FORMAT_"));
-    const std::string shortName = de::toLower(longName.substr(10 /*strlen("VK_FORMAT_")*/));
-    return shortName;
-}
-
 using FormatVec = std::vector<VkFormat>;
 std::string getFormatShortName(const FormatVec &formats)
 {
     std::string concat;
     for (const auto format : formats)
-        concat += (concat.empty() ? "" : "_") + getFormatShortName(format);
+        concat += (concat.empty() ? "" : "_") + getFormatSimpleName(format);
     return concat;
 }
 
@@ -980,7 +972,7 @@ void createLegacyVertexAttributesTests(tcu::TestCaseGroup *group, PipelineConstr
                                 continue;
                         }
 
-                        const auto shortName = getFormatShortName(format);
+                        const auto shortName = getFormatSimpleName(format);
                         const auto aoSuffix  = ((attributeOffset > 0u) ?
                                                     std::string("_attribute_offset_") + std::to_string(attributeOffset) :
                                                     "");

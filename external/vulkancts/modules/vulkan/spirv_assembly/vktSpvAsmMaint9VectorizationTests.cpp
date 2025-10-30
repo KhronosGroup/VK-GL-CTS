@@ -217,6 +217,11 @@ public:
         return useBitSize(BitSize::BIT8);
     }
 
+    bool requiresMaint9() const
+    {
+        return operandList[1].bitSize != BitSize::BIT32;
+    }
+
     uint32_t getRandomSeed() const
     {
         uint32_t seed = (static_cast<uint32_t>(bitOp) << 24);
@@ -281,7 +286,8 @@ void M9V_Case::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Vulkan 1.3 required");
 
     // Requires maintenance 9 for the bitwise ops.
-    context.requireDeviceFunctionality("VK_KHR_maintenance9");
+    if (m_params.requiresMaint9())
+        context.requireDeviceFunctionality("VK_KHR_maintenance9");
 
     const auto &vk12Features = context.getDeviceVulkan12Features();
     const auto &vk11Features = context.getDeviceVulkan11Features();

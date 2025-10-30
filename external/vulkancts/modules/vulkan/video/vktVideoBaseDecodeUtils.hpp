@@ -797,6 +797,7 @@ public:
         nvVideoH265PicParameters h265PicParams;
         VkParserAv1PictureData av1PicParams;
         VkParserVp9PictureData vp9PicParams;
+        VkVideoDecodeVP9PictureInfoKHR vp9VkPicInfo;
 
         NvVkDecodeFrameDataSlot frameDataSlot;
         VkVideoBeginCodingInfoKHR decodeBeginInfo{};
@@ -866,8 +867,8 @@ public:
     // VkParserVideoDecodeClient callbacks
     // Returns max number of reference frames (always at least 2 for MPEG-2)
     int32_t BeginSequence(const VkParserSequenceInfo *pnvsi) override;
-    // Returns a new INvidiaVulkanPicture interface
-    bool AllocPictureBuffer(VkPicIf **ppNvidiaVulkanPicture, uint32_t width, uint32_t height) override;
+    // Returns a new VkPicIf
+    bool AllocPictureBuffer(VkPicIf **ppPicBuf) override;
     // Called when a picture is ready to be decoded
     bool DecodePicture(VkParserPictureData *pNvidiaVulkanParserPictureData) override;
     // Called when the stream parameters have changed
@@ -931,6 +932,10 @@ public:
     void QueryDecodeResults(de::MovePtr<CachedDecodeParameters> &cachedParameters);
     void decodeFramesOutOfOrder();
     void reinitializeFormatsForProfile(const VkVideoCoreProfile *profile);
+    bool getVideoLogPrintEnable()
+    {
+        return m_videoLogPrintEnable;
+    }
 
     DeviceContext *m_deviceContext{};
     VkVideoCoreProfile m_profile{};
@@ -1018,6 +1023,7 @@ public:
     bool m_useImageViewArray{false};
     bool m_useSeparateOutputImages{false};
     bool m_resetDecoder{false};
+    bool m_videoLogPrintEnable{false};
 };
 
 using VkVideoParser = VkSharedBaseObj<VulkanVideoDecodeParser>;

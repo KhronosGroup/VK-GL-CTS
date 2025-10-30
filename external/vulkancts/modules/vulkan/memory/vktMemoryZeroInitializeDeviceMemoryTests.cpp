@@ -1246,12 +1246,6 @@ tcu::TestStatus DepthFormatTest::iterate(void)
 
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-std::string getSimpleName(VkFormat format)
-{
-    static const size_t prefixLen = strlen("VK_FORMAT_");
-    return de::toLower(std::string(getFormatName(format)).substr(prefixLen));
-}
-
 } // namespace
 
 tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCtx)
@@ -1367,7 +1361,7 @@ tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCt
                                 format,   usageCase.usage,         tcu::IVec3(mipSize.x(), mipSize.y(), 1),
                                 firstMip, readStageCase.readStage,
                             };
-                            const auto testName = getSimpleName(format) + "_" + usageCase.name + "_shader_" +
+                            const auto testName = getFormatSimpleName(format) + "_" + usageCase.name + "_shader_" +
                                                   readStageCase.name + "_" + std::to_string(mipSize.x()) + "x" +
                                                   std::to_string(mipSize.y()) +
                                                   (firstMip ? "_first_mip" : "_second_mip");
@@ -1392,7 +1386,7 @@ tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCt
                         tcu::IVec3(mipSize.x(), mipSize.y(), 1),
                         firstMip,
                     };
-                    const auto testName = getSimpleName(format) + "_" + std::to_string(mipSize.x()) + "x" +
+                    const auto testName = getFormatSimpleName(format) + "_" + std::to_string(mipSize.x()) + "x" +
                                           std::to_string(mipSize.y()) + (firstMip ? "_first_mip" : "_second_mip");
                     imageTransition->addChild(new DepthFormatCase(testCtx, testName, params));
                 }

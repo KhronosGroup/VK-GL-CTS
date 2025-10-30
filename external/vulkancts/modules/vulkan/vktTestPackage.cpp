@@ -488,7 +488,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
             getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
         if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
         {
-            runTestsInSubprocess(m_context->getTestContext());
+            runTestsInSubprocess(testCase->getTestContext());
 
             // Clean up data after performing tests in subprocess and prepare system for another batch of tests
             m_testsForSubprocess.clear();
@@ -601,8 +601,15 @@ void TestCaseExecutor::deinit(tcu::TestCase *testCase)
 
         // Collect and report any debug messages
 #ifndef CTS_USES_VULKANSC
-    if (validContext && m_context->hasDebugReportRecorder())
-        collectAndReportDebugMessages(m_context->getDebugReportRecorder(), *m_context);
+    if (validContext && m_context->hasDebugReportRecorders())
+    {
+        const auto recorders = m_context->getDebugReportRecorders();
+        for (const auto &r : recorders)
+        {
+            if (r != nullptr)
+                collectAndReportDebugMessages(*r, *m_context);
+        }
+    }
 #endif // CTS_USES_VULKANSC
 
     if (testCase != nullptr)
@@ -729,7 +736,7 @@ void TestCaseExecutor::logUnusedShaders(tcu::TestCase *testCase)
 
             message = std::string("Unused shaders: ") + message;
 
-            m_context->getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
+            testCase->getTestContext().getLog() << TestLog::Message << message << TestLog::EndMessage;
         }
     }
 }
@@ -777,7 +784,7 @@ void TestCaseExecutor::deinitTestPackage(tcu::TestContext &testCtx)
         // Tests are finished. Next tests ( if any ) will come from other test package and test executor
         if (!testCtx.getCommandLine().quietMode())
             restoreStandardOutput();
-        m_context->getTestContext().getLog().supressLogging(false);
+        testCtx.getLog().supressLogging(false);
     }
     m_resourceInterface->resetPipelineCaches();
 #else
@@ -937,13 +944,33 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
 
         // brave ( but working ) assumption that each CTS parameter starts with "--deqp"
 
-        std::string paramStr("--deqp");
+        const std::string paramStr("--deqp");
         std::vector<std::string> skipElements = {
             "--deqp-case",           "--deqp-stdin-caselist", "--deqp-log-filename",  "--deqp-pipeline-compiler",
             "--deqp-pipeline-dir",   "--deqp-pipeline-args",  "--deqp-pipeline-file", "--deqp-pipeline-logfile",
             "--deqp-pipeline-prefix"};
+        const std::string replaceElements[]{"-n ", "-n\t", "-f ", "-f\t"};
 
         std::size_t pos = 0;
+
+        while (pos != std::string::npos)
+        {
+            for (const std::string &replaceElement : replaceElements)
+            {
+                if (std::size_t repl = originalCmdLine.find(replaceElement, pos); repl != std::string::npos)
+                {
+                    originalCmdLine.replace(repl, replaceElement.length(), skipElements.at(0));
+                    pos = repl;
+                    break;
+                }
+                else
+                {
+                    pos = std::string::npos;
+                }
+            }
+        }
+
+        pos = 0;
         std::vector<std::size_t> argPos;
         while ((pos = originalCmdLine.find(paramStr, pos)) != std::string::npos)
             argPos.push_back(pos++);
@@ -1006,6 +1033,7 @@ void TestCaseExecutor::runTestsInSubprocess(tcu::TestContext &testCtx)
     std::string subProcessExitCodeInfo;
     {
         deProcess *process = deProcess_create();
+
         if (deProcess_start(process, newCmdLine.c_str(), ".") != true)
         {
             std::string err = deProcess_getLastError(process);
@@ -1272,9 +1300,7 @@ void TestPackage::init(void)
     addRootChild("binding_model", m_caseListFilter, BindingModel::createTests);
     addRootChild("spirv_assembly", m_caseListFilter, SpirVAssembly::createTests);
     addRootChild("glsl", m_caseListFilter, createGlslTests);
-    addRootChild("renderpass", m_caseListFilter, createRenderPassTests);
-    addRootChild("renderpass2", m_caseListFilter, createRenderPass2Tests);
-    addRootChild("dynamic_rendering", m_caseListFilter, createDynamicRenderingTests);
+    addRootChild("renderpasses", m_caseListFilter, createRenderPassesTests);
     addRootChild("ubo", m_caseListFilter, ubo::createTests);
     addRootChild("dynamic_state", m_caseListFilter, DynamicState::createTests);
     addRootChild("ssbo", m_caseListFilter, ssbo::createTests);
@@ -1341,8 +1367,7 @@ void TestPackageSC::init(void)
     addRootChild("binding_model", m_caseListFilter, BindingModel::createTests);
     addRootChild("spirv_assembly", m_caseListFilter, SpirVAssembly::createTests);
     addRootChild("glsl", m_caseListFilter, createGlslTests);
-    addRootChild("renderpass", m_caseListFilter, createRenderPassTests);
-    addRootChild("renderpass2", m_caseListFilter, createRenderPass2Tests);
+    addRootChild("renderpasses", m_caseListFilter, createRenderPassesTests);
     addRootChild("ubo", m_caseListFilter, ubo::createTests);
     addRootChild("dynamic_state", m_caseListFilter, DynamicState::createTests);
     addRootChild("ssbo", m_caseListFilter, ssbo::createTests);

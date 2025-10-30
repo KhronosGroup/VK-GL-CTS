@@ -91,8 +91,10 @@
 #include "vktSpvAsmFloatControls2Tests.hpp"
 #include "vktSpvAsmIntegerDotProductTests.hpp"
 #include "vktSpvAsmComputeShaderDerivativesTests.hpp"
+#include "vktSpvAsmFmaTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
+#include "vktSpvAsmUntypedPointersTests.hpp"
 #include "vktSpvAsmRawAccessChainTests.hpp"
 #include "vktSpvAsmLdexpTests.hpp"
 #include "vktSpvAsmMaint9VectorizationTests.hpp"
@@ -21315,6 +21317,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(createOpSDotAccSatKHRComputeGroup(testCtx));
     computeTests->addChild(createOpUDotAccSatKHRComputeGroup(testCtx));
     computeTests->addChild(createOpSUDotAccSatKHRComputeGroup(testCtx));
+    computeTests->addChild(createOpFmaComputeGroup(testCtx));
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createConvertComputeTests(testCtx, "OpSConvert", "sconvert"));
     computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
@@ -21377,6 +21380,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 #ifndef CTS_USES_VULKANSC
     computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
+    computeTests->addChild(createUntypedPointersTestGroup(testCtx));
     computeTests->addChild(createComputeShaderDerivativesTests(testCtx));
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));

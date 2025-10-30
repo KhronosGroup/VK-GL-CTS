@@ -27,6 +27,7 @@
  */ /*-------------------------------------------------------------------*/
 
 #include "gl4cTextureQueryLodTests.hpp"
+#include "tcuRenderTarget.hpp"
 #include "tcuStringTemplate.hpp"
 #include "gluContextInfo.hpp"
 #include "glwEnums.hpp"
@@ -45,10 +46,10 @@ TextureQueryLodBaseTest::TextureQueryLodBaseTest(deqp::Context &context, const s
     , m_vao(0)
     , m_ebo(0)
     , m_texture(0)
-    , m_width(256)
-    , m_height(256)
-    , m_viewPortWidth(512)
-    , m_viewPortHeight(512)
+    , m_width(128)
+    , m_height(128)
+    , m_viewPortWidth(256)
+    , m_viewPortHeight(256)
     , m_scaleLoc(0)
 {
     m_vertex_shader_txt   = R"(
@@ -86,6 +87,10 @@ tcu::TestNode::IterateResult TextureQueryLodBaseTest::iterate(void)
         m_testCtx.setTestResult(QP_TEST_RESULT_NOT_SUPPORTED, "Not supported");
         return STOP;
     }
+    // Bail out if rendertarget is too small.
+    if (m_context.getRenderTarget().getWidth() < static_cast<int>(m_viewPortWidth) ||
+        m_context.getRenderTarget().getHeight() < static_cast<int>(m_viewPortHeight))
+        throw tcu::NotSupportedError("Too small viewport", "", __FILE__, __LINE__);
     bool is_ok = false;
     createBuffers();
     createTexture();

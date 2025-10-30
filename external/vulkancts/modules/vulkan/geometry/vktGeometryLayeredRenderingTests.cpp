@@ -337,8 +337,10 @@ void copyLayeredImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuff
 {
     // Image read barrier
     {
+        const uint32_t numLayers =
+            (VK_IMAGE_VIEW_TYPE_3D == imageParams.viewType ? imageParams.size.depth : imageParams.numLayers);
         const VkImageSubresourceRange colorSubresourceRange =
-            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, imageParams.numLayers);
+            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers);
         const VkImageMemoryBarrier barrier = {
             VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType            sType
             nullptr,                                  // const void*                pNext
@@ -1441,7 +1443,7 @@ tcu::TestStatus testLayeredReadBack(Context &context, const TestParams params)
     const Unique<VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
     const VkImageSubresourceRange colorSubresRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, params.image.numLayers);
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers);
     const VkImageSubresourceRange dsSubresRange = makeImageSubresourceRange(dsAspectFlags, 0u, 1u, 0u, numLayers);
     std::string result;
 
@@ -1795,7 +1797,7 @@ tcu::TestStatus testSecondaryCmdBuffer(Context &context, const TestParams params
             0u,                            // uint32_t                baseMipLevel
             1u,                            // uint32_t                levelCount
             0u,                            // uint32_t                baseArrayLayer
-            params.image.numLayers         // uint32_t                layerCount
+            numLayers                      // uint32_t                layerCount
         };
 
         const vk::VkImageMemoryBarrier preImageBarrier = {

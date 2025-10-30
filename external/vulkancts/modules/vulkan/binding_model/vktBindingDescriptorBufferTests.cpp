@@ -26,6 +26,7 @@
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuImageCompare.hpp"
 #include "vktBindingDescriptorBufferTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -83,6 +84,9 @@ constexpr VkComponentMapping ComponentMappingIdentity = {
     VK_COMPONENT_SWIZZLE_IDENTITY,
     VK_COMPONENT_SWIZZLE_IDENTITY,
 };
+
+constexpr VkFormat k2PlaneFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+constexpr VkFormat k3PlaneFormat = VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM;
 
 template <typename T>
 inline uint32_t u32(const T &value)
@@ -191,9 +195,12 @@ enum class TestVariant : uint32_t
     PUSH_TEMPLATE,               // use push descriptor template and descriptor buffer at the same time
     ROBUST_BUFFER_ACCESS,        // robust buffer access
     ROBUST_NULL_DESCRIPTOR,      // robustness2 with null descriptor
+    ROBUST_NULL_DESCRIPTOR_SIZE, // robustness2 with size queries on null descriptors
     CAPTURE_REPLAY,              // capture and replay capability with descriptor buffers
+    INVALIDATION_RULES,          // verify set invalidation rules based on pipeline compatibility
     MUTABLE_DESCRIPTOR_TYPE,     // use VK_EXT_mutable_descriptor_type
-    YCBCR_SAMPLER,               // use VK_KHR_sampler_ycbcr_conversion
+    YCBCR_SAMPLER_2PLANES,       // use VK_KHR_sampler_ycbcr_conversion with a 2-plane format
+    YCBCR_SAMPLER_3PLANES,       // use VK_KHR_sampler_ycbcr_conversion with a 3-plane format
 };
 
 // Optional; Used to add variations for a specific test case.
@@ -444,11 +451,26 @@ struct TestParams
         {
         case TestVariant::SINGLE:
         case TestVariant::ROBUST_NULL_DESCRIPTOR:
+        case TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE:
         case TestVariant::CAPTURE_REPLAY:
             return isAccelerationStructure();
         default:
             return false;
         }
+    }
+
+    bool isYCbCrSamplerVariant() const
+    {
+        return (variant == TestVariant::YCBCR_SAMPLER_2PLANES || variant == TestVariant::YCBCR_SAMPLER_3PLANES);
+    }
+
+    VkFormat getYCbCrImageFormat() const
+    {
+        if (variant == TestVariant::YCBCR_SAMPLER_2PLANES)
+            return k2PlaneFormat;
+        if (variant == TestVariant::YCBCR_SAMPLER_3PLANES)
+            return k3PlaneFormat;
+        return VK_FORMAT_UNDEFINED;
     }
 
     // Update the hash field. Must be called after changing the value of any other parameters.
@@ -750,7 +772,7 @@ std::string getCaseNameUpdateHash(TestParams &params, uint32_t baseHash)
     str << toString(params.queue) << "_" << toString(params.stage);
 
     if ((params.variant == TestVariant::SINGLE) || (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
-        (params.variant == TestVariant::CAPTURE_REPLAY))
+        (params.variant == TestVariant::CAPTURE_REPLAY) || (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
     {
         str << "_" << toString(params.descriptor);
 
@@ -795,6 +817,9 @@ std::string getCaseNameUpdateHash(TestParams &params, uint32_t baseHash)
     {
         str << "_commands_2";
     }
+
+    if (params.variant == TestVariant::YCBCR_SAMPLER_3PLANES)
+        str << "_3planes";
 
     params.updateHash(baseHash ^ deStringHash(str.str().c_str()));
 
@@ -843,11 +868,28 @@ tcu::UVec2 getExpectedData_G8_B8R8(uint32_t hash, uint32_t set, uint32_t binding
     return tcu::UVec2((data >> 16) & 0xff, data & 0xffff);
 }
 
+// The returned vector contains G8 in x, B8 in y and R8 in z (as defined by VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM).
+tcu::UVec3 getExpectedData_G8_B8_R8(uint32_t hash, uint32_t set, uint32_t binding, uint32_t arrayIndex = 0)
+{
+    // Hash the input data to achieve "randomness" of components.
+    const uint32_t data = deUint32Hash(getExpectedData(hash, set, binding, arrayIndex));
+
+    return tcu::UVec3(((data >> 24) & 0xFF), ((data >> 16) & 0xFF), ((data)&0xFF));
+}
+
 // Convert G8_B8R8_UNORM to float components.
 tcu::Vec4 toVec4_G8_B8R8(const tcu::UVec2 &input)
 {
     return tcu::Vec4(float(((input.y() >> 8) & 0xff)) / 255.0f, float(input.x()) / 255.0f,
                      float((input.y() & 0xff)) / 255.0f, 1.0f);
+}
+
+// Convert G8_B8_R8_UNORM to float components.
+tcu::Vec4 toVec4_G8_B8_R8(const tcu::UVec3 &input)
+{
+    const tcu::Vec3 div(255.0f, 255.0f, 255.0f);
+    const auto gbr = input.asFloat() / div;
+    return tcu::Vec4(gbr.z(), gbr.x(), gbr.y(), 1.0f);
 }
 
 // Used by shaders.
@@ -882,7 +924,7 @@ std::string glslDeclareBinding(VkDescriptorType type, uint32_t set, uint32_t bin
         imagePrefix = "u";
         imageFormat = "r32ui";
     }
-    else if (format == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+    else if (format == k2PlaneFormat || format == k3PlaneFormat)
     {
         imagePrefix = "";
         imageFormat = "rgba8";
@@ -986,9 +1028,9 @@ std::string glslGlobalDeclarations(const TestParams &params, const std::vector<S
                                                                                           ConstUniformBufferDwords;
 
         VkFormat format;
-        if ((params.variant == TestVariant::YCBCR_SAMPLER) && (sb.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER))
+        if (params.isYCbCrSamplerVariant() && (sb.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER))
         {
-            format = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+            format = params.getYCbCrImageFormat();
         }
         else
         {
@@ -1085,7 +1127,7 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
         (params.variant == TestVariant::PUSH_DESCRIPTOR) || (params.variant == TestVariant::PUSH_TEMPLATE) ||
         (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
         (params.variant == TestVariant::MUTABLE_DESCRIPTOR_TYPE) || (params.variant == TestVariant::CAPTURE_REPLAY) ||
-        (params.variant == TestVariant::YCBCR_SAMPLER))
+        (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE) || (params.isYCbCrSamplerVariant()))
     {
         // Read at least one value from a descriptor and compare it.
         // For buffers, verify every element.
@@ -1140,16 +1182,18 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
 
             const bool isNullDescriptor =
                 (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) && (sb.type == params.descriptor);
+            const bool isQuerySizeNullTexelBuffer =
+                (params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE) && (sb.type == params.descriptor);
             const bool isCustomBorderColor = (params.subcase == SubCase::CAPTURE_REPLAY_CUSTOM_BORDER_COLOR);
 
             for (uint32_t arrayIndex = 0; arrayIndex < sb.count; ++arrayIndex)
             {
                 // Input attachment index increases with array index.
-                const auto expectedData =
-                    glslFormat(isNullDescriptor ? 0 :
-                                                  getExpectedData(params.hash, sb.set, sb.binding,
-                                                                  sb.inputAttachmentIndex + arrayIndex));
-                const auto expectedBorderColor = isNullDescriptor    ? "uvec4(0)" :
+                const auto expectedData = glslFormat(
+                    (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                        0 :
+                        getExpectedData(params.hash, sb.set, sb.binding, sb.inputAttachmentIndex + arrayIndex));
+                const auto expectedBorderColor = (isNullDescriptor || isQuerySizeNullTexelBuffer) ? "uvec4(0)" :
                                                  isCustomBorderColor ? "uvec4(2, 0, 0, 1)" :
                                                                        "uvec4(0, 0, 0, 1)";
                 const auto bindingArgs =
@@ -1190,16 +1234,31 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                 }
                 else if (sb.type == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER)
                 {
-                    if (params.variant == TestVariant::YCBCR_SAMPLER)
+                    if (params.isYCbCrSamplerVariant())
                     {
-                        const auto ycbcrData         = getExpectedData_G8_B8R8(params.hash, sb.set, sb.binding,
-                                                                               sb.inputAttachmentIndex + arrayIndex);
-                        const auto expectedDataFloat = toVec4_G8_B8R8(ycbcrData);
+                        tcu::Vec4 expectedDataFloat(0.0f);
+
+                        if (params.variant == TestVariant::YCBCR_SAMPLER_2PLANES)
+                        {
+                            const auto ycbcrData = getExpectedData_G8_B8R8(params.hash, sb.set, sb.binding,
+                                                                           sb.inputAttachmentIndex + arrayIndex);
+                            expectedDataFloat    = toVec4_G8_B8R8(ycbcrData);
+                        }
+                        else if (params.variant == TestVariant::YCBCR_SAMPLER_3PLANES)
+                        {
+                            const auto ycbcrData = getExpectedData_G8_B8_R8(params.hash, sb.set, sb.binding,
+                                                                            sb.inputAttachmentIndex + arrayIndex);
+                            expectedDataFloat    = toVec4_G8_B8_R8(ycbcrData);
+                        }
+                        else
+                            DE_ASSERT(false);
 
                         // No border color with ycbcr samplers. 0.005 tolerance is a bit more than 1/255.
                         str << "\t{\n"
                             << "    vec4 color = textureLod(" << glslResourceName(sb.set, sb.binding) << subscript
                             << ", vec2(0, 0), 0);\n"
+                            << "    debugPrintfEXT(\"color=(%f, %f, %f, %f)\\n\", color.r, color.g, color.b, "
+                               "color.a);\n"
                             << "    if ((abs(" << expectedDataFloat.x() << " - color.r) < 0.005) &&\n"
                             << "        (abs(" << expectedDataFloat.y() << " - color.g) < 0.005) &&\n"
                             << "        (abs(" << expectedDataFloat.z() << " - color.b) < 0.005) &&\n"
@@ -1222,24 +1281,47 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                 else if ((sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ||
                          (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER))
                 {
-                    const auto loadOp =
-                        (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ? "texelFetch" : "imageLoad";
-                    const auto loopData = isNullDescriptor ? expectedData : "(" + expectedData + " + i)";
+                    if (isQuerySizeNullTexelBuffer)
+                    {
+                        // Test size query on NULL texel buffer - should return 0
+                        // Use textureSize() for uniform texel buffers, imageSize() for storage texel buffers
+                        const auto sizeOp =
+                            (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ? "textureSize" : "imageSize";
+                        str << "    uint bufferSize = uint(" << sizeOp << "(" << glslResourceName(sb.set, sb.binding)
+                            << subscript << "));\n"
+                            << "    if (bufferSize == 0u) " << glslResultBlock("\t", bindingArgs) << "\n";
+                    }
+                    else
+                    {
+                        const auto loadOp =
+                            (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ? "texelFetch" : "imageLoad";
+                        const auto loopData = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                                  expectedData :
+                                                  "(" + expectedData + " + i)";
 
-                    str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
-                        << "; i += " << glslFormat(loopIncrement) << ") {\n"
-                        << "        uint value = " << loadOp << "(" << glslResourceName(sb.set, sb.binding) << subscript
-                        << ", int(i)).r;\n"
-                        << "        if (value == " << loopData << ") " << glslResultBlock("\t\t", bindingArgs, "i")
-                        << "    }\n";
+                        str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
+                            << "; i += " << glslFormat(loopIncrement) << ") {\n"
+                            << "        uint value = " << loadOp << "(" << glslResourceName(sb.set, sb.binding)
+                            << subscript << ", int(i)).r;\n"
+                            << "        if (value == " << loopData << ") " << glslResultBlock("\t\t", bindingArgs, "i")
+                            << "    }\n";
+                    }
                 }
                 else if ((sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER) ||
                          (sb.type == VK_DESCRIPTOR_TYPE_INLINE_UNIFORM_BLOCK))
                 {
-                    const auto loopData0 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 0)";
-                    const auto loopData1 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 1)";
-                    const auto loopData2 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 2)";
-                    const auto loopData3 = isNullDescriptor ? expectedData : "(" + expectedData + " + 4 * i + 3)";
+                    const auto loopData0 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 0)";
+                    const auto loopData1 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 1)";
+                    const auto loopData2 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 2)";
+                    const auto loopData3 = (isNullDescriptor || isQuerySizeNullTexelBuffer) ?
+                                               expectedData :
+                                               "(" + expectedData + " + 4 * i + 3)";
 
                     str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
                         << "; i += " << glslFormat(loopIncrement) << ") {\n"
@@ -1254,7 +1336,8 @@ std::string glslOutputVerification(const TestParams &params, const std::vector<S
                 }
                 else if (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
                 {
-                    const auto loopData = isNullDescriptor ? expectedData : "(" + expectedData + " + i)";
+                    const auto loopData =
+                        (isNullDescriptor || isQuerySizeNullTexelBuffer) ? expectedData : "(" + expectedData + " + i)";
 
                     str << "    for (uint i = 0; i < " << glslFormat(bufferLoopIterations)
                         << "; i += " << glslFormat(loopIncrement) << ") {\n"
@@ -1486,7 +1569,7 @@ private:
 void DescriptorBufferTestCase::delayedInit()
 {
     if ((m_params.variant == TestVariant::SINGLE) || (m_params.variant == TestVariant::CAPTURE_REPLAY) ||
-        (m_params.variant == TestVariant::YCBCR_SAMPLER))
+        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE) || (m_params.isYCbCrSamplerVariant()))
     {
         // Creates a single set with a single binding, unless additional helper resources are required.
         {
@@ -1831,7 +1914,12 @@ void DescriptorBufferTestCase::initPrograms(vk::SourceCollections &programs,
     //
     // Compute shaders still declare a "result" variable to help unify the verification logic.
     std::string extentionDeclarations = std::string(glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_460)) + "\n" +
-                                        (m_params.isRayTracing() ? "#extension GL_EXT_ray_tracing : require\n" : "");
+                                        (m_params.isRayTracing() ? "#extension GL_EXT_ray_tracing : require\n" : "") +
+                                        ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE &&
+                                          m_params.descriptor == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER) ?
+                                             "#extension GL_EXT_samplerless_texture_functions : require\n" :
+                                             "") +
+                                        "#extension GL_EXT_debug_printf : enable\n";
 
     if (m_params.isGraphics())
     {
@@ -2396,7 +2484,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
     }
 
     if ((m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS) ||
-        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR))
+        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+        (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
     {
         if (context.isDeviceFunctionalitySupported("VK_EXT_robustness2") ||
             context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
@@ -2408,7 +2497,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
 
             context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
 
-            if ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) &&
+            if (((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+                 (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)) &&
                 (robustness2Features.nullDescriptor == VK_FALSE))
             {
                 TCU_THROW(NotSupportedError, "robustness2 nullDescriptor is not supported");
@@ -2416,7 +2506,8 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
 
             DE_ASSERT(features2.features.robustBufferAccess);
         }
-        else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR)
+        else if ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+                 (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
         {
             TCU_THROW(NotSupportedError, "VK_EXT_robustness2 and VK_KHR_robustness2 are not supported");
         }
@@ -2483,8 +2574,7 @@ void DescriptorBufferTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
     }
 
-    if ((m_params.variant == TestVariant::YCBCR_SAMPLER) &&
-        !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
+    if (m_params.isYCbCrSamplerVariant() && !context.isDeviceFunctionalitySupported("VK_KHR_sampler_ycbcr_conversion"))
     {
         TCU_THROW(NotSupportedError, "VK_KHR_sampler_ycbcr_conversion is not supported");
     }
@@ -2927,7 +3017,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
             extensions.push_back("VK_KHR_push_descriptor");
     }
     else if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR ||
-             m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS)
+             m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS ||
+             m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)
     {
         if (context.isDeviceFunctionalitySupported("VK_KHR_robustness2"))
         {
@@ -2950,7 +3041,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         extensions.push_back("VK_EXT_mutable_descriptor_type");
         addToChainVulkanStructure(&nextPtr, mutableDescTypeFeatures);
     }
-    else if (m_params.variant == TestVariant::YCBCR_SAMPLER)
+    else if (m_params.isYCbCrSamplerVariant())
     {
         extensions.push_back("VK_KHR_sampler_ycbcr_conversion");
         addToChainVulkanStructure(&nextPtr, samplerYcbcrConvFeatures);
@@ -2992,7 +3083,8 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
         robustness2Features.robustImageAccess2  = VK_FALSE;
     }
 
-    if (m_params.variant != TestVariant::ROBUST_NULL_DESCRIPTOR)
+    if ((m_params.variant != TestVariant::ROBUST_NULL_DESCRIPTOR) &&
+        (m_params.variant != TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE))
     {
         robustness2Features.nullDescriptor = VK_FALSE;
     }
@@ -3061,7 +3153,7 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
     {
         DE_ASSERT(mutableDescTypeFeatures.mutableDescriptorType);
     }
-    else if (params.variant == TestVariant::YCBCR_SAMPLER)
+    else if (params.isYCbCrSamplerVariant())
     {
         DE_ASSERT(samplerYcbcrConvFeatures.samplerYcbcrConversion);
     }
@@ -3095,9 +3187,9 @@ DescriptorBufferTestInstance::DescriptorBufferTestInstance(Context &context, con
 
     m_memoryProperties = vk::getPhysicalDeviceMemoryProperties(inst, physDevice);
 
-    if (params.variant == TestVariant::YCBCR_SAMPLER)
+    if (params.isYCbCrSamplerVariant())
     {
-        m_imageColorFormat = VK_FORMAT_G8_B8R8_2PLANE_420_UNORM;
+        m_imageColorFormat = params.getYCbCrImageFormat();
 
         VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = initVulkanStructure();
         imageFormatInfo.format                           = m_imageColorFormat;
@@ -4343,7 +4435,7 @@ void DescriptorBufferTestInstance::createImageForBinding(ResourceHolder &resourc
 
             if (resources.samplerYcbcrConversion)
             {
-                DE_ASSERT(m_params.variant == TestVariant::YCBCR_SAMPLER);
+                DE_ASSERT(m_params.isYCbCrSamplerVariant());
 
                 samplerYcbcrConvInfo.conversion = *resources.samplerYcbcrConversion;
 
@@ -4372,7 +4464,8 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
         (m_descriptorBufferProperties.combinedImageSamplerDescriptorSingleArray == VK_FALSE);
 
     const bool isRobustBufferAccess = (m_params.variant == TestVariant::ROBUST_BUFFER_ACCESS);
-    const bool isNullDescriptor     = (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) &&
+    const bool isNullDescriptor     = ((m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR) ||
+                                   (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)) &&
                                   (binding.descriptorType == m_params.descriptor) && binding.isTestableDescriptor();
 
     for (uint32_t arrayIndex = 0; arrayIndex < arrayCount; ++arrayIndex)
@@ -4562,13 +4655,22 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
                 {
                     stagingBuffer.size = sizeof(uint32_t) * numPixels;
                 }
-                else if (m_imageColorFormat == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+                else if (m_imageColorFormat == k2PlaneFormat)
                 {
                     DE_ASSERT((m_renderArea.extent.width % 2) == 0);
                     DE_ASSERT((m_renderArea.extent.height % 2) == 0);
 
                     stagingBuffer.size = 1 * numPixels;      // g8
                     stagingBuffer.size += 2 * numPixels / 4; // b8r8
+                }
+                else if (m_imageColorFormat == k3PlaneFormat)
+                {
+                    DE_ASSERT((m_renderArea.extent.width % 2) == 0);
+                    DE_ASSERT((m_renderArea.extent.height % 2) == 0);
+
+                    stagingBuffer.size = 1 * numPixels;      // g8
+                    stagingBuffer.size += 1 * numPixels / 4; // b8
+                    stagingBuffer.size += 1 * numPixels / 4; // r8
                 }
                 else
                 {
@@ -4605,7 +4707,7 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
 
                     std::fill(pBufferData, pBufferData + numPixels, expectedData);
                 }
-                else if (m_imageColorFormat == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+                else if (m_imageColorFormat == k2PlaneFormat)
                 {
                     auto pPlane0 = static_cast<uint8_t *>(stagingBuffer.alloc->getHostPtr());
                     auto pPlane1 = static_cast<uint16_t *>(offsetPtr(pPlane0, numPixels));
@@ -4614,6 +4716,19 @@ void DescriptorBufferTestInstance::initializeBinding(const DescriptorSetLayoutHo
 
                     std::fill(pPlane0, pPlane0 + numPixels, expectedData.x());
                     std::fill(pPlane1, pPlane1 + numPixels / 4, expectedData.y());
+                }
+                else if (m_imageColorFormat == k3PlaneFormat)
+                {
+                    auto pPlane0 = static_cast<uint8_t *>(stagingBuffer.alloc->getHostPtr());
+                    auto pPlane1 = static_cast<uint8_t *>(offsetPtr(pPlane0, numPixels));
+                    auto pPlane2 = static_cast<uint8_t *>(offsetPtr(pPlane1, numPixels / 4));
+
+                    const auto expectedData =
+                        getExpectedData_G8_B8_R8(m_params.hash, setIndex, binding.binding, arrayIndex);
+
+                    std::fill(pPlane0, pPlane0 + numPixels, expectedData.x());
+                    std::fill(pPlane1, pPlane1 + numPixels / 4, expectedData.y());
+                    std::fill(pPlane2, pPlane2 + numPixels / 4, expectedData.z());
                 }
                 else
                 {
@@ -5216,7 +5331,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                     auto &resources         = **m_resources[binding.perBindingResourceIndex[arrayIndex]];
                     auto &captureReplayData = resources.captureReplay.samplerData;
 
-                    if (m_params.variant == TestVariant::YCBCR_SAMPLER)
+                    if (m_params.isYCbCrSamplerVariant())
                     {
                         VkSamplerYcbcrConversionCreateInfo convCreateInfo = initVulkanStructure();
                         convCreateInfo.format                             = m_imageColorFormat;
@@ -5256,7 +5371,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
 
                     const void **nextPtr = &createInfo.pNext;
 
-                    if (m_params.variant == TestVariant::YCBCR_SAMPLER)
+                    if (m_params.isYCbCrSamplerVariant())
                     {
                         createInfo.addressModeU = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
                         createInfo.addressModeV = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE;
@@ -5317,7 +5432,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
     }
 
     if ((m_params.variant == TestVariant::EMBEDDED_IMMUTABLE_SAMPLERS) ||
-        (m_params.subcase == SubCase::IMMUTABLE_SAMPLERS) || (m_params.variant == TestVariant::YCBCR_SAMPLER))
+        (m_params.subcase == SubCase::IMMUTABLE_SAMPLERS) || m_params.isYCbCrSamplerVariant())
     {
         // Patch immutable sampler pointers, now that all memory has been allocated and pointers won't move.
 
@@ -5556,7 +5671,7 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                                                     1, // region count
                                                     &region);
                         }
-                        else if (m_imageColorFormat == VK_FORMAT_G8_B8R8_2PLANE_420_UNORM)
+                        else if (m_imageColorFormat == k2PlaneFormat)
                         {
                             std::vector<VkBufferImageCopy> regions(2);
 
@@ -5572,6 +5687,37 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                                 makeImageSubresourceLayers(VK_IMAGE_ASPECT_PLANE_1_BIT, 0, 0, 1);
                             regions[1].imageOffset = makeOffset3D(0, 0, 0);
                             regions[1].imageExtent =
+                                makeExtent3D(m_renderArea.extent.width / 2, m_renderArea.extent.height / 2, 1);
+
+                            vk.cmdCopyBufferToImage(*cmdBuf, *srcBuffer.buffer, *dstImage.image,
+                                                    VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, u32(regions.size()),
+                                                    regions.data());
+                        }
+                        else if (m_imageColorFormat == k3PlaneFormat)
+                        {
+                            std::vector<VkBufferImageCopy> regions(3);
+
+                            regions[0].bufferOffset = 0;
+                            regions[0].imageSubresource =
+                                makeImageSubresourceLayers(VK_IMAGE_ASPECT_PLANE_0_BIT, 0, 0, 1);
+                            regions[0].imageOffset = makeOffset3D(0, 0, 0);
+                            regions[0].imageExtent =
+                                makeExtent3D(m_renderArea.extent.width, m_renderArea.extent.height, 1);
+
+                            regions[1].bufferOffset = m_renderArea.extent.width * m_renderArea.extent.height;
+                            regions[1].imageSubresource =
+                                makeImageSubresourceLayers(VK_IMAGE_ASPECT_PLANE_1_BIT, 0, 0, 1);
+                            regions[1].imageOffset = makeOffset3D(0, 0, 0);
+                            regions[1].imageExtent =
+                                makeExtent3D(m_renderArea.extent.width / 2, m_renderArea.extent.height / 2, 1);
+
+                            regions[2].bufferOffset =
+                                m_renderArea.extent.width * m_renderArea.extent.height +
+                                (m_renderArea.extent.width / 2) * (m_renderArea.extent.height / 2);
+                            regions[2].imageSubresource =
+                                makeImageSubresourceLayers(VK_IMAGE_ASPECT_PLANE_2_BIT, 0, 0, 1);
+                            regions[2].imageOffset = makeOffset3D(0, 0, 0);
+                            regions[2].imageExtent =
                                 makeExtent3D(m_renderArea.extent.width / 2, m_renderArea.extent.height / 2, 1);
 
                             vk.cmdCopyBufferToImage(*cmdBuf, *srcBuffer.buffer, *dstImage.image,
@@ -5777,11 +5923,21 @@ tcu::TestStatus DescriptorBufferTestInstance::iterate()
                     {
                         expected += ConstChecksPerBuffer * 4 * sb.count;
                     }
-                    else if ((sb.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER) ||
-                             (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) ||
-                             (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER))
+                    else if (sb.type == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
                     {
                         expected += ConstChecksPerBuffer * sb.count;
+                    }
+                    else if ((sb.type == VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER) ||
+                             (sb.type == VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER))
+                    {
+                        if (m_params.variant == TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE)
+                        {
+                            expected += sb.count; // Only 1 size query per texel buffer
+                        }
+                        else
+                        {
+                            expected += ConstChecksPerBuffer * sb.count;
+                        }
                     }
                     // Samplers are tested implicitly via sampled images
                     else if (sb.type != VK_DESCRIPTOR_TYPE_SAMPLER)
@@ -5967,7 +6123,7 @@ tcu::TestStatus testLimits(Context &context)
 #undef CHECK_MAX_LIMIT_NON_ZERO
 }
 
-enum class CaptureReplyTestMode
+enum class CaptureReplayTestMode
 {
     Image = 0,
     Sparse_Image,
@@ -5975,84 +6131,238 @@ enum class CaptureReplyTestMode
     Sparse_Buffer,
 };
 
-class CaptureReplyTestInstance : public TestInstance
+struct CaptureReplayParams
+{
+    CaptureReplayTestMode mode;
+    bool useDescriptor;
+
+    bool isImage() const
+    {
+        return (mode == CaptureReplayTestMode::Image || mode == CaptureReplayTestMode::Sparse_Image);
+    }
+
+    bool isBuffer() const
+    {
+        return (mode == CaptureReplayTestMode::Buffer || mode == CaptureReplayTestMode::Sparse_Buffer);
+    }
+
+    VkDescriptorType getDescriptorType() const
+    {
+        if (isBuffer())
+            return VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        if (isImage())
+            return VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+
+        DE_ASSERT(false);
+        return VK_DESCRIPTOR_TYPE_MAX_ENUM;
+    }
+};
+
+class CaptureReplayTestInstance : public TestInstance
 {
 public:
-    CaptureReplyTestInstance(Context &context, CaptureReplyTestMode mode);
+    static constexpr uint32_t kItemSize    = DE_SIZEOF32(tcu::Vec4);
+    static constexpr uint32_t kItemCount   = 128u;
+    static constexpr uint32_t kBufferSize  = kItemCount * kItemSize;
+    static constexpr uint32_t kImageWidth  = 16u;
+    static constexpr uint32_t kImageHeight = 8u;
+    static constexpr VkFormat kImageFormat = VK_FORMAT_R8G8B8A8_UNORM;
+
+    CaptureReplayTestInstance(Context &context, const CaptureReplayParams &params);
 
     tcu::TestStatus iterate() override;
 
 protected:
-    const CaptureReplyTestMode m_mode;
+    union DescriptorHandle
+    {
+        VkImage image;
+        VkBuffer buffer;
+
+        DescriptorHandle() : image(VK_NULL_HANDLE)
+        {
+        }
+    };
+    void useAndCheckDescriptor(const DeviceInterface &vkd, VkDevice device, Allocator &allocator,
+                               const std::vector<uint8_t> &descriptorData, uint32_t qfIndex, VkQueue queue,
+                               const DescriptorHandle &handle);
+    const CaptureReplayParams m_params;
 };
 
-CaptureReplyTestInstance::CaptureReplyTestInstance(Context &context, CaptureReplyTestMode mode)
+CaptureReplayTestInstance::CaptureReplayTestInstance(Context &context, const CaptureReplayParams &params)
     : TestInstance(context)
-    , m_mode(mode)
+    , m_params(params)
 {
 }
 
-tcu::TestStatus CaptureReplyTestInstance::iterate()
+void bindSparseImageMemory(const DeviceInterface &vk, VkDevice device, VkQueue sparseQueue, VkImage image,
+                           VkDeviceSize memorySize, Allocation &allocation)
+{
+    const VkSparseMemoryBind memoryBind = {
+        0ull, memorySize, allocation.getMemory(), allocation.getOffset(), 0u,
+    };
+
+    const VkSparseImageOpaqueMemoryBindInfo opaqueBind = {
+        image,
+        1u,
+        &memoryBind,
+    };
+
+    const VkBindSparseInfo bindInfo = {
+        VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,
+        nullptr,
+        0u,
+        nullptr,
+        0u,
+        nullptr,
+        1u,
+        &opaqueBind,
+        0u,
+        nullptr,
+        0u,
+        nullptr,
+    };
+
+    const auto sparseFence = createFence(vk, device);
+    VK_CHECK(vk.queueBindSparse(sparseQueue, 1u, &bindInfo, *sparseFence));
+    waitForFence(vk, device, *sparseFence);
+}
+
+void bindSparseBufferMemory(const DeviceInterface &vk, VkDevice device, VkQueue sparseQueue, VkBuffer buffer,
+                            VkDeviceSize memorySize, Allocation &allocation)
+{
+    const VkSparseMemoryBind memoryBind = {
+        0ull, memorySize, allocation.getMemory(), allocation.getOffset(), 0u,
+    };
+
+    const VkSparseBufferMemoryBindInfo bufferBind = {
+        buffer,
+        1u,
+        &memoryBind,
+    };
+
+    const VkBindSparseInfo bindInfo = {
+        VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,
+        nullptr,
+        0u,
+        nullptr,
+        1u,
+        &bufferBind,
+        0u,
+        nullptr,
+        0u,
+        nullptr,
+        0u,
+        nullptr,
+    };
+
+    const auto sparseFence = createFence(vk, device);
+    VK_CHECK(vk.queueBindSparse(sparseQueue, 1u, &bindInfo, *sparseFence));
+    waitForFence(vk, device, *sparseFence);
+}
+
+uint64_t getMemoryOpaqueCaptureAddress(const DeviceInterface &vkd, VkDevice device, VkDeviceMemory memory)
+{
+    const VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = {
+        VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO,
+        nullptr,
+        memory,
+    };
+    return vkd.getDeviceMemoryOpaqueCaptureAddress(device, &memoryOpaqueCaptureAddressInfo);
+}
+
+tcu::TestStatus CaptureReplayTestInstance::iterate()
 {
     const auto &vki           = m_context.getInstanceInterface();
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
+    auto &allocator           = m_context.getDefaultAllocator();
     auto physicalDevice       = m_context.getPhysicalDevice();
-    MovePtr<Allocation> allocation;
-    const auto &dbProperties = m_context.getDescriptorBufferPropertiesEXT();
-    const bool useSparseImage(m_mode == CaptureReplyTestMode::Sparse_Image);
-    const bool useSparseBuffer(m_mode == CaptureReplyTestMode::Sparse_Buffer);
+    const auto &dbProperties  = m_context.getDescriptorBufferPropertiesEXT();
+    const bool useSparseImage(m_params.mode == CaptureReplayTestMode::Sparse_Image);
+    const bool useSparseBuffer(m_params.mode == CaptureReplayTestMode::Sparse_Buffer);
+    const auto sparseQueue = ((useSparseBuffer || useSparseImage) ? m_context.getSparseQueue() : VK_NULL_HANDLE);
+    const auto runQFIndex  = m_context.getUniversalQueueFamilyIndex();
+    const auto runQueue    = m_context.getUniversalQueue();
 
     VkMemoryOpaqueCaptureAddressAllocateInfo opaqueCaptureAddressAllocateInfo = initVulkanStructure();
     VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure(&opaqueCaptureAddressAllocateInfo);
     uint64_t opaqueCaptureAddress{};
     VkMemoryRequirements memoryRequirements;
 
-    if (useSparseImage || (m_mode == CaptureReplyTestMode::Image))
+    // We will try to make sure the replayed image or buffer will not get the same address as during the capture phase.
+    // For that, we will allocate an extra buffer/image before creating the real one, and we will not replay the extra
+    // buffer/image.
+    Move<VkImage> extraImage;
+    Move<VkBuffer> extraBuffer;
+    MovePtr<Allocation> extraAllocation;
+
+    Move<VkImage> image;
+    Move<VkImageView> imageView;
+    Move<VkBuffer> buffer;
+    MovePtr<Allocation> allocation;
+
+    std::vector<uint8_t> finalDescriptorData;
+
+    if (m_params.isImage())
     {
         const VkImageCreateFlags sparseFlag =
             useSparseImage * (VK_IMAGE_CREATE_SPARSE_BINDING_BIT | VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT);
 
+        VkImageUsageFlags imageUsage = VK_IMAGE_USAGE_STORAGE_BIT;
+        if (m_params.useDescriptor)
+            imageUsage |= VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
         VkImageCreateInfo imageCreateInfo = initVulkanStructure();
         imageCreateInfo.flags             = sparseFlag | VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
         imageCreateInfo.imageType         = VK_IMAGE_TYPE_2D;
-        imageCreateInfo.format            = VK_FORMAT_R8G8B8A8_UNORM;
-        imageCreateInfo.extent            = {16, 16, 1};
+        imageCreateInfo.format            = kImageFormat;
+        imageCreateInfo.extent            = {kImageWidth, kImageHeight, 1};
         imageCreateInfo.mipLevels         = 1;
         imageCreateInfo.arrayLayers       = 1;
         imageCreateInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.usage             = VK_IMAGE_USAGE_STORAGE_BIT;
+        imageCreateInfo.usage             = imageUsage;
 
-        // create image with VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
-        auto image(createImage(vk, device, &imageCreateInfo));
-
-        if (!useSparseImage)
+        // Allocate two images but only replay the second one.
+        for (int i = 0; i < 2; ++i)
         {
-            memoryRequirements = getImageMemoryRequirements(vk, device, *image);
+            auto &imageHandle   = (i == 0 ? extraImage : image);
+            auto &allocationPtr = (i == 0 ? extraAllocation : allocation);
+
+            // create image with VK_IMAGE_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
+            imageHandle = createImage(vk, device, &imageCreateInfo);
+
+            memoryRequirements = getImageMemoryRequirements(vk, device, *imageHandle);
             allocFlagsInfo.flags =
                 VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT | VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
             // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo
-            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
-                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+            allocationPtr = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                             MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
 
             // get data from vkGetDeviceMemoryOpaqueCaptureAddressKHR
-            VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
-            memoryOpaqueCaptureAddressInfo.memory                                 = allocation->getMemory();
-            opaqueCaptureAddress = vk.getDeviceMemoryOpaqueCaptureAddress(device, &memoryOpaqueCaptureAddressInfo);
+            opaqueCaptureAddress = getMemoryOpaqueCaptureAddress(vk, device, allocationPtr->getMemory());
 
-            // bind image & memory
-            VK_CHECK(vk.bindImageMemory(device, *image, allocation->getMemory(), allocation->getOffset()));
+            if (!useSparseImage)
+            {
+                // bind image & memory
+                VK_CHECK(
+                    vk.bindImageMemory(device, *imageHandle, allocationPtr->getMemory(), allocationPtr->getOffset()));
+            }
+            else
+            {
+                // bind image & memory using the sparse queue.
+                bindSparseImageMemory(vk, device, sparseQueue, *imageHandle, memoryRequirements.size, *allocationPtr);
+            }
         }
 
         VkImageViewCreateInfo imageViewCreateInfo = initVulkanStructure();
         imageViewCreateInfo.flags                 = VK_IMAGE_VIEW_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
         imageViewCreateInfo.image                 = *image;
         imageViewCreateInfo.viewType              = VK_IMAGE_VIEW_TYPE_2D;
-        imageViewCreateInfo.format                = VK_FORMAT_R8G8B8A8_UNORM;
+        imageViewCreateInfo.format                = kImageFormat;
         imageViewCreateInfo.components            = makeComponentMappingRGBA();
         imageViewCreateInfo.subresourceRange      = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1);
-        auto imageView                            = createImageView(vk, device, &imageViewCreateInfo);
+        imageView                                 = createImageView(vk, device, &imageViewCreateInfo);
 
         // get data from vkGetImageOpaqueCaptureDescriptorDataEXT
         VkImageCaptureDescriptorDataInfoEXT imageCaptureDescriptorDataInfo = initVulkanStructure();
@@ -6076,15 +6386,16 @@ tcu::TestStatus CaptureReplyTestInstance::iterate()
         VkDescriptorImageInfo imageInfo{};
         imageInfo.imageView                = *imageView;
         VkDescriptorGetInfoEXT descGetInfo = initVulkanStructure();
-        descGetInfo.type                   = VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        descGetInfo.type                   = m_params.getDescriptorType();
         descGetInfo.data.pStorageImage     = &imageInfo;
         vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, firstDescriptorData.data());
 
-        // destroy image and free memory
-        imageView = Move<VkImageView>();
-        if (!useSparseImage)
-            allocation = MovePtr<Allocation>();
-        image = Move<VkImage>();
+        // destroy images and free memory
+        imageView       = Move<VkImageView>();
+        allocation      = MovePtr<Allocation>();
+        image           = Move<VkImage>();
+        extraAllocation = MovePtr<Allocation>();
+        extraImage      = Move<VkImage>();
 
         // recreate image with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from imageCaptureDescriptorDataInfo
         VkOpaqueCaptureDescriptorDataCreateInfoEXT opaqueCaptureDescriptorDataCreateInfo = initVulkanStructure();
@@ -6092,13 +6403,18 @@ tcu::TestStatus CaptureReplyTestInstance::iterate()
         imageCreateInfo.pNext                                             = &opaqueCaptureDescriptorDataCreateInfo;
         image                                                             = createImage(vk, device, &imageCreateInfo);
 
-        if (!useSparseImage)
-        {
-            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
-            opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
-            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
-                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+        // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
+        opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
+        allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                      MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
 
+        if (useSparseImage)
+        {
+            // bind image & memory using the sparse queue.
+            bindSparseImageMemory(vk, device, sparseQueue, *image, memoryRequirements.size, *allocation);
+        }
+        else
+        {
             // bind image & memory
             VK_CHECK(vk.bindImageMemory(device, *image, allocation->getMemory(), allocation->getOffset()));
         }
@@ -6110,41 +6426,56 @@ tcu::TestStatus CaptureReplyTestInstance::iterate()
         imageView = createImageView(vk, device, &imageViewCreateInfo);
 
         // call vkGetDescriptorEXT() for the second time
-        std::vector<uint8_t> secondDescriptorData(descriptorSize);
+        finalDescriptorData.resize(descriptorSize);
         imageInfo.imageView = *imageView;
-        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, secondDescriptorData.data());
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, finalDescriptorData.data());
 
-        if (deMemCmp(firstDescriptorData.data(), secondDescriptorData.data(), descriptorSize) == 0)
-            return tcu::TestStatus::pass("Pass");
+        if (deMemCmp(firstDescriptorData.data(), finalDescriptorData.data(), descriptorSize) != 0)
+            TCU_FAIL("Descriptor data is not the same between both vkGetDescriptorEXT calls");
     }
-    else
+    else if (m_params.isBuffer())
     {
-        auto bufferCreateInfo =
-            makeBufferCreateInfo(64, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+        VkBufferUsageFlags bufferUsage =
+            (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+        if (m_params.useDescriptor)
+            bufferUsage |= VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+
+        auto bufferCreateInfo = makeBufferCreateInfo(kBufferSize, bufferUsage);
         const VkBufferCreateFlags sparseFlag =
             useSparseBuffer * (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
         bufferCreateInfo.flags = sparseFlag | VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
 
-        // create buffer with VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
-        auto buffer(createBuffer(vk, device, &bufferCreateInfo));
-
-        if (!useSparseBuffer)
+        // Allocate two buffers but only replay the second one.
+        for (int i = 0; i < 2; ++i)
         {
-            memoryRequirements = getBufferMemoryRequirements(vk, device, *buffer);
+            auto &bufferHandle  = (i == 0 ? extraBuffer : buffer);
+            auto &allocationPtr = (i == 0 ? extraAllocation : allocation);
+
+            // create buffer with VK_BUFFER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT
+            bufferHandle = createBuffer(vk, device, &bufferCreateInfo);
+
+            memoryRequirements = getBufferMemoryRequirements(vk, device, *bufferHandle);
             allocFlagsInfo.flags =
                 VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT | VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
 
             // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo
-            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
-                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+            allocationPtr = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                             MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
 
             // get data from vkGetDeviceMemoryOpaqueCaptureAddressKHR
-            VkDeviceMemoryOpaqueCaptureAddressInfo memoryOpaqueCaptureAddressInfo = initVulkanStructure();
-            memoryOpaqueCaptureAddressInfo.memory                                 = allocation->getMemory();
-            opaqueCaptureAddress = vk.getDeviceMemoryOpaqueCaptureAddress(device, &memoryOpaqueCaptureAddressInfo);
+            opaqueCaptureAddress = getMemoryOpaqueCaptureAddress(vk, device, allocationPtr->getMemory());
 
-            // bind buffer & memory
-            VK_CHECK(vk.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
+            if (useSparseBuffer)
+            {
+                // bind buffer & memory using the sparse queue
+                bindSparseBufferMemory(vk, device, sparseQueue, *bufferHandle, memoryRequirements.size, *allocationPtr);
+            }
+            else
+            {
+                // bind buffer & memory
+                VK_CHECK(
+                    vk.bindBufferMemory(device, *bufferHandle, allocationPtr->getMemory(), allocationPtr->getOffset()));
+            }
         }
 
         // get data from vkGetBufferOpaqueCaptureDescriptorDataEXT
@@ -6162,16 +6493,17 @@ tcu::TestStatus CaptureReplyTestInstance::iterate()
         bdaInfo.buffer                                   = *buffer;
         VkDescriptorAddressInfoEXT descriptorAddressInfo = initVulkanStructure();
         descriptorAddressInfo.address                    = vk.getBufferDeviceAddress(device, &bdaInfo);
-        descriptorAddressInfo.range                      = 64;
+        descriptorAddressInfo.range                      = kBufferSize;
         VkDescriptorGetInfoEXT descGetInfo               = initVulkanStructure();
-        descGetInfo.type                                 = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        descGetInfo.type                                 = m_params.getDescriptorType();
         descGetInfo.data.pStorageBuffer                  = &descriptorAddressInfo;
         vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, firstDescriptorData.data());
 
-        // destroy buffer and free memory
-        buffer = Move<VkBuffer>();
-        if (!useSparseBuffer)
-            allocation = MovePtr<Allocation>();
+        // destroy buffers and free memory
+        buffer          = Move<VkBuffer>();
+        allocation      = MovePtr<Allocation>();
+        extraBuffer     = Move<VkBuffer>();
+        extraAllocation = MovePtr<Allocation>();
 
         // recreate buffer with VkOpaqueCaptureDescriptorDataCreateInfoEXT with data from captureDescriptorDataInfo
         VkOpaqueCaptureDescriptorDataCreateInfoEXT opaqueCaptureDescriptorDataCreateInfo = initVulkanStructure();
@@ -6179,55 +6511,281 @@ tcu::TestStatus CaptureReplyTestInstance::iterate()
         bufferCreateInfo.pNext = &opaqueCaptureDescriptorDataCreateInfo;
         buffer                 = createBuffer(vk, device, &bufferCreateInfo);
 
-        if (!useSparseBuffer)
-        {
-            // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
-            opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
-            allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
-                                          MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
+        // allocate memory with VkMemoryOpaqueCaptureAddressAllocateInfo with data from opaqueCaptureAddress
+        opaqueCaptureAddressAllocateInfo.opaqueCaptureAddress = opaqueCaptureAddress;
+        allocation = allocateExtended(vki, vk, physicalDevice, device, memoryRequirements,
+                                      MemoryRequirement::DeviceAddressCaptureReplay, &allocFlagsInfo);
 
+        if (useSparseBuffer)
+        {
+            // bind buffer & memory using the sparse queue
+            bindSparseBufferMemory(vk, device, sparseQueue, *buffer, memoryRequirements.size, *allocation);
+        }
+        else
+        {
             // bind image & memory
             VK_CHECK(vk.bindBufferMemory(device, *buffer, allocation->getMemory(), allocation->getOffset()));
         }
 
         // call vkGetDescriptorEXT() for the second time
-        std::vector<uint8_t> secondDescriptorData(descriptorSize);
+        finalDescriptorData.resize(descriptorSize);
         bdaInfo.buffer                = *buffer;
         descriptorAddressInfo.address = vk.getBufferDeviceAddress(device, &bdaInfo);
-        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, secondDescriptorData.data());
+        vk.getDescriptorEXT(device, &descGetInfo, descriptorSize, finalDescriptorData.data());
 
-        if (deMemCmp(firstDescriptorData.data(), secondDescriptorData.data(), descriptorSize) == 0)
-            return tcu::TestStatus::pass("Pass");
+        if (deMemCmp(firstDescriptorData.data(), finalDescriptorData.data(), descriptorSize) != 0)
+            TCU_FAIL("Descriptor data is not the same between both vkGetDescriptorEXT calls");
+    }
+    else
+        DE_ASSERT(false);
+
+    if (m_params.useDescriptor)
+    {
+        DescriptorHandle handle;
+        if (m_params.isBuffer())
+            handle.buffer = *buffer;
+        else if (m_params.isImage())
+            handle.image = *image;
+        else
+            DE_ASSERT(false);
+        useAndCheckDescriptor(vk, device, allocator, finalDescriptorData, runQFIndex, runQueue, handle);
     }
 
-    return tcu::TestStatus::fail("descriptor data is not the same between both getDescriptorEXT calls");
+    return tcu::TestStatus::pass("Pass");
 }
 
-class CaptureReplyTestCase : public TestCase
+void CaptureReplayTestInstance::useAndCheckDescriptor(const DeviceInterface &vkd, VkDevice device, Allocator &allocator,
+                                                      const std::vector<uint8_t> &descriptorData, uint32_t qfIndex,
+                                                      VkQueue queue, const DescriptorHandle &handle)
+{
+    const auto shaderStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto bindPoint    = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+    // Set and pipeline layout.
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    const auto srcDescType = m_params.getDescriptorType();
+    setLayoutBuilder.addSingleBinding(srcDescType, shaderStages);
+    const auto setLayout =
+        setLayoutBuilder.build(vkd, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
+    const auto pipelineLayout = makePipelineLayout(vkd, device, *setLayout);
+
+    // Compute pipeline.
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto compShader = createShaderModule(vkd, device, binaries.get("comp"));
+    const auto pipeline   = makeComputePipeline(vkd, device, *pipelineLayout,
+                                                VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT, nullptr, *compShader, 0u);
+
+    VkDeviceSize bindingOffset = 0ull;
+    VkDeviceSize layoutSize    = 0ull;
+
+    vkd.getDescriptorSetLayoutBindingOffsetEXT(device, *setLayout, 0u, &bindingOffset);
+    vkd.getDescriptorSetLayoutSizeEXT(device, *setLayout, &layoutSize);
+
+    const auto &dbProperties = m_context.getDescriptorBufferPropertiesEXT();
+    const auto descriptorSize =
+        (m_params.isBuffer() ? dbProperties.storageBufferDescriptorSize : dbProperties.storageImageDescriptorSize);
+
+    // Descriptor buffer.
+    const auto descriptorBufferUsage =
+        (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
+         VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto descriptorBufferInfo = makeBufferCreateInfo(layoutSize, descriptorBufferUsage);
+    BufferWithMemory descriptorBuffer(vkd, device, allocator, descriptorBufferInfo, HostIntent::NONE, true,
+                                      VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
+    const auto descriptorBufferAddress = getBufferDeviceAddress(vkd, device, *descriptorBuffer, 0ull);
+
+    // Staging buffer: same size, source for a copy to the descriptor buffer.
+    const auto stagingBufferUsage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const auto stagingBufferInfo  = makeBufferCreateInfo(layoutSize, stagingBufferUsage);
+    BufferWithMemory stagingBuffer(vkd, device, allocator, stagingBufferInfo, HostIntent::W);
+    {
+        auto &alloc   = stagingBuffer.getAllocation();
+        uint8_t *data = reinterpret_cast<uint8_t *>(alloc.getHostPtr());
+        memcpy(data + bindingOffset, de::dataOrNull(descriptorData), descriptorSize);
+        flushAlloc(vkd, device, alloc);
+    }
+
+    // Verification buffer.
+    const auto tcuFormat        = mapVkFormat(kImageFormat);
+    const auto imageBufferSize  = static_cast<VkDeviceSize>(tcu::getPixelSize(tcuFormat) * kImageWidth * kImageHeight);
+    const auto verifBufferSize  = (m_params.isBuffer() ? kBufferSize : imageBufferSize);
+    const auto verifBufferUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    const auto verifBufferInfo  = makeBufferCreateInfo(verifBufferSize, verifBufferUsage);
+    BufferWithMemory verifBuffer(vkd, device, allocator, verifBufferInfo, HostIntent::R);
+
+    CommandPoolWithBuffer cmd(vkd, device, qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(vkd, cmdBuffer);
+    {
+        // Prepare descriptor buffer by copying from the staging buffer.
+        const VkBufferCopy copyRegion{0ull, 0ull, layoutSize};
+        vkd.cmdCopyBuffer(cmdBuffer, *stagingBuffer, *descriptorBuffer, 1u, &copyRegion);
+
+        const VkMemoryBarrier2 barrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER_2,     nullptr,
+            VK_PIPELINE_STAGE_2_TRANSFER_BIT,       VK_ACCESS_2_TRANSFER_WRITE_BIT,
+            VK_PIPELINE_STAGE_2_COMPUTE_SHADER_BIT, VK_ACCESS_2_DESCRIPTOR_BUFFER_READ_BIT_EXT,
+        };
+
+        const VkDependencyInfo dependencyInfo = {
+            VK_STRUCTURE_TYPE_DEPENDENCY_INFO, nullptr, 0u, 1u, &barrier, 0u, nullptr, 0u, nullptr,
+        };
+
+        vkd.cmdPipelineBarrier2(cmdBuffer, &dependencyInfo);
+    }
+    {
+        // Bind descriptor buffer.
+        const VkDescriptorBufferBindingInfoEXT bindingInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT,
+            nullptr,
+            descriptorBufferAddress,
+            descriptorBufferInfo.usage,
+        };
+        vkd.cmdBindDescriptorBuffersEXT(cmdBuffer, 1u, &bindingInfo);
+        {
+            // Tie the bound descriptor buffer to the descriptor set.
+            const uint32_t bufferIndex   = 0u;
+            const VkDeviceSize setOffset = 0ull;
+            vkd.cmdSetDescriptorBufferOffsetsEXT(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &bufferIndex,
+                                                 &setOffset);
+        }
+    }
+    {
+        if (m_params.isImage())
+        {
+            // Transition storage image layout.
+            const auto barrier =
+                makeImageMemoryBarrier(0ull, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_GENERAL, handle.image, makeDefaultImageSubresourceRange());
+            cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &barrier);
+        }
+
+        // Fill buffer or image with contents.
+        vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+        vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    }
+    {
+        const auto preCopyBarrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+        cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 &preCopyBarrier);
+
+        // Copy image or buffer contents to a verification buffer.
+        if (m_params.isBuffer())
+        {
+            const VkBufferCopy bufferCopy = {
+                0ull,
+                0ull,
+                kBufferSize,
+            };
+            vkd.cmdCopyBuffer(cmdBuffer, handle.buffer, *verifBuffer, 1u, &bufferCopy);
+        }
+        else if (m_params.isImage())
+        {
+            const VkBufferImageCopy imageCopy{
+                0ull,
+                0u,
+                0u,
+                makeDefaultImageSubresourceLayers(),
+                makeOffset3D(0, 0, 0),
+                makeExtent3D(kImageWidth, kImageHeight, 1u),
+            };
+            vkd.cmdCopyImageToBuffer(cmdBuffer, handle.image, VK_IMAGE_LAYOUT_GENERAL, *verifBuffer, 1u, &imageCopy);
+        }
+        else
+            DE_ASSERT(false);
+
+        const auto postCopyBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &postCopyBarrier);
+    }
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    auto &verifBufferAlloc = verifBuffer.getAllocation();
+    invalidateAlloc(vkd, device, verifBufferAlloc);
+    auto &log = m_context.getTestContext().getLog();
+
+    if (m_params.isBuffer())
+    {
+        std::vector<tcu::Vec4> results(kItemCount, tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f));
+        memcpy(de::dataOrNull(results), verifBufferAlloc.getHostPtr(), de::dataSize(results));
+
+        bool ok = true;
+        for (size_t i = 0; i < results.size(); ++i)
+        {
+            const auto &result    = results.at(i);
+            const float baseValue = static_cast<float>(i) * 1000.0f;
+            const tcu::Vec4 expected(baseValue + 1.0f, baseValue + 2.0f, baseValue + 3.0f, baseValue + 4.0f);
+
+            if (result != expected)
+            {
+                ok = false;
+                std::ostringstream msg;
+                msg << "Unexpected value at position " << i << ": expected " << expected << " but found " << result;
+                log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            }
+        }
+
+        if (!ok)
+            TCU_FAIL("Unexpected results found in verification buffer; check log for details --");
+    }
+    else if (m_params.isImage())
+    {
+        const tcu::UVec3 extent(kImageWidth, kImageHeight, 1u);
+        const auto iExtent = extent.asInt();
+        const auto fExtent = extent.asFloat();
+
+        tcu::TextureLevel refLevel(tcuFormat, iExtent.x(), iExtent.y(), iExtent.z());
+        tcu::PixelBufferAccess reference = refLevel.getAccess();
+
+        for (int y = 0; y < iExtent.y(); ++y)
+            for (int x = 0; x < iExtent.x(); ++x)
+            {
+                const float red  = static_cast<float>(x) / fExtent.x();
+                const float blue = static_cast<float>(y) / fExtent.y();
+                const tcu::Vec4 color(red, 0.0f, blue, 1.0f);
+                reference.setPixel(color, x, y);
+            }
+
+        tcu::ConstPixelBufferAccess result(tcuFormat, iExtent, verifBufferAlloc.getHostPtr());
+        const float threshold = 0.005f; // 1/255 < 0.005 < 2/255
+        const tcu::Vec4 thresholdVec(threshold, threshold, threshold, threshold);
+
+        if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, thresholdVec, tcu::COMPARE_LOG_ON_ERROR))
+            TCU_FAIL("Unexpected results in output image; check log for details --");
+    }
+    else
+        DE_ASSERT(false);
+}
+
+class CaptureReplayTestCase : public TestCase
 {
 public:
-    CaptureReplyTestCase(tcu::TestContext &testCtx, const std::string &name, CaptureReplyTestMode mode);
+    CaptureReplayTestCase(tcu::TestContext &testCtx, const std::string &name, const CaptureReplayParams &params);
 
     TestInstance *createInstance(Context &context) const override;
     void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &dst) const override;
 
 private:
-    const CaptureReplyTestMode m_mode;
+    const CaptureReplayParams m_params;
 };
 
-CaptureReplyTestCase::CaptureReplyTestCase(tcu::TestContext &testCtx, const std::string &name,
-                                           CaptureReplyTestMode mode)
+CaptureReplayTestCase::CaptureReplayTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                             const CaptureReplayParams &params)
     : TestCase(testCtx, name)
-    , m_mode(mode)
+    , m_params(params)
 {
 }
 
-TestInstance *CaptureReplyTestCase::createInstance(Context &context) const
+TestInstance *CaptureReplayTestCase::createInstance(Context &context) const
 {
-    return new CaptureReplyTestInstance(context, m_mode);
+    return new CaptureReplayTestInstance(context, m_params);
 }
 
-void CaptureReplyTestCase::checkSupport(Context &context) const
+void CaptureReplayTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
 
@@ -6238,16 +6796,376 @@ void CaptureReplyTestCase::checkSupport(Context &context) const
     if (!descriptorBufferFeatures.descriptorBufferCaptureReplay)
         TCU_THROW(NotSupportedError, "descriptorBufferCaptureReplay feature is not supported");
 
-    if (m_mode == CaptureReplyTestMode::Sparse_Image)
+    if (m_params.mode == CaptureReplayTestMode::Sparse_Image || m_params.mode == CaptureReplayTestMode::Sparse_Buffer)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+
+    if (m_params.mode == CaptureReplayTestMode::Sparse_Image)
     {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_IMAGE2D);
+
         const auto sparseImageFormatPropVec = getPhysicalDeviceSparseImageFormatProperties(
             vki, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, VK_IMAGE_TYPE_2D, VK_SAMPLE_COUNT_1_BIT,
             VK_IMAGE_USAGE_STORAGE_BIT, VK_IMAGE_TILING_OPTIMAL);
         if (sparseImageFormatPropVec.size() == 0)
             TCU_THROW(NotSupportedError, "Format does not support sparse operations.");
     }
-    else if (m_mode == CaptureReplyTestMode::Sparse_Buffer)
-        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
+    else if (m_params.mode == CaptureReplayTestMode::Sparse_Buffer)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
+}
+
+void CaptureReplayTestCase::initPrograms(vk::SourceCollections &dst) const
+{
+    if (!m_params.useDescriptor)
+        return;
+
+    const bool srcIsImage  = m_params.isImage();
+    const bool srcIsBuffer = m_params.isBuffer();
+
+    DE_ASSERT(srcIsImage || srcIsBuffer);
+
+    const auto widthStr     = std::to_string(CaptureReplayTestInstance::kImageWidth);
+    const auto heightStr    = std::to_string(CaptureReplayTestInstance::kImageHeight);
+    const auto itemCountStr = std::to_string(CaptureReplayTestInstance::kItemCount);
+
+    std::ostringstream comp;
+    comp << "#version 460\n"
+         << (srcIsImage ?
+                 "layout (local_size_x=" + widthStr + ", local_size_y=" + heightStr + ", local_size_z=1) in;\n" :
+                 "layout (local_size_x=" + itemCountStr + ", local_size_y=1, local_size_z=1) in;\n")
+         << (srcIsImage ? "layout (set=0, binding=0, rgba8) uniform image2D imgDesc;\n" :
+                          "layout (set=0, binding=0) buffer InBufferBlock { vec4 values[]; } bufferDesc;\n")
+         << "void main(void) {\n";
+
+    if (srcIsImage)
+    {
+        comp << "    const float red = float(gl_LocalInvocationID.x) / float(" << widthStr << ");\n"
+             << "    const float blue = float(gl_LocalInvocationID.y) / float(" << heightStr << ");\n"
+             << "    const vec4 outColor = vec4(red, 0.0, blue, 1.0);\n"
+             << "    imageStore(imgDesc, ivec2(gl_LocalInvocationID.xy), outColor);\n";
+    }
+    else if (srcIsBuffer)
+    {
+        comp << "    const float baseValue = float(gl_LocalInvocationIndex * 1000);\n"
+             << "    const vec4 outColor = vec4(baseValue + 1.0, baseValue + 2.0, baseValue + 3.0, baseValue + 4.0);\n"
+             << "    bufferDesc.values[gl_LocalInvocationIndex] = outColor;\n";
+    }
+    else
+        DE_ASSERT(false);
+
+    comp << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+enum class InvalidationMode
+{
+    SwitchFromDescriptorBufferToLegacy = 0,
+    SwitchFromLegacyToDescriptorBuffer,
+    UseLegacyAndBindDescriptorBuffer,
+};
+
+class InvalidationRulesTestInstance : public TestInstance
+{
+public:
+    InvalidationRulesTestInstance(Context &context, InvalidationMode mode);
+
+    tcu::TestStatus iterate() override;
+
+protected:
+    void fillBuffer(BufferWithMemory &buffer, std::size_t itemCount, uint32_t value);
+    bool isBufferValid(BufferWithMemory &buffer, std::size_t itemCount, uint32_t initialValue);
+
+private:
+    InvalidationMode m_mode;
+    bool m_useBindDescriptorBufferBeforeBindDescriptorSets       = false;
+    bool m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets = false;
+    bool m_useBindDescriptorBufferAfterBindDescriptorSets        = false;
+    bool m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets  = false;
+    bool m_usePipelineWithLegacyDescriptorSetBeforeDispatch      = false;
+    bool m_useDispatch                                           = false;
+    bool m_verifyBufferSetUsingDescriptorBuffer                  = false;
+    bool m_verifyBufferSetUsingLegacyDescriptor                  = false;
+};
+
+InvalidationRulesTestInstance::InvalidationRulesTestInstance(Context &context, InvalidationMode mode)
+    : TestInstance(context)
+    , m_mode(mode)
+{
+    // configure test case based on the invalidation mode
+    switch (m_mode)
+    {
+    // vkCmdBindDescriptorBuffersEXT + vkCmdSetDescriptorBufferOffsetsEXT
+    // vkCmdBindDescriptorSets
+    // vkCmdDispatch - using legacy
+    case InvalidationMode::SwitchFromDescriptorBufferToLegacy:
+        m_useBindDescriptorBufferBeforeBindDescriptorSets       = true;
+        m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets = true;
+        m_useDispatch                                           = true;
+        m_verifyBufferSetUsingLegacyDescriptor                  = true;
+        break;
+
+    // vkCmdBindDescriptorSets
+    // vkCmdBindDescriptorBuffersEXT + vkCmdSetDescriptorBufferOffsetsEXT
+    // vkCmdDispatch - using descriptor buffer
+    case InvalidationMode::SwitchFromLegacyToDescriptorBuffer:
+        m_useBindDescriptorBufferAfterBindDescriptorSets       = true;
+        m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets = true;
+        m_useDispatch                                          = true;
+        m_verifyBufferSetUsingDescriptorBuffer                 = true;
+        break;
+
+    // vkCmdBindDescriptorSets
+    // vkCmdBindDescriptorBuffersEXT - doesn't invalidate anything in spec
+    // vkCmdDispatch - using legacy
+    case InvalidationMode::UseLegacyAndBindDescriptorBuffer:
+        m_useBindDescriptorBufferAfterBindDescriptorSets   = true;
+        m_usePipelineWithLegacyDescriptorSetBeforeDispatch = true;
+        m_useDispatch                                      = true;
+        m_verifyBufferSetUsingLegacyDescriptor             = true;
+        break;
+    }
+}
+
+tcu::TestStatus InvalidationRulesTestInstance::iterate()
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    const auto &dbProperties  = m_context.getDescriptorBufferPropertiesEXT();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+
+    // define generic descriptor set layout with a single storage buffer
+    const VkShaderStageFlags stageFlag = VK_SHADER_STAGE_COMPUTE_BIT;
+    VkDescriptorSetLayoutBinding binding{
+        2u,                                // uint32_t binding;
+        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, // VkDescriptorType descriptorType;
+        1u,                                // uint32_t descriptorCount;
+        stageFlag,                         // VkShaderStageFlags stageFlags;
+        nullptr                            // const VkSampler* pImmutableSamplers;
+    };
+    VkDescriptorSetLayoutCreateInfo createInfo = initVulkanStructure();
+    createInfo.flags                           = VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+    createInfo.bindingCount                    = 1;
+    createInfo.pBindings                       = &binding;
+
+    // create descriptor set layouts, one for descriptor buffer and one for legacy descriptor set
+    auto descriptorSetLayoutA = createDescriptorSetLayout(vk, device, &createInfo);
+    createInfo.flags          = 0;
+    auto descriptorSetLayoutB = createDescriptorSetLayout(vk, device, &createInfo);
+
+    // create pipelines with a layout that expects descriptor set 0
+    auto pipelineFlags   = VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT;
+    auto &bc             = m_context.getBinaryCollection();
+    auto shaderModule    = createShaderModule(vk, device, bc.get("comp"));
+    auto pipelineLayoutA = makePipelineLayout(vk, device, *descriptorSetLayoutA);
+    auto pipelineA       = makeComputePipeline(vk, device, *pipelineLayoutA, pipelineFlags, nullptr, *shaderModule, 0);
+    auto pipelineLayoutB = makePipelineLayout(vk, device, *descriptorSetLayoutB);
+    auto pipelineB       = makeComputePipeline(vk, device, *pipelineLayoutB, 0, nullptr, *shaderModule, 0);
+
+    VkDeviceSize descriptorLayoutSize;
+    vk.getDescriptorSetLayoutSizeEXT(device, *descriptorSetLayoutA, &descriptorLayoutSize);
+
+    auto descriptorBufferOffsetAlignment = dbProperties.descriptorBufferOffsetAlignment;
+    descriptorLayoutSize                 = deAlign64(descriptorLayoutSize, descriptorBufferOffsetAlignment);
+
+    // create buffer that will be used as descriptor buffer
+    VkBufferCreateFlags usageFlags =
+        VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    auto bufferCreateInfo = makeBufferCreateInfo(descriptorLayoutSize, usageFlags);
+    BufferWithMemory descriptorBuffer(vk, device, allocator, bufferCreateInfo,
+                                      MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    auto descriptorBufferHostPtr = reinterpret_cast<char *>(descriptorBuffer.getAllocation().getHostPtr());
+
+    // create legacy descriptor set
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+    const auto descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto legacyDescriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayoutB);
+
+    // create buffers for data
+    uint32_t dataBufferItems    = 16u;
+    VkDeviceSize dataBufferSize = dataBufferItems * sizeof(uint32_t);
+    bufferCreateInfo.usage =
+        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    bufferCreateInfo.size = dataBufferSize;
+    BufferWithMemory dataBufferB(vk, device, allocator, bufferCreateInfo, MemoryRequirement::HostVisible);
+    bufferCreateInfo.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    BufferWithMemory dataBufferA(vk, device, allocator, bufferCreateInfo,
+                                 MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+
+    // fill data buffer filled by pipeline that uses descriptor buffer
+    const uint32_t initialValueA = 3u;
+    fillBuffer(dataBufferA, dataBufferItems, initialValueA);
+
+    VkDescriptorAddressInfoEXT descriptorAddressInfo = initVulkanStructure();
+    descriptorAddressInfo.range                      = dataBufferSize;
+    descriptorAddressInfo.address                    = getBufferDeviceAddress(vk, device, *dataBufferA, 0);
+
+    VkDescriptorGetInfoEXT descGetInfo = initVulkanStructure();
+    descGetInfo.type                   = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    descGetInfo.data.pStorageBuffer    = &descriptorAddressInfo;
+    vk.getDescriptorEXT(device, &descGetInfo, dbProperties.storageBufferDescriptorSize, descriptorBufferHostPtr);
+
+    // fill data buffer B
+    const uint32_t initialValueB = 5u;
+    fillBuffer(dataBufferB, dataBufferItems, initialValueB);
+
+    const auto outDescInfo = makeDescriptorBufferInfo(*dataBufferB, 0u, VK_WHOLE_SIZE);
+    DescriptorSetUpdateBuilder dsUpdateBuilder;
+    dsUpdateBuilder.writeSingle(*legacyDescriptorSet, DescriptorSetUpdateBuilder::Location::binding(2u),
+                                VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outDescInfo);
+    dsUpdateBuilder.update(vk, device);
+
+    // setup data needed for descriptor buffer binding
+    VkDescriptorBufferBindingInfoEXT descriptorBufferBindingInfo = initVulkanStructure();
+    descriptorBufferBindingInfo.address = getBufferDeviceAddress(vk, device, *descriptorBuffer, 0);
+    descriptorBufferBindingInfo.usage   = VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT;
+    uint32_t bIndices                   = 0;
+    VkDeviceSize bOffsets               = 0;
+
+    const auto wiatForHostMemoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT);
+    const auto waitForDeviceMemoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT, VK_ACCESS_HOST_READ_BIT);
+
+    VkPipelineBindPoint bindPoint = VK_PIPELINE_BIND_POINT_COMPUTE;
+    auto cmdPool                  = makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
+    auto cmdBuffer                = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    // wait for buffer to be ready for shader access
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0, 1,
+                          &wiatForHostMemoryBarrier, 0, 0, 0, 0);
+
+    if (m_useBindDescriptorBufferBeforeBindDescriptorSets || m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets)
+    {
+        // bind pipeline prepared for descriptor buffer
+        vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineA);
+
+        if (m_useBindDescriptorBufferBeforeBindDescriptorSets)
+            vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1, &descriptorBufferBindingInfo);
+
+        if (m_useSetDescriptorBufferOffsetsBeforeBindDescriptorSets)
+            vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, bindPoint, *pipelineLayoutA, 0, 1, &bIndices, &bOffsets);
+    }
+
+    // bind pipeline prepared for legacy descriptor set
+    vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineB);
+
+    // bind legacy descriptor set
+    vk.cmdBindDescriptorSets(*cmdBuffer, bindPoint, *pipelineLayoutB, 0, 1, &*legacyDescriptorSet, 0, nullptr);
+
+    if (m_useBindDescriptorBufferAfterBindDescriptorSets || m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets)
+    {
+        // bind pipeline prepared for descriptor buffer
+        vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineA);
+
+        if (m_useBindDescriptorBufferAfterBindDescriptorSets)
+            vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1, &descriptorBufferBindingInfo);
+
+        if (m_useSetDescriptorBufferOffsetsAfterBindDescriptorSets)
+            vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, bindPoint, *pipelineLayoutA, 0, 1, &bIndices, &bOffsets);
+    }
+
+    // bind pipeline prepared for legacy descriptor set
+    if (m_usePipelineWithLegacyDescriptorSetBeforeDispatch)
+        vk.cmdBindPipeline(*cmdBuffer, bindPoint, *pipelineB);
+
+    if (m_useDispatch)
+        vk.cmdDispatch(*cmdBuffer, dataBufferItems, 1, 1);
+
+    // wait for device to finish work
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0, 1,
+                          &waitForDeviceMemoryBarrier, 0, 0, 0, 0);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    // submit and wait for all commands
+    submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+    // check content of data buffer A
+    if (m_verifyBufferSetUsingDescriptorBuffer && !isBufferValid(dataBufferA, dataBufferItems, initialValueA))
+        return tcu::TestStatus::fail("Data in bufferA is not valid");
+
+    // check content of data buffer B
+    if (m_verifyBufferSetUsingLegacyDescriptor && !isBufferValid(dataBufferB, dataBufferItems, initialValueB))
+        return tcu::TestStatus::fail("Data in bufferB is not valid");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void InvalidationRulesTestInstance::fillBuffer(BufferWithMemory &buffer, std::size_t itemCount, uint32_t value)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    auto &allocation          = buffer.getAllocation();
+
+    uint32_t *data = static_cast<uint32_t *>(allocation.getHostPtr());
+    std::fill(data, data + itemCount, value);
+
+    flushAlloc(vk, device, allocation);
+}
+
+bool InvalidationRulesTestInstance::isBufferValid(BufferWithMemory &buffer, std::size_t itemCount,
+                                                  uint32_t initialValue)
+{
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    auto &allocation          = buffer.getAllocation();
+
+    invalidateAlloc(vk, device, allocation);
+    uint32_t *data = static_cast<uint32_t *>(allocation.getHostPtr());
+
+    for (std::size_t i = 0; i < itemCount; ++i)
+    {
+        if (data[i] != (i + initialValue))
+            return false;
+    }
+
+    return true;
+}
+
+class InvalidationRulesTestCase : public TestCase
+{
+public:
+    InvalidationRulesTestCase(tcu::TestContext &testCtx, const std::string &name, InvalidationMode mode);
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+private:
+    InvalidationMode m_mode;
+};
+
+InvalidationRulesTestCase::InvalidationRulesTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                                     InvalidationMode mode)
+    : TestCase(testCtx, name)
+    , m_mode(mode)
+{
+}
+
+void InvalidationRulesTestCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    programCollection.glslSources.add("comp") << glu::ComputeSource("#version 450\n"
+                                                                    "layout (local_size_x=1) in;\n"
+                                                                    "layout (set=0, binding=2, std430) buffer Block {\n"
+                                                                    "    uint data[];\n"
+                                                                    "};\n"
+                                                                    "\n"
+                                                                    "void main() {\n"
+                                                                    "    uint idx = gl_GlobalInvocationID.x;\n"
+                                                                    "    data[idx] = data[idx] + idx;\n"
+                                                                    "}\n");
+}
+
+void InvalidationRulesTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
+}
+
+TestInstance *InvalidationRulesTestCase::createInstance(Context &context) const
+{
+    return new InvalidationRulesTestInstance(context, m_mode);
 }
 
 void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceResidency resourceResidency)
@@ -6610,8 +7528,10 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
         MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "robust"));
         MovePtr<tcu::TestCaseGroup> subGroupBuffer(new tcu::TestCaseGroup(testCtx, "buffer_access"));
         MovePtr<tcu::TestCaseGroup> subGroupNullDescriptor(new tcu::TestCaseGroup(testCtx, "null_descriptor"));
-        const uint32_t subGroupBufferHash         = baseSeed ^ deStringHash(subGroupBuffer->getName());
-        const uint32_t subGroupNullDescriptorHash = baseSeed ^ deStringHash(subGroupNullDescriptor->getName());
+        MovePtr<tcu::TestCaseGroup> subGroupNullDescriptorSize(new tcu::TestCaseGroup(testCtx, "null_descriptor_size"));
+        const uint32_t subGroupBufferHash             = baseSeed ^ deStringHash(subGroupBuffer->getName());
+        const uint32_t subGroupNullDescriptorHash     = baseSeed ^ deStringHash(subGroupNullDescriptor->getName());
+        const uint32_t subGroupNullDescriptorSizeHash = baseSeed ^ deStringHash(subGroupNullDescriptorSize->getName());
 
         // Robust buffer access:
         // This test will fill the buffers with zeros and always expect to read zero values back (in and out of bounds).
@@ -6666,8 +7586,45 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                 }
             }
 
+        // Robustness tests with QuerySize of NULL, only for texel buffers:
+        // For texel buffers with null handles, textureSize() and imageSize() queries are expected to return 0.
+        // This tests size dimensions returning zero, not data reads
+        //
+        const VkDescriptorType texelBufferDescriptors[] = {
+            VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER,
+            VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER,
+        };
+
+        for (auto pQueue = choiceQueues; pQueue < DE_ARRAY_END(choiceQueues); ++pQueue)
+            for (auto pStage = choiceStages; pStage < DE_ARRAY_END(choiceStages); ++pStage)
+            {
+                if ((*pQueue == VK_QUEUE_COMPUTE_BIT) && (*pStage != VK_SHADER_STAGE_COMPUTE_BIT))
+                {
+                    // Compute queue can only use compute shaders.
+                    continue;
+                }
+
+                for (auto pDescriptor = texelBufferDescriptors; pDescriptor < DE_ARRAY_END(texelBufferDescriptors);
+                     ++pDescriptor)
+                {
+                    TestParams params{};
+                    params.variant            = TestVariant::ROBUST_NULL_DESCRIPTOR_SIZE;
+                    params.stage              = *pStage;
+                    params.queue              = *pQueue;
+                    params.descriptor         = *pDescriptor;
+                    params.bufferBindingCount = 1;
+                    params.setsPerBuffer      = 1;
+                    params.useMaintenance5    = false;
+                    params.resourceResidency  = resourceResidency;
+
+                    subGroupNullDescriptorSize->addChild(new DescriptorBufferTestCase(
+                        testCtx, getCaseNameUpdateHash(params, subGroupNullDescriptorSizeHash), params));
+                }
+            }
+
         subGroup->addChild(subGroupBuffer.release());
         subGroup->addChild(subGroupNullDescriptor.release());
+        subGroup->addChild(subGroupNullDescriptorSize.release());
         topGroup->addChild(subGroup.release());
     }
 
@@ -6733,18 +7690,44 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                     }
                 }
 
-        std::pair<std::string, CaptureReplyTestMode> captureReplyModes[]{
-            {"image", CaptureReplyTestMode::Image},
-            {"sparse_image", CaptureReplyTestMode::Sparse_Image},
-            {"buffer", CaptureReplyTestMode::Buffer},
-            {"sparse_buffer", CaptureReplyTestMode::Sparse_Buffer},
-        };
-
-        for (const auto &captureReplyMode : captureReplyModes)
+        if (resourceResidency == ResourceResidency::TRADITIONAL)
         {
-            std::string name = captureReplyMode.first + "_descriptor_data_consistency";
-            subGroup->addChild(new CaptureReplyTestCase(testCtx, name, captureReplyMode.second));
+            std::pair<std::string, CaptureReplayTestMode> captureReplyModes[]{
+                {"image", CaptureReplayTestMode::Image},
+                {"sparse_image", CaptureReplayTestMode::Sparse_Image},
+                {"buffer", CaptureReplayTestMode::Buffer},
+                {"sparse_buffer", CaptureReplayTestMode::Sparse_Buffer},
+            };
+
+            for (const auto &captureReplyMode : captureReplyModes)
+            {
+                for (const bool useDescriptor : {false, true})
+                {
+                    std::string name =
+                        captureReplyMode.first + "_descriptor_data_consistency" + (useDescriptor ? "_and_usage" : "");
+                    const CaptureReplayParams params{captureReplyMode.second, useDescriptor};
+                    subGroup->addChild(new CaptureReplayTestCase(testCtx, name, params));
+                }
+            }
         }
+
+        topGroup->addChild(subGroup.release());
+    }
+
+    if (resourceResidency == ResourceResidency::TRADITIONAL)
+    {
+        //
+        // Verify set invalidation rules based on pipeline compatibility
+        //
+        MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(testCtx, "invalidation_rules", ""));
+
+        std::pair<std::string, InvalidationMode> invalidationCases[]{
+            {"switch_from_descriptor_buffer_to_legacy", InvalidationMode::SwitchFromDescriptorBufferToLegacy},
+            {"switch_from_legacy_to_descriptor_buffer", InvalidationMode::SwitchFromLegacyToDescriptorBuffer},
+            {"use_legacy_and_bind_descriptor_buffer", InvalidationMode::UseLegacyAndBindDescriptorBuffer},
+        };
+        for (auto [name, mode] : invalidationCases)
+            subGroup->addChild(new InvalidationRulesTestCase(testCtx, name, mode));
 
         topGroup->addChild(subGroup.release());
     }
@@ -6852,7 +7835,7 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                 }
 
                 TestParams params{};
-                params.variant            = TestVariant::YCBCR_SAMPLER;
+                params.variant            = TestVariant::YCBCR_SAMPLER_2PLANES;
                 params.subcase            = SubCase::NONE;
                 params.stage              = *pStage;
                 params.queue              = *pQueue;
@@ -6860,6 +7843,17 @@ void populateDescriptorBufferTestGroup(tcu::TestCaseGroup *topGroup, ResourceRes
                 params.bufferBindingCount = 1;
                 params.setsPerBuffer      = 1;
                 params.resourceResidency  = resourceResidency;
+
+                subGroup->addChild(
+                    new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
+
+                params.subcase = SubCase::YCBCR_SAMPLER_ARRAY;
+
+                subGroup->addChild(
+                    new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));
+
+                params.variant = TestVariant::YCBCR_SAMPLER_3PLANES;
+                params.subcase = SubCase::NONE;
 
                 subGroup->addChild(
                     new DescriptorBufferTestCase(testCtx, getCaseNameUpdateHash(params, subGroupHash), params));

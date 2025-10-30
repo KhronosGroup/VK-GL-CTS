@@ -148,6 +148,7 @@ struct TestParameters
     uint32_t stencilClearValue;
     const VkFormat imageFormat;
     const UVec2 renderSize;
+    bool endRendering2;
 };
 
 struct ImagesLayout
@@ -635,6 +636,7 @@ protected:
                         const VkRenderingFlagsKHR flags, const uint32_t colorAtchCount,
                         const ImagesFormat &imagesFormat, const VkAttachmentLoadOp loadOp,
                         const VkAttachmentStoreOp storeOp);
+    void endRendering(VkCommandBuffer cmdBuffer);
     void copyImgToBuff(VkCommandBuffer commandBuffer, const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
                        const ImagesFormat &imagesFormat);
     void verifyResults(const uint32_t colorAtchCount, const ImagesFormat &imagesFormat);
@@ -930,7 +932,7 @@ void DynamicRenderingTestInstance::rendering(const VkPipeline pipeline,
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -969,7 +971,7 @@ void DynamicRenderingTestInstance::rendering(const VkPipeline pipeline,
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1132,6 +1134,18 @@ void DynamicRenderingTestInstance::beginRendering(VkCommandBuffer cmdBuffer,
     };
 
     vk.cmdBeginRendering(cmdBuffer, &renderingInfo);
+}
+
+void DynamicRenderingTestInstance::endRendering(VkCommandBuffer cmdBuffer)
+{
+    const auto &vkd = m_context.getDeviceInterface();
+    if (m_parameters.endRendering2)
+    {
+        const VkRenderingEndInfoKHR renderingEndInfo = initVulkanStructure();
+        vkd.cmdEndRendering2KHR(cmdBuffer, &renderingEndInfo);
+    }
+    else
+        vkd.cmdEndRendering(cmdBuffer);
 }
 
 void DynamicRenderingTestInstance::copyImgToBuff(VkCommandBuffer commandBuffer, const uint32_t colorAtchCount,
@@ -1301,7 +1315,7 @@ void SingleCmdBufferResuming::rendering(const VkPipeline pipeline, const std::ve
 
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             beginRendering(*m_cmdBuffer, attachmentBindInfos, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount,
                            imagesFormat, static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
@@ -1309,7 +1323,7 @@ void SingleCmdBufferResuming::rendering(const VkPipeline pipeline, const std::ve
 
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1339,7 +1353,7 @@ void SingleCmdBufferResuming::rendering(const VkPipeline pipeline, const std::ve
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 beginRendering(*m_cmdBuffer, attachmentBindInfos, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount,
                                imagesFormat, static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
@@ -1354,7 +1368,7 @@ void SingleCmdBufferResuming::rendering(const VkPipeline pipeline, const std::ve
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1419,7 +1433,7 @@ void TwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipeline,
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
@@ -1440,7 +1454,7 @@ void TwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipeline,
 
             vk.cmdDraw(*m_cmdBuffer2, 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer2);
+            endRendering(*m_cmdBuffer2);
 
             copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1472,7 +1486,7 @@ void TwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipeline,
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
@@ -1492,7 +1506,7 @@ void TwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipeline,
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer2, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_cmdBuffer2);
+                endRendering(*m_cmdBuffer2);
 
                 copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -1557,7 +1571,7 @@ void TwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
             vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 8u, 0u);
             vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 0u, 0u);
 
-            vk.cmdEndRendering(secCmdBuffers[0]);
+            endRendering(secCmdBuffers[0]);
             VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
             // secCmdBuffersSecond
@@ -1572,7 +1586,7 @@ void TwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
 
             vk.cmdDraw(secCmdBuffers[1], 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(secCmdBuffers[1]);
+            endRendering(secCmdBuffers[1]);
             VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
             // Primary commandBuffer
@@ -1609,7 +1623,7 @@ void TwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-                vk.cmdEndRendering(secCmdBuffers[0]);
+                endRendering(secCmdBuffers[0]);
                 VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
                 // secCmdBuffersSecond
@@ -1628,7 +1642,7 @@ void TwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(secCmdBuffers[1]);
+                endRendering(secCmdBuffers[1]);
                 VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
                 // Primary commandBuffer
@@ -1702,7 +1716,7 @@ void TwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipelin
             vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 8u, 0u);
             vk.cmdDraw(secCmdBuffers[0], 4u, 1u, 0u, 0u);
 
-            vk.cmdEndRendering(secCmdBuffers[0]);
+            endRendering(secCmdBuffers[0]);
             VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
             // secCmdBuffersSecond
@@ -1717,7 +1731,7 @@ void TwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipelin
 
             vk.cmdDraw(secCmdBuffers[1], 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(secCmdBuffers[1]);
+            endRendering(secCmdBuffers[1]);
             VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
             // Primary commandBuffer
@@ -1761,7 +1775,7 @@ void TwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipelin
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(secCmdBuffers[0], 1u, &clearData.stencilClear1, 1, &clearData.rectStencil1);
 
-                vk.cmdEndRendering(secCmdBuffers[0]);
+                endRendering(secCmdBuffers[0]);
                 VK_CHECK(vk.endCommandBuffer(secCmdBuffers[0]));
 
                 // secCmdBuffersSecond
@@ -1780,7 +1794,7 @@ void TwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pipelin
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(secCmdBuffers[1], 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(secCmdBuffers[1]);
+                endRendering(secCmdBuffers[1]);
                 VK_CHECK(vk.endCommandBuffer(secCmdBuffers[1]));
 
                 // Primary commandBuffer
@@ -1865,7 +1879,7 @@ void ContentsSecondaryCmdBuffer::rendering(const VkPipeline pipeline,
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffers));
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
             VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -1913,7 +1927,7 @@ void ContentsSecondaryCmdBuffer::rendering(const VkPipeline pipeline,
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffers));
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
                 VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -1996,7 +2010,7 @@ void ContentsTwoSecondaryCmdBuffer::rendering(const VkPipeline pipeline,
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
             VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2049,7 +2063,7 @@ void ContentsTwoSecondaryCmdBuffer::rendering(const VkPipeline pipeline,
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 2u, secCmdBuffers);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
                 VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2135,7 +2149,7 @@ void ContentsTwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             beginRendering(*m_cmdBuffer, attachmentBindInfos,
                            VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR | VK_RENDERING_RESUMING_BIT_KHR,
@@ -2144,7 +2158,7 @@ void ContentsTwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[1]);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
             VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2200,7 +2214,7 @@ void ContentsTwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 beginRendering(*m_cmdBuffer, attachmentBindInfos,
                                VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR | VK_RENDERING_RESUMING_BIT_KHR,
@@ -2209,7 +2223,7 @@ void ContentsTwoSecondaryCmdBufferResuming::rendering(const VkPipeline pipeline,
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[1]);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
                 VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
@@ -2298,7 +2312,7 @@ void ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
@@ -2312,7 +2326,7 @@ void ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline
 
             vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &secCmdBuffers[1]);
 
-            vk.cmdEndRendering(*m_cmdBuffer2);
+            endRendering(*m_cmdBuffer2);
 
             copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2369,7 +2383,7 @@ void ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &secCmdBuffers[0]);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
@@ -2383,7 +2397,7 @@ void ContentsTwoSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline
 
                 vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &secCmdBuffers[1]);
 
-                vk.cmdEndRendering(*m_cmdBuffer2);
+                endRendering(*m_cmdBuffer2);
 
                 copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2458,7 +2472,7 @@ void ContentsPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pipel
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             beginRendering(*m_cmdBuffer, attachmentBindInfos,
                            VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR | VK_RENDERING_RESUMING_BIT_KHR,
@@ -2467,7 +2481,7 @@ void ContentsPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pipel
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2514,7 +2528,7 @@ void ContentsPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pipel
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 beginRendering(*m_cmdBuffer, attachmentBindInfos,
                                VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT_KHR | VK_RENDERING_RESUMING_BIT_KHR,
@@ -2523,7 +2537,7 @@ void ContentsPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pipel
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2596,7 +2610,7 @@ void ContentsSecondaryPrimaryCmdBufferResuming::rendering(const VkPipeline pipel
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             beginRendering(*m_cmdBuffer, attachmentBindInfos, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount,
                            imagesFormat, static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
@@ -2607,7 +2621,7 @@ void ContentsSecondaryPrimaryCmdBufferResuming::rendering(const VkPipeline pipel
 
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
 
             copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2649,7 +2663,7 @@ void ContentsSecondaryPrimaryCmdBufferResuming::rendering(const VkPipeline pipel
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 beginRendering(*m_cmdBuffer, attachmentBindInfos, VK_RENDERING_RESUMING_BIT_KHR, colorAtchCount,
                                imagesFormat, static_cast<VkAttachmentLoadOp>(attachmentLoadOp),
@@ -2664,7 +2678,7 @@ void ContentsSecondaryPrimaryCmdBufferResuming::rendering(const VkPipeline pipel
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
 
                 copyImgToBuff(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2741,7 +2755,7 @@ void ContentsTwoPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pi
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 8u, 0u);
             vk.cmdDraw(*m_cmdBuffer, 4u, 1u, 0u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
             VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
             // Primary commandBuffer2
@@ -2754,7 +2768,7 @@ void ContentsTwoPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pi
 
             vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &(*m_secCmdBuffer));
 
-            vk.cmdEndRendering(*m_cmdBuffer2);
+            endRendering(*m_cmdBuffer2);
 
             copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2801,7 +2815,7 @@ void ContentsTwoPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pi
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
                 VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
                 // Primary commandBuffer2
@@ -2814,7 +2828,7 @@ void ContentsTwoPrimarySecondaryCmdBufferResuming::rendering(const VkPipeline pi
 
                 vk.cmdExecuteCommands(*m_cmdBuffer2, 1u, &(*m_secCmdBuffer));
 
-                vk.cmdEndRendering(*m_cmdBuffer2);
+                endRendering(*m_cmdBuffer2);
 
                 copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2889,7 +2903,7 @@ void ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pi
 
             vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-            vk.cmdEndRendering(*m_cmdBuffer);
+            endRendering(*m_cmdBuffer);
             VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
             // Primary commandBuffer2
@@ -2904,7 +2918,7 @@ void ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pi
 
             vk.cmdDraw(*m_cmdBuffer2, 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(*m_cmdBuffer2);
+            endRendering(*m_cmdBuffer2);
 
             copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -2946,7 +2960,7 @@ void ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pi
 
                 vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secCmdBuffer));
 
-                vk.cmdEndRendering(*m_cmdBuffer);
+                endRendering(*m_cmdBuffer);
                 VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
 
                 // Primary commandBuffer2
@@ -2965,7 +2979,7 @@ void ContentsSecondaryTwoPrimaryCmdBufferResuming::rendering(const VkPipeline pi
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_cmdBuffer2, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_cmdBuffer2);
+                endRendering(*m_cmdBuffer2);
 
                 copyImgToBuff(*m_cmdBuffer2, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -3032,7 +3046,7 @@ void SecondaryCmdBufferOutOfRenderingCommands::rendering(const VkPipeline pipeli
             vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 0u, 0u);
             vk.cmdDraw(*m_secCmdBuffer, 4u, 1u, 4u, 0u);
 
-            vk.cmdEndRendering(*m_secCmdBuffer);
+            endRendering(*m_secCmdBuffer);
 
             copyImgToBuff(*m_secCmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -3081,7 +3095,7 @@ void SecondaryCmdBufferOutOfRenderingCommands::rendering(const VkPipeline pipeli
                 if (imagesFormat.stencil != VK_FORMAT_UNDEFINED)
                     vk.cmdClearAttachments(*m_secCmdBuffer, 1u, &clearData.stencilClear2, 1, &clearData.rectStencil2);
 
-                vk.cmdEndRendering(*m_secCmdBuffer);
+                endRendering(*m_secCmdBuffer);
 
                 copyImgToBuff(*m_secCmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
 
@@ -3113,6 +3127,9 @@ protected:
     void baseTest(const VkPipeline pipeline, const std::vector<VkImageView> &attachmentBindInfos,
                   const uint32_t colorAtchCount, ImagesLayout &imagesLayout, const ImagesFormat &imagesFormat,
                   bool clearOnly, bool useSecondary);
+    void secondaryUndefinedFormatTest(const VkPipeline pipeline, const std::vector<VkImageView> &attachmentBindInfos,
+                                      const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
+                                      const ImagesFormat &imagesFormat, bool discardDepth, bool discardStencil);
 
     void rendering(const VkPipeline pipeline, const std::vector<VkImageView> &attachmentBindInfos,
                    const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
@@ -3233,7 +3250,7 @@ void PartialBindingDepthStencil::baseTest(const VkPipeline pipeline,
     else
         recordRenderingCommands(vk, *m_cmdBuffer, pipeline, clearValues, clearRect, clearOnly);
 
-    vk.cmdEndRendering(*m_cmdBuffer);
+    endRendering(*m_cmdBuffer);
 
     // Copy images
     {
@@ -3303,6 +3320,180 @@ void PartialBindingDepthStencil::baseTest(const VkPipeline pipeline,
     }
 }
 
+void PartialBindingDepthStencil::secondaryUndefinedFormatTest(const VkPipeline pipeline,
+                                                              const std::vector<VkImageView> &attachmentBindInfos,
+                                                              const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
+                                                              const ImagesFormat &imagesFormat, bool discardDepth,
+                                                              bool discardStencil)
+{
+    DE_ASSERT(imagesFormat.depth != VK_FORMAT_UNDEFINED);
+    DE_ASSERT(imagesFormat.stencil != VK_FORMAT_UNDEFINED);
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    const VkQueue queue       = m_context.getUniversalQueue();
+
+    // Clear values before rendering is started
+    const VkClearDepthStencilValue depthStencilClear =
+        makeClearValueDepthStencil(m_parameters.depthClearValue, m_parameters.stencilClearValue).depthStencil;
+
+    // Clear values for attachment clear in render pass. Same one as in beginRendering
+    VkClearValue clearValue         = makeClearValueColor(m_parameters.clearColor);
+    clearValue.depthStencil.depth   = m_parameters.depthClearValue;
+    clearValue.depthStencil.stencil = m_parameters.stencilClearValue;
+
+    // Expected values
+    const float expectedDepth      = clearValue.depthStencil.depth;
+    const unsigned expectedStencil = clearValue.depthStencil.stencil;
+
+    const VkClearAttachment clearValues = {
+        VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, // aspectMask
+        0,                                                       // colorAttachment
+        clearValue                                               // clearValue
+    };
+    const VkClearRect clearRect = {
+        makeRect2D(m_parameters.renderSize), // rect
+        0u,                                  // baseArrayLayer
+        1u,                                  // layerCount
+    };
+
+    // beginSecondaryCmdBuffer
+    {
+        const VkCommandBufferInheritanceRenderingInfoKHR inheritanceRenderingInfo{
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_RENDERING_INFO_KHR, // VkStructureType sType;
+            nullptr,                                                         // const void* pNext;
+            0u,                                                              // VkRenderingFlagsKHR flags;
+            0u,                                                              // uint32_t viewMask;
+            COLOR_ATTACHMENTS_NUMBER,                                        // uint32_t colorAttachmentCount;
+            imagesFormat.colors,                                             // const VkFormat* pColorAttachmentFormats;
+            discardDepth ? VK_FORMAT_UNDEFINED : imagesFormat.depth,         // VkFormat depthAttachmentFormat;
+            discardStencil ? VK_FORMAT_UNDEFINED : imagesFormat.stencil,     // VkFormat stencilAttachmentFormat;
+            VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits rasterizationSamples;
+        };
+
+        const VkCommandBufferInheritanceInfo bufferInheritanceInfo = {
+            vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_INFO, // VkStructureType sType;
+            &inheritanceRenderingInfo,                             // const void* pNext;
+            VK_NULL_HANDLE,                                        // VkRenderPass renderPass;
+            0u,                                                    // uint32_t subpass;
+            VK_NULL_HANDLE,                                        // VkFramebuffer framebuffer;
+            VK_FALSE,                                              // VkBool32 occlusionQueryEnable;
+            (vk::VkQueryControlFlags)0u,                           // VkQueryControlFlags queryFlags;
+            (vk::VkQueryPipelineStatisticFlags)0u                  // VkQueryPipelineStatisticFlags pipelineStatistics;
+        };
+
+        const VkCommandBufferBeginInfo commandBufBeginParams = {
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
+            nullptr,                                     // const void* pNext;
+            VK_COMMAND_BUFFER_USAGE_ONE_TIME_SUBMIT_BIT |
+                VK_COMMAND_BUFFER_USAGE_RENDER_PASS_CONTINUE_BIT, // VkCommandBufferUsageFlags flags;
+            &bufferInheritanceInfo};
+        VK_CHECK(vk.beginCommandBuffer(*m_secondaryCmdBuffer, &commandBufBeginParams));
+    }
+    recordRenderingCommands(vk, *m_secondaryCmdBuffer, pipeline, clearValues, clearRect, false);
+    VK_CHECK(vk.endCommandBuffer(*m_secondaryCmdBuffer));
+
+    beginCommandBuffer(vk, *m_cmdBuffer);
+
+    // Clear before we start rendering with a different value to ensure unbound one is not modified when rendering
+    {
+        VkImageSubresourceRange subresource =
+            makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u);
+        VkImageMemoryBarrier barrier =
+            makeImageMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_TRANSFER_WRITE_BIT, imagesLayout.oldDepth,
+                                   VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *m_imageStencilDepth, subresource);
+        cmdPipelineImageMemoryBarrier(vk, *m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, &barrier, 1u);
+        imagesLayout.oldDepth   = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        imagesLayout.oldStencil = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+        vk.cmdClearDepthStencilImage(*m_cmdBuffer, *m_imageStencilDepth, imagesLayout.oldDepth, &depthStencilClear, 1,
+                                     &subresource);
+    }
+
+    preBarier(*m_cmdBuffer, colorAtchCount, imagesLayout, imagesFormat);
+
+    {
+        ImagesFormat imagesFormatCopy = imagesFormat;
+        if (discardDepth)
+            imagesFormatCopy.depth = VK_FORMAT_UNDEFINED;
+        if (discardStencil)
+            imagesFormatCopy.stencil = VK_FORMAT_UNDEFINED;
+        beginRendering(*m_cmdBuffer, attachmentBindInfos, VK_RENDERING_CONTENTS_SECONDARY_COMMAND_BUFFERS_BIT,
+                       colorAtchCount, imagesFormatCopy, static_cast<VkAttachmentLoadOp>(m_attachmentLoadOp),
+                       static_cast<VkAttachmentStoreOp>(m_attachmentStoreOp));
+    }
+
+    vk.cmdExecuteCommands(*m_cmdBuffer, 1u, &(*m_secondaryCmdBuffer));
+
+    vk.cmdEndRendering(*m_cmdBuffer);
+
+    // Copy images
+    {
+        const auto prevDepthXfer    = (imagesLayout.oldDepth == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        const auto prevStencilXfer  = (imagesLayout.oldStencil == VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+        const auto srcAccessDepth   = (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                     (prevDepthXfer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR));
+        const auto srcAccessStencil = (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+                                       (prevStencilXfer ? VK_ACCESS_TRANSFER_WRITE_BIT : VK_ACCESS_NONE_KHR));
+
+        copyImageToBuffer(vk, *m_cmdBuffer, *m_imageStencilDepth, m_imageDepthBuffer->object(),
+                          tcu::IVec2(m_parameters.renderSize.x(), m_parameters.renderSize.y()), srcAccessDepth,
+                          imagesLayout.oldDepth, 1u, VK_IMAGE_ASPECT_DEPTH_BIT, VK_IMAGE_ASPECT_DEPTH_BIT);
+        imagesLayout.oldDepth = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+
+        copyImageToBuffer(vk, *m_cmdBuffer, *m_imageStencilDepth, m_imageStencilBuffer->object(),
+                          tcu::IVec2(m_parameters.renderSize.x(), m_parameters.renderSize.y()), srcAccessStencil,
+                          imagesLayout.oldStencil, 1u, VK_IMAGE_ASPECT_STENCIL_BIT, VK_IMAGE_ASPECT_STENCIL_BIT);
+        imagesLayout.oldStencil = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    }
+
+    VK_CHECK(vk.endCommandBuffer(*m_cmdBuffer));
+    submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+    // Verify depth
+    {
+        tcu::TextureLevel reference;
+
+        if (!discardDepth)
+        {
+            reference = m_referenceImages[COLOR_ATTACHMENTS_NUMBER];
+        }
+        else
+        {
+            reference = tcu::TextureLevel(getDepthCopyFormat(m_formatStencilDepthImage), m_parameters.renderSize.x(),
+                                          m_parameters.renderSize.y());
+
+            for (int z = 0u; z < reference.getDepth(); ++z)
+                for (int y = 0u; y < reference.getHeight(); ++y)
+                    for (int x = 0u; x < reference.getWidth(); ++x)
+                        reference.getAccess().setPixDepth(expectedDepth, x, y, z);
+        }
+
+        verifyDepth(reference);
+    }
+
+    // Verify stencil
+    {
+        tcu::TextureLevel reference;
+
+        if (!discardStencil)
+        {
+            reference = m_referenceImages[COLOR_ATTACHMENTS_NUMBER + 1];
+        }
+        else
+        {
+            reference = tcu::TextureLevel(mapVkFormat(VK_FORMAT_S8_UINT), m_parameters.renderSize.x(),
+                                          m_parameters.renderSize.y());
+
+            for (int z = 0u; z < reference.getDepth(); ++z)
+                for (int y = 0u; y < reference.getHeight(); ++y)
+                    for (int x = 0u; x < reference.getWidth(); ++x)
+                        reference.getAccess().setPixStencil(expectedStencil, x, y, z);
+        }
+
+        verifyStencil(reference);
+    }
+}
+
 void PartialBindingDepthStencil::rendering(const VkPipeline pipeline,
                                            const std::vector<VkImageView> &attachmentBindInfos,
                                            const uint32_t colorAtchCount, ImagesLayout &imagesLayout,
@@ -3310,10 +3501,9 @@ void PartialBindingDepthStencil::rendering(const VkPipeline pipeline,
 {
     // Only test when one of both depth or stencil is enabled
     // If no depth/stencil format is available, both will be undefined and therefore pass
+    tcu::TestLog &log = m_context.getTestContext().getLog();
     if ((imagesFormat.depth != VK_FORMAT_UNDEFINED) ^ (imagesFormat.stencil != VK_FORMAT_UNDEFINED))
     {
-        tcu::TestLog &log = m_context.getTestContext().getLog();
-
         log << tcu::TestLog::Message << "Checking depth format " << getFormatName(imagesFormat.depth)
             << " and stencil format " << getFormatName(imagesFormat.stencil) << tcu::TestLog::EndMessage;
 
@@ -3338,6 +3528,17 @@ void PartialBindingDepthStencil::rendering(const VkPipeline pipeline,
         baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, true, true);
         log << tcu::TestLog::Message << "Secondary non trivial draw" << tcu::TestLog::EndMessage;
         baseTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, false, true);
+    }
+    else if (imagesFormat.depth != VK_FORMAT_UNDEFINED && imagesFormat.stencil != VK_FORMAT_UNDEFINED)
+    {
+        log << tcu::TestLog::Message << "Depth disabled in VkCommandBufferInheritanceRenderingInfo"
+            << tcu::TestLog::EndMessage;
+        secondaryUndefinedFormatTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, true,
+                                     false);
+        log << tcu::TestLog::Message << "Stencil disabled in VkCommandBufferInheritanceRenderingInfo"
+            << tcu::TestLog::EndMessage;
+        secondaryUndefinedFormatTest(pipeline, attachmentBindInfos, colorAtchCount, imagesLayout, imagesFormat, false,
+                                     true);
     }
 }
 
@@ -3369,6 +3570,9 @@ void BaseTestCase::checkSupport(Context &context) const
 {
     if (!context.requireDeviceFunctionality("VK_KHR_dynamic_rendering"))
         TCU_THROW(NotSupportedError, "VK_KHR_dynamic_rendering not supported");
+
+    if (m_parameters.endRendering2)
+        context.requireDeviceFunctionality("VK_KHR_maintenance10");
 }
 
 void BaseTestCase::initPrograms(SourceCollections &programCollection) const
@@ -3508,7 +3712,8 @@ tcu::TestNode *dynamicRenderingTests(tcu::TestContext &testCtx, const TestParame
     };
 
     // Dynamic Rendering tests
-    return new BaseTestCase(testCtx, testName[parameters.testType], parameters);
+    const auto finalName = testName[parameters.testType] + (parameters.endRendering2 ? "_end_rendering_2" : "");
+    return new BaseTestCase(testCtx, finalName, parameters);
 }
 
 } // namespace
@@ -3518,19 +3723,21 @@ tcu::TestCaseGroup *createDynamicRenderingBasicTests(tcu::TestContext &testCtx)
     // Basic dynamic rendering tests
     de::MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup(new tcu::TestCaseGroup(testCtx, "basic"));
 
-    for (int testType = 0; testType < TEST_TYPE_LAST; ++testType)
-    {
-        const TestParameters parameters = {
-            static_cast<TestType>(testType), // TestType testType;
-            Vec4(0.0f, 0.0f, 0.0f, 1.0f),    // const Vec4 clearColor;
-            1.0f,                            // float depthClearValue;
-            0U,                              // uint32_t stencilClearValue;
-            VK_FORMAT_R8G8B8A8_UNORM,        // const VkFormat imageFormat;
-            (UVec2(32, 32))                  // const UVec2 renderSize;
-        };
+    for (const bool endRendering2 : {false, true})
+        for (int testType = 0; testType < TEST_TYPE_LAST; ++testType)
+        {
+            const TestParameters parameters = {
+                static_cast<TestType>(testType), // TestType testType;
+                Vec4(0.0f, 0.0f, 0.0f, 1.0f),    // const Vec4 clearColor;
+                1.0f,                            // float depthClearValue;
+                0U,                              // uint32_t stencilClearValue;
+                VK_FORMAT_R8G8B8A8_UNORM,        // const VkFormat imageFormat;
+                (UVec2(32, 32)),                 // const UVec2 renderSize;
+                endRendering2,                   // bool endRendering2;
+            };
 
-        dynamicRenderingGroup->addChild(dynamicRenderingTests(testCtx, parameters));
-    }
+            dynamicRenderingGroup->addChild(dynamicRenderingTests(testCtx, parameters));
+        }
 
     return dynamicRenderingGroup.release();
 }

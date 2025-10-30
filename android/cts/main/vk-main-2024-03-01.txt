@@ -8,7 +8,6 @@ vk-main-2024-03-01/descriptor-indexing.txt
 vk-main-2024-03-01/dgc.txt
 vk-main-2024-03-01/draw.txt
 vk-main-2024-03-01/drm-format-modifiers.txt
-vk-main-2024-03-01/dynamic-rendering.txt
 vk-main-2024-03-01/dynamic-state.txt
 vk-main-2024-03-01/fragment-operations.txt
 vk-main-2024-03-01/fragment-shading-barycentric.txt
@@ -48,8 +47,7 @@ vk-main-2024-03-01/rasterization.txt
 vk-main-2024-03-01/ray-query.txt
 vk-main-2024-03-01/ray-tracing-pipeline.txt
 vk-main-2024-03-01/reconvergence.txt
-vk-main-2024-03-01/renderpass.txt
-vk-main-2024-03-01/renderpass2.txt
+vk-main-2024-03-01/renderpasses.txt
 vk-main-2024-03-01/robustness.txt
 vk-main-2024-03-01/shader-object/api.txt
 vk-main-2024-03-01/shader-object/binary.txt
@@ -60,6 +58,7 @@ vk-main-2024-03-01/shader-object/misc.txt
 vk-main-2024-03-01/shader-object/performance.txt
 vk-main-2024-03-01/shader-object/pipeline-interaction.txt
 vk-main-2024-03-01/shader-object/rendering.txt
+vk-main-2024-03-01/shader-object/tessellation.txt
 vk-main-2024-03-01/sparse-resources.txt
 vk-main-2024-03-01/spirv-assembly.txt
 vk-main-2024-03-01/subgroups.txt
@@ -68,5 +67,6 @@ vk-main-2024-03-01/synchronization2.txt
 vk-main-2024-03-01/tessellation.txt
 vk-main-2024-03-01/texture.txt
 vk-main-2024-03-01/transform-feedback.txt
+vk-main-2024-03-01/ubo.txt
 vk-main-2024-03-01/wsi.txt
 vk-main-2024-03-01/ycbcr.txt

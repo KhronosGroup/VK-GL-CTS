@@ -59,12 +59,6 @@ struct DeferredThreadParams
     VkResult result;
 };
 
-std::string getFormatSimpleName(vk::VkFormat format)
-{
-    constexpr size_t kPrefixLen = 10; // strlen("VK_FORMAT_")
-    return de::toLower(de::toString(format).substr(kPrefixLen));
-}
-
 bool pointInTriangle2D(const tcu::Vec3 &p, const tcu::Vec3 &p0, const tcu::Vec3 &p1, const tcu::Vec3 &p2)
 {
     float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();
@@ -200,7 +194,6 @@ struct GeometryBuilderParams
 template <typename V, typename I>
 RaytracedGeometryBase *buildRaytracedGeometry(const GeometryBuilderParams &params)
 {
-    DE_ASSERT(!params.usePadding);
     return new RaytracedGeometry<V, I>(params.geometryType, (params.usePadding ? 1u : 0u), params.minAlign);
 }
 
@@ -1853,16 +1846,31 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
                 transformData = makeDeviceOrHostAddressConstKHR(nullptr);
         }
 
+        const uint32_t primitiveCount = (m_buildWithoutPrimitives ? 0u : geometryData->getPrimitiveCount());
+        const VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfosKHR = {
+            primitiveCount, //  uint32_t primitiveCount;
+            0,              //  uint32_t primitiveOffset;
+            0,              //  uint32_t firstVertex;
+            0               //  uint32_t transformOffset;
+        };
+
+        uint32_t maxVertex = static_cast<uint32_t>(geometryData->getVertexCount() - 1);
+        if (m_buildWithoutPrimitives)
+        {
+            // To satisfy VUID-VkAccelerationStructureBuildRangeInfoKHR-None-10775
+            maxVertex = accelerationStructureBuildRangeInfosKHR.firstVertex + 3 * primitiveCount - 1;
+        }
+
         VkAccelerationStructureGeometryTrianglesDataKHR accelerationStructureGeometryTrianglesDataKHR = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_TRIANGLES_DATA_KHR, //  VkStructureType sType;
             nullptr,                                                              //  const void* pNext;
             geometryData->getVertexFormat(),                                      //  VkFormat vertexFormat;
-            vertexData,                                                //  VkDeviceOrHostAddressConstKHR vertexData;
-            geometryData->getVertexStride(),                           //  VkDeviceSize vertexStride;
-            static_cast<uint32_t>(geometryData->getVertexCount() - 1), //  uint32_t maxVertex;
-            geometryData->getIndexType(),                              //  VkIndexType indexType;
-            indexData,                                                 //  VkDeviceOrHostAddressConstKHR indexData;
-            transformData,                                             //  VkDeviceOrHostAddressConstKHR transformData;
+            vertexData,                      //  VkDeviceOrHostAddressConstKHR vertexData;
+            geometryData->getVertexStride(), //  VkDeviceSize vertexStride;
+            maxVertex,                       //  uint32_t maxVertex;
+            geometryData->getIndexType(),    //  VkIndexType indexType;
+            indexData,                       //  VkDeviceOrHostAddressConstKHR indexData;
+            transformData,                   //  VkDeviceOrHostAddressConstKHR transformData;
         };
 
         if (geometryData->getHasOpacityMicromap())
@@ -1884,15 +1892,6 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
             geometryData->getGeometryType(),                       //  VkGeometryTypeKHR geometryType;
             geometry,                                              //  VkAccelerationStructureGeometryDataKHR geometry;
             geometryData->getGeometryFlags()                       //  VkGeometryFlagsKHR flags;
-        };
-
-        const uint32_t primitiveCount = (m_buildWithoutPrimitives ? 0u : geometryData->getPrimitiveCount());
-
-        const VkAccelerationStructureBuildRangeInfoKHR accelerationStructureBuildRangeInfosKHR = {
-            primitiveCount, //  uint32_t primitiveCount;
-            0,              //  uint32_t primitiveOffset;
-            0,              //  uint32_t firstVertex;
-            0               //  uint32_t transformOffset;
         };
 
         accelerationStructureGeometriesKHR[geometryNdx]         = accelerationStructureGeometryKHR;
@@ -4598,7 +4597,7 @@ void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestP
                     "hitAttributeEXT uvec4 hitValue;\n"
                     "void main()\n"
                     "{\n"
-                    "  reportIntersectionEXT(0.5f, 0);\n"
+                    "  reportIntersectionEXT(gl_RayTminEXT, 0);\n"
                     "}\n";
 
     std::stringstream rtChit;
@@ -5074,7 +5073,7 @@ void generateRayQueryShaders(SourceCollections &programCollection, RayQueryTestP
                          "  hitValue.y = y;\n"
                          "  hitValue.z = z;\n"
                          "  hitValue.w = w;\n"
-                         "  reportIntersectionEXT(0.5f, 0);\n"
+                         "  reportIntersectionEXT(gl_RayTminEXT, 0);\n"
                          "}\n";
 
                 programCollection.glslSources.add("isect_1", &buildOptions)

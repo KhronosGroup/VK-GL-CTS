@@ -181,8 +181,6 @@ public:
     VkSharedBaseObj<VkVideoRefCountBase> stdSps;
     // PPS
     VkSharedBaseObj<VkVideoRefCountBase> stdPps;
-    // AV1 SPS
-    VkSharedBaseObj<VkVideoRefCountBase> stdAv1Sps;
     // The bitstream Buffer
     VkSharedBaseObj<VkVideoRefCountBase> bitstreamData;
 
@@ -406,17 +404,19 @@ public:
     {
         DE_ASSERT((uint32_t)picId < m_perFrameDecodeImageSet.size());
 
+        bool videoLogPrintEnabled = m_vkDevCtx.context->getTestContext().getCommandLine().getVideoLogPrint();
+
         m_perFrameDecodeImageSet[picId].m_displayOrder = m_frameNumInDisplayOrder++;
         m_perFrameDecodeImageSet[picId].m_timestamp    = pDispInfo->timestamp;
         m_perFrameDecodeImageSet[picId].AddRef();
 
         m_displayFrames.push((uint8_t)picId);
 
-        if (videoLoggingEnabled())
+        if (videoLogPrintEnabled)
         {
             std::cout << std::dec << ";;; framebuffer: queue picture for display: " << (uint32_t)picId << " "
-                      << m_perFrameDecodeImageSet[picId].upscaledWidth << " x "
-                      << m_perFrameDecodeImageSet[picId].frameHeight
+                      << m_perFrameDecodeImageSet[picId].decodeSuperResWidth << " x "
+                      << m_perFrameDecodeImageSet[picId].decodeHeight
                       << " displayOrder=" << m_perFrameDecodeImageSet[picId].m_displayOrder
                       << " decodeOrder=" << m_perFrameDecodeImageSet[picId].m_decodeOrder
                       << " timestamp=" << m_perFrameDecodeImageSet[picId].m_timestamp << std::endl;
@@ -581,16 +581,17 @@ int32_t VkVideoFrameBuffer::QueuePictureForDecode(
 {
     DE_ASSERT((uint32_t)picId < m_perFrameDecodeImageSet.size());
 
+    bool videoLogPrintEnabled = m_vkDevCtx.context->getTestContext().getCommandLine().getVideoLogPrint();
+
     m_perFrameDecodeImageSet[picId].m_picDispInfo = *pDecodePictureInfo;
     m_perFrameDecodeImageSet[picId].m_decodeOrder = m_frameNumInDecodeOrder++;
     m_perFrameDecodeImageSet[picId].stdPps        = const_cast<VkVideoRefCountBase *>(pReferencedObjectsInfo->pStdPps);
     m_perFrameDecodeImageSet[picId].stdSps        = const_cast<VkVideoRefCountBase *>(pReferencedObjectsInfo->pStdSps);
     m_perFrameDecodeImageSet[picId].stdVps        = const_cast<VkVideoRefCountBase *>(pReferencedObjectsInfo->pStdVps);
-    m_perFrameDecodeImageSet[picId].stdAv1Sps = const_cast<VkVideoRefCountBase *>(pReferencedObjectsInfo->pStdAV1Sps);
     m_perFrameDecodeImageSet[picId].bitstreamData =
         const_cast<VkVideoRefCountBase *>(pReferencedObjectsInfo->pBitstreamData);
 
-    if (videoLoggingEnabled())
+    if (videoLogPrintEnabled)
     {
         static int counter = 0;
         tcu::print(";;; %d queue decode: %d: decoderOrder=%d displayOrder=%d completeFence=%d consumerDoneFence=%d "
@@ -719,7 +720,6 @@ int32_t VkVideoFrameBuffer::ReleaseDisplayedPicture(DecodedFrameRelease **pDecod
         m_perFrameDecodeImageSet[picId].stdPps        = nullptr;
         m_perFrameDecodeImageSet[picId].stdSps        = nullptr;
         m_perFrameDecodeImageSet[picId].stdVps        = nullptr;
-        m_perFrameDecodeImageSet[picId].stdAv1Sps     = nullptr;
         m_perFrameDecodeImageSet[picId].Release();
 
         m_perFrameDecodeImageSet[picId].m_hasConsummerSignalFence = pDecodedFrameRelease->hasConsummerSignalFence;
@@ -753,9 +753,9 @@ int32_t VkVideoFrameBuffer::GetDpbImageResourcesByIndex(
                 0, 0}; // FIXME: This parameter must to be adjusted based on the interlaced mode.
 
             dpbPictureResources[resId].codedExtent.width =
-                m_perFrameDecodeImageSet[referenceSlotIndexes[resId]].upscaledWidth;
+                m_perFrameDecodeImageSet[referenceSlotIndexes[resId]].decodeSuperResWidth;
             dpbPictureResources[resId].codedExtent.height =
-                m_perFrameDecodeImageSet[referenceSlotIndexes[resId]].frameHeight;
+                m_perFrameDecodeImageSet[referenceSlotIndexes[resId]].decodeHeight;
         }
     }
     return numResources;
@@ -932,7 +932,6 @@ void NvPerFrameDecodeResources::Deinit()
     stdPps        = nullptr;
     stdSps        = nullptr;
     stdVps        = nullptr;
-    stdAv1Sps     = nullptr;
 
     if (m_vkDevCtx == nullptr)
     {

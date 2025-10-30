@@ -175,8 +175,8 @@ VkPhysicalDeviceFeatures getDeviceFeaturesForWsi(void)
 Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance instance, const InstanceInterface &vki,
                                    VkPhysicalDevice physicalDevice, const Extensions &supportedExtensions,
                                    const uint32_t queueFamilyIndex, const VkAllocationCallbacks *pAllocator,
-                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup,
-                                   bool requireFifoLatestReady, bool validationEnabled, bool preferExt)
+                                   bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool validationEnabled,
+                                   bool preferExt)
 {
     const float queuePriorities[]              = {1.0f};
     const VkDeviceQueueCreateInfo queueInfos[] = {{
@@ -201,7 +201,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
     {
         extensions.push_back("VK_KHR_device_group");
     }
-    if (requireFifoLatestReady)
+    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
     {
         extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
     }
@@ -230,7 +230,7 @@ Move<VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, VkInstance 
         pNext                               = &swapchainMaintenance1Features;
     }
 
-    if (requireFifoLatestReady)
+    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
     {
         fifoLatestReadyFeatures.pNext = pNext;
         pNext                         = &fifoLatestReadyFeatures;
@@ -280,14 +280,13 @@ struct DeviceHelper
     const VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, VkInstance instance, VkSurfaceKHR surface,
-                 bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool requireFifoLatestReady,
-                 bool preferExt, const VkAllocationCallbacks *pAllocator = nullptr)
+                 bool requireSwapchainMaintenance1, bool requireDeviceGroup, bool preferExt,
+                 const VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
                                      pAllocator, requireSwapchainMaintenance1, requireDeviceGroup,
-                                     requireFifoLatestReady,
                                      context.getTestContext().getCommandLine().isValidationEnabled(), preferExt))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
@@ -795,7 +794,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     }
 
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surfaces[0], true,
-                                 testParams.bindImageMemory, false, testParams.preferExt);
+                                 testParams.bindImageMemory, testParams.preferExt);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -840,9 +839,15 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
         if (isSharedPresentMode[i] && (sharedImageUsage & VK_IMAGE_USAGE_TRANSFER_DST_BIT) == 0)
             TCU_THROW(NotSupportedError, "Transfer dst with shared present mode not supported");
 
-        swapchainInfo.push_back(getBasicSwapchainParameters(
-            *surfaces[i], surfaceFormats[0], native.windowSize, testParams.modes[i], transform,
-            isSharedPresentMode[i] ? 1 : capabilities.minImageCount, testParams.deferMemoryAllocation));
+        // VUID-VkSwapchainCreateInfoKHR-presentMode-02839
+        uint32_t imageCount = isSharedPresentMode[i] ? 1 : capabilities.minImageCount + 1;
+
+        if (!isSharedPresentMode[i] && capabilities.maxImageCount > 0)
+            imageCount = de::min(imageCount, capabilities.maxImageCount);
+
+        swapchainInfo.push_back(getBasicSwapchainParameters(*surfaces[i], surfaceFormats[0], native.windowSize,
+                                                            testParams.modes[i], transform, imageCount,
+                                                            testParams.deferMemoryAllocation));
 
         VkSwapchainPresentModesCreateInfoEXT compatibleModesCreateInfo = {
             VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_MODES_CREATE_INFO_EXT,
@@ -909,7 +914,8 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t foreverNs = 1000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -1252,7 +1258,7 @@ tcu::TestStatus presentModesQueryTest(Context &context, const PresentModesTestCo
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1529,7 +1535,7 @@ tcu::TestStatus scalingQueryTest(Context &context, const ScalingQueryTestConfig 
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1564,7 +1570,8 @@ tcu::TestStatus scalingQueryCompatibleModesTest(Context &context, const ScalingQ
     const TestNativeObjects native(context, instHelper.supportedExtensions, testParams.wsiType, 1);
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false, false, false);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, false, false,
+                                 testParams.preferExt);
 
     const std::vector<VkPresentModeKHR> presentModes =
         getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
@@ -1632,7 +1639,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false, false,
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false,
                                  testParams.preferExt);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
@@ -1729,7 +1736,8 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t foreverNs = 1000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -2161,9 +2169,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, testParams.wsiType, *native.display,
                                                *native.windows[0], context.getTestContext().getCommandLine()));
 
-    const bool requireFifoLatestReady = testParams.mode == VK_PRESENT_MODE_FIFO_LATEST_READY_EXT;
     const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, true, false,
-                                 requireFifoLatestReady, testParams.preferExt);
+                                 testParams.preferExt);
     const DeviceInterface &vkd = devHelper.vkd;
     const VkDevice device      = *devHelper.device;
 
@@ -2229,7 +2236,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-7782
+    const uint64_t foreverNs = 1000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -2268,20 +2276,25 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             const VkSemaphore presentSem = **presentSems[i];
             VkSemaphore acquireSem       = **acquireSems[i];
             std::vector<uint32_t> acquiredIndices(acquireCount, 0x12345);
-            FenceSp acquireFenceSp      = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
-            const VkFence &acquireFence = **acquireFenceSp;
+            std::vector<FenceSp> acquireFences(acquireCount);
+
+            // VUID-vkAcquireNextImageKHR-fence-10066
+            for (uint32_t j = 0; j < acquireCount; ++j)
+            {
+                acquireFences[j] = FenceSp(new Unique<VkFence>(createFence(vkd, device)));
+            }
 
             VkResult result = VK_SUCCESS;
             if (!isSharedPresentMode || needSharedPresentAcquire)
             {
                 result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
-                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, acquireFence,
+                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
 
                 if (result == VK_SUCCESS)
                 {
-                    VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
-                    VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+                    VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[0], VK_TRUE, kMaxFenceWaitTimeout));
+                    VK_CHECK(vkd.resetFences(device, 1u, &**acquireFences[0]));
                 }
             }
 
@@ -2304,12 +2317,12 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                               "Unexpected change in number of swapchain images when recreated during window resize");
 
                 result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
-                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, acquireFence,
+                                                 presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
                 if (result == VK_SUCCESS)
                 {
-                    VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
-                    VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+                    VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[0], VK_TRUE, kMaxFenceWaitTimeout));
+                    VK_CHECK(vkd.resetFences(device, 1u, &**acquireFences[0]));
                 }
             }
 
@@ -2329,10 +2342,10 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             for (uint32_t j = 1; j < acquireCount; ++j)
             {
                 VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
-                                                     presentIndex == j ? acquireSem : VK_NULL_HANDLE, acquireFence,
-                                                     &acquiredIndices[j]));
-                VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, kMaxFenceWaitTimeout));
-                VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+                                                     presentIndex == j ? acquireSem : VK_NULL_HANDLE,
+                                                     **acquireFences[j], &acquiredIndices[j]));
+                VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[j], VK_TRUE, kMaxFenceWaitTimeout));
+                VK_CHECK(vkd.resetFences(device, 1u, &**acquireFences[j]));
             }
 
             // Construct a list of image indices to be released.  That is every index except the one being presented, if any.
@@ -2354,6 +2367,12 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
                 native.resizeWindow(0, windowSize);
             }
+
+            // VUID-VkReleaseSwapchainImagesInfoKHR-pImageIndices-07786
+            Move<VkFence> completionFence;
+
+            if (imageReleaseSize > 0 && doPresent)
+                completionFence = createFence(vkd, device);
 
             if (doPresent)
             {
@@ -2405,7 +2424,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     1u,
                     &presentSem,
                 };
-                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE));
+                VK_CHECK(vkd.queueSubmit(devHelper.queue, 1u, &submitInfo, *completionFence));
             }
 
             // If asked to release before present, do so now.
@@ -2420,6 +2439,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             bool imagesReleased = false;
             if (testParams.releaseBeforePresent && imageReleaseSize > 0)
             {
+                if (completionFence.get() != VK_NULL_HANDLE)
+                    VK_CHECK(vkd.waitForFences(device, 1u, &*completionFence, VK_TRUE, kMaxFenceWaitTimeout));
+
                 VK_CHECK(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                 imagesReleased = true;
                 // Since the image was released, it should be acquired again in shared present mode.
@@ -2453,6 +2475,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     // If OUT_OF_DATE is returned from present, recreate the swapchain and release images to the retired swapchain.
                     if (!imagesReleased && testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
+                        if (completionFence.get() != VK_NULL_HANDLE)
+                            VK_CHECK(vkd.waitForFences(device, 1u, &*completionFence, VK_TRUE, kMaxFenceWaitTimeout));
+
                         VK_CHECK(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                         imagesReleased = true;
                     }
@@ -2470,6 +2495,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
 
                     if (!imagesReleased && !testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {
+                        if (completionFence.get() != VK_NULL_HANDLE)
+                            VK_CHECK(vkd.waitForFences(device, 1u, &*completionFence, VK_TRUE, kMaxFenceWaitTimeout));
+
                         // Release the images to the retired swapchain before deleting it (as part of move assignment below)
                         VK_CHECK(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                         imagesReleased = true;
@@ -2499,6 +2527,9 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             // If asked to release after present, do it now.
             if (!imagesReleased && imageReleaseSize > 0)
             {
+                if (completionFence.get() != VK_NULL_HANDLE)
+                    VK_CHECK(vkd.waitForFences(device, 1u, &*completionFence, VK_TRUE, kMaxFenceWaitTimeout));
+
                 VK_CHECK_WSI(vkd.releaseSwapchainImagesKHR(device, &releaseInfo));
                 // Since the image was released, it should be acquired again in shared present mode.
                 needSharedPresentAcquire = true;

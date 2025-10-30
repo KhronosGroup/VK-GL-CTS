@@ -336,52 +336,44 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "e0bad2825dacf274578ec6d3c0e64e406d5e4fd7",
+        "a167f0df7c071e3530dbb88dfe5c64071a6a4629",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "8a85691a0740d390761a1008b4696f57facd02c4",
+        "36b4d078576ad465e85b4b0502695ac5f3edb2e6",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "2a611a970fdbc41ac2e3e328802aed9985352dca",
+        "6bb105b6c4b3a246e1e6bb96366fe14c6dbfde83",
         "spirv-headers"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Docs.git",
         "git@github.com:KhronosGroup/Vulkan-Docs.git",
-        "6ecb205ac29c6c07186c500460c1d9b837993ec2",
+        "805d2ca04d00074ee4debe327fc7d7eb3016f67e",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "68e4cdd8269c2af39aa16793c9089d1893eae972",
+        "0a11cf1257471c22b9e7d620ab48057fb2f53cf9",
         "vulkan-validationlayers",
         postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "57ba1ca211b6f4890c013dcf42cb16069ae916dd",
+        "9482448393f3f1f75067cc6ba8ad77fda48691c6",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
         "git@github.com:open-source-parsers/jsoncpp.git",
         "9059f5cad030ba11d37818847443a53918c327b1",
         "jsoncpp"),
-    # NOTE: The samples application is not well suited to external
-    # integration, this fork contains the small fixes needed for use
-    # by the CTS.
-    GitRepo(
-        "https://github.com/Igalia/vk_video_samples.git",
-        "git@github.com:Igalia/vk_video_samples.git",
-        "435807a3f875d83aa00f5b4b0702dc156ba3ffa9",
-        "nvidia-video-samples"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "v0.3.1",
+        "v0.3.5",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(
