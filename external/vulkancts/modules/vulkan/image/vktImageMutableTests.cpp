@@ -1102,7 +1102,8 @@ void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
         const vk::VkSampleCountFlagBits samples =
             getMaxAvailableSampleCount(context, format, imageType, imageUsage, msImgflags);
 
-        if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+        if ((samples == VK_SAMPLE_COUNT_1_BIT) ||
+            (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
                  context.getPhysicalDevice(), format, getImageType(m_caseDef.imageType), VK_IMAGE_TILING_OPTIMAL,
                  imageUsage, msImgflags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
         {
