@@ -2819,6 +2819,45 @@ string dumpWholeMatrix(void *data, VkComponentTypeKHR dt, bool colMajor, uint32_
 }
 #endif
 
+#ifndef CTS_USES_VULKANSC
+template <typename F8Type>
+static float toF8Exact(float x)
+{
+    F8Type fp8{x, tcu::ROUND_TO_EVEN};
+    return fp8.asFloat();
+}
+#endif // CTS_USES_VULKANSC
+
+// Calculate a threshold designed specially for BFloat16 cases, which have low precission, by finding a range of
+// acceptable values around the given exponent, and manipulating the last two mantissa bits. Not applied to denorm, infs
+// and nans, so the result is an empty Maybe<float> for those cases, while the rest will get an actual value.
+tcu::Maybe<float> calcB16Threshold(const float origRef)
+{
+    const BFloat16 b16Ref(origRef);
+
+    if (b16Ref.isDenorm() || b16Ref.isInf() || b16Ref.isNaN())
+        return tcu::Nothing;
+
+    float threshold = 0.0f;
+
+    if (b16Ref.isZero())
+        threshold = 2.351e-38f; // Around twice the smallest normal number.
+    else
+    {
+        const auto sign = b16Ref.sign();
+        const auto exp  = b16Ref.exponent();
+        const auto mant = b16Ref.mantissa();
+
+        const BFloat16 refTrunc = BFloat16::construct(sign, exp, (mant & 0xFFFCu)); // Truncate last two bits.
+        const BFloat16 refSat   = BFloat16::construct(sign, exp, (mant | 0x3u));    // Saturate last two bits.
+
+        // Whatever gives us the largest difference.
+        threshold = std::max(fabs(refTrunc.asFloat() - origRef), fabs(refSat.asFloat() - origRef));
+    }
+
+    return tcu::just(threshold);
+}
+
 tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
@@ -3789,6 +3828,9 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                 uint32_t numMatrixY = (m_data.scope == VK_SCOPE_WORKGROUP_KHR) ?
                                           m_data.workgroupsY :
                                           (m_data.subgroupsPerWorkgroupY * m_data.workgroupsY);
+
+                const bool isB16Dij = (dataTypes[3] == VK_COMPONENT_TYPE_BFLOAT16_KHR);
+
                 for (uint32_t mX = 0; mX < numMatrixX; ++mX)
                 {
                     for (uint32_t mY = 0; mY < numMatrixY; ++mY)
@@ -3847,13 +3889,38 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 {
                                     ref = Combine(ref, getA(i, j));
                                 }
+
+                                bool specialB16Check   = false;
+                                float specialThreshold = 0.0f;
+
+                                if (isB16Dij)
+                                {
+                                    const auto maybeThres = calcB16Threshold(ref);
+                                    if (!!maybeThres)
+                                    {
+                                        specialB16Check  = true;
+                                        specialThreshold = *maybeThres;
+                                    }
+                                }
+
                                 for (uint32_t j = 0; j < outputN; ++j)
                                 {
                                     float Dij = getD(i, j);
-                                    if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                    if (specialB16Check)
                                     {
-                                        //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
-                                        res = QP_TEST_RESULT_FAIL;
+                                        if (fabs(ref - Dij) > specialThreshold)
+                                        {
+                                            //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                            res = QP_TEST_RESULT_FAIL;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                        {
+                                            //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                            res = QP_TEST_RESULT_FAIL;
+                                        }
                                     }
                                     float Di0 = getD(i, 0);
                                     if (Dij != Di0)
@@ -3873,13 +3940,38 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 {
                                     ref = Combine(ref, getA(i, j));
                                 }
+
+                                bool specialB16Check   = false;
+                                float specialThreshold = 0.0f;
+
+                                if (isB16Dij)
+                                {
+                                    const auto maybeThres = calcB16Threshold(ref);
+                                    if (!!maybeThres)
+                                    {
+                                        specialB16Check  = true;
+                                        specialThreshold = *maybeThres;
+                                    }
+                                }
+
                                 for (uint32_t i = 0; i < outputM; ++i)
                                 {
                                     float Dij = getD(i, j);
-                                    if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                    if (specialB16Check)
                                     {
-                                        //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
-                                        res = QP_TEST_RESULT_FAIL;
+                                        if (fabs(ref - Dij) > specialThreshold)
+                                        {
+                                            //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                            res = QP_TEST_RESULT_FAIL;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                        {
+                                            //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                            res = QP_TEST_RESULT_FAIL;
+                                        }
                                     }
                                     float D0j = getD(0, j);
                                     if (Dij != D0j)
@@ -3900,15 +3992,40 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                     ref = Combine(ref, getA(i, j));
                                 }
                             }
+
+                            bool specialB16Check   = false;
+                            float specialThreshold = 0.0f;
+
+                            if (isB16Dij)
+                            {
+                                const auto maybeThres = calcB16Threshold(ref);
+                                if (!!maybeThres)
+                                {
+                                    specialB16Check  = true;
+                                    specialThreshold = *maybeThres;
+                                }
+                            }
+
                             for (uint32_t i = 0; i < outputM; ++i)
                             {
                                 for (uint32_t j = 0; j < outputN; ++j)
                                 {
                                     float Dij = getD(i, j);
-                                    if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                    if (specialB16Check)
                                     {
-                                        //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
-                                        res = QP_TEST_RESULT_FAIL;
+                                        if (fabs(ref - Dij) > specialThreshold)
+                                        {
+                                            //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                            res = QP_TEST_RESULT_FAIL;
+                                        }
+                                    }
+                                    else
+                                    {
+                                        if (fabs(ref - Dij) / (fabs(ref) + 0.001) > 3.0 / 1024)
+                                        {
+                                            //printf("mX %d mY %d i %d j %d ref %f Dij %f\n", mX, mY, i, j, ref, Dij);
+                                            res = QP_TEST_RESULT_FAIL;
+                                        }
                                     }
                                     float D00 = getD(0, 0);
                                     if (Dij != D00)
@@ -4503,6 +4620,20 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                 float Cij = getDataFloat(ptrs[2], dataTypes[2], ij);
 
                                 ref += Cij;
+
+#ifndef CTS_USES_VULKANSC
+                                switch (dataTypes[3])
+                                {
+                                case VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT:
+                                    ref = toF8Exact<tcu::FloatE5M2>(ref);
+                                    break;
+                                case VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT:
+                                    ref = toF8Exact<tcu::FloatE4M3>(ref);
+                                    break;
+                                default:
+                                    break;
+                                }
+#endif //CTS_USES_VULKANSC
 
                                 // When loading with stride 0, ij for matrix D is different from matrix C
                                 if (m_data.colMajor)
