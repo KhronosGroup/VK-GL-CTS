@@ -25,3 +25,4 @@ static const VkConformanceVersion knownConformanceVersions[]
 	makeConformanceVersion(1, 3, 9, 1),
 	makeConformanceVersion(1, 3, 9, 0),
 };
+

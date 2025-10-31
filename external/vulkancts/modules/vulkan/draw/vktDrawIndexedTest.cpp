@@ -1085,6 +1085,7 @@ public:
     {
         caps.addExtension("VK_KHR_create_renderpass2");
         caps.addExtension("VK_KHR_dynamic_rendering");
+        caps.addFeature(&vk::VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
 
         caps.addExtension(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
         caps.addFeature(&vk::VkPhysicalDeviceMultiDrawFeaturesEXT::multiDraw);
