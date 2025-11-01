@@ -1840,9 +1840,11 @@ tcu::TestStatus varyingSamplesFragTest(Context &context, VaryingSamplesFragParam
 class PipelineNoRenderingTestInstance : public vkt::TestInstance
 {
 public:
-    PipelineNoRenderingTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType)
+    PipelineNoRenderingTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType,
+                                    const bool unusedAttachment)
         : vkt::TestInstance(context)
         , m_pipelineConstructionType(pipelineConstructionType)
+        , m_unusedAttachment(unusedAttachment)
     {
     }
     ~PipelineNoRenderingTestInstance(void)
@@ -1851,7 +1853,8 @@ public:
     tcu::TestStatus iterate(void) override;
 
 private:
-    PipelineConstructionType m_pipelineConstructionType;
+    const PipelineConstructionType m_pipelineConstructionType;
+    const bool m_unusedAttachment;
 };
 
 tcu::TestStatus PipelineNoRenderingTestInstance::iterate()
@@ -1948,8 +1951,17 @@ tcu::TestStatus PipelineNoRenderingTestInstance::iterate()
         vk::VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
         clearValueColor                                      // VkClearValue clearValue;
     };
-    const VkRenderingInfoKHR render_info = {
-        VK_STRUCTURE_TYPE_RENDERING_INFO_KHR, 0, 0, renderArea, 1, 0, 1, &colorAttachments, nullptr, nullptr};
+    const uint32_t attachmentCount       = m_unusedAttachment ? 1u : 0u;
+    const VkRenderingInfoKHR render_info = {VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+                                            0,
+                                            0,
+                                            renderArea,
+                                            1,
+                                            0,
+                                            attachmentCount,
+                                            &colorAttachments,
+                                            nullptr,
+                                            nullptr};
 
     beginCommandBuffer(vkd, *cmdBuffer);
     vkd.cmdBeginRendering(*cmdBuffer, &render_info);
@@ -1966,9 +1978,10 @@ class PipelineNoRenderingTestCase : public vkt::TestCase
 {
 public:
     PipelineNoRenderingTestCase(tcu::TestContext &testCtx, const std::string &name,
-                                PipelineConstructionType pipelineConstructionType)
+                                const PipelineConstructionType pipelineConstructionType, const bool unusedAttachment)
         : vkt::TestCase(testCtx, name)
         , m_pipelineConstructionType(pipelineConstructionType)
+        , m_unusedAttachment(unusedAttachment)
     {
     }
     ~PipelineNoRenderingTestCase(void)
@@ -1980,11 +1993,12 @@ public:
 
 private:
     const PipelineConstructionType m_pipelineConstructionType;
+    const bool m_unusedAttachment;
 };
 
 TestInstance *PipelineNoRenderingTestCase::createInstance(Context &context) const
 {
-    return new PipelineNoRenderingTestInstance(context, m_pipelineConstructionType);
+    return new PipelineNoRenderingTestInstance(context, m_pipelineConstructionType, m_unusedAttachment);
 }
 
 void PipelineNoRenderingTestCase::checkSupport(Context &context) const
@@ -1994,7 +2008,8 @@ void PipelineNoRenderingTestCase::checkSupport(Context &context) const
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
 
-    if (!context.getDynamicRenderingUnusedAttachmentsFeaturesEXT().dynamicRenderingUnusedAttachments)
+    if (m_unusedAttachment &&
+        !context.getDynamicRenderingUnusedAttachmentsFeaturesEXT().dynamicRenderingUnusedAttachments)
         TCU_THROW(NotSupportedError, "dynamicRenderingUnusedAttachments");
 }
 
@@ -2319,7 +2334,9 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx, PipelineConstruct
 #ifndef CTS_USES_VULKANSC
     if (!isConstructionTypeShaderObject(pipelineConstructionType))
     {
-        miscTests->addChild(new PipelineNoRenderingTestCase(testCtx, "no_rendering", pipelineConstructionType));
+        miscTests->addChild(new PipelineNoRenderingTestCase(testCtx, "no_rendering", pipelineConstructionType, false));
+        miscTests->addChild(
+            new PipelineNoRenderingTestCase(testCtx, "no_rendering_unused_attachment", pipelineConstructionType, true));
     }
 #endif
 
