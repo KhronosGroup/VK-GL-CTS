@@ -430,9 +430,91 @@ struct TestParams
         return (getRenderingType() == RENDERING_TYPE_DYNAMIC_RENDERING);
     }
 
-    uint32_t getDepthStencilInputAttOffsetDynamicRendering() const
+    tcu::Maybe<uint32_t> getMaxColorInputAttachmentIndex(uint32_t resolvePassIndex) const
     {
-        return 100u;
+        tcu::Maybe<uint32_t> maxIndex = tcu::Nothing;
+        const auto &resolvePass       = resolvePasses.at(resolvePassIndex);
+
+        if (useDynamicRendering())
+        {
+            if (!locationRemapping)
+            {
+                // Find the highest resolve location for a color attachment.
+                for (const auto &attResolve : resolvePass.attachmentResolves)
+                {
+                    if (attResolve.attachment.aspects & VK_IMAGE_ASPECT_COLOR_BIT)
+                    {
+                        const auto resolveLocation = attachmentList.at(attResolve.attachment.index).resolveLocation;
+                        if (!maxIndex || *maxIndex < resolveLocation)
+                            maxIndex = tcu::just(resolveLocation);
+                    }
+                }
+            }
+            else
+            {
+                // Find the highest resolve index corresponding to a color attachment.
+                for (size_t i = resolvePass.attachmentResolves.size(); i > 0; --i)
+                {
+                    const auto idx         = i - 1u;
+                    const auto &attResolve = resolvePass.attachmentResolves.at(idx);
+                    if (attResolve.attachment.aspects & VK_IMAGE_ASPECT_COLOR_BIT)
+                    {
+                        maxIndex = tcu::just(static_cast<uint32_t>(idx));
+                        break;
+                    }
+                }
+            }
+        }
+        else
+        {
+            for (const auto &attResolve : resolvePass.attachmentResolves)
+            {
+                if (attResolve.attachment.aspects & VK_IMAGE_ASPECT_COLOR_BIT)
+                {
+                    const auto attIndex = attResolve.attachment.index;
+                    if (!maxIndex || *maxIndex < attIndex)
+                        maxIndex = tcu::just(attIndex);
+                }
+            }
+        }
+
+        return maxIndex;
+    }
+
+    // The input attachment offset for depth/stencil in a given resolve pass, if needed.
+    uint32_t getDepthStencilInputAttOffsetDynamicRendering(uint32_t resolvePassIndex) const
+    {
+        const auto maxIndex = getMaxColorInputAttachmentIndex(resolvePassIndex);
+        return ((!maxIndex) ? 0u : (*maxIndex + 1u));
+    }
+
+    uint32_t getMaxInputAttachmentCount() const
+    {
+        tcu::Maybe<uint32_t> maxCount;
+
+        for (uint32_t i = 0u; i < de::sizeU32(resolvePasses); ++i)
+        {
+            const auto &resolvePass     = resolvePasses.at(i);
+            const auto maxColorIndex    = getMaxColorInputAttachmentIndex(i);
+            const auto dsResolveAspects = resolvePass.depthStencilResolveAspects();
+
+            // Extremely paranoid check because attachment counts are low.
+            if (maxColorIndex)
+                DE_ASSERT(*maxColorIndex <= static_cast<uint32_t>(std::numeric_limits<int>::max()));
+
+            int topIndex = (maxColorIndex ? static_cast<int>(*maxColorIndex) : -1);
+            if (dsResolveAspects & VK_IMAGE_ASPECT_STENCIL_BIT)
+                topIndex += 2;
+            else if (dsResolveAspects & VK_IMAGE_ASPECT_DEPTH_BIT)
+                topIndex += 1;
+
+            const auto candidateCount = static_cast<uint32_t>(topIndex + 1);
+            if (!maxCount || *maxCount < candidateCount)
+                maxCount = tcu::just(candidateCount);
+        }
+
+        DE_ASSERT(!!maxCount);
+        return *maxCount;
     }
 
     // Returns the highest resolve location for any color attachment in the resolve pass resolvePassIndex. If that
@@ -607,9 +689,11 @@ stencil_export_end:
     // upload fragment shaders (and their corresponding rendering passes) create gaps in the attachments list to use
     // the global attachment index as the output location. In practice, this means we're limited by the global
     // attachment count. That's why, to simplify, we also only allow a single depth/stencil attachment.
-    const auto &maxColorAttachments = context.getDeviceProperties().limits.maxColorAttachments;
-    uint32_t dsCount                = 0u;
+    const auto &limits                                = context.getDeviceProperties().limits;
+    const auto &maxColorAttachments                   = limits.maxColorAttachments;
+    const auto &maxPerStageDescriptorInputAttachments = limits.maxPerStageDescriptorInputAttachments;
 
+    uint32_t dsCount = 0u;
     for (const auto &att : m_params.attachmentList)
     {
         if (att.isDepthStencil())
@@ -655,6 +739,18 @@ stencil_export_end:
         DE_ASSERT(passDSCount <= 1u);
         if (passDSCount == 1u)
             DE_ASSERT(m_params.attachmentList.at(pass.attachmentResolves.back().attachment.index).isDepthStencil());
+    }
+
+    // Verify we do not exceed maxPerStageDescriptorInputAttachments.
+    {
+        const auto maxInputAttachmentCount = m_params.getMaxInputAttachmentCount();
+        if (maxInputAttachmentCount > maxPerStageDescriptorInputAttachments)
+        {
+            std::ostringstream msg;
+            msg << "Highest input attachment count (" << maxInputAttachmentCount
+                << ") >= maxPerStageDescriptorInputAttachments (" << maxPerStageDescriptorInputAttachments << ")";
+            TCU_THROW(NotSupportedError, msg.str());
+        }
     }
 
     // Verify that the resolve mode is supported if we resolve depth and/or stencil.
@@ -753,7 +849,7 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
         programCollection.glslSources.add(shaderName) << glu::FragmentSource(frag.str());
     }
 
-    for (size_t i = 0; i < m_params.resolvePasses.size(); ++i)
+    for (uint32_t i = 0; i < de::sizeU32(m_params.resolvePasses); ++i)
     {
         const auto &pass = m_params.resolvePasses.at(i);
 
@@ -767,15 +863,17 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
 
         bool stencilRef = false;
 
-        for (const auto &attResolve : pass.attachmentResolves)
+        for (size_t resolveIdx = 0u; resolveIdx < pass.attachmentResolves.size(); ++resolveIdx)
         {
+            const auto &attResolve    = pass.attachmentResolves.at(resolveIdx);
             const auto attIndex       = attResolve.attachment.index;
             const auto &attInfo       = m_params.attachmentList.at(attIndex);
+            const auto attLocation    = attInfo.resolveLocation; // We may remap the index for this attachment.
             const bool resolveColor   = (attResolve.attachment.aspects & VK_IMAGE_ASPECT_COLOR_BIT);
             const bool resolveDepth   = (attResolve.attachment.aspects & VK_IMAGE_ASPECT_DEPTH_BIT);
             const bool resolveStencil = (attResolve.attachment.aspects & VK_IMAGE_ASPECT_STENCIL_BIT);
             const auto dsInputAttachmentBase =
-                (m_params.useDynamicRendering() ? m_params.getDepthStencilInputAttOffsetDynamicRendering() : attIndex);
+                (m_params.useDynamicRendering() ? m_params.getDepthStencilInputAttOffsetDynamicRendering(i) : attIndex);
 
             // This attachment may not need resolving.
             if (!attInfo.isMultiSample())
@@ -787,8 +885,30 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
                 << "} attInfo" << attIndex << ";\n";
 
             if (resolveColor && attInfo.usedInResolvePipeline)
-                descriptors << "layout (set=1, binding=" << attIndex << ", input_attachment_index=" << attIndex
-                            << ") uniform subpassInputMS inColor" << attIndex << ";\n";
+            {
+                // For dynamic rendering:
+                //
+                // The input attachment index is related to the position that the attachment will have in the pipeline
+                // rendering info, and the rendering info at vkCmdBeginRendering time (both will match).
+                //
+                // When we are not remapping attachments, those arrays are set up in such a way that an attachment with
+                // resolve location N will appear at position N, so the input attachment index needs to be the resolve
+                // location N. See below.
+                //
+                // If we are remapping attachments, each resolved attachment for a given resolve pass will be stored
+                // sequentially, without gaps, in both arrays, and the remapping will make sure each attachment is
+                // mapped to the final resolve location. The input attachment index needs to match the attachment index
+                // in the resolve pass. See below.
+                //
+                // Note we do not call vkCmdSetRenderingInputAttachmentIndices to remap color input attachment indices.
+                const auto inputAttachmentIndex =
+                    (m_params.useDynamicRendering() ? (m_params.locationRemapping ? resolveIdx : attLocation) :
+                                                      attIndex);
+
+                descriptors << "layout (set=1, binding=" << attIndex
+                            << ", input_attachment_index=" << inputAttachmentIndex << ") uniform subpassInputMS inColor"
+                            << attIndex << ";\n";
+            }
             if (resolveDepth)
                 descriptors << "layout (set=1, binding=" << attIndex
                             << ", input_attachment_index=" << dsInputAttachmentBase
@@ -802,9 +922,6 @@ void CustomResolveCase::initPrograms(vk::SourceCollections &programCollection) c
                             << ", input_attachment_index=" << (dsInputAttachmentBase + 1u)
                             << ") uniform usubpassInputMS inStencil;\n";
             }
-
-            // We may be remapping the index for this attachment, so its location will vary.
-            const auto attLocation = attInfo.resolveLocation;
 
             if (resolveColor && attInfo.usedInResolvePipeline)
             {
@@ -968,20 +1085,18 @@ inline de::SharedPtr<Move<T>> makeVkSharedPtr(Move<T> move)
 
 tcu::TestStatus CustomResolveInstance::iterate(void)
 {
-    const auto ctx                                   = m_context.getContextCommonData();
-    const bool dynamicRendering                      = m_params.useDynamicRendering();
-    const bool useSecondaries                        = m_params.groupParams->useSecondaryCmdBuffer;
-    const uint32_t dynamicRenderingDepthInputIndex   = m_params.getDepthStencilInputAttOffsetDynamicRendering();
-    const uint32_t dynamicRenderingStencilInputIndex = dynamicRenderingDepthInputIndex + 1u;
-    const auto extent                                = m_params.getExtent();
-    const auto extentVk                              = makeExtent3D(extent);
-    const auto pixelCount                            = extent.x() * extent.y() * extent.z();
-    const auto colorSRL                              = makeSimpleImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT);
-    const auto depthSRR                              = makeSimpleImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT);
-    const auto depthSRL                              = makeSimpleImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT);
-    const auto stencilSRR                            = makeSimpleImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT);
-    const auto stencilSRL                            = makeSimpleImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT);
-    auto &log                                        = m_context.getTestContext().getLog();
+    const auto ctx              = m_context.getContextCommonData();
+    const bool dynamicRendering = m_params.useDynamicRendering();
+    const bool useSecondaries   = m_params.groupParams->useSecondaryCmdBuffer;
+    const auto extent           = m_params.getExtent();
+    const auto extentVk         = makeExtent3D(extent);
+    const auto pixelCount       = extent.x() * extent.y() * extent.z();
+    const auto colorSRL         = makeSimpleImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT);
+    const auto depthSRR         = makeSimpleImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT);
+    const auto depthSRL         = makeSimpleImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT);
+    const auto stencilSRR       = makeSimpleImageSubresourceRange(VK_IMAGE_ASPECT_STENCIL_BIT);
+    const auto stencilSRL       = makeSimpleImageSubresourceLayers(VK_IMAGE_ASPECT_STENCIL_BIT);
+    auto &log                   = m_context.getTestContext().getLog();
 
     if (useSecondaries)
     {
@@ -1185,6 +1300,9 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     RenderingInfoVec uploadRenderingInfos;
     RenderingInfoVec resolveRenderingInfos;
 
+    std::vector<uint32_t> depthInputAttachmentIndices(m_params.resolvePasses.size(), 0u);
+    std::vector<uint32_t> stencilInputAttachmentIndices(m_params.resolvePasses.size(), 0u);
+
     std::vector<RenderingInputAttachmentIndexInfoPtr> resolveInputAttachmentIndexInfos;
     resolveInputAttachmentIndexInfos.reserve(m_params.resolvePasses.size());
 
@@ -1335,7 +1453,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             // Multisample attachments which are resolved in this subpass need to be included in the input attachment
             // reference list. However, if they're not resolved or they're not multisampled, we need to insert an unused
             // attachment reference in the list so the input attachment index matches the frag shader, which uses the
-            // global attachment index as the input attachment index and descriptor binding number.
+            // global attachment index as the input attachment index and descriptor binding number for classic RPs.
             for (uint32_t i = 0; i < de::sizeU32(m_params.attachmentList); ++i)
             {
                 const auto &attInfo = m_params.attachmentList.at(i);
@@ -2022,13 +2140,17 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             resolveInputAttachmentIndexInfos.emplace_back(nullptr);
             if (dynamicRendering && depthStencilAttIndexAspects)
             {
+                const auto dsInputAttOffset         = m_params.getDepthStencilInputAttOffsetDynamicRendering(i);
+                depthInputAttachmentIndices.at(i)   = dsInputAttOffset;
+                stencilInputAttachmentIndices.at(i) = dsInputAttOffset + 1u;
+
                 resolveInputAttachmentIndexInfos.back().reset(new VkRenderingInputAttachmentIndexInfo{
                     VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO,
                     nullptr,
                     colorAttachmentCount,
                     nullptr,
-                    (resolveDepth ? &dynamicRenderingDepthInputIndex : nullptr),
-                    (resolveStencil ? &dynamicRenderingStencilInputIndex : nullptr),
+                    (resolveDepth ? &depthInputAttachmentIndices.at(i) : nullptr),
+                    (resolveStencil ? &stencilInputAttachmentIndices.at(i) : nullptr),
                 });
             }
         }
@@ -2510,32 +2632,34 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     };
 
     // We will reuse this function to record the main tasks of resolve passes in primary or secondary cmd buffers.
-    const auto recordMainResolvePassContents = [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIdx)
+    const auto recordMainResolvePassContents = [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIndex)
     {
-        const auto &resolvePass = m_params.resolvePasses.at(resolvePassIdx);
+        const auto &resolvePass = m_params.resolvePasses.at(resolvePassIndex);
         ctx.vkd.cmdBindDescriptorSets(targetCmdBuffer, bindPoint, resolvePipelineLayout.get(), 0u,
                                       de::sizeU32(allDescriptorSets), de::dataOrNull(allDescriptorSets), 0u, nullptr);
         ctx.vkd.cmdPushConstants(targetCmdBuffer, resolvePipelineLayout.get(), pcStages, 0u, pcSize, &resolvePass.area);
-        if (dynamicRendering && resolveInputAttachmentIndexInfos.at(resolvePassIdx))
-        {
-            // The pNext pointer may have been modified while building the pipelines.
-            resolveInputAttachmentIndexInfos.at(resolvePassIdx)->pNext = nullptr;
-            ctx.vkd.cmdSetRenderingInputAttachmentIndices(targetCmdBuffer,
-                                                          resolveInputAttachmentIndexInfos.at(resolvePassIdx).get());
-        }
-        resolvePipelines.at(resolvePassIdx)->bind(targetCmdBuffer);
+        resolvePipelines.at(resolvePassIndex)->bind(targetCmdBuffer);
         ctx.vkd.cmdDraw(targetCmdBuffer, 4u, 1u, 0u, 0u);
     };
 
     // We will use this function to record the start of the resolve block.
-    const auto recordBeginCustomResolve = [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIdx)
+    const auto recordBeginCustomResolve = [&](VkCommandBuffer targetCmdBuffer, uint32_t resolvePassIndex)
     {
         ctx.vkd.cmdBeginCustomResolveEXT(targetCmdBuffer, nullptr);
-        if (resolveAttLocations.at(resolvePassIdx))
+
+        if (resolveAttLocations.at(resolvePassIndex))
         {
             // The pNext pointer may have been modified while building the pipelines.
-            resolveAttLocations.at(resolvePassIdx)->pNext = nullptr;
-            ctx.vkd.cmdSetRenderingAttachmentLocations(targetCmdBuffer, resolveAttLocations.at(resolvePassIdx).get());
+            resolveAttLocations.at(resolvePassIndex)->pNext = nullptr;
+            ctx.vkd.cmdSetRenderingAttachmentLocations(targetCmdBuffer, resolveAttLocations.at(resolvePassIndex).get());
+        }
+
+        if (resolveInputAttachmentIndexInfos.at(resolvePassIndex))
+        {
+            // The pNext pointer may have been modified while building the pipelines.
+            resolveInputAttachmentIndexInfos.at(resolvePassIndex)->pNext = nullptr;
+            ctx.vkd.cmdSetRenderingInputAttachmentIndices(targetCmdBuffer,
+                                                          resolveInputAttachmentIndexInfos.at(resolvePassIndex).get());
         }
     };
 
@@ -3411,6 +3535,9 @@ protected:
 
 void FragmentRegionCase::checkSupport(Context &context) const
 {
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.groupParams->pipelineConstructionType);
+
     const auto &crFeatures = context.getCustomResolveFeaturesEXT();
     if (!crFeatures.customResolve)
         TCU_THROW(NotSupportedError, "customResolve not supported");
