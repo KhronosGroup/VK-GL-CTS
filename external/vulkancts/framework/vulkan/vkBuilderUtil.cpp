@@ -37,7 +37,8 @@ DescriptorSetLayoutBuilder::DescriptorSetLayoutBuilder(void)
 DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addBinding(VkDescriptorType descriptorType,
                                                                    uint32_t descriptorCount,
                                                                    VkShaderStageFlags stageFlags,
-                                                                   const VkSampler *pImmutableSamplers)
+                                                                   const VkSampler *pImmutableSamplers,
+                                                                   VkDescriptorBindingFlags bindingFlags)
 {
     if (pImmutableSamplers)
     {
@@ -59,14 +60,14 @@ DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addBinding(VkDescriptorT
         nullptr,                     // pImmutableSamplers
     };
     m_bindings.push_back(binding);
+    m_bindingFlags.push_back(bindingFlags);
+
     return *this;
 }
 
-DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addIndexedBinding(VkDescriptorType descriptorType,
-                                                                          uint32_t descriptorCount,
-                                                                          VkShaderStageFlags stageFlags,
-                                                                          uint32_t dstBinding,
-                                                                          const VkSampler *pImmutableSamplers)
+DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addIndexedBinding(
+    VkDescriptorType descriptorType, uint32_t descriptorCount, VkShaderStageFlags stageFlags, uint32_t dstBinding,
+    const VkSampler *pImmutableSamplers, VkDescriptorBindingFlags bindingFlags)
 {
     if (pImmutableSamplers)
     {
@@ -87,6 +88,7 @@ DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addIndexedBinding(VkDesc
         nullptr,         // pImmutableSamplers
     };
     m_bindings.push_back(binding);
+    m_bindingFlags.push_back(bindingFlags);
     return *this;
 }
 
@@ -95,6 +97,7 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build(const DeviceInterf
 {
     // Create new layout bindings with pImmutableSamplers updated
     std::vector<VkDescriptorSetLayoutBinding> bindings = m_bindings;
+    std::vector<VkDescriptorBindingFlags> bindingFlags = m_bindingFlags;
 
     for (size_t samplerInfoNdx = 0; samplerInfoNdx < m_immutableSamplerInfos.size(); samplerInfoNdx++)
     {
@@ -112,9 +115,14 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build(const DeviceInterf
         bindings[bindingNdx].pImmutableSamplers = &m_immutableSamplers[samplerInfo.samplerBaseIndex];
     }
 
+    const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsCreateInfo = {
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO, nullptr,
+        (uint32_t)bindingFlags.size(),                                // bindingCount
+        (bindingFlags.empty()) ? (nullptr) : (&bindingFlags.front()), // pBindingFlags
+    };
     const VkDescriptorSetLayoutCreateInfo createInfo = {
         VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO,
-        nullptr,
+        &flagsCreateInfo,
         (VkDescriptorSetLayoutCreateFlags)extraFlags,         // flags
         (uint32_t)bindings.size(),                            // bindingCount
         (bindings.empty()) ? (nullptr) : (&bindings.front()), // pBinding

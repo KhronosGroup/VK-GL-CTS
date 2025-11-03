@@ -742,7 +742,8 @@ tcu::TestStatus UnusedInvalidDescriptorWriteTestInstance::queuePass(const QueueD
     Move<VkDescriptorSetLayout> descriptorSetLayout =
         DescriptorSetLayoutBuilder()
             .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-            .addArrayBinding(getVkDescriptorType(m_params.type), 3u, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addArrayBinding(getVkDescriptorType(m_params.type), 3u, VK_SHADER_STAGE_COMPUTE_BIT,
+                             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
             .addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
             .build(vk, device);
 
@@ -1045,7 +1046,8 @@ tcu::TestStatus InvalidDescriptorCopyTestInstance::queuePass(const QueueData &qu
     Move<VkDescriptorSetLayout> descriptorSetLayout =
         DescriptorSetLayoutBuilder()
             .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT)
-            .addArrayBinding(getVkDescriptorType(m_params.type), 3u, VK_SHADER_STAGE_COMPUTE_BIT)
+            .addArrayBinding(getVkDescriptorType(m_params.type), 3u, VK_SHADER_STAGE_COMPUTE_BIT,
+                             VK_DESCRIPTOR_BINDING_PARTIALLY_BOUND_BIT)
             .addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_COMPUTE_BIT)
             .build(vk, device);
 

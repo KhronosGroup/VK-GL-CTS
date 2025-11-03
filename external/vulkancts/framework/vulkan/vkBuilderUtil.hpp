@@ -37,52 +37,59 @@ public:
     DescriptorSetLayoutBuilder(void);
 
     DescriptorSetLayoutBuilder &addBinding(VkDescriptorType descriptorType, uint32_t descriptorCount,
-                                           VkShaderStageFlags stageFlags, const VkSampler *pImmutableSamplers);
+                                           VkShaderStageFlags stageFlags, const VkSampler *pImmutableSamplers,
+                                           VkDescriptorBindingFlags bindingFlags = 0);
 
     DescriptorSetLayoutBuilder &addIndexedBinding(VkDescriptorType descriptorType, uint32_t descriptorCount,
                                                   VkShaderStageFlags stageFlags, uint32_t dstBinding,
-                                                  const VkSampler *pImmutableSamplers);
+                                                  const VkSampler *pImmutableSamplers,
+                                                  VkDescriptorBindingFlags bindingFlags = 0);
 
     Move<VkDescriptorSetLayout> build(const DeviceInterface &vk, VkDevice device,
                                       VkDescriptorSetLayoutCreateFlags extraFlags = 0) const;
 
     // helpers
 
-    inline DescriptorSetLayoutBuilder &addSingleBinding(VkDescriptorType descriptorType, VkShaderStageFlags stageFlags)
+    inline DescriptorSetLayoutBuilder &addSingleBinding(VkDescriptorType descriptorType, VkShaderStageFlags stageFlags,
+                                                        VkDescriptorBindingFlags bindingFlags = 0)
     {
-        return addBinding(descriptorType, 1u, stageFlags, nullptr);
+        return addBinding(descriptorType, 1u, stageFlags, nullptr, bindingFlags);
     }
     inline DescriptorSetLayoutBuilder &addSingleIndexedBinding(VkDescriptorType descriptorType,
-                                                               VkShaderStageFlags stageFlags, uint32_t dstBinding)
+                                                               VkShaderStageFlags stageFlags, uint32_t dstBinding,
+                                                               VkDescriptorBindingFlags bindingFlags = 0)
     {
-        return addIndexedBinding(descriptorType, 1u, stageFlags, dstBinding, nullptr);
+        return addIndexedBinding(descriptorType, 1u, stageFlags, dstBinding, nullptr, bindingFlags);
     }
     inline DescriptorSetLayoutBuilder &addArrayBinding(VkDescriptorType descriptorType, uint32_t descriptorCount,
-                                                       VkShaderStageFlags stageFlags)
+                                                       VkShaderStageFlags stageFlags,
+                                                       VkDescriptorBindingFlags bindingFlags = 0)
     {
-        return addBinding(descriptorType, descriptorCount, stageFlags, nullptr);
+        return addBinding(descriptorType, descriptorCount, stageFlags, nullptr, bindingFlags);
     }
     inline DescriptorSetLayoutBuilder &addSingleSamplerBinding(
-        VkDescriptorType descriptorType, VkShaderStageFlags stageFlags,
-        const VkSampler *immutableSampler) //!< \note: Using pointer to sampler to clarify that handle is not
-                                           //!<        copied and argument lifetime is expected to cover build()
-                                           //!<        call.
+        VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, const VkSampler *immutableSampler,
+        VkDescriptorBindingFlags bindingFlags = 0) //!< \note: Using pointer to sampler to clarify that handle is not
+                                                   //!<        copied and argument lifetime is expected to cover build()
+                                                   //!<        call.
     {
-        return addBinding(descriptorType, 1u, stageFlags, immutableSampler);
+        return addBinding(descriptorType, 1u, stageFlags, immutableSampler, bindingFlags);
     }
     inline DescriptorSetLayoutBuilder &addSingleIndexedSamplerBinding(
         VkDescriptorType descriptorType, VkShaderStageFlags stageFlags, uint32_t dstBinding,
-        const VkSampler *immutableSampler) //!< \note: Using pointer to sampler to clarify that handle is not
-                                           //!<        copied and argument lifetime is expected to cover build()
-                                           //!<        call.
+        const VkSampler *immutableSampler,
+        VkDescriptorBindingFlags bindingFlags = 0) //!< \note: Using pointer to sampler to clarify that handle is not
+                                                   //!<        copied and argument lifetime is expected to cover build()
+                                                   //!<        call.
     {
-        return addIndexedBinding(descriptorType, 1u, stageFlags, dstBinding, immutableSampler);
+        return addIndexedBinding(descriptorType, 1u, stageFlags, dstBinding, immutableSampler, bindingFlags);
     }
     inline DescriptorSetLayoutBuilder &addArraySamplerBinding(VkDescriptorType descriptorType, uint32_t descriptorCount,
                                                               VkShaderStageFlags stageFlags,
-                                                              const VkSampler *pImmutableSamplers)
+                                                              const VkSampler *pImmutableSamplers,
+                                                              VkDescriptorBindingFlags bindingFlags = 0)
     {
-        return addBinding(descriptorType, descriptorCount, stageFlags, pImmutableSamplers);
+        return addBinding(descriptorType, descriptorCount, stageFlags, pImmutableSamplers, bindingFlags);
     }
 
 protected:
@@ -90,6 +97,7 @@ protected:
     DescriptorSetLayoutBuilder &operator=(const DescriptorSetLayoutBuilder &); // delete
 
     std::vector<VkDescriptorSetLayoutBinding> m_bindings;
+    std::vector<VkDescriptorBindingFlags> m_bindingFlags;
 
     struct ImmutableSamplerInfo
     {
