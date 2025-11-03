@@ -150,11 +150,6 @@ void OpacityMicromapCase::checkSupport(Context &context) const
     }
 }
 
-static uint32_t levelToSubtriangles(uint32_t level)
-{
-    return 1 << (2 * level);
-}
-
 void OpacityMicromapCase::initPrograms(vk::SourceCollections &programCollection) const
 {
     const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
@@ -777,7 +772,7 @@ constexpr uint32_t kMaxSubdivisionLevel = 15;
 tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
 {
     // Test acceleration structures using opacity micromap with ray pipelines
-    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "opacity_micromap"));
+    de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "ext"));
 
     uint32_t seed = 1614343620u;
 

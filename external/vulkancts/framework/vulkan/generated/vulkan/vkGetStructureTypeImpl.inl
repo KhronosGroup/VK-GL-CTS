@@ -18,6 +18,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureCaptureDescri
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CAPTURE_DESCRIPTOR_DATA_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfo2KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR;
@@ -58,6 +63,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureGeometryLinea
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_LINEAR_SWEPT_SPHERES_DATA_NV;
 }
 
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMicromapDataKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MICROMAP_DATA_KHR;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMotionTrianglesDataNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV;
@@ -96,6 +106,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesDisp
 template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesOpacityMicromapEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_EXT;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesOpacityMicromapKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_TRIANGLES_OPACITY_MICROMAP_KHR;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureVersionInfoKHR> (void)
@@ -193,6 +208,11 @@ template<> VkStructureType getStructureType<VkAttachmentSampleCountInfoAMD> (voi
 	return VK_STRUCTURE_TYPE_ATTACHMENT_SAMPLE_COUNT_INFO_AMD;
 }
 
+template<> VkStructureType getStructureType<VkBeginCustomResolveInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BEGIN_CUSTOM_RESOLVE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkBindAccelerationStructureMemoryInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
@@ -243,6 +263,11 @@ template<> VkStructureType getStructureType<VkBindImagePlaneMemoryInfo> (void)
 	return VK_STRUCTURE_TYPE_BIND_IMAGE_PLANE_MEMORY_INFO;
 }
 
+template<> VkStructureType getStructureType<VkBindIndexBuffer3InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_INDEX_BUFFER_3_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkBindMemoryStatus> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_MEMORY_STATUS;
@@ -256,6 +281,16 @@ template<> VkStructureType getStructureType<VkBindSparseInfo> (void)
 template<> VkStructureType getStructureType<VkBindTensorMemoryInfoARM> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkBindTransformFeedbackBuffer2InfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_TRANSFORM_FEEDBACK_BUFFER_2_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkBindVertexBuffer3InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_VERTEX_BUFFER_3_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkBindVideoSessionMemoryInfoKHR> (void)
@@ -463,6 +498,11 @@ template<> VkStructureType getStructureType<VkComputePipelineIndirectBufferInfoN
 	return VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_INDIRECT_BUFFER_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfo2EXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_2_EXT;
+}
+
 template<> VkStructureType getStructureType<VkConditionalRenderingBeginInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT;
@@ -521,6 +561,16 @@ template<> VkStructureType getStructureType<VkCopyCommandTransformInfoQCOM> (voi
 template<> VkStructureType getStructureType<VkCopyDescriptorSet> (void)
 {
 	return VK_STRUCTURE_TYPE_COPY_DESCRIPTOR_SET;
+}
+
+template<> VkStructureType getStructureType<VkCopyDeviceMemoryImageInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_IMAGE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkCopyDeviceMemoryInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkCopyImageInfo2> (void)
@@ -618,9 +668,19 @@ template<> VkStructureType getStructureType<VkCudaModuleCreateInfoNV> (void)
 	return VK_STRUCTURE_TYPE_CUDA_MODULE_CREATE_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkCustomResolveCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkD3D12FenceSubmitInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineBuiltinModelCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_BUILTIN_MODEL_CREATE_INFO_QCOM;
 }
 
 template<> VkStructureType getStructureType<VkDataGraphPipelineCompilerControlCreateInfoARM> (void)
@@ -948,6 +1008,16 @@ template<> VkStructureType getStructureType<VkDeviceImageSubresourceInfo> (void)
 	return VK_STRUCTURE_TYPE_DEVICE_IMAGE_SUBRESOURCE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkDeviceMemoryCopyKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDeviceMemoryImageCopyKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR;
+}
+
 template<> VkStructureType getStructureType<VkDeviceMemoryOpaqueCaptureAddressInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_DEVICE_MEMORY_OPAQUE_CAPTURE_ADDRESS_INFO;
@@ -1011,6 +1081,11 @@ template<> VkStructureType getStructureType<VkDirectDriverLoadingListLUNARG> (vo
 template<> VkStructureType getStructureType<VkDirectFBSurfaceCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_DIRECTFB_SURFACE_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkDispatchIndirect2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DISPATCH_INDIRECT_2_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDispatchTileInfoQCOM> (void)
@@ -1081,6 +1156,16 @@ template<> VkStructureType getStructureType<VkDisplaySurfaceCreateInfoKHR> (void
 template<> VkStructureType getStructureType<VkDisplaySurfaceStereoCreateInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_DISPLAY_SURFACE_STEREO_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkDrawIndirect2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DRAW_INDIRECT_2_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDrawIndirectCount2InfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_DRAW_INDIRECT_COUNT_2_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkDrmFormatModifierPropertiesList2EXT> (void)
@@ -1216,6 +1301,11 @@ template<> VkStructureType getStructureType<VkExternalFenceProperties> (void)
 template<> VkStructureType getStructureType<VkExternalFormatANDROID> (void)
 {
 	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID;
+}
+
+template<> VkStructureType getStructureType<VkExternalFormatOHOS> (void)
+{
+	return VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_OHOS;
 }
 
 template<> VkStructureType getStructureType<VkExternalFormatQNX> (void)
@@ -1668,6 +1758,11 @@ template<> VkStructureType getStructureType<VkImportMetalTextureInfoEXT> (void)
 	return VK_STRUCTURE_TYPE_IMPORT_METAL_TEXTURE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkImportNativeBufferInfoOHOS> (void)
+{
+	return VK_STRUCTURE_TYPE_IMPORT_NATIVE_BUFFER_INFO_OHOS;
+}
+
 template<> VkStructureType getStructureType<VkImportScreenBufferInfoQNX> (void)
 {
 	return VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX;
@@ -1838,6 +1933,11 @@ template<> VkStructureType getStructureType<VkMemoryGetMetalHandleInfoEXT> (void
 	return VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkMemoryGetNativeBufferInfoOHOS> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_GET_NATIVE_BUFFER_INFO_OHOS;
+}
+
 template<> VkStructureType getStructureType<VkMemoryGetRemoteAddressInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV;
@@ -1868,6 +1968,11 @@ template<> VkStructureType getStructureType<VkMemoryMapPlacedInfoEXT> (void)
 	return VK_STRUCTURE_TYPE_MEMORY_MAP_PLACED_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkMemoryMarkerInfoAMD> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_MARKER_INFO_AMD;
+}
+
 template<> VkStructureType getStructureType<VkMemoryMetalHandlePropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_METAL_HANDLE_PROPERTIES_EXT;
@@ -1881,6 +1986,16 @@ template<> VkStructureType getStructureType<VkMemoryOpaqueCaptureAddressAllocate
 template<> VkStructureType getStructureType<VkMemoryPriorityAllocateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_MEMORY_PRIORITY_ALLOCATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkMemoryRangeBarrierKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIER_KHR;
+}
+
+template<> VkStructureType getStructureType<VkMemoryRangeBarriersInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_MEMORY_RANGE_BARRIERS_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkMemoryRequirements2> (void)
@@ -1958,9 +2073,24 @@ template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoEXT
 	return VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkNativeBufferFormatPropertiesOHOS> (void)
+{
+	return VK_STRUCTURE_TYPE_NATIVE_BUFFER_FORMAT_PROPERTIES_OHOS;
+}
+
 template<> VkStructureType getStructureType<VkNativeBufferOHOS> (void)
 {
 	return VK_STRUCTURE_TYPE_NATIVE_BUFFER_OHOS;
+}
+
+template<> VkStructureType getStructureType<VkNativeBufferPropertiesOHOS> (void)
+{
+	return VK_STRUCTURE_TYPE_NATIVE_BUFFER_PROPERTIES_OHOS;
+}
+
+template<> VkStructureType getStructureType<VkNativeBufferUsageOHOS> (void)
+{
+	return VK_STRUCTURE_TYPE_NATIVE_BUFFER_USAGE_OHOS;
 }
 
 template<> VkStructureType getStructureType<VkOpaqueCaptureDescriptorDataCreateInfoEXT> (void)
@@ -2008,6 +2138,21 @@ template<> VkStructureType getStructureType<VkPartitionedAccelerationStructureIn
 	return VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_INSTANCES_INPUT_NV;
 }
 
+template<> VkStructureType getStructureType<VkPastPresentationTimingEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPastPresentationTimingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPastPresentationTimingPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPerTileBeginInfoQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM;
@@ -2021,6 +2166,16 @@ template<> VkStructureType getStructureType<VkPerTileEndInfoQCOM> (void)
 template<> VkStructureType getStructureType<VkPerformanceConfigurationAcquireInfoINTEL> (void)
 {
 	return VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceCounterARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPerformanceCounterDescriptionARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_ARM;
 }
 
 template<> VkStructureType getStructureType<VkPerformanceCounterDescriptionKHR> (void)
@@ -2288,9 +2443,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCustomBorderColorPro
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceCustomResolveFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_RESOLVE_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphFeaturesARM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphModelFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_MODEL_FEATURES_QCOM;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV> (void)
@@ -2376,6 +2541,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorPoolOveral
 template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorSetHostMappingFeaturesVALVE> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_SET_HOST_MAPPING_FEATURES_VALVE;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_ADDRESS_COMMANDS_FEATURES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDeviceGeneratedCommandsComputeFeaturesNV> (void)
@@ -3038,9 +3208,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapFeatu
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapFeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceOpacityMicromapPropertiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_OPACITY_MICROMAP_PROPERTIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceOpticalFlowFeaturesNV> (void)
@@ -3076,6 +3256,16 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePartitionedAccelerat
 template<> VkStructureType getStructureType<VkPhysicalDevicePerStageDescriptorSetFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCountersByRegionFeaturesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceCountersByRegionPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDevicePerformanceQueryFeaturesKHR> (void)
@@ -3183,6 +3373,11 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePresentModeFifoLates
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentTimingFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePresentWait2FeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR;
@@ -3268,9 +3463,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayQueryFeaturesKHR>
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV> (void)
@@ -4233,6 +4438,21 @@ template<> VkStructureType getStructureType<VkPresentTimesInfoGOOGLE> (void)
 	return VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE;
 }
 
+template<> VkStructureType getStructureType<VkPresentTimingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPresentTimingSurfaceCapabilitiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMING_SURFACE_CAPABILITIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPresentTimingsInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMINGS_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPresentWait2InfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PRESENT_WAIT_2_INFO_KHR;
@@ -4421,6 +4641,11 @@ template<> VkStructureType getStructureType<VkRenderPassInputAttachmentAspectCre
 template<> VkStructureType getStructureType<VkRenderPassMultiviewCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO;
+}
+
+template<> VkStructureType getStructureType<VkRenderPassPerformanceCountersByRegionBeginInfoARM> (void)
+{
+	return VK_STRUCTURE_TYPE_RENDER_PASS_PERFORMANCE_COUNTERS_BY_REGION_BEGIN_INFO_ARM;
 }
 
 template<> VkStructureType getStructureType<VkRenderPassSampleLocationsBeginInfoEXT> (void)
@@ -4808,6 +5033,11 @@ template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (
 	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkSwapchainCalibratedTimestampInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_CALIBRATED_TIMESTAMP_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkSwapchainCounterCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT;
@@ -4856,6 +5086,16 @@ template<> VkStructureType getStructureType<VkSwapchainPresentModesCreateInfoKHR
 template<> VkStructureType getStructureType<VkSwapchainPresentScalingCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainTimeDomainPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_TIME_DOMAIN_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainTimingPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_TIMING_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkSysmemColorSpaceFUCHSIA> (void)

@@ -35,6 +35,7 @@ EnumerateDeviceExtensionPropertiesFunc									enumerateDeviceExtensionPropertie
 EnumerateDeviceLayerPropertiesFunc										enumerateDeviceLayerProperties;
 EnumeratePhysicalDeviceGroupsFunc										enumeratePhysicalDeviceGroups;
 EnumeratePhysicalDeviceGroupsKHRFunc									enumeratePhysicalDeviceGroupsKHR;
+EnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARMFunc	enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM;
 EnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHRFunc		enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR;
 EnumeratePhysicalDevicesFunc											enumeratePhysicalDevices;
 GetDisplayModeProperties2KHRFunc										getDisplayModeProperties2KHR;

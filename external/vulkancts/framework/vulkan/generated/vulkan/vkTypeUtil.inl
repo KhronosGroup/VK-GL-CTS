@@ -324,6 +324,14 @@ inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (uint32
 	return res;
 }
 
+inline VkDeviceAddressRangeKHR makeDeviceAddressRangeKHR (VkDeviceAddress address, VkDeviceSize size)
+{
+	VkDeviceAddressRangeKHR res;
+	res.address	= address;
+	res.size	= size;
+	return res;
+}
+
 inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultAddressTypeEXT addressType, VkDeviceAddress reportedAddress, VkDeviceSize addressPrecision)
 {
 	VkDeviceFaultAddressInfoEXT res;
@@ -572,9 +580,9 @@ inline VkMemoryRequirements makeMemoryRequirements (VkDeviceSize size, VkDeviceS
 	return res;
 }
 
-inline VkMicromapTriangleEXT makeMicromapTriangleEXT (uint32_t dataOffset, uint16_t subdivisionLevel, uint16_t format)
+inline VkMicromapTriangleKHR makeMicromapTriangleKHR (uint32_t dataOffset, uint16_t subdivisionLevel, uint16_t format)
 {
-	VkMicromapTriangleEXT res;
+	VkMicromapTriangleKHR res;
 	res.dataOffset			= dataOffset;
 	res.subdivisionLevel	= subdivisionLevel;
 	res.format				= format;
@@ -584,6 +592,15 @@ inline VkMicromapTriangleEXT makeMicromapTriangleEXT (uint32_t dataOffset, uint1
 inline VkMicromapUsageEXT makeMicromapUsageEXT (uint32_t count, uint32_t subdivisionLevel, uint32_t format)
 {
 	VkMicromapUsageEXT res;
+	res.count				= count;
+	res.subdivisionLevel	= subdivisionLevel;
+	res.format				= format;
+	return res;
+}
+
+inline VkMicromapUsageKHR makeMicromapUsageKHR (uint32_t count, uint32_t subdivisionLevel, VkOpacityMicromapFormatKHR format)
+{
+	VkMicromapUsageKHR res;
 	res.count				= count;
 	res.subdivisionLevel	= subdivisionLevel;
 	res.format				= format;
@@ -737,6 +754,14 @@ inline VkPresentRegionKHR makePresentRegionKHR (uint32_t rectangleCount, const V
 	VkPresentRegionKHR res;
 	res.rectangleCount	= rectangleCount;
 	res.pRectangles		= pRectangles;
+	return res;
+}
+
+inline VkPresentStageTimeEXT makePresentStageTimeEXT (VkPresentStageFlagsEXT stage, uint64_t time)
+{
+	VkPresentStageTimeEXT res;
+	res.stage	= stage;
+	res.time	= time;
 	return res;
 }
 

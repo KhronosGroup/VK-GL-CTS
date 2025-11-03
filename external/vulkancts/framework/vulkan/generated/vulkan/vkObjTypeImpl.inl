@@ -41,6 +41,7 @@ template<> inline VkObjectType	getObjectType<VkDisplayModeKHR>					(void) { retu
 template<> inline VkObjectType	getObjectType<VkVideoSessionKHR>				(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_KHR;				}
 template<> inline VkObjectType	getObjectType<VkVideoSessionParametersKHR>		(void) { return VK_OBJECT_TYPE_VIDEO_SESSION_PARAMETERS_KHR;	}
 template<> inline VkObjectType	getObjectType<VkDeferredOperationKHR>			(void) { return VK_OBJECT_TYPE_DEFERRED_OPERATION_KHR;			}
+template<> inline VkObjectType	getObjectType<VkAccelerationStructureKHR>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;		}
 template<> inline VkObjectType	getObjectType<VkPipelineBinaryKHR>				(void) { return VK_OBJECT_TYPE_PIPELINE_BINARY_KHR;				}
 template<> inline VkObjectType	getObjectType<VkDebugReportCallbackEXT>			(void) { return VK_OBJECT_TYPE_DEBUG_REPORT_CALLBACK_EXT;		}
 template<> inline VkObjectType	getObjectType<VkCuModuleNVX>					(void) { return VK_OBJECT_TYPE_CU_MODULE_NVX;					}
@@ -52,7 +53,6 @@ template<> inline VkObjectType	getObjectType<VkPerformanceConfigurationINTEL>	(v
 template<> inline VkObjectType	getObjectType<VkIndirectCommandsLayoutNV>		(void) { return VK_OBJECT_TYPE_INDIRECT_COMMANDS_LAYOUT_NV;		}
 template<> inline VkObjectType	getObjectType<VkCudaModuleNV>					(void) { return VK_OBJECT_TYPE_CUDA_MODULE_NV;					}
 template<> inline VkObjectType	getObjectType<VkCudaFunctionNV>					(void) { return VK_OBJECT_TYPE_CUDA_FUNCTION_NV;				}
-template<> inline VkObjectType	getObjectType<VkAccelerationStructureKHR>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;		}
 template<> inline VkObjectType	getObjectType<VkBufferCollectionFUCHSIA>		(void) { return VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA;		}
 template<> inline VkObjectType	getObjectType<VkMicromapEXT>					(void) { return VK_OBJECT_TYPE_MICROMAP_EXT;					}
 template<> inline VkObjectType	getObjectType<VkTensorARM>						(void) { return VK_OBJECT_TYPE_TENSOR_ARM;						}

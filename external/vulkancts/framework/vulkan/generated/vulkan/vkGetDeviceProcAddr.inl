@@ -102,6 +102,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM",
 		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
 
+		// "VK_ARM_performance_counters_by_region
+		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
+
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
 		"vkCmdCopyTensorARM",
@@ -139,6 +142,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_EXT_conditional_rendering
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
+
+		// "VK_EXT_custom_resolve
+		"vkCmdBeginCustomResolveEXT",
 
 		// "VK_EXT_debug_marker
 		"vkCmdDebugMarkerBeginEXT",
@@ -355,6 +361,12 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_EXT_pipeline_properties
 		"vkGetPipelinePropertiesEXT",
 
+		// "VK_EXT_present_timing
+		"vkGetPastPresentationTimingEXT",
+		"vkGetSwapchainTimeDomainPropertiesEXT",
+		"vkGetSwapchainTimingPropertiesEXT",
+		"vkSetSwapchainPresentTimingQueueSizeEXT",
+
 		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
 		"vkDestroyPrivateDataSlotEXT",
@@ -562,6 +574,30 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCreateDescriptorUpdateTemplateKHR",
 		"vkDestroyDescriptorUpdateTemplateKHR",
 		"vkUpdateDescriptorSetWithTemplateKHR",
+
+		// "VK_KHR_device_address_commands
+		"vkCmdBeginConditionalRendering2EXT",
+		"vkCmdBeginTransformFeedback2EXT",
+		"vkCmdBindIndexBuffer3KHR",
+		"vkCmdBindTransformFeedbackBuffers2EXT",
+		"vkCmdBindVertexBuffers3KHR",
+		"vkCmdCopyImageToMemoryKHR",
+		"vkCmdCopyMemoryKHR",
+		"vkCmdCopyMemoryToImageKHR",
+		"vkCmdCopyQueryPoolResultsToMemoryKHR",
+		"vkCmdDispatchIndirect2KHR",
+		"vkCmdDrawIndexedIndirect2KHR",
+		"vkCmdDrawIndexedIndirectCount2KHR",
+		"vkCmdDrawIndirect2KHR",
+		"vkCmdDrawIndirectByteCount2EXT",
+		"vkCmdDrawIndirectCount2KHR",
+		"vkCmdDrawMeshTasksIndirect2EXT",
+		"vkCmdDrawMeshTasksIndirectCount2EXT",
+		"vkCmdEndTransformFeedback2EXT",
+		"vkCmdFillMemoryKHR",
+		"vkCmdUpdateMemoryKHR",
+		"vkCmdWriteMarkerToMemoryAMD",
+		"vkCreateAccelerationStructure2KHR",
 
 		// "VK_KHR_device_group
 		"vkAcquireNextImage2KHR",
@@ -956,6 +992,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBindShadingRateImageNV",
 		"vkCmdSetCoarseSampleOrderNV",
 		"vkCmdSetViewportShadingRatePaletteNV",
+
+		// "VK_OHOS_external_memory
+		"vkGetMemoryNativeBufferOHOS",
+		"vkGetNativeBufferPropertiesOHOS",
 
 		// "VK_OHOS_native_buffer
 		"vkAcquireImageOHOS",
