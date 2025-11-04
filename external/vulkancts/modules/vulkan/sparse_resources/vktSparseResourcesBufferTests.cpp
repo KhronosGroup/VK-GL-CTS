@@ -225,11 +225,22 @@ MovePtr<SparseAllocation> SparseAllocationBuilder::build(const InstanceInterface
         memoryRequirements.alignment, static_cast<VkDeviceSize>(deAlign64(minChunkSize, memoryRequirements.alignment)));
     const uint32_t memoryTypeNdx =
         findMatchingMemoryType(instanceInterface, physicalDevice, memoryRequirements, MemoryRequirement::Any);
+
+    // Check if buffer requires device address capability
+    const bool requiresDeviceAddress = (referenceCreateInfo.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0;
+
+    VkMemoryAllocateFlagsInfo allocFlagsInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO, // VkStructureType sType;
+        nullptr,                                      // const void* pNext;
+        VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT,        // VkMemoryAllocateFlags flags;
+        0u,                                           // uint32_t deviceMask;
+    };
+
     VkMemoryAllocateInfo allocInfo = {
-        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, // VkStructureType sType;
-        nullptr,                                // const void* pNext;
-        memoryRequirements.size,                // VkDeviceSize allocationSize;
-        memoryTypeNdx,                          // uint32_t memoryTypeIndex;
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,            // VkStructureType sType;
+        requiresDeviceAddress ? &allocFlagsInfo : nullptr, // const void* pNext;
+        memoryRequirements.size,                           // VkDeviceSize allocationSize;
+        memoryTypeNdx,                                     // uint32_t memoryTypeIndex;
     };
 
     for (std::vector<uint32_t>::const_iterator numChunksIter = m_chunksPerAllocation.begin();
@@ -1577,8 +1588,13 @@ public:
             };
 
             Move<VkBuffer> stagingBufferWithAddress = makeBuffer(vk, getDevice(), stagingBufferCreateInfo);
+
+            const bool requiresDeviceAddress =
+                (stagingBufferCreateInfo.usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) != 0;
             MovePtr<Allocation> stagingBufferWithAddressAlloc =
-                bindBuffer(vk, getDevice(), getAllocator(), *stagingBufferWithAddress, MemoryRequirement::HostVisible);
+                bindBuffer(vk, getDevice(), getAllocator(), *stagingBufferWithAddress,
+                           requiresDeviceAddress ? (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress) :
+                                                   MemoryRequirement::HostVisible);
 
             // Copy data from original staging buffer
             deMemcpy(stagingBufferWithAddressAlloc->getHostPtr(), m_stagingBufferAlloc->getHostPtr(),
@@ -1591,8 +1607,9 @@ public:
                 makeBuffer(vk, getDevice(), indirectBufferSize,
                            VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
             MovePtr<Allocation> indirectBufferAlloc =
-                bindBuffer(vk, getDevice(), getAllocator(), *indirectBuffer, MemoryRequirement::HostVisible);
-
+                bindBuffer(vk, getDevice(), getAllocator(), *indirectBuffer,
+                           requiresDeviceAddress ? (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress) :
+                                                   MemoryRequirement::HostVisible);
             // Fill the indirect buffer with copy commands
             VkCopyMemoryIndirectCommandKHR *indirectCommands =
                 static_cast<VkCopyMemoryIndirectCommandKHR *>(indirectBufferAlloc->getHostPtr());

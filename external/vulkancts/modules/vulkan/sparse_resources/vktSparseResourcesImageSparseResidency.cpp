@@ -68,14 +68,26 @@ static const tcu::Vec4 kColorFloat = tcu::Vec4(0.00f, 0.40f, 0.80f, 0.10f);
 static const tcu::IVec4 kColorInt  = tcu::IVec4(0x70707070, 0x3C3C3C3C, 0x65656565, 0x29292929);
 
 std::string getFormatValueString(const std::vector<std::pair<uint32_t, uint32_t>> &channelsOnPlane,
-                                 const std::vector<std::string> &formatValueStrings)
+                                 const std::vector<std::string> &formatValueStrings, bool isMultiPlanar)
 {
     std::vector<std::string> usedValues{"0", "0", "0", "0"}; // Default values.
 
-    for (const auto &channel : channelsOnPlane)
+    if (isMultiPlanar)
     {
-        const auto channelIdx  = channel.first;
-        usedValues[channelIdx] = formatValueStrings[channelIdx];
+        int componentIdx = 0;
+        for (const auto &channel : channelsOnPlane)
+        {
+            const auto channelIdx      = channel.first;
+            usedValues[componentIdx++] = formatValueStrings[channelIdx];
+        }
+    }
+    else
+    {
+        for (const auto &channel : channelsOnPlane)
+        {
+            const auto channelIdx  = channel.first;
+            usedValues[channelIdx] = formatValueStrings[channelIdx];
+        }
     }
 
     std::string result;
@@ -219,8 +231,9 @@ void ImageSparseResidencyCase::initPrograms(SourceCollections &sourceCollections
             std::sort(begin(channelsOnPlane), end(channelsOnPlane),
                       [](const std::pair<uint32_t, uint32_t> &lhs, const std::pair<uint32_t, uint32_t> &rhs)
                       { return lhs.second < rhs.second; });
-        std::string formatValueStr = getFormatValueString(channelsOnPlane, formatValueStrings);
-        VkExtent3D shaderExtent    = getPlaneExtent(compatibleFormatDescription, compatibleShaderGridSize, planeNdx, 0);
+        std::string formatValueStr =
+            getFormatValueString(channelsOnPlane, formatValueStrings, formatDescription.numPlanes > 1);
+        VkExtent3D shaderExtent = getPlaneExtent(compatibleFormatDescription, compatibleShaderGridSize, planeNdx, 0);
         const std::string formatQualifierStr =
             (isAlphaOnly ? "" : ", " + getShaderImageFormatQualifier(planeCompatibleFormat));
         const tcu::UVec3 workGroupSize = computeWorkGroupSize(shaderExtent);
@@ -284,9 +297,28 @@ void ImageSparseResidencyCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
     //Check if image format supports storage images
-    const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(instance, physicalDevice, m_format);
-    if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
-        TCU_THROW(NotSupportedError, "Storage images are not supported for this format");
+    const PlanarFormatDescription formatDescription = getPlanarFormatDescription(m_format);
+    if (formatDescription.numPlanes > 1)
+    {
+        // For multi-planar formats, check storage-compatible formats support storage
+        // We use block-compatible formats (e.g. R16 for R10X6) for actual storage operations
+        for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+        {
+            const VkFormat planeFormat   = getPlaneCompatibleFormat(formatDescription, planeNdx);
+            const VkFormat storageFormat = getStorageCompatibleFormat(planeFormat);
+            const VkFormatProperties storageFormatProperties =
+                getPhysicalDeviceFormatProperties(instance, physicalDevice, storageFormat);
+            if ((storageFormatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+                TCU_THROW(NotSupportedError, "Device does not support storage-compatible format for plane");
+        }
+    }
+    else
+    {
+        const VkFormatProperties formatProperties =
+            getPhysicalDeviceFormatProperties(instance, physicalDevice, m_format);
+        if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT) == 0)
+            TCU_THROW(NotSupportedError, "Storage images are not supported for this format");
+    }
 
     if (formatIsR64(m_format))
     {
@@ -386,11 +418,27 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
             imageCreateInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
         }
 
+        // Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views
+        if (formatDescription.numPlanes > 1)
+        {
+            imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+            // EXTENDED_USAGE is required for storage usage on plane-compatible views
+            if (imageCreateInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
+            {
+                imageCreateInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            }
+        }
+
         // check if we need to create VkImageView with different VkFormat than VkImage format
         VkFormat planeCompatibleFormat0 = getPlaneCompatibleFormatForWriting(formatDescription, 0);
         if (planeCompatibleFormat0 != getPlaneCompatibleFormat(formatDescription, 0))
         {
             imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+            // EXTENDED_USAGE is required for storage usage on plane-compatible views
+            if (imageCreateInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
+            {
+                imageCreateInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            }
         }
 
         // Check if device supports sparse operations for image format
@@ -674,6 +722,8 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
             const VkImageSubresourceRange subresourceRange =
                 makeImageSubresourceRange(aspect, 0u, 1u, 0u, getNumLayers(m_imageType, m_imageSize));
             VkFormat planeCompatibleFormat = getPlaneCompatibleFormatForWriting(formatDescription, planeNdx);
+            // For storage images, use block-compatible format (e.g. R16 for R10X6)
+            VkFormat storageViewFormat = getStorageCompatibleFormat(planeCompatibleFormat);
             vk::PlanarFormatDescription compatibleFormatDescription =
                 (planeCompatibleFormat != getPlaneCompatibleFormat(formatDescription, planeNdx)) ?
                     getPlanarFormatDescription(planeCompatibleFormat) :
@@ -703,7 +753,7 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
 
             auto imageView =
                 makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), *imageSparse, mapImageViewType(m_imageType),
-                                              planeCompatibleFormat, subresourceRange));
+                                              storageViewFormat, subresourceRange));
             imageViews.push_back(imageView);
             const VkDescriptorImageInfo imageSparseInfo =
                 makeDescriptorImageInfo(VK_NULL_HANDLE, imageView->get(), VK_IMAGE_LAYOUT_GENERAL);

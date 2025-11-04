@@ -44,6 +44,8 @@
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 
+#include <algorithm>
+
 #include "tcuTexture.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuTexVerifierUtil.hpp"
@@ -232,9 +234,40 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
         if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
             imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 
+        if (formatDescription.numPlanes > 1)
+        {
+            imageSparseInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+            // EXTENDED_USAGE is required for storage usage on plane-compatible views
+            if (imageSparseInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
+            {
+                imageSparseInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+            }
+        }
+
         // Check if device supports sparse operations for image format
         if (!checkSparseSupportForImageFormat(instance, physicalDevice, imageSparseInfo))
             TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
+
+        // Check if image format supports storage images
+        if (formatDescription.numPlanes > 1)
+        {
+            // For multi-planar formats, check storage-compatible formats support storage
+            // We use block-compatible formats (e.g. R16 for R10X6) for actual storage operations
+            for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+            {
+                const VkFormat planeFormat   = getPlaneCompatibleFormat(formatDescription, planeNdx);
+                const VkFormat storageFormat = getStorageCompatibleFormat(planeFormat);
+                if (!checkImageFormatFeatureSupport(instance, physicalDevice, storageFormat,
+                                                    VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+                    TCU_THROW(NotSupportedError, "Device does not support storage-compatible format for plane");
+            }
+        }
+        else
+        {
+            if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format,
+                                                VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+                TCU_THROW(NotSupportedError, "Device does not support image format for storage image");
+        }
 
         {
             // Assign maximum allowed mipmap levels to image
@@ -623,83 +656,101 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
 
         Unique<VkPipelineLayout> pipelineLayout(makePipelineLayout(deviceInterface, getDevice(), *descriptorSetLayout));
 
-        Unique<VkDescriptorPool> descriptorPool(
-            DescriptorPoolBuilder()
-                .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, imageSparseInfo.mipLevels)
-                .build(deviceInterface, getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-                       imageSparseInfo.mipLevels));
+        const uint32_t totalDescriptorSets = formatDescription.numPlanes * imageSparseInfo.mipLevels;
+        Unique<VkDescriptorPool> descriptorPool(DescriptorPoolBuilder()
+                                                    .addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, totalDescriptorSets)
+                                                    .build(deviceInterface, getDevice(),
+                                                           VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
+                                                           totalDescriptorSets));
 
         typedef de::SharedPtr<Unique<VkImageView>> SharedVkImageView;
-        std::vector<SharedVkImageView> imageViews;
-        imageViews.resize(imageSparseInfo.mipLevels);
-
         typedef de::SharedPtr<Unique<VkDescriptorSet>> SharedVkDescriptorSet;
-        std::vector<SharedVkDescriptorSet> descriptorSets;
-        descriptorSets.resize(imageSparseInfo.mipLevels);
-
         typedef de::SharedPtr<Unique<VkPipeline>> SharedVkPipeline;
-        std::vector<SharedVkPipeline> computePipelines;
-        computePipelines.resize(imageSparseInfo.mipLevels);
 
-        for (uint32_t mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
+        std::vector<std::vector<SharedVkImageView>> imageViews(formatDescription.numPlanes);
+        std::vector<std::vector<SharedVkDescriptorSet>> descriptorSets(formatDescription.numPlanes);
+        std::vector<std::vector<SharedVkPipeline>> computePipelines(formatDescription.numPlanes);
+
+        for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
         {
-            std::ostringstream name;
-            name << "comp" << mipLevelNdx;
+            imageViews[planeNdx].resize(imageSparseInfo.mipLevels);
+            descriptorSets[planeNdx].resize(imageSparseInfo.mipLevels);
+            computePipelines[planeNdx].resize(imageSparseInfo.mipLevels);
 
-            // Create and bind compute pipeline
-            Unique<VkShaderModule> shaderModule(
-                createShaderModule(deviceInterface, getDevice(), m_context.getBinaryCollection().get(name.str()), 0));
+            const VkImageAspectFlags aspect =
+                (formatDescription.numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
+            const VkFormat planeFormat =
+                (formatDescription.numPlanes > 1) ? formatDescription.planes[planeNdx].planeCompatibleFormat : m_format;
+            // For storage images, use block-compatible format (e.g. R16 for R10X6)
+            const VkFormat storageViewFormat = getStorageCompatibleFormat(planeFormat);
 
-            computePipelines[mipLevelNdx] =
-                makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
-            VkPipeline computePipeline = **computePipelines[mipLevelNdx];
-
-            deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
-
-            // Create and bind descriptor set
-            descriptorSets[mipLevelNdx] =
-                makeVkSharedPtr(makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
-            VkDescriptorSet descriptorSet = **descriptorSets[mipLevelNdx];
-
-            // Select which mipmap level to bind
-            const VkImageSubresourceRange subresourceRange =
-                makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
-
-            imageViews[mipLevelNdx] =
-                makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), *imageWrite, mapImageViewType(m_imageType),
-                                              imageSparseInfo.format, subresourceRange));
-            VkImageView imageView = **imageViews[mipLevelNdx];
-
-            const VkDescriptorImageInfo descriptorImageSparseInfo =
-                makeDescriptorImageInfo(VK_NULL_HANDLE, imageView, VK_IMAGE_LAYOUT_GENERAL);
-
-            DescriptorSetUpdateBuilder()
-                .writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
-                             VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageSparseInfo)
-                .update(deviceInterface, getDevice());
-
-            deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u,
-                                                  1u, &descriptorSet, 0u, nullptr);
-
-            const tcu::UVec3 gridSize = getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
-            const uint32_t xWorkGroupSize =
-                std::min(std::min(gridSize.x(), maxWorkGroupSize.x()), maxWorkGroupInvocations);
-            const uint32_t yWorkGroupSize =
-                std::min(std::min(gridSize.y(), maxWorkGroupSize.y()), maxWorkGroupInvocations / xWorkGroupSize);
-            const uint32_t zWorkGroupSize = std::min(std::min(gridSize.z(), maxWorkGroupSize.z()),
-                                                     maxWorkGroupInvocations / (xWorkGroupSize * yWorkGroupSize));
-
-            const uint32_t xWorkGroupCount = gridSize.x() / xWorkGroupSize + (gridSize.x() % xWorkGroupSize ? 1u : 0u);
-            const uint32_t yWorkGroupCount = gridSize.y() / yWorkGroupSize + (gridSize.y() % yWorkGroupSize ? 1u : 0u);
-            const uint32_t zWorkGroupCount = gridSize.z() / zWorkGroupSize + (gridSize.z() % zWorkGroupSize ? 1u : 0u);
-
-            if (maxWorkGroupCount.x() < xWorkGroupCount || maxWorkGroupCount.y() < yWorkGroupCount ||
-                maxWorkGroupCount.z() < zWorkGroupCount)
+            for (uint32_t mipLevelNdx = 0u; mipLevelNdx < imageSparseInfo.mipLevels; ++mipLevelNdx)
             {
-                TCU_THROW(NotSupportedError, "Image size is not supported");
-            }
+                std::ostringstream name;
+                name << "comp" << planeNdx << "_" << mipLevelNdx;
 
-            deviceInterface.cmdDispatch(*commandBuffer, xWorkGroupCount, yWorkGroupCount, zWorkGroupCount);
+                // Create and bind compute pipeline
+                Unique<VkShaderModule> shaderModule(createShaderModule(
+                    deviceInterface, getDevice(), m_context.getBinaryCollection().get(name.str()), 0));
+
+                computePipelines[planeNdx][mipLevelNdx] =
+                    makeVkSharedPtr(makeComputePipeline(deviceInterface, getDevice(), *pipelineLayout, *shaderModule));
+                VkPipeline computePipeline = **computePipelines[planeNdx][mipLevelNdx];
+
+                deviceInterface.cmdBindPipeline(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, computePipeline);
+
+                // Create and bind descriptor set
+                descriptorSets[planeNdx][mipLevelNdx] = makeVkSharedPtr(
+                    makeDescriptorSet(deviceInterface, getDevice(), *descriptorPool, *descriptorSetLayout));
+                VkDescriptorSet descriptorSet = **descriptorSets[planeNdx][mipLevelNdx];
+
+                // Select which mipmap level and plane to bind
+                const VkImageSubresourceRange subresourceRange =
+                    makeImageSubresourceRange(aspect, mipLevelNdx, 1u, 0u, imageSparseInfo.arrayLayers);
+
+                imageViews[planeNdx][mipLevelNdx] =
+                    makeVkSharedPtr(makeImageView(deviceInterface, getDevice(), *imageWrite,
+                                                  mapImageViewType(m_imageType), storageViewFormat, subresourceRange));
+                VkImageView imageView = **imageViews[planeNdx][mipLevelNdx];
+
+                const VkDescriptorImageInfo descriptorImageSparseInfo =
+                    makeDescriptorImageInfo(VK_NULL_HANDLE, imageView, VK_IMAGE_LAYOUT_GENERAL);
+
+                DescriptorSetUpdateBuilder()
+                    .writeSingle(descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                                 VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &descriptorImageSparseInfo)
+                    .update(deviceInterface, getDevice());
+
+                deviceInterface.cmdBindDescriptorSets(*commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout,
+                                                      0u, 1u, &descriptorSet, 0u, nullptr);
+
+                const tcu::UVec3 gridSize = getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
+                const tcu::UVec3 planeExtent =
+                    tcu::UVec3(gridSize.x() / formatDescription.planes[planeNdx].widthDivisor,
+                               gridSize.y() / formatDescription.planes[planeNdx].heightDivisor, gridSize.z());
+
+                const uint32_t xWorkGroupSize =
+                    std::min(std::min(planeExtent.x(), maxWorkGroupSize.x()), maxWorkGroupInvocations);
+                const uint32_t yWorkGroupSize =
+                    std::min(std::min(planeExtent.y(), maxWorkGroupSize.y()), maxWorkGroupInvocations / xWorkGroupSize);
+                const uint32_t zWorkGroupSize = std::min(std::min(planeExtent.z(), maxWorkGroupSize.z()),
+                                                         maxWorkGroupInvocations / (xWorkGroupSize * yWorkGroupSize));
+
+                const uint32_t xWorkGroupCount =
+                    planeExtent.x() / xWorkGroupSize + (planeExtent.x() % xWorkGroupSize ? 1u : 0u);
+                const uint32_t yWorkGroupCount =
+                    planeExtent.y() / yWorkGroupSize + (planeExtent.y() % yWorkGroupSize ? 1u : 0u);
+                const uint32_t zWorkGroupCount =
+                    planeExtent.z() / zWorkGroupSize + (planeExtent.z() % zWorkGroupSize ? 1u : 0u);
+
+                if (maxWorkGroupCount.x() < xWorkGroupCount || maxWorkGroupCount.y() < yWorkGroupCount ||
+                    maxWorkGroupCount.z() < zWorkGroupCount)
+                {
+                    TCU_THROW(NotSupportedError, "Image size is not supported");
+                }
+
+                deviceInterface.cmdDispatch(*commandBuffer, xWorkGroupCount, yWorkGroupCount, zWorkGroupCount);
+            }
         }
 
         {
@@ -780,9 +831,14 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                                          (const void *const *)planePointers[mipmapNdx].data(), channelNdx);
                 tcu::IVec3 pixelDivider = pixelBuffer.getDivider();
 
-                for (uint32_t offsetZ = 0u; offsetZ < gridSize.z(); ++offsetZ)
-                    for (uint32_t offsetY = 0u; offsetY < gridSize.y(); ++offsetY)
-                        for (uint32_t offsetX = 0u; offsetX < gridSize.x(); ++offsetX)
+                // For subsampled channels, only check the samples that actually exist in the plane
+                const uint32_t sampleStepX = pixelDivider.x();
+                const uint32_t sampleStepY = pixelDivider.y();
+                const uint32_t sampleStepZ = pixelDivider.z();
+
+                for (uint32_t offsetZ = 0u; offsetZ < gridSize.z(); offsetZ += sampleStepZ)
+                    for (uint32_t offsetY = 0u; offsetY < gridSize.y(); offsetY += sampleStepY)
+                        for (uint32_t offsetX = 0u; offsetX < gridSize.x(); offsetX += sampleStepX)
                         {
                             const uint32_t index =
                                 offsetX + gridSize.x() * offsetY + gridSize.x() * gridSize.y() * offsetZ;
@@ -813,8 +869,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                             case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
                             case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
                             {
-                                const tcu::UVec4 outputValue = pixelBuffer.getPixelUint(
-                                    offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
+                                const tcu::UVec4 outputValue = pixelBuffer.getPixelUint(offsetX, offsetY, offsetZ);
 
                                 if (outputValue.x() != iReferenceValue)
                                     return tcu::TestStatus::fail("Failed");
@@ -827,8 +882,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                                 float fixedPointError = tcu::TexVerifierUtil::computeFixedPointError(
                                     formatDescription.channels[channelNdx].sizeBits);
                                 acceptableError += fixedPointError;
-                                const tcu::Vec4 outputValue = pixelBuffer.getPixel(
-                                    offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
+                                const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX, offsetY, offsetZ);
 
                                 if (deAbs(outputValue.x() - fReferenceValue) > acceptableError)
                                     return tcu::TestStatus::fail("Failed");
@@ -837,8 +891,7 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                             }
                             case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
                             {
-                                const tcu::Vec4 outputValue = pixelBuffer.getPixel(
-                                    offsetX * pixelDivider.x(), offsetY * pixelDivider.y(), offsetZ * pixelDivider.z());
+                                const tcu::Vec4 outputValue = pixelBuffer.getPixel(offsetX, offsetY, offsetZ);
 
                                 if (deAbs(outputValue.x() - fReferenceValue) > acceptableError)
                                     return tcu::TestStatus::fail("Failed");
@@ -873,9 +926,6 @@ void ImageSparseMemoryAliasingCase::initPrograms(SourceCollections &sourceCollec
 {
     const char *const versionDecl                   = glu::getGLSLVersionDeclaration(m_glslVersion);
     const PlanarFormatDescription formatDescription = getPlanarFormatDescription(m_format);
-    const std::string imageTypeStr                  = getShaderImageType(formatDescription, m_imageType);
-    const std::string formatQualifierStr            = getShaderImageFormatQualifier(m_format);
-    const std::string formatDataStr                 = getShaderImageDataType(formatDescription);
     const uint32_t maxWorkGroupInvocations          = 128u;
     const tcu::UVec3 maxWorkGroupSize               = tcu::UVec3(128u, 128u, 64u);
     VkExtent3D layerExtent                          = makeExtent3D(getLayerSize(m_imageType, m_imageSize));
@@ -883,65 +933,86 @@ void ImageSparseMemoryAliasingCase::initPrograms(SourceCollections &sourceCollec
     imageFormatProperties.maxMipLevels = 20;
     const uint32_t mipLevels = getMipmapCount(m_format, formatDescription, imageFormatProperties, layerExtent);
 
-    std::ostringstream formatValueStr;
-    switch (formatDescription.channels[0].type)
+    for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
     {
-    case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
-    case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
-        formatValueStr << "( index % " << MODULO_DIVISOR << ", index % " << MODULO_DIVISOR << ", index % "
-                       << MODULO_DIVISOR << ", 1)";
-        break;
-    case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-    case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-    case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
-        formatValueStr << "( float( index % " << MODULO_DIVISOR << ") / " << MODULO_DIVISOR << ".0, float( index % "
-                       << MODULO_DIVISOR << ") / " << MODULO_DIVISOR << ".0, float( index % " << MODULO_DIVISOR
-                       << ") / " << MODULO_DIVISOR << ".0, 1.0)";
-        break;
-    default:
-        DE_FATAL("Unexpected channel type");
-        break;
-    }
+        const PlanarFormatDescription planeFormatDesc =
+            (formatDescription.numPlanes > 1) ?
+                getPlanarFormatDescription(formatDescription.planes[planeNdx].planeCompatibleFormat) :
+                formatDescription;
+        const std::string imageTypeStr       = getShaderImageType(planeFormatDesc, m_imageType);
+        const std::string formatQualifierStr = getShaderImageFormatQualifier(
+            formatDescription.numPlanes > 1 ? formatDescription.planes[planeNdx].planeCompatibleFormat : m_format);
+        const std::string formatDataStr = getShaderImageDataType(planeFormatDesc);
 
-    for (uint32_t mipLevelNdx = 0; mipLevelNdx < mipLevels; ++mipLevelNdx)
-    {
-        // Create compute program
-        const tcu::UVec3 gridSize     = getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
-        const uint32_t xWorkGroupSize = std::min(std::min(gridSize.x(), maxWorkGroupSize.x()), maxWorkGroupInvocations);
-        const uint32_t yWorkGroupSize =
-            std::min(std::min(gridSize.y(), maxWorkGroupSize.y()), maxWorkGroupInvocations / xWorkGroupSize);
-        const uint32_t zWorkGroupSize = std::min(std::min(gridSize.z(), maxWorkGroupSize.z()),
-                                                 maxWorkGroupInvocations / (xWorkGroupSize * yWorkGroupSize));
-
-        std::ostringstream src;
-
-        src << versionDecl << "\n";
-        if (formatIsR64(m_format))
+        // Build format value string based on channel type
+        std::ostringstream formatValueStr;
+        switch (formatDescription.channels[0].type)
         {
-            src << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
-                << "#extension GL_EXT_shader_image_int64 : require\n";
+        case tcu::TEXTURECHANNELCLASS_SIGNED_INTEGER:
+        case tcu::TEXTURECHANNELCLASS_UNSIGNED_INTEGER:
+            formatValueStr << "(index % " << MODULO_DIVISOR << ", index % " << MODULO_DIVISOR << ", index % "
+                           << MODULO_DIVISOR << ", 1)";
+            break;
+        case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
+        case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
+        case tcu::TEXTURECHANNELCLASS_FLOATING_POINT:
+            formatValueStr << "(float(index % " << MODULO_DIVISOR << ") / " << MODULO_DIVISOR << ".0, float(index % "
+                           << MODULO_DIVISOR << ") / " << MODULO_DIVISOR << ".0, float(index % " << MODULO_DIVISOR
+                           << ") / " << MODULO_DIVISOR << ".0, 1.0)";
+            break;
+        default:
+            DE_FATAL("Unexpected channel type");
+            break;
         }
-        src << "layout (local_size_x = " << xWorkGroupSize << ", local_size_y = " << yWorkGroupSize
-            << ", local_size_z = " << zWorkGroupSize << ") in; \n"
-            << "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform highp " << imageTypeStr
-            << " u_image;\n"
-            << "void main (void)\n"
-            << "{\n"
-            << "    if( gl_GlobalInvocationID.x < " << gridSize.x() << " ) \n"
-            << "    if( gl_GlobalInvocationID.y < " << gridSize.y() << " ) \n"
-            << "    if( gl_GlobalInvocationID.z < " << gridSize.z() << " ) \n"
-            << "    {\n"
-            << "        int index = int( gl_GlobalInvocationID.x + " << gridSize.x() << " * gl_GlobalInvocationID.y + "
-            << gridSize.x() << " * " << gridSize.y() << " * gl_GlobalInvocationID.z );\n"
-            << "        imageStore(u_image, "
-            << getCoordStr(m_imageType, "gl_GlobalInvocationID.x", "gl_GlobalInvocationID.y", "gl_GlobalInvocationID.z")
-            << "," << formatDataStr << formatValueStr.str() << "); \n"
-            << "    }\n"
-            << "}\n";
 
-        std::ostringstream name;
-        name << "comp" << mipLevelNdx;
-        sourceCollections.glslSources.add(name.str()) << glu::ComputeSource(src.str());
+        for (uint32_t mipLevelNdx = 0; mipLevelNdx < mipLevels; ++mipLevelNdx)
+        {
+            const tcu::UVec3 gridSize = getShaderGridSize(m_imageType, m_imageSize, mipLevelNdx);
+            const tcu::UVec3 planeExtent =
+                tcu::UVec3(gridSize.x() / formatDescription.planes[planeNdx].widthDivisor,
+                           gridSize.y() / formatDescription.planes[planeNdx].heightDivisor, gridSize.z());
+
+            const uint32_t xWorkGroupSize =
+                std::min(std::min(planeExtent.x(), maxWorkGroupSize.x()), maxWorkGroupInvocations);
+            const uint32_t yWorkGroupSize =
+                std::min(std::min(planeExtent.y(), maxWorkGroupSize.y()), maxWorkGroupInvocations / xWorkGroupSize);
+            const uint32_t zWorkGroupSize = std::min(std::min(planeExtent.z(), maxWorkGroupSize.z()),
+                                                     maxWorkGroupInvocations / (xWorkGroupSize * yWorkGroupSize));
+
+            std::ostringstream src;
+            src << versionDecl << "\n";
+            if (formatIsR64(m_format))
+            {
+                src << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : require\n"
+                    << "#extension GL_EXT_shader_image_int64 : require\n";
+            }
+            src << "layout (local_size_x = " << xWorkGroupSize << ", local_size_y = " << yWorkGroupSize
+                << ", local_size_z = " << zWorkGroupSize << ") in; \n"
+                << "layout (binding = 0, " << formatQualifierStr << ") writeonly uniform highp " << imageTypeStr
+                << " u_image;\n"
+                << "void main (void)\n"
+                << "{\n"
+                << "    if( gl_GlobalInvocationID.x < " << planeExtent.x() << " ) \n"
+                << "    if( gl_GlobalInvocationID.y < " << planeExtent.y() << " ) \n"
+                << "    if( gl_GlobalInvocationID.z < " << planeExtent.z() << " ) \n"
+                << "    {\n"
+                << "        int logicalX = int(gl_GlobalInvocationID.x) * "
+                << (uint32_t)formatDescription.planes[planeNdx].widthDivisor << ";\n"
+                << "        int logicalY = int(gl_GlobalInvocationID.y) * "
+                << (uint32_t)formatDescription.planes[planeNdx].heightDivisor << ";\n"
+                << "        int index = logicalX + " << gridSize.x() << " * logicalY + " << gridSize.x() << " * "
+                << gridSize.y() << " * int(gl_GlobalInvocationID.z);\n"
+                << "        imageStore(u_image, "
+                << getCoordStr(m_imageType, "gl_GlobalInvocationID.x", "gl_GlobalInvocationID.y",
+                               "gl_GlobalInvocationID.z")
+                << ", " << formatDataStr << formatValueStr.str() << "); \n"
+                << "    }\n"
+                << "}\n";
+
+            std::ostringstream name;
+            name << "comp" << planeNdx << "_" << mipLevelNdx;
+            sourceCollections.glslSources.add(name.str()) << glu::ComputeSource(src.str());
+        }
     }
 }
 
