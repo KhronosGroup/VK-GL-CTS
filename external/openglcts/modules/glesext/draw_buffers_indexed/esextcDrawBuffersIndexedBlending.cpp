@@ -371,12 +371,18 @@ tcu::RGBA DrawBuffersIndexedBlending::GetEpsilon()
 
     tcu::IVec4 bits;
     tcu::UVec4 epsilon;
+    tcu::UVec4 quantizationLoss;
 
     for (int i = 0; i < 4; ++i)
     {
         gl.getIntegerv(GL_RED_BITS + i, &bits[i]);
         epsilon[i] = de::min(
             255u, static_cast<unsigned int>(ceil(1.0 + 255.0 * (1.0 / pow(2.0, static_cast<double>(bits[i]))))));
+
+        quantizationLoss[i] =
+            de::min(255u, static_cast<unsigned int>(ceil(255.0 / static_cast<double>(1u << bits[i]))));
+
+        epsilon[i] = de::min(255u, (epsilon[i] + quantizationLoss[i]));
     }
 
     return tcu::RGBA(epsilon.x(), epsilon.y(), epsilon.z(), epsilon.w());
