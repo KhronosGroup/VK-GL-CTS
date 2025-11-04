@@ -1460,7 +1460,10 @@ void RobustnessExtsTestCase::initPrograms(SourceCollections &programCollection) 
 
             checks << "    if (c < 0 || c >= " << inboundcoords << ") "
                    << genStore(m_data.descriptorType, vecType, bufType, coord) << ";\n";
-            if (m_data.formatQualifier && (format == VK_FORMAT_R32_SINT || format == VK_FORMAT_R32_UINT))
+
+            if ((m_data.formatQualifier || m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER ||
+                 m_data.descriptorType == VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC) &&
+                (format == VK_FORMAT_R32_SINT || format == VK_FORMAT_R32_UINT))
             {
                 checks << "    if (c < 0 || c >= " << inboundcoords << ") "
                        << genAtomic(m_data.descriptorType, bufType, coord) << ";\n";

@@ -336,34 +336,34 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "b8b90dba56eb8c75050a712188d662fd51c953df",
+        "a167f0df7c071e3530dbb88dfe5c64071a6a4629",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "38f6708b6b6f213010c51ffa8f577a7751e12ce7",
+        "36b4d078576ad465e85b4b0502695ac5f3edb2e6",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "97e96f9e9defeb4bba3cfbd034dec516671dd7a3",
+        "6bb105b6c4b3a246e1e6bb96366fe14c6dbfde83",
         "spirv-headers"),
     GitRepo(
         "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "8e7977791bf1c6c299cb381f1c9ce66bd36f3145",
+        "e0a94276a5ec781cdea9ea80c2a8f0ec1be6175f",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
         "git@github.com:KhronosGroup/Vulkan-ValidationLayers.git",
-        "68e4cdd8269c2af39aa16793c9089d1893eae972",
+        "0a11cf1257471c22b9e7d620ab48057fb2f53cf9",
         "vulkan-validationlayers",
         postCheckout="python3 scripts/update_deps.py --dir external  --optional tests  --api vulkan"),
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "57ba1ca211b6f4890c013dcf42cb16069ae916dd",
+        "9482448393f3f1f75067cc6ba8ad77fda48691c6",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
@@ -373,7 +373,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "v0.3.4",
+        "v0.3.5",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(

@@ -317,6 +317,8 @@ struct ResourceDescription
     vk::VkSampleCountFlagBits imageSamples;
 };
 
+bool resourceSupportsComputeQueue(const ResourceDescription &resource);
+
 struct BufferResource
 {
     BufferResource(vk::VkBuffer handle_, vk::VkDeviceSize offset_, vk::VkDeviceSize size_)
@@ -388,8 +390,8 @@ vk::VkDependencyInfoKHR makeCommonDependencyInfo(const vk::VkMemoryBarrier2KHR *
 
 vk::VkDevice getSyncDevice(de::MovePtr<VideoDevice> &device, Context &context);
 const vk::DeviceInterface &getSyncDeviceInterface(de::MovePtr<VideoDevice> &device, Context &context);
-uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &context);
-vk::VkQueue getSyncQueue(de::MovePtr<VideoDevice> &device, Context &context);
+uint32_t getSyncQueueFamilyIndex(de::MovePtr<VideoDevice> &device, Context &context, bool computeQueue);
+vk::VkQueue getSyncQueue(de::MovePtr<VideoDevice> &device, Context &context, bool computeQueue);
 } // namespace synchronization
 } // namespace vkt
 

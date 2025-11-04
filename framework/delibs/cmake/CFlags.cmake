@@ -40,7 +40,7 @@ if (DE_COMPILER_IS_GCC OR DE_COMPILER_IS_CLANG)
 	endif ()
 
 	# \note Remove -Wno-sign-conversion for more warnings
-	set(WARNING_FLAGS			"-Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion -Wno-sign-conversion")
+	set(WARNING_FLAGS			"-Wall -Wextra -Wno-long-long -Wshadow -Wundef -Wconversion -Wno-sign-conversion -Wno-missing-field-initializers")
 
 	# Need to specify c++ standard version through CMAKE_C_STANDARD and CMAKE_CXX_STANDARD
 	# Avoids incorrect addition of argument -std=gnu++XX that may result in build failure to usage of features in

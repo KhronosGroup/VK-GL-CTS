@@ -632,27 +632,26 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
             TCU_CHECK((size_t)imageNdx < swapchainImages.size());
 
             {
-                const VkSemaphore renderingCompleteSemaphore =
-                    **renderingCompleteSemaphores[frameNdx % renderingCompleteSemaphores.size()];
-                const VkCommandBuffer commandBuffer     = **commandBuffers[frameNdx % commandBuffers.size()];
-                const VkPipelineStageFlags waitDstStage = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
-                const VkSubmitInfo submitInfo           = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
-                                                           nullptr,
-                                                           1u,
-                                                           &imageReadySemaphore,
-                                                           &waitDstStage,
-                                                           1u,
-                                                           &commandBuffer,
-                                                           1u,
-                                                           &renderingCompleteSemaphore};
-                const VkPresentInfoKHR presentInfo      = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
-                                                           nullptr,
-                                                           1u,
-                                                           &renderingCompleteSemaphore,
-                                                           1u,
-                                                           &*swapchain,
-                                                           &imageNdx,
-                                                           nullptr};
+                const VkSemaphore renderingCompleteSemaphore = **renderingCompleteSemaphores[imageNdx];
+                const VkCommandBuffer commandBuffer          = **commandBuffers[frameNdx % commandBuffers.size()];
+                const VkPipelineStageFlags waitDstStage      = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+                const VkSubmitInfo submitInfo                = {VK_STRUCTURE_TYPE_SUBMIT_INFO,
+                                                                nullptr,
+                                                                1u,
+                                                                &imageReadySemaphore,
+                                                                &waitDstStage,
+                                                                1u,
+                                                                &commandBuffer,
+                                                                1u,
+                                                                &renderingCompleteSemaphore};
+                const VkPresentInfoKHR presentInfo           = {VK_STRUCTURE_TYPE_PRESENT_INFO_KHR,
+                                                                nullptr,
+                                                                1u,
+                                                                &renderingCompleteSemaphore,
+                                                                1u,
+                                                                &*swapchain,
+                                                                &imageNdx,
+                                                                (VkResult *)nullptr};
 
                 if (checkHdr)
                 {

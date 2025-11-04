@@ -148,6 +148,7 @@ public:
     uint32_t getUniversalQueueFamilyIndex(void) const;
     vk::VkQueue getUniversalQueue(void) const;
     uint32_t getUsedApiVersion(void) const;
+    uint32_t getEquivalentApiVersion(void) const;
     uint32_t getSparseQueueFamilyIndex(void) const;
     vk::VkQueue getSparseQueue(void) const;
     int getComputeQueueFamilyIndex(void) const;

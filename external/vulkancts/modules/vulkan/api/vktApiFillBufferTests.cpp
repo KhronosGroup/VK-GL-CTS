@@ -114,11 +114,13 @@ Move<VkDevice> createCustomDevice(Context &context,
     auto deviceFeatures2          = context.getDeviceFeatures2();
     void *pNext                   = &deviceFeatures2;
 
-    if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2") &&
-        (context.getUsedApiVersion() < VK_API_VERSION_1_3))
+    if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
     {
-        synchronization2Features.pNext = &deviceFeatures2;
-        pNext                          = &synchronization2Features;
+        if (context.getEquivalentApiVersion() < VK_API_VERSION_1_3)
+        {
+            synchronization2Features.pNext = &deviceFeatures2;
+            pNext                          = &synchronization2Features;
+        }
     }
 
 #ifndef CTS_USES_VULKANSC
@@ -552,7 +554,7 @@ tcu::TestStatus FillBufferTestInstance::iterate(void)
             dstFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
 
         VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
-        vk.cmdFillMemoryKHR(*m_cmdBuffer, dstRange, dstFlags, m_params.testData[0]);
+        vk.cmdFillMemoryKHR(*m_cmdBuffer, &dstRange, dstFlags, m_params.testData[0]);
     }
 #endif
 
@@ -707,7 +709,7 @@ tcu::TestStatus UpdateBufferTestInstance::iterate(void)
             dstFlags = 0;
 
         VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
-        vk.cmdUpdateMemoryKHR(*m_cmdBuffer, dstRange, dstFlags, TestParams::TEST_DATA_SIZE * sizeof(uint32_t),
+        vk.cmdUpdateMemoryKHR(*m_cmdBuffer, &dstRange, dstFlags, TestParams::TEST_DATA_SIZE * sizeof(uint32_t),
                               &m_params.testData);
     }
 #endif

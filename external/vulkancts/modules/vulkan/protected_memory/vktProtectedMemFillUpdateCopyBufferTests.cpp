@@ -210,7 +210,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         if (m_useDeviceAddressCommands)
         {
             vk::VkDeviceAddressRangeKHR dstRange{dstDevicceAddress, bufferSize};
-            vk.cmdFillMemoryKHR(targetCmdBuffer, dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
+            vk.cmdFillMemoryKHR(targetCmdBuffer, &dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
         }
 #endif
         if (!m_useDeviceAddressCommands)
@@ -229,7 +229,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         if (m_useDeviceAddressCommands)
         {
             vk::VkDeviceAddressRangeKHR dstRange{dstDevicceAddress, bufferSize};
-            vk.cmdUpdateMemoryKHR(targetCmdBuffer, dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, bufferSize,
+            vk.cmdUpdateMemoryKHR(targetCmdBuffer, &dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, bufferSize,
                                   (const uint32_t *)&data);
         }
 #endif
@@ -244,7 +244,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         if (m_useDeviceAddressCommands)
         {
             vk::VkDeviceAddressRangeKHR srcRange{srcDevicceAddress, bufferSize};
-            vk.cmdFillMemoryKHR(targetCmdBuffer, srcRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
+            vk.cmdFillMemoryKHR(targetCmdBuffer, &srcRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
         }
 #endif
         if (!m_useDeviceAddressCommands)

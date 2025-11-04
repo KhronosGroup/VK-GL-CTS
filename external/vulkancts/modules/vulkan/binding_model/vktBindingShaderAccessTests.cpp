@@ -52,6 +52,7 @@
 #include "deSharedPtr.hpp"
 #include "deStringUtil.hpp"
 #include "deArrayUtil.hpp"
+#include "deRandom.h"
 
 #include "qpInfo.h"
 #include <iostream>
@@ -1477,6 +1478,22 @@ vk::Move<vk::VkBuffer> BufferRenderInstance::createSourceBuffer(const vk::Device
     return buffer;
 }
 
+vk::Move<vk::VkDescriptorSetLayout> createUnusedLayout(const vk::DeviceInterface &vki, vk::VkDevice device,
+                                                       vk::VkShaderStageFlags stageFlags, uint32_t hash)
+{
+    de::Random random(hash);
+    uint32_t r = random.getUint32() % 10;
+    vk::DescriptorSetLayoutBuilder builder;
+    if (r == 0)
+        builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC, stageFlags, 0);
+    else if (r == 1)
+        builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC, stageFlags, 0);
+    else if (r == 2)
+        builder.addSingleIndexedBinding(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, stageFlags, 0);
+
+    return builder.build(vki, device, (vk::VkDescriptorSetLayoutCreateFlags)0);
+}
+
 vk::Move<vk::VkDescriptorPool> BufferRenderInstance::createDescriptorPool(const vk::DeviceInterface &vki,
                                                                           vk::VkDevice device,
                                                                           vk::VkDescriptorType descriptorType,
@@ -1547,10 +1564,9 @@ std::vector<DescriptorSetLayoutHandleSp> BufferRenderInstance::createDescriptorS
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(vki, device, (vk::VkDescriptorSetLayoutCreateFlags)0);
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout = createUnusedLayout(
+                vki, device, stageFlags, deInt32Hash((uint32_t)descriptorType) ^ deInt32Hash((uint32_t)stageFlags));
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
         }
     }
     return descriptorSetLayouts;
@@ -2867,11 +2883,11 @@ tcu::TestStatus BufferComputeInstance::testResourceAccess(void)
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && m_descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(m_vki, m_device, (vk::VkDescriptorSetLayoutCreateFlags)0);
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout =
+                createUnusedLayout(m_vki, m_device, vk::VK_SHADER_STAGE_COMPUTE_BIT,
+                                   deInt32Hash((uint32_t)m_descriptorType) ^ deInt32Hash(ndx0));
 
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
             layoutHandles.push_back(**descriptorSetLayouts.back());
         }
     }
@@ -4253,10 +4269,9 @@ std::vector<DescriptorSetLayoutHandleSp> ImageFetchRenderInstance::createDescrip
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(vki, device, (vk::VkDescriptorSetLayoutCreateFlags)0);
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout = createUnusedLayout(
+                vki, device, stageFlags, deInt32Hash((uint32_t)descriptorType) ^ deInt32Hash((uint32_t)stageFlags));
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
         }
     }
     return descriptorSetLayouts;
@@ -5087,11 +5102,11 @@ tcu::TestStatus ImageFetchComputeInstance::testResourceAccess(void)
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && m_descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(m_vki, m_device, (vk::VkDescriptorSetLayoutCreateFlags)0);
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout =
+                createUnusedLayout(m_vki, m_device, vk::VK_SHADER_STAGE_COMPUTE_BIT,
+                                   deInt32Hash((uint32_t)m_descriptorType) ^ deInt32Hash(m_numLevels));
 
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
             layoutHandles.push_back(**descriptorSetLayouts.back());
         }
     }
@@ -5783,10 +5798,9 @@ std::vector<DescriptorSetLayoutHandleSp> ImageSampleRenderInstance::createDescri
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(vki, device, (vk::VkDescriptorSetLayoutCreateFlags)0);
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout = createUnusedLayout(
+                vki, device, stageFlags, deInt32Hash((uint32_t)descriptorType) ^ deInt32Hash((uint32_t)stageFlags));
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
         }
     }
 
@@ -7236,11 +7250,11 @@ tcu::TestStatus ImageSampleComputeInstance::testResourceAccess(void)
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && m_descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(m_vki, m_device, (vk::VkDescriptorSetLayoutCreateFlags)0);
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout =
+                createUnusedLayout(m_vki, m_device, vk::VK_SHADER_STAGE_COMPUTE_BIT,
+                                   deInt32Hash((uint32_t)m_descriptorType) ^ deInt32Hash(m_numLevels));
 
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
             layoutHandles.push_back(**descriptorSetLayouts.back());
         }
     }
@@ -8437,10 +8451,10 @@ std::vector<DescriptorSetLayoutHandleSp> TexelBufferRenderInstance::createDescri
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(vki, device, (vk::VkDescriptorSetLayoutCreateFlags)0);
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout = createUnusedLayout(
+                vki, device, stageFlags, deInt32Hash((uint32_t)descriptorType) ^ deInt32Hash((uint32_t)stageFlags));
+
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
         }
     }
     return descriptorSetLayouts;
@@ -9262,11 +9276,11 @@ tcu::TestStatus TexelBufferComputeInstance::testResourceAccess(void)
         // Add an empty descriptor set layout between sets 0 and 2
         if (setNdx == 0 && m_descriptorSetCount == DESCRIPTOR_SET_COUNT_MULTIPLE_DISCONTIGUOUS)
         {
-            vk::DescriptorSetLayoutBuilder emptyBuilder;
-            vk::Move<vk::VkDescriptorSetLayout> emptyLayout =
-                emptyBuilder.build(m_vki, m_device, (vk::VkDescriptorSetLayoutCreateFlags)0);
+            vk::Move<vk::VkDescriptorSetLayout> unusedLayout = createUnusedLayout(
+                m_vki, m_device, vk::VK_SHADER_STAGE_COMPUTE_BIT,
+                deInt32Hash((uint32_t)m_descriptorType) ^ deInt32Hash((uint32_t)m_nonzeroViewOffset));
 
-            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(emptyLayout)));
+            descriptorSetLayouts.push_back(DescriptorSetLayoutHandleSp(new DescriptorSetLayoutHandleUp(unusedLayout)));
             layoutHandles.push_back(**descriptorSetLayouts.back());
         }
     }

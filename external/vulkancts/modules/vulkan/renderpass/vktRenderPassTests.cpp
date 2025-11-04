@@ -41,6 +41,7 @@
 #include "vktRenderPassLoadStoreOpNoneTests.hpp"
 #include "vktDynamicRenderingTests.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
+#include "vktDynamicRenderingLocalReadMaint10Tests.hpp"
 #include "vktDynamicRenderingDepthStencilResolveTests.hpp"
 #include "vktRenderPassNestedCommandBuffersTests.hpp"
 #endif // CTS_USES_VULKANSC
@@ -5738,7 +5739,7 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
                 TCU_THROW(NotSupportedError, "Required number of color attachments not supported.");
 
 #ifndef CTS_USES_VULKANSC
-            if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0))
+            if (context.getEquivalentApiVersion() > VK_API_VERSION_1_3)
             {
                 if (!context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
                 {
@@ -8484,6 +8485,7 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createDynamicRenderingBasicTests(testCtx));
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, false));
             renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx));
+            renderingTests->addChild(createDynamicRenderingLocalReadMaint10Tests(testCtx));
         }
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {

@@ -73,6 +73,7 @@ MODULES = [
     Module("KHR-Single-GL44","GL44"),
     Module("KHR-Single-GL45","GL45"),
     Module("KHR-Single-GL46","GL46"),
+    Module("KHR-Single-GLES31","GLES31"),
     Module("KHR-Single-GLES32","GLES32"),
     Module("KHR-GLESEXT","GLES32"),
 ]

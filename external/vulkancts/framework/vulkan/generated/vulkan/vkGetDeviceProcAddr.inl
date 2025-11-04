@@ -102,6 +102,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM",
 		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
 
+		// "VK_ARM_performance_counters_by_region
+		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
+
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
 		"vkCmdCopyTensorARM",
@@ -313,6 +316,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 
 		// "VK_EXT_line_rasterization
 		"vkCmdSetLineStippleEXT",
+
+		// "VK_EXT_memory_decompression
+		"vkCmdDecompressMemoryEXT",
+		"vkCmdDecompressMemoryIndirectCountEXT",
 
 		// "VK_EXT_mesh_shader
 		"vkCmdDrawMeshTasksEXT",
@@ -686,6 +693,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_KHR_maintenance1
 		"vkTrimCommandPoolKHR",
 
+		// "VK_KHR_maintenance10
+		"vkCmdEndRendering2KHR",
+
 		// "VK_KHR_maintenance3
 		"vkGetDescriptorSetLayoutSupportKHR",
 
@@ -973,6 +983,15 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBindShadingRateImageNV",
 		"vkCmdSetCoarseSampleOrderNV",
 		"vkCmdSetViewportShadingRatePaletteNV",
+
+		// "VK_OHOS_external_memory
+		"vkGetMemoryNativeBufferOHOS",
+		"vkGetNativeBufferPropertiesOHOS",
+
+		// "VK_OHOS_native_buffer
+		"vkAcquireImageOHOS",
+		"vkGetSwapchainGrallocUsageOHOS",
+		"vkQueueSignalReleaseImageOHOS",
 
 		// "VK_OHOS_surface
 		"vkCreateSurfaceOHOS",

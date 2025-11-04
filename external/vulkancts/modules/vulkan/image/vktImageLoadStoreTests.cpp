@@ -1287,6 +1287,8 @@ void LoadStoreTest::checkSupport(Context &context) const
 #ifndef CTS_USES_VULKANSC
     if (m_format == VK_FORMAT_A8_UNORM_KHR || m_format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
+    if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     const VkFormatProperties3 formatProperties(context.getFormatProperties(m_format));
     const VkFormatProperties3 imageFormatProperties(context.getFormatProperties(m_imageFormat));
@@ -3185,7 +3187,7 @@ void ImageDeviceScopeAccessTest::checkSupport(Context &context) const
     if (!vkMemModelFeatures.vulkanMemoryModelDeviceScope)
         TCU_THROW(NotSupportedError, "vulkanMemoryModelDeviceScope not supported");
 
-    if (context.getUsedApiVersion() < SPIRV_VERSION_1_5)
+    if (context.getEquivalentApiVersion() < VK_API_VERSION_1_2)
         TCU_THROW(NotSupportedError,
                   std::string("Vulkan higher than or equal to spirv 1.5 is required for this test to run").c_str());
 

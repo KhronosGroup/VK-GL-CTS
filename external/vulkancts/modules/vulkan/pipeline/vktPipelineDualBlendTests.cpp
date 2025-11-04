@@ -1357,9 +1357,9 @@ tcu::TestStatus DualSourceBlendMAInstance::iteratePerArgs(const VkFormat format,
             }
 
             m_vkd.cmdPipelineBarrier(cmd,
-                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT,
+                VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_HOST_BIT,
                 VK_DEPENDENCY_BY_REGION_BIT, 0u, nullptr,
-                ATTACHMENT_COUNT, transformBuffers(buffers, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE),
+                ATTACHMENT_COUNT, transformBuffers(buffers, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT),
                 ATTACHMENT_COUNT, transformImages(0, ATTACHMENT_COUNT,
                     VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
                     VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));
@@ -1425,9 +1425,9 @@ tcu::TestStatus DualSourceBlendMAInstance::iteratePerArgs(const VkFormat format,
 
         m_vkd.cmdPipelineBarrier(cmd,
             VK_PIPELINE_STAGE_TRANSFER_BIT,
-            (standalone ? VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT : VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT),
+            (standalone ? VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT : VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT) | VK_PIPELINE_STAGE_HOST_BIT,
             VK_DEPENDENCY_BY_REGION_BIT, 0u, nullptr,
-            ATTACHMENT_COUNT, transformBuffers(m_genericAttachments, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE),
+            ATTACHMENT_COUNT, transformBuffers(m_genericAttachments, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT),
             ATTACHMENT_COUNT, transformImages(0, ATTACHMENT_COUNT,
                                 VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
                                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));
@@ -1488,9 +1488,9 @@ tcu::TestStatus DualSourceBlendMAInstance::iteratePerArgs(const VkFormat format,
         }
 
         m_vkd.cmdPipelineBarrier(cmd,
-            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
+            VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT | VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT,
             VK_DEPENDENCY_BY_REGION_BIT, 0u, nullptr,
-            ATTACHMENT_COUNT, transformBuffers(m_dualAttachments, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_NONE),
+            ATTACHMENT_COUNT, transformBuffers(m_dualAttachments, VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT),
             ATTACHMENT_COUNT, transformImages(0, ATTACHMENT_COUNT,
                                 VK_ACCESS_TRANSFER_READ_BIT, VK_ACCESS_NONE,
                                 VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, VK_IMAGE_LAYOUT_GENERAL));

@@ -256,6 +256,10 @@ void checkSupport(Context &context, const TestParameters params)
         if (properties.maxArrayLayers < 2)
             TCU_THROW(NotSupportedError, "Image format does not support more than 1 maxArrayLayers");
     }
+
+    if (params.shaderType == glu::SHADERTYPE_VERTEX || params.shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL ||
+        params.shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION || params.shaderType == glu::SHADERTYPE_GEOMETRY)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 }
 
 void generateLookupCoordinates(const UVec2 &imageSize, vector<Vec2> *dst)
