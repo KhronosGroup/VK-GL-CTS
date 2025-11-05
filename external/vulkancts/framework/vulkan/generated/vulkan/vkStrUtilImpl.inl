@@ -3328,6 +3328,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV:							return "VK_STRUCTURE_TYPE_EXTERNAL_COMPUTE_QUEUE_DEVICE_CREATE_INFO_NV";
 		case VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES:												return "VK_STRUCTURE_TYPE_EXTERNAL_FENCE_PROPERTIES";
 		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID:													return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_ANDROID";
+		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_OHOS:													return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_OHOS";
 		case VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX:														return "VK_STRUCTURE_TYPE_EXTERNAL_FORMAT_QNX";
 		case VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES:										return "VK_STRUCTURE_TYPE_EXTERNAL_IMAGE_FORMAT_PROPERTIES";
 		case VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_EXT:									return "VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_ACQUIRE_UNMODIFIED_EXT";
@@ -3417,6 +3418,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMPORT_METAL_IO_SURFACE_INFO_EXT:										return "VK_STRUCTURE_TYPE_IMPORT_METAL_IO_SURFACE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT:										return "VK_STRUCTURE_TYPE_IMPORT_METAL_SHARED_EVENT_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMPORT_METAL_TEXTURE_INFO_EXT:											return "VK_STRUCTURE_TYPE_IMPORT_METAL_TEXTURE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_IMPORT_NATIVE_BUFFER_INFO_OHOS:											return "VK_STRUCTURE_TYPE_IMPORT_NATIVE_BUFFER_INFO_OHOS";
 		case VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX:											return "VK_STRUCTURE_TYPE_IMPORT_SCREEN_BUFFER_INFO_QNX";
 		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR:											return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR:									return "VK_STRUCTURE_TYPE_IMPORT_SEMAPHORE_WIN32_HANDLE_INFO_KHR";
@@ -3454,6 +3456,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID:							return "VK_STRUCTURE_TYPE_MEMORY_GET_ANDROID_HARDWARE_BUFFER_INFO_ANDROID";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR:													return "VK_STRUCTURE_TYPE_MEMORY_GET_FD_INFO_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT:										return "VK_STRUCTURE_TYPE_MEMORY_GET_METAL_HANDLE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_MEMORY_GET_NATIVE_BUFFER_INFO_OHOS:										return "VK_STRUCTURE_TYPE_MEMORY_GET_NATIVE_BUFFER_INFO_OHOS";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV:										return "VK_STRUCTURE_TYPE_MEMORY_GET_REMOTE_ADDRESS_INFO_NV";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR:										return "VK_STRUCTURE_TYPE_MEMORY_GET_WIN32_HANDLE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA:									return "VK_STRUCTURE_TYPE_MEMORY_GET_ZIRCON_HANDLE_INFO_FUCHSIA";
@@ -3478,7 +3481,10 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX:									return "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_ATTRIBUTES_INFO_NVX";
 		case VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM:				return "VK_STRUCTURE_TYPE_MULTIVIEW_PER_VIEW_RENDER_AREAS_RENDER_PASS_BEGIN_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT:									return "VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT";
+		case VK_STRUCTURE_TYPE_NATIVE_BUFFER_FORMAT_PROPERTIES_OHOS:									return "VK_STRUCTURE_TYPE_NATIVE_BUFFER_FORMAT_PROPERTIES_OHOS";
 		case VK_STRUCTURE_TYPE_NATIVE_BUFFER_OHOS:														return "VK_STRUCTURE_TYPE_NATIVE_BUFFER_OHOS";
+		case VK_STRUCTURE_TYPE_NATIVE_BUFFER_PROPERTIES_OHOS:											return "VK_STRUCTURE_TYPE_NATIVE_BUFFER_PROPERTIES_OHOS";
+		case VK_STRUCTURE_TYPE_NATIVE_BUFFER_USAGE_OHOS:												return "VK_STRUCTURE_TYPE_NATIVE_BUFFER_USAGE_OHOS";
 		case VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT:							return "VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT";
 		case VK_STRUCTURE_TYPE_OPTICAL_FLOW_EXECUTE_INFO_NV:											return "VK_STRUCTURE_TYPE_OPTICAL_FLOW_EXECUTE_INFO_NV";
 		case VK_STRUCTURE_TYPE_OPTICAL_FLOW_IMAGE_FORMAT_INFO_NV:										return "VK_STRUCTURE_TYPE_OPTICAL_FLOW_IMAGE_FORMAT_INFO_NV";
@@ -3489,6 +3495,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_FLAGS_NV:								return "VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_FLAGS_NV";
 		case VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_INSTANCES_INPUT_NV:					return "VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_INSTANCES_INPUT_NV";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL:							return "VK_STRUCTURE_TYPE_PERFORMANCE_CONFIGURATION_ACQUIRE_INFO_INTEL";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_ARM:													return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_ARM";
+		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_ARM:										return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_ARM";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR:										return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_DESCRIPTION_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR:													return "VK_STRUCTURE_TYPE_PERFORMANCE_COUNTER_KHR";
 		case VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL:											return "VK_STRUCTURE_TYPE_PERFORMANCE_MARKER_INFO_INTEL";
@@ -3658,6 +3666,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_LINE_RASTERIZATION_PROPERTIES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_10_PROPERTIES_KHR";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_11_FEATURES_KHR:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_11_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_3_PROPERTIES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_FEATURES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MAINTENANCE_4_PROPERTIES";
@@ -3701,6 +3710,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PARTITIONED_ACCELERATION_STRUCTURE_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PCI_BUS_INFO_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_FEATURES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_COUNTERS_BY_REGION_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PERFORMANCE_QUERY_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV:					return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PER_STAGE_DESCRIPTOR_SET_FEATURES_NV";
@@ -3949,6 +3960,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_DATA_GRAPH_PROCESSING_ENGINE_PROPERTIES_ARM:				return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_DATA_GRAPH_PROCESSING_ENGINE_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_DATA_GRAPH_PROPERTIES_ARM:									return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_DATA_GRAPH_PROPERTIES_ARM";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES:									return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_GLOBAL_PRIORITY_PROPERTIES";
+		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_OPTIMAL_IMAGE_TRANSFER_GRANULARITY_PROPERTIES_KHR:			return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_OPTIMAL_IMAGE_TRANSFER_GRANULARITY_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_OWNERSHIP_TRANSFER_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_OWNERSHIP_TRANSFER_PROPERTIES_KHR";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2:												return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2";
 		case VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR:							return "VK_STRUCTURE_TYPE_QUEUE_FAMILY_QUERY_RESULT_STATUS_PROPERTIES_KHR";
@@ -3980,6 +3992,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT:					return "VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_OFFSET_END_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO:							return "VK_STRUCTURE_TYPE_RENDER_PASS_INPUT_ATTACHMENT_ASPECT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO:										return "VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO";
+		case VK_STRUCTURE_TYPE_RENDER_PASS_PERFORMANCE_COUNTERS_BY_REGION_BEGIN_INFO_ARM:				return "VK_STRUCTURE_TYPE_RENDER_PASS_PERFORMANCE_COUNTERS_BY_REGION_BEGIN_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT:								return "VK_STRUCTURE_TYPE_RENDER_PASS_SAMPLE_LOCATIONS_BEGIN_INFO_EXT";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM:										return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_BEGIN_INFO_ARM";
 		case VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM:												return "VK_STRUCTURE_TYPE_RENDER_PASS_STRIPE_INFO_ARM";
@@ -5108,6 +5121,7 @@ tcu::Format::Bitfield<32> getExternalMemoryHandleTypeFlagsStr (VkExternalMemoryH
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLBUFFER_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLHEAP_BIT_EXT,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLHEAP_BIT_EXT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_MTLTEXTURE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OH_NATIVE_BUFFER_BIT_OHOS,				"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OH_NATIVE_BUFFER_BIT_OHOS"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT,							"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_FD_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT,						"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_BIT"),
 		tcu::Format::BitDesc(VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT,					"VK_EXTERNAL_MEMORY_HANDLE_TYPE_OPAQUE_WIN32_KMT_BIT"),
@@ -5439,6 +5453,7 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT,						"VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT,					"VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_ALIAS_BIT,										"VK_IMAGE_CREATE_ALIAS_BIT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_ALIAS_SINGLE_LAYER_DESCRIPTOR_BIT_KHR,			"VK_IMAGE_CREATE_ALIAS_SINGLE_LAYER_DESCRIPTOR_BIT_KHR"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT,				"VK_IMAGE_CREATE_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV,							"VK_IMAGE_CREATE_CORNER_SAMPLED_BIT_NV"),
 		tcu::Format::BitDesc(VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT,							"VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT"),
@@ -6232,6 +6247,7 @@ tcu::Format::Bitfield<32> getShaderCreateFlagsEXTStr (VkShaderCreateFlagsEXT val
 		tcu::Format::BitDesc(VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT,					"VK_SHADER_CREATE_DISPATCH_BASE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SHADER_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT,	"VK_SHADER_CREATE_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SHADER_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_EXT,	"VK_SHADER_CREATE_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_EXT"),
+		tcu::Format::BitDesc(VK_SHADER_CREATE_INDEPENDENT_SETS_BIT_KHR,					"VK_SHADER_CREATE_INDEPENDENT_SETS_BIT_KHR"),
 		tcu::Format::BitDesc(VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT,				"VK_SHADER_CREATE_INDIRECT_BINDABLE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SHADER_CREATE_LINK_STAGE_BIT_EXT,						"VK_SHADER_CREATE_LINK_STAGE_BIT_EXT"),
 		tcu::Format::BitDesc(VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT,					"VK_SHADER_CREATE_NO_TASK_SHADER_BIT_EXT"),
@@ -10773,6 +10789,16 @@ std::ostream& operator<< (std::ostream& s, const VkExternalFormatANDROID& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkExternalFormatOHOS& value)
+{
+	s << "VkExternalFormatOHOS = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkExternalFormatQNX& value)
 {
 	s << "VkExternalFormatQNX = {\n";
@@ -11992,6 +12018,16 @@ std::ostream& operator<< (std::ostream& s, const VkImportMetalTextureInfoEXT& va
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImportNativeBufferInfoOHOS& value)
+{
+	s << "VkImportNativeBufferInfoOHOS = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tbuffer = " << value.buffer << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImportScreenBufferInfoQNX& value)
 {
 	s << "VkImportScreenBufferInfoQNX = {\n";
@@ -12506,6 +12542,16 @@ std::ostream& operator<< (std::ostream& s, const VkMemoryGetMetalHandleInfoEXT& 
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkMemoryGetNativeBufferInfoOHOS& value)
+{
+	s << "VkMemoryGetNativeBufferInfoOHOS = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmemory = " << value.memory << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkMemoryGetRemoteAddressInfoNV& value)
 {
 	s << "VkMemoryGetRemoteAddressInfoNV = {\n";
@@ -12856,12 +12902,50 @@ std::ostream& operator<< (std::ostream& s, const VkMutableDescriptorTypeListEXT&
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkNativeBufferFormatPropertiesOHOS& value)
+{
+	s << "VkNativeBufferFormatPropertiesOHOS = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tformat = " << value.format << '\n';
+	s << "\texternalFormat = " << value.externalFormat << '\n';
+	s << "\tformatFeatures = " << getFormatFeatureFlagsStr(value.formatFeatures) << '\n';
+	s << "\tsamplerYcbcrConversionComponents = " << value.samplerYcbcrConversionComponents << '\n';
+	s << "\tsuggestedYcbcrModel = " << value.suggestedYcbcrModel << '\n';
+	s << "\tsuggestedYcbcrRange = " << value.suggestedYcbcrRange << '\n';
+	s << "\tsuggestedXChromaOffset = " << value.suggestedXChromaOffset << '\n';
+	s << "\tsuggestedYChromaOffset = " << value.suggestedYChromaOffset << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkNativeBufferOHOS& value)
 {
 	s << "VkNativeBufferOHOS = {\n";
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\thandle = " << value.handle << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkNativeBufferPropertiesOHOS& value)
+{
+	s << "VkNativeBufferPropertiesOHOS = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tallocationSize = " << value.allocationSize << '\n';
+	s << "\tmemoryTypeBits = " << value.memoryTypeBits << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkNativeBufferUsageOHOS& value)
+{
+	s << "VkNativeBufferUsageOHOS = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tOHOSNativeBufferUsage = " << value.OHOSNativeBufferUsage << '\n';
 	s << '}';
 	return s;
 }
@@ -13062,6 +13146,27 @@ std::ostream& operator<< (std::ostream& s, const VkPerformanceConfigurationAcqui
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\ttype = " << value.type << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterARM& value)
+{
+	s << "VkPerformanceCounterARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcounterID = " << value.counterID << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPerformanceCounterDescriptionARM& value)
+{
+	s << "VkPerformanceCounterDescriptionARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tname = " << '\n' << tcu::formatArray(tcu::Format::HexIterator<char>(DE_ARRAY_BEGIN(value.name)), tcu::Format::HexIterator<char>(DE_ARRAY_END(value.name))) << '\n';
 	s << '}';
 	return s;
 }
@@ -15284,6 +15389,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance10Pr
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance11FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceMaintenance11FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaintenance11 = " << value.maintenance11 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value)
 {
 	s << "VkPhysicalDeviceMaintenance3Properties = {\n";
@@ -15817,6 +15932,30 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerStageDescrip
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tperStageDescriptorSet = " << value.perStageDescriptorSet << '\n';
 	s << "\tdynamicPipelineLayout = " << value.dynamicPipelineLayout << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionFeaturesARM& value)
+{
+	s << "VkPhysicalDevicePerformanceCountersByRegionFeaturesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tperformanceCountersByRegion = " << value.performanceCountersByRegion << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionPropertiesARM& value)
+{
+	s << "VkPhysicalDevicePerformanceCountersByRegionPropertiesARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPerRegionPerformanceCounters = " << value.maxPerRegionPerformanceCounters << '\n';
+	s << "\tperformanceCounterRegionSize = " << value.performanceCounterRegionSize << '\n';
+	s << "\trowStrideAlignment = " << value.rowStrideAlignment << '\n';
+	s << "\tregionAlignment = " << value.regionAlignment << '\n';
+	s << "\tidentityTransformOrder = " << value.identityTransformOrder << '\n';
 	s << '}';
 	return s;
 }
@@ -19009,6 +19148,16 @@ std::ostream& operator<< (std::ostream& s, const VkQueueFamilyGlobalPriorityProp
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR& value)
+{
+	s << "VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\toptimalImageTransferGranularity = " << value.optimalImageTransferGranularity << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkQueueFamilyOwnershipTransferPropertiesKHR& value)
 {
 	s << "VkQueueFamilyOwnershipTransferPropertiesKHR = {\n";
@@ -19328,6 +19477,20 @@ std::ostream& operator<< (std::ostream& s, const VkRenderPassMultiviewCreateInfo
 	s << "\tpViewOffsets = " << value.pViewOffsets << '\n';
 	s << "\tcorrelationMaskCount = " << value.correlationMaskCount << '\n';
 	s << "\tpCorrelationMasks = " << value.pCorrelationMasks << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkRenderPassPerformanceCountersByRegionBeginInfoARM& value)
+{
+	s << "VkRenderPassPerformanceCountersByRegionBeginInfoARM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tcounterAddressCount = " << value.counterAddressCount << '\n';
+	s << "\tpCounterAddresses = " << value.pCounterAddresses << '\n';
+	s << "\tserializeRegions = " << value.serializeRegions << '\n';
+	s << "\tcounterIndexCount = " << value.counterIndexCount << '\n';
+	s << "\tpCounterIndices = " << value.pCounterIndices << '\n';
 	s << '}';
 	return s;
 }

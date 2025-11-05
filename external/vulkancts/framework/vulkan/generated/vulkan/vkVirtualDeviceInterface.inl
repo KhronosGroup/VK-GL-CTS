@@ -451,6 +451,7 @@ virtual VkResult			getMemoryFdPropertiesKHR								(VkDevice device, VkExternalM
 virtual VkResult			getMemoryHostPointerPropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHostPointer, VkMemoryHostPointerPropertiesEXT* pMemoryHostPointerProperties) const = 0;
 virtual VkResult			getMemoryMetalHandleEXT									(VkDevice device, const VkMemoryGetMetalHandleInfoEXT* pGetMetalHandleInfo, void** pHandle) const = 0;
 virtual VkResult			getMemoryMetalHandlePropertiesEXT						(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, const void* pHandle, VkMemoryMetalHandlePropertiesEXT* pMemoryMetalHandleProperties) const = 0;
+virtual VkResult			getMemoryNativeBufferOHOS								(VkDevice device, const VkMemoryGetNativeBufferInfoOHOS* pInfo, struct OH_NativeBuffer** pBuffer) const = 0;
 virtual VkResult			getMemoryRemoteAddressNV								(VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const = 0;
 virtual VkResult			getMemoryWin32HandleKHR									(VkDevice device, const VkMemoryGetWin32HandleInfoKHR* pGetWin32HandleInfo, pt::Win32Handle* pHandle) const = 0;
 virtual VkResult			getMemoryWin32HandleNV									(VkDevice device, VkDeviceMemory memory, VkExternalMemoryHandleTypeFlagsNV handleType, pt::Win32Handle* pHandle) const = 0;
@@ -458,6 +459,7 @@ virtual VkResult			getMemoryWin32HandlePropertiesKHR						(VkDevice device, VkEx
 virtual VkResult			getMemoryZirconHandleFUCHSIA							(VkDevice device, const VkMemoryGetZirconHandleInfoFUCHSIA* pGetZirconHandleInfo, pt::zx_handle_t* pZirconHandle) const = 0;
 virtual VkResult			getMemoryZirconHandlePropertiesFUCHSIA					(VkDevice device, VkExternalMemoryHandleTypeFlagBits handleType, pt::zx_handle_t zirconHandle, VkMemoryZirconHandlePropertiesFUCHSIA* pMemoryZirconHandleProperties) const = 0;
 virtual void				getMicromapBuildSizesEXT								(VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const = 0;
+virtual VkResult			getNativeBufferPropertiesOHOS							(VkDevice device, const struct OH_NativeBuffer* buffer, VkNativeBufferPropertiesOHOS* pProperties) const = 0;
 virtual void				getPartitionedAccelerationStructuresBuildSizesNV		(VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const = 0;
 virtual VkResult			getPastPresentationTimingGOOGLE							(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const = 0;
 virtual VkResult			getPerformanceParameterINTEL							(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const = 0;

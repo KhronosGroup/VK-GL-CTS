@@ -501,6 +501,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance10"))
 		addFeatures(&physicalDeviceMaintenance10FeaturesKHR);
 
+	// VkPhysicalDeviceMaintenance11FeaturesKHR for ext [VK_KHR_maintenance11]
+	vk::VkPhysicalDeviceMaintenance11FeaturesKHR physicalDeviceMaintenance11FeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance11"))
+		addFeatures(&physicalDeviceMaintenance11FeaturesKHR);
+
 	// VkPhysicalDeviceMaintenance4Features, VkPhysicalDeviceMaintenance4FeaturesKHR for ext [VK_KHR_maintenance4]
 	vk::VkPhysicalDeviceMaintenance4Features physicalDeviceMaintenance4Features = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance4"))
@@ -620,6 +625,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV physicalDevicePerStageDescriptorSetFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_per_stage_descriptor_set"))
 		addFeatures(&physicalDevicePerStageDescriptorSetFeaturesNV);
+
+	// VkPhysicalDevicePerformanceCountersByRegionFeaturesARM for ext [VK_ARM_performance_counters_by_region]
+	vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM physicalDevicePerformanceCountersByRegionFeaturesARM = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ARM_performance_counters_by_region"))
+		addFeatures(&physicalDevicePerformanceCountersByRegionFeaturesARM);
 
 	// VkPhysicalDevicePerformanceQueryFeaturesKHR for ext [VK_KHR_performance_query]
 	vk::VkPhysicalDevicePerformanceQueryFeaturesKHR physicalDevicePerformanceQueryFeaturesKHR = initVulkanStructure();
@@ -3006,6 +3016,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDevicePipelineOpacityMicromapFeaturesARM.pipelineOpacityMicromap == VK_FALSE )
 			failMesages.push_back("pipelineOpacityMicromap");
+	}
+
+	// VkPhysicalDevicePerformanceCountersByRegionFeaturesARM
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_ARM_performance_counters_by_region")) )
+	{
+		if ( physicalDevicePerformanceCountersByRegionFeaturesARM.performanceCountersByRegion == VK_FALSE )
+			failMesages.push_back("performanceCountersByRegion");
 	}
 
 	// VkPhysicalDeviceFormatPackFeaturesARM

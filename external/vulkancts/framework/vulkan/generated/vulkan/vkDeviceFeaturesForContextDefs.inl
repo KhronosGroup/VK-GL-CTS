@@ -100,6 +100,7 @@ const vk::VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				Context::getLega
 const vk::VkPhysicalDeviceLineRasterizationFeatures&						Context::getLineRasterizationFeatures						(void) const { return m_device->getLineRasterizationFeatures();						}
 const vk::VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					Context::getLinearColorAttachmentFeatures					(void) const { return m_device->getLinearColorAttachmentFeatures();					}
 const vk::VkPhysicalDeviceMaintenance10FeaturesKHR&							Context::getMaintenance10Features							(void) const { return m_device->getMaintenance10Features();							}
+const vk::VkPhysicalDeviceMaintenance11FeaturesKHR&							Context::getMaintenance11Features							(void) const { return m_device->getMaintenance11Features();							}
 const vk::VkPhysicalDeviceMaintenance4Features&								Context::getMaintenance4Features							(void) const { return m_device->getMaintenance4Features();							}
 const vk::VkPhysicalDeviceMaintenance5Features&								Context::getMaintenance5Features							(void) const { return m_device->getMaintenance5Features();							}
 const vk::VkPhysicalDeviceMaintenance6Features&								Context::getMaintenance6Features							(void) const { return m_device->getMaintenance6Features();							}
@@ -124,6 +125,7 @@ const vk::VkPhysicalDeviceOpticalFlowFeaturesNV&							Context::getOpticalFlowFe
 const vk::VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				Context::getPageableDeviceLocalMemoryFeaturesEXT			(void) const { return m_device->getPageableDeviceLocalMemoryFeaturesEXT();			}
 const vk::VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV&		Context::getPartitionedAccelerationStructureFeaturesNV		(void) const { return m_device->getPartitionedAccelerationStructureFeaturesNV();	}
 const vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV&					Context::getPerStageDescriptorSetFeaturesNV					(void) const { return m_device->getPerStageDescriptorSetFeaturesNV();				}
+const vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			Context::getPerformanceCountersByRegionFeaturesARM			(void) const { return m_device->getPerformanceCountersByRegionFeaturesARM();		}
 const vk::VkPhysicalDevicePerformanceQueryFeaturesKHR&						Context::getPerformanceQueryFeatures						(void) const { return m_device->getPerformanceQueryFeatures();						}
 const vk::VkPhysicalDevicePipelineBinaryFeaturesKHR&						Context::getPipelineBinaryFeatures							(void) const { return m_device->getPipelineBinaryFeatures();						}
 const vk::VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC&			Context::getPipelineCacheIncrementalModeFeaturesSEC			(void) const { return m_device->getPipelineCacheIncrementalModeFeaturesSEC();		}

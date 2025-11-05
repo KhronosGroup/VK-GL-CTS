@@ -977,6 +977,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueDataParam
 std::ostream&	operator<<	(std::ostream& s, const VkExternalComputeQueueDeviceCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFenceProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatANDROID& value);
+std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatOHOS& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalFormatQNX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalImageFormatProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkExternalImageFormatPropertiesNV& value);
@@ -1078,6 +1079,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImportMetalBufferInfoEXT& val
 std::ostream&	operator<<	(std::ostream& s, const VkImportMetalIOSurfaceInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportMetalSharedEventInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportMetalTextureInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImportNativeBufferInfoOHOS& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportScreenBufferInfoQNX& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImportSemaphoreWin32HandleInfoKHR& value);
@@ -1122,6 +1124,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkMemoryFdPropertiesKHR& value)
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetAndroidHardwareBufferInfoANDROID& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetFdInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetMetalHandleInfoEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetNativeBufferInfoOHOS& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetRemoteAddressInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetWin32HandleInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMemoryGetZirconHandleInfoFUCHSIA& value);
@@ -1154,7 +1157,10 @@ std::ostream&	operator<<	(std::ostream& s, const VkMultiviewPerViewAttributesInf
 std::ostream&	operator<<	(std::ostream& s, const VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkMutableDescriptorTypeListEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkNativeBufferFormatPropertiesOHOS& value);
 std::ostream&	operator<<	(std::ostream& s, const VkNativeBufferOHOS& value);
+std::ostream&	operator<<	(std::ostream& s, const VkNativeBufferPropertiesOHOS& value);
+std::ostream&	operator<<	(std::ostream& s, const VkNativeBufferUsageOHOS& value);
 std::ostream&	operator<<	(std::ostream& s, const VkOffset2D& value);
 std::ostream&	operator<<	(std::ostream& s, const VkOffset3D& value);
 std::ostream&	operator<<	(std::ostream& s, const VkOpaqueCaptureDescriptorDataCreateInfoEXT& value);
@@ -1173,6 +1179,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPastPresentationTimingGOOGLE&
 std::ostream&	operator<<	(std::ostream& s, const VkPerTileBeginInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerTileEndInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceConfigurationAcquireInfoINTEL& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterDescriptionARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterDescriptionKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPerformanceCounterResultKHR& value);
@@ -1347,6 +1355,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLineRasterizati
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceLinearColorAttachmentFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance10PropertiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance11FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance3Properties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Features& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceMaintenance4Properties& value);
@@ -1392,6 +1401,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePageableDeviceL
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerStageDescriptorSetFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceCountersByRegionPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceQueryFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePerformanceQueryPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDevicePipelineBinaryFeaturesKHR& value);
@@ -1650,6 +1661,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyCheckpointProperti
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyDataGraphProcessingEnginePropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyDataGraphPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityProperties& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyOptimalImageTransferGranularityPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyOwnershipTransferPropertiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyProperties2& value);
@@ -1677,6 +1689,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkRenderPassFragmentDensityMapC
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassFragmentDensityMapOffsetEndInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassInputAttachmentAspectCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassMultiviewCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkRenderPassPerformanceCountersByRegionBeginInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassSampleLocationsBeginInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeBeginInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkRenderPassStripeInfoARM& value);

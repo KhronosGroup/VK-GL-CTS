@@ -100,6 +100,7 @@ const VkPhysicalDeviceLegacyVertexAttributesFeaturesEXT&				getLegacyVertexAttri
 const VkPhysicalDeviceLineRasterizationFeatures&						getLineRasterizationFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceLineRasterizationFeatures>();						}
 const VkPhysicalDeviceLinearColorAttachmentFeaturesNV&					getLinearColorAttachmentFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceLinearColorAttachmentFeaturesNV>();				}
 const VkPhysicalDeviceMaintenance10FeaturesKHR&							getMaintenance10Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMaintenance10FeaturesKHR>();						}
+const VkPhysicalDeviceMaintenance11FeaturesKHR&							getMaintenance11Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMaintenance11FeaturesKHR>();						}
 const VkPhysicalDeviceMaintenance4Features&								getMaintenance4Features								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMaintenance4Features>();							}
 const VkPhysicalDeviceMaintenance5Features&								getMaintenance5Features								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMaintenance5Features>();							}
 const VkPhysicalDeviceMaintenance6Features&								getMaintenance6Features								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceMaintenance6Features>();							}
@@ -124,6 +125,7 @@ const VkPhysicalDeviceOpticalFlowFeaturesNV&							getOpticalFlowFeatures							
 const VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT&				getPageableDeviceLocalMemoryFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePageableDeviceLocalMemoryFeaturesEXT>();			}
 const VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV&		getPartitionedAccelerationStructureFeaturesNV		(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePartitionedAccelerationStructureFeaturesNV>();	}
 const VkPhysicalDevicePerStageDescriptorSetFeaturesNV&					getPerStageDescriptorSetFeaturesNV					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePerStageDescriptorSetFeaturesNV>();				}
+const VkPhysicalDevicePerformanceCountersByRegionFeaturesARM&			getPerformanceCountersByRegionFeaturesARM			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePerformanceCountersByRegionFeaturesARM>();		}
 const VkPhysicalDevicePerformanceQueryFeaturesKHR&						getPerformanceQueryFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePerformanceQueryFeaturesKHR>();					}
 const VkPhysicalDevicePipelineBinaryFeaturesKHR&						getPipelineBinaryFeatures							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePipelineBinaryFeaturesKHR>();						}
 const VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC&			getPipelineCacheIncrementalModeFeaturesSEC			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC>();		}

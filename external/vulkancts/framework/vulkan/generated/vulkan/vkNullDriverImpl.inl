@@ -3216,6 +3216,16 @@ VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceGroupsKHR (VkInstance inst
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterARM* pCounters, VkPerformanceCounterDescriptionARM* pCounterDescriptions)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(pCounterCount);
+	DE_UNREF(pCounters);
+	DE_UNREF(pCounterDescriptions);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions)
 {
 	DE_UNREF(physicalDevice);
@@ -3952,6 +3962,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryMetalHandlePropertiesEXT (VkDevice devic
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryNativeBufferOHOS (VkDevice device, const VkMemoryGetNativeBufferInfoOHOS* pInfo, struct OH_NativeBuffer** pBuffer)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pBuffer);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress)
 {
 	DE_UNREF(device);
@@ -4009,6 +4027,14 @@ VKAPI_ATTR void VKAPI_CALL getMicromapBuildSizesEXT (VkDevice device, VkAccelera
 	DE_UNREF(buildType);
 	DE_UNREF(pBuildInfo);
 	DE_UNREF(pSizeInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getNativeBufferPropertiesOHOS (VkDevice device, const struct OH_NativeBuffer* buffer, VkNativeBufferPropertiesOHOS* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(buffer);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
@@ -5472,6 +5498,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,									enumerateDeviceExtensionProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,										enumerateDeviceLayerProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,											enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM,		enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR,			enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,												enumeratePhysicalDevices),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,											getDisplayModeProperties2KHR),
@@ -5990,6 +6017,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMemoryHostPointerPropertiesEXT,							getMemoryHostPointerPropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandleEXT,									getMemoryMetalHandleEXT),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandlePropertiesEXT,							getMemoryMetalHandlePropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryNativeBufferOHOS,									getMemoryNativeBufferOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryRemoteAddressNV,									getMemoryRemoteAddressNV),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,									getMemoryWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,									getMemoryWin32HandleNV),
@@ -5997,6 +6025,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMemoryZirconHandleFUCHSIA,								getMemoryZirconHandleFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryZirconHandlePropertiesFUCHSIA,					getMemoryZirconHandlePropertiesFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetMicromapBuildSizesEXT,									getMicromapBuildSizesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetNativeBufferPropertiesOHOS,								getNativeBufferPropertiesOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetPartitionedAccelerationStructuresBuildSizesNV,			getPartitionedAccelerationStructuresBuildSizesNV),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,							getPastPresentationTimingGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkGetPerformanceParameterINTEL,								getPerformanceParameterINTEL),
