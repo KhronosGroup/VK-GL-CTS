@@ -1456,19 +1456,23 @@ public:
     {
     }
 
-    virtual uint32_t getShaderGroupHandleSize(void)                  = 0;
-    virtual uint32_t getShaderGroupHandleAlignment(void)             = 0;
-    virtual uint32_t getShaderGroupHandleCaptureReplaySize(void)     = 0;
-    virtual uint32_t getMaxRecursionDepth(void)                      = 0;
-    virtual uint32_t getMaxShaderGroupStride(void)                   = 0;
-    virtual uint32_t getShaderGroupBaseAlignment(void)               = 0;
-    virtual uint64_t getMaxGeometryCount(void)                       = 0;
-    virtual uint64_t getMaxInstanceCount(void)                       = 0;
-    virtual uint64_t getMaxPrimitiveCount(void)                      = 0;
-    virtual uint32_t getMaxDescriptorSetAccelerationStructures(void) = 0;
-    virtual uint32_t getMaxRayDispatchInvocationCount(void)          = 0;
-    virtual uint32_t getMaxRayHitAttributeSize(void)                 = 0;
-    virtual uint32_t getMaxMemoryAllocationCount(void)               = 0;
+    virtual uint32_t getShaderGroupHandleSize(void)                                      = 0;
+    virtual uint32_t getShaderGroupHandleAlignment(void)                                 = 0;
+    virtual uint32_t getShaderGroupHandleCaptureReplaySize(void)                         = 0;
+    virtual uint32_t getMaxRecursionDepth(void)                                          = 0;
+    virtual uint32_t getMaxShaderGroupStride(void)                                       = 0;
+    virtual uint32_t getShaderGroupBaseAlignment(void)                                   = 0;
+    virtual uint64_t getMaxGeometryCount(void)                                           = 0;
+    virtual uint64_t getMaxInstanceCount(void)                                           = 0;
+    virtual uint64_t getMaxPrimitiveCount(void)                                          = 0;
+    virtual uint32_t getMaxDescriptorSetAccelerationStructures(void)                     = 0;
+    virtual uint32_t getMaxRayDispatchInvocationCount(void)                              = 0;
+    virtual uint32_t getMaxRayHitAttributeSize(void)                                     = 0;
+    virtual uint32_t getMaxMemoryAllocationCount(void)                                   = 0;
+    virtual uint32_t getMaxPerStageDescriptorAccelerationStructures(void)                = 0;
+    virtual uint32_t getMaxPerStageDescriptorUpdateAfterBindAccelerationStructures(void) = 0;
+    virtual uint32_t getMaxDescriptorSetUpdateAfterBindAccelerationStructures(void)      = 0;
+    virtual uint32_t getMinAccelerationStructureScratchOffsetAlignment(void)             = 0;
 };
 
 de::MovePtr<RayTracingProperties> makeRayTracingProperties(const InstanceInterface &vki,

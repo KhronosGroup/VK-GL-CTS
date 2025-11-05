@@ -4822,6 +4822,22 @@ public:
     {
         return m_maxMemoryAllocationCount;
     }
+    uint32_t getMaxPerStageDescriptorAccelerationStructures(void) override
+    {
+        return m_accelerationStructureProperties.maxPerStageDescriptorAccelerationStructures;
+    }
+    uint32_t getMaxPerStageDescriptorUpdateAfterBindAccelerationStructures(void) override
+    {
+        return m_accelerationStructureProperties.maxPerStageDescriptorUpdateAfterBindAccelerationStructures;
+    }
+    uint32_t getMaxDescriptorSetUpdateAfterBindAccelerationStructures(void) override
+    {
+        return m_accelerationStructureProperties.maxDescriptorSetUpdateAfterBindAccelerationStructures;
+    }
+    uint32_t getMinAccelerationStructureScratchOffsetAlignment(void) override
+    {
+        return m_accelerationStructureProperties.minAccelerationStructureScratchOffsetAlignment;
+    }
 
 protected:
     VkPhysicalDeviceAccelerationStructurePropertiesKHR m_accelerationStructureProperties;
