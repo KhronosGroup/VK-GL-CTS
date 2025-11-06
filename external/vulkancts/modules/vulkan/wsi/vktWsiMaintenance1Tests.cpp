@@ -626,7 +626,15 @@ bool canDoMultiSwapchainPresent(vk::wsi::Type wsiType)
     // This bug has existed since Vulkan 1.0 and is unrelated to
     // VK_EXT_swapchain_maintenance1.  Once that bug is fixed, multi-swapchain
     // present tests can be enabled for this platform.
-    return wsiType != TYPE_ANDROID;
+    //
+    // Issue #6118:
+    // For VK_KHR_display, a VkSurface is created with vkCreateDisplayPlaneSurfaceKHR()
+    // using a tuple of VkDisplay (implicitly through VkDisplayMode) and planeIndex.
+    // It is intended that this tuple is analogous to the "native window"
+    // referred to in the quote above. The current wsi wrapper for direct display
+    // doesn't support different VkDisplays or planeIndex, so will fail tests
+    // trying to create multiple swapchains.
+    return wsiType != TYPE_ANDROID && wsiType != TYPE_DIRECT_DRM && wsiType != TYPE_DIRECT;
 }
 
 uint32_t getIterations(std::vector<VkPresentModeKHR> presentModes,
