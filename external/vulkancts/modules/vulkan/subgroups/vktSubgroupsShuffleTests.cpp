@@ -267,6 +267,7 @@ const string getNonClusteredTestSource(const CaseDefinition &caseDef)
     return testSource;
 }
 
+#ifndef CTS_USES_VULKANSC
 const string getClusteredTestSource(const CaseDefinition &caseDef)
 {
     const string idInSource = caseDef.argType == ArgType::DYNAMICALLY_UNIFORM ? "data2[0] & (gl_SubgroupSize * 2 - 1)" :
@@ -331,6 +332,7 @@ const string getClusteredTestSource(const CaseDefinition &caseDef)
 
     return testSource;
 }
+#endif
 
 const string getTestSource(const CaseDefinition &caseDef)
 {

@@ -427,11 +427,12 @@ VkPhysicalDevicePerformanceCountersByRegionPropertiesARM getPtpcProperties(const
 VkDeviceSize getPtpcBufferSize(const VkPhysicalDevicePerformanceCountersByRegionPropertiesARM &ptpcProperties,
                                uint32_t imageWidth, uint32_t imageHeight)
 {
-    int maxCounters = ptpcProperties.maxPerRegionPerformanceCounters;
-    int regionSize  = deRoundUp32(sizeof(uint32_t) * maxCounters, ptpcProperties.regionAlignment);
-    int regionsX    = deRoundUp32(imageWidth, ptpcProperties.performanceCounterRegionSize.width);
-    int regionsY    = deRoundUp32(imageHeight, ptpcProperties.performanceCounterRegionSize.height);
-    int rowStride   = deRoundUp32(regionSize * regionsX, ptpcProperties.rowStrideAlignment);
+    uint32_t maxCounters = ptpcProperties.maxPerRegionPerformanceCounters;
+    uint32_t regionSize =
+        deRoundUp32u(static_cast<uint32_t>(sizeof(uint32_t)) * maxCounters, ptpcProperties.regionAlignment);
+    uint32_t regionsX  = deRoundUp32u(imageWidth, ptpcProperties.performanceCounterRegionSize.width);
+    uint32_t regionsY  = deRoundUp32u(imageHeight, ptpcProperties.performanceCounterRegionSize.height);
+    uint32_t rowStride = deRoundUp32u(regionSize * regionsX, ptpcProperties.rowStrideAlignment);
 
     VkDeviceSize size = rowStride * regionsY;
 
@@ -1236,11 +1237,12 @@ void PerformanceCountersByRegionContainer::validateCounters()
                                     m_ptpcBuffers[layerIdx].m_ptpcBufferMemory->getOffset(), VK_WHOLE_SIZE);
         const unsigned char *u8Data =
             reinterpret_cast<const unsigned char *>(m_ptpcBuffers[layerIdx].m_ptpcBufferMemory->getHostPtr());
-        const int maxCounters = m_perRegionPerfCtrProperties.maxPerRegionPerformanceCounters;
-        const int regionSize =
-            deRoundUp32(sizeof(uint32_t) * maxCounters, m_perRegionPerfCtrProperties.regionAlignment);
-        const int rowStride = deRoundUp32(regionSize * m_regionsX, m_perRegionPerfCtrProperties.rowStrideAlignment);
-        bool pass           = true;
+        const uint32_t maxCounters = m_perRegionPerfCtrProperties.maxPerRegionPerformanceCounters;
+        const uint32_t regionSize  = deRoundUp32u(static_cast<uint32_t>(sizeof(uint32_t)) * maxCounters,
+                                                  m_perRegionPerfCtrProperties.regionAlignment);
+        const uint32_t rowStride =
+            deRoundUp32u(regionSize * m_regionsX, m_perRegionPerfCtrProperties.rowStrideAlignment);
+        bool pass = true;
 
         for (uint32_t y = 0; y < m_regionsY; ++y)
         {
