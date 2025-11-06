@@ -34,6 +34,7 @@ virtual void		destroySurfaceKHR													(VkInstance instance, VkSurfaceKHR s
 virtual VkResult	enumerateDeviceExtensionProperties									(VkPhysicalDevice physicalDevice, const char* pLayerName, uint32_t* pPropertyCount, VkExtensionProperties* pProperties) const;
 virtual VkResult	enumerateDeviceLayerProperties										(VkPhysicalDevice physicalDevice, uint32_t* pPropertyCount, VkLayerProperties* pProperties) const;
 virtual VkResult	enumeratePhysicalDeviceGroups										(VkInstance instance, uint32_t* pPhysicalDeviceGroupCount, VkPhysicalDeviceGroupProperties* pPhysicalDeviceGroupProperties) const;
+virtual VkResult	enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM	(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterARM* pCounters, VkPerformanceCounterDescriptionARM* pCounterDescriptions) const;
 virtual VkResult	enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR		(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterKHR* pCounters, VkPerformanceCounterDescriptionKHR* pCounterDescriptions) const;
 virtual VkResult	enumeratePhysicalDevices											(VkInstance instance, uint32_t* pPhysicalDeviceCount, VkPhysicalDevice* pPhysicalDevices) const;
 virtual VkResult	getDisplayModeProperties2KHR										(VkPhysicalDevice physicalDevice, VkDisplayKHR display, uint32_t* pPropertyCount, VkDisplayModeProperties2KHR* pProperties) const;

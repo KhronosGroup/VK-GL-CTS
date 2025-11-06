@@ -2372,6 +2372,11 @@ VkResult DeviceDriver::getMemoryMetalHandlePropertiesEXT (VkDevice device, VkExt
     return m_vk.getMemoryMetalHandlePropertiesEXT(device, handleType, pHandle, pMemoryMetalHandleProperties);
 }
 
+VkResult DeviceDriver::getMemoryNativeBufferOHOS (VkDevice device, const VkMemoryGetNativeBufferInfoOHOS* pInfo, struct OH_NativeBuffer** pBuffer) const
+{
+    return m_vk.getMemoryNativeBufferOHOS(device, pInfo, pBuffer);
+}
+
 VkResult DeviceDriver::getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress) const
 {
     return m_vk.getMemoryRemoteAddressNV(device, pMemoryGetRemoteAddressInfo, pAddress);
@@ -2405,6 +2410,11 @@ VkResult DeviceDriver::getMemoryZirconHandlePropertiesFUCHSIA (VkDevice device, 
 void DeviceDriver::getMicromapBuildSizesEXT (VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const
 {
     m_vk.getMicromapBuildSizesEXT(device, buildType, pBuildInfo, pSizeInfo);
+}
+
+VkResult DeviceDriver::getNativeBufferPropertiesOHOS (VkDevice device, const struct OH_NativeBuffer* buffer, VkNativeBufferPropertiesOHOS* pProperties) const
+{
+    return m_vk.getNativeBufferPropertiesOHOS(device, buffer, pProperties);
 }
 
 void DeviceDriver::getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const

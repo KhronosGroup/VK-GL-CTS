@@ -36,6 +36,7 @@ m_vk.enumerateDeviceLayerProperties = (EnumerateDeviceLayerPropertiesFunc) GET_P
 m_vk.enumeratePhysicalDeviceGroups = (EnumeratePhysicalDeviceGroupsFunc) GET_PROC_ADDR("vkEnumeratePhysicalDeviceGroups");
 if (!m_vk.enumeratePhysicalDeviceGroups)
     m_vk.enumeratePhysicalDeviceGroups = (EnumeratePhysicalDeviceGroupsFunc) GET_PROC_ADDR("vkEnumeratePhysicalDeviceGroupsKHR");
+m_vk.enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM = (EnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARMFunc) GET_PROC_ADDR("vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM");
 m_vk.enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR = (EnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHRFunc) GET_PROC_ADDR("vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR");
 m_vk.enumeratePhysicalDevices = (EnumeratePhysicalDevicesFunc) GET_PROC_ADDR("vkEnumeratePhysicalDevices");
 m_vk.getDisplayModeProperties2KHR = (GetDisplayModeProperties2KHRFunc) GET_PROC_ADDR("vkGetDisplayModeProperties2KHR");

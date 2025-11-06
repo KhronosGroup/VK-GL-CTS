@@ -102,6 +102,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetPhysicalDeviceQueueFamilyDataGraphProcessingEnginePropertiesARM",
 		"vkGetPhysicalDeviceQueueFamilyDataGraphPropertiesARM",
 
+		// "VK_ARM_performance_counters_by_region
+		"vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM",
+
 		// "VK_ARM_tensors
 		"vkBindTensorMemoryARM",
 		"vkCmdCopyTensorARM",
@@ -956,6 +959,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBindShadingRateImageNV",
 		"vkCmdSetCoarseSampleOrderNV",
 		"vkCmdSetViewportShadingRatePaletteNV",
+
+		// "VK_OHOS_external_memory
+		"vkGetMemoryNativeBufferOHOS",
+		"vkGetNativeBufferPropertiesOHOS",
 
 		// "VK_OHOS_native_buffer
 		"vkAcquireImageOHOS",

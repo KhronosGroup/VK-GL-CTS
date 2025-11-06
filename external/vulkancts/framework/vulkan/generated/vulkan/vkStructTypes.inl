@@ -3674,6 +3674,13 @@ struct VkExternalFormatANDROID
 	uint64_t		externalFormat;
 };
 
+struct VkExternalFormatOHOS
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		externalFormat;
+};
+
 struct VkExternalFormatQNX
 {
 	VkStructureType	sType;
@@ -4438,6 +4445,13 @@ struct VkImportMetalTextureInfoEXT
 	pt::MTLTexture_id		mtlTexture;
 };
 
+struct VkImportNativeBufferInfoOHOS
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	struct OH_NativeBuffer*	buffer;
+};
+
 struct VkImportScreenBufferInfoQNX
 {
 	VkStructureType			sType;
@@ -4800,6 +4814,13 @@ struct VkMemoryGetMetalHandleInfoEXT
 	VkExternalMemoryHandleTypeFlagBits	handleType;
 };
 
+struct VkMemoryGetNativeBufferInfoOHOS
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceMemory	memory;
+};
+
 struct VkMemoryGetRemoteAddressInfoNV
 {
 	VkStructureType						sType;
@@ -5070,11 +5091,40 @@ struct VkMutableDescriptorTypeCreateInfoEXT
 	const VkMutableDescriptorTypeListEXT*	pMutableDescriptorTypeLists;
 };
 
+struct VkNativeBufferFormatPropertiesOHOS
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkFormat						format;
+	uint64_t						externalFormat;
+	VkFormatFeatureFlags			formatFeatures;
+	VkComponentMapping				samplerYcbcrConversionComponents;
+	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
+	VkSamplerYcbcrRange				suggestedYcbcrRange;
+	VkChromaLocation				suggestedXChromaOffset;
+	VkChromaLocation				suggestedYChromaOffset;
+};
+
 struct VkNativeBufferOHOS
 {
 	VkStructureType			sType;
 	const void*				pNext;
 	struct OHBufferHandle*	handle;
+};
+
+struct VkNativeBufferPropertiesOHOS
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	allocationSize;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkNativeBufferUsageOHOS
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		OHOSNativeBufferUsage;
 };
 
 struct VkOffset2D
@@ -5436,6 +5486,21 @@ struct VkPerformanceConfigurationAcquireInfoINTEL
 	VkStructureType						sType;
 	const void*							pNext;
 	VkPerformanceConfigurationTypeINTEL	type;
+};
+
+struct VkPerformanceCounterARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		counterID;
+};
+
+struct VkPerformanceCounterDescriptionARM
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkPerformanceCounterDescriptionFlagsARM	flags;
+	char									name[VK_MAX_DESCRIPTION_SIZE];
 };
 
 struct VkPerformanceCounterDescriptionKHR
@@ -7542,6 +7607,24 @@ struct VkPhysicalDevicePerStageDescriptorSetFeaturesNV
 	VkBool32		dynamicPipelineLayout;
 };
 
+struct VkPhysicalDevicePerformanceCountersByRegionFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		performanceCountersByRegion;
+};
+
+struct VkPhysicalDevicePerformanceCountersByRegionPropertiesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxPerRegionPerformanceCounters;
+	VkExtent2D		performanceCounterRegionSize;
+	uint32_t		rowStrideAlignment;
+	uint32_t		regionAlignment;
+	VkBool32		identityTransformOrder;
+};
+
 struct VkPhysicalDevicePerformanceQueryFeaturesKHR
 {
 	VkStructureType	sType;
@@ -7728,7 +7811,7 @@ struct VkPhysicalDevicePresentWaitFeaturesKHR
 struct VkPhysicalDevicePresentationPropertiesOHOS
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		sharedImage;
 };
 
@@ -10151,6 +10234,17 @@ struct VkRenderPassMultiviewCreateInfo
 	const int32_t*	pViewOffsets;
 	uint32_t		correlationMaskCount;
 	const uint32_t*	pCorrelationMasks;
+};
+
+struct VkRenderPassPerformanceCountersByRegionBeginInfoARM
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint32_t				counterAddressCount;
+	const VkDeviceAddress*	pCounterAddresses;
+	VkBool32				serializeRegions;
+	uint32_t				counterIndexCount;
+	uint32_t*				pCounterIndices;
 };
 
 struct VkRenderPassStripeInfoARM

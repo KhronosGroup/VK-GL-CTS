@@ -567,6 +567,18 @@ bool check_VK_ARM_data_graph(const tcu::UVec2& v, const ExtPropVect& vIEP, const
 	return (isCompatible(1, 3, v) && (isCompatible(1, 4, v) || isSupported(vDEP, "VK_KHR_maintenance5")) && isSupported(vDEP, "VK_KHR_deferred_host_operations"));
 }
 
+bool check_VK_ARM_performance_counters_by_region(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_ARM_performance_counters_by_region"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_ARM_pipeline_opacity_micromap(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -3943,6 +3955,18 @@ bool check_VK_NV_win32_keyed_mutex(const tcu::UVec2& v, const ExtPropVect& vIEP,
 	return isSupported(vDEP, "VK_NV_external_memory_win32");
 }
 
+bool check_VK_OHOS_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_OHOS_external_memory"))
+		return true;
+
+	// depends attribute in xml: ((VK_KHR_sampler_ycbcr_conversion+VK_KHR_external_memory+VK_KHR_dedicated_allocation),VK_VERSION_1_1)+VK_EXT_queue_family_foreign
+	return (((isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") && isSupported(vDEP, "VK_KHR_external_memory") && isSupported(vDEP, "VK_KHR_dedicated_allocation")) || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_queue_family_foreign"));
+}
+
 bool check_VK_QCOM_filter_cubic_clamp(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4148,6 +4172,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_ANDROID_external_format_resolve",					&check_VK_ANDROID_external_format_resolve),
 	std::make_pair("VK_ANDROID_external_memory_android_hardware_buffer",	&check_VK_ANDROID_external_memory_android_hardware_buffer),
 	std::make_pair("VK_ARM_data_graph",										&check_VK_ARM_data_graph),
+	std::make_pair("VK_ARM_performance_counters_by_region",					&check_VK_ARM_performance_counters_by_region),
 	std::make_pair("VK_ARM_pipeline_opacity_micromap",						&check_VK_ARM_pipeline_opacity_micromap),
 	std::make_pair("VK_ARM_rasterization_order_attachment_access",			&check_VK_ARM_rasterization_order_attachment_access),
 	std::make_pair("VK_ARM_render_pass_striped",							&check_VK_ARM_render_pass_striped),
@@ -4419,6 +4444,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_shader_subgroup_partitioned",						&check_VK_NV_shader_subgroup_partitioned),
 	std::make_pair("VK_NV_shading_rate_image",								&check_VK_NV_shading_rate_image),
 	std::make_pair("VK_NV_win32_keyed_mutex",								&check_VK_NV_win32_keyed_mutex),
+	std::make_pair("VK_OHOS_external_memory",								&check_VK_OHOS_external_memory),
 	std::make_pair("VK_QCOM_filter_cubic_clamp",							&check_VK_QCOM_filter_cubic_clamp),
 	std::make_pair("VK_QCOM_filter_cubic_weights",							&check_VK_QCOM_filter_cubic_weights),
 	std::make_pair("VK_QCOM_fragment_density_map_offset",					&check_VK_QCOM_fragment_density_map_offset),
@@ -4476,6 +4502,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_ANDROID_external_memory_android_hardware_buffer"),
 	std::make_tuple(1, 3, "VK_ARM_data_graph"),
 	std::make_tuple(1, 0, "VK_ARM_format_pack"),
+	std::make_tuple(1, 0, "VK_ARM_performance_counters_by_region"),
 	std::make_tuple(1, 0, "VK_ARM_pipeline_opacity_micromap"),
 	std::make_tuple(1, 0, "VK_ARM_rasterization_order_attachment_access"),
 	std::make_tuple(1, 0, "VK_ARM_render_pass_striped"),
@@ -4853,6 +4880,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_viewport_array2"),
 	std::make_tuple(1, 0, "VK_NV_viewport_swizzle"),
 	std::make_tuple(1, 0, "VK_NV_win32_keyed_mutex"),
+	std::make_tuple(1, 0, "VK_OHOS_external_memory"),
 	std::make_tuple(1, 0, "VK_OHOS_native_buffer"),
 	std::make_tuple(1, 0, "VK_OHOS_surface"),
 	std::make_tuple(1, 0, "VK_QCOM_filter_cubic_clamp"),

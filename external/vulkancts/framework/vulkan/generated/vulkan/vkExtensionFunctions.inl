@@ -145,6 +145,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_performance_counters_by_region")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM");
+		return;
+	}
 	if (extName == "VK_ARM_pipeline_opacity_micromap")
 	{
 		return;
@@ -1742,6 +1747,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_OHOS_external_memory")
+	{
+		return;
+	}
 	if (extName == "VK_OHOS_native_buffer")
 	{
 		return;
@@ -1992,6 +2001,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_ARM_format_pack")
+	{
+		return;
+	}
+	if (extName == "VK_ARM_performance_counters_by_region")
 	{
 		return;
 	}
@@ -4115,6 +4128,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_OHOS_external_memory")
+	{
+		functions.push_back("vkGetNativeBufferPropertiesOHOS");
+		functions.push_back("vkGetMemoryNativeBufferOHOS");
+		return;
+	}
 	if (extName == "VK_OHOS_native_buffer")
 	{
 		functions.push_back("vkGetSwapchainGrallocUsageOHOS");
@@ -4598,6 +4617,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
 	"VK_EXT_nested_command_buffer",
+	"VK_OHOS_external_memory",
 	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
@@ -4653,6 +4673,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_cooperative_matrix2",
 	"VK_ARM_pipeline_opacity_micromap",
 	"VK_EXT_external_memory_metal",
+	"VK_ARM_performance_counters_by_region",
 	"VK_EXT_vertex_attribute_robustness",
 	"VK_ARM_format_pack",
 	"VK_VALVE_fragment_density_map_layered",
