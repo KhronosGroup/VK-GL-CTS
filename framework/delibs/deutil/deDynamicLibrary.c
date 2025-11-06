@@ -29,8 +29,6 @@
 /* Posix implementation. */
 
 #include <dlfcn.h>
-#include <libgen.h>
-#include <stdlib.h>
 
 struct deDynamicLibrary_s
 {
@@ -43,18 +41,7 @@ deDynamicLibrary *deDynamicLibrary_open(const char *fileName)
     if (!library)
         return NULL;
 
-    if (getenv("LD_LIBRARY_PATH"))
-    {
-        // basename() requires a non-const string because it may modify the its contents, so we cannot pass fileName to
-        // it directly. The string may be coming from statically allocated memory. E.g. this segfaulted in FreeBSD.
-        char *aux = deStrdup(fileName);
-        if (!aux)
-            return NULL;
-        library->libHandle = dlopen(basename(aux), RTLD_LAZY);
-        deFree(aux);
-    }
-    else
-        library->libHandle = dlopen(fileName, RTLD_LAZY);
+    library->libHandle = dlopen(fileName, RTLD_LAZY);
 
     if (!library->libHandle)
     {
