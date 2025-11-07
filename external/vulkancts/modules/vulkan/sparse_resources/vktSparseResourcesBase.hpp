@@ -80,7 +80,9 @@ protected:
 
     void createDeviceSupportingQueues(const QueueRequirementsVec &queueRequirements,
                                       bool requireShaderImageAtomicInt64Features = false,
-                                      bool requireMaintenance5 = false, bool requireTransformFeedback = false);
+                                      bool requireMaintenance5 = false, bool requireTransformFeedback = false,
+                                      bool requireCopyMemoryIndirect = false, bool requireBufferDeviceAddress = false);
+
     const Queue &getQueue(const vk::VkQueueFlags queueFlags, const uint32_t queueIndex) const;
     const vk::DeviceInterface &getDeviceInterface(void) const
     {

@@ -99,6 +99,7 @@ DE_DECLARE_COMMAND_LINE_OPT(EGLDisplayType, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLWindowType, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(EGLPixmapType, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(LogImages, bool);
+DE_DECLARE_COMMAND_LINE_OPT(LogAllImages, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogShaderSources, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogDecompiledSpirv, bool);
 DE_DECLARE_COMMAND_LINE_OPT(LogEmptyLoginfo, bool);
@@ -144,6 +145,9 @@ DE_DECLARE_COMMAND_LINE_OPT(VkLibraryPath, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(ApplicationParametersInputFile, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(QuietStdout, bool);
 DE_DECLARE_COMMAND_LINE_OPT(ComputeOnly, bool);
+DE_DECLARE_COMMAND_LINE_OPT(VideoLogPrint, bool);
+DE_DECLARE_COMMAND_LINE_OPT(VideoDecodeOutputDump, VideoDecodeOutput);
+DE_DECLARE_COMMAND_LINE_OPT(VideoEncodeOutputDump, VideoEncodeOutput);
 
 static void parseIntList(const char *src, std::vector<int> *dst)
 {
@@ -185,6 +189,19 @@ void registerOptions(de::cmdline::Parser &parser)
         {"any", tcu::RUNNERTYPE_ANY},
         {"none", tcu::RUNNERTYPE_NONE},
         {"amber", tcu::RUNNERTYPE_AMBER},
+    };
+
+    static const NamedValue<VideoDecodeOutput> s_videoDecodeDump[] = {
+        {"disable", DUMP_DEC_DISABLE},
+        {"single", DUMP_DEC_TO_SINGLE},
+        {"separate", DUMP_DEC_TO_SEPARATE_FILES},
+    };
+
+    static const NamedValue<VideoEncodeOutput> s_videoEncodeDump[] = {
+        {"disable", DUMP_ENC_DISABLE},
+        {"yuv", DUMP_ENC_YUV},
+        {"bitstream", DUMP_ENC_BITSTREAM},
+        {"all", DUMP_ENC_ALL},
     };
 
     parser
@@ -233,8 +250,13 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<VKDeviceID>(nullptr, "deqp-vk-device-id", "Vulkan device ID (IDs start from 1)", "1")
         << Option<MaxCustomDevices>(nullptr, "deqp-max-custom-vk-devices", "Maximum number of custom devices", "5")
         << Option<VKDeviceGroupID>(nullptr, "deqp-vk-device-group-id", "Vulkan device Group ID (IDs start from 1)", "1")
-        << Option<LogImages>(nullptr, "deqp-log-images", "Enable or disable logging of result images", s_enableNames,
-                             "enable")
+        << Option<LogImages>(nullptr, "deqp-log-images",
+                             "When disabled, prevent any image from being logged into the test results file",
+                             s_enableNames, "enable")
+        << Option<LogAllImages>(nullptr, "deqp-log-all-images",
+                                "When enabled, log all images from image comparison routines as if "
+                                "COMPARE_LOG_EVERYTHING was used in the code",
+                                s_enableNames, "disable")
         << Option<LogShaderSources>(nullptr, "deqp-log-shader-sources", "Enable or disable logging of shader sources",
                                     s_enableNames, "enable")
         << Option<LogDecompiledSpirv>(nullptr, "deqp-log-decompiled-spirv",
@@ -320,7 +342,14 @@ void registerOptions(de::cmdline::Parser &parser)
                                                   "File that provides a default set of application parameters")
         << Option<ComputeOnly>(nullptr, "deqp-compute-only",
                                "Perform tests for devices implementing compute-only functionality", s_enableNames,
-                               "disable");
+                               "disable")
+        << Option<VideoLogPrint>(nullptr, "deqp-vk-video-log-print", "Print log messages of vulkan video tests",
+                                 s_enableNames, "disable")
+        << Option<VideoDecodeOutputDump>(nullptr, "deqp-vk-video-decode-dump",
+                                         "Dump the output of vulkan video decoding tests", s_videoDecodeDump, "disable")
+        << Option<VideoEncodeOutputDump>(nullptr, "deqp-vk-video-encode-dump",
+                                         "Dump the output of vulkan video encoding tests", s_videoEncodeDump,
+                                         "disable");
 }
 
 void registerLegacyOptions(de::cmdline::Parser &parser)
@@ -1082,6 +1111,9 @@ bool CommandLine::parse(int argc, const char *const *argv)
     if (!m_cmdLine.getOption<opt::LogImages>())
         m_logFlags |= QP_TEST_LOG_EXCLUDE_IMAGES;
 
+    if (m_cmdLine.getOption<opt::LogImages>() && m_cmdLine.getOption<opt::LogAllImages>())
+        m_logFlags |= QP_TEST_LOG_ALL_IMAGES;
+
     if (!m_cmdLine.getOption<opt::LogShaderSources>())
         m_logFlags |= QP_TEST_LOG_EXCLUDE_SHADER_SOURCES;
 
@@ -1457,6 +1489,21 @@ const char *CommandLine::getPipelineCompilerFilePrefix(void) const
         return nullptr;
 }
 
+bool CommandLine::getVideoLogPrint(void) const
+{
+    return m_cmdLine.getOption<opt::VideoLogPrint>();
+}
+
+VideoDecodeOutput CommandLine::getVideoDumpDecodeOutput(void) const
+{
+    return m_cmdLine.getOption<opt::VideoDecodeOutputDump>();
+}
+
+VideoEncodeOutput CommandLine::getVideoDumpEncodeOutput(void) const
+{
+    return m_cmdLine.getOption<opt::VideoEncodeOutputDump>();
+}
+
 const char *CommandLine::getVkLibraryPath(void) const
 {
     if (m_cmdLine.hasOption<opt::VkLibraryPath>())
@@ -1519,10 +1566,25 @@ bool CaseListFilter::checkTestCaseName(const char *caseName) const
     return result;
 }
 
-bool CaseListFilter::checkCaseFraction(int i, const std::string &testCaseName) const
+bool CaseListFilter::checkCaseFraction(int i, const std::string &testCaseName, bool useFraction0) const
 {
-    return m_caseFraction.size() != 2 || ((i % m_caseFraction[1]) == m_caseFraction[0]) ||
-           (m_caseFractionMandatoryTests.get() != nullptr && m_caseFractionMandatoryTests->matches(testCaseName));
+    // If the fraction is not set, run the test
+    if (m_caseFraction.size() != 2)
+        return true;
+
+    // If the test is mandatory, run it.
+    if (m_caseFractionMandatoryTests.get() != nullptr && m_caseFractionMandatoryTests->matches(testCaseName))
+        return true;
+
+    // If this test must run in fraction zero, and this is fraction zero, run it.
+    if (useFraction0 && m_caseFraction[0] == 0)
+        return true;
+
+    // Split according to group index
+    if (!useFraction0 && (i % m_caseFraction[1]) == m_caseFraction[0])
+        return true;
+
+    return false;
 }
 
 CaseListFilter::CaseListFilter(void) : m_caseTree(nullptr), m_runnerType(tcu::RUNNERTYPE_ANY)

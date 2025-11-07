@@ -863,6 +863,12 @@ void DynamicStateComputeCase::checkSupport(Context &context) const
                 context.requireDeviceFunctionality(functionality);
             }
         }
+
+        // VUID-vkCmdSetDepthBoundsTestEnable-depthBounds-10010
+        if (state == VK_DYNAMIC_STATE_DEPTH_BOUNDS_TEST_ENABLE_EXT)
+        {
+            context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DEPTH_BOUNDS);
+        }
     }
 }
 

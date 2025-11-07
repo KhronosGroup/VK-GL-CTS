@@ -369,6 +369,13 @@ public:
 
             if (m_params.attribDivisor == 0 && !vertexAttributeDivisorFeatures.vertexAttributeInstanceRateZeroDivisor)
                 TCU_THROW(NotSupportedError, "Implementation does not support vertexAttributeInstanceRateDivisorZero");
+
+            //  VUID-vkCmdDraw-pNext-09461
+            const vk::VkPhysicalDeviceVertexAttributeDivisorPropertiesKHR &vertexAttributeDivisorProperties =
+                context.getVertexAttributeDivisorProperties();
+
+            if (!vertexAttributeDivisorProperties.supportsNonZeroFirstInstance)
+                TCU_THROW(NotSupportedError, "Implementation does not support supportsNonZeroFirstInstance");
         }
 #ifndef CTS_USES_VULKANSC
         else if (m_params.testAttribDivisor == ATTRIBUTE_DIVISOR_KHR)
@@ -554,7 +561,7 @@ InstancedDrawInstance::InstancedDrawInstance(Context &context, TestParams params
                                                               std::size(vertexInputAttributeDescriptions),
                                                               vertexInputAttributeDescriptions);
 
-    const VkVertexInputBindingDivisorDescriptionEXT vertexInputBindingDivisorDescription{
+    const VkVertexInputBindingDivisorDescription vertexInputBindingDivisorDescription{
         1u,
         m_params.attribDivisor,
     };
@@ -1006,8 +1013,11 @@ void InstancedDrawInstance::draw(VkCommandBuffer cmdBuffer, const DrawData &draw
         }
         else if (m_params.useDeviceAddressCommands)
         {
-            VkDeviceAddressRangeKHR range{drawData.indexBufferAddress, drawData.indexBufferSize};
-            m_vk.cmdBindIndexBuffer3KHR(cmdBuffer, range, VK_INDEX_TYPE_UINT32);
+            VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
+            bindIndexBuffer3Info.addressRange              = {drawData.indexBufferAddress, drawData.indexBufferSize};
+            bindIndexBuffer3Info.indexType                 = VK_INDEX_TYPE_UINT32;
+
+            m_vk.cmdBindIndexBuffer3KHR(cmdBuffer, &bindIndexBuffer3Info);
         }
 #endif
     }
@@ -1021,11 +1031,27 @@ void InstancedDrawInstance::draw(VkCommandBuffer cmdBuffer, const DrawData &draw
     }
 
 #ifndef CTS_USES_VULKANSC
+    VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
     if (m_params.useDeviceAddressCommands)
     {
-        VkStridedDeviceAddressRangeKHR ranges[]{{drawData.vertexBufferAddress, 0, drawData.vertexBufferSize},
-                                                {drawData.instanceBufferAddress, 0, drawData.instanceBufferSize}};
-        m_vk.cmdBindVertexBuffers3KHR(cmdBuffer, 0, std::size(ranges), ranges);
+        // use different valid addressFlags in some cases to test them
+        VkAddressCommandFlagsKHR addressFlags = 0;
+        if (m_params.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            addressFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+        if (m_params.testMultiview)
+            addressFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+
+        VkBindVertexBuffer3InfoKHR vertexBuffer3Infos[2];
+        vertexBuffer3Infos[0]              = initVulkanStructure();
+        vertexBuffer3Infos[1]              = initVulkanStructure();
+        vertexBuffer3Infos[0].addressRange = {drawData.vertexBufferAddress, drawData.vertexBufferSize, 0};
+        vertexBuffer3Infos[1].addressRange = {drawData.instanceBufferAddress, drawData.instanceBufferSize, 0};
+        vertexBuffer3Infos[1].addressFlags = addressFlags;
+
+        m_vk.cmdBindVertexBuffers3KHR(cmdBuffer, 0, 2, vertexBuffer3Infos);
+
+        drawIndirect2Info.addressRange = {drawData.indirectBufferAddress, drawData.indirectBufferSize, 0};
+        drawIndirect2Info.drawCount    = 1u;
     }
 #endif
 
@@ -1081,10 +1107,7 @@ void InstancedDrawInstance::draw(VkCommandBuffer cmdBuffer, const DrawData &draw
             m_vk.cmdDrawIndirect(cmdBuffer, drawData.indirectBuffer->object(), 0, 1u, 0u);
 #ifndef CTS_USES_VULKANSC
         if (m_params.useDeviceAddressCommands)
-        {
-            VkStridedDeviceAddressRangeKHR range{drawData.indirectBufferAddress, 0, drawData.indirectBufferSize};
-            m_vk.cmdDrawIndirect2KHR(cmdBuffer, range, 1u);
-        }
+            m_vk.cmdDrawIndirect2KHR(cmdBuffer, &drawIndirect2Info);
 #endif
         break;
 
@@ -1093,10 +1116,7 @@ void InstancedDrawInstance::draw(VkCommandBuffer cmdBuffer, const DrawData &draw
             m_vk.cmdDrawIndexedIndirect(cmdBuffer, drawData.indirectBuffer->object(), 0, 1u, 0u);
 #ifndef CTS_USES_VULKANSC
         if (m_params.useDeviceAddressCommands)
-        {
-            VkStridedDeviceAddressRangeKHR range{drawData.indirectBufferAddress, 0, drawData.indirectBufferSize};
-            m_vk.cmdDrawIndexedIndirect2KHR(cmdBuffer, range, 1u);
-        }
+            m_vk.cmdDrawIndexedIndirect2KHR(cmdBuffer, &drawIndirect2Info);
 #endif
         break;
 

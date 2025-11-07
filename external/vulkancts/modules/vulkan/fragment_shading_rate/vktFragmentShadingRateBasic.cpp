@@ -122,6 +122,7 @@ struct CaseDef
     uint32_t dsBaseMipLevel;
     bool multiSubpasses;
     bool maintenance6;
+    bool helperInvocation;
 
     bool useAttachment() const
     {
@@ -657,14 +658,17 @@ void FSRTestCase::initPrograms(SourceCollections &programCollection) const
 
     fss <<
         // X component gets shading rate enum
-        "  col0.x = gl_ShadingRateEXT;\n"
-        "  col0.y = 0;\n"
-        // Z component gets packed primitiveID | atomic value
-        "  col0.z = (instanceIndex << 24) | ((atomicAdd(buf.counter, 1) + 1) & 0x00FFFFFFu);\n"
-        "  ivec2 fragCoordXY = ivec2(gl_FragCoord.xy);\n"
-        "  ivec2 fragSize = ivec2(1<<((gl_ShadingRateEXT/4)&3), 1<<(gl_ShadingRateEXT&3));\n"
-        // W component gets error code
-        "  col0.w = uint(zero)"
+        "  col0.x = gl_ShadingRateEXT;\n";
+    if (m_data.helperInvocation)
+        fss << "  col0.y = uint(gl_HelperInvocation);\n";
+    else
+        fss << "  col0.y = 0;\n";
+    // Z component gets packed primitiveID | atomic value
+    fss << "  col0.z = (instanceIndex << 24) | ((atomicAdd(buf.counter, 1) + 1) & 0x00FFFFFFu);\n"
+           "  ivec2 fragCoordXY = ivec2(gl_FragCoord.xy);\n"
+           "  ivec2 fragSize = ivec2(1<<((gl_ShadingRateEXT/4)&3), 1<<(gl_ShadingRateEXT&3));\n"
+           // W component gets error code
+           "  col0.w = uint(zero)"
         << (m_data.sampleShadingInput ? " * gl_SampleID" : "")
         << ";\n"
            "  if (((fragCoordXY - fragSize / 2) % fragSize) != ivec2(0,0))\n"
@@ -3859,6 +3863,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                             baseMipLevel,             // uint32_t dsBaseMipLevel;
                                             multiPass,                // bool multiSubpasses;
                                             maintenance6,             // bool maintenance6;
+                                            false,                    // bool helperInvocation;
                                         };
 
                                         sampGroup->addChild(new FSRTestCase(testCtx, shaderCases[shaderNdx].name, c));
@@ -3924,6 +3929,51 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     0,                                                    // uint32_t dsBaseMipLevel;
                     false,                                                // bool multiSubpasses;
                     false,                                                // bool maintenance6;
+                    false,                                                // bool helperInvocation;
+                }));
+        }
+
+        if (!groupParams->useSecondaryCmdBuffer)
+        {
+            group->addChild(new FSRTestCase(
+                testCtx, "helper_invocation",
+                {
+                    groupParams,           // SharedGroupParams groupParams;
+                    123,                   // int32_t seed;
+                    {32, 33},              // VkExtent2D framebufferDim;
+                    VK_SAMPLE_COUNT_4_BIT, // VkSampleCountFlagBits samples;
+                    {VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR,
+                     VK_FRAGMENT_SHADING_RATE_COMBINER_OP_KEEP_KHR}, // VkFragmentShadingRateCombinerOpKHR combinerOp[2];
+                    AttachmentUsage::NO_ATTACHMENT,                  // AttachmentUsage attachmentUsage;
+                    true,                                            // bool shaderWritesRate;
+                    false,                                           // bool geometryShader;
+                    false,                                           // bool meshShader;
+                    false,                                           // bool useDynamicState;
+                    true,                                            // bool useApiSampleMask;
+                    false,                                           // bool useSampleMaskIn;
+                    false,                                           // bool conservativeEnable;
+                    VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT, // VkConservativeRasterizationModeEXT conservativeMode;
+                    false,                                                // bool useDepthStencil;
+                    false,                                                // bool fragDepth;
+                    false,                                                // bool fragStencil;
+                    false,                                                // bool multiViewport;
+                    false,                                                // bool colorLayered;
+                    false,                                                // bool srLayered;
+                    1u,                                                   // uint32_t numColorLayers;
+                    false,                                                // bool multiView;
+                    false,                                                // bool correlationMask;
+                    false,                                                // bool interlock;
+                    false,                                                // bool sampleLocations;
+                    false,                                                // bool sampleShadingEnable;
+                    false,                                                // bool sampleShadingInput;
+                    false,                                                // bool sampleMaskTest;
+                    false,                                                // bool earlyAndLateTest;
+                    false,                                                // bool garbageAttachment;
+                    false,                                                // bool dsClearOp;
+                    0,                                                    // uint32_t dsBaseMipLevel;
+                    false,                                                // bool multiSubpasses;
+                    false,                                                // bool maintenance6;
+                    true,                                                 // bool helperInvocation;
                 }));
         }
 
@@ -3969,6 +4019,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     0,                                                    // uint32_t dsBaseMipLevel;
                     false,                                                // bool multiSubpasses;
                     false,                                                // bool maintenance6;
+                    false,                                                // bool helperInvocation;
                 }));
         }
 #endif // CTS_USES_VULKANSC

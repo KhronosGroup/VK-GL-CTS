@@ -36,6 +36,8 @@ set(DEQP_VK_BINDING_MODEL_SRCS
 	vktBindingStagesTests.hpp
 	vktBindingDescriptorInlineUniformTests.cpp
 	vktBindingDescriptorInlineUniformTests.hpp
+	vktBindingUnusedInvalidDescriptorTests.cpp
+	vktBindingUnusedInvalidDescriptorTests.hpp
 	)
 
 PCH(DEQP_VK_BINDING_MODEL_SRCS ../pch.cpp)

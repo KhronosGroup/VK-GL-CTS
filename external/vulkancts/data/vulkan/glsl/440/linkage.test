@@ -1984,6 +1984,318 @@ group varying "Varying linkage"
                     ""
                 end
             end
+            group two_vec4 "two_vec4"
+                group array_writes "array_writes"
+                    case as_float_vec3-2_float
+                        version 440 core
+                        desc "Write fragment output 0 as float and vec3, output 1 as float and vec3"
+                        output_color vec4
+
+                        values
+                        {
+                            input vec4 in0 = [ vec4(13.0, 2.0, 11.0, 1.0) | vec4(4.0, 13.0, 8.0, 3.0) | vec4(7.0, 5.0, 1.0, 12.0) | vec4(14.0, 15.0, 11.0, 1.0) ];
+                            output vec4 out0 = [ vec4(26.0, 4.0, 22.0, 2.0) | vec4(8.0, 26.0, 16.0, 6.0) | vec4(14.0, 10.0, 2.0, 24.0) | vec4(28.0, 30.0, 22.0, 2.0) ];
+                            output vec4 out1 = [ vec4(52.0, 8.0, 44.0, 4.0) | vec4(16.0, 52.0, 32.0, 12.0) | vec4(28.0, 20.0, 4.0, 48.0) | vec4(56.0, 60.0, 44.0, 4.0) ];
+                        }
+                        vertex ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 dEQP_Position;
+                            layout(location = 1) in vec4 in0;
+                            layout(location = 0) out vec4 var0;
+                            layout(location = 1) out vec4 var1;
+
+                            void main()
+                            {
+                                var0 = in0 + in0;
+                                var1 = in0 + in0 + in0 + in0;
+                                ${VERTEX_OUTPUT}
+                            }
+                        ""
+                        fragment ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 var0;
+                            layout(location = 1) in vec4 var1;
+                            layout(location = 0, component = 0) out float dEQP_FragColor_0_0;
+                            layout(location = 0, component = 1) out vec3  dEQP_FragColor_0_1[2];
+                            layout(location = 1, component = 0) out float dEQP_FragColor_1_0;
+                            void main()
+                            {
+                                vec4 out0 = var0;
+                                out0 /= vec4(255.0);
+                                dEQP_FragColor_0_0 = out0.x;
+                                dEQP_FragColor_0_1[0] = out0.yzw;
+
+                                vec4 out1 = var1;
+                                out1 /= vec4(255.0);
+                                dEQP_FragColor_1_0 = out1.x;
+                                dEQP_FragColor_0_1[1] = out1.yzw;
+                            }
+                        ""
+                    end
+                    case as_vec3-2_float_float
+                        version 440 core
+                        desc "Write fragment output 0 as vec3 and float, output 1 as vec3 and float."
+                        output_color vec4
+
+                        values
+                        {
+                            input vec4 in0 = [ vec4(13.0, 2.0, 11.0, 1.0) | vec4(4.0, 13.0, 8.0, 3.0) | vec4(7.0, 5.0, 1.0, 12.0) | vec4(14.0, 15.0, 11.0, 1.0) ];
+                            output vec4 out0 = [ vec4(26.0, 4.0, 22.0, 2.0) | vec4(8.0, 26.0, 16.0, 6.0) | vec4(14.0, 10.0, 2.0, 24.0) | vec4(28.0, 30.0, 22.0, 2.0) ];
+                            output vec4 out1 = [ vec4(52.0, 8.0, 44.0, 4.0) | vec4(16.0, 52.0, 32.0, 12.0) | vec4(28.0, 20.0, 4.0, 48.0) | vec4(56.0, 60.0, 44.0, 4.0) ];
+                        }
+                        vertex ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 dEQP_Position;
+                            layout(location = 1) in vec4 in0;
+                            layout(location = 0) out vec4 var0;
+                            layout(location = 1) out vec4 var1;
+
+                            void main()
+                            {
+                                var0 = in0 + in0;
+                                var1 = in0 + in0 + in0 + in0;
+                                ${VERTEX_OUTPUT}
+                            }
+                        ""
+                        fragment ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 var0;
+                            layout(location = 1) in vec4 var1;
+                            layout(location = 0, component = 0) out vec3  dEQP_FragColor_0_0[2];
+                            layout(location = 0, component = 3) out float dEQP_FragColor_0_3;
+                            layout(location = 1, component = 3) out float dEQP_FragColor_1_3;
+                            void main()
+                            {
+                                vec4 out0 = var0;
+                                out0 /= vec4(255.0);
+                                dEQP_FragColor_0_0[0] = out0.xyz;
+                                dEQP_FragColor_0_3 = out0.w;
+
+                                vec4 out1 = var1;
+                                out1 /= vec4(255.0);
+                                dEQP_FragColor_0_0[1] = out1.xyz;
+                                dEQP_FragColor_1_3 = out1.w;
+                            }
+                        ""
+                    end
+                    case as_vec2_vec2-2_vec2
+                        version 440 core
+                        desc "Write fragment output 0 as two vec2, output 1 as two vec2."
+                        output_color vec4
+
+                        values
+                        {
+                            input vec4 in0 = [ vec4(13.0, 2.0, 11.0, 1.0) | vec4(4.0, 13.0, 8.0, 3.0) | vec4(7.0, 5.0, 1.0, 12.0) | vec4(14.0, 15.0, 11.0, 1.0) ];
+                            output vec4 out0 = [ vec4(26.0, 4.0, 22.0, 2.0) | vec4(8.0, 26.0, 16.0, 6.0) | vec4(14.0, 10.0, 2.0, 24.0) | vec4(28.0, 30.0, 22.0, 2.0) ];
+                            output vec4 out1 = [ vec4(52.0, 8.0, 44.0, 4.0) | vec4(16.0, 52.0, 32.0, 12.0) | vec4(28.0, 20.0, 4.0, 48.0) | vec4(56.0, 60.0, 44.0, 4.0) ];
+                        }
+                        vertex ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 dEQP_Position;
+                            layout(location = 1) in vec4 in0;
+                            layout(location = 0) out vec4 var0;
+                            layout(location = 1) out vec4 var1;
+
+                            void main()
+                            {
+                                var0 = in0 + in0;
+                                var1 = in0 + in0 + in0 + in0;
+                                ${VERTEX_OUTPUT}
+                            }
+                        ""
+                        fragment ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 var0;
+                            layout(location = 1) in vec4 var1;
+                            layout(location = 0, component = 0) out vec2 dEQP_FragColor_0_0;
+                            layout(location = 0, component = 2) out vec2 dEQP_FragColor_0_2[2];
+                            layout(location = 1, component = 0) out vec2 dEQP_FragColor_1_0;
+                            void main()
+                            {
+                                vec4 out0 = var0;
+                                out0 /= vec4(255.0);
+                                dEQP_FragColor_0_0 = out0.xy;
+                                dEQP_FragColor_0_2[0] = out0.zw;
+
+                                vec4 out1 = var1;
+                                out1 /= vec4(255.0);
+                                dEQP_FragColor_1_0 = out1.xy;
+                                dEQP_FragColor_0_2[1] = out1.zw;
+                            }
+                        ""
+                    end
+                    case as_vec2-2_vec2_vec2
+                        version 440 core
+                        desc "Write fragment output 0 as two vec2, output 1 as two vec2."
+                        output_color vec4
+
+                        values
+                        {
+                            input vec4 in0 = [ vec4(13.0, 2.0, 11.0, 1.0) | vec4(4.0, 13.0, 8.0, 3.0) | vec4(7.0, 5.0, 1.0, 12.0) | vec4(14.0, 15.0, 11.0, 1.0) ];
+                            output vec4 out0 = [ vec4(26.0, 4.0, 22.0, 2.0) | vec4(8.0, 26.0, 16.0, 6.0) | vec4(14.0, 10.0, 2.0, 24.0) | vec4(28.0, 30.0, 22.0, 2.0) ];
+                            output vec4 out1 = [ vec4(52.0, 8.0, 44.0, 4.0) | vec4(16.0, 52.0, 32.0, 12.0) | vec4(28.0, 20.0, 4.0, 48.0) | vec4(56.0, 60.0, 44.0, 4.0) ];
+                        }
+                        vertex ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 dEQP_Position;
+                            layout(location = 1) in vec4 in0;
+                            layout(location = 0) out vec4 var0;
+                            layout(location = 1) out vec4 var1;
+
+                            void main()
+                            {
+                                var0 = in0 + in0;
+                                var1 = in0 + in0 + in0 + in0;
+                                ${VERTEX_OUTPUT}
+                            }
+                        ""
+                        fragment ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 var0;
+                            layout(location = 1) in vec4 var1;
+                            layout(location = 0, component = 0) out vec2 dEQP_FragColor_0_0[2];
+                            layout(location = 0, component = 2) out vec2 dEQP_FragColor_0_2;
+                            layout(location = 1, component = 2) out vec2 dEQP_FragColor_1_2;
+                            void main()
+                            {
+                                vec4 out0 = var0;
+                                out0 /= vec4(255.0);
+                                dEQP_FragColor_0_0[0] = out0.xy;
+                                dEQP_FragColor_0_2 = out0.zw;
+
+                                vec4 out1 = var1;
+                                out1 /= vec4(255.0);
+                                dEQP_FragColor_0_0[1] = out1.xy;
+                                dEQP_FragColor_1_2 = out1.zw;
+                            }
+                        ""
+                    end
+                    case as_float_float-2_vec2-2_float
+                        version 440 core
+                        desc "Write fragment output 0 as two floats and vec2, output 1 as two floats and vec2."
+                        output_color vec4
+
+                        values
+                        {
+                            input vec4 in0 = [ vec4(13.0, 2.0, 11.0, 1.0) | vec4(4.0, 13.0, 8.0, 3.0) | vec4(7.0, 5.0, 1.0, 12.0) | vec4(14.0, 15.0, 11.0, 1.0) ];
+                            output vec4 out0 = [ vec4(26.0, 4.0, 22.0, 2.0) | vec4(8.0, 26.0, 16.0, 6.0) | vec4(14.0, 10.0, 2.0, 24.0) | vec4(28.0, 30.0, 22.0, 2.0) ];
+                            output vec4 out1 = [ vec4(52.0, 8.0, 44.0, 4.0) | vec4(16.0, 52.0, 32.0, 12.0) | vec4(28.0, 20.0, 4.0, 48.0) | vec4(56.0, 60.0, 44.0, 4.0) ];
+                        }
+                        vertex ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 dEQP_Position;
+                            layout(location = 1) in vec4 in0;
+                            layout(location = 0) out vec4 var0;
+                            layout(location = 1) out vec4 var1;
+
+                            void main()
+                            {
+                                var0 = in0 + in0;
+                                var1 = in0 + in0 + in0 + in0;
+                                ${VERTEX_OUTPUT}
+                            }
+                        ""
+                        fragment ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 var0;
+                            layout(location = 1) in vec4 var1;
+                            layout(location = 0, component = 0) out float dEQP_FragColor_0_0;
+                            layout(location = 0, component = 1) out float dEQP_FragColor_0_1[2];
+                            layout(location = 0, component = 2) out vec2  dEQP_FragColor_0_2[2];
+                            layout(location = 1, component = 0) out float dEQP_FragColor_1_0;
+                            void main()
+                            {
+                                vec4 out0 = var0;
+                                out0 /= vec4(255.0);
+                                dEQP_FragColor_0_0 = out0.x;
+                                dEQP_FragColor_0_1[0] = out0.y;
+                                dEQP_FragColor_0_2[0] = out0.zw;
+
+                                vec4 out1 = var1;
+                                out1 /= vec4(255.0);
+                                dEQP_FragColor_1_0 = out1.x;
+                                dEQP_FragColor_0_1[1] = out1.y;
+                                dEQP_FragColor_0_2[1] = out1.zw;
+                            }
+                        ""
+                    end
+                    case as_float-2_float-2_float-2_float-2_float-2
+                        version 440 core
+                        desc "Write fragment output 0 as four floats, output 1 as four floats."
+                        output_color vec4
+
+                        values
+                        {
+                            input vec4 in0 = [ vec4(13.0, 2.0, 11.0, 1.0) | vec4(4.0, 13.0, 8.0, 3.0) | vec4(7.0, 5.0, 1.0, 12.0) | vec4(14.0, 15.0, 11.0, 1.0) ];
+                            output vec4 out0 = [ vec4(26.0, 4.0, 22.0, 2.0) | vec4(8.0, 26.0, 16.0, 6.0) | vec4(14.0, 10.0, 2.0, 24.0) | vec4(28.0, 30.0, 22.0, 2.0) ];
+                            output vec4 out1 = [ vec4(52.0, 8.0, 44.0, 4.0) | vec4(16.0, 52.0, 32.0, 12.0) | vec4(28.0, 20.0, 4.0, 48.0) | vec4(56.0, 60.0, 44.0, 4.0) ];
+                        }
+                        vertex ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 dEQP_Position;
+                            layout(location = 1) in vec4 in0;
+                            layout(location = 0) out vec4 var0;
+                            layout(location = 1) out vec4 var1;
+
+                            void main()
+                            {
+                                var0 = in0 + in0;
+                                var1 = in0 + in0 + in0 + in0;
+                                ${VERTEX_OUTPUT}
+                            }
+                        ""
+                        fragment ""
+                            #version 440 core
+                            precision highp float;
+                            precision highp int;
+                            layout(location = 0) in vec4 var0;
+                            layout(location = 1) in vec4 var1;
+                            layout(location = 0, component = 0) out float dEQP_FragColor_0_0[2];
+                            layout(location = 0, component = 1) out float dEQP_FragColor_0_1[2];
+                            layout(location = 0, component = 2) out float dEQP_FragColor_0_2[2];
+                            layout(location = 0, component = 3) out float dEQP_FragColor_0_3[2];
+                            void main()
+                            {
+                                vec4 out0 = var0;
+                                out0 /= vec4(255.0);
+                                dEQP_FragColor_0_0[0] = out0.x;
+                                dEQP_FragColor_0_1[0] = out0.y;
+                                dEQP_FragColor_0_2[0] = out0.z;
+                                dEQP_FragColor_0_3[0] = out0.w;
+
+                                vec4 out1 = var1;
+                                out1 /= vec4(255.0);
+                                dEQP_FragColor_0_0[1] = out1.x;
+                                dEQP_FragColor_0_1[1] = out1.y;
+                                dEQP_FragColor_0_2[1] = out1.z;
+                                dEQP_FragColor_0_3[1] = out1.w;
+                            }
+                        ""
+                    end
+                end
+            end
             group vec4 "vec4"
                 case as_float_float_float_float
                     version 440 core

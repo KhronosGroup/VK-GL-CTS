@@ -8,7 +8,6 @@ vk-main/descriptor-indexing.txt
 vk-main/device-group.txt
 vk-main/draw.txt
 vk-main/drm-format-modifiers.txt
-vk-main/dynamic-rendering.txt
 vk-main/dynamic-state.txt
 vk-main/fragment-operations.txt
 vk-main/fragment-shader-interlock.txt
@@ -33,8 +32,7 @@ vk-main/rasterization.txt
 vk-main/ray-query.txt
 vk-main/ray-tracing-pipeline.txt
 vk-main/reconvergence.txt
-vk-main/renderpass.txt
-vk-main/renderpass2.txt
+vk-main/renderpasses.txt
 vk-main/robustness.txt
 vk-main/sparse-resources.txt
 vk-main/spirv-assembly.txt

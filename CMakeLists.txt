@@ -6,6 +6,7 @@ cmake_minimum_required(VERSION 3.20.0)
 
 option(GLES_ALLOW_DIRECT_LINK "Allow direct linking to GLES libraries" OFF)
 option(DEQP_ANDROID_EXE "Build dEQP modules as executables rather than a library on Android" OFF)
+option(DEQP_LOG_NODE_SOURCE "Log source code file and line where nodes are being added" OFF)
 
 # Target selection:
 # SELECTED_BUILD_TARGETS is a CMake option that can be set to a list of targets
@@ -148,9 +149,7 @@ include_directories(external/renderdoc/src)
 
 # Vulkan video support libraries
 if (DE_OS_IS_WIN32 OR DE_OS_IS_UNIX)
-   # Some of the parsing / codec code is used from here.
-   add_subdirectory(external/nvidia-video-samples EXCLUDE_FROM_ALL)
-   # Video encoder library
+   # Video parser and encoder library
    add_subdirectory(external/vulkan-video-samples EXCLUDE_FROM_ALL)
    # YUV Video generator library
    add_subdirectory(external/video_generator EXCLUDE_FROM_ALL)
@@ -253,16 +252,26 @@ if (DE_COMPILER_IS_MSC)
 	set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -D_SCL_SECURE_NO_WARNINGS")
 endif ()
 
+if (DEQP_LOG_NODE_SOURCE)
+	if ((DE_OS_IS_UNIX))
+		add_definitions(-DDEQP_LOG_NODE_SOURCE=1)
+		set(CMAKE_EXE_LINKER_FLAGS "${CMAKE_EXE_LINKER_FLAGS} -lstdc++exp")
+	elseif (DE_COMPILER_IS_MSC)
+		add_definitions(-DDEQP_LOG_NODE_SOURCE=1)
+		set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -std:c++latest")
+	endif ()
+endif ()
+
 # Precompiled header macro. Parameters are source file list and filename for pch cpp file.
 macro(PCH SRCS PCHCPP)
-  if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
-    set(PCH_NAME "$(IntDir)\\pch.pch")
-    # make source files use/depend on PCH_NAME
-    set_source_files_properties(${${SRCS}} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME}" OBJECT_DEPENDS "${PCH_NAME}")
-    # make PCHCPP file compile and generate PCH_NAME
-    set_source_files_properties(${PCHCPP} PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fp${PCH_NAME}" OBJECT_OUTPUTS "${PCH_NAME}")
-    list(APPEND ${SRCS} "${PCHCPP}")
-  endif()
+	if(MSVC AND CMAKE_GENERATOR MATCHES "^Visual Studio")
+		set(PCH_NAME "$(IntDir)\\pch.pch")
+		# make source files use/depend on PCH_NAME
+		set_source_files_properties(${${SRCS}} PROPERTIES COMPILE_FLAGS "/Yupch.h /FIpch.h /Fp${PCH_NAME}" OBJECT_DEPENDS "${PCH_NAME}")
+		# make PCHCPP file compile and generate PCH_NAME
+		set_source_files_properties(${PCHCPP} PROPERTIES COMPILE_FLAGS "/Ycpch.h /Fp${PCH_NAME}" OBJECT_OUTPUTS "${PCH_NAME}")
+		list(APPEND ${SRCS} "${PCHCPP}")
+	endif()
 endmacro(PCH)
 
 # delibs projects

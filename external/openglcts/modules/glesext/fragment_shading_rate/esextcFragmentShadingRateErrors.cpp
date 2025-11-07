@@ -265,7 +265,8 @@ tcu::TestNode::IterateResult FragmentShadingRateErrors::iterate(void)
     {
         gl.shadingRateCombinerOpsEXT(GL_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_EXT,
                                      GL_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_EXT);
-        testPassed = testPassed && verifyError(GL_INVALID_ENUM, "shadingRateCombinerOpsEXT <combinerOp0> is not valid");
+        testPassed =
+            testPassed && verifyError(GL_INVALID_OPERATION, "shadingRateCombinerOpsEXT <combinerOp0> is not valid");
     }
 
     // [[If GL_EXT_fragment_shading_rate_attachment is not supported]]
@@ -275,7 +276,8 @@ tcu::TestNode::IterateResult FragmentShadingRateErrors::iterate(void)
     {
         gl.shadingRateCombinerOpsEXT(GL_FRAGMENT_SHADING_RATE_COMBINER_OP_MAX_EXT,
                                      GL_FRAGMENT_SHADING_RATE_COMBINER_OP_REPLACE_EXT);
-        testPassed = testPassed && verifyError(GL_INVALID_ENUM, "shadingRateCombinerOpsEXT <combinerOp0> is not valid");
+        testPassed =
+            testPassed && verifyError(GL_INVALID_OPERATION, "shadingRateCombinerOpsEXT <combinerOp1> is not valid");
     }
 
     /* All done */

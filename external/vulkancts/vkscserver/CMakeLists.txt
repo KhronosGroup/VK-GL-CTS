@@ -20,6 +20,7 @@ set(VKSC_SERVER_SRCS
 
 set(VKSC_SERVER_UTIL_SRCS
 	vksCommon.hpp
+	vksDefs.hpp
 	vksNetwork.cpp
 	vksNetwork.hpp
 	vksProtocol.hpp

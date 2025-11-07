@@ -11,7 +11,6 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_external_fence_fd",
 	"VK_KHR_external_memory_fd",
 	"VK_KHR_external_semaphore_fd",
-	"VK_KHR_format_feature_flags2",
 	"VK_KHR_fragment_shading_rate",
 	"VK_KHR_global_priority",
 	"VK_KHR_incremental_present",

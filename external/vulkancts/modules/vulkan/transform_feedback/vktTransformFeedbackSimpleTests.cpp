@@ -170,8 +170,19 @@ struct TestParameters
             TEST_TYPE_LINES_TRIANGLES,
         };
 
-        const auto itr = nonFullPipelineTestTypesWithGeomShaders.find(testType);
-        return (itr != nonFullPipelineTestTypesWithGeomShaders.end() || requiresFullPipeline());
+        // These are only supported with the geometryShader feature, even if
+        // they are used without a geometry shader.
+        static const std::set<VkPrimitiveTopology> geomShaderTopologies{
+            VK_PRIMITIVE_TOPOLOGY_LINE_LIST_WITH_ADJACENCY,
+            VK_PRIMITIVE_TOPOLOGY_LINE_STRIP_WITH_ADJACENCY,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST_WITH_ADJACENCY,
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY,
+        };
+
+        const auto itrType     = nonFullPipelineTestTypesWithGeomShaders.find(testType);
+        const auto itrTopology = geomShaderTopologies.find(primTopology);
+        return (itrType != nonFullPipelineTestTypesWithGeomShaders.end() || itrTopology != geomShaderTopologies.end() ||
+                requiresFullPipeline());
     }
 
     bool usingTessGeom(void) const
@@ -981,13 +992,19 @@ void TransformFeedbackTestInstance::cmdBindTransformFeedbackBuffers(const Device
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.useDeviceAddressCommands)
     {
-        std::vector<VkDeviceAddressRangeKHR> ranges(bindingCount);
+        // use different valid addressFlags in some cases to test them
+        VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_ALWAYS_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+        if (bindingCount == 1)
+            addressFlags = VK_ADDRESS_COMMAND_MAYBE_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+
+        std::vector<VkBindTransformFeedbackBuffer2InfoEXT> bindingInfos(bindingCount);
         for (uint32_t i = 0; i < bindingCount; ++i)
         {
-            ranges[i].address = pBuffersDeviceAddress[i] + pOffsets[i];
-            ranges[i].size    = pSizes[i];
+            bindingInfos[i]              = initVulkanStructure();
+            bindingInfos[i].addressRange = {pBuffersDeviceAddress[i] + pOffsets[i], pSizes[i]};
+            bindingInfos[i].addressFlags = addressFlags;
         }
-        vk.cmdBindTransformFeedbackBuffers2EXT(cmdBuffer, firstBinding, bindingCount, ranges.data());
+        vk.cmdBindTransformFeedbackBuffers2EXT(cmdBuffer, firstBinding, bindingCount, bindingInfos.data());
     }
 #endif
 }
@@ -1008,13 +1025,16 @@ void TransformFeedbackTestInstance::cmdBeginTransformFeedback(const DeviceInterf
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.useDeviceAddressCommands)
     {
-        std::vector<VkDeviceAddressRangeKHR> ranges(counterBufferCount);
+        std::vector<VkBindTransformFeedbackBuffer2InfoEXT> counterInfos(counterBufferCount);
         for (uint32_t i = 0; i < counterBufferCount; ++i)
         {
-            ranges[i].address = pCounterBuffersDeviceAddress[i] + pCounterBufferOffsets[i];
-            ranges[i].size    = pCounterBufferSizes[i];
+            counterInfos[i]              = initVulkanStructure();
+            counterInfos[i].addressRange = {pCounterBuffersDeviceAddress[i] + pCounterBufferOffsets[i],
+                                            pCounterBufferSizes[i]};
+            counterInfos[i].addressFlags = VK_ADDRESS_COMMAND_ALWAYS_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT |
+                                           VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
         }
-        vk.cmdBeginTransformFeedback2EXT(cmdBuffer, firstCounterBuffer, counterBufferCount, ranges.data());
+        vk.cmdBeginTransformFeedback2EXT(cmdBuffer, firstCounterBuffer, counterBufferCount, counterInfos.data());
     }
 #endif
 }
@@ -1035,13 +1055,17 @@ void TransformFeedbackTestInstance::cmdEndTransformFeedback(const DeviceInterfac
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.useDeviceAddressCommands)
     {
-        std::vector<VkDeviceAddressRangeKHR> ranges(counterBufferCount);
+        std::vector<VkBindTransformFeedbackBuffer2InfoEXT> counterInfos(counterBufferCount);
         for (uint32_t i = 0; i < counterBufferCount; ++i)
         {
-            ranges[i].address = pCounterBuffersDeviceAddress[i] + pCounterBufferOffsets[i];
-            ranges[i].size    = pCounterBufferSizes[i];
+            counterInfos[i]              = initVulkanStructure();
+            counterInfos[i].addressRange = {pCounterBuffersDeviceAddress[i] + pCounterBufferOffsets[i],
+                                            pCounterBufferSizes[i]};
+            counterInfos[i].addressFlags = VK_ADDRESS_COMMAND_ALWAYS_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT |
+                                           VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
         }
-        vk.cmdEndTransformFeedback2EXT(cmdBuffer, firstCounterBuffer, counterBufferCount, ranges.data());
+
+        vk.cmdEndTransformFeedback2EXT(cmdBuffer, firstCounterBuffer, counterBufferCount, counterInfos.data());
     }
 #endif
 }
@@ -1061,9 +1085,12 @@ void TransformFeedbackTestInstance::cmdDrawIndirectCount(const DeviceInterface &
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.useDeviceAddressCommands)
     {
-        VkStridedDeviceAddressRangeKHR range{bufferDeviceAddress + offset, stride, size};
-        VkDeviceAddressRangeKHR countRange{countBufferDeviceAddress + countOffset, countSize};
-        vk.cmdDrawIndirectCount2KHR(cmdBuffer, range, countRange, maxDrawCount);
+        VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
+        drawIndirectCount2Info.addressRange                = {bufferDeviceAddress + offset, size, stride};
+        drawIndirectCount2Info.countAddressRange           = {countBufferDeviceAddress + countOffset, countSize};
+        drawIndirectCount2Info.maxDrawCount                = maxDrawCount;
+
+        vk.cmdDrawIndirectCount2KHR(cmdBuffer, &drawIndirectCount2Info);
     }
 #endif
 }
@@ -1082,8 +1109,12 @@ void TransformFeedbackTestInstance::cmdDrawIndirectByteCount(
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.useDeviceAddressCommands)
     {
-        VkDeviceAddressRangeKHR range{counterBufferDeviceAddress + counterBufferOffset, counterBufferSize};
-        vk.cmdDrawIndirectByteCount2EXT(cmdBuffer, instanceCount, firstInstance, range, counterOffset, vertexStride);
+        VkBindTransformFeedbackBuffer2InfoEXT bindTransformFeedbackBuffer2Info = initVulkanStructure();
+        bindTransformFeedbackBuffer2Info.addressRange = {counterBufferDeviceAddress + counterBufferOffset,
+                                                         counterBufferSize};
+
+        vk.cmdDrawIndirectByteCount2EXT(cmdBuffer, instanceCount, firstInstance, &bindTransformFeedbackBuffer2Info,
+                                        counterOffset, vertexStride);
     }
 #endif
 }

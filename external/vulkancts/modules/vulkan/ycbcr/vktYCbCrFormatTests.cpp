@@ -293,6 +293,16 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
         allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags,
                                    mappedMemory ? MemoryRequirement::HostVisible : MemoryRequirement::Any));
 
+    const VkFormatProperties formatProperties =
+        getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+    const VkFormatFeatureFlags featureFlags = tiling == VK_IMAGE_TILING_OPTIMAL ?
+                                                  formatProperties.optimalTilingFeatures :
+                                                  formatProperties.linearTilingFeatures;
+
+    // VUID-VkSamplerYcbcrConversionCreateInfo-xChromaOffset-01652
+    if (!(featureFlags & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT))
+        TCU_THROW(NotSupportedError, "Format does not support midpoint chroma subsampling");
+
     const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,
         nullptr,

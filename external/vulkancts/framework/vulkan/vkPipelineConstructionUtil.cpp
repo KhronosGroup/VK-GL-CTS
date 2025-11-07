@@ -518,9 +518,19 @@ RenderPassWrapper::SubpassDependency::SubpassDependency(const VkSubpassDependenc
 }
 #endif // CTS_USES_VULKANSC
 
-RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
-                                     VkDevice device, const VkRenderPassCreateInfo *pCreateInfo)
-    : m_isDynamicRendering(vk::isConstructionTypeShaderObject(pipelineConstructionType))
+#ifndef CTS_USES_VULKANSC
+RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
+                                     const VkRenderPassCreateInfo *pCreateInfo,
+                                     const VkAttachmentFeedbackLoopInfoEXT *attachmentFeedbackLoopInfo)
+    : RenderPassWrapper(vk, device, pCreateInfo, true)
+{
+    m_attachmentFeedbackLoopInfo = *attachmentFeedbackLoopInfo;
+}
+#endif
+
+RenderPassWrapper::RenderPassWrapper(const DeviceInterface &vk, VkDevice device,
+                                     const VkRenderPassCreateInfo *pCreateInfo, bool dynamicRendering)
+    : m_isDynamicRendering(dynamicRendering)
     , m_renderPassPtr()
     , m_renderPass(VK_NULL_HANDLE)
 #ifndef CTS_USES_VULKANSC
@@ -656,6 +666,12 @@ RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructi
             m_dependencies.emplace_back(pCreateInfo->pDependencies[depIdx]);
 #endif
     }
+}
+
+RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
+                                     VkDevice device, const VkRenderPassCreateInfo *pCreateInfo)
+    : RenderPassWrapper(vk, device, pCreateInfo, isConstructionTypeShaderObject(pipelineConstructionType))
+{
 }
 
 RenderPassWrapper::RenderPassWrapper(PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk,
@@ -924,6 +940,7 @@ RenderPassWrapper::RenderPassWrapper(RenderPassWrapper &&rhs) noexcept
     , m_renderPass(rhs.m_renderPass)
     , m_framebuffer(rhs.m_framebuffer)
 #ifndef CTS_USES_VULKANSC
+    , m_attachmentFeedbackLoopInfo(rhs.m_attachmentFeedbackLoopInfo)
     , m_subpasses(std::move(rhs.m_subpasses))
     , m_dependencies(std::move(rhs.m_dependencies))
     , m_attachments(std::move(rhs.m_attachments))
@@ -947,18 +964,19 @@ RenderPassWrapper &RenderPassWrapper::operator=(RenderPassWrapper &&rhs) noexcep
     m_renderPass         = rhs.m_renderPass;
     m_framebuffer        = rhs.m_framebuffer;
 #ifndef CTS_USES_VULKANSC
-    m_subpasses               = std::move(rhs.m_subpasses);
-    m_dependencies            = std::move(rhs.m_dependencies);
-    m_attachments             = std::move(rhs.m_attachments);
-    m_images                  = std::move(rhs.m_images);
-    m_imageViews              = std::move(rhs.m_imageViews);
-    m_clearValues             = std::move(rhs.m_clearValues);
-    m_layouts                 = std::move(rhs.m_layouts);
-    m_activeSubpass           = rhs.m_activeSubpass;
-    m_renderingInfo           = rhs.m_renderingInfo;
-    m_layers                  = rhs.m_layers;
-    m_viewMasks               = std::move(rhs.m_viewMasks);
-    m_secondaryCommandBuffers = rhs.m_secondaryCommandBuffers;
+    m_attachmentFeedbackLoopInfo = rhs.m_attachmentFeedbackLoopInfo;
+    m_subpasses                  = std::move(rhs.m_subpasses);
+    m_dependencies               = std::move(rhs.m_dependencies);
+    m_attachments                = std::move(rhs.m_attachments);
+    m_images                     = std::move(rhs.m_images);
+    m_imageViews                 = std::move(rhs.m_imageViews);
+    m_clearValues                = std::move(rhs.m_clearValues);
+    m_layouts                    = std::move(rhs.m_layouts);
+    m_activeSubpass              = rhs.m_activeSubpass;
+    m_renderingInfo              = rhs.m_renderingInfo;
+    m_layers                     = rhs.m_layers;
+    m_viewMasks                  = std::move(rhs.m_viewMasks);
+    m_secondaryCommandBuffers    = rhs.m_secondaryCommandBuffers;
 #endif
     return *this;
 }
@@ -1515,7 +1533,9 @@ void RenderPassWrapper::beginRendering(const DeviceInterface &vk, const VkComman
         colorAttachment       = vk::initVulkanStructure();
         if (subpass.m_colorAttachments[i].index == VK_ATTACHMENT_UNUSED)
             continue;
-        colorAttachment        = subpass.m_colorAttachments[i].attachmentInfo;
+        colorAttachment = subpass.m_colorAttachments[i].attachmentInfo;
+        if (m_attachmentFeedbackLoopInfo.sType == VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT)
+            colorAttachment.pNext = &m_attachmentFeedbackLoopInfo;
         colorAttachment.loadOp = vk::VK_ATTACHMENT_LOAD_OP_LOAD;
         if (!subpass.m_resolveAttachments.empty() && subpass.m_resolveAttachments[i].index != VK_ATTACHMENT_UNUSED)
         {
@@ -1925,7 +1945,9 @@ struct GraphicsPipelineWrapper::InternalData
 
 #ifndef CTS_USES_VULKANSC
     VkGraphicsPipelineLibraryCreateInfoEXT pipelinePartLibraryCreateInfo[4];
+    VkPipeline pipelineParts[4];
     VkPipelineLibraryCreateInfoKHR finalPipelineLibraryCreateInfo;
+    VkGraphicsPipelineCreateInfo finalPipelineCreateInfo;
     VkPipelineCreateFlags2CreateInfoKHR pipelinePartFlags2CreateInfo[4];
     VkPipelineCreateFlags2CreateInfoKHR finalPipelineFlags2CreateInfo;
 #endif
@@ -4090,26 +4112,21 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
     else
     {
 #ifndef CTS_USES_VULKANSC
-        VkGraphicsPipelineCreateInfo linkedCreateInfo = initVulkanStructure();
-        std::vector<VkPipeline> rawPipelines;
-        VkPipelineLibraryCreateInfoKHR linkingInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
-            creationFeedback.ptr,                               // const void* pNext;
-            0u,                                                 // uint32_t libraryCount;
-            nullptr,                                            // const VkPipeline* pLibraries;
-        };
-
         if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
         {
+            m_internalData->finalPipelineCreateInfo        = initVulkanStructure();
+            m_internalData->finalPipelineLibraryCreateInfo = initVulkanStructure(creationFeedback.ptr);
+
             for (const auto &pipelinePtr : m_pipelineParts)
             {
                 const auto &pipeline = pipelinePtr.get();
                 if (pipeline != VK_NULL_HANDLE)
-                    rawPipelines.push_back(pipeline);
+                    m_internalData->pipelineParts[m_internalData->finalPipelineLibraryCreateInfo.libraryCount++] =
+                        pipeline;
             }
 
-            linkingInfo.libraryCount = static_cast<uint32_t>(rawPipelines.size());
-            linkingInfo.pLibraries   = de::dataOrNull(rawPipelines);
+            m_internalData->finalPipelineLibraryCreateInfo.pLibraries =
+                (m_internalData->finalPipelineLibraryCreateInfo.libraryCount) ? m_internalData->pipelineParts : nullptr;
 
             // If a test hits the following assert, it's likely missing a call
             // to the setMonolithicPipelineLayout() method. Related VUs:
@@ -4119,17 +4136,19 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
             DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
-            linkedCreateInfo.layout = m_internalData->monolithicPipelineCreateInfo.layout;
-            linkedCreateInfo.flags  = m_internalData->pipelineFlags;
-            linkedCreateInfo.pNext  = &linkingInfo;
+            m_internalData->finalPipelineCreateInfo.layout = m_internalData->monolithicPipelineCreateInfo.layout;
+            m_internalData->finalPipelineCreateInfo.flags  = m_internalData->pipelineFlags;
+            m_internalData->finalPipelineCreateInfo.pNext  = &m_internalData->finalPipelineLibraryCreateInfo;
 
-            pointerToCreateInfo = &linkedCreateInfo;
+            pointerToCreateInfo      = &m_internalData->finalPipelineCreateInfo;
+            void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
+            addToChain(&firstStructInChain, pNext);
 
             if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
-                linkedCreateInfo.flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+                pointerToCreateInfo->flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
 
             if (m_internalData->failOnCompileWhenLinking)
-                linkedCreateInfo.flags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
+                pointerToCreateInfo->flags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
         }
         else
         {
@@ -4242,7 +4261,8 @@ void GraphicsPipelineWrapper::setShaderObjectDynamicStates(vk::VkCommandBuffer c
                 vk.cmdSetScissorWithCount(cmdBuffer, (uint32_t)state->scissors.size(), state->scissors.data());
             break;
         case vk::VK_DYNAMIC_STATE_LINE_WIDTH:
-            if (polygonModeLine || topologyLine)
+            // Mesh shaders can produce line topology so ensure lineWidth is set
+            if (polygonModeLine || topologyLine || meshOrTask)
                 vk.cmdSetLineWidth(cmdBuffer, state->lineWidth);
             break;
         case vk::VK_DYNAMIC_STATE_DEPTH_BIAS:
@@ -4694,7 +4714,12 @@ vk::VkPipeline GraphicsPipelineWrapper::getPartialPipeline(uint32_t part) const
 const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPipelineCreateInfo(void) const
 {
     DE_ASSERT(m_internalData);
-    return m_internalData->monolithicPipelineCreateInfo;
+#ifndef CTS_USES_VULKANSC
+    if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
+        return m_internalData->finalPipelineCreateInfo;
+    else
+#endif
+        return m_internalData->monolithicPipelineCreateInfo;
 }
 const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPartialPipelineCreateInfo(uint32_t part) const
 {

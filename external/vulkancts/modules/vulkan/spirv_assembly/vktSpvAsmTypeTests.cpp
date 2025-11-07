@@ -165,10 +165,48 @@ enum InputType
     TYPE_LAST
 };
 
+uint32_t getInputTypeWidth(InputType inputType)
+{
+    switch (inputType)
+    {
+    case TYPE_I8:
+    case TYPE_U8:
+        return 8u;
+    case TYPE_I16:
+    case TYPE_U16:
+        return 16u;
+    case TYPE_I32:
+    case TYPE_U32:
+        return 32u;
+    case TYPE_I64:
+    case TYPE_U64:
+        return 64u;
+    default:
+        break;
+    }
+
+    return 0u;
+}
+
 uint32_t getConstituentIndex(uint32_t ndx, uint32_t vectorSize)
 {
     DE_ASSERT(vectorSize != 0u);
     return (ndx / vectorSize) / (1u + (ndx % vectorSize));
+}
+
+bool hasScalarInputs(uint32_t spirvOperation)
+{
+    switch (spirvOperation)
+    {
+    case SpvOpBitFieldInsert:
+    case SpvOpBitFieldSExtract:
+    case SpvOpBitFieldUExtract:
+        return true;
+    default:
+        break;
+    }
+
+    return false;
 }
 
 bool isScalarInput(uint32_t spirvOperation, uint32_t numInput)
@@ -234,6 +272,27 @@ bool isConstantOrVariableTest(uint32_t spirvOperation)
     default:
         return false;
     }
+}
+
+bool isBitManipulationTest(uint32_t spirvOperation)
+{
+    switch (spirvOperation)
+    {
+    case SpvOpBitCount:
+        return true;
+    case SpvOpBitReverse:
+        return true;
+    case SpvOpBitFieldInsert:
+        return true;
+    case SpvOpBitFieldSExtract:
+        return true;
+    case SpvOpBitFieldUExtract:
+        return true;
+    default:
+        break;
+    }
+
+    return false;
 }
 
 const char *getSpvOperationStr(uint32_t spirvOperation)
@@ -594,6 +653,22 @@ InputType getInputType(uint32_t inputWidth, bool isSigned)
     }
 }
 
+bool isSignedType(InputType inputType)
+{
+    switch (inputType)
+    {
+    case TYPE_I8:
+    case TYPE_I16:
+    case TYPE_I32:
+    case TYPE_I64:
+        return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+
 string getOtherSizeTypes(InputType inputType, uint32_t vectorSize, InputWidth inputWidth)
 {
     const uint32_t inputWidthValues[] = {8, 16, 32, 64};
@@ -731,15 +806,21 @@ string getBinaryFullOperationWithInputWidthStr(string resultName, string spirvOp
 }
 
 string getFullOperationWithDifferentInputWidthStr(string resultName, string spirvOperation, InputType inputType,
-                                                  string spirvTestType, InputWidth inputWidth, bool isQuaternary)
+                                                  string spirvTestType, uint32_t vectorSize, InputWidth inputWidth,
+                                                  bool isQuaternary)
 {
-    const bool isSigned = (inputType == TYPE_I32);
+    const bool isSigned       = isSignedType(inputType);
+    const auto signPrefix     = (isSigned ? "i" : "u");
+    const auto inputTypeWidth = getInputTypeWidth(inputType);
 
     const uint32_t offsetWidth = getInputWidth(inputWidth, 0);
     const uint32_t countWidth  = getInputWidth(inputWidth, 1);
 
-    const string offsetType = ((isSigned) ? "i" : "u") + de::toString(offsetWidth);
-    const string countType  = ((isSigned) ? "i" : "u") + de::toString(countWidth);
+    const string matchingType =
+        (vectorSize > 1 ? (inputTypeWidth != 32 ? "scalartype" : (signPrefix + de::toString(inputTypeWidth))) :
+                          "testtype");
+    const string offsetType = (offsetWidth == inputTypeWidth ? matchingType : signPrefix + de::toString(offsetWidth));
+    const string countType  = (countWidth == inputTypeWidth ? matchingType : signPrefix + de::toString(countWidth));
 
     const string offsetNdx = (isQuaternary) ? "2" : "1";
     const string countNdx  = (isQuaternary) ? "3" : "2";
@@ -747,17 +828,19 @@ string getFullOperationWithDifferentInputWidthStr(string resultName, string spir
     string str = "";
 
     // Create intermediate values with different width
-    if (offsetWidth != 32)
+    const bool convertOffset = (offsetWidth != inputTypeWidth);
+    const bool convertCount  = (countWidth != inputTypeWidth);
+
+    if (convertOffset)
         str += "%input" + offsetNdx + "_val_" + de::toString(offsetWidth) + " = OpSConvert %" + offsetType + " %input" +
                offsetNdx + "_val\n";
-    if (countWidth != 32)
+    if (convertCount)
         str += "%input" + countNdx + "_val_" + de::toString(countWidth) + " = OpSConvert %" + countType + " %input" +
                countNdx + "_val\n";
 
     // Inputs with potentially different width
-    const string offsetStr =
-        "%input" + offsetNdx + "_val" + ((offsetWidth != 32) ? "_" + de::toString(offsetWidth) : "");
-    const string countStr = "%input" + countNdx + "_val" + ((countWidth != 32) ? "_" + de::toString(countWidth) : "");
+    const string offsetStr = "%input" + offsetNdx + "_val" + (convertOffset ? "_" + de::toString(offsetWidth) : "");
+    const string countStr  = "%input" + countNdx + "_val" + (convertCount ? "_" + de::toString(countWidth) : "");
 
     if (isQuaternary)
         str += resultName + " = " + spirvOperation + " %" + spirvTestType + " %input0_val %input1_val " + offsetStr +
@@ -789,6 +872,14 @@ template <class T>
 class SpvAsmTypeTests : public tcu::TestCaseGroup
 {
 public:
+    typedef struct OperationWrapper
+    {
+        explicit OperationWrapper(uint32_t spirvOperation_) : spirvOperation(spirvOperation_)
+        {
+        }
+        uint32_t spirvOperation;
+    } OperationWrapper;
+
     typedef T (*OpUnaryFuncType)(T);
     typedef T (*OpBinaryFuncType)(T, T);
     typedef T (*OpTernaryFuncType)(T, T, T);
@@ -850,10 +941,10 @@ private:
     uint32_t combine(GraphicsResources &resources, ComputeShaderSpec &computeResources, vector<T> &data,
                      OpQuaternaryFuncType operation, QuaternaryFilterFuncType filter, InputRange inputRange);
     uint32_t fillResources(GraphicsResources &resources, ComputeShaderSpec &computeResources, const vector<T> &data);
-    void createStageTests(const char *testName, GraphicsResources &resources, ComputeShaderSpec &computeResources,
-                          uint32_t numElements, vector<string> &decorations, vector<string> &pre_mains,
-                          vector<string> &testfuns, string &operation, InputWidth inputWidth, const char *funVariables,
-                          const char *spirvExtension = nullptr);
+    void createStageTests(const char *testName, OperationWrapper spirvOperation, GraphicsResources &resources,
+                          ComputeShaderSpec &computeResources, uint32_t numElements, vector<string> &decorations,
+                          vector<string> &pre_mains, vector<string> &testfuns, string &operation, InputWidth inputWidth,
+                          const char *funVariables, const char *spirvExtension = nullptr);
     void finalizeFullOperation(string &fullOperation, const string &resultName, const bool returnHighPart,
                                const bool isBooleanResult);
 
@@ -927,9 +1018,9 @@ std::string SpvAsmTypeTests<T>::createInputDecoration(uint32_t numInput)
 }
 
 template <class T>
-std::string SpvAsmTypeTests<T>::createInputPreMain(uint32_t numInput, uint32_t spirvOpertaion)
+std::string SpvAsmTypeTests<T>::createInputPreMain(uint32_t numInput, uint32_t spirvOperation)
 {
-    const bool scalarInput  = (m_vectorSize != 1) && isScalarInput(spirvOpertaion, numInput);
+    const bool scalarInput  = (m_vectorSize != 1) && isScalarInput(spirvOperation, numInput);
     const string bufferType = (scalarInput) ? "%scalarbufptr" : "%bufptr";
 
     return "%input" + de::toString(numInput) + " = OpVariable " + bufferType + " Uniform\n";
@@ -938,9 +1029,9 @@ std::string SpvAsmTypeTests<T>::createInputPreMain(uint32_t numInput, uint32_t s
 template <class T>
 std::string SpvAsmTypeTests<T>::createInputTestfun(uint32_t numInput, uint32_t spirvOpertaion)
 {
-    const bool scalarInput   = (m_vectorSize != 1) && isScalarInput(spirvOpertaion, numInput);
-    const string pointerType = (scalarInput) ? "%up_scalartype" : "%up_testtype";
-    const string valueType   = (scalarInput) ? "%u32" : "%${testtype}";
+    const bool scalarInput   = ((m_vectorSize != 1) && isScalarInput(spirvOpertaion, numInput));
+    const string pointerType = (scalarInput ? "%up_scalartype" : "%up_testtype");
+    const string valueType   = (scalarInput ? "%${scalar_type_name}" : "%${testtype}");
 
     const StringTemplate testfun("%input${n_input}_loc = OpAccessChain " + pointerType +
                                  " %input${n_input} "
@@ -951,6 +1042,10 @@ std::string SpvAsmTypeTests<T>::createInputTestfun(uint32_t numInput, uint32_t s
 
     specs["n_input"]  = de::toString(numInput);
     specs["testtype"] = m_spirvTestType;
+
+    const bool is32           = (m_inputType == TYPE_I32 || m_inputType == TYPE_U32);
+    const auto scalarName32   = (is32 ? ((m_inputType == TYPE_I32) ? "i32" : "u32") : "");
+    specs["scalar_type_name"] = (is32 ? scalarName32 : ((m_vectorSize == 1) ? "testtype" : "scalartype"));
 
     return testfun.specialize(specs);
 }
@@ -1262,8 +1357,12 @@ uint32_t SpvAsmTypeTests<T>::combine(GraphicsResources &resources, ComputeShader
                             }
 
                             // Make sure the sum of offset and count doesn't exceed bit width
-                            if ((uint32_t)(bitOffset + bitCount) > m_typeSize)
-                                bitCount -= bitOffset + bitCount - static_cast<T>(m_typeSize);
+                            const auto bitOffset32 = static_cast<uint32_t>(bitOffset);
+                            const auto bitCount32  = static_cast<uint32_t>(bitCount);
+                            const auto bitEnd      = bitOffset32 + bitCount32;
+
+                            if (bitEnd > m_typeSize)
+                                bitCount = static_cast<T>(m_typeSize - bitOffset32);
 
                             inputs0.push_back(data[elemNdx1]);
                             inputs1.push_back(data[elemNdx2]);
@@ -1357,9 +1456,9 @@ uint32_t SpvAsmTypeTests<T>::fillResources(GraphicsResources &resources, Compute
 }
 
 template <class T>
-void SpvAsmTypeTests<T>::createStageTests(const char *testName, GraphicsResources &resources,
-                                          ComputeShaderSpec &computeResources, uint32_t numElements,
-                                          vector<string> &decorations, vector<string> &pre_mains,
+void SpvAsmTypeTests<T>::createStageTests(const char *testName, OperationWrapper spirvOperation,
+                                          GraphicsResources &resources, ComputeShaderSpec &computeResources,
+                                          uint32_t numElements, vector<string> &decorations, vector<string> &pre_mains,
                                           vector<string> &testfuns, string &operation, InputWidth inputWidth,
                                           const char *funVariables, const char *spirvExtension)
 {
@@ -1430,15 +1529,16 @@ void SpvAsmTypeTests<T>::createStageTests(const char *testName, GraphicsResource
                                          "${constant_zero}\n"
                                          "${constant_one}\n");
 
-    const StringTemplate pre_main_constv("%c_shift1 = OpConstant %u32 16\n"
-                                         "%c_shift  = OpConstantComposite %v${vector_size}u32 ${shift_initializers}\n"
-                                         "${bvec}\n"
-                                         "${constant_zero}\n"
-                                         "${constant_one}\n"
-                                         "%a${num_elements}scalartype = OpTypeArray %u32 %c_u32_${num_elements}\n"
-                                         "%up_scalartype = OpTypePointer Uniform %u32\n"
-                                         "%scalarbuf = OpTypeStruct %a${num_elements}scalartype\n"
-                                         "%scalarbufptr = OpTypePointer Uniform %scalarbuf\n");
+    const StringTemplate pre_main_constv(
+        "%c_shift1 = OpConstant %u32 16\n"
+        "%c_shift  = OpConstantComposite %v${vector_size}u32 ${shift_initializers}\n"
+        "${bvec}\n"
+        "${constant_zero}\n"
+        "${constant_one}\n"
+        "%a${num_elements}scalartype = OpTypeArray %${scalar_type_name} %c_u32_${num_elements}\n"
+        "%up_scalartype = OpTypePointer Uniform %${scalar_type_name}\n"
+        "%scalarbuf = OpTypeStruct %a${num_elements}scalartype\n"
+        "%scalarbufptr = OpTypePointer Uniform %scalarbuf\n");
 
     const StringTemplate post_pre_main("%a${num_elements}testtype = OpTypeArray %${testtype} "
                                        "%c_u32_${num_elements}\n"
@@ -1537,6 +1637,13 @@ void SpvAsmTypeTests<T>::createStageTests(const char *testName, GraphicsResource
         spirvExtensions += "OpExtension \"SPV_KHR_16bit_storage\"\n";
     }
 
+#ifndef CTS_USES_VULKANSC
+    if (m_inputType != TYPE_I32 && m_inputType != TYPE_U32 && isBitManipulationTest(spirvOperation.spirvOperation))
+        requiredFeatures.maint9Features.maintenance9 = VK_TRUE;
+#else
+    DE_UNREF(spirvOperation);
+#endif // CTS_USES_VULKANSC
+
     specs["testtype"]           = m_spirvTestType;
     specs["scalartype"]         = m_spirvType;
     specs["typesize"]           = de::toString(((m_vectorSize == 3) ? 4 : m_vectorSize) * m_typeSize / 8);
@@ -1565,6 +1672,12 @@ void SpvAsmTypeTests<T>::createStageTests(const char *testName, GraphicsResource
     specs["u32_function_pointer"] =
         m_spirvTestType == "i32" ? ("") :
                                    ("%fp_" + m_spirvTestType + " = OpTypePointer Function %" + m_spirvTestType + "\n");
+
+    const bool is32           = (m_inputType == TYPE_I32 || m_inputType == TYPE_U32);
+    const auto scalarName32   = (is32 ? ((m_inputType == TYPE_I32) ? "i32" : "u32") : "");
+    specs["scalar_type_name"] = (hasScalarInputs(spirvOperation.spirvOperation) ?
+                                     (is32 ? scalarName32 : ((m_vectorSize > 1) ? "scalartype" : "testtype")) :
+                                     "u32");
 
     if (spirvExtension)
         spirvExtensions += "%ext1 = OpExtInstImport \"" + string(spirvExtension) + "\"";
@@ -1884,8 +1997,9 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
 
         finalizeFullOperation(fullOperation, resultName, returnHighPart, false);
 
-        createStageTests(testName, resources, computeResources, totalElements, decorations, pre_mains, testfuns,
-                         fullOperation, inputWidth, funVariables.c_str(), spirvExtension);
+        createStageTests(testName, OperationWrapper(spirvOperation), resources, computeResources, totalElements,
+                         decorations, pre_mains, testfuns, fullOperation, inputWidth, funVariables.c_str(),
+                         spirvExtension);
     }
     else
     {
@@ -1909,8 +2023,8 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
 
         finalizeFullOperation(full_operation, resultName, returnHighPart, false);
 
-        createStageTests(testName, resources, computeResources, totalElements, decorations, pre_mains, testfuns,
-                         full_operation, inputWidth, "", spirvExtension);
+        createStageTests(testName, OperationWrapper(spirvOperation), resources, computeResources, totalElements,
+                         decorations, pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
     }
 }
 
@@ -1979,8 +2093,8 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
 
     finalizeFullOperation(full_operation, resultName, returnHighPart, isBoolean);
 
-    createStageTests(testName, resources, computeResources, totalElements, decorations, pre_mains, testfuns,
-                     full_operation, inputWidth, "", spirvExtension);
+    createStageTests(testName, OperationWrapper(spirvOperation), resources, computeResources, totalElements,
+                     decorations, pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 }
 
 template <class T>
@@ -2026,13 +2140,14 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
                               resultName + " = " + getSpvOperationStr(spirvOperation) + " %" + m_spirvTestType +
                                   " %input0_val %input1_val %input2_val\n");
     else
-        full_operation = getFullOperationWithDifferentInputWidthStr(resultName, getSpvOperationStr(spirvOperation),
-                                                                    m_inputType, m_spirvTestType, inputWidth, false);
+        full_operation =
+            getFullOperationWithDifferentInputWidthStr(resultName, getSpvOperationStr(spirvOperation), m_inputType,
+                                                       m_spirvTestType, m_vectorSize, inputWidth, false);
 
     finalizeFullOperation(full_operation, resultName, returnHighPart, false);
 
-    createStageTests(testName, resources, computeResources, totalElements, decorations, pre_mains, testfuns,
-                     full_operation, inputWidth, "", spirvExtension);
+    createStageTests(testName, OperationWrapper(spirvOperation), resources, computeResources, totalElements,
+                     decorations, pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 }
 
 template <class T>
@@ -2075,13 +2190,14 @@ void SpvAsmTypeTests<T>::createTests(const char *testName, uint32_t spirvOperati
         full_operation = resultName + " = " + getSpvOperationStr(spirvOperation) + " %" + m_spirvTestType +
                          " %input0_val %input1_val %input2_val %input3_val\n";
     else
-        full_operation = getFullOperationWithDifferentInputWidthStr(resultName, getSpvOperationStr(spirvOperation),
-                                                                    m_inputType, m_spirvTestType, inputWidth, true);
+        full_operation =
+            getFullOperationWithDifferentInputWidthStr(resultName, getSpvOperationStr(spirvOperation), m_inputType,
+                                                       m_spirvTestType, m_vectorSize, inputWidth, true);
 
     finalizeFullOperation(full_operation, resultName, returnHighPart, false);
 
-    createStageTests(testName, resources, computeResources, totalElements, decorations, pre_mains, testfuns,
-                     full_operation, inputWidth, "", spirvExtension);
+    createStageTests(testName, OperationWrapper(spirvOperation), resources, computeResources, totalElements,
+                     decorations, pre_mains, testfuns, full_operation, inputWidth, "", spirvExtension);
 }
 
 template <class T>
@@ -3103,7 +3219,7 @@ public:
             return allZeros;
 
         const T extractMask = de::rightSetMask(z);
-        const T signBit     = static_cast<T>(x & (1 << (y + z - 1)));
+        const T signBit     = static_cast<T>(x & (1ull << (y + z - 1)));
         const T signMask    = static_cast<T>(signBit ? ~extractMask : allZeros);
 
         return static_cast<T>((signMask & ~extractMask) | ((x >> y) & extractMask));
@@ -3130,7 +3246,7 @@ public:
         for (size_t bitNdx = 0u; bitNdx < sizeof(T) * 8u; bitNdx++)
         {
             result = static_cast<T>(result << 1) | (base & 1);
-            base >>= 1;
+            base   = static_cast<T>(base >> 1);
         }
 
         return result;
@@ -3698,6 +3814,22 @@ const string bitFieldTestPostfix[] = {
                                          TestMathInt64::test_##op, I64_##filter, inputRange, inputWidth, (extension)); \
         }
 
+#define MAKE_TEST_SV_I_8136_WN(name, spirvOp, op, filter, inputRange, extension)                                       \
+    for (uint32_t ndx = 0; ndx < 4; ++ndx)                                                                             \
+        for (uint32_t widthNdx = 0; widthNdx < DE_LENGTH_OF_ARRAY(bitFieldTestPostfix); ++widthNdx)                    \
+        {                                                                                                              \
+            const InputWidth inputWidth = static_cast<InputWidth>(WIDTH_8_8 + widthNdx);                               \
+                                                                                                                       \
+            int8Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),               \
+                                        TestMathInt8::test_##op, I8_##filter, inputRange, inputWidth, (extension));    \
+            int16Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),              \
+                                         TestMathInt16::test_##op, I16_##filter, inputRange, inputWidth, (extension)); \
+            int32Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),              \
+                                         TestMathInt32::test_##op, I32_##filter, inputRange, inputWidth, (extension)); \
+            int64Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),              \
+                                         TestMathInt64::test_##op, I64_##filter, inputRange, inputWidth, (extension)); \
+        }
+
 #define MAKE_TEST_SV_I_1(name, spirvOp, op, filter, inputRange, extension)                                             \
     for (uint32_t ndx = 0; ndx < 4; ++ndx)                                                                             \
     {                                                                                                                  \
@@ -3795,6 +3927,25 @@ const string bitFieldTestPostfix[] = {
                                           TestMathUint32::test_##op, U32_##filter, inputRange, inputWidth,            \
                                           (extension));                                                               \
             uint64Tests[ndx]->createTests(string(name + bitShiftTestPostfix[widthNdx]).c_str(), (spirvOp),            \
+                                          TestMathUint64::test_##op, U64_##filter, inputRange, inputWidth,            \
+                                          (extension));                                                               \
+        }
+
+#define MAKE_TEST_SV_U_8136_WN(name, spirvOp, op, filter, inputRange, extension)                                      \
+    for (uint32_t ndx = 0; ndx < 4; ++ndx)                                                                            \
+        for (uint32_t widthNdx = 0; widthNdx < DE_LENGTH_OF_ARRAY(bitFieldTestPostfix); ++widthNdx)                   \
+        {                                                                                                             \
+            const InputWidth inputWidth = static_cast<InputWidth>(WIDTH_8_8 + widthNdx);                              \
+                                                                                                                      \
+            uint8Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),             \
+                                         TestMathUint8::test_##op, U8_##filter, inputRange, inputWidth, (extension)); \
+            uint16Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),            \
+                                          TestMathUint16::test_##op, U16_##filter, inputRange, inputWidth,            \
+                                          (extension));                                                               \
+            uint32Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),            \
+                                          TestMathUint32::test_##op, U32_##filter, inputRange, inputWidth,            \
+                                          (extension));                                                               \
+            uint64Tests[ndx]->createTests(string(name + bitFieldTestPostfix[widthNdx]).c_str(), (spirvOp),            \
                                           TestMathUint64::test_##op, U64_##filter, inputRange, inputWidth,            \
                                           (extension));                                                               \
         }
@@ -3921,6 +4072,24 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
     MAKE_TEST_SV_U_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_8136_N("slessthanequal", SpvOpSLessThanEqual, slessthanequal, FILTER_NONE, RANGE_FULL, nullptr)
 
+#ifndef CTS_USES_VULKANSC
+    MAKE_TEST_SV_U_8136_WN("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
+                           nullptr)
+    MAKE_TEST_SV_I_8136_WN("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
+                           nullptr)
+    MAKE_TEST_SV_U_8136_WN("bit_field_s_extract", SpvOpBitFieldSExtract, bitFieldSExtract, FILTER_NONE,
+                           RANGE_BIT_WIDTH_SUM, nullptr)
+    MAKE_TEST_SV_I_8136_WN("bit_field_s_extract", SpvOpBitFieldSExtract, bitFieldSExtract, FILTER_NONE,
+                           RANGE_BIT_WIDTH_SUM, nullptr)
+    MAKE_TEST_SV_U_8136_WN("bit_field_u_extract", SpvOpBitFieldUExtract, bitFieldUExtract, FILTER_NONE,
+                           RANGE_BIT_WIDTH_SUM, nullptr)
+    MAKE_TEST_SV_I_8136_WN("bit_field_u_extract", SpvOpBitFieldUExtract, bitFieldUExtract, FILTER_NONE,
+                           RANGE_BIT_WIDTH_SUM, nullptr)
+    MAKE_TEST_SV_U_8136_N("bit_reverse", SpvOpBitReverse, bitReverse, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("bit_reverse", SpvOpBitReverse, bitReverse, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_U_8136_N("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, nullptr)
+    MAKE_TEST_SV_I_8136_N("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, nullptr)
+#else
     MAKE_TEST_SV_U_3_W("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
                        nullptr)
     MAKE_TEST_SV_I_3_W("bit_field_insert", SpvOpBitFieldInsert, bitFieldInsert, FILTER_NONE, RANGE_BIT_WIDTH_SUM,
@@ -3937,6 +4106,7 @@ tcu::TestCaseGroup *createTypeTests(tcu::TestContext &testCtx)
     MAKE_TEST_SV_I_3("bit_reverse", SpvOpBitReverse, bitReverse, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_U_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_SV_I_3("bit_count", SpvOpBitCount, bitCount, FILTER_NONE, RANGE_FULL, nullptr)
+#endif
 
     MAKE_TEST_S_U_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, nullptr)
     MAKE_TEST_S_I_8136("constant", SpvOpConstant, constant, FILTER_NONE, RANGE_FULL, nullptr)

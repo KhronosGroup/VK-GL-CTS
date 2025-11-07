@@ -582,6 +582,7 @@ tcu::TestStatus pushConstantTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     DescriptorPoolBuilder poolBuilder;
@@ -677,6 +678,7 @@ tcu::TestStatus updateBufferTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -743,6 +745,7 @@ tcu::TestStatus fillBufferTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -844,6 +847,7 @@ tcu::TestStatus resolveImageTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -980,6 +984,7 @@ tcu::TestStatus blitImageTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -1118,6 +1123,7 @@ tcu::TestStatus copyImageTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -1251,6 +1257,7 @@ tcu::TestStatus copyImageToBufferTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -1361,6 +1368,7 @@ tcu::TestStatus clearColorImageTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -1469,6 +1477,7 @@ tcu::TestStatus clearDepthStencilImageTest(Context &context, GeneralCmdParams pa
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -1587,6 +1596,7 @@ tcu::TestStatus copyBufferToImageTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -1682,6 +1692,7 @@ tcu::TestStatus copyBufferTest(Context &context, GeneralCmdParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -1945,6 +1956,7 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
     {
         auto &alloc = crBuffer.getAllocation();
         memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
@@ -2031,6 +2043,264 @@ tcu::TestStatus graphicsBindTest(Context &context, GraphicsBindParams params)
 
     if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+enum class RayTracingCmd
+{
+    TRACE_RAYS = 0,
+    TRACE_RAYS_INDIRECT,
+    TRACE_RAYS_INDIRECT2,
+};
+
+struct RayTracingParams : public GeneralCmdParams
+{
+    RayTracingCmd rtCmd;
+};
+
+void rayTracingCheckSupport(Context &context, RayTracingParams params)
+{
+    generalConditionalRenderingCheckSupport(context, params);
+
+    context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+
+    if (params.rtCmd == RayTracingCmd::TRACE_RAYS_INDIRECT2)
+        context.requireDeviceFunctionality("VK_KHR_ray_tracing_maintenance1");
+}
+
+void rayTracingInitPrograms(vk::SourceCollections &dst, RayTracingParams)
+{
+    const vk::ShaderBuildOptions buildOptions(dst.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+    std::ostringstream rgen;
+    rgen << "#version 460\n"
+         << "#extension GL_EXT_ray_tracing : require\n"
+         << "layout (set=0, binding=0) buffer OutBlock { uint value; } outBuffer;\n"
+         << "void main (void) { outBuffer.value = 1u; }\n";
+    dst.glslSources.add("rgen") << glu::RaygenSource(rgen.str()) << buildOptions;
+}
+
+tcu::TestStatus rayTracingTest(Context &context, RayTracingParams params)
+{
+    constexpr auto kShaderGroupHandleSize = 32u; // Bytes, exact as per the spec.
+
+    const auto ctx         = context.getContextCommonData();
+    const auto descType    = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto shaderStage = VK_SHADER_STAGE_RAYGEN_BIT_KHR;
+
+    // Pipeline.
+    const auto &binaries  = context.getBinaryCollection();
+    const auto rgenShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("rgen"));
+
+    DescriptorSetLayoutBuilder setLayoutbuilder;
+    setLayoutbuilder.addSingleBinding(descType, shaderStage);
+    const auto setLayout      = setLayoutbuilder.build(ctx.vkd, ctx.device);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout);
+
+    const VkPipelineShaderStageCreateInfo shaderStageInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, nullptr, 0u, shaderStage, *rgenShader, "main", nullptr,
+    };
+
+    const VkRayTracingShaderGroupCreateInfoKHR shaderGroup = {
+        VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR,
+        nullptr,
+        VK_RAY_TRACING_SHADER_GROUP_TYPE_GENERAL_KHR,
+        0u,
+        VK_SHADER_UNUSED_KHR,
+        VK_SHADER_UNUSED_KHR,
+        VK_SHADER_UNUSED_KHR,
+        nullptr,
+    };
+
+    const VkRayTracingPipelineInterfaceCreateInfoKHR pipelineInterfaceInfo = {
+        VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_INTERFACE_CREATE_INFO_KHR,
+        nullptr,
+        0u,
+        0u,
+    };
+
+    const VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo = {
+        VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR,
+        nullptr,
+        0u,
+        1u,
+        &shaderStageInfo,
+        1u,
+        &shaderGroup,
+        1u,
+        nullptr,
+        &pipelineInterfaceInfo,
+        nullptr,
+        *pipelineLayout,
+        VK_NULL_HANDLE,
+        -1,
+    };
+
+    const auto pipeline =
+        createRayTracingPipelineKHR(ctx.vkd, ctx.device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    // Ray generation SBT.
+    struct ShaderGroupHandle
+    {
+        uint8_t data[kShaderGroupHandleSize];
+    };
+
+    ShaderGroupHandle rgenGroupHandle;
+    VK_CHECK(ctx.vkd.getRayTracingShaderGroupHandlesKHR(ctx.device, *pipeline, 0u, 1u, sizeof(rgenGroupHandle),
+                                                        &rgenGroupHandle));
+
+    const auto sbtSize = static_cast<VkDeviceSize>(kShaderGroupHandleSize);
+    const auto sbtUsage =
+        (VK_BUFFER_USAGE_SHADER_BINDING_TABLE_BIT_KHR | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR);
+    const auto sbtCreateInfo = makeBufferCreateInfo(sbtSize, sbtUsage);
+    BufferWithMemory sbt(ctx.vkd, ctx.device, ctx.allocator, sbtCreateInfo,
+                         (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress));
+    {
+        auto &alloc = sbt.getAllocation();
+        memcpy(alloc.getHostPtr(), &rgenGroupHandle, static_cast<size_t>(kShaderGroupHandleSize));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+    const VkBufferDeviceAddressInfo sbtAddressInfo = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr, *sbt};
+    const auto sbtAddress                          = ctx.vkd.getBufferDeviceAddress(ctx.device, &sbtAddressInfo);
+
+    // Output buffer.
+    const auto outBufferSize       = static_cast<VkDeviceSize>(sizeof(uint32_t));
+    const auto outBufferUsage      = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    const auto outBufferCreateInfo = makeBufferCreateInfo(outBufferSize, outBufferUsage);
+    BufferWithMemory outBuffer(ctx.vkd, ctx.device, ctx.allocator, outBufferCreateInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = outBuffer.getAllocation();
+        memset(alloc.getHostPtr(), 0, sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+
+    const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto outBufferDescInfo = makeDescriptorBufferInfo(*outBuffer, 0u, VK_WHOLE_SIZE);
+    setUpdateBuilder.writeSingle(*descSet, binding(0u), descType, &outBufferDescInfo);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    // Conditional rendering buffer.
+    const auto crBufferSize  = static_cast<VkDeviceSize>(sizeof(uint32_t));
+    const auto crBufferUsage = VK_BUFFER_USAGE_CONDITIONAL_RENDERING_BIT_EXT;
+    const auto crBufferInfo  = makeBufferCreateInfo(crBufferSize, crBufferUsage);
+    BufferWithMemory crBuffer(ctx.vkd, ctx.device, ctx.allocator, crBufferInfo, MemoryRequirement::HostVisible);
+    {
+        auto &alloc = crBuffer.getAllocation();
+        memset(alloc.getHostPtr(), params.getDisableValue(), sizeof(uint32_t));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+
+    const auto rgenRegion =
+        makeStridedDeviceAddressRegionKHR(sbtAddress, kShaderGroupHandleSize, kShaderGroupHandleSize);
+    const auto missRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    const auto hitRegion  = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+    const auto callRegion = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+
+    std::unique_ptr<BufferWithMemory> indirectBuffer;
+    VkDeviceAddress indirectAddress = 0ull;
+
+    if (params.rtCmd != RayTracingCmd::TRACE_RAYS)
+    {
+        const bool version1      = (params.rtCmd == RayTracingCmd::TRACE_RAYS_INDIRECT);
+        const auto indirect1Size = static_cast<VkDeviceSize>(sizeof(VkTraceRaysIndirectCommandKHR));
+        const auto indirect2Size = static_cast<VkDeviceSize>(sizeof(VkTraceRaysIndirectCommand2KHR));
+
+        const auto indirectBufferSize = (version1 ? indirect1Size : indirect2Size);
+        const auto indirectBufferUsage =
+            (VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+        const auto indirectBufferInfo = makeBufferCreateInfo(indirectBufferSize, indirectBufferUsage);
+        indirectBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, indirectBufferInfo,
+                                                  (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress)));
+
+        const VkBufferDeviceAddressInfo indirectAddressInfo = {VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
+                                                               indirectBuffer->get()};
+        indirectAddress = ctx.vkd.getBufferDeviceAddress(ctx.device, &indirectAddressInfo);
+
+        if (version1)
+        {
+            const VkTraceRaysIndirectCommandKHR cmdData{1u, 1u, 1u};
+            auto &alloc = indirectBuffer->getAllocation();
+            memcpy(alloc.getHostPtr(), &cmdData, sizeof(cmdData));
+            flushAlloc(ctx.vkd, ctx.device, alloc);
+        }
+        else
+        {
+            const VkTraceRaysIndirectCommand2KHR cmdData{
+                rgenRegion.deviceAddress,
+                rgenRegion.size,
+                missRegion.deviceAddress,
+                missRegion.size,
+                missRegion.stride,
+                hitRegion.deviceAddress,
+                hitRegion.size,
+                hitRegion.stride,
+                callRegion.deviceAddress,
+                callRegion.size,
+                callRegion.stride,
+                1u,
+                1u,
+                1u,
+            };
+            auto &alloc = indirectBuffer->getAllocation();
+            memcpy(alloc.getHostPtr(), &cmdData, sizeof(cmdData));
+            flushAlloc(ctx.vkd, ctx.device, alloc);
+        }
+    }
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    {
+        const VkConditionalRenderingBeginInfoEXT conditionalRenderingBegin = {
+            VK_STRUCTURE_TYPE_CONDITIONAL_RENDERING_BEGIN_INFO_EXT,
+            nullptr,
+            *crBuffer,
+            0ull,
+            params.getConditionalRenderingFlags(),
+        };
+        ctx.vkd.cmdBeginConditionalRenderingEXT(cmdBuffer, &conditionalRenderingBegin);
+        if (params.rtCmd == RayTracingCmd::TRACE_RAYS)
+            ctx.vkd.cmdTraceRaysKHR(cmdBuffer, &rgenRegion, &missRegion, &hitRegion, &callRegion, 1u, 1u, 1u);
+        else if (params.rtCmd == RayTracingCmd::TRACE_RAYS_INDIRECT)
+            ctx.vkd.cmdTraceRaysIndirectKHR(cmdBuffer, &rgenRegion, &missRegion, &hitRegion, &callRegion,
+                                            indirectAddress);
+        else if (params.rtCmd == RayTracingCmd::TRACE_RAYS_INDIRECT2)
+            ctx.vkd.cmdTraceRaysIndirect2KHR(cmdBuffer, indirectAddress);
+        else
+            DE_ASSERT(false);
+        ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
+    }
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_RAY_TRACING_SHADER_BIT_KHR,
+                                 VK_PIPELINE_STAGE_HOST_BIT, &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, outBuffer.getAllocation());
+    uint32_t result = 0u;
+    memcpy(&result, outBuffer.getAllocation().getHostPtr(), sizeof(result));
+
+    const auto expected = 1u; // See shader code.
+    if (result != expected)
+    {
+        std::ostringstream msg;
+        msg << "Unexpected result found in output buffer: expected " << expected << " but found " << result;
+        TCU_FAIL(msg.str());
+    }
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -2144,6 +2414,24 @@ void ConditionalIgnoreTests::init(void)
             const GraphicsBindParams graphicsParams{{params.inverted}, GraphicsBindType::VERTEX_BUFFER};
             addFunctionCaseWithPrograms(this, testName, graphicsBindCheckSupport, graphicsBindInitPrograms,
                                         graphicsBindTest, graphicsParams);
+        }
+        {
+            const auto testName = "trace_rays" + suffix;
+            const RayTracingParams rtParams{{params.inverted}, RayTracingCmd::TRACE_RAYS};
+            addFunctionCaseWithPrograms(this, testName, rayTracingCheckSupport, rayTracingInitPrograms, rayTracingTest,
+                                        rtParams);
+        }
+        {
+            const auto testName = "trace_rays_indirect" + suffix;
+            const RayTracingParams rtParams{{params.inverted}, RayTracingCmd::TRACE_RAYS_INDIRECT};
+            addFunctionCaseWithPrograms(this, testName, rayTracingCheckSupport, rayTracingInitPrograms, rayTracingTest,
+                                        rtParams);
+        }
+        {
+            const auto testName = "trace_rays_indirect2" + suffix;
+            const RayTracingParams rtParams{{params.inverted}, RayTracingCmd::TRACE_RAYS_INDIRECT2};
+            addFunctionCaseWithPrograms(this, testName, rayTracingCheckSupport, rayTracingInitPrograms, rayTracingTest,
+                                        rtParams);
         }
     }
 }

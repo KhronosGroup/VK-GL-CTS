@@ -2969,6 +2969,45 @@ protected:
     const VkShaderStageFlags m_stage;
 };
 
+class PointDefaultSizeNoLargePointsTestCase : public PointDefaultSizeTestCase
+{
+public:
+    PointDefaultSizeNoLargePointsTestCase(tcu::TestContext &context, std::string name, uint32_t renderSize,
+                                          VkShaderStageFlags stage,
+                                          VkSampleCountFlagBits sampleCount = VK_SAMPLE_COUNT_1_BIT);
+
+    std::string getRequiredCapabilitiesId() const override;
+    void initDeviceCapabilities(DevCaps &caps) override;
+};
+
+PointDefaultSizeNoLargePointsTestCase::PointDefaultSizeNoLargePointsTestCase(tcu::TestContext &context,
+                                                                             std::string name, uint32_t renderSize,
+                                                                             VkShaderStageFlags stage,
+                                                                             VkSampleCountFlagBits sampleCount)
+    : PointDefaultSizeTestCase(context, name, renderSize, stage, sampleCount)
+{
+}
+
+std::string PointDefaultSizeNoLargePointsTestCase::getRequiredCapabilitiesId() const
+{
+    return typeid(PointDefaultSizeNoLargePointsTestCase).name();
+}
+
+void PointDefaultSizeNoLargePointsTestCase::initDeviceCapabilities(DevCaps &caps)
+{
+    caps.addExtension("VK_KHR_maintenance5");
+
+#ifndef CTS_USES_VULKANSC
+    caps.addFeature(&VkPhysicalDeviceMaintenance5FeaturesKHR::maintenance5);
+#endif // CTS_USES_VULKANSC
+    caps.addFeature(&VkPhysicalDeviceFeatures::geometryShader);
+    caps.addFeature(&VkPhysicalDeviceFeatures::tessellationShader);
+    caps.addFeature(&VkPhysicalDeviceFeatures::shaderTessellationAndGeometryPointSize);
+
+    // Make sure largePoints is disabled.
+    caps.addFeature(&VkPhysicalDeviceFeatures::largePoints, VK_FALSE, VK_FALSE, false);
+}
+
 PointDefaultSizeTestCase::PointDefaultSizeTestCase(tcu::TestContext &context, std::string name, uint32_t renderSize,
                                                    VkShaderStageFlags stage, VkSampleCountFlagBits sampleCount)
     : BaseRenderingTestCase(context, name, sampleCount)
@@ -9393,6 +9432,8 @@ void createRasterizationTests(tcu::TestCaseGroup *rasterizationTests)
                     const uint32_t renderSize               = 3u; // Odd number so only the center pixel is rendered
 
                     points->addChild(new PointDefaultSizeTestCase(testCtx, testCaseName, renderSize, testStageFlags));
+                    points->addChild(new PointDefaultSizeNoLargePointsTestCase(
+                        testCtx, testCaseName + "_no_large_points", renderSize, testStageFlags));
                 }
 
                 defaultSize->addChild(points);

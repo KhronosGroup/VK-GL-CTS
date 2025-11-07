@@ -1053,8 +1053,11 @@ bool verifyMultisampleLineGroupRasterization(const tcu::Surface &surface, const 
 
         if (scene.stippleEnable)
         {
-            float lineLength = tcu::distance(lineScreenSpace[0], lineScreenSpace[1]);
-            float lineOffset = 0.0f;
+            float lineLength       = tcu::distance(lineScreenSpace[0], lineScreenSpace[1]);
+            float lineOffset       = 0.0f;
+            float lineSegmentStart = -1.0f;
+            float lineSegmentEnd   = -1.0f;
+            bool prevStipplePass   = false;
 
             while (lineOffset < lineLength)
             {
@@ -1103,11 +1106,28 @@ bool verifyMultisampleLineGroupRasterization(const tcu::Surface &surface, const 
                 if (leftoverPhase == 0)
                     stippleCounter++;
 
-                if (!stipplePass)
-                    continue;
+                if (stipplePass)
+                {
+                    // start new segment
+                    if (!prevStipplePass)
+                        lineSegmentStart = d0;
 
-                d0 /= lineLength;
-                d1 /= lineLength;
+                    // extend current segment
+                    lineSegmentEnd = d1;
+                }
+
+                // update state
+                prevStipplePass = stipplePass;
+
+                // keep accumulating lines
+                if ((stipplePass && lineOffset < lineLength) || lineSegmentStart == lineSegmentEnd)
+                {
+                    continue;
+                }
+
+                d0               = lineSegmentStart / lineLength;
+                d1               = lineSegmentEnd / lineLength;
+                lineSegmentStart = lineSegmentEnd = -1.0;
 
                 tcu::Vec2 l0 = mix(lineScreenSpace[0], lineScreenSpace[1], d0);
                 tcu::Vec2 l1 = mix(lineScreenSpace[0], lineScreenSpace[1], d1);
@@ -1129,7 +1149,7 @@ bool verifyMultisampleLineGroupRasterization(const tcu::Surface &surface, const 
 
                 tri.positions[0] =
                     tcu::Vec4(lineQuadNormalizedDeviceSpace[0].x(), lineQuadNormalizedDeviceSpace[0].y(), 0.0f, 1.0f);
-                tri.sharedEdge[0] = (d0 != 0.0f);
+                tri.sharedEdge[0] = false;
                 tri.positions[1] =
                     tcu::Vec4(lineQuadNormalizedDeviceSpace[1].x(), lineQuadNormalizedDeviceSpace[1].y(), 0.0f, 1.0f);
                 tri.sharedEdge[1] = false;
@@ -1144,13 +1164,15 @@ bool verifyMultisampleLineGroupRasterization(const tcu::Surface &surface, const 
                 tri.sharedEdge[0] = true;
                 tri.positions[1] =
                     tcu::Vec4(lineQuadNormalizedDeviceSpace[2].x(), lineQuadNormalizedDeviceSpace[2].y(), 0.0f, 1.0f);
-                tri.sharedEdge[1] = (d1 != 1.0f);
+                tri.sharedEdge[1] = false;
                 tri.positions[2] =
                     tcu::Vec4(lineQuadNormalizedDeviceSpace[3].x(), lineQuadNormalizedDeviceSpace[3].y(), 0.0f, 1.0f);
                 tri.sharedEdge[2] = false;
 
                 triangleScene.triangles.push_back(tri);
             }
+            DE_ASSERT(lineSegmentStart < 0);
+            DE_ASSERT(lineSegmentEnd < 0);
         }
         else
         {

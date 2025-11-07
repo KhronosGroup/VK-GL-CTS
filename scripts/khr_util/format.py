@@ -87,13 +87,15 @@ def writeFileIfChanged (filename, data):
         f.write(data)
         f.close()
 
-def writeLines (filename, lines):
-    text = ""
+def combineLines (lines, header = ""):
+    text = header
     for line in lines:
         text += line
         text += "\n"
+    return text
 
-    writeFileIfChanged(filename, text)
+def writeLines (filename, lines):
+    writeFileIfChanged(filename, combineLines(lines))
     print(filename)
 
 def writeInlFile (filename, header, source):

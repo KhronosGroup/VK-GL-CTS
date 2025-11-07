@@ -7942,9 +7942,14 @@ RayTracingMiscTestInstance::~RayTracingMiscTestInstance(void)
 
 void RayTracingMiscTestInstance::checkSupport(void) const
 {
+    // Checks if the buffer size is within the limits of the device.
     if (m_testPtr->getResultBufferSize() > m_context.getDeviceVulkan11Properties().maxMemoryAllocationSize)
         TCU_THROW(NotSupportedError,
                   "VkPhysicalDeviceVulkan11Properties::maxMemoryAllocationSize too small, allocation might fail");
+
+    if (m_testPtr->getResultBufferSize() > m_context.getDeviceProperties().limits.maxStorageBufferRange)
+        TCU_THROW(NotSupportedError,
+                  "VkPhysicalDeviceLimits::maxStorageBufferRange too small, updating descriptor might fail");
 }
 
 de::MovePtr<BufferWithMemory> RayTracingMiscTestInstance::runTest(void)

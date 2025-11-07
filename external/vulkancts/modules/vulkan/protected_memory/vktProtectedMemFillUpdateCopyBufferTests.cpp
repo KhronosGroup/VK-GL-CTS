@@ -210,7 +210,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         if (m_useDeviceAddressCommands)
         {
             vk::VkDeviceAddressRangeKHR dstRange{dstDevicceAddress, bufferSize};
-            vk.cmdFillMemoryKHR(targetCmdBuffer, dstRange, vk::VK_ADDRESS_COPY_PROTECTED_BIT_KHR, m_fillValue);
+            vk.cmdFillMemoryKHR(targetCmdBuffer, dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
         }
 #endif
         if (!m_useDeviceAddressCommands)
@@ -229,7 +229,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         if (m_useDeviceAddressCommands)
         {
             vk::VkDeviceAddressRangeKHR dstRange{dstDevicceAddress, bufferSize};
-            vk.cmdUpdateMemoryKHR(targetCmdBuffer, dstRange, vk::VK_ADDRESS_COPY_PROTECTED_BIT_KHR, bufferSize,
+            vk.cmdUpdateMemoryKHR(targetCmdBuffer, dstRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, bufferSize,
                                   (const uint32_t *)&data);
         }
 #endif
@@ -244,7 +244,7 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
         if (m_useDeviceAddressCommands)
         {
             vk::VkDeviceAddressRangeKHR srcRange{srcDevicceAddress, bufferSize};
-            vk.cmdFillMemoryKHR(targetCmdBuffer, srcRange, vk::VK_ADDRESS_COPY_PROTECTED_BIT_KHR, m_fillValue);
+            vk.cmdFillMemoryKHR(targetCmdBuffer, srcRange, vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR, m_fillValue);
         }
 #endif
         if (!m_useDeviceAddressCommands)
@@ -272,9 +272,9 @@ tcu::TestStatus FillUpdateCopyBufferTestInstance<T>::iterate()
             vk::VkDeviceMemoryCopyKHR memoryCopy{vk::VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR,
                                                  nullptr,
                                                  {srcDevicceAddress, bufferSize},
-                                                 vk::VK_ADDRESS_COPY_PROTECTED_BIT_KHR,
+                                                 vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR,
                                                  {dstDevicceAddress, bufferSize},
-                                                 vk::VK_ADDRESS_COPY_PROTECTED_BIT_KHR};
+                                                 vk::VK_ADDRESS_COMMAND_PROTECTED_BIT_KHR};
 
             vk::VkCopyDeviceMemoryInfoKHR memorInfo{vk::VK_STRUCTURE_TYPE_COPY_DEVICE_MEMORY_INFO_KHR, nullptr, 1u,
                                                     &memoryCopy};

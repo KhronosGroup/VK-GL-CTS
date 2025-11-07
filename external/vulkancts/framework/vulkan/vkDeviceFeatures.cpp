@@ -293,7 +293,7 @@ bool DeviceFeatures::verifyFeatureAddCriteria(const FeatureStructCreationData &i
         for (const auto &property : properties)
         {
             if (property.extensionName == item.name)
-                return (property.specVersion == item.specVersion);
+                return (property.specVersion == VK_KHR_VULKAN_MEMORY_MODEL_SPEC_VERSION);
         }
     }
 #else  // CTS_USES_VULKANSC

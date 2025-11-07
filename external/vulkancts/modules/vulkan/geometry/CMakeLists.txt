@@ -18,6 +18,8 @@ set(DEQP_VK_GEOMETRY_SRCS
 	vktGeometryInstancedRenderingTests.hpp
 	vktGeometryLayeredRenderingTests.cpp
 	vktGeometryLayeredRenderingTests.hpp
+	vktGeometryBuiltinVariableGeometryShaderTests.cpp
+	vktGeometryBuiltinVariableGeometryShaderTests.hpp
 	vktGeometryTests.cpp
 	vktGeometryTests.hpp
 	vktGeometryTestsUtil.cpp

@@ -333,26 +333,45 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
     if (m_params.useDeviceAddressCommands)
     {
-        VkStridedDeviceAddressRangeKHR vertexRange{vertexBufferAddress, 4u * sizeof(float), vertexBufferSize};
-        vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1u, &vertexRange);
+        // use different valid addressFlags in some cases to test them
+        VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_NEVER_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+        if (m_params.mode == TM_DRAW_INDEXED)
+            addressFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+        if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
+            addressFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
 
-        VkDeviceAddressRangeKHR indexRange{indexBufferAddress, indexBufferSize};
-        vk.cmdBindIndexBuffer3KHR(*cmdBuffer, indexRange, VK_INDEX_TYPE_UINT32);
+        VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+        vertexBuffer3Info.addressRange               = {vertexBufferAddress, vertexBufferSize, 4u * sizeof(float)};
+        vertexBuffer3Info.addressFlags               = addressFlags;
+        vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1, &vertexBuffer3Info);
+
+        VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
+        bindIndexBuffer3Info.addressRange              = {indexBufferAddress, indexBufferSize};
+        bindIndexBuffer3Info.indexType                 = VK_INDEX_TYPE_UINT32;
+        bindIndexBuffer3Info.addressFlags              = addressFlags;
+        vk.cmdBindIndexBuffer3KHR(*cmdBuffer, &bindIndexBuffer3Info);
 
         // we will draw all points at index 0
         if (m_params.mode == TM_DRAW_INDEXED)
             vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)index.size(), 1, oobFirstIndex, 0, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
         {
-            VkStridedDeviceAddressRangeKHR addressRange{indirectBufferAddress, 0, indirectBufferSize};
-            vk.cmdDrawIndexedIndirect2KHR(*cmdBuffer, addressRange, 1);
+            VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
+            drawIndirect2Info.addressRange           = {indirectBufferAddress, indirectBufferSize, 0};
+            drawIndirect2Info.addressFlags           = addressFlags;
+            drawIndirect2Info.drawCount              = 1u;
+
+            vk.cmdDrawIndexedIndirect2KHR(*cmdBuffer, &drawIndirect2Info);
         }
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
         {
-            VkStridedDeviceAddressRangeKHR addressRange{indirectBufferAddress, sizeof(VkDrawIndexedIndirectCommand),
-                                                        indirectBufferSize};
-            VkDeviceAddressRangeKHR countAddressRange{indirectCountBufferAddress, indirectCountBufferSize};
-            vk.cmdDrawIndexedIndirectCount2KHR(*cmdBuffer, addressRange, countAddressRange, 1);
+            VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
+            drawIndirectCount2Info.addressRange                = {indirectBufferAddress, indirectBufferSize,
+                                                                  sizeof(VkDrawIndexedIndirectCommand)};
+            drawIndirectCount2Info.countAddressRange           = {indirectCountBufferAddress, indirectCountBufferSize};
+            drawIndirectCount2Info.maxDrawCount                = 1;
+
+            vk.cmdDrawIndexedIndirectCount2KHR(*cmdBuffer, &drawIndirectCount2Info);
         }
         else if (m_params.mode == TM_DRAW_MULTI_INDEXED)
             DE_ASSERT(false);
@@ -922,11 +941,14 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
 #ifndef CTS_USES_VULKANSC
     if (m_params.useDeviceAddressCommands)
     {
-        VkStridedDeviceAddressRangeKHR vertexRange{vertexBufferAddress, sizeof(tcu::Vec4), vertexBufferSize};
-        vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1u, &vertexRange);
+        VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+        vertexBuffer3Info.addressRange               = {vertexBufferAddress, vertexBufferSize, sizeof(tcu::Vec4)};
+        vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1, &vertexBuffer3Info);
 
-        VkDeviceAddressRangeKHR indexRange{indexBufferAddress + bindingOffset, indexBindingSize};
-        vk.cmdBindIndexBuffer3KHR(*cmdBuffer, indexRange, VK_INDEX_TYPE_UINT32);
+        VkBindIndexBuffer3InfoKHR bindIndexBuffer3Info = initVulkanStructure();
+        bindIndexBuffer3Info.addressRange              = {indexBufferAddress + bindingOffset, indexBindingSize};
+        bindIndexBuffer3Info.indexType                 = VK_INDEX_TYPE_UINT32;
+        vk.cmdBindIndexBuffer3KHR(*cmdBuffer, &bindIndexBuffer3Info);
     }
     else
         vk.cmdBindIndexBuffer2(*cmdBuffer, indexBuffer.get(), bindingOffset, indexBindingSize, VK_INDEX_TYPE_UINT32);
@@ -972,19 +994,24 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     if (m_params.useDeviceAddressCommands)
     {
         if (m_params.mode == TM_DRAW_INDEXED)
-            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)indexBufferSize, 1, firstIndex, 0, 0);
+            vk.cmdDrawIndexed(*cmdBuffer, (uint32_t)indexCount, 1, firstIndex, 0, 0);
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
         {
-            VkStridedDeviceAddressRangeKHR addressRange{indirectBufferAddress, sizeof(drawIndirectCommand),
-                                                        indirectBufferSize};
-            vk.cmdDrawIndexedIndirect2KHR(*cmdBuffer, addressRange, 1);
+            VkDrawIndirect2InfoKHR drawIndirect2Info = initVulkanStructure();
+            drawIndirect2Info.addressRange = {indirectBufferAddress, indirectBufferSize, sizeof(drawIndirectCommand)};
+            drawIndirect2Info.drawCount    = 1u;
+
+            vk.cmdDrawIndexedIndirect2KHR(*cmdBuffer, &drawIndirect2Info);
         }
         else if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
         {
-            VkStridedDeviceAddressRangeKHR addressRange{indirectBufferAddress, sizeof(drawIndirectCommand),
-                                                        indirectBufferSize};
-            VkDeviceAddressRangeKHR countAddressRange{indirectCountBufferAddress, indirectCountBufferSize};
-            vk.cmdDrawIndexedIndirectCount2KHR(*cmdBuffer, addressRange, countAddressRange, 1);
+            VkDrawIndirectCount2InfoKHR drawIndirectCount2Info = initVulkanStructure();
+            drawIndirectCount2Info.addressRange                = {indirectBufferAddress, indirectBufferSize,
+                                                                  sizeof(drawIndirectCommand)};
+            drawIndirectCount2Info.countAddressRange           = {indirectCountBufferAddress, indirectCountBufferSize};
+            drawIndirectCount2Info.maxDrawCount                = 1;
+
+            vk.cmdDrawIndexedIndirectCount2KHR(*cmdBuffer, &drawIndirectCount2Info);
         }
         else // TM_DRAW_MULTI_INDEXED
             DE_ASSERT(false);

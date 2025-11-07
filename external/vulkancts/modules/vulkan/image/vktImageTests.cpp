@@ -44,6 +44,8 @@
 #include "vktImageDepthStencilSeparateTests.hpp"
 #include "vktImageNonUniformOffsetSampleTests.hpp"
 #include "vktImageConcurrentCopyTests.hpp"
+#include "vktImage2dArrayCompatibleTests.hpp"
+#include "vktImageGeneralLayoutTests.hpp"
 #ifndef CTS_USES_VULKANSC
 #include "vktImageHostImageCopyTests.hpp"
 #endif
@@ -93,6 +95,8 @@ void createChildren(tcu::TestCaseGroup *imageTests)
     imageTests->addChild(createImageDepthStencilSeparateTests(testCtx));
     imageTests->addChild(createImageNonUniformOffsetSampleTests(testCtx));
     imageTests->addChild(createImageDeviceScopeAccessTests(testCtx));
+    imageTests->addChild(createImage2dArrayCompatibleTests(testCtx));
+    imageTests->addChild(createImageGeneralLayoutTests(testCtx));
 }
 
 } // namespace

@@ -4,6 +4,6 @@
  */
 
 m_vk.createInstance = (CreateInstanceFunc) GET_PROC_ADDR("vkCreateInstance");
-m_vk.enumerateInstanceVersion = (EnumerateInstanceVersionFunc) GET_PROC_ADDR("vkEnumerateInstanceVersion");
-m_vk.enumerateInstanceLayerProperties = (EnumerateInstanceLayerPropertiesFunc) GET_PROC_ADDR("vkEnumerateInstanceLayerProperties");
 m_vk.enumerateInstanceExtensionProperties = (EnumerateInstanceExtensionPropertiesFunc) GET_PROC_ADDR("vkEnumerateInstanceExtensionProperties");
+m_vk.enumerateInstanceLayerProperties = (EnumerateInstanceLayerPropertiesFunc) GET_PROC_ADDR("vkEnumerateInstanceLayerProperties");
+m_vk.enumerateInstanceVersion = (EnumerateInstanceVersionFunc) GET_PROC_ADDR("vkEnumerateInstanceVersion");

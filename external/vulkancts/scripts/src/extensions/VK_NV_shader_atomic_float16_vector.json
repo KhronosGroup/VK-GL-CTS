@@ -6,8 +6,7 @@
                     "shaderFloat16VectorAtomics"
                 ],
                 "requirements": [
-                    "VK_NV_shader_atomic_float16_vector",
-                    "physicalDeviceShaderAtomicFloat16VectorFeaturesNV.shaderFloat16VectorAtomics"
+                    "VK_NV_shader_atomic_float16_vector"
                 ]
             }
         ]
