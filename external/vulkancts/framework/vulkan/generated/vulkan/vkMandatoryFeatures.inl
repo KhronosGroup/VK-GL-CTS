@@ -3060,6 +3060,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("zeroInitializeDeviceMemory");
 	}
 
+	// VkPhysicalDeviceShader64BitIndexingFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_64bit_indexing")) )
+	{
+		if ( physicalDeviceShader64BitIndexingFeaturesEXT.shader64BitIndexing == VK_FALSE )
+			failMesages.push_back("shader64BitIndexing");
+	}
+
 	// VkPhysicalDeviceDataGraphModelFeaturesQCOM
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_QCOM_data_graph_model")) )
 	{

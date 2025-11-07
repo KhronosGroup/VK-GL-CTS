@@ -3182,6 +3182,13 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         TCU_THROW(NotSupportedError, "Tessellation not supported");
     }
 
+#ifndef CTS_USES_VULKANSC
+    if (instance.resources.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+    {
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+    }
+#endif
+
     // Check all required extensions are supported
     for (std::vector<std::string>::const_iterator i = instance.requiredDeviceExtensions.begin();
          i != instance.requiredDeviceExtensions.end(); ++i)
@@ -4220,10 +4227,20 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         dynamicStates                                         // pDynamicStates
     };
 
+    const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+    if (instance.resources.uses64BitIndexing)
+    {
+        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+        pNext                          = &pipelineFlags2CreateInfo;
+    }
+#endif
+
     const VkPipelineTessellationStateCreateInfo *tessellationInfo = hasTessellation ? &tessellationState : nullptr;
     const VkGraphicsPipelineCreateInfo pipelineParams             = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                         // const void* pNext;
+        pNext,                                           // const void* pNext;
         0u,                                              // VkPipelineCreateFlags flags;
         (uint32_t)shaderStageParams.size(),              // uint32_t stageCount;
         &shaderStageParams[0],                           // const VkPipelineShaderStageCreateInfo* pStages;

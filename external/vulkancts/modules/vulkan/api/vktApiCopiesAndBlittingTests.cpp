@@ -23501,12 +23501,12 @@ void DynamicStateMetaOpsInstance::doDraw(const VkCommandBuffer &cmdBuffer, uint3
 
     // const auto colorSubresourceLayers  = makeDefaultImageSubresourceLayers();
     // const VkBufferImageCopy copyRegion = {
-    //     0u,                                        // VkDeviceSize				bufferOffset
-    //     0u,                                        // uint32_t					bufferRowLength
-    //     0u,                                        // uint32_t					bufferImageHeight
-    //     colorSubresourceLayers,                    // VkImageSubresourceLayers	imageSubresource
-    //     makeOffset3D(0u, 0u, 0u),                  // VkOffset3D					imageOffset
-    //     defaultExtent                              // VkExtent3D					imageExtent
+    //     0u,                                        // VkDeviceSize                bufferOffset
+    //     0u,                                        // uint32_t                    bufferRowLength
+    //     0u,                                        // uint32_t                    bufferImageHeight
+    //     colorSubresourceLayers,                    // VkImageSubresourceLayers    imageSubresource
+    //     makeOffset3D(0u, 0u, 0u),                  // VkOffset3D                    imageOffset
+    //     defaultExtent                              // VkExtent3D                    imageExtent
     // };
 
     // Execute draw commands

@@ -294,6 +294,7 @@ struct CaseDef
     PipelineRobustnessCase pipelineRobustnessCase;
     uint32_t imageDim[3]; // width, height, depth or layers
     bool readOnly;
+    bool uses64BitIndexing;
 
     bool needsScalarBlockLayout() const
     {
@@ -703,6 +704,9 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
 #ifndef CTS_USES_VULKANSC
     if (m_data.needsPipelineRobustness() && !pipelineRobustnessFeatures.pipelineRobustness)
         TCU_THROW(NotSupportedError, "pipelineRobustness not supported");
+
+    if (m_data.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
 #endif
 }
 
@@ -2095,10 +2099,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     descriptorPool = poolBuilder.build(vk, device, poolCreateFlags, 1u, nullptr);
 
-    const void *pNext = nullptr;
-
     if (!m_data.pushDescriptor)
-        descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout, pNext);
+        descriptorSet = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout, nullptr);
 
     BufferWithMemoryPtr buffer;
 
@@ -2836,6 +2838,16 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
     const auto sgHandleSize                       = rayTracingProperties.shaderGroupHandleSize;
 #endif // CTS_USES_VULKANSC
 
+    const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+    if (m_data.uses64BitIndexing)
+    {
+        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+        pNext                          = &pipelineFlags2CreateInfo;
+    }
+#endif
+
     if (m_data.stage == STAGE_COMPUTE)
     {
         const Unique<VkShaderModule> shader(
@@ -2853,7 +2865,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         VkComputePipelineCreateInfo pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                        // const void* pNext;
+            pNext,                                          // const void* pNext;
             static_cast<VkPipelineCreateFlags>(0u),         // VkPipelineCreateFlags flags;
             pipelineShaderStageParams,                      // VkPipelineShaderStageCreateInfo stage;
             *pipelineLayout,                                // VkPipelineLayout layout;
@@ -2865,8 +2877,9 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo;
         if (m_data.needsPipelineRobustness())
         {
-            pipelineRobustnessInfo   = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
-            pipelineCreateInfo.pNext = &pipelineRobustnessInfo;
+            pipelineRobustnessInfo       = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
+            pipelineRobustnessInfo.pNext = pipelineCreateInfo.pNext;
+            pipelineCreateInfo.pNext     = &pipelineRobustnessInfo;
         }
 #endif
 
@@ -2901,7 +2914,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
         VkRayTracingPipelineCreateInfoKHR pipelineCreateInfo = {
             VK_STRUCTURE_TYPE_RAY_TRACING_PIPELINE_CREATE_INFO_KHR, // sType
-            nullptr,                                                // pNext
+            pNext,                                                  // pNext
             0u,                                                     // flags
             1u,                                                     // stageCount
             &shaderCreateInfo,                                      // pStages
@@ -2919,8 +2932,9 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo;
         if (m_data.needsPipelineRobustness())
         {
-            pipelineRobustnessInfo   = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
-            pipelineCreateInfo.pNext = &pipelineRobustnessInfo;
+            pipelineRobustnessInfo       = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
+            pipelineRobustnessInfo.pNext = pipelineCreateInfo.pNext;
+            pipelineCreateInfo.pNext     = &pipelineRobustnessInfo;
         }
 
         pipeline = createRayTracingPipelineKHR(vk, device, VK_NULL_HANDLE, VK_NULL_HANDLE, &pipelineCreateInfo);
@@ -3112,7 +3126,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         // Base structure with everything for the monolithic case.
         VkGraphicsPipelineCreateInfo graphicsPipelineCreateInfo = {
             VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                         // const void* pNext;
+            pNext,                                           // const void* pNext;
             0u,                                              // VkPipelineCreateFlags flags;
             numStages,                                       // uint32_t stageCount;
             &shaderCreateInfo[0],                            // const VkPipelineShaderStageCreateInfo* pStages;
@@ -3137,6 +3151,9 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         if (m_data.needsPipelineRobustness())
         {
             pipelineRobustnessInfo = getPipelineRobustnessInfo(m_data.testRobustness2, m_data.descriptorType);
+
+            // would need to handle pNext chain
+            DE_ASSERT(!m_data.uses64BitIndexing);
 
             if (m_data.pipelineRobustnessCase == PipelineRobustnessCase::ENABLED_MONOLITHIC)
             {
@@ -3757,7 +3774,7 @@ std::string getGPLSuffix(PipelineRobustnessCase prCase)
 
 } // namespace
 
-static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipelineRobustness)
+static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipelineRobustness, bool uses64BitIndexing)
 {
     tcu::TestContext &testCtx = group->getTestContext();
 
@@ -3887,9 +3904,10 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                 de::MovePtr<tcu::TestCaseGroup> fmtGroup(new tcu::TestCaseGroup(testCtx, fmtCases[fmtNdx].name));
 
                 // Avoid too much duplication by excluding certain test cases
-                if (pipelineRobustness && !(fmtCases[fmtNdx].count == VK_FORMAT_R32_UINT ||
-                                            fmtCases[fmtNdx].count == VK_FORMAT_R32G32B32A32_SFLOAT ||
-                                            fmtCases[fmtNdx].count == VK_FORMAT_R64_SINT))
+                if ((pipelineRobustness || uses64BitIndexing) &&
+                    !(fmtCases[fmtNdx].count == VK_FORMAT_R32_UINT ||
+                      fmtCases[fmtNdx].count == VK_FORMAT_R32G32B32A32_SFLOAT ||
+                      fmtCases[fmtNdx].count == VK_FORMAT_R64_SINT))
                 {
                     continue;
                 }
@@ -3902,7 +3920,7 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                         new tcu::TestCaseGroup(testCtx, unrollCases[unrollNdx].name));
 
                     // Avoid too much duplication by excluding certain test cases
-                    if (unrollNdx > 0 && pipelineRobustness)
+                    if (unrollNdx > 0 && (pipelineRobustness || uses64BitIndexing))
                         continue;
 
                     for (int volNdx = 0; volNdx < DE_LENGTH_OF_ARRAY(volCases); volNdx++)
@@ -3928,6 +3946,10 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                             {
                                 continue;
                             }
+                            if (uses64BitIndexing && descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                            {
+                                continue;
+                            }
 
                             for (int roNdx = 0; roNdx < DE_LENGTH_OF_ARRAY(readOnlyCases); roNdx++)
                             {
@@ -3940,7 +3962,7 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                                     descCases[descNdx].count != VK_DESCRIPTOR_TYPE_STORAGE_BUFFER_DYNAMIC)
                                     continue;
 
-                                if (pipelineRobustness && readOnlyCases[roNdx].count != 0)
+                                if ((pipelineRobustness || uses64BitIndexing) && readOnlyCases[roNdx].count != 0)
                                 {
                                     continue;
                                 }
@@ -3994,7 +4016,7 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                                         }
 
                                         // Avoid too much duplication by excluding certain test cases
-                                        if (pipelineRobustness && robustness2 &&
+                                        if ((pipelineRobustness || uses64BitIndexing) && robustness2 &&
                                             (lenCases[lenNdx].count == 0 ||
                                              ((lenCases[lenNdx].count & (lenCases[lenNdx].count - 1)) != 0)))
                                         {
@@ -4134,6 +4156,7 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
                                                             {imageDim[0], imageDim[1],
                                                              imageDim[2]}, // uint32_t imageDim[3];
                                                             (bool)(readOnlyCases[roNdx].count == 1), // bool readOnly;
+                                                            uses64BitIndexing, // bool uses64BitIndexing;
                                                         };
 
                                                         const auto name = stageCases[stageNdx].name +
@@ -4179,7 +4202,7 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
         group->addChild(pushGroup.release());
     }
 
-    if (robustness2)
+    if (robustness2 && !uses64BitIndexing)
     {
         de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
 
@@ -4198,12 +4221,20 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
 
 static void createRobustness2Tests(tcu::TestCaseGroup *group)
 {
-    createTests(group, /*robustness2=*/true, /*pipelineRobustness=*/false);
+    createTests(group, /*robustness2=*/true, /*pipelineRobustness=*/false, /*uses64BitIndexing=*/false);
+
+#ifndef CTS_USES_VULKANSC
+    tcu::TestContext &testCtx                    = group->getTestContext();
+    tcu::TestCaseGroup *shader64BitIndexingGroup = new tcu::TestCaseGroup(testCtx, "64b_indexing");
+    createTests(shader64BitIndexingGroup, /*robustness2=*/true, /*pipelineRobustness=*/false,
+                /*uses64BitIndexing=*/true);
+    group->addChild(shader64BitIndexingGroup);
+#endif
 }
 
 static void createImageRobustnessTests(tcu::TestCaseGroup *group)
 {
-    createTests(group, /*robustness2=*/false, /*pipelineRobustness=*/false);
+    createTests(group, /*robustness2=*/false, /*pipelineRobustness=*/false, /*uses64BitIndexing=*/false);
 }
 
 #ifndef CTS_USES_VULKANSC
@@ -4213,13 +4244,13 @@ static void createPipelineRobustnessTests(tcu::TestCaseGroup *group)
 
     tcu::TestCaseGroup *robustness2Group = new tcu::TestCaseGroup(testCtx, "robustness2");
 
-    createTests(robustness2Group, /*robustness2=*/true, /*pipelineRobustness=*/true);
+    createTests(robustness2Group, /*robustness2=*/true, /*pipelineRobustness=*/true, /*uses64BitIndexing=*/false);
 
     group->addChild(robustness2Group);
 
     tcu::TestCaseGroup *imageRobustness2Group = new tcu::TestCaseGroup(testCtx, "image_robustness");
 
-    createTests(imageRobustness2Group, /*robustness2=*/false, /*pipelineRobustness=*/true);
+    createTests(imageRobustness2Group, /*robustness2=*/false, /*pipelineRobustness=*/true, /*uses64BitIndexing=*/false);
 
     group->addChild(imageRobustness2Group);
 }
