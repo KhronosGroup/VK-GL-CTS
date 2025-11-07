@@ -1551,6 +1551,51 @@ VkResult DeviceDriver::getMemoryAndroidHardwareBufferANDROID (VkDevice device, c
     return m_vk.getMemoryAndroidHardwareBufferANDROID(device, pInfo, pBuffer);
 }
 
+VkResult DeviceDriver::writeSamplerDescriptorsEXT (VkDevice device, uint32_t samplerCount, const VkSamplerCreateInfo* pSamplers, const VkHostAddressRangeEXT* pDescriptors) const
+{
+    return m_vk.writeSamplerDescriptorsEXT(device, samplerCount, pSamplers, pDescriptors);
+}
+
+VkResult DeviceDriver::writeResourceDescriptorsEXT (VkDevice device, uint32_t resourceCount, const VkResourceDescriptorInfoEXT* pResources, const VkHostAddressRangeEXT* pDescriptors) const
+{
+    return m_vk.writeResourceDescriptorsEXT(device, resourceCount, pResources, pDescriptors);
+}
+
+void DeviceDriver::cmdBindSamplerHeapEXT (VkCommandBuffer commandBuffer, const VkBindHeapInfoEXT* pBindInfo) const
+{
+    m_vk.cmdBindSamplerHeapEXT(commandBuffer, pBindInfo);
+}
+
+void DeviceDriver::cmdBindResourceHeapEXT (VkCommandBuffer commandBuffer, const VkBindHeapInfoEXT* pBindInfo) const
+{
+    m_vk.cmdBindResourceHeapEXT(commandBuffer, pBindInfo);
+}
+
+void DeviceDriver::cmdPushDataEXT (VkCommandBuffer commandBuffer, const VkPushDataInfoEXT* pPushDataInfo) const
+{
+    m_vk.cmdPushDataEXT(commandBuffer, pPushDataInfo);
+}
+
+VkResult DeviceDriver::getImageOpaqueCaptureDataEXT (VkDevice device, uint32_t imageCount, const VkImage* pImages, VkHostAddressRangeEXT* pDatas) const
+{
+    return m_vk.getImageOpaqueCaptureDataEXT(device, imageCount, pImages, pDatas);
+}
+
+VkResult DeviceDriver::registerCustomBorderColorEXT (VkDevice device, const VkSamplerCustomBorderColorCreateInfoEXT* pBorderColor, VkBool32 requestIndex, uint32_t* pIndex) const
+{
+    return m_vk.registerCustomBorderColorEXT(device, pBorderColor, requestIndex, pIndex);
+}
+
+void DeviceDriver::unregisterCustomBorderColorEXT (VkDevice device, uint32_t index) const
+{
+    m_vk.unregisterCustomBorderColorEXT(device, index);
+}
+
+VkResult DeviceDriver::getTensorOpaqueCaptureDataARM (VkDevice device, uint32_t tensorCount, const VkTensorARM* pTensors, VkHostAddressRangeEXT* pDatas) const
+{
+    return m_vk.getTensorOpaqueCaptureDataARM(device, tensorCount, pTensors, pDatas);
+}
+
 void DeviceDriver::cmdSetSampleLocationsEXT (VkCommandBuffer commandBuffer, const VkSampleLocationsInfoEXT* pSampleLocationsInfo) const
 {
     if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();

@@ -433,6 +433,11 @@ void InstanceDriver::submitDebugUtilsMessageEXT (VkInstance instance, VkDebugUti
     m_vk.submitDebugUtilsMessageEXT(instance, messageSeverity, messageTypes, pCallbackData);
 }
 
+VkDeviceSize InstanceDriver::getPhysicalDeviceDescriptorSizeEXT (VkPhysicalDevice physicalDevice, VkDescriptorType descriptorType) const
+{
+    return m_vk.getPhysicalDeviceDescriptorSizeEXT(physicalDevice, descriptorType);
+}
+
 void InstanceDriver::getPhysicalDeviceMultisamplePropertiesEXT (VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties) const
 {
     m_vk.getPhysicalDeviceMultisamplePropertiesEXT(physicalDevice, samples, pMultisampleProperties);

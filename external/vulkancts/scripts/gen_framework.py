@@ -76,6 +76,7 @@ VK_EXT_depth_clamp_zero_one
 VK_EXT_depth_clip_control
 VK_EXT_depth_clip_enable
 VK_EXT_descriptor_buffer
+VK_EXT_descriptor_heap
 VK_EXT_device_address_binding_report
 VK_EXT_device_fault
 VK_EXT_device_generated_commands
@@ -250,6 +251,7 @@ VK_GOOGLE_display_timing
 VK_HUAWEI_cluster_culling_shader
 VK_HUAWEI_invocation_mask
 VK_NV_clip_space_w_scaling
+VK_NV_command_buffer_inheritance
 VK_NV_cooperative_matrix
 VK_NV_cooperative_matrix2
 VK_NV_cooperative_vector

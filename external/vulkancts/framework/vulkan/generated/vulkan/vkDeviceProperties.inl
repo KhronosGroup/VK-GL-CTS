@@ -236,6 +236,8 @@ template<> void initPropertyFromBlob<VkPhysicalDeviceCustomBorderColorProperties
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>(VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(VkPhysicalDeviceDescriptorBufferPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM>(VkPhysicalDeviceDescriptorBufferTensorPropertiesARM&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(VkPhysicalDeviceDescriptorHeapPropertiesEXT&, const AllPropertiesBlobs&) {}
+template<> void initPropertyFromBlob<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>(VkPhysicalDeviceDescriptorHeapTensorPropertiesARM&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>(VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>(VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&, const AllPropertiesBlobs&) {}
 template<> void initPropertyFromBlob<VkPhysicalDeviceDiscardRectanglePropertiesEXT>(VkPhysicalDeviceDiscardRectanglePropertiesEXT&, const AllPropertiesBlobs&) {}
@@ -298,6 +300,8 @@ template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDepthStencilResolveProp
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_DENSITY_MAP_PROPERTIES_EXT, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorBufferPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_PROPERTIES_EXT, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_TENSOR_PROPERTIES_ARM, VK_ARM_TENSORS_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorHeapPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_PROPERTIES_EXT, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME}; }
+template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_TENSOR_PROPERTIES_ARM, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDescriptorIndexingProperties>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_INDEXING_PROPERTIES, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_EXT, VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME}; }
 template<> PropertyDesc makePropertyDesc<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>(void) { return PropertyDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEVICE_GENERATED_COMMANDS_PROPERTIES_NV, VK_NV_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME}; }
@@ -386,6 +390,8 @@ static const PropertyStructCreationData propertyStructCreationArray[]
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT>, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorBufferPropertiesEXT>, VK_EXT_DESCRIPTOR_BUFFER_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM>, VK_ARM_TENSORS_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorHeapPropertiesEXT>, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME },
+	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>, VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDescriptorIndexingProperties>, VK_EXT_DESCRIPTOR_INDEXING_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT>, VK_EXT_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME },
 	{ createPropertyStructWrapper<VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV>, VK_NV_DEVICE_GENERATED_COMMANDS_EXTENSION_NAME },

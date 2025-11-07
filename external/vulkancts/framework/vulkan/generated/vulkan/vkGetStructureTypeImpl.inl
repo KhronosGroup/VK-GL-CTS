@@ -208,6 +208,11 @@ template<> VkStructureType getStructureType<VkBindDescriptorSetsInfo> (void)
 	return VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO;
 }
 
+template<> VkStructureType getStructureType<VkBindHeapInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkBindImageMemoryDeviceGroupInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_IMAGE_MEMORY_DEVICE_GROUP_INFO;
@@ -331,6 +336,11 @@ template<> VkStructureType getStructureType<VkCommandBufferBeginInfo> (void)
 template<> VkStructureType getStructureType<VkCommandBufferInheritanceConditionalRenderingInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_CONDITIONAL_RENDERING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkCommandBufferInheritanceDescriptorHeapInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_COMMAND_BUFFER_INHERITANCE_DESCRIPTOR_HEAP_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkCommandBufferInheritanceInfo> (void)
@@ -656,6 +666,11 @@ template<> VkStructureType getStructureType<VkDescriptorPoolInlineUniformBlockCr
 template<> VkStructureType getStructureType<VkDescriptorSetAllocateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO;
+}
+
+template<> VkStructureType getStructureType<VkDescriptorSetAndBindingMappingEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_DESCRIPTOR_SET_AND_BINDING_MAPPING_EXT;
 }
 
 template<> VkStructureType getStructureType<VkDescriptorSetLayoutBindingFlagsCreateInfo> (void)
@@ -1173,6 +1188,11 @@ template<> VkStructureType getStructureType<VkImageCreateInfo> (void)
 	return VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
 }
 
+template<> VkStructureType getStructureType<VkImageDescriptorInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkImageDrmFormatModifierExplicitCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT;
@@ -1356,6 +1376,11 @@ template<> VkStructureType getStructureType<VkIndirectCommandsLayoutCreateInfoEX
 template<> VkStructureType getStructureType<VkIndirectCommandsLayoutCreateInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_CREATE_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkIndirectCommandsLayoutPushDataTokenNV> (void)
+{
+	return VK_STRUCTURE_TYPE_INDIRECT_COMMANDS_LAYOUT_PUSH_DATA_TOKEN_NV;
 }
 
 template<> VkStructureType getStructureType<VkIndirectCommandsLayoutTokenEXT> (void)
@@ -1578,6 +1603,11 @@ template<> VkStructureType getStructureType<VkMutableDescriptorTypeCreateInfoEXT
 	return VK_STRUCTURE_TYPE_MUTABLE_DESCRIPTOR_TYPE_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkOpaqueCaptureDataCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DATA_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkOpaqueCaptureDescriptorDataCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_OPAQUE_CAPTURE_DESCRIPTOR_DATA_CREATE_INFO_EXT;
@@ -1716,6 +1746,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCoherentMemoryFeatur
 template<> VkStructureType getStructureType<VkPhysicalDeviceColorWriteEnableFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COLOR_WRITE_ENABLE_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceCommandBufferInheritanceFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMMAND_BUFFER_INHERITANCE_FEATURES_NV;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR> (void)
@@ -1871,6 +1906,21 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferTens
 template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorBufferTensorPropertiesARM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_BUFFER_TENSOR_PROPERTIES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorHeapFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_FEATURES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorHeapPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DESCRIPTOR_HEAP_TENSOR_PROPERTIES_ARM;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDescriptorIndexingFeatures> (void)
@@ -3528,6 +3578,11 @@ template<> VkStructureType getStructureType<VkPushConstantsInfo> (void)
 	return VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO;
 }
 
+template<> VkStructureType getStructureType<VkPushDataInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPushDescriptorSetInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO;
@@ -3743,6 +3798,11 @@ template<> VkStructureType getStructureType<VkResolveImageModeInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_RESOLVE_IMAGE_MODE_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkResourceDescriptorInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkSampleLocationsInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SAMPLE_LOCATIONS_INFO_EXT;
@@ -3766,6 +3826,11 @@ template<> VkStructureType getStructureType<VkSamplerCreateInfo> (void)
 template<> VkStructureType getStructureType<VkSamplerCustomBorderColorCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSamplerCustomBorderColorIndexCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_INDEX_CREATE_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkSamplerReductionModeCreateInfo> (void)
@@ -3853,6 +3918,11 @@ template<> VkStructureType getStructureType<VkShaderCreateInfoEXT> (void)
 	return VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT;
 }
 
+template<> VkStructureType getStructureType<VkShaderDescriptorSetAndBindingMappingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SHADER_DESCRIPTOR_SET_AND_BINDING_MAPPING_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkShaderModuleCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_SHADER_MODULE_CREATE_INFO;
@@ -3931,6 +4001,11 @@ template<> VkStructureType getStructureType<VkSubresourceHostMemcpySize> (void)
 template<> VkStructureType getStructureType<VkSubresourceLayout2> (void)
 {
 	return VK_STRUCTURE_TYPE_SUBRESOURCE_LAYOUT_2;
+}
+
+template<> VkStructureType getStructureType<VkSubsampledImageFormatPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SUBSAMPLED_IMAGE_FORMAT_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkSurfaceCapabilities2EXT> (void)
@@ -4091,6 +4166,11 @@ template<> VkStructureType getStructureType<VkTensorViewCaptureDescriptorDataInf
 template<> VkStructureType getStructureType<VkTensorViewCreateInfoARM> (void)
 {
 	return VK_STRUCTURE_TYPE_TENSOR_VIEW_CREATE_INFO_ARM;
+}
+
+template<> VkStructureType getStructureType<VkTexelBufferDescriptorInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_TEXEL_BUFFER_DESCRIPTOR_INFO_EXT;
 }
 
 template<> VkStructureType getStructureType<VkTextureLODGatherFormatPropertiesAMD> (void)

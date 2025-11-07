@@ -250,6 +250,99 @@ inline VkDescriptorImageInfo makeDescriptorImageInfo (VkSampler sampler, VkImage
 	return res;
 }
 
+inline VkDescriptorMappingSourceConstantOffsetEXT makeDescriptorMappingSourceConstantOffsetEXT (uint32_t heapOffset, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, uint32_t samplerHeapOffset, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourceConstantOffsetEXT res;
+	res.heapOffset				= heapOffset;
+	res.heapArrayStride			= heapArrayStride;
+	res.pEmbeddedSampler		= pEmbeddedSampler;
+	res.samplerHeapOffset		= samplerHeapOffset;
+	res.samplerHeapArrayStride	= samplerHeapArrayStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourceHeapDataEXT makeDescriptorMappingSourceHeapDataEXT (uint32_t heapOffset, uint32_t pushOffset)
+{
+	VkDescriptorMappingSourceHeapDataEXT res;
+	res.heapOffset	= heapOffset;
+	res.pushOffset	= pushOffset;
+	return res;
+}
+
+inline VkDescriptorMappingSourceIndirectAddressEXT makeDescriptorMappingSourceIndirectAddressEXT (uint32_t pushOffset, uint32_t addressOffset)
+{
+	VkDescriptorMappingSourceIndirectAddressEXT res;
+	res.pushOffset		= pushOffset;
+	res.addressOffset	= addressOffset;
+	return res;
+}
+
+inline VkDescriptorMappingSourceIndirectIndexArrayEXT makeDescriptorMappingSourceIndirectIndexArrayEXT (uint32_t heapOffset, uint32_t pushOffset, uint32_t addressOffset, uint32_t heapIndexStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerPushOffset, uint32_t samplerAddressOffset, uint32_t samplerHeapIndexStride)
+{
+	VkDescriptorMappingSourceIndirectIndexArrayEXT res;
+	res.heapOffset						= heapOffset;
+	res.pushOffset						= pushOffset;
+	res.addressOffset					= addressOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerPushOffset				= samplerPushOffset;
+	res.samplerAddressOffset			= samplerAddressOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourceIndirectIndexEXT makeDescriptorMappingSourceIndirectIndexEXT (uint32_t heapOffset, uint32_t pushOffset, uint32_t addressOffset, uint32_t heapIndexStride, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerPushOffset, uint32_t samplerAddressOffset, uint32_t samplerHeapIndexStride, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourceIndirectIndexEXT res;
+	res.heapOffset						= heapOffset;
+	res.pushOffset						= pushOffset;
+	res.addressOffset					= addressOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.heapArrayStride					= heapArrayStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerPushOffset				= samplerPushOffset;
+	res.samplerAddressOffset			= samplerAddressOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	res.samplerHeapArrayStride			= samplerHeapArrayStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourcePushIndexEXT makeDescriptorMappingSourcePushIndexEXT (uint32_t heapOffset, uint32_t pushOffset, uint32_t heapIndexStride, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerPushOffset, uint32_t samplerHeapIndexStride, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourcePushIndexEXT res;
+	res.heapOffset						= heapOffset;
+	res.pushOffset						= pushOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.heapArrayStride					= heapArrayStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerPushOffset				= samplerPushOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	res.samplerHeapArrayStride			= samplerHeapArrayStride;
+	return res;
+}
+
+inline VkDescriptorMappingSourceShaderRecordIndexEXT makeDescriptorMappingSourceShaderRecordIndexEXT (uint32_t heapOffset, uint32_t shaderRecordOffset, uint32_t heapIndexStride, uint32_t heapArrayStride, const VkSamplerCreateInfo* pEmbeddedSampler, VkBool32 useCombinedImageSamplerIndex, uint32_t samplerHeapOffset, uint32_t samplerShaderRecordOffset, uint32_t samplerHeapIndexStride, uint32_t samplerHeapArrayStride)
+{
+	VkDescriptorMappingSourceShaderRecordIndexEXT res;
+	res.heapOffset						= heapOffset;
+	res.shaderRecordOffset				= shaderRecordOffset;
+	res.heapIndexStride					= heapIndexStride;
+	res.heapArrayStride					= heapArrayStride;
+	res.pEmbeddedSampler				= pEmbeddedSampler;
+	res.useCombinedImageSamplerIndex	= useCombinedImageSamplerIndex;
+	res.samplerHeapOffset				= samplerHeapOffset;
+	res.samplerShaderRecordOffset		= samplerShaderRecordOffset;
+	res.samplerHeapIndexStride			= samplerHeapIndexStride;
+	res.samplerHeapArrayStride			= samplerHeapArrayStride;
+	return res;
+}
+
 inline VkDescriptorPoolSize makeDescriptorPoolSize (VkDescriptorType type, uint32_t descriptorCount)
 {
 	VkDescriptorPoolSize res;
@@ -278,6 +371,14 @@ inline VkDescriptorUpdateTemplateEntry makeDescriptorUpdateTemplateEntry (uint32
 	res.descriptorType	= descriptorType;
 	res.offset			= offset;
 	res.stride			= stride;
+	return res;
+}
+
+inline VkDeviceAddressRangeEXT makeDeviceAddressRangeEXT (VkDeviceAddress address, VkDeviceSize size)
+{
+	VkDeviceAddressRangeEXT res;
+	res.address	= address;
+	res.size	= size;
 	return res;
 }
 
@@ -411,6 +512,22 @@ inline VkExternalMemoryProperties makeExternalMemoryProperties (VkExternalMemory
 	res.externalMemoryFeatures			= externalMemoryFeatures;
 	res.exportFromImportedHandleTypes	= exportFromImportedHandleTypes;
 	res.compatibleHandleTypes			= compatibleHandleTypes;
+	return res;
+}
+
+inline VkHostAddressRangeConstEXT makeHostAddressRangeConstEXT (const void* address, size_t size)
+{
+	VkHostAddressRangeConstEXT res;
+	res.address	= address;
+	res.size	= size;
+	return res;
+}
+
+inline VkHostAddressRangeEXT makeHostAddressRangeEXT (void* address, size_t size)
+{
+	VkHostAddressRangeEXT res;
+	res.address	= address;
+	res.size	= size;
 	return res;
 }
 
@@ -705,6 +822,16 @@ inline VkRenderPassCreationFeedbackInfoEXT makeRenderPassCreationFeedbackInfoEXT
 {
 	VkRenderPassCreationFeedbackInfoEXT res;
 	res.postMergeSubpassCount	= postMergeSubpassCount;
+	return res;
+}
+
+inline VkResourceDescriptorDataEXT makeResourceDescriptorDataEXT (const VkImageDescriptorInfoEXT* pImage, const VkTexelBufferDescriptorInfoEXT* pTexelBuffer, const VkDeviceAddressRangeEXT* pAddressRange, const VkTensorViewCreateInfoARM* pTensorARM)
+{
+	VkResourceDescriptorDataEXT res;
+	res.pImage			= pImage;
+	res.pTexelBuffer	= pTexelBuffer;
+	res.pAddressRange	= pAddressRange;
+	res.pTensorARM		= pTensorARM;
 	return res;
 }
 

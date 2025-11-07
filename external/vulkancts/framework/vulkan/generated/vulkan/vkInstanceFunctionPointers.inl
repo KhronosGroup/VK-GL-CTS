@@ -89,6 +89,7 @@ CreateMacOSSurfaceMVKFunc												createMacOSSurfaceMVK;
 CreateDebugUtilsMessengerEXTFunc										createDebugUtilsMessengerEXT;
 DestroyDebugUtilsMessengerEXTFunc										destroyDebugUtilsMessengerEXT;
 SubmitDebugUtilsMessageEXTFunc											submitDebugUtilsMessageEXT;
+GetPhysicalDeviceDescriptorSizeEXTFunc									getPhysicalDeviceDescriptorSizeEXT;
 GetPhysicalDeviceMultisamplePropertiesEXTFunc							getPhysicalDeviceMultisamplePropertiesEXT;
 GetPhysicalDeviceCalibrateableTimeDomainsEXTFunc						getPhysicalDeviceCalibrateableTimeDomainsEXT;
 CreateImagePipeSurfaceFUCHSIAFunc										createImagePipeSurfaceFUCHSIA;

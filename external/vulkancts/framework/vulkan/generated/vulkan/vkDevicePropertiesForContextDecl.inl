@@ -17,6 +17,8 @@ const vk::VkPhysicalDeviceDepthStencilResolveProperties&			getDepthStencilResolv
 const vk::VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&	getDescriptorBufferDensityMapPropertiesEXT	(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&			getDescriptorBufferPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferTensorPropertiesARM&		getDescriptorBufferTensorPropertiesARM		(void) const;
+const vk::VkPhysicalDeviceDescriptorHeapPropertiesEXT&				getDescriptorHeapPropertiesEXT				(void) const;
+const vk::VkPhysicalDeviceDescriptorHeapTensorPropertiesARM&		getDescriptorHeapTensorPropertiesARM		(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&				getDescriptorIndexingProperties				(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&		getDeviceGeneratedCommandsPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&		getDeviceGeneratedCommandsProperties		(void) const;

@@ -194,6 +194,15 @@ bool DeviceProperties::verifyPropertyAddCriteria(const PropertyStructCreationDat
         isPropertyAvailable                = isExtensionStructSupported(allDeviceExtensions, previousPropertyExtName);
     }
 
+#ifndef CTS_USES_VULKANSC
+    // VkPhysicalDeviceDescriptorHeapTensorPropertiesARM requires both VK_EXT_descriptor_heap and VK_ARM_tensors
+    if (item.creatorFunction == &createPropertyStructWrapper<VkPhysicalDeviceDescriptorHeapTensorPropertiesARM>)
+    {
+        if (!isExtensionStructSupported(allDeviceExtensions, VK_ARM_TENSORS_EXTENSION_NAME))
+            isPropertyAvailable = false;
+    }
+#endif
+
     return isPropertyAvailable;
 }
 
