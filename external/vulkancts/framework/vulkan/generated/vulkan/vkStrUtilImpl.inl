@@ -1256,6 +1256,16 @@ const char* getCubicFilterWeightsQCOMName (VkCubicFilterWeightsQCOM value)
 }
 
 
+const char* getDataGraphModelCacheTypeQCOMName (VkDataGraphModelCacheTypeQCOM value)
+{
+	switch (value)
+	{
+		case VK_DATA_GRAPH_MODEL_CACHE_TYPE_GENERIC_BINARY_QCOM:	return "VK_DATA_GRAPH_MODEL_CACHE_TYPE_GENERIC_BINARY_QCOM";
+		default:													return nullptr;
+	}
+}
+
+
 const char* getDataGraphPipelinePropertyARMName (VkDataGraphPipelinePropertyARM value)
 {
 	switch (value)
@@ -2542,6 +2552,8 @@ const char* getPhysicalDeviceDataGraphOperationTypeARMName (VkPhysicalDeviceData
 {
 	switch (value)
 	{
+		case VK_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_TYPE_BUILTIN_MODEL_QCOM:					return "VK_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_TYPE_BUILTIN_MODEL_QCOM";
+		case VK_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_TYPE_NEURAL_MODEL_QCOM:					return "VK_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_TYPE_NEURAL_MODEL_QCOM";
 		case VK_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_TYPE_SPIRV_EXTENDED_INSTRUCTION_SET_ARM:	return "VK_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_TYPE_SPIRV_EXTENDED_INSTRUCTION_SET_ARM";
 		default:																				return nullptr;
 	}
@@ -2552,7 +2564,9 @@ const char* getPhysicalDeviceDataGraphProcessingEngineTypeARMName (VkPhysicalDev
 {
 	switch (value)
 	{
+		case VK_PHYSICAL_DEVICE_DATA_GRAPH_PROCESSING_ENGINE_TYPE_COMPUTE_QCOM:	return "VK_PHYSICAL_DEVICE_DATA_GRAPH_PROCESSING_ENGINE_TYPE_COMPUTE_QCOM";
 		case VK_PHYSICAL_DEVICE_DATA_GRAPH_PROCESSING_ENGINE_TYPE_DEFAULT_ARM:	return "VK_PHYSICAL_DEVICE_DATA_GRAPH_PROCESSING_ENGINE_TYPE_DEFAULT_ARM";
+		case VK_PHYSICAL_DEVICE_DATA_GRAPH_PROCESSING_ENGINE_TYPE_NEURAL_QCOM:	return "VK_PHYSICAL_DEVICE_DATA_GRAPH_PROCESSING_ENGINE_TYPE_NEURAL_QCOM";
 		default:																return nullptr;
 	}
 }
@@ -2605,8 +2619,9 @@ const char* getPipelineCacheHeaderVersionName (VkPipelineCacheHeaderVersion valu
 {
 	switch (value)
 	{
-		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:	return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
-		default:									return nullptr;
+		case VK_PIPELINE_CACHE_HEADER_VERSION_DATA_GRAPH_QCOM:	return "VK_PIPELINE_CACHE_HEADER_VERSION_DATA_GRAPH_QCOM";
+		case VK_PIPELINE_CACHE_HEADER_VERSION_ONE:				return "VK_PIPELINE_CACHE_HEADER_VERSION_ONE";
+		default:												return nullptr;
 	}
 }
 
@@ -3209,6 +3224,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_CU_MODULE_CREATE_INFO_NVX:												return "VK_STRUCTURE_TYPE_CU_MODULE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_CU_MODULE_TEXTURING_MODE_CREATE_INFO_NVX:								return "VK_STRUCTURE_TYPE_CU_MODULE_TEXTURING_MODE_CREATE_INFO_NVX";
 		case VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR:												return "VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR";
+		case VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_BUILTIN_MODEL_CREATE_INFO_QCOM:						return "VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_BUILTIN_MODEL_CREATE_INFO_QCOM";
 		case VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_COMPILER_CONTROL_CREATE_INFO_ARM:					return "VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_COMPILER_CONTROL_CREATE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CONSTANT_ARM:										return "VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CONSTANT_ARM";
 		case VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CONSTANT_TENSOR_SEMI_STRUCTURED_SPARSITY_INFO_ARM:	return "VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CONSTANT_TENSOR_SEMI_STRUCTURED_SPARSITY_INFO_ARM";
@@ -3553,6 +3569,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_FEATURES_ARM:									return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_FEATURES_ARM";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_MODEL_FEATURES_QCOM:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_MODEL_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV:			return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DENSE_GEOMETRY_FORMAT_FEATURES_AMDX";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_BIAS_CONTROL_FEATURES_EXT";
@@ -9070,6 +9087,16 @@ std::ostream& operator<< (std::ostream& s, const VkD3D12FenceSubmitInfoKHR& valu
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkDataGraphPipelineBuiltinModelCreateInfoQCOM& value)
+{
+	s << "VkDataGraphPipelineBuiltinModelCreateInfoQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tpOperation = " << value.pOperation << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkDataGraphPipelineCompilerControlCreateInfoARM& value)
 {
 	s << "VkDataGraphPipelineCompilerControlCreateInfoARM = {\n";
@@ -13818,6 +13845,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDataGraphFeatur
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDataGraphModelFeaturesQCOM& value)
+{
+	s << "VkPhysicalDeviceDataGraphModelFeaturesQCOM = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tdataGraphModel = " << value.dataGraphModel << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceDataGraphOperationSupportARM& value)
 {
 	s << "VkPhysicalDeviceDataGraphOperationSupportARM = {\n";
@@ -18157,6 +18194,18 @@ std::ostream& operator<< (std::ostream& s, const VkPipelineCacheCreateInfo& valu
 	s << "\tflags = " << getPipelineCacheCreateFlagsStr(value.flags) << '\n';
 	s << "\tinitialDataSize = " << value.initialDataSize << '\n';
 	s << "\tpInitialData = " << value.pInitialData << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPipelineCacheHeaderVersionDataGraphQCOM& value)
+{
+	s << "VkPipelineCacheHeaderVersionDataGraphQCOM = {\n";
+	s << "\theaderSize = " << value.headerSize << '\n';
+	s << "\theaderVersion = " << value.headerVersion << '\n';
+	s << "\tcacheType = " << value.cacheType << '\n';
+	s << "\tcacheVersion = " << value.cacheVersion << '\n';
+	s << "\ttoolchainVersion = " << '\n' << tcu::formatArray(DE_ARRAY_BEGIN(value.toolchainVersion), DE_ARRAY_END(value.toolchainVersion)) << '\n';
 	s << '}';
 	return s;
 }

@@ -5983,11 +5983,25 @@ struct VkPhysicalDeviceDataGraphFeaturesARM
 	VkBool32		dataGraphShaderModule;
 };
 
+struct VkPhysicalDeviceDataGraphModelFeaturesQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		dataGraphModel;
+};
+
 struct VkPhysicalDeviceDataGraphOperationSupportARM
 {
 	VkPhysicalDeviceDataGraphOperationTypeARM	operationType;
 	char										name[VK_MAX_PHYSICAL_DEVICE_DATA_GRAPH_OPERATION_SET_NAME_SIZE_ARM];
 	uint32_t									version;
+};
+
+struct VkDataGraphPipelineBuiltinModelCreateInfoQCOM
+{
+	VkStructureType										sType;
+	const void*											pNext;
+	const VkPhysicalDeviceDataGraphOperationSupportARM*	pOperation;
 };
 
 struct VkPhysicalDeviceDataGraphProcessingEngineARM
@@ -9303,6 +9317,15 @@ struct VkPipelineCacheCreateInfo
 	VkPipelineCacheCreateFlags	flags;
 	size_t						initialDataSize;
 	const void*					pInitialData;
+};
+
+struct VkPipelineCacheHeaderVersionDataGraphQCOM
+{
+	uint32_t						headerSize;
+	VkPipelineCacheHeaderVersion	headerVersion;
+	VkDataGraphModelCacheTypeQCOM	cacheType;
+	uint32_t						cacheVersion;
+	uint32_t						toolchainVersion[VK_DATA_GRAPH_MODEL_TOOLCHAIN_VERSION_LENGTH_QCOM];
 };
 
 struct VkPipelineCacheHeaderVersionOne

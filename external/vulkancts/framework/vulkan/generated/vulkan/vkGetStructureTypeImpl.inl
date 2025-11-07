@@ -623,6 +623,11 @@ template<> VkStructureType getStructureType<VkD3D12FenceSubmitInfoKHR> (void)
 	return VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR;
 }
 
+template<> VkStructureType getStructureType<VkDataGraphPipelineBuiltinModelCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_BUILTIN_MODEL_CREATE_INFO_QCOM;
+}
+
 template<> VkStructureType getStructureType<VkDataGraphPipelineCompilerControlCreateInfoARM> (void)
 {
 	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_COMPILER_CONTROL_CREATE_INFO_ARM;
@@ -2331,6 +2336,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCustomBorderColorPro
 template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphFeaturesARM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphModelFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_MODEL_FEATURES_QCOM;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV> (void)

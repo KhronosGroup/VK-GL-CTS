@@ -186,6 +186,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ARM_data_graph"))
 		addFeatures(&physicalDeviceDataGraphFeaturesARM);
 
+	// VkPhysicalDeviceDataGraphModelFeaturesQCOM for ext [VK_QCOM_data_graph_model]
+	vk::VkPhysicalDeviceDataGraphModelFeaturesQCOM physicalDeviceDataGraphModelFeaturesQCOM = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_QCOM_data_graph_model"))
+		addFeatures(&physicalDeviceDataGraphModelFeaturesQCOM);
+
 	// VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV for ext [VK_NV_dedicated_allocation_image_aliasing]
 	vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV physicalDeviceDedicatedAllocationImageAliasingFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_dedicated_allocation_image_aliasing"))
@@ -3053,6 +3058,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.zeroInitializeDeviceMemory == VK_FALSE )
 			failMesages.push_back("zeroInitializeDeviceMemory");
+	}
+
+	// VkPhysicalDeviceDataGraphModelFeaturesQCOM
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_QCOM_data_graph_model")) )
+	{
+		if ( physicalDeviceDataGraphModelFeaturesQCOM.dataGraphModel == VK_FALSE )
+			failMesages.push_back("dataGraphModel");
 	}
 
 	// VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC

@@ -37,6 +37,7 @@ const char*	getCopyMicromapModeEXTName								(VkCopyMicromapModeEXT value);
 const char*	getCoverageModulationModeNVName							(VkCoverageModulationModeNV value);
 const char*	getCoverageReductionModeNVName							(VkCoverageReductionModeNV value);
 const char*	getCubicFilterWeightsQCOMName							(VkCubicFilterWeightsQCOM value);
+const char*	getDataGraphModelCacheTypeQCOMName						(VkDataGraphModelCacheTypeQCOM value);
 const char*	getDataGraphPipelinePropertyARMName						(VkDataGraphPipelinePropertyARM value);
 const char*	getDataGraphPipelineSessionBindPointARMName				(VkDataGraphPipelineSessionBindPointARM value);
 const char*	getDataGraphPipelineSessionBindPointTypeARMName			(VkDataGraphPipelineSessionBindPointTypeARM value);
@@ -225,6 +226,7 @@ inline tcu::Format::Enum<VkCopyMicromapModeEXT>								getCopyMicromapModeEXTStr
 inline tcu::Format::Enum<VkCoverageModulationModeNV>						getCoverageModulationModeNVStr							(VkCoverageModulationModeNV value)							{ return tcu::Format::Enum<VkCoverageModulationModeNV>(getCoverageModulationModeNVName, value);												}
 inline tcu::Format::Enum<VkCoverageReductionModeNV>							getCoverageReductionModeNVStr							(VkCoverageReductionModeNV value)							{ return tcu::Format::Enum<VkCoverageReductionModeNV>(getCoverageReductionModeNVName, value);												}
 inline tcu::Format::Enum<VkCubicFilterWeightsQCOM>							getCubicFilterWeightsQCOMStr							(VkCubicFilterWeightsQCOM value)							{ return tcu::Format::Enum<VkCubicFilterWeightsQCOM>(getCubicFilterWeightsQCOMName, value);													}
+inline tcu::Format::Enum<VkDataGraphModelCacheTypeQCOM>						getDataGraphModelCacheTypeQCOMStr						(VkDataGraphModelCacheTypeQCOM value)						{ return tcu::Format::Enum<VkDataGraphModelCacheTypeQCOM>(getDataGraphModelCacheTypeQCOMName, value);										}
 inline tcu::Format::Enum<VkDataGraphPipelinePropertyARM>					getDataGraphPipelinePropertyARMStr						(VkDataGraphPipelinePropertyARM value)						{ return tcu::Format::Enum<VkDataGraphPipelinePropertyARM>(getDataGraphPipelinePropertyARMName, value);										}
 inline tcu::Format::Enum<VkDataGraphPipelineSessionBindPointARM>			getDataGraphPipelineSessionBindPointARMStr				(VkDataGraphPipelineSessionBindPointARM value)				{ return tcu::Format::Enum<VkDataGraphPipelineSessionBindPointARM>(getDataGraphPipelineSessionBindPointARMName, value);						}
 inline tcu::Format::Enum<VkDataGraphPipelineSessionBindPointTypeARM>		getDataGraphPipelineSessionBindPointTypeARMStr			(VkDataGraphPipelineSessionBindPointTypeARM value)			{ return tcu::Format::Enum<VkDataGraphPipelineSessionBindPointTypeARM>(getDataGraphPipelineSessionBindPointTypeARMName, value);				}
@@ -376,6 +378,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkCopyMicromapModeEXT value)		
 inline std::ostream&	operator<<	(std::ostream& s, VkCoverageModulationModeNV value)							{ return s << getCoverageModulationModeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkCoverageReductionModeNV value)							{ return s << getCoverageReductionModeNVStr(value);							}
 inline std::ostream&	operator<<	(std::ostream& s, VkCubicFilterWeightsQCOM value)							{ return s << getCubicFilterWeightsQCOMStr(value);							}
+inline std::ostream&	operator<<	(std::ostream& s, VkDataGraphModelCacheTypeQCOM value)						{ return s << getDataGraphModelCacheTypeQCOMStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkDataGraphPipelinePropertyARM value)						{ return s << getDataGraphPipelinePropertyARMStr(value);					}
 inline std::ostream&	operator<<	(std::ostream& s, VkDataGraphPipelineSessionBindPointARM value)				{ return s << getDataGraphPipelineSessionBindPointARMStr(value);			}
 inline std::ostream&	operator<<	(std::ostream& s, VkDataGraphPipelineSessionBindPointTypeARM value)			{ return s << getDataGraphPipelineSessionBindPointTypeARMStr(value);		}
@@ -825,6 +828,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkCudaFunctionCreateInfoNV& val
 std::ostream&	operator<<	(std::ostream& s, const VkCudaLaunchInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCudaModuleCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkD3D12FenceSubmitInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineBuiltinModelCreateInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineCompilerControlCreateInfoARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineConstantARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineConstantTensorSemiStructuredSparsityInfoARM& value);
@@ -1238,6 +1242,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCudaKernelLaunc
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCustomBorderColorFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCustomBorderColorPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphFeaturesARM& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphModelFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphOperationSupportARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphProcessingEngineARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV& value);
@@ -1577,6 +1582,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryInfoKHR& value)
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryKeyKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineBinaryKeysAndDataKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheCreateInfo& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheHeaderVersionDataGraphQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineCacheHeaderVersionOne& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorBlendAdvancedStateCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPipelineColorBlendAttachmentState& value);

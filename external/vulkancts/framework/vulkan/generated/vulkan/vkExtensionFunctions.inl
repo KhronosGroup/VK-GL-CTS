@@ -1760,6 +1760,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		functions.push_back("vkCreateSurfaceOHOS");
 		return;
 	}
+	if (extName == "VK_QCOM_data_graph_model")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_filter_cubic_clamp")
 	{
 		return;
@@ -4145,6 +4149,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_data_graph_model")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_filter_cubic_clamp")
 	{
 		return;
@@ -4681,6 +4689,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
 	"VK_EXT_shader_64bit_indexing",
+	"VK_QCOM_data_graph_model",
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_KHR_acceleration_structure",
