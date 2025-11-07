@@ -6,7 +6,6 @@
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireNextImage2KHRFunc)											(VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireNextImageKHRFunc)											(VkDevice device, VkSwapchainKHR swapchain, uint64_t timeout, VkSemaphore semaphore, VkFence fence, uint32_t* pImageIndex);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireProfilingLockKHRFunc)										(VkDevice device, const VkAcquireProfilingLockInfoKHR* pInfo);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AcquireWinrtDisplayNVFunc)											(VkPhysicalDevice physicalDevice, VkDisplayKHR display);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AllocateCommandBuffersFunc)										(VkDevice device, const VkCommandBufferAllocateInfo* pAllocateInfo, VkCommandBuffer* pCommandBuffers);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AllocateDescriptorSetsFunc)										(VkDevice device, const VkDescriptorSetAllocateInfo* pAllocateInfo, VkDescriptorSet* pDescriptorSets);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* AllocateMemoryFunc)												(VkDevice device, const VkMemoryAllocateInfo* pAllocateInfo, const VkAllocationCallbacks* pAllocator, VkDeviceMemory* pMemory);
@@ -267,7 +266,6 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSemaphoreSciSyncObjNVFunc)							
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainCounterEXTFunc)										(VkDevice device, VkSwapchainKHR swapchain, VkSurfaceCounterFlagBitsEXT counter, uint64_t* pCounterValue);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainImagesKHRFunc)											(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetSwapchainStatusKHRFunc)											(VkDevice device, VkSwapchainKHR swapchain);
-typedef VKAPI_ATTR VkResult				(VKAPI_CALL* GetWinrtDisplayNVFunc)												(VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceFdKHRFunc)												(VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceSciSyncFenceNVFunc)										(VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* ImportFenceSciSyncObjNVFunc)										(VkDevice device, const VkImportFenceSciSyncInfoNV* pImportFenceSciSyncInfo);

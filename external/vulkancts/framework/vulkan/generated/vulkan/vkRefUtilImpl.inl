@@ -24,12 +24,6 @@ void Deleter<VkBuffer>::operator() (VkBuffer obj) const
 }
 
 template<>
-void Deleter<VkBufferCollectionFUCHSIA>::operator() (VkBufferCollectionFUCHSIA obj) const
-{
-	m_deviceIface->destroyBufferCollectionFUCHSIA(m_device, obj, m_allocator);
-}
-
-template<>
 void Deleter<VkBufferView>::operator() (VkBufferView obj) const
 {
 	m_deviceIface->destroyBufferView(m_device, obj, m_allocator);
@@ -39,30 +33,6 @@ template<>
 void Deleter<VkCommandPool>::operator() (VkCommandPool obj) const
 {
 	m_deviceIface->destroyCommandPool(m_device, obj, m_allocator);
-}
-
-template<>
-void Deleter<VkCuFunctionNVX>::operator() (VkCuFunctionNVX obj) const
-{
-	m_deviceIface->destroyCuFunctionNVX(m_device, obj, m_allocator);
-}
-
-template<>
-void Deleter<VkCuModuleNVX>::operator() (VkCuModuleNVX obj) const
-{
-	m_deviceIface->destroyCuModuleNVX(m_device, obj, m_allocator);
-}
-
-template<>
-void Deleter<VkCudaFunctionNV>::operator() (VkCudaFunctionNV obj) const
-{
-	m_deviceIface->destroyCudaFunctionNV(m_device, obj, m_allocator);
-}
-
-template<>
-void Deleter<VkCudaModuleNV>::operator() (VkCudaModuleNV obj) const
-{
-	m_deviceIface->destroyCudaModuleNV(m_device, obj, m_allocator);
 }
 
 template<>
@@ -99,12 +69,6 @@ template<>
 void Deleter<VkEvent>::operator() (VkEvent obj) const
 {
 	m_deviceIface->destroyEvent(m_device, obj, m_allocator);
-}
-
-template<>
-void Deleter<VkExternalComputeQueueNV>::operator() (VkExternalComputeQueueNV obj) const
-{
-	m_deviceIface->destroyExternalComputeQueueNV(m_device, obj, m_allocator);
 }
 
 template<>
@@ -153,12 +117,6 @@ template<>
 void Deleter<VkMicromapEXT>::operator() (VkMicromapEXT obj) const
 {
 	m_deviceIface->destroyMicromapEXT(m_device, obj, m_allocator);
-}
-
-template<>
-void Deleter<VkOpticalFlowSessionNV>::operator() (VkOpticalFlowSessionNV obj) const
-{
-	m_deviceIface->destroyOpticalFlowSessionNV(m_device, obj, m_allocator);
 }
 
 template<>
@@ -252,12 +210,6 @@ void Deleter<VkTensorViewARM>::operator() (VkTensorViewARM obj) const
 }
 
 template<>
-void Deleter<VkValidationCacheEXT>::operator() (VkValidationCacheEXT obj) const
-{
-	m_deviceIface->destroyValidationCacheEXT(m_device, obj, m_allocator);
-}
-
-template<>
 void Deleter<VkVideoSessionKHR>::operator() (VkVideoSessionKHR obj) const
 {
 	m_deviceIface->destroyVideoSessionKHR(m_device, obj, m_allocator);
@@ -313,13 +265,6 @@ Move<VkBuffer> createBuffer (const DeviceInterface& vk, VkDevice device, const V
 	return Move<VkBuffer>(check<VkBuffer>(object), Deleter<VkBuffer>(vk, device, pAllocator));
 }
 
-Move<VkBufferCollectionFUCHSIA> createBufferCollectionFUCHSIA (const DeviceInterface& vk, VkDevice device, const VkBufferCollectionCreateInfoFUCHSIA* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkBufferCollectionFUCHSIA object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createBufferCollectionFUCHSIA(device, pCreateInfo, pAllocator, &object));
-	return Move<VkBufferCollectionFUCHSIA>(check<VkBufferCollectionFUCHSIA>(object), Deleter<VkBufferCollectionFUCHSIA>(vk, device, pAllocator));
-}
-
 Move<VkBufferView> createBufferView (const DeviceInterface& vk, VkDevice device, const VkBufferViewCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
 {
 	VkBufferView object = VK_NULL_HANDLE;
@@ -332,34 +277,6 @@ Move<VkCommandPool> createCommandPool (const DeviceInterface& vk, VkDevice devic
 	VkCommandPool object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createCommandPool(device, pCreateInfo, pAllocator, &object));
 	return Move<VkCommandPool>(check<VkCommandPool>(object), Deleter<VkCommandPool>(vk, device, pAllocator));
-}
-
-Move<VkCuFunctionNVX> createCuFunctionNVX (const DeviceInterface& vk, VkDevice device, const VkCuFunctionCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkCuFunctionNVX object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createCuFunctionNVX(device, pCreateInfo, pAllocator, &object));
-	return Move<VkCuFunctionNVX>(check<VkCuFunctionNVX>(object), Deleter<VkCuFunctionNVX>(vk, device, pAllocator));
-}
-
-Move<VkCuModuleNVX> createCuModuleNVX (const DeviceInterface& vk, VkDevice device, const VkCuModuleCreateInfoNVX* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkCuModuleNVX object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createCuModuleNVX(device, pCreateInfo, pAllocator, &object));
-	return Move<VkCuModuleNVX>(check<VkCuModuleNVX>(object), Deleter<VkCuModuleNVX>(vk, device, pAllocator));
-}
-
-Move<VkCudaFunctionNV> createCudaFunctionNV (const DeviceInterface& vk, VkDevice device, const VkCudaFunctionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkCudaFunctionNV object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createCudaFunctionNV(device, pCreateInfo, pAllocator, &object));
-	return Move<VkCudaFunctionNV>(check<VkCudaFunctionNV>(object), Deleter<VkCudaFunctionNV>(vk, device, pAllocator));
-}
-
-Move<VkCudaModuleNV> createCudaModuleNV (const DeviceInterface& vk, VkDevice device, const VkCudaModuleCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkCudaModuleNV object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createCudaModuleNV(device, pCreateInfo, pAllocator, &object));
-	return Move<VkCudaModuleNV>(check<VkCudaModuleNV>(object), Deleter<VkCudaModuleNV>(vk, device, pAllocator));
 }
 
 Move<VkDataGraphPipelineSessionARM> createDataGraphPipelineSessionARM (const DeviceInterface& vk, VkDevice device, const VkDataGraphPipelineSessionCreateInfoARM* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -437,13 +354,6 @@ Move<VkEvent> createEvent (const DeviceInterface& vk, VkDevice device, const VkE
 	VkEvent object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createEvent(device, pCreateInfo, pAllocator, &object));
 	return Move<VkEvent>(check<VkEvent>(object), Deleter<VkEvent>(vk, device, pAllocator));
-}
-
-Move<VkExternalComputeQueueNV> createExternalComputeQueueNV (const DeviceInterface& vk, VkDevice device, const VkExternalComputeQueueCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkExternalComputeQueueNV object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createExternalComputeQueueNV(device, pCreateInfo, pAllocator, &object));
-	return Move<VkExternalComputeQueueNV>(check<VkExternalComputeQueueNV>(object), Deleter<VkExternalComputeQueueNV>(vk, device, pAllocator));
 }
 
 Move<VkFence> createFence (const DeviceInterface& vk, VkDevice device, const VkFenceCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -542,13 +452,6 @@ Move<VkMicromapEXT> createMicromapEXT (const DeviceInterface& vk, VkDevice devic
 	VkMicromapEXT object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createMicromapEXT(device, pCreateInfo, pAllocator, &object));
 	return Move<VkMicromapEXT>(check<VkMicromapEXT>(object), Deleter<VkMicromapEXT>(vk, device, pAllocator));
-}
-
-Move<VkOpticalFlowSessionNV> createOpticalFlowSessionNV (const DeviceInterface& vk, VkDevice device, const VkOpticalFlowSessionCreateInfoNV* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkOpticalFlowSessionNV object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createOpticalFlowSessionNV(device, pCreateInfo, pAllocator, &object));
-	return Move<VkOpticalFlowSessionNV>(check<VkOpticalFlowSessionNV>(object), Deleter<VkOpticalFlowSessionNV>(vk, device, pAllocator));
 }
 
 Move<VkPipelineCache> createPipelineCache (const DeviceInterface& vk, VkDevice device, const VkPipelineCacheCreateInfo* pCreateInfo, const VkAllocationCallbacks* pAllocator)
@@ -668,13 +571,6 @@ Move<VkTensorViewARM> createTensorViewARM (const DeviceInterface& vk, VkDevice d
 	VkTensorViewARM object = VK_NULL_HANDLE;
 	VK_CHECK(vk.createTensorViewARM(device, pCreateInfo, pAllocator, &object));
 	return Move<VkTensorViewARM>(check<VkTensorViewARM>(object), Deleter<VkTensorViewARM>(vk, device, pAllocator));
-}
-
-Move<VkValidationCacheEXT> createValidationCacheEXT (const DeviceInterface& vk, VkDevice device, const VkValidationCacheCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator)
-{
-	VkValidationCacheEXT object = VK_NULL_HANDLE;
-	VK_CHECK(vk.createValidationCacheEXT(device, pCreateInfo, pAllocator, &object));
-	return Move<VkValidationCacheEXT>(check<VkValidationCacheEXT>(object), Deleter<VkValidationCacheEXT>(vk, device, pAllocator));
 }
 
 Move<VkSurfaceKHR> createViSurfaceNN (const InstanceInterface& vk, VkInstance instance, const VkViSurfaceCreateInfoNN* pCreateInfo, const VkAllocationCallbacks* pAllocator)
