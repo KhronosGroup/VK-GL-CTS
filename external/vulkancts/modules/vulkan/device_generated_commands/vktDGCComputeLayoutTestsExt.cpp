@@ -516,7 +516,7 @@ void LayoutTestInstance::createPipelinesOrShaders(const DeviceInterface &vkd, Vk
         else
         {
             VkPipelineCreateFlags2CreateInfo createFlags2 = initVulkanStructure();
-            createFlags2.flags                            = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+            createFlags2.flags = m_params.useDescriptorHeap ? VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT : 0;
 
             VkComputePipelineCreateInfo createInfo = initVulkanStructure();
             createInfo.pNext                       = &createFlags2;
@@ -553,7 +553,8 @@ void LayoutTestInstance::makeCommandsLayout(const DeviceInterface &vkd, VkDevice
                                             VkPipelineLayout pipelineLayout,
                                             const VkPipelineLayoutCreateInfo *createInfo)
 {
-    const auto pcTokenStage = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto pcTokenStage = m_params.useDescriptorHeap ? static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_ALL) :
+                                                           static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
 
     // Note we always add the dispatch token at the end.
     IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(0u, m_shaderStage, pipelineLayout, createInfo);

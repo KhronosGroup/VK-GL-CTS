@@ -1120,6 +1120,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
     }
 
     // Create buffer for indices/offsets
+    VkDeviceSize indicesBufferSize = 0;
     {
         struct IndicesBuffer
         {
@@ -1131,16 +1132,23 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         VkBufferUsageFlags indicesBufferUsageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
 
+        indicesBufferSize = VkDeviceSize{sizeof(IndicesBuffer)};
+
         if (m_testDescriptorHeaps)
         {
             indicesBufferUsageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+            // Align up by uniform buffer alignment requirements
+            const VkDeviceSize alignment = context.getDeviceProperties().limits.minUniformBufferOffsetAlignment;
+            indicesBufferSize            = static_cast<VkDeviceSize>(
+                deAlign64(static_cast<int64_t>(indicesBufferSize), static_cast<int64_t>(alignment)));
         }
 
         const VkBufferCreateInfo indicesBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
-            sizeof(IndicesBuffer),                // VkDeviceSize size;
+            indicesBufferSize,                    // VkDeviceSize size;
             indicesBufferUsageFlags,              // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
@@ -1180,6 +1188,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
             }
         }
 
+        deMemset(m_indicesBufferAlloc->getHostPtr(), 0, static_cast<size_t>(indicesBufferSize));
         deMemcpy(m_indicesBufferAlloc->getHostPtr(), &indices, sizeof(IndicesBuffer));
 
         flushMappedMemoryRange(vk, *m_device, m_indicesBufferAlloc->getMemory(), m_indicesBufferAlloc->getOffset(),
@@ -1383,7 +1392,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         VkDeviceAddressRangeEXT indicesAddressRange{};
         indicesAddressRange.address = getBufferDeviceAddress(vk, *m_device, *m_indicesBuffer);
-        indicesAddressRange.size    = 8;
+        indicesAddressRange.size    = indicesBufferSize;
 
         VkResourceDescriptorInfoEXT &indicesResourceInfo = resourceDescInfos.emplace_back();
         indicesResourceInfo.sType                        = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT;
@@ -1446,6 +1455,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
         heapParams.resourceHeap.heapRange.address   = getBufferDeviceAddress(vk, *m_device, *m_resourceHeap);
         heapParams.resourceHeap.heapRange.size      = resourceHeapSize;
         heapParams.resourceHeap.reservedRangeOffset = static_cast<VkDeviceSize>(userResourceHeapSize);
+        heapParams.resourceHeap.reservedRangeSize   = heapProps.minResourceHeapReservedRange;
     }
 #endif // CTS_USES_VULKANSC
 
@@ -2032,7 +2042,7 @@ static void addBufferAccessTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *
                 for (size_t rangeNdx = 0; rangeNdx < rangesLength; rangeNdx++)
                 {
                     const BufferRangeConfig &rangeConfig = ranges[rangeNdx];
-                    const VkDeviceSize rangeInBytes      = rangeConfig.range * rangeMultiplier;
+                    VkDeviceSize rangeInBytes            = rangeConfig.range * rangeMultiplier;
 
                     if (rangeInBytes > 16 && (ShaderType)shaderTypeNdx == SHADER_TYPE_VECTOR_MEMBER_COPY)
                     {

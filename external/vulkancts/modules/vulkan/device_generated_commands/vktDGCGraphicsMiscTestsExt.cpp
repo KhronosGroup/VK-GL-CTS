@@ -3031,7 +3031,7 @@ tcu::TestStatus SequenceIndexRun(Context &context, bool const useDescriptorHeap)
     const auto fragModule = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
 
     const auto pcSize   = DE_SIZEOF32(uint32_t);
-    const auto pcStages = VK_SHADER_STAGE_FRAGMENT_BIT;
+    const auto pcStages = useDescriptorHeap ? VK_SHADER_STAGE_ALL : VK_SHADER_STAGE_FRAGMENT_BIT;
     const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
     Move<VkPipelineLayout> pipelineLayout;
@@ -3098,7 +3098,7 @@ tcu::TestStatus SequenceIndexRun(Context &context, bool const useDescriptorHeap)
     const tcu::UVec4 clearColor(0u, 0u, 0u, 0u);
 
     beginCommandBuffer(ctx.vkd, cmdBuffer);
-    if (useDescriptorHeap)
+    if (useDescriptorHeap && bindHeapInfo.sType == VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT)
     {
         ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
     }
@@ -4610,7 +4610,9 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
     if (!params.partial)
     {
         // Partial update for the red color.
-        const auto redRange = makePushConstantRange(pcStages, 0u, DE_SIZEOF32(float) /*R*/);
+        const auto redRange = makePushConstantRange(
+            !params.useDescriptorHeap ? static_cast<VkShaderStageFlagBits>(pcStages) : VK_SHADER_STAGE_ALL, 0u,
+            DE_SIZEOF32(float) /*R*/);
         if (params.useDescriptorHeap)
             cmdsLayoutBuilder.addPushDataToken(cmdsLayoutBuilder.getStreamRange(), redRange);
         else
@@ -4618,7 +4620,9 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
     }
     {
         // Partial update for the green and blue colors.
-        const auto gbRange = makePushConstantRange(pcStages, DE_SIZEOF32(float), DE_SIZEOF32(float) * 2u /*GB*/);
+        const auto gbRange = makePushConstantRange(
+            !params.useDescriptorHeap ? static_cast<VkShaderStageFlagBits>(pcStages) : VK_SHADER_STAGE_ALL,
+            DE_SIZEOF32(float), DE_SIZEOF32(float) * 2u /*GB*/);
         if (params.useDescriptorHeap)
             cmdsLayoutBuilder.addPushDataToken(cmdsLayoutBuilder.getStreamRange(), gbRange);
         else
@@ -4673,7 +4677,8 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
     ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer.get(), 0ull, VK_INDEX_TYPE_UINT32);
     if (params.useDescriptorHeap)
     {
-        ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
+        if (bindHeapInfo.sType == VK_STRUCTURE_TYPE_BIND_HEAP_INFO_EXT)
+            ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
 
         if (params.partial)
         {
