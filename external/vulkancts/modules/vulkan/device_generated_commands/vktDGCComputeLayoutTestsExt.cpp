@@ -96,12 +96,13 @@ bool hasComplementaryPush(TestType testType)
 struct TestParams
 {
     TestParams(TestType testType_, bool shaderObjects_, bool computeQueue_, bool dynamicPipelineLayout_,
-               bool destroySetLayout_)
+               bool destroySetLayout_, bool useDescriptorHeap_)
         : testType(testType_)
         , shaderObjects(shaderObjects_)
         , computeQueue(computeQueue_)
         , dynamicPipelineLayout(dynamicPipelineLayout_)
         , destroySetLayout(destroySetLayout_)
+        , useDescriptorHeap(useDescriptorHeap_)
     {
     }
 
@@ -110,6 +111,7 @@ struct TestParams
     bool computeQueue;          // Use the compute queue.
     bool dynamicPipelineLayout; // Use dynamicGeneratedPipelineLayout.
     bool destroySetLayout;      // Destroy set layout after using it in VkIndirectExecutionSetShaderLayoutInfoEXT.
+    bool useDescriptorHeap;     // Use VK_EXT_descriptor_heap.
 };
 
 // See the shader code below. This is the specialization data that will be used in each dispatch. It may be used as specialization
@@ -241,6 +243,11 @@ void LayoutTestCase::checkSupport(Context &context) const
         if (!dgcFeatures.dynamicGeneratedPipelineLayout)
             TCU_THROW(NotSupportedError, "dynamicGeneratedPipelineLayout not supported");
     }
+
+    if (m_params.useDescriptorHeap)
+    {
+        context.requireDeviceFunctionality(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
+    }
 }
 
 void LayoutTestCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -367,9 +374,30 @@ void LayoutTestInstance::createPipelinesOrShaders(const DeviceInterface &vkd, Vk
     const auto &binaries        = m_context.getBinaryCollection();
     const auto shaderBinary     = binaries.get("comp");
 
+    VkDescriptorSetAndBindingMappingEXT mapping         = initVulkanStructure();
+    mapping.descriptorSet                               = 0;
+    mapping.firstBinding                                = 0;
+    mapping.bindingCount                                = 1;
+    mapping.resourceMask                                = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+    mapping.source                                      = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+    mapping.sourceData.constantOffset.heapOffset        = 0;
+    mapping.sourceData.constantOffset.heapArrayStride   = 0;
+    mapping.sourceData.constantOffset.pEmbeddedSampler  = nullptr;
+    mapping.sourceData.constantOffset.samplerHeapOffset = 0;
+    mapping.sourceData.constantOffset.samplerHeapArrayStride = 0;
+
+    VkShaderDescriptorSetAndBindingMappingInfoEXT mappingInfo = initVulkanStructure();
+    mappingInfo.mappingCount                                  = 1u;
+    mappingInfo.pMappings                                     = &mapping;
+
+    const VkShaderDescriptorSetAndBindingMappingInfoEXT *const pMappingInfo =
+        m_params.useDescriptorHeap ? &mappingInfo : nullptr;
+
     Move<VkShaderModule> compModule;
     if (!m_params.shaderObjects)
+    {
         compModule = createShaderModule(vkd, device, shaderBinary);
+    }
 
     const std::vector<VkDescriptorSetLayout> setLayouts{*m_setLayout};
 
@@ -426,8 +454,11 @@ void LayoutTestInstance::createPipelinesOrShaders(const DeviceInterface &vkd, Vk
         else
             DE_ASSERT(false);
 
-        m_pipelineLayout = makePipelineLayout(vkd, device, de::sizeU32(setLayouts), de::dataOrNull(setLayouts),
-                                              de::sizeU32(m_pcRanges), de::dataOrNull(m_pcRanges));
+        if (!m_params.useDescriptorHeap)
+        {
+            m_pipelineLayout = makePipelineLayout(vkd, device, de::sizeU32(setLayouts), de::dataOrNull(setLayouts),
+                                                  de::sizeU32(m_pcRanges), de::dataOrNull(m_pcRanges));
+        }
 
         for (size_t i = 0; i < specializationData.size(); ++i)
         {
@@ -438,12 +469,13 @@ void LayoutTestInstance::createPipelinesOrShaders(const DeviceInterface &vkd, Vk
             if (m_params.shaderObjects)
             {
                 m_dgcShaders.emplace_back(new DGCComputeShaderExt(vkd, device, 0u, shaderBinary, setLayouts, m_pcRanges,
-                                                                  &specializationInfo));
+                                                                  &specializationInfo, 0u, pMappingInfo));
             }
             else
             {
                 m_dgcPipelines.emplace_back(new DGCComputePipelineExt(vkd, device, 0u, *m_pipelineLayout, 0u,
-                                                                      *compModule, &specializationInfo));
+                                                                      *compModule, &specializationInfo, VK_NULL_HANDLE,
+                                                                      -1, 0u, pMappingInfo));
             }
         }
     }
@@ -460,16 +492,43 @@ void LayoutTestInstance::createPipelinesOrShaders(const DeviceInterface &vkd, Vk
         const auto pcRange = makePushConstantRange(m_shaderStage, 0u, m_layoutPcSize);
 
         m_pcRanges.push_back(pcRange);
-        m_pipelineLayout = makePipelineLayout(vkd, device, *m_setLayout, &pcRange);
+
+        if (!m_params.useDescriptorHeap)
+        {
+            m_pipelineLayout = makePipelineLayout(vkd, device, *m_setLayout, &pcRange);
+        }
 
         if (m_params.shaderObjects)
         {
-            const auto shaderCreateInfo = makeComputeShaderCreateInfo(0u, binaries.get("comp"), *m_setLayout, pcRange);
-            m_singleShader              = createShader(vkd, device, shaderCreateInfo);
+            VkShaderCreateInfoEXT shaderCreateInfo =
+                makeComputeShaderCreateInfo(0u, binaries.get("comp"), *m_setLayout, pcRange);
+            if (m_params.useDescriptorHeap)
+            {
+                shaderCreateInfo.pNext                  = pMappingInfo;
+                shaderCreateInfo.flags                  = VK_SHADER_CREATE_DESCRIPTOR_HEAP_BIT_EXT;
+                shaderCreateInfo.setLayoutCount         = 0;
+                shaderCreateInfo.pSetLayouts            = nullptr;
+                shaderCreateInfo.pushConstantRangeCount = 0;
+                shaderCreateInfo.pPushConstantRanges    = nullptr;
+            }
+            m_singleShader = createShader(vkd, device, shaderCreateInfo);
         }
         else
         {
-            m_singlePipeline = makeComputePipeline(vkd, device, *m_pipelineLayout, *compModule);
+            VkPipelineCreateFlags2CreateInfo createFlags2 = initVulkanStructure();
+            createFlags2.flags                            = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+            VkComputePipelineCreateInfo createInfo = initVulkanStructure();
+            createInfo.pNext                       = &createFlags2;
+            createInfo.stage                       = initVulkanStructure();
+            createInfo.stage.pNext                 = pMappingInfo;
+            createInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+            createInfo.stage.module                = *compModule;
+            createInfo.stage.pName                 = "main";
+            createInfo.stage.pSpecializationInfo   = nullptr;
+            createInfo.layout                      = *m_pipelineLayout;
+
+            m_singlePipeline = createComputePipeline(vkd, device, VK_NULL_HANDLE, &createInfo);
         }
     }
 }
@@ -504,28 +563,50 @@ void LayoutTestInstance::makeCommandsLayout(const DeviceInterface &vkd, VkDevice
     if (m_params.testType == TestType::PUSH_DISPATCH || m_params.testType == TestType::COMPLEMENTARY_PUSH_DISPATCH ||
         m_params.testType == TestType::COMPLEMENTARY_PUSH_INDEX_DISPATCH)
     {
-        DE_ASSERT(*m_pipelineLayout != VK_NULL_HANDLE);
+        DE_ASSERT(m_params.useDescriptorHeap || *m_pipelineLayout != VK_NULL_HANDLE);
         DE_ASSERT(m_pcTokenDataSize != 0u);
-        cmdsLayoutBuilder.addPushConstantToken(0u, makePushConstantRange(pcTokenStage, 0u, m_pcTokenDataSize));
+        if (m_params.useDescriptorHeap)
+            cmdsLayoutBuilder.addPushDataToken(0u, makePushConstantRange(pcTokenStage, 0u, m_pcTokenDataSize));
+        else
+            cmdsLayoutBuilder.addPushConstantToken(0u, makePushConstantRange(pcTokenStage, 0u, m_pcTokenDataSize));
 
         if (sequenceIndex)
         {
             // COMPLEMENTARY_PUSH_INDEX_DISPATCH: indirect push constants + extra push constant + index.
             // In the indirect commands buffer, the sequence index placeholder comes after the other indirect push
             // constants, but the push constant offset has to take into account the complentary push constant.
-            cmdsLayoutBuilder.addSequenceIndexToken(
-                cmdsLayoutBuilder.getStreamRange(),
-                makePushConstantRange(pcTokenStage, m_pcTokenDataSize + m_constantSize, m_constantSize));
+            if (m_params.useDescriptorHeap)
+            {
+                cmdsLayoutBuilder.addPushDataSequenceIndexToken(
+                    cmdsLayoutBuilder.getStreamRange(),
+                    makePushConstantRange(pcTokenStage, m_pcTokenDataSize + m_constantSize, m_constantSize));
+            }
+            else
+            {
+                cmdsLayoutBuilder.addSequenceIndexToken(
+                    cmdsLayoutBuilder.getStreamRange(),
+                    makePushConstantRange(pcTokenStage, m_pcTokenDataSize + m_constantSize, m_constantSize));
+            }
         }
     }
     else if (m_params.testType == TestType::MULTI_PUSH_DISPATCH)
     {
         // We have 3 push constants and we'll update them in two steps: 1,2 followed by 0.
-        DE_ASSERT(*m_pipelineLayout != VK_NULL_HANDLE);
-        cmdsLayoutBuilder.addPushConstantToken(
-            0u, makePushConstantRange(pcTokenStage, m_constantSize, m_constantSize * 2u));
-        cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(),
+        DE_ASSERT(m_params.useDescriptorHeap || *m_pipelineLayout != VK_NULL_HANDLE);
+        if (m_params.useDescriptorHeap)
+        {
+            cmdsLayoutBuilder.addPushDataToken(
+                0u, makePushConstantRange(pcTokenStage, m_constantSize, m_constantSize * 2u));
+            cmdsLayoutBuilder.addPushDataToken(cmdsLayoutBuilder.getStreamRange(),
                                                makePushConstantRange(pcTokenStage, 0u, m_constantSize));
+        }
+        else
+        {
+            cmdsLayoutBuilder.addPushConstantToken(
+                0u, makePushConstantRange(pcTokenStage, m_constantSize, m_constantSize * 2u));
+            cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(),
+                                                   makePushConstantRange(pcTokenStage, 0u, m_constantSize));
+        }
     }
     else if (m_params.testType == TestType::EXECUTION_SET_DISPATCH ||
              m_params.testType == TestType::OFFSET_EXECUTION_SET_DISPATCH)
@@ -540,7 +621,7 @@ void LayoutTestInstance::makeCommandsLayout(const DeviceInterface &vkd, VkDevice
              m_params.testType == TestType::EXECUTION_SET_INDEX_PUSH_DISPATCH ||
              m_params.testType == TestType::EXECUTION_SET_COMPLEMENTARY_PUSH_DISPATCH)
     {
-        DE_ASSERT(*m_pipelineLayout != VK_NULL_HANDLE);
+        DE_ASSERT(m_params.useDescriptorHeap || *m_pipelineLayout != VK_NULL_HANDLE);
         DE_ASSERT(m_pcTokenDataSize != 0u);
 
         if (m_params.shaderObjects)
@@ -554,13 +635,30 @@ void LayoutTestInstance::makeCommandsLayout(const DeviceInterface &vkd, VkDevice
         if (sequenceIndex)
         {
             DE_ASSERT(pcOffset == 0u);
-            cmdsLayoutBuilder.addSequenceIndexToken(
-                cmdsLayoutBuilder.getStreamRange(),
-                makePushConstantRange(pcTokenStage, pcOffset + m_pcTokenDataSize, m_constantSize));
+            if (m_params.useDescriptorHeap)
+            {
+                cmdsLayoutBuilder.addPushDataSequenceIndexToken(
+                    cmdsLayoutBuilder.getStreamRange(),
+                    makePushConstantRange(pcTokenStage, pcOffset + m_pcTokenDataSize, m_constantSize));
+            }
+            else
+            {
+                cmdsLayoutBuilder.addSequenceIndexToken(
+                    cmdsLayoutBuilder.getStreamRange(),
+                    makePushConstantRange(pcTokenStage, pcOffset + m_pcTokenDataSize, m_constantSize));
+            }
         }
 
-        cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(),
+        if (m_params.useDescriptorHeap)
+        {
+            cmdsLayoutBuilder.addPushDataToken(cmdsLayoutBuilder.getStreamRange(),
                                                makePushConstantRange(pcTokenStage, pcOffset, m_pcTokenDataSize));
+        }
+        else
+        {
+            cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(),
+                                                   makePushConstantRange(pcTokenStage, pcOffset, m_pcTokenDataSize));
+        }
     }
     else
         DE_ASSERT(false);
@@ -681,6 +779,58 @@ std::vector<uint32_t> LayoutTestInstance::makeIndirectCommands(
     return indirectCmds;
 }
 
+VkPhysicalDeviceDescriptorHeapPropertiesEXT GetPhysicalDeviceDescriptorHeapProperties(Context &context)
+{
+    VkPhysicalDeviceDescriptorHeapPropertiesEXT heapProps = initVulkanStructure();
+    VkPhysicalDeviceProperties2KHR features2              = initVulkanStructure();
+    features2.pNext                                       = &heapProps;
+
+    const auto ctx = context.getContextCommonData();
+    ctx.vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &features2);
+
+    return heapProps;
+}
+
+std::pair<std::unique_ptr<BufferWithMemory>, VkBindHeapInfoEXT> CreateResourceHeap(Context &context,
+                                                                                   VkDeviceSize userHeapSize)
+{
+    const auto ctx       = context.getContextCommonData();
+    const auto heapProps = GetPhysicalDeviceDescriptorHeapProperties(context);
+
+    userHeapSize = static_cast<VkDeviceSize>(
+        deAlign64(static_cast<int64_t>(userHeapSize), static_cast<int64_t>(heapProps.resourceHeapAlignment)));
+    const VkDeviceSize resourceHeapSize = userHeapSize + heapProps.minResourceHeapReservedRange;
+    if (resourceHeapSize == 0)
+        return {};
+
+    VkBufferCreateInfo resourceHeapBufferCreateInfo = initVulkanStructure();
+    resourceHeapBufferCreateInfo.flags              = 0;
+    resourceHeapBufferCreateInfo.size               = resourceHeapSize;
+    resourceHeapBufferCreateInfo.usage =
+        VK_BUFFER_USAGE_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    resourceHeapBufferCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+    resourceHeapBufferCreateInfo.queueFamilyIndexCount = 0;
+    resourceHeapBufferCreateInfo.pQueueFamilyIndices   = nullptr;
+
+    auto resourceHeapBuffer =
+        std::make_unique<BufferWithMemory>(ctx.vkd, ctx.device, ctx.allocator, resourceHeapBufferCreateInfo,
+                                           MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+
+    VkBufferDeviceAddressInfo resourceHeapBufferAddressInfo = initVulkanStructure();
+    resourceHeapBufferAddressInfo.buffer                    = resourceHeapBuffer->get();
+
+    const VkDeviceAddress resourceHeapAddress =
+        ctx.vkd.getBufferDeviceAddress(ctx.device, &resourceHeapBufferAddressInfo);
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = resourceHeapAddress;
+    bindHeapInfo.heapRange.size      = resourceHeapSize;
+    bindHeapInfo.reservedRangeOffset = userHeapSize;
+    bindHeapInfo.reservedRangeSize   = heapProps.minResourceHeapReservedRange;
+
+    return {std::move(resourceHeapBuffer), bindHeapInfo};
+}
+
 tcu::TestStatus LayoutTestInstance::iterate(void)
 {
     const auto ctx          = m_context.getContextCommonData();
@@ -727,10 +877,18 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
         static_cast<VkDeviceSize>(totalInvocations) * static_cast<VkDeviceSize>(sizeof(uint32_t));
 
     // Create a host-visible output buffer.
-    const auto outputBufferType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-    const auto outputBufferUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
-    const auto outputBufferInfo  = makeBufferCreateInfo(outputBufferSize, outputBufferUsage);
-    BufferWithMemory outputBuffer(ctx.vkd, ctx.device, ctx.allocator, outputBufferInfo, MemoryRequirement::HostVisible);
+    const auto outputBufferType          = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    VkBufferUsageFlags outputBufferUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+    if (m_params.useDescriptorHeap)
+    {
+        outputBufferUsage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    }
+
+    const auto outputBufferInfo = makeBufferCreateInfo(outputBufferSize, outputBufferUsage);
+    BufferWithMemory outputBuffer(ctx.vkd, ctx.device, ctx.allocator, outputBufferInfo,
+                                  m_params.useDescriptorHeap ?
+                                      (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress) :
+                                      MemoryRequirement::HostVisible);
     auto &outputBufferAlloc = outputBuffer.getAllocation();
     void *outputBufferData  = outputBufferAlloc.getHostPtr();
 
@@ -740,24 +898,56 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
 
     // Create the descriptor set layout, descriptor set and update it.
     DescriptorSetLayoutBuilder setLayoutBuilder;
-    setLayoutBuilder.addSingleBinding(outputBufferType, m_shaderStage);
-    m_setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+    Move<VkDescriptorPool> descriptorPool;
+    Move<VkDescriptorSet> descriptorSet;
 
-    DescriptorPoolBuilder poolBuilder;
-    poolBuilder.addType(outputBufferType);
-    const auto descriptorPool =
-        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
-    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *m_setLayout);
+    std::unique_ptr<BufferWithMemory> resourceHeap;
+    VkBindHeapInfoEXT bindHeapInfo = initVulkanStructure();
 
-    DescriptorSetUpdateBuilder setUpdateBuilder;
-    const auto outputBufferDescInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, outputBufferSize);
-    setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), outputBufferType,
-                                 &outputBufferDescInfo);
-    setUpdateBuilder.update(ctx.vkd, ctx.device);
+    if (m_params.useDescriptorHeap)
+    {
+        const auto heapProps            = GetPhysicalDeviceDescriptorHeapProperties(m_context);
+        const VkDeviceSize userHeapSize = heapProps.bufferDescriptorSize;
+
+        std::tie(resourceHeap, bindHeapInfo) = CreateResourceHeap(m_context, userHeapSize);
+
+        VkBufferDeviceAddressInfo bufferDeviceAddressInfo = initVulkanStructure();
+        bufferDeviceAddressInfo.buffer                    = outputBuffer.get();
+
+        VkDeviceAddressRangeEXT addressRange{};
+        addressRange.address = ctx.vkd.getBufferDeviceAddress(ctx.device, &bufferDeviceAddressInfo);
+        addressRange.size    = outputBufferSize;
+
+        VkHostAddressRangeEXT descriptorHostRange{};
+        descriptorHostRange.address = resourceHeap->getAllocation().getHostPtr();
+        descriptorHostRange.size    = static_cast<size_t>(heapProps.bufferDescriptorSize);
+
+        VkResourceDescriptorInfoEXT resourceDescriptorInfo = initVulkanStructure();
+        resourceDescriptorInfo.type                        = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+        resourceDescriptorInfo.data.pAddressRange          = &addressRange;
+
+        VK_CHECK(ctx.vkd.writeResourceDescriptorsEXT(ctx.device, 1, &resourceDescriptorInfo, &descriptorHostRange));
+    }
+    else
+    {
+        setLayoutBuilder.addSingleBinding(outputBufferType, m_shaderStage);
+        m_setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+        DescriptorPoolBuilder poolBuilder;
+        poolBuilder.addType(outputBufferType);
+        descriptorPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *m_setLayout);
+
+        DescriptorSetUpdateBuilder setUpdateBuilder;
+        const auto outputBufferDescInfo = makeDescriptorBufferInfo(*outputBuffer, 0ull, outputBufferSize);
+        setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                                     outputBufferType, &outputBufferDescInfo);
+        setUpdateBuilder.update(ctx.vkd, ctx.device);
+    }
 
     // Create the pipelines.
     createPipelinesOrShaders(ctx.vkd, ctx.device, specializationData);
-    DE_ASSERT(*m_pipelineLayout != VK_NULL_HANDLE);
+    DE_ASSERT(m_params.useDescriptorHeap || *m_pipelineLayout != VK_NULL_HANDLE);
 
     // Create the indirect execution set.
     ExecutionSetManagerPtr executionSet;
@@ -801,6 +991,11 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
     }
 
     // Make the commands layout.
+    if (m_params.useDescriptorHeap)
+    {
+        makeCommandsLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, nullptr);
+    }
+    else
     {
         const auto pipelineLayoutCreateInfo = getPipelineLayoutCreateInfo();
         const auto pipelineLayout           = (m_params.dynamicPipelineLayout ? VK_NULL_HANDLE : *m_pipelineLayout);
@@ -839,7 +1034,12 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
     const auto cmdBuffer = *cmd.cmdBuffer;
 
     beginCommandBuffer(ctx.vkd, cmdBuffer);
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, m_bindPoint, *m_pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+
+    if (m_params.useDescriptorHeap)
+        ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
+    else
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, m_bindPoint, *m_pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
+                                      nullptr);
 
     // Bind or prepare pipelines.
     if (*m_singlePipeline != VK_NULL_HANDLE)
@@ -859,7 +1059,20 @@ tcu::TestStatus LayoutTestInstance::iterate(void)
         const auto noIES    = (m_params.testType == TestType::COMPLEMENTARY_PUSH_DISPATCH ||
                             m_params.testType == TestType::COMPLEMENTARY_PUSH_INDEX_DISPATCH);
         const auto pcOffset = (noIES ? m_pcTokenDataSize : 0u);
-        ctx.vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, m_shaderStage, pcOffset, m_constantSize, &valueOffset2);
+
+        if (m_params.useDescriptorHeap)
+        {
+            VkPushDataInfoEXT pushDataInfo = initVulkanStructure();
+            pushDataInfo.data.address      = &valueOffset2;
+            pushDataInfo.data.size         = m_constantSize;
+            pushDataInfo.offset            = pcOffset;
+            ctx.vkd.cmdPushDataEXT(cmdBuffer, &pushDataInfo);
+        }
+        else
+        {
+            ctx.vkd.cmdPushConstants(cmdBuffer, *m_pipelineLayout, m_shaderStage, pcOffset, m_constantSize,
+                                     &valueOffset2);
+        }
     }
 
     // Execute indirect commands.
@@ -962,30 +1175,33 @@ tcu::TestCaseGroup *createDGCComputeLayoutTestsExt(tcu::TestContext &testCtx)
         {TestType::EXECUTION_SET_COMPLEMENTARY_PUSH_DISPATCH, "execution_set_complementary_push_dispatch"},
     };
 
-    for (const auto useComputeQueue : {false, true})
-        for (const auto useShaderObjects : {false, true})
-            for (const auto destroySetLayout : {false, true})
-            {
-                // We want to test destroying the layouts in VkIndirectExecutionSetShaderLayoutInfoEXT, which only
-                // applies to indirect execution sets using shader objects.
-                if (destroySetLayout && !useShaderObjects)
-                    continue;
+    for (const auto useDescriptorHeap : {false, true})
+        for (const auto useComputeQueue : {false, true})
+            for (const auto useShaderObjects : {false, true})
+                for (const auto destroySetLayout : {false, true})
+                {
+                    // We want to test destroying the layouts in VkIndirectExecutionSetShaderLayoutInfoEXT, which only
+                    // applies to indirect execution sets using shader objects.
+                    if (destroySetLayout && !useShaderObjects)
+                        continue;
 
-                for (const auto dynamicPipelineLayout : {false, true})
-                    for (const auto &testCase : testTypesTable)
-                    {
-                        if (destroySetLayout && !hasExecutionSet(testCase.testType))
-                            continue;
+                    for (const auto dynamicPipelineLayout : {false, true})
+                        for (const auto &testCase : testTypesTable)
+                        {
+                            if (destroySetLayout && !hasExecutionSet(testCase.testType))
+                                continue;
 
-                        TestParams params(testCase.testType, useShaderObjects, useComputeQueue, dynamicPipelineLayout,
-                                          destroySetLayout);
-                        const auto testName = std::string(testCase.name) + (useShaderObjects ? "_shader_objects" : "") +
-                                              (useComputeQueue ? "_cq" : "") +
-                                              (dynamicPipelineLayout ? "_dynamic_pipeline_layout" : "") +
-                                              (destroySetLayout ? "_destroy_ies_set_layout" : "");
-                        mainGroup->addChild(new LayoutTestCase(testCtx, testName, params));
-                    }
-            }
+                            TestParams params(testCase.testType, useShaderObjects, useComputeQueue,
+                                              dynamicPipelineLayout, destroySetLayout, useDescriptorHeap);
+                            const auto testName = std::string(testCase.name) +
+                                                  (useShaderObjects ? "_shader_objects" : "") +
+                                                  (useComputeQueue ? "_cq" : "") +
+                                                  (dynamicPipelineLayout ? "_dynamic_pipeline_layout" : "") +
+                                                  (destroySetLayout ? "_destroy_ies_set_layout" : "") +
+                                                  (useDescriptorHeap ? "_descriptor_heap" : "");
+                            mainGroup->addChild(new LayoutTestCase(testCtx, testName, params));
+                        }
+                }
 
     return mainGroup.release();
 }

@@ -2899,6 +2899,54 @@ tcu::TestStatus IfaceMatchingInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+std::pair<std::unique_ptr<BufferWithMemory>, VkBindHeapInfoEXT> CreateEmptyResourceHeap(Context &context)
+{
+    const auto ctx = context.getContextCommonData();
+
+    std::unique_ptr<BufferWithMemory> resourceHeapBuffer;
+
+    VkPhysicalDeviceDescriptorHeapPropertiesEXT heapProps = initVulkanStructure();
+    VkPhysicalDeviceProperties2KHR features2              = initVulkanStructure();
+    features2.pNext                                       = &heapProps;
+
+    ctx.vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &features2);
+
+    const VkDeviceSize resourceHeapSize = heapProps.minResourceHeapReservedRange;
+    if (resourceHeapSize == 0)
+        return {};
+
+    VkBufferUsageFlags2CreateInfo bufferUsageFlags2CreateInfo = initVulkanStructure();
+    bufferUsageFlags2CreateInfo.usage =
+        VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT;
+
+    VkBufferCreateInfo resourceHeapBufferCreateInfo    = initVulkanStructure();
+    resourceHeapBufferCreateInfo.pNext                 = &bufferUsageFlags2CreateInfo;
+    resourceHeapBufferCreateInfo.flags                 = 0;
+    resourceHeapBufferCreateInfo.size                  = resourceHeapSize;
+    resourceHeapBufferCreateInfo.usage                 = 0;
+    resourceHeapBufferCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
+    resourceHeapBufferCreateInfo.queueFamilyIndexCount = 0;
+    resourceHeapBufferCreateInfo.pQueueFamilyIndices   = nullptr;
+
+    resourceHeapBuffer =
+        std::make_unique<BufferWithMemory>(ctx.vkd, ctx.device, ctx.allocator, resourceHeapBufferCreateInfo,
+                                           MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+
+    VkBufferDeviceAddressInfo resourceHeapBufferAddressInfo = initVulkanStructure();
+    resourceHeapBufferAddressInfo.buffer                    = resourceHeapBuffer->get();
+
+    const VkDeviceAddress resourceHeapAddress =
+        ctx.vkd.getBufferDeviceAddress(ctx.device, &resourceHeapBufferAddressInfo);
+
+    VkBindHeapInfoEXT bindHeapInfo   = initVulkanStructure();
+    bindHeapInfo.heapRange.address   = resourceHeapAddress;
+    bindHeapInfo.heapRange.size      = resourceHeapSize;
+    bindHeapInfo.reservedRangeOffset = 0;
+    bindHeapInfo.reservedRangeSize   = heapProps.minResourceHeapReservedRange;
+
+    return {std::move(resourceHeapBuffer), bindHeapInfo};
+}
+
 void SequenceIndexPrograms(vk::SourceCollections &dst)
 {
     std::ostringstream vert;
@@ -2920,13 +2968,18 @@ void SequenceIndexPrograms(vk::SourceCollections &dst)
     dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
-void SequenceIndexSupport(Context &context)
+void SequenceIndexSupport(Context &context, bool const useDescriptorHeap)
 {
     const auto stages = (VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT);
     checkDGCExtSupport(context, stages);
+
+    if (useDescriptorHeap)
+    {
+        context.requireDeviceFunctionality(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
+    }
 }
 
-tcu::TestStatus SequenceIndexRun(Context &context)
+tcu::TestStatus SequenceIndexRun(Context &context, bool const useDescriptorHeap)
 {
     const auto ctx = context.getContextCommonData();
     const tcu::IVec3 fbExtent(256, 1, 1);
@@ -2962,6 +3015,12 @@ tcu::TestStatus SequenceIndexRun(Context &context)
     }
     const VkDeviceSize vertexBufferOffset = 0ull;
 
+    // Descriptor heap
+    std::unique_ptr<BufferWithMemory> resourceHeapBuffer;
+    VkBindHeapInfoEXT bindHeapInfo{};
+    if (useDescriptorHeap)
+        std::tie(resourceHeapBuffer, bindHeapInfo) = CreateEmptyResourceHeap(context);
+
     // Render pass, framebuffer, shaders, pipeline.
     const auto renderPass  = makeRenderPass(ctx.vkd, ctx.device, colorFormat);
     const auto framebuffer = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(),
@@ -2975,19 +3034,34 @@ tcu::TestStatus SequenceIndexRun(Context &context)
     const auto pcStages = VK_SHADER_STAGE_FRAGMENT_BIT;
     const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+    Move<VkPipelineLayout> pipelineLayout;
+    if (!useDescriptorHeap)
+    {
+        pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+    }
 
     const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
     const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
 
-    const auto pipeline = makeGraphicsPipeline(
-        ctx.vkd, ctx.device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
-        *renderPass, viewports, scissors, topology); // Default values work fine here including vertex inputs.
+    VkPipelineCreateFlags2CreateInfo pipelineCreateFlags2 = initVulkanStructure();
+    pipelineCreateFlags2.flags                            = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertModule, VK_NULL_HANDLE,
+                                               VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule, *renderPass, viewports,
+                                               scissors, topology, 0, 0, nullptr, nullptr, nullptr, nullptr, nullptr,
+                                               nullptr, useDescriptorHeap ? &pipelineCreateFlags2 : nullptr);
 
     // DGC commands layout, sequences and preprocess buffer.
     const auto shaderStages = (VK_SHADER_STAGE_FRAGMENT_BIT | VK_SHADER_STAGE_VERTEX_BIT);
     IndirectCommandsLayoutBuilderExt cmdsLayoutBuilder(0u, shaderStages, *pipelineLayout);
-    cmdsLayoutBuilder.addSequenceIndexToken(0u, pcRange);
+    if (useDescriptorHeap)
+    {
+        cmdsLayoutBuilder.addPushDataSequenceIndexToken(0u, pcRange);
+    }
+    else
+    {
+        cmdsLayoutBuilder.addSequenceIndexToken(0u, pcRange);
+    }
     cmdsLayoutBuilder.addDrawToken(cmdsLayoutBuilder.getStreamRange());
     const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
 
@@ -3024,6 +3098,10 @@ tcu::TestStatus SequenceIndexRun(Context &context)
     const tcu::UVec4 clearColor(0u, 0u, 0u, 0u);
 
     beginCommandBuffer(ctx.vkd, cmdBuffer);
+    if (useDescriptorHeap)
+    {
+        ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
+    }
     ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
     beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
     ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
@@ -4288,7 +4366,8 @@ VkShaderStageFlags tessGeomTypeToFlags(TessGeomType type)
 struct TessGeomPCParams
 {
     TessGeomType type;
-    bool partial; // Partial means the red value will be pushed outside execution of the indirect commands.
+    bool partial;           // Partial means the red value will be pushed outside execution of the indirect commands.
+    bool useDescriptorHeap; // Use VK_EXT_descriptor_heap or not.
 
     bool hasTess(void) const
     {
@@ -4313,6 +4392,9 @@ void tessGeomPushConstantsCheckSupport(Context &context, TessGeomPCParams params
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
     else
         DE_ASSERT(false);
+
+    if (params.useDescriptorHeap)
+        context.requireDeviceFunctionality(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
 
     checkDGCExtSupport(context, params.usedStages());
 }
@@ -4466,7 +4548,9 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
     const auto pcSize           = DE_SIZEOF32(float) * 3u; // red, green and blue floats
     const auto pcRange          = makePushConstantRange(pcStages, 0u, pcSize);
 
-    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+    Move<VkPipelineLayout> pipelineLayout;
+    if (!params.useDescriptorHeap)
+        pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
 
     const auto vertexBinding =
         makeVertexInputBindingDescription(0u, DE_SIZEOF32(tcu::Vec4), VK_VERTEX_INPUT_RATE_VERTEX);
@@ -4481,6 +4565,11 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
         1u,
         &vertexAttribute,
     };
+
+    std::unique_ptr<BufferWithMemory> resourceHeapBuffer;
+    VkBindHeapInfoEXT bindHeapInfo{};
+    if (params.useDescriptorHeap)
+        std::tie(resourceHeapBuffer, bindHeapInfo) = CreateEmptyResourceHeap(context);
 
     const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
     const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
@@ -4505,9 +4594,13 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
     const auto topology           = (hasTess ? VK_PRIMITIVE_TOPOLOGY_PATCH_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
     const auto patchControlPoints = (hasTess ? 3u : 0u);
 
-    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *vertModule, *tescModule,
-                                               *teseModule, *geomModule, *fragModule, *renderPass, viewports, scissors,
-                                               topology, 0u, patchControlPoints, &vertexInputStateCreateInfo);
+    VkPipelineCreateFlags2CreateInfo pipelineCreateFlags2 = initVulkanStructure();
+    pipelineCreateFlags2.flags                            = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+
+    const auto pipeline = makeGraphicsPipeline(
+        ctx.vkd, ctx.device, *pipelineLayout, *vertModule, *tescModule, *teseModule, *geomModule, *fragModule,
+        *renderPass, viewports, scissors, topology, 0u, patchControlPoints, &vertexInputStateCreateInfo, nullptr,
+        nullptr, nullptr, nullptr, nullptr, params.useDescriptorHeap ? &pipelineCreateFlags2 : nullptr);
 
     // Commands layout.
     const auto kSequenceCount = 4u;
@@ -4518,12 +4611,18 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
     {
         // Partial update for the red color.
         const auto redRange = makePushConstantRange(pcStages, 0u, DE_SIZEOF32(float) /*R*/);
-        cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(), redRange);
+        if (params.useDescriptorHeap)
+            cmdsLayoutBuilder.addPushDataToken(cmdsLayoutBuilder.getStreamRange(), redRange);
+        else
+            cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(), redRange);
     }
     {
         // Partial update for the green and blue colors.
         const auto gbRange = makePushConstantRange(pcStages, DE_SIZEOF32(float), DE_SIZEOF32(float) * 2u /*GB*/);
-        cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(), gbRange);
+        if (params.useDescriptorHeap)
+            cmdsLayoutBuilder.addPushDataToken(cmdsLayoutBuilder.getStreamRange(), gbRange);
+        else
+            cmdsLayoutBuilder.addPushConstantToken(cmdsLayoutBuilder.getStreamRange(), gbRange);
     }
     cmdsLayoutBuilder.addDrawIndexedToken(cmdsLayoutBuilder.getStreamRange());
     const auto cmdsLayout = cmdsLayoutBuilder.build(ctx.vkd, ctx.device);
@@ -4572,8 +4671,24 @@ tcu::TestStatus tessGeomPushConstantsRun(Context &context, TessGeomPCParams para
     ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
     ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
     ctx.vkd.cmdBindIndexBuffer(cmdBuffer, indexBuffer.get(), 0ull, VK_INDEX_TYPE_UINT32);
-    if (params.partial)
-        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, DE_SIZEOF32(float), &red);
+    if (params.useDescriptorHeap)
+    {
+        ctx.vkd.cmdBindResourceHeapEXT(cmdBuffer, &bindHeapInfo);
+
+        if (params.partial)
+        {
+            VkPushDataInfoEXT pdInfo = initVulkanStructure();
+            pdInfo.offset            = 0;
+            pdInfo.data.address      = &red;
+            pdInfo.data.size         = DE_SIZEOF32(float);
+            ctx.vkd.cmdPushDataEXT(cmdBuffer, &pdInfo);
+        }
+    }
+    else
+    {
+        if (params.partial)
+            ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, DE_SIZEOF32(float), &red);
+    }
     {
         const DGCGenCmdsInfo cmdsInfo(stageFlags, VK_NULL_HANDLE, *cmdsLayout, dgcBuffer.getDeviceAddress(),
                                       dgcBuffer.getSize(), preprocessBuffer.getDeviceAddress(),
@@ -8325,8 +8440,14 @@ tcu::TestCaseGroup *createDGCGraphicsMiscTestsExt(tcu::TestContext &testCtx)
         mainGroup->addChild(new MultiIfaceCase(testCtx, testName, params));
     }
 
-    addFunctionCaseWithPrograms(mainGroup.get(), "sequence_index_token", SequenceIndexSupport, SequenceIndexPrograms,
-                                SequenceIndexRun);
+    addFunctionCaseWithPrograms(
+        mainGroup.get(), "sequence_index_token", [](vkt::Context &context) { SequenceIndexSupport(context, false); },
+        SequenceIndexPrograms, [](vkt::Context &context) { return SequenceIndexRun(context, false); });
+
+    addFunctionCaseWithPrograms(
+        mainGroup.get(), "sequence_index_token_descriptor_heap",
+        [](vkt::Context &context) { SequenceIndexSupport(context, true); }, SequenceIndexPrograms,
+        [](vkt::Context &context) { return SequenceIndexRun(context, true); });
 
     for (const auto useExecutionSet : {false, true})
     {
@@ -8379,15 +8500,16 @@ tcu::TestCaseGroup *createDGCGraphicsMiscTestsExt(tcu::TestContext &testCtx)
             {TessGeomType::GEOM, "geom"},
         };
 
-        for (const auto &tessGeomPCCase : tessGeomPCCases)
-            for (bool partial : {false, true})
-            {
-                const TessGeomPCParams params{tessGeomPCCase.type, partial};
-                const auto testName =
-                    std::string("tg_push_constants_") + tessGeomPCCase.suffix + (partial ? "_partial" : "");
-                addFunctionCaseWithPrograms(mainGroup.get(), testName, tessGeomPushConstantsCheckSupport,
-                                            tessGeomPushConstantsInitPrograms, tessGeomPushConstantsRun, params);
-            }
+        for (bool useDescriptorHeap : {false, true})
+            for (const auto &tessGeomPCCase : tessGeomPCCases)
+                for (bool partial : {false, true})
+                {
+                    const TessGeomPCParams params{tessGeomPCCase.type, partial, useDescriptorHeap};
+                    const auto testName = std::string("tg_push_constants_") + tessGeomPCCase.suffix +
+                                          (partial ? "_partial" : "") + (useDescriptorHeap ? "_descriptor_heap" : "");
+                    addFunctionCaseWithPrograms(mainGroup.get(), testName, tessGeomPushConstantsCheckSupport,
+                                                tessGeomPushConstantsInitPrograms, tessGeomPushConstantsRun, params);
+                }
     }
 
     {
