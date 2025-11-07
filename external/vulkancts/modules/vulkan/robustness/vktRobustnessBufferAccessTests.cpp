@@ -69,6 +69,22 @@ static VkDeviceSize min(VkDeviceSize a, VkDeviceSize b)
     return (a < b) ? a : b;
 }
 
+#ifndef CTS_USES_VULKANSC
+static VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, const VkDevice device, const VkBuffer buffer)
+{
+
+    if (buffer == VK_NULL_HANDLE)
+        return 0;
+
+    VkBufferDeviceAddressInfo deviceAddressInfo{
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType    sType
+        nullptr,                                      // const void*        pNext
+        buffer                                        // VkBuffer           buffer;
+    };
+    return vk.getBufferDeviceAddress(device, &deviceAddressInfo);
+}
+#endif
+
 class RobustBufferAccessTest : public vkt::TestCase
 {
 public:
@@ -78,7 +94,8 @@ public:
     static const uint32_t s_numberOfVectorBytesAccessed;
 
     RobustBufferAccessTest(tcu::TestContext &testContext, const std::string &name, VkShaderStageFlags shaderStage,
-                           ShaderType shaderType, VkFormat bufferFormat, bool testPipelineRobustness);
+                           ShaderType shaderType, VkFormat bufferFormat, bool testPipelineRobustness,
+                           bool testDescriptorHeaps);
 
     virtual ~RobustBufferAccessTest(void)
     {
@@ -110,6 +127,7 @@ protected:
     const ShaderType m_shaderType;
     const VkFormat m_bufferFormat;
     const bool m_testPipelineRobustness;
+    const bool m_testDescriptorHeaps;
 };
 
 class RobustBufferReadTest : public RobustBufferAccessTest
@@ -117,7 +135,8 @@ class RobustBufferReadTest : public RobustBufferAccessTest
 public:
     RobustBufferReadTest(tcu::TestContext &testContext, const std::string &name, VkShaderStageFlags shaderStage,
                          ShaderType shaderType, VkFormat bufferFormat, bool testPipelineRobustness,
-                         VkDeviceSize readAccessRange, bool readFromStorage, bool accessOutOfBackingMemory);
+                         bool testDescriptorHeaps, VkDeviceSize readAccessRange, bool readFromStorage,
+                         bool accessOutOfBackingMemory);
 
     virtual ~RobustBufferReadTest(void)
     {
@@ -137,7 +156,7 @@ class RobustBufferWriteTest : public RobustBufferAccessTest
 public:
     RobustBufferWriteTest(tcu::TestContext &testContext, const std::string &name, VkShaderStageFlags shaderStage,
                           ShaderType shaderType, VkFormat bufferFormat, bool testPipelineRobustness,
-                          VkDeviceSize writeAccessRange, bool accessOutOfBackingMemory);
+                          bool testDescriptorHeaps, VkDeviceSize writeAccessRange, bool accessOutOfBackingMemory);
 
     virtual ~RobustBufferWriteTest(void)
     {
@@ -163,7 +182,8 @@ public:
 #endif // CTS_USES_VULKANSC
                          ShaderType shaderType, VkShaderStageFlags shaderStage, VkFormat bufferFormat,
                          BufferAccessType bufferAccessType, VkDeviceSize inBufferAccessRange,
-                         VkDeviceSize outBufferAccessRange, bool accessOutOfBackingMemory, bool testPipelineRobustness);
+                         VkDeviceSize outBufferAccessRange, bool accessOutOfBackingMemory, bool testPipelineRobustness,
+                         bool testDescriptorHeaps);
 
     virtual ~BufferAccessInstance(void);
 
@@ -213,6 +233,9 @@ protected:
     Move<VkDescriptorSetLayout> m_descriptorSetLayout;
     Move<VkDescriptorSet> m_descriptorSet;
 
+    Move<VkBuffer> m_resourceHeap;
+    de::MovePtr<Allocation> m_resourceHeapAlloc;
+
     Move<VkFence> m_fence;
     VkQueue m_queue;
 
@@ -226,6 +249,7 @@ protected:
 
     const bool m_accessOutOfBackingMemory;
     const bool m_testPipelineRobustness;
+    const bool m_testDescriptorHeaps;
 };
 
 class BufferReadInstance : public BufferAccessInstance
@@ -240,7 +264,7 @@ public:
 #endif // CTS_USES_VULKANSC
                        ShaderType shaderType, VkShaderStageFlags shaderStage, VkFormat bufferFormat,
                        bool readFromStorage, VkDeviceSize inBufferAccessRange, bool accessOutOfBackingMemory,
-                       bool testPipelineRobustness);
+                       bool testPipelineRobustness, bool testDescriptorHeaps);
 
     virtual ~BufferReadInstance(void)
     {
@@ -260,8 +284,8 @@ public:
                         de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver,
 #endif // CTS_USES_VULKANSC
                         ShaderType shaderType, VkShaderStageFlags shaderStage, VkFormat bufferFormat,
-                        VkDeviceSize writeBufferAccessRange, bool accessOutOfBackingMemory,
-                        bool testPipelineRobustness);
+                        VkDeviceSize writeBufferAccessRange, bool accessOutOfBackingMemory, bool testPipelineRobustness,
+                        bool testDescriptorHeaps);
 
     virtual ~BufferWriteInstance(void)
     {
@@ -277,12 +301,14 @@ const uint32_t RobustBufferAccessTest::s_numberOfVectorBytesAccessed = (uint32_t
 
 RobustBufferAccessTest::RobustBufferAccessTest(tcu::TestContext &testContext, const std::string &name,
                                                VkShaderStageFlags shaderStage, ShaderType shaderType,
-                                               VkFormat bufferFormat, bool testPipelineRobustness)
+                                               VkFormat bufferFormat, bool testPipelineRobustness,
+                                               bool testDescriptorHeaps)
     : vkt::TestCase(testContext, name)
     , m_shaderStage(shaderStage)
     , m_shaderType(shaderType)
     , m_bufferFormat(bufferFormat)
     , m_testPipelineRobustness(testPipelineRobustness)
+    , m_testDescriptorHeaps(testDescriptorHeaps)
 {
     DE_ASSERT(m_shaderStage == VK_SHADER_STAGE_VERTEX_BIT || m_shaderStage == VK_SHADER_STAGE_FRAGMENT_BIT ||
               m_shaderStage == VK_SHADER_STAGE_COMPUTE_BIT);
@@ -687,9 +713,11 @@ void RobustBufferAccessTest::initBufferAccessPrograms(SourceCollections &program
 
 RobustBufferReadTest::RobustBufferReadTest(tcu::TestContext &testContext, const std::string &name,
                                            VkShaderStageFlags shaderStage, ShaderType shaderType, VkFormat bufferFormat,
-                                           bool testPipelineRobustness, VkDeviceSize readAccessRange,
-                                           bool readFromStorage, bool accessOutOfBackingMemory)
-    : RobustBufferAccessTest(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
+                                           bool testPipelineRobustness, bool testDescriptorHeaps,
+                                           VkDeviceSize readAccessRange, bool readFromStorage,
+                                           bool accessOutOfBackingMemory)
+    : RobustBufferAccessTest(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness,
+                             testDescriptorHeaps)
     , m_readFromStorage(readFromStorage)
     , m_readAccessRange(readAccessRange)
     , m_accessOutOfBackingMemory(accessOutOfBackingMemory)
@@ -732,9 +760,27 @@ TestInstance *RobustBufferReadTest::createInstance(Context &context) const
         pipelineRobustnessFeatures.pNext = features2.pNext;
         features2.pNext                  = &pipelineRobustnessFeatures;
     }
+
+    VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures           = initVulkanStructure();
+    VkPhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeatures = initVulkanStructure();
+    if (m_testDescriptorHeaps)
+    {
+        context.requireDeviceFunctionality(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
+        context.requireDeviceFunctionality(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+
+        descriptorHeapFeatures.descriptorHeap           = VK_TRUE;
+        bufferDeviceAddressFeatures.bufferDeviceAddress = VK_TRUE;
+
+        descriptorHeapFeatures.pNext = features2.pNext;
+        features2.pNext              = &descriptorHeapFeatures;
+
+        bufferDeviceAddressFeatures.pNext = features2.pNext;
+        features2.pNext                   = &bufferDeviceAddressFeatures;
+    }
 #endif
 
-    const bool useFeatures2 = (m_testPipelineRobustness || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
+    const bool useFeatures2 =
+        (m_testPipelineRobustness || m_testDescriptorHeaps || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
 
 #ifndef CTS_USES_VULKANSC
     Move<VkDevice> device = createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
@@ -760,7 +806,8 @@ TestInstance *RobustBufferReadTest::createInstance(Context &context) const
                                   customInstance,
 #endif // CTS_USES_VULKANSC
                                   deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_readFromStorage,
-                                  m_readAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness);
+                                  m_readAccessRange, m_accessOutOfBackingMemory, m_testPipelineRobustness,
+                                  m_testDescriptorHeaps);
 }
 
 // RobustBufferWriteTest
@@ -768,9 +815,11 @@ TestInstance *RobustBufferReadTest::createInstance(Context &context) const
 RobustBufferWriteTest::RobustBufferWriteTest(tcu::TestContext &testContext, const std::string &name,
                                              VkShaderStageFlags shaderStage, ShaderType shaderType,
                                              VkFormat bufferFormat, bool testPipelineRobustness,
-                                             VkDeviceSize writeAccessRange, bool accessOutOfBackingMemory)
+                                             bool testDescriptorHeaps, VkDeviceSize writeAccessRange,
+                                             bool accessOutOfBackingMemory)
 
-    : RobustBufferAccessTest(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness)
+    : RobustBufferAccessTest(testContext, name, shaderStage, shaderType, bufferFormat, testPipelineRobustness,
+                             testDescriptorHeaps)
     , m_writeAccessRange(writeAccessRange)
     , m_accessOutOfBackingMemory(accessOutOfBackingMemory)
 {
@@ -816,9 +865,29 @@ TestInstance *RobustBufferWriteTest::createInstance(Context &context) const
 
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
     }
+
+    VkPhysicalDeviceDescriptorHeapFeaturesEXT descriptorHeapFeatures           = initVulkanStructure();
+    VkPhysicalDeviceBufferDeviceAddressFeaturesKHR bufferDeviceAddressFeatures = initVulkanStructure();
+    if (m_testDescriptorHeaps)
+    {
+        context.requireDeviceFunctionality(VK_EXT_DESCRIPTOR_HEAP_EXTENSION_NAME);
+        context.requireDeviceFunctionality(VK_KHR_BUFFER_DEVICE_ADDRESS_EXTENSION_NAME);
+
+        const auto &vki           = context.getInstanceInterface();
+        const auto physicalDevice = context.getPhysicalDevice();
+
+        descriptorHeapFeatures.pNext = features2.pNext;
+        features2.pNext              = &descriptorHeapFeatures;
+
+        bufferDeviceAddressFeatures.pNext = features2.pNext;
+        features2.pNext                   = &bufferDeviceAddressFeatures;
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+    }
 #endif
 
-    const bool useFeatures2 = (m_testPipelineRobustness || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
+    const bool useFeatures2 =
+        (m_testPipelineRobustness || m_testDescriptorHeaps || is64BitsTest_ || isVertexTest_ || isFragmentTest_);
 
 #ifndef CTS_USES_VULKANSC
     Move<VkDevice> device = createRobustBufferAccessDevice(context, (useFeatures2 ? &features2 : nullptr));
@@ -844,7 +913,15 @@ TestInstance *RobustBufferWriteTest::createInstance(Context &context) const
                                    customInstance,
 #endif // CTS_USES_VULKANSC
                                    deviceDriver, m_shaderType, m_shaderStage, m_bufferFormat, m_writeAccessRange,
-                                   m_accessOutOfBackingMemory, m_testPipelineRobustness);
+                                   m_accessOutOfBackingMemory, m_testPipelineRobustness, m_testDescriptorHeaps);
+}
+
+static MemoryRequirement GetHostVisibleRequirement(bool includeDeviceAddress)
+{
+    if (includeDeviceAddress)
+        return MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress;
+    else
+        return MemoryRequirement::HostVisible;
 }
 
 // BufferAccessInstance
@@ -859,7 +936,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
                                            ShaderType shaderType, VkShaderStageFlags shaderStage, VkFormat bufferFormat,
                                            BufferAccessType bufferAccessType, VkDeviceSize inBufferAccessRange,
                                            VkDeviceSize outBufferAccessRange, bool accessOutOfBackingMemory,
-                                           bool testPipelineRobustness)
+                                           bool testPipelineRobustness, bool testDescriptorHeaps)
     : vkt::TestInstance(context)
 #ifdef CTS_USES_VULKANSC
     , m_customInstance(customInstance)
@@ -874,6 +951,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
     , m_outBufferAccessRange(outBufferAccessRange)
     , m_accessOutOfBackingMemory(accessOutOfBackingMemory)
     , m_testPipelineRobustness(testPipelineRobustness)
+    , m_testDescriptorHeaps(testDescriptorHeaps)
 {
     const DeviceInterface &vk             = *m_deviceDriver;
     const auto &vki                       = context.getInstanceInterface();
@@ -948,6 +1026,11 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
                 readFromStorage ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
         }
 
+        if (m_testDescriptorHeaps)
+        {
+            inBufferUsageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        }
+
         const VkBufferCreateInfo inBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
@@ -963,7 +1046,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         inBufferMemoryReqs  = getBufferMemoryRequirements(vk, *m_device, *m_inBuffer);
         m_inBufferAllocSize = inBufferMemoryReqs.size;
-        m_inBufferAlloc     = memAlloc.allocate(inBufferMemoryReqs, MemoryRequirement::HostVisible);
+        m_inBufferAlloc     = memAlloc.allocate(inBufferMemoryReqs, GetHostVisibleRequirement(m_testDescriptorHeaps));
 
         // Size of the most restrictive bound
         m_inBufferMaxAccessRange = min(m_inBufferAllocSize, min(inBufferParams.size, m_inBufferAccessRange));
@@ -982,9 +1065,14 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
     // Create buffer to write data into
     {
         VkMemoryRequirements outBufferMemoryReqs;
-        const VkBufferUsageFlags outBufferUsageFlags = (m_shaderType == SHADER_TYPE_TEXEL_COPY) ?
-                                                           VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT :
-                                                           VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        VkBufferUsageFlags outBufferUsageFlags = (m_shaderType == SHADER_TYPE_TEXEL_COPY) ?
+                                                     VK_BUFFER_USAGE_STORAGE_TEXEL_BUFFER_BIT :
+                                                     VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+
+        if (m_testDescriptorHeaps)
+        {
+            outBufferUsageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        }
 
         const VkBufferCreateInfo outBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
@@ -1001,7 +1089,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         outBufferMemoryReqs  = getBufferMemoryRequirements(vk, *m_device, *m_outBuffer);
         m_outBufferAllocSize = outBufferMemoryReqs.size;
-        m_outBufferAlloc     = memAlloc.allocate(outBufferMemoryReqs, MemoryRequirement::HostVisible);
+        m_outBufferAlloc     = memAlloc.allocate(outBufferMemoryReqs, GetHostVisibleRequirement(m_testDescriptorHeaps));
 
 #ifdef CTS_USES_VULKANSC
         if (m_context.getTestContext().getCommandLine().isSubProcess())
@@ -1041,12 +1129,19 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         IndicesBuffer indices = {0, 0};
 
+        VkBufferUsageFlags indicesBufferUsageFlags = VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT;
+
+        if (m_testDescriptorHeaps)
+        {
+            indicesBufferUsageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        }
+
         const VkBufferCreateInfo indicesBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             sizeof(IndicesBuffer),                // VkDeviceSize size;
-            VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT,   // VkBufferUsageFlags usage;
+            indicesBufferUsageFlags,              // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
             nullptr,                              // const uint32_t* pQueueFamilyIndices;
@@ -1054,7 +1149,7 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
         m_indicesBuffer      = createBuffer(vk, *m_device, &indicesBufferParams);
         m_indicesBufferAlloc = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_device, *m_indicesBuffer),
-                                                 MemoryRequirement::HostVisible);
+                                                 GetHostVisibleRequirement(m_testDescriptorHeaps));
 
         VK_CHECK(vk.bindBufferMemory(*m_device, *m_indicesBuffer, m_indicesBufferAlloc->getMemory(),
                                      m_indicesBufferAlloc->getOffset()));
@@ -1094,24 +1189,25 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
         log << tcu::TestLog::Message << "outIndex = " << indices.outIndex << tcu::TestLog::EndMessage;
     }
 
-    // Create descriptor data
+    VkDescriptorType inBufferDescriptorType;
+    VkDescriptorType outBufferDescriptorType;
+
+    if (isTexelAccess)
     {
-        VkDescriptorType inBufferDescriptorType;
-        VkDescriptorType outBufferDescriptorType;
+        inBufferDescriptorType =
+            readFromStorage ? VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
+        outBufferDescriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
+    }
+    else
+    {
+        inBufferDescriptorType =
+            readFromStorage ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        outBufferDescriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    }
 
-        if (isTexelAccess)
-        {
-            inBufferDescriptorType =
-                readFromStorage ? VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER : VK_DESCRIPTOR_TYPE_UNIFORM_TEXEL_BUFFER;
-            outBufferDescriptorType = VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER;
-        }
-        else
-        {
-            inBufferDescriptorType =
-                readFromStorage ? VK_DESCRIPTOR_TYPE_STORAGE_BUFFER : VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-            outBufferDescriptorType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        }
-
+    // Create descriptor data
+    if (!m_testDescriptorHeaps)
+    {
         DescriptorPoolBuilder descriptorPoolBuilder;
         descriptorPoolBuilder.addType(inBufferDescriptorType, 1u);
         descriptorPoolBuilder.addType(outBufferDescriptorType, 1u);
@@ -1187,6 +1283,172 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
         setUpdateBuilder.update(vk, *m_device);
     }
 
+    // Create descriptor heap data
+    DescriptorHeapEnvironmentParams heapParams;
+
+#ifndef CTS_USES_VULKANSC
+    if (m_testDescriptorHeaps)
+    {
+        VkPhysicalDeviceDescriptorHeapPropertiesEXT heapProps = initVulkanStructure();
+        VkPhysicalDeviceProperties2KHR features2              = initVulkanStructure();
+        features2.pNext                                       = &heapProps;
+
+        vki.getPhysicalDeviceProperties2(context.getPhysicalDevice(), &features2);
+
+        const int64_t descriptorSize =
+            static_cast<int64_t>(isTexelAccess ? heapProps.imageDescriptorSize : heapProps.bufferDescriptorSize);
+        const VkDeviceSize descriptorAlignment = static_cast<int64_t>(
+            isTexelAccess ? heapProps.imageDescriptorAlignment : heapProps.bufferDescriptorAlignment);
+
+        int64_t userResourceHeapSize          = 0;
+        userResourceHeapSize                  = userResourceHeapSize + heapProps.bufferDescriptorSize;
+        userResourceHeapSize                  = deAlign64(descriptorSize, descriptorAlignment);
+        const VkDeviceSize testResourceOffset = static_cast<VkDeviceSize>(userResourceHeapSize);
+        userResourceHeapSize                  = userResourceHeapSize + 2 * descriptorSize;
+        userResourceHeapSize = deAlign64(userResourceHeapSize, static_cast<int64_t>(heapProps.resourceHeapAlignment));
+
+        const VkDeviceSize resourceHeapSize =
+            static_cast<VkDeviceSize>(userResourceHeapSize + heapProps.minResourceHeapReservedRange);
+
+        VkBufferUsageFlags2CreateInfo resourceHeapFlags2 = initVulkanStructure();
+        resourceHeapFlags2.usage =
+            VK_BUFFER_USAGE_2_DESCRIPTOR_HEAP_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT_KHR;
+
+        const VkBufferCreateInfo resourceHeapParams = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            &resourceHeapFlags2,                  // const void* pNext;
+            0u,                                   // VkBufferCreateFlags flags;
+            resourceHeapSize,                     // VkDeviceSize size;
+            0,                                    // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+            VK_QUEUE_FAMILY_IGNORED,              // uint32_t queueFamilyIndexCount;
+            nullptr,                              // const uint32_t* pQueueFamilyIndices;
+        };
+
+        m_resourceHeap      = createBuffer(vk, *m_device, &resourceHeapParams);
+        m_resourceHeapAlloc = memAlloc.allocate(getBufferMemoryRequirements(vk, *m_device, *m_resourceHeap),
+                                                GetHostVisibleRequirement(m_testDescriptorHeaps));
+
+        VK_CHECK(vk.bindBufferMemory(*m_device, *m_resourceHeap, m_resourceHeapAlloc->getMemory(),
+                                     m_resourceHeapAlloc->getOffset()));
+
+        char *const heapData = static_cast<char *>(m_resourceHeapAlloc->getHostPtr());
+
+        std::vector<VkResourceDescriptorInfoEXT> resourceDescInfos;
+
+        VkTexelBufferDescriptorInfoEXT inTexelBufferDescriptorInfo  = initVulkanStructure();
+        VkTexelBufferDescriptorInfoEXT outTexelBufferDescriptorInfo = initVulkanStructure();
+
+        VkDeviceAddressRangeEXT inBufferAddressRange{};
+        VkDeviceAddressRangeEXT outBufferAddressRange{};
+
+        if (isTexelAccess)
+        {
+            inTexelBufferDescriptorInfo.addressRange.address = getBufferDeviceAddress(vk, *m_device, *m_inBuffer);
+            inTexelBufferDescriptorInfo.addressRange.size    = m_inBufferAccessRange;
+            inTexelBufferDescriptorInfo.format               = m_bufferFormat;
+
+            VkResourceDescriptorInfoEXT &inTexelBufferResource = resourceDescInfos.emplace_back();
+            inTexelBufferResource                              = initVulkanStructure();
+            inTexelBufferResource.type                         = inBufferDescriptorType;
+            inTexelBufferResource.data.pTexelBuffer            = &inTexelBufferDescriptorInfo;
+
+            outTexelBufferDescriptorInfo.addressRange.address = getBufferDeviceAddress(vk, *m_device, *m_outBuffer);
+            outTexelBufferDescriptorInfo.addressRange.size    = m_outBufferAccessRange;
+            outTexelBufferDescriptorInfo.format               = m_bufferFormat;
+
+            VkResourceDescriptorInfoEXT &outTexelBufferResource = resourceDescInfos.emplace_back();
+            outTexelBufferResource                              = initVulkanStructure();
+            outTexelBufferResource.type                         = outBufferDescriptorType;
+            outTexelBufferResource.data.pTexelBuffer            = &outTexelBufferDescriptorInfo;
+        }
+        else
+        {
+            inBufferAddressRange.address = getBufferDeviceAddress(vk, *m_device, *m_inBuffer);
+            inBufferAddressRange.size    = m_inBufferAccessRange;
+
+            VkResourceDescriptorInfoEXT &inBufferResourceInfo = resourceDescInfos.emplace_back();
+            inBufferResourceInfo                              = initVulkanStructure();
+            inBufferResourceInfo.type                         = inBufferDescriptorType;
+            inBufferResourceInfo.data.pAddressRange           = &inBufferAddressRange;
+
+            outBufferAddressRange.address = getBufferDeviceAddress(vk, *m_device, *m_outBuffer);
+            outBufferAddressRange.size    = m_outBufferAccessRange;
+
+            VkResourceDescriptorInfoEXT &outBufferResourceInfo = resourceDescInfos.emplace_back();
+            outBufferResourceInfo                              = initVulkanStructure();
+            outBufferResourceInfo.type                         = outBufferDescriptorType;
+            outBufferResourceInfo.data.pAddressRange           = &outBufferAddressRange;
+        }
+
+        VkDeviceAddressRangeEXT indicesAddressRange{};
+        indicesAddressRange.address = getBufferDeviceAddress(vk, *m_device, *m_indicesBuffer);
+        indicesAddressRange.size    = 8;
+
+        VkResourceDescriptorInfoEXT &indicesResourceInfo = resourceDescInfos.emplace_back();
+        indicesResourceInfo.sType                        = VK_STRUCTURE_TYPE_RESOURCE_DESCRIPTOR_INFO_EXT;
+        indicesResourceInfo.type                         = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+        indicesResourceInfo.data.pAddressRange           = &indicesAddressRange;
+
+        std::vector<VkHostAddressRangeEXT> descriptorWrites;
+
+        VkHostAddressRangeEXT &inWrite = descriptorWrites.emplace_back();
+        inWrite.address                = heapData + testResourceOffset + 0 * descriptorSize;
+        inWrite.size                   = static_cast<size_t>(descriptorSize);
+
+        VkHostAddressRangeEXT &outWrite = descriptorWrites.emplace_back();
+        outWrite.address                = heapData + testResourceOffset + 1 * descriptorSize;
+        outWrite.size                   = static_cast<size_t>(descriptorSize);
+
+        VkHostAddressRangeEXT &indicesWrite = descriptorWrites.emplace_back();
+        indicesWrite.address                = heapData;
+        indicesWrite.size                   = static_cast<size_t>(heapProps.bufferDescriptorSize);
+
+        VK_CHECK(vk.writeResourceDescriptorsEXT(*m_device, static_cast<uint32_t>(resourceDescInfos.size()),
+                                                resourceDescInfos.data(), descriptorWrites.data()));
+
+        {
+            std::vector<VkDescriptorSetAndBindingMappingEXT> mapping;
+
+            VkDescriptorSetAndBindingMappingEXT &inMapping = mapping.emplace_back();
+            inMapping                                      = initVulkanStructure();
+            inMapping.descriptorSet                        = 0;
+            inMapping.firstBinding                         = 0;
+            inMapping.bindingCount                         = 1;
+            inMapping.resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+            inMapping.source                               = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+            inMapping.sourceData.constantOffset.heapOffset =
+                static_cast<uint32_t>(testResourceOffset + 0 * descriptorSize);
+
+            VkDescriptorSetAndBindingMappingEXT &outMapping = mapping.emplace_back();
+            outMapping                                      = initVulkanStructure();
+            outMapping.descriptorSet                        = 0;
+            outMapping.firstBinding                         = 1;
+            outMapping.bindingCount                         = 1;
+            outMapping.resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+            outMapping.source = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+            outMapping.sourceData.constantOffset.heapOffset =
+                static_cast<uint32_t>(testResourceOffset + 1 * descriptorSize);
+
+            VkDescriptorSetAndBindingMappingEXT &indicesMapping = mapping.emplace_back();
+            indicesMapping                                      = initVulkanStructure();
+            indicesMapping.descriptorSet                        = 0;
+            indicesMapping.firstBinding                         = 2;
+            indicesMapping.bindingCount                         = 1;
+            indicesMapping.resourceMask                         = VK_SPIRV_RESOURCE_TYPE_ALL_EXT;
+            indicesMapping.source = VK_DESCRIPTOR_MAPPING_SOURCE_HEAP_WITH_CONSTANT_OFFSET_EXT;
+            indicesMapping.sourceData.constantOffset.heapOffset = 0;
+
+            heapParams.mappings = std::move(mapping);
+        }
+
+        heapParams.resourceHeap                     = initVulkanStructure();
+        heapParams.resourceHeap.heapRange.address   = getBufferDeviceAddress(vk, *m_device, *m_resourceHeap);
+        heapParams.resourceHeap.heapRange.size      = resourceHeapSize;
+        heapParams.resourceHeap.reservedRangeOffset = static_cast<VkDeviceSize>(userResourceHeapSize);
+    }
+#endif // CTS_USES_VULKANSC
+
     // Create fence
     {
         const VkFenceCreateInfo fenceParams = {
@@ -1203,8 +1465,9 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
 
     if (m_shaderStage == VK_SHADER_STAGE_COMPUTE_BIT)
     {
-        m_testEnvironment = de::MovePtr<TestEnvironment>(new ComputeEnvironment(
-            m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet, m_testPipelineRobustness));
+        m_testEnvironment = de::MovePtr<TestEnvironment>(
+            new ComputeEnvironment(m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet,
+                                   m_testPipelineRobustness, m_testDescriptorHeaps ? &heapParams : nullptr));
     }
     else
     {
@@ -1266,11 +1529,11 @@ BufferAccessInstance::BufferAccessInstance(Context &context, Move<VkDevice> devi
             0u,                                        // uint32_t indexCount;
         };
 
-        m_testEnvironment = de::MovePtr<TestEnvironment>(
-            new GraphicsEnvironment(m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet,
-                                    GraphicsEnvironment::VertexBindings(1, vertexInputBindingDescription),
-                                    GraphicsEnvironment::VertexAttributes(1, vertexInputAttributeDescription),
-                                    drawWithOneVertexBuffer, m_testPipelineRobustness));
+        m_testEnvironment = de::MovePtr<TestEnvironment>(new GraphicsEnvironment(
+            m_context, *m_deviceDriver, *m_device, *m_descriptorSetLayout, *m_descriptorSet,
+            GraphicsEnvironment::VertexBindings(1, vertexInputBindingDescription),
+            GraphicsEnvironment::VertexAttributes(1, vertexInputAttributeDescription), drawWithOneVertexBuffer,
+            m_testPipelineRobustness, m_testDescriptorHeaps ? &heapParams : nullptr));
     }
 }
 
@@ -1600,7 +1863,8 @@ BufferReadInstance::BufferReadInstance(Context &context, Move<VkDevice> device,
 #endif // CTS_USES_VULKANSC
                                        ShaderType shaderType, VkShaderStageFlags shaderStage, VkFormat bufferFormat,
                                        bool readFromStorage, VkDeviceSize inBufferAccessRange,
-                                       bool accessOutOfBackingMemory, bool testPipelineRobustness)
+                                       bool accessOutOfBackingMemory, bool testPipelineRobustness,
+                                       bool testDescriptorHeaps)
 
     : BufferAccessInstance(context, device,
 #ifdef CTS_USES_VULKANSC
@@ -1610,7 +1874,7 @@ BufferReadInstance::BufferReadInstance(Context &context, Move<VkDevice> device,
                            readFromStorage ? BUFFER_ACCESS_TYPE_READ_FROM_STORAGE : BUFFER_ACCESS_TYPE_READ,
                            inBufferAccessRange,
                            RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType), // outBufferAccessRange
-                           accessOutOfBackingMemory, testPipelineRobustness)
+                           accessOutOfBackingMemory, testPipelineRobustness, testDescriptorHeaps)
 {
 }
 
@@ -1625,7 +1889,7 @@ BufferWriteInstance::BufferWriteInstance(Context &context, Move<VkDevice> device
 #endif // CTS_USES_VULKANSC
                                          ShaderType shaderType, VkShaderStageFlags shaderStage, VkFormat bufferFormat,
                                          VkDeviceSize writeBufferAccessRange, bool accessOutOfBackingMemory,
-                                         bool testPipelineRobustness)
+                                         bool testPipelineRobustness, bool testDescriptorHeaps)
 
     : BufferAccessInstance(context, device,
 #ifdef CTS_USES_VULKANSC
@@ -1633,7 +1897,8 @@ BufferWriteInstance::BufferWriteInstance(Context &context, Move<VkDevice> device
 #endif // CTS_USES_VULKANSC
                            deviceDriver, shaderType, shaderStage, bufferFormat, BUFFER_ACCESS_TYPE_WRITE,
                            RobustBufferAccessTest::getNumberOfBytesAccesssed(shaderType), // inBufferAccessRange
-                           writeBufferAccessRange, accessOutOfBackingMemory, testPipelineRobustness)
+                           writeBufferAccessRange, accessOutOfBackingMemory, testPipelineRobustness,
+                           testDescriptorHeaps)
 {
 }
 
@@ -1663,7 +1928,8 @@ static const char *getShaderStageName(VkShaderStageFlagBits shaderStage)
     return nullptr;
 }
 
-static void addBufferAccessTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentNode, bool testPipelineRobustness)
+static void addBufferAccessTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentNode, bool testPipelineRobustness,
+                                 bool testDescriptorHeaps)
 {
     struct BufferRangeConfig
     {
@@ -1773,19 +2039,19 @@ static void addBufferAccessTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *
                         continue;
                     }
 
-                    uboReadTests->addChild(
-                        new RobustBufferReadTest(testCtx, rangeConfig.name, stage, (ShaderType)shaderTypeNdx,
-                                                 bufferFormat, testPipelineRobustness, rangeInBytes, false, false));
+                    uboReadTests->addChild(new RobustBufferReadTest(
+                        testCtx, rangeConfig.name, stage, (ShaderType)shaderTypeNdx, bufferFormat,
+                        testPipelineRobustness, testDescriptorHeaps, rangeInBytes, false, false));
 
                     // Avoid too much duplication by excluding certain test cases
                     if (!testPipelineRobustness)
-                        ssboReadTests->addChild(
-                            new RobustBufferReadTest(testCtx, rangeConfig.name, stage, (ShaderType)shaderTypeNdx,
-                                                     bufferFormat, testPipelineRobustness, rangeInBytes, true, false));
+                        ssboReadTests->addChild(new RobustBufferReadTest(
+                            testCtx, rangeConfig.name, stage, (ShaderType)shaderTypeNdx, bufferFormat,
+                            testPipelineRobustness, testDescriptorHeaps, rangeInBytes, true, false));
 
-                    ssboWriteTests->addChild(new RobustBufferWriteTest(testCtx, rangeConfig.name, stage,
-                                                                       (ShaderType)shaderTypeNdx, bufferFormat,
-                                                                       testPipelineRobustness, rangeInBytes, false));
+                    ssboWriteTests->addChild(new RobustBufferWriteTest(
+                        testCtx, rangeConfig.name, stage, (ShaderType)shaderTypeNdx, bufferFormat,
+                        testPipelineRobustness, testDescriptorHeaps, rangeInBytes, false));
                 }
 
                 formatTests->addChild(uboReadTests.release());
@@ -1806,19 +2072,19 @@ static void addBufferAccessTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *
                 const VkDeviceSize writeAccessRange =
                     ((ShaderType)shaderTypeNdx == SHADER_TYPE_VECTOR_MEMBER_COPY) ? 8 : 16;
 
-                outOfAllocTests->addChild(
-                    new RobustBufferReadTest(testCtx, "oob_uniform_read", stage, (ShaderType)shaderTypeNdx, format,
-                                             testPipelineRobustness, writeAccessRange, false, true));
+                outOfAllocTests->addChild(new RobustBufferReadTest(
+                    testCtx, "oob_uniform_read", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness,
+                    testDescriptorHeaps, writeAccessRange, false, true));
 
                 // Avoid too much duplication by excluding certain test cases
                 if (!testPipelineRobustness)
-                    outOfAllocTests->addChild(
-                        new RobustBufferReadTest(testCtx, "oob_storage_read", stage, (ShaderType)shaderTypeNdx, format,
-                                                 testPipelineRobustness, writeAccessRange, true, true));
+                    outOfAllocTests->addChild(new RobustBufferReadTest(
+                        testCtx, "oob_storage_read", stage, (ShaderType)shaderTypeNdx, format, testPipelineRobustness,
+                        testDescriptorHeaps, writeAccessRange, true, true));
 
-                outOfAllocTests->addChild(new RobustBufferWriteTest(testCtx, "oob_storage_write", stage,
-                                                                    (ShaderType)shaderTypeNdx, format,
-                                                                    testPipelineRobustness, writeAccessRange, true));
+                outOfAllocTests->addChild(
+                    new RobustBufferWriteTest(testCtx, "oob_storage_write", stage, (ShaderType)shaderTypeNdx, format,
+                                              testPipelineRobustness, testDescriptorHeaps, writeAccessRange, true));
 
                 shaderTypeTests->addChild(outOfAllocTests.release());
             }
@@ -1833,7 +2099,7 @@ tcu::TestCaseGroup *createBufferAccessTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> bufferAccessTests(new tcu::TestCaseGroup(testCtx, "buffer_access"));
 
-    addBufferAccessTests(testCtx, bufferAccessTests.get(), false);
+    addBufferAccessTests(testCtx, bufferAccessTests.get(), false, false);
 
     return bufferAccessTests.release();
 }
@@ -1843,7 +2109,15 @@ tcu::TestCaseGroup *createPipelineRobustnessBufferAccessTests(tcu::TestContext &
 {
     de::MovePtr<tcu::TestCaseGroup> bufferAccessTests(
         new tcu::TestCaseGroup(testCtx, "pipeline_robustness_buffer_access"));
-    addBufferAccessTests(testCtx, bufferAccessTests.get(), true);
+    addBufferAccessTests(testCtx, bufferAccessTests.get(), true, false);
+
+    return bufferAccessTests.release();
+}
+
+tcu::TestCaseGroup *createDescriptorHeapBufferAccessTests(tcu::TestContext &testCtx)
+{
+    de::MovePtr<tcu::TestCaseGroup> bufferAccessTests(new tcu::TestCaseGroup(testCtx, "descriptor_heap_buffer_access"));
+    addBufferAccessTests(testCtx, bufferAccessTests.get(), false, true);
 
     return bufferAccessTests.release();
 }

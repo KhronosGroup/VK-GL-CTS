@@ -36,6 +36,7 @@
 #include "tcuCommandLine.hpp"
 #include "vkDeviceUtil.hpp"
 #include "deMath.h"
+#include <array>
 #include <iomanip>
 #include <limits>
 #include <sstream>
@@ -350,7 +351,8 @@ VkCommandBuffer TestEnvironment::getCommandBuffer(void)
 GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface &vk, VkDevice device,
                                          VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet descriptorSet,
                                          const VertexBindings &vertexBindings, const VertexAttributes &vertexAttributes,
-                                         const DrawConfig &drawConfig, bool testPipelineRobustness)
+                                         const DrawConfig &drawConfig, bool testPipelineRobustness,
+                                         const DescriptorHeapEnvironmentParams *descriptorHeapParams)
 
     : TestEnvironment(context, vk, device, descriptorSetLayout, descriptorSet)
     , m_renderSize(16, 16)
@@ -425,6 +427,7 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
     }
 
     // Create pipeline layout
+    if (!descriptorHeapParams)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
@@ -457,7 +460,8 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
         const std::vector<VkViewport> viewports(1, makeViewport(m_renderSize));
         const std::vector<VkRect2D> scissors(1, makeRect2D(m_renderSize));
 
-        const void *pNext = nullptr;
+        const void *pNext       = nullptr;
+        const void *pShaderNext = nullptr;
 #ifndef CTS_USES_VULKANSC
         VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = initVulkanStructure();
 
@@ -467,34 +471,158 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
             pipelineRobustnessInfo.uniformBuffers = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
             pipelineRobustnessInfo.vertexInputs   = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_ROBUST_BUFFER_ACCESS_EXT;
             pipelineRobustnessInfo.images         = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
+            pipelineRobustnessInfo.pNext          = pNext;
             pNext                                 = &pipelineRobustnessInfo;
+        }
+
+        VkPipelineCreateFlags2CreateInfo pipelineCreateFlags2Info = initVulkanStructure();
+        VkShaderDescriptorSetAndBindingMappingInfoEXT mappings    = initVulkanStructure();
+
+        if (descriptorHeapParams)
+        {
+            pipelineCreateFlags2Info.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+            pipelineCreateFlags2Info.pNext = pNext;
+            pNext                          = &pipelineCreateFlags2Info;
+
+            mappings.mappingCount = static_cast<uint32_t>(descriptorHeapParams->mappings.size());
+            mappings.pMappings    = descriptorHeapParams->mappings.data();
+            mappings.pNext        = pShaderNext;
+            pShaderNext           = &mappings;
         }
 #else
         DE_UNREF(testPipelineRobustness);
 #endif
 
-        m_graphicsPipeline = makeGraphicsPipeline(
-            vk,                      // const DeviceInterface&                        vk
-            m_device,                // const VkDevice                                device
-            *m_pipelineLayout,       // const VkPipelineLayout                        pipelineLayout
-            *m_vertexShaderModule,   // const VkShaderModule                          vertexShaderModule
-            VK_NULL_HANDLE,          // const VkShaderModule                          tessellationControlShaderModule
-            VK_NULL_HANDLE,          // const VkShaderModule                          tessellationEvalShaderModule
-            VK_NULL_HANDLE,          // const VkShaderModule                          geometryShaderModule
-            *m_fragmentShaderModule, // const VkShaderModule                          fragmentShaderModule
-            *m_renderPass,           // const VkRenderPass                            renderPass
-            viewports,               // const std::vector<VkViewport>&                viewports
-            scissors,                // const std::vector<VkRect2D>&                  scissors
-            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // const VkPrimitiveTopology                     topology
-            0u,                                   // const uint32_t                                subpass
-            0u,                                   // const uint32_t                                patchControlPoints
-            &vertexInputStateParams, // const VkPipelineVertexInputStateCreateInfo*   vertexInputStateCreateInfo
-            nullptr,                 // const VkPipelineRasterizationStateCreateInfo*    rasterizationStateCreateInfo
-            nullptr,                 // const VkPipelineMultisampleStateCreateInfo*        multisampleStateCreateInfo
-            nullptr,                 // const VkPipelineDepthStencilStateCreateInfo*        depthStencilStateCreateInfo
-            nullptr,                 // const VkPipelineColorBlendStateCreateInfo*        colorBlendStateCreateInfo
-            nullptr,                 // const VkPipelineDynamicStateCreateInfo*            dynamicStateCreateInfo
-            pNext);                  // void* pNext
+        std::array<VkPipelineShaderStageCreateInfo, 2> shaderStageCreateInfos{};
+        shaderStageCreateInfos[0]                     = initVulkanStructure();
+        shaderStageCreateInfos[0].pNext               = pShaderNext;
+        shaderStageCreateInfos[0].flags               = 0;
+        shaderStageCreateInfos[0].stage               = VK_SHADER_STAGE_VERTEX_BIT;
+        shaderStageCreateInfos[0].module              = *m_vertexShaderModule;
+        shaderStageCreateInfos[0].pName               = "main";
+        shaderStageCreateInfos[0].pSpecializationInfo = nullptr;
+        shaderStageCreateInfos[1]                     = initVulkanStructure();
+        shaderStageCreateInfos[1].pNext               = pShaderNext;
+        shaderStageCreateInfos[1].flags               = 0;
+        shaderStageCreateInfos[1].stage               = VK_SHADER_STAGE_FRAGMENT_BIT;
+        shaderStageCreateInfos[1].module              = *m_fragmentShaderModule;
+        shaderStageCreateInfos[1].pName               = "main";
+        shaderStageCreateInfos[1].pSpecializationInfo = nullptr;
+
+        const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfoDefault = {
+            VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType                            sType
+            nullptr,                              // const void*                                pNext
+            0u,                                   // VkPipelineInputAssemblyStateCreateFlags    flags
+            VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // VkPrimitiveTopology                        topology
+            VK_FALSE                              // VkBool32                                   primitiveRestartEnable
+        };
+
+        const VkPipelineViewportStateCreateInfo viewportStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_VIEWPORT_STATE_CREATE_INFO, // VkStructureType                             sType
+            nullptr,                                               // const void*                                 pNext
+            0,                                                     // VkPipelineViewportStateCreateFlags          flags
+            static_cast<uint32_t>(viewports.size()), // uint32_t                                    viewportCount
+            viewports.data(),                        // const VkViewport*                           pViewports
+            static_cast<uint32_t>(scissors.size()),  // uint32_t                                    scissorCount
+            scissors.data()                          // const VkRect2D*                             pScissors
+        };
+
+        const VkPipelineRasterizationStateCreateInfo rasterizationStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO, // VkStructureType                            sType
+            nullptr,                         // const void*                                pNext
+            0u,                              // VkPipelineRasterizationStateCreateFlags    flags
+            VK_FALSE,                        // VkBool32                                   depthClampEnable
+            VK_FALSE,                        // VkBool32                                   rasterizerDiscardEnable
+            VK_POLYGON_MODE_FILL,            // VkPolygonMode                              polygonMode
+            VK_CULL_MODE_NONE,               // VkCullModeFlags                            cullMode
+            VK_FRONT_FACE_COUNTER_CLOCKWISE, // VkFrontFace                                frontFace
+            VK_FALSE,                        // VkBool32                                   depthBiasEnable
+            0.0f,                            // float                                      depthBiasConstantFactor
+            0.0f,                            // float                                      depthBiasClamp
+            0.0f,                            // float                                      depthBiasSlopeFactor
+            1.0f                             // float                                      lineWidth
+        };
+
+        const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType                          sType
+            nullptr,                                                  // const void*                              pNext
+            0u,                                                       // VkPipelineMultisampleStateCreateFlags    flags
+            VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits                    rasterizationSamples
+            VK_FALSE,              // VkBool32                                 sampleShadingEnable
+            1.0f,                  // float                                    minSampleShading
+            nullptr,               // const VkSampleMask*                      pSampleMask
+            VK_FALSE,              // VkBool32                                 alphaToCoverageEnable
+            VK_FALSE               // VkBool32                                 alphaToOneEnable
+        };
+
+        const VkStencilOpState stencilOpState = {
+            VK_STENCIL_OP_KEEP,  // VkStencilOp    failOp
+            VK_STENCIL_OP_KEEP,  // VkStencilOp    passOp
+            VK_STENCIL_OP_KEEP,  // VkStencilOp    depthFailOp
+            VK_COMPARE_OP_NEVER, // VkCompareOp    compareOp
+            0,                   // uint32_t       compareMask
+            0,                   // uint32_t       writeMask
+            0                    // uint32_t       reference
+        };
+
+        const VkPipelineDepthStencilStateCreateInfo depthStencilStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType                          sType
+            nullptr,                     // const void*                              pNext
+            0u,                          // VkPipelineDepthStencilStateCreateFlags   flags
+            VK_FALSE,                    // VkBool32                                 depthTestEnable
+            VK_FALSE,                    // VkBool32                                 depthWriteEnable
+            VK_COMPARE_OP_LESS_OR_EQUAL, // VkCompareOp                              depthCompareOp
+            VK_FALSE,                    // VkBool32                                 depthBoundsTestEnable
+            VK_FALSE,                    // VkBool32                                 stencilTestEnable
+            stencilOpState,              // VkStencilOpState                         front
+            stencilOpState,              // VkStencilOpState                         back
+            0.0f,                        // float                                    minDepthBounds
+            1.0f,                        // float                                    maxDepthBounds
+        };
+
+        const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {
+            VK_FALSE,                // VkBool32                 blendEnable
+            VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            srcColorBlendFactor
+            VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            dstColorBlendFactor
+            VK_BLEND_OP_ADD,         // VkBlendOp                colorBlendOp
+            VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            srcAlphaBlendFactor
+            VK_BLEND_FACTOR_ZERO,    // VkBlendFactor            dstAlphaBlendFactor
+            VK_BLEND_OP_ADD,         // VkBlendOp                alphaBlendOp
+            VK_COLOR_COMPONENT_R_BIT // VkColorComponentFlags    colorWriteMask
+                | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT};
+
+        const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType                               sType
+            nullptr,                    // const void*                                   pNext
+            0u,                         // VkPipelineColorBlendStateCreateFlags          flags
+            VK_FALSE,                   // VkBool32                                      logicOpEnable
+            VK_LOGIC_OP_CLEAR,          // VkLogicOp                                     logicOp
+            1u,                         // uint32_t                                      attachmentCount
+            &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState*    pAttachments
+            {0.0f, 0.0f, 0.0f, 0.0f}    // float                                         blendConstants[4]
+        };
+
+        VkGraphicsPipelineCreateInfo pipelineParams = initVulkanStructure();
+        pipelineParams.pNext                        = pNext;
+        pipelineParams.flags                        = 0;
+        pipelineParams.stageCount                   = static_cast<uint32_t>(shaderStageCreateInfos.size());
+        pipelineParams.pStages                      = shaderStageCreateInfos.data();
+        pipelineParams.pVertexInputState            = &vertexInputStateParams;
+        pipelineParams.pInputAssemblyState          = &inputAssemblyStateCreateInfoDefault;
+        pipelineParams.pTessellationState           = nullptr;
+        pipelineParams.pViewportState               = &viewportStateParams;
+        pipelineParams.pRasterizationState          = &rasterizationStateParams;
+        pipelineParams.pMultisampleState            = &multisampleStateParams;
+        pipelineParams.pDepthStencilState           = &depthStencilStateParams;
+        pipelineParams.pColorBlendState             = &colorBlendStateParams;
+        pipelineParams.pDynamicState                = nullptr;
+        pipelineParams.layout                       = *m_pipelineLayout;
+        pipelineParams.renderPass                   = *m_renderPass;
+        pipelineParams.subpass                      = 0;
+        pipelineParams.basePipelineHandle           = VK_NULL_HANDLE;
+        pipelineParams.basePipelineIndex            = -1;
+
+        m_graphicsPipeline = createGraphicsPipeline(vk, m_device, VK_NULL_HANDLE, &pipelineParams);
     }
 
     // Record commands
@@ -524,8 +652,17 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
                 const std::vector<VkDeviceSize> vertexBufferOffsets(drawConfig.vertexBuffers.size(), 0ull);
 
                 vk.cmdBindPipeline(*m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_graphicsPipeline);
-                vk.cmdBindDescriptorSets(*m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
-                                         &m_descriptorSet, 0, nullptr);
+                if (descriptorHeapParams)
+                {
+#ifndef CTS_USES_VULKANSC
+                    vk.cmdBindResourceHeapEXT(*m_commandBuffer, &descriptorHeapParams->resourceHeap);
+#endif
+                }
+                else
+                {
+                    vk.cmdBindDescriptorSets(*m_commandBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0, 1,
+                                             &m_descriptorSet, 0, nullptr);
+                }
                 vk.cmdBindVertexBuffers(*m_commandBuffer, 0, (uint32_t)drawConfig.vertexBuffers.size(),
                                         drawConfig.vertexBuffers.data(), vertexBufferOffsets.data());
 
@@ -549,11 +686,13 @@ GraphicsEnvironment::GraphicsEnvironment(Context &context, const DeviceInterface
 
 ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &vk, VkDevice device,
                                        VkDescriptorSetLayout descriptorSetLayout, VkDescriptorSet descriptorSet,
-                                       bool testPipelineRobustness)
+                                       bool testPipelineRobustness,
+                                       const DescriptorHeapEnvironmentParams *descriptorHeapParams)
 
     : TestEnvironment(context, vk, device, descriptorSetLayout, descriptorSet)
 {
     // Create pipeline layout
+    if (!descriptorHeapParams)
     {
         const VkPipelineLayoutCreateInfo pipelineLayoutParams = {
             VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
@@ -572,9 +711,23 @@ ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &
     {
         m_computeShaderModule = createShaderModule(vk, m_device, m_context.getBinaryCollection().get("compute"), 0);
 
+        const void *pNextShader = nullptr;
+
+#ifndef CTS_USES_VULKANSC
+        VkShaderDescriptorSetAndBindingMappingInfoEXT mappings = initVulkanStructure();
+        if (descriptorHeapParams)
+        {
+            mappings.mappingCount = static_cast<uint32_t>(descriptorHeapParams->mappings.size());
+            mappings.pMappings    = descriptorHeapParams->mappings.data();
+
+            mappings.pNext = pNextShader;
+            pNextShader    = &mappings;
+        }
+#endif
+
         const VkPipelineShaderStageCreateInfo computeStageParams = {
             VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                             // const void* pNext;
+            pNextShader,                                         // const void* pNext;
             0u,                                                  // VkPipelineShaderStageCreateFlags flags;
             VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlagBits stage;
             *m_computeShaderModule,                              // VkShaderModule module;
@@ -584,7 +737,8 @@ ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &
 
         const void *pNext = nullptr;
 #ifndef CTS_USES_VULKANSC
-        VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = initVulkanStructure();
+        VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo  = initVulkanStructure();
+        VkPipelineCreateFlags2CreateInfo pipelineCreateFlags2Info = initVulkanStructure();
 
         if (testPipelineRobustness)
         {
@@ -593,6 +747,13 @@ ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &
             pipelineRobustnessInfo.vertexInputs   = VK_PIPELINE_ROBUSTNESS_BUFFER_BEHAVIOR_DISABLED_EXT;
             pipelineRobustnessInfo.images         = VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_DISABLED_EXT;
             pNext                                 = &pipelineRobustnessInfo;
+        }
+
+        if (descriptorHeapParams)
+        {
+            pipelineCreateFlags2Info.flags = VK_PIPELINE_CREATE_2_DESCRIPTOR_HEAP_BIT_EXT;
+            pipelineCreateFlags2Info.pNext = pNext;
+            pNext                          = &pipelineCreateFlags2Info;
         }
 #else
         DE_UNREF(testPipelineRobustness);
@@ -615,8 +776,17 @@ ComputeEnvironment::ComputeEnvironment(Context &context, const DeviceInterface &
     {
         beginCommandBuffer(vk, *m_commandBuffer, 0u);
         vk.cmdBindPipeline(*m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_computePipeline);
-        vk.cmdBindDescriptorSets(*m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1,
-                                 &m_descriptorSet, 0, nullptr);
+        if (descriptorHeapParams)
+        {
+#ifndef CTS_USES_VULKANSC
+            vk.cmdBindResourceHeapEXT(*m_commandBuffer, &descriptorHeapParams->resourceHeap);
+#endif
+        }
+        else
+        {
+            vk.cmdBindDescriptorSets(*m_commandBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1,
+                                     &m_descriptorSet, 0, nullptr);
+        }
         vk.cmdDispatch(*m_commandBuffer, 32, 32, 1);
 
         const VkMemoryBarrier barrier = {
