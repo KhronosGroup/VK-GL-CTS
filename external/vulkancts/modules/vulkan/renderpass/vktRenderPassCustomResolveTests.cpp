@@ -3071,10 +3071,12 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 // Compare the result extracted to the level with the reference values.
                 if (checkDepth)
                 {
-                    // Choose a threshold according to the format. The threshold will be more than 1 unit but less than
-                    // 2 for UNORM formats. For SFLOAT, which has 24 mantissa bits (23 explicitly stored), we make it
-                    // similar to D24.
-                    const auto pixelSize = tcu::getPixelSize(tcuFormat);
+                    // Choose a threshold according to the format. The threshold is normally more than 1 unit but less
+                    // than 2 for UNORM formats. However, for SFLOAT and 24-bit formats we have detected, in practice,
+                    // that stores and intermediate calculations by some implementations sometimes results in
+                    // discrepancies of up to 3 units compared to the CPU-side calculation.
+                    const auto origDepthFormat = getDepthCopyFormat(attInfo.attachmentFormat);
+                    const auto pixelSize = std::min(tcu::getPixelSize(tcuFormat), tcu::getPixelSize(origDepthFormat));
                     float depthThreshold = 0.0f;
 
                     switch (pixelSize)
@@ -3083,7 +3085,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                         depthThreshold = 0.000025f;
                         break;
                     case 4: // D32
-                        depthThreshold = 0.000000075f;
+                        depthThreshold = 0.0000002f;
                         break;
                     default:
                         DE_ASSERT(false);
