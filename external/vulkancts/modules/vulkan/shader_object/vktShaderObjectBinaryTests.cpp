@@ -703,10 +703,8 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto computeShaderDerivativesFeatures           = m_context.getComputeShaderDerivativesFeatures();
     auto meshShaderFeatures                         = m_context.getMeshShaderFeaturesEXT();
     auto fragmentShaderBarycentricFeatures          = m_context.getFragmentShaderBarycentricFeatures();
-    auto shaderImageFootprintFeatures               = m_context.getShaderImageFootprintFeatures();
     auto exclusiveScissorFeatures                   = m_context.getExclusiveScissorFeatures();
     auto timelineSemaphoreFeatures                  = m_context.getTimelineSemaphoreFeatures();
-    auto shaderIntegerFunctions2Features            = m_context.getShaderIntegerFunctions2FeaturesINTEL();
     auto vulkanMemoryModelFeatures                  = m_context.getVulkanMemoryModelFeatures();
     auto shaderTerminateInvocationFeatures          = m_context.getShaderTerminateInvocationFeatures();
     auto fragmentDensityMapFeatures                 = m_context.getFragmentDensityMapFeaturesEXT();
@@ -715,7 +713,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto coherentMemoryFeatures                     = m_context.getCoherentMemoryFeaturesAMD();
     auto shaderImageAtomicInt64Features             = m_context.getShaderImageAtomicInt64FeaturesEXT();
     auto memoryPriorityFeatures                     = m_context.getMemoryPriorityFeaturesEXT();
-    auto dedicatedAllocationImageAliasingFeatures   = m_context.getDedicatedAllocationImageAliasingFeatures();
     auto separateDepthStencilLayoutFeatures         = m_context.getSeparateDepthStencilLayoutsFeatures();
     auto bufferDeviceAddressFeatures                = m_context.getBufferDeviceAddressFeatures();
     auto presentWaitFeatures                        = m_context.getPresentWaitFeatures();
@@ -741,11 +738,9 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto deviceMemoryReportFeatures                 = m_context.getDeviceMemoryReportFeaturesEXT();
     auto robustness2Features                        = m_context.getRobustness2Features();
     auto customBorderColorFeatures                  = m_context.getCustomBorderColorFeaturesEXT();
-    auto presentBarrierFeatures                     = m_context.getPresentBarrierFeatures();
     auto presentIdFeatures                          = m_context.getPresentIdFeatures();
     auto privateDataFeatures                        = m_context.getPrivateDataFeatures();
     auto pipelineCreationCacheControlFeatures       = m_context.getPipelineCreationCacheControlFeatures();
-    auto diagnosticConfigFeatures                   = m_context.getDiagnosticsConfigFeatures();
     auto synchronization2Features                   = m_context.getSynchronization2Features();
     auto descriptorBufferFeatures                   = m_context.getDescriptorBufferFeaturesEXT();
     auto graphicsPipelineLibraryFeatures            = m_context.getGraphicsPipelineLibraryFeaturesEXT();
@@ -753,7 +748,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto shaderSubgroupUniformControlFlowFeatures   = m_context.getShaderSubgroupUniformControlFlowFeatures();
     auto zeroInitializeWorkgroupMemoryFeatures      = m_context.getZeroInitializeWorkgroupMemoryFeatures();
     auto fragmentShadingRateEnumsFeatures           = m_context.getFragmentShadingRateEnumsFeatures();
-    auto rayTracingMotionBlurFeatures               = m_context.getRayTracingMotionBlurFeatures();
     auto ycbcr2Plane444FormatsFeatures              = m_context.getYcbcr2Plane444FormatsFeaturesEXT();
     auto fragmentDensityMap2Features                = m_context.getFragmentDensityMap2FeaturesEXT();
     auto imageRobustnessFeatures                    = m_context.getImageRobustnessFeatures();
@@ -771,9 +765,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto addressBindingReportFeatures               = m_context.getAddressBindingReportFeaturesEXT();
     auto depthClipControlFeatures                   = m_context.getDepthClipControlFeaturesEXT();
     auto primitiveTopologyListRestartFeatures       = m_context.getPrimitiveTopologyListRestartFeaturesEXT();
-    auto subpassShadingFeatures                     = m_context.getSubpassShadingFeaturesHUAWEI();
     auto invocationMaskFeatures                     = m_context.getInvocationMaskFeaturesHUAWEI();
-    auto externalMemoryRDMAFeatures                 = m_context.getExternalMemoryRDMAFeatures();
     auto pipelinePropertiesFeatures                 = m_context.getPipelinePropertiesFeaturesEXT();
     auto multisampledRenderToSingleSampledFeatures  = m_context.getMultisampledRenderToSingleSampledFeaturesEXT();
     auto extendedDynamicState2Features              = m_context.getExtendedDynamicState2FeaturesEXT();
@@ -791,7 +783,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto pageableDeviceLocalMemoryFeatures          = m_context.getPageableDeviceLocalMemoryFeaturesEXT();
     auto maintenance4Features                       = m_context.getMaintenance4Features();
     auto imageSlicedViewOf3DFeatures                = m_context.getImageSlicedViewOf3DFeaturesEXT();
-    auto descriptorSetHostMappingFeatures           = m_context.getDescriptorSetHostMappingFeaturesVALVE();
     auto depthClampZeroOneFeatures                  = m_context.getDepthClampZeroOneFeatures();
     auto nonSeamlessCubeMapFeatures                 = m_context.getNonSeamlessCubeMapFeaturesEXT();
     auto fragmentDensityMapOffsetFeatures           = m_context.getFragmentDensityMapOffsetFeaturesEXT();
@@ -804,15 +795,10 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
     auto extendedDynamicState3Features              = m_context.getExtendedDynamicState3FeaturesEXT();
     auto subpassMergeFeedbackFeatures               = m_context.getSubpassMergeFeedbackFeaturesEXT();
     auto shaderModuleIdentifierFeatures             = m_context.getShaderModuleIdentifierFeaturesEXT();
-    auto opticalFlowFeatures                        = m_context.getOpticalFlowFeatures();
     auto legacyDitheringFeatures                    = m_context.getLegacyDitheringFeaturesEXT();
     auto pipelineProtectedAccessFeatures            = m_context.getPipelineProtectedAccessFeatures();
-    auto tilePropertiesFeatures                     = m_context.getTilePropertiesFeaturesQCOM();
-    auto multivewPerViewViewportsFeatures           = m_context.getMultiviewPerViewViewportsFeaturesQCOM();
     auto rayTracingInvocationReorderFeatures        = m_context.getRayTracingInvocationReorderFeaturesEXT();
-    auto shaderCoreBuiltinsFeatures                 = m_context.getShaderCoreBuiltinsFeaturesARM();
     auto pipelineLibraryGroupHandlesFeatures        = m_context.getPipelineLibraryGroupHandlesFeaturesEXT();
-    auto multivewPerViewRenderAreasFeatures         = m_context.getMultiviewPerViewRenderAreasFeaturesQCOM();
 
     // These features depend on other features being enabled
     meshShaderFeatures.multiviewMeshShader                    = VK_FALSE;
@@ -854,10 +840,8 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         &computeShaderDerivativesFeatures,
         &meshShaderFeatures,
         &fragmentShaderBarycentricFeatures,
-        &shaderImageFootprintFeatures,
         &exclusiveScissorFeatures,
         &timelineSemaphoreFeatures,
-        &shaderIntegerFunctions2Features,
         &vulkanMemoryModelFeatures,
         &shaderTerminateInvocationFeatures,
         &fragmentDensityMapFeatures,
@@ -866,7 +850,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         &coherentMemoryFeatures,
         &shaderImageAtomicInt64Features,
         &memoryPriorityFeatures,
-        &dedicatedAllocationImageAliasingFeatures,
         &separateDepthStencilLayoutFeatures,
         &bufferDeviceAddressFeatures,
         &presentWaitFeatures,
@@ -892,11 +875,9 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         &deviceMemoryReportFeatures,
         &robustness2Features,
         &customBorderColorFeatures,
-        &presentBarrierFeatures,
         &presentIdFeatures,
         &privateDataFeatures,
         &pipelineCreationCacheControlFeatures,
-        &diagnosticConfigFeatures,
         &synchronization2Features,
         &descriptorBufferFeatures,
         &graphicsPipelineLibraryFeatures,
@@ -904,7 +885,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         &shaderSubgroupUniformControlFlowFeatures,
         &zeroInitializeWorkgroupMemoryFeatures,
         &fragmentShadingRateEnumsFeatures,
-        &rayTracingMotionBlurFeatures,
         &ycbcr2Plane444FormatsFeatures,
         &fragmentDensityMap2Features,
         &imageRobustnessFeatures,
@@ -922,9 +902,7 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         &addressBindingReportFeatures,
         &depthClipControlFeatures,
         &primitiveTopologyListRestartFeatures,
-        &subpassShadingFeatures,
         &invocationMaskFeatures,
-        &externalMemoryRDMAFeatures,
         &pipelinePropertiesFeatures,
         &multisampledRenderToSingleSampledFeatures,
         &extendedDynamicState2Features,
@@ -942,7 +920,6 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         &pageableDeviceLocalMemoryFeatures,
         &maintenance4Features,
         &imageSlicedViewOf3DFeatures,
-        &descriptorSetHostMappingFeatures,
         &depthClampZeroOneFeatures,
         &nonSeamlessCubeMapFeatures,
         &fragmentDensityMapOffsetFeatures,
@@ -955,15 +932,10 @@ tcu::TestStatus ShaderObjectDeviceFeaturesBinaryInstance::iterate(void)
         &extendedDynamicState3Features,
         &subpassMergeFeedbackFeatures,
         &shaderModuleIdentifierFeatures,
-        &opticalFlowFeatures,
         &legacyDitheringFeatures,
         &pipelineProtectedAccessFeatures,
-        &tilePropertiesFeatures,
-        &multivewPerViewViewportsFeatures,
         &rayTracingInvocationReorderFeatures,
-        &shaderCoreBuiltinsFeatures,
         &pipelineLibraryGroupHandlesFeatures,
-        &multivewPerViewRenderAreasFeatures,
     };
 
     const float queuePriority = 1.0f;

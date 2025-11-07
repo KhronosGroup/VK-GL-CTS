@@ -268,21 +268,14 @@ VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorUpdateTemplate);
 VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugReportCallback, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuModule, NVX)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuFunction, NVX)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaModule, NV)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaFunction, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, OpticalFlowSession, NV)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSession, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSessionParameters, KHR)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ValidationCache, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, BufferCollection, FUCHSIA)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Tensor, ARM)
@@ -407,9 +400,6 @@ public:
     {
     }
     Pipeline(VkDevice, const VkRayTracingPipelineCreateInfoKHR *)
-    {
-    }
-    Pipeline(VkDevice, const VkExecutionGraphPipelineCreateInfoAMDX *)
     {
     }
     Pipeline(VkDevice, const VkDataGraphPipelineCreateInfoARM *)
@@ -844,16 +834,6 @@ void DescriptorPool::reset(void)
         delete m_managedSets[ndx];
     m_managedSets.clear();
 }
-
-#ifndef CTS_USES_VULKANSC
-class ExternalComputeQueueNV
-{
-public:
-    ExternalComputeQueueNV(VkDevice, const VkExternalComputeQueueCreateInfoNV *)
-    {
-    }
-};
-#endif
 
 // API implementation
 

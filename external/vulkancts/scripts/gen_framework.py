@@ -49,16 +49,21 @@ sys.path.insert(0, vulkanObjectPath)
 
 from reg import Registry
 from base_generator import BaseGenerator, BaseGeneratorOptions, SetTargetApiName, SetOutputDirectory, SetMergedApiNames, OutputGenerator
-from vulkan_object import Struct, Member, Enum, EnumField, Extension
+from vulkan_object import Struct, Member, Enum, Command, EnumField, Extension
 
 # list of KHR and EXT extensions that are tested by CTS and that were not promoted to core
-# (core extensions are implicitly in that list because if they are core we know that tests
-# for them must be present in CTS - so we do not need to list them here)
-EXTENSIONS_TESTED_BY_CTS = """
+# (core extensions are implicitly in the list because if they are core we know that tests
+# for them must be present in CTS - so we do not need to list them here);
+# there is also separate list for vendor extensions: VENDOR_EXTENSIONS_TESTED_BY_CTS
+KHR_EXT_EXTENSIONS_TESTED_BY_CTS = """
+VK_EXT_external_memory_acquire_unmodified
+VK_EXT_astc_decode_mode
 VK_EXT_attachment_feedback_loop_dynamic_state
 VK_EXT_attachment_feedback_loop_layout
+VK_EXT_blend_operation_advanced
 VK_EXT_border_color_swizzle
 VK_EXT_buffer_device_address
+VK_EXT_calibrated_timestamps
 VK_EXT_color_write_enable
 VK_EXT_conditional_rendering
 VK_EXT_conservative_rasterization
@@ -74,23 +79,34 @@ VK_EXT_device_address_binding_report
 VK_EXT_device_fault
 VK_EXT_device_generated_commands
 VK_EXT_device_memory_report
+VK_EXT_discard_rectangles
+VK_EXT_display_control
 VK_EXT_dynamic_rendering_unused_attachments
+VK_EXT_external_memory_host
+VK_EXT_external_memory_metal
 VK_EXT_extended_dynamic_state3
+VK_EXT_filter_cubic
 VK_EXT_fragment_density_map
 VK_EXT_fragment_density_map2
 VK_EXT_fragment_density_map_offset
 VK_EXT_fragment_shader_interlock
 VK_EXT_frame_boundary
+VK_EXT_full_screen_exclusive
 VK_EXT_global_priority_query
 VK_EXT_graphics_pipeline_library
+VK_EXT_hdr_metadata
 VK_EXT_image_2d_view_of_3d
 VK_EXT_image_compression_control
 VK_EXT_image_compression_control_swapchain
+VK_EXT_image_drm_format_modifier
+VK_EXT_image_sliced_view_of_3d
 VK_EXT_image_view_min_lod
 VK_EXT_index_type_uint8
 VK_EXT_legacy_dithering
 VK_EXT_legacy_vertex_attributes
 VK_EXT_line_rasterization
+VK_EXT_map_memory_placed
+VK_EXT_memory_budget
 VK_EXT_memory_decompression
 VK_EXT_memory_priority
 VK_EXT_mesh_shader
@@ -101,14 +117,20 @@ VK_EXT_nested_command_buffer
 VK_EXT_non_seamless_cube_map
 VK_EXT_opacity_micromap
 VK_EXT_pageable_device_local_memory
+VK_EXT_pci_bus_info
+VK_EXT_physical_device_drm
 VK_EXT_pipeline_library_group_handles
+VK_EXT_pipeline_properties
 VK_EXT_present_mode_fifo_latest_ready
 VK_EXT_present_timing
 VK_EXT_primitive_topology_list_restart
 VK_EXT_primitives_generated_query
 VK_EXT_provoking_vertex
+VK_EXT_rasterization_order_attachment_access
+VK_EXT_ray_tracing_invocation_reorder
 VK_EXT_rgba10x6_formats
 VK_EXT_robustness2
+VK_EXT_sample_locations
 VK_EXT_shader_64bit_indexing
 VK_EXT_shader_atomic_float
 VK_EXT_shader_atomic_float2
@@ -116,12 +138,15 @@ VK_EXT_shader_float8
 VK_EXT_shader_image_atomic_int64
 VK_EXT_shader_module_identifier
 VK_EXT_shader_object
+VK_EXT_shader_replicated_composites
 VK_EXT_shader_tile_image
+VK_EXT_shader_uniform_buffer_unsized_array
 VK_EXT_subpass_merge_feedback
 VK_EXT_swapchain_maintenance1
 VK_EXT_transform_feedback
 VK_EXT_uniform_buffer_unsized_array
 VK_EXT_vertex_attribute_divisor
+VK_EXT_vertex_attribute_robustness
 VK_EXT_vertex_input_dynamic_state
 VK_EXT_ycbcr_image_arrays
 VK_EXT_zero_initialize_device_memory
@@ -204,6 +229,52 @@ VK_KHR_win32_surface
 VK_KHR_workgroup_memory_explicit_layout
 VK_KHR_xcb_surface
 VK_KHR_xlib_surface
+""".splitlines()
+
+VENDOR_EXTENSIONS_TESTED_BY_CTS = """
+VK_AMD_buffer_marker
+VK_AMD_device_coherent_memory
+VK_AMD_shader_early_and_late_fragment_tests
+VK_AMD_texture_gather_bias_lod
+VK_ANDROID_external_format_resolve
+VK_ANDROID_external_memory_android_hardware_buffer
+VK_ARM_data_graph
+VK_ARM_performance_counters_by_region
+VK_ARM_tensors
+VK_FUCHSIA_external_memory
+VK_FUCHSIA_external_semaphore
+VK_GOOGLE_display_timing
+VK_HUAWEI_cluster_culling_shader
+VK_HUAWEI_invocation_mask
+VK_NV_clip_space_w_scaling
+VK_NV_cooperative_matrix
+VK_NV_cooperative_matrix2
+VK_NV_cooperative_vector
+VK_NV_corner_sampled_image
+VK_NV_coverage_reduction_mode
+VK_NV_device_generated_commands
+VK_NV_device_generated_commands_compute
+VK_NV_displacement_micromap
+VK_NV_external_memory_sci_buf
+VK_NV_external_sci_sync
+VK_NV_external_sci_sync2
+VK_NV_fragment_coverage_to_color
+VK_NV_fragment_shading_rate_enums
+VK_NV_framebuffer_mixed_samples
+VK_NV_inherited_viewport_scissor
+VK_NV_linear_color_attachment
+VK_NV_mesh_shader
+VK_NV_raw_access_chains
+VK_NV_ray_tracing
+VK_NV_ray_tracing_linear_swept_spheres
+VK_NV_representative_fragment_test
+VK_NV_scissor_exclusive
+VK_NV_shader_atomic_float16_vector
+VK_NV_shader_sm_builtins
+VK_NV_shading_rate_image
+VK_NV_viewport_swizzle
+VK_QCOM_image_processing
+VK_QNX_external_memory_screen_buffer
 """.splitlines()
 
 INL_HEADER = """\
@@ -510,32 +581,183 @@ def camelToSnake(name):
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
-class HandleTypeGenerator(BaseGenerator):
-    def __init__(self, _):
+class ConformanceItemLists:
+    def __init__(self):
+        # subset of vkObject extensions/enums/bitmasks/structs/commands that are tested by CTS;
+        # by default framework is not generated for new extensions that are not core or not
+        # explicitly added to KHR_EXT_EXTENSIONS_TESTED_BY_CTS or VENDOR_EXTENSIONS_TESTED_BY_CTS
+        self.extensions = KHR_EXT_EXTENSIONS_TESTED_BY_CTS + VENDOR_EXTENSIONS_TESTED_BY_CTS
+
+    def setup(self, vkObject, isSC):
+        for ext in vkObject.extensions.values():
+            name = ext.name
+            # add all instance extensions
+            if ext.instance:
+                self.extensions.append(name)
+            # add core extensions
+            elif ext.promotedTo and 'VK_VERSION' in ext.promotedTo and name not in self.extensions:
+                self.extensions.append(name)
+
+        self.handles = self.filterToSupportedByCTS(vkObject.handles)
+        self.enums = self.filterToSupportedByCTS(vkObject.enums)
+        self.enumsIncludingVideo = self.enums + self.filterToSupportedByCTS(vkObject.videoStd.enums)
+        self.enumsIncludingVideo = sorted(self.enumsIncludingVideo, key=lambda item: item.name)
+        self.bitmasks = self.filterToSupportedByCTS(vkObject.bitmasks)
+
+        self.structs = self.filterToSupportedByCTS(vkObject.structs)
+        self.commands = self.filterToSupportedByCTS(vkObject.commands)
+
+        # <vulkan_object_issues_workaround>
+        if isSC:
+            self.scPostProcess()
+        elif not any([s for s in self.structs if s.name == 'VkDeviceOrHostAddressConstKHR']):
+            # vulkan_object recognizes VkDeviceOrHostAddressConstKHR as added only by VK_NV_ray_tracing_motion_blur
+            self.structs.append(vkObject.structs['VkDeviceOrHostAddressConstKHR'])
+            self.structs = sorted(self.structs, key=lambda item: item.name)
+        # </vulkan_object_issues_workaround>
+
+        self.structsIncludingVideo = self.structs + self.filterToSupportedByCTS(vkObject.videoStd.structs)
+        self.structsIncludingVideo = sorted(self.structsIncludingVideo, key=lambda item: item.name)
+
+    # <vulkan_object_issue_workaround>
+    # some functions and structures for Vulkan SC use names from regular Vulkan e.g.
+    # vkCmdBindVertexBuffers2 is provided instead of non promoted vkCmdBindVertexBuffers2EXT
+    def scPostProcess(self):
+        khrCommands = [
+            # VK_KHR_copy_commands2
+            'vkCmdBlitImage2',
+            'vkCmdCopyBuffer2',
+            'vkCmdCopyBufferToImage2',
+            'vkCmdCopyImage2',
+            'vkCmdCopyImageToBuffer2',
+            'vkCmdResolveImage2',
+            # VK_KHR_synchronization2
+            'vkCmdPipelineBarrier2',
+            'vkCmdResetEvent2',
+            'vkCmdSetEvent2',
+            'vkCmdWaitEvents2',
+            'vkCmdWriteTimestamp2',
+            'vkQueueSubmit2',
+        ]
+        extCommands = [
+            # VK_EXT_extended_dynamic_state
+            'vkCmdBindVertexBuffers2',
+            'vkCmdSetCullMode',
+            'vkCmdSetDepthBoundsTestEnable',
+            'vkCmdSetDepthCompareOp',
+            'vkCmdSetDepthTestEnable',
+            'vkCmdSetDepthWriteEnable',
+            'vkCmdSetFrontFace',
+            'vkCmdSetPrimitiveTopology',
+            'vkCmdSetScissorWithCount',
+            'vkCmdSetStencilOp',
+            'vkCmdSetStencilTestEnable',
+            'vkCmdSetViewportWithCount',
+            # VK_EXT_extended_dynamic_state2
+            'vkCmdSetDepthBiasEnable',
+            'vkCmdSetLogicOp',
+            'vkCmdSetPatchControlPoints',
+            'vkCmdSetPrimitiveRestartEnable',
+            'vkCmdSetRasterizerDiscardEnable',
+            # VK_EXT_line_rasterization
+            'vkCmdSetLineStipple',
+        ]
+        # rename commands that shoud have EXT or KHR postfix for SC
+        def renameCommands(commandList, postfix):
+            itemsToRemove = []
+            for c in self.commands:
+                if c.name not in commandList:
+                    continue
+                expectedName = c.name + postfix
+                # memorize entry containing expectedName which is just alias
+                for r in self.commands:
+                    if r.name == expectedName:
+                        itemsToRemove.append(r)
+                        break
+                c.name = expectedName
+            for item in itemsToRemove:
+                self.commands.remove(item)
+        renameCommands(khrCommands, 'KHR')
+        renameCommands(extCommands, 'EXT')
+        # remove VkPrivateDataSlot handle
+        self.handles[:] = [h for h in self.handles if h.name != 'VkPrivateDataSlot']
+        # remove commands added by VK_EXT_private_data
+        privateDataCommands = ['vkCreatePrivateDataSlot', 'vkDestroyPrivateDataSlot',
+                               'vkGetPrivateData', 'vkSetPrivateData']
+        self.commands[:] = [c for c in self.commands if c.name not in privateDataCommands]
+        # remove incorrect commands
+        incorrectCommands = [
+            'vkGetDeviceImageSparseMemoryRequirements',
+        ]
+        self.commands[:] = [c for c in self.commands if c.name not in incorrectCommands]
+        self.commands = sorted(self.commands, key=lambda item: item.name)
+        # add aliases for structures with incorrect names
+        khrStructs = [
+            # VK_KHR_global_priority
+            'VkQueueGlobalPriority',
+            # VK_KHR_vertex_attribute_divisor
+            'VkVertexInputBindingDivisorDescription',
+            'VkPhysicalDeviceVertexAttributeDivisorFeatures'
+            'VkPhysicalDeviceVertexAttributeDivisorProperties'
+            'VkPipelineVertexInputDivisorStateCreateInfo'
+        ]
+        for s in self.structs:
+            if s.name in khrStructs:
+                s.alias = s.name + 'KHR'
+    # </vulkan_object_issue_workaround>
+
+    def filterToSupportedByCTS(self, items):
+        # generate framework enums/structs/commands only for items that are tested by CTS;
+        # this method assumes that items list passed as argument contains items that have
+        # 'extensions' attribute which is a list of extension names that added the item
+        resultList = []
+        for item in items.values():
+            testedByCTS = True
+            # if items was added by extension do additional check
+            for extName in item.extensions or []:
+                testedByCTS = extName in self.extensions
+                if testedByCTS:
+                    break
+            if testedByCTS:
+                resultList.append(item)
+        # sort all items by name, except for commands where order matters (KHR should be before EXT)
+        if len(resultList) and not isinstance(resultList[0], Command):
+            resultList = sorted(resultList, key=lambda item: item.name)
+        return resultList
+
+class CTSGenerator(BaseGenerator):
+    def __init__(self, ctsLists):
         BaseGenerator.__init__(self)
+        self.cts = ctsLists
+
+class HandleTypeGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         def getHandleName (name):
             return prefixName("HANDLE_TYPE_", name)
 
         def genHandles ():
-            sorted_handles = sorted(self.vk.handles.values(), key=lambda item: item.name)
-            it = iter(sorted_handles)
+            it = iter(self.cts.handles)
             yield f"\t{getHandleName(next(it).name)}\t= 0,"
             for h in it:
                 yield f"\t{getHandleName(h.name)},"
-            for h in sorted_handles:
+            for h in self.cts.handles:
                 for a in h.aliases or []:
                     yield f"\t{getHandleName(a)}\t= {getHandleName(h.name)},"
-            it = reversed(sorted_handles)
+            it = reversed(self.cts.handles)
             yield f"\tHANDLE_TYPE_LAST\t= {getHandleName(next(it).name)} + 1\n}};"
+
+        # first generator to setup subset of lists provided by vulkan_object
+        self.cts.setup(self.vk, self.targetApiName == "vulkansc")
 
         self.write(INL_HEADER + "\nenum HandleType\n{")
         self.write(combineLines(indentLines(genHandles())))
 
-class BasicTypesGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class BasicTypesGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         def gen ():
@@ -547,16 +769,6 @@ class BasicTypesGenerator(BaseGenerator):
             yield "\n"
 
             yield "// Handles"
-            # <vulkan_object_issue_workaround>
-            # remove VkPrivateDataSlot handle
-            if self.targetApiName == "vulkansc" and 'VkPrivateDataSlot' in self.vk.handles:
-                self.vk.handles.pop('VkPrivateDataSlot')
-                self.vk.commands.pop('vkCreatePrivateDataSlot')
-                self.vk.commands.pop('vkDestroyPrivateDataSlot')
-                self.vk.commands.pop('vkGetPrivateData')
-                self.vk.commands.pop('vkSetPrivateData')
-            # </vulkan_object_issue_workaround>
-
             for line in self.genHandlesSrc():
                 yield line
             yield "\n"
@@ -591,13 +803,8 @@ class BasicTypesGenerator(BaseGenerator):
                         break
             # <vulkan_object_issue_workaround>
 
-            # append enums directly from video.xml
-            all_enums = list(self.vk.enums.values())
-            all_enums.extend(self.vk.videoStd.enums.values())
-            all_enums = sorted(all_enums, key=lambda item: item.name)
-
             yield "// Enums"
-            for enum in all_enums:
+            for enum in self.cts.enumsIncludingVideo:
                 # skip empty enums only for vulkan
                 # vulkan_json_data.hpp and vulkan_json_parser.hpp in SC need empty enums
                 if len(enum.fields) == 0 and self.targetApiName == "vulkan":
@@ -606,7 +813,7 @@ class BasicTypesGenerator(BaseGenerator):
                     yield line
 
             yield "// Enum aliases"
-            for enum in all_enums:
+            for enum in self.cts.enumsIncludingVideo:
                 # skip empty enums only for vulkan
                 # vulkan_json_data.hpp and vulkan_json_parser.hpp in SC need empty enums
                 if len(enum.fields) == 0 and self.targetApiName == "vulkan":
@@ -615,7 +822,7 @@ class BasicTypesGenerator(BaseGenerator):
                     yield f"typedef {enum.name} {a};"
 
             yield "// Bitmasks"
-            for bitmask in self.vk.bitmasks.values():
+            for bitmask in self.cts.bitmasks:
                 genBitfield = self.genBitfield32Src if bitmask.bitWidth == 32 else self.genBitfield64Src
                 for line in genBitfield(bitmask):
                     yield line
@@ -764,8 +971,7 @@ class BasicTypesGenerator(BaseGenerator):
 
     def genHandlesSrc (self):
         def genLines (handles):
-            sorted_handles = sorted(handles, key=lambda item: item.name)
-            for h in sorted_handles:
+            for h in self.cts.handles:
                 define = "VK_DEFINE_HANDLE" if h.dispatchable else "VK_DEFINE_NON_DISPATCHABLE_HANDLE"
                 handleType    = h.type
                 line = f"{define}\t({{}},\tHANDLE{handleType[9:]});"
@@ -773,12 +979,12 @@ class BasicTypesGenerator(BaseGenerator):
                 for a in h.aliases or []:
                     yield line.format(a)
 
-        for line in indentLines(genLines(self.vk.handles.values())):
+        for line in indentLines(genLines(self.cts.handles)):
             yield line
 
-class StructTypesGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class StructTypesGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     # function that returns definition of structure member
     def memberAsString (self, member):
@@ -798,12 +1004,9 @@ class StructTypesGenerator(BaseGenerator):
 
     # function that prints all structure definitions and alias typedefs
     def genVulkanStructs(self):
-        all_structs = list(self.vk.structs.values())
-        all_structs.extend(self.vk.videoStd.structs.values())
-        all_structs = sorted(all_structs, key=lambda s: s.name)
         # structures in xml are not ordered in a correct way for C++
         # we need to save structures that are used in other structures first
-        allStructureNamesList = [s.name for s in all_structs]
+        allStructureNamesList = [s.name for s in self.cts.structsIncludingVideo]
         savedStructureNamesList = []
         delayedStructureObjectsList = []
 
@@ -821,7 +1024,7 @@ class StructTypesGenerator(BaseGenerator):
 
         # iterate over all composite types
         lastDelayedComposite = None
-        for ct in all_structs:
+        for ct in self.cts.structsIncludingVideo:
             # check if one of delayed structures can be saved
             delayedButSaved = []
             for dct in delayedStructureObjectsList:
@@ -862,7 +1065,7 @@ class StructTypesGenerator(BaseGenerator):
             yield '};\n'
 
         # write all alias typedefs
-        for ct in all_structs:
+        for ct in self.cts.structsIncludingVideo:
             sorted_aliases = sorted(ct.aliases)
             for alias in sorted_aliases:
                 yield "typedef %s %s;" % (ct.name, alias)
@@ -874,15 +1077,15 @@ class StructTypesGenerator(BaseGenerator):
         for l in self.genVulkanStructs():
             self.write(l)
 
-class InterfaceDeclarationGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class InterfaceDeclarationGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         def genProtos ():
             postfix = "" if 'Concrete' in self.filename else " = 0"
             selectedFunctions = []
-            for fun in self.vk.commands.values():
+            for fun in self.cts.commands:
                 if getFunctionType(fun) in self.filename:
                     if fun.alias and fun.alias in selectedFunctions:
                         continue
@@ -895,15 +1098,14 @@ class InterfaceDeclarationGenerator(BaseGenerator):
         for l in indentLines(genProtos()):
             self.write(l)
 
-class FunctionPointerTypesGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class FunctionPointerTypesGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         def genTypes ():
             pattern = "typedef VKAPI_ATTR {}\t(VKAPI_CALL* {})\t({});"
-            sorted_functions = sorted(self.vk.commands.values(), key=lambda f: f.name)
-            for function in sorted_functions:
+            for function in self.cts.commands:
                 argList = argListToStr(function.params)
                 yield pattern.format(function.returnType, getFunctionTypeName(function.name), argList)
                 if function.alias:
@@ -912,9 +1114,9 @@ class FunctionPointerTypesGenerator(BaseGenerator):
         for l in indentLines(genTypes()):
             self.write(l)
 
-class FunctionPointersGenerator(BaseGenerator):
-    def __init__(self, params):
-        BaseGenerator.__init__(self)
+class FunctionPointersGenerator(CTSGenerator):
+    def __init__(self, ctsLists, params):
+        CTSGenerator.__init__(self, ctsLists)
         self.savedFunctions = []
 
     def prepareEntry (self, functionName):
@@ -926,9 +1128,8 @@ class FunctionPointersGenerator(BaseGenerator):
     def functionsYielder (self):
         generateForInstance = "Instance" in self.filename
         generateForDevice = "Device" in self.filename
-        sortedFunctions = sorted(self.vk.commands.values(), key=lambda f: f.name)
         processedFunctions = []
-        for function in sortedFunctions:
+        for function in self.cts.commands:
             if getFunctionType(function) not in self.filename:
                 continue
             processedFunctions.append(function.name)
@@ -944,9 +1145,9 @@ class FunctionPointersGenerator(BaseGenerator):
         for l in indentLines(self.functionsYielder()):
             self.write(l)
 
-class InitFunctionPointersGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class InitFunctionPointersGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
         # dictionary containing function names as keys
         # and their initialization code as single string value
         self.resultDict = {}
@@ -958,7 +1159,7 @@ class InitFunctionPointersGenerator(BaseGenerator):
         isSC = int(self.targetApiName == 'vulkansc')
         generateForInstance = "Instance" in self.filename
         generateForDevice = "Device" in self.filename
-        for function in self.vk.commands.values():
+        for function in self.cts.commands:
             if getFunctionType(function) not in self.filename or function.name == 'vkGetInstanceProcAddr':
                 continue
             condition = ''
@@ -999,9 +1200,9 @@ computeOnlyRestrictedCommands = {
     "createBuffer"            : "\t\tif ((pCreateInfo->usage & ( VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_INDEX_BUFFER_BIT )) !=0) THROW_NOT_SUPPORTED_COMPUTE_ONLY();",
 }
 
-class FuncPtrInterfaceImplGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class FuncPtrInterfaceImplGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def makeFuncPtrInterfaceImpl (self):
         processedClassName = "Instance"
@@ -1009,13 +1210,13 @@ class FuncPtrInterfaceImplGenerator(BaseGenerator):
         processedClassName = "Platform" if "Platform" in self.filename else processedClassName
 
         sortedFunctions = []
-        for function in self.vk.commands.values():
+        commandNames = [f.name for f in self.cts.commands]
+        for function in self.cts.commands:
             if processedClassName != getFunctionType(function):
                 continue
-            name = function.alias if function.alias and function.alias in self.vk.commands else function.name
+            name = function.alias if function.alias and function.alias in commandNames else function.name
             if name not in sortedFunctions:
                 sortedFunctions.append(name)
-        sortedFunctions = sorted(sortedFunctions)
 
         processedFunctions = []
         for name in sortedFunctions:
@@ -1070,7 +1271,7 @@ class FuncPtrInterfaceImplGenerator(BaseGenerator):
 
     def generate(self):
         # populate compute only forbidden commands
-        for fun in self.vk.commands.values():
+        for fun in self.cts.commands:
             if "VK_QUEUE_GRAPHICS_BIT" in fun.queues and not ("VK_QUEUE_COMPUTE_BIT" in fun.queues):
                 # remove the 'vk' prefix and change the first character of the remaining string to lowercase
                 commandName = fun.name[2:3].lower() + fun.name[3:]
@@ -1085,9 +1286,9 @@ class FuncPtrInterfaceImplGenerator(BaseGenerator):
         for l in self.makeFuncPtrInterfaceImpl():
             self.write(l)
 
-class FuncPtrInterfaceSCImplGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class FuncPtrInterfaceSCImplGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
         self.normFuncs = {
             "createGraphicsPipelines"        : "\t\treturn createGraphicsPipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
             "createComputePipelines"        : "\t\treturn createComputePipelinesHandlerNorm(device, pipelineCache, createInfoCount, pCreateInfos, pAllocator, pPipelines);",
@@ -1165,7 +1366,7 @@ class FuncPtrInterfaceSCImplGenerator(BaseGenerator):
         }
 
     def makeFuncPtrInterfaceStatisticsImpl(self):
-        for function in self.vk.commands.values():
+        for function in self.cts.commands:
             if not function.device:
                 continue
             ifaceName = getInterfaceName(function.name)
@@ -1204,30 +1405,27 @@ class FuncPtrInterfaceSCImplGenerator(BaseGenerator):
         for l in self.makeFuncPtrInterfaceStatisticsImpl():
             self.write(l)
 
-class StrUtilProtoGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class StrUtilProtoGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def makeStrUtilProto(self):
-        sorted_enums = sorted(self.vk.enums.values(), key=lambda en: en.name)
-        sorted_bitmasks = sorted(self.vk.bitmasks.values(), key=lambda en: en.name)
-        sorted_structs = sorted(self.vk.structs.values(), key=lambda en: en.name)
-        for line in indentLines([f"const char*\tget{e.name[2:]}Name\t({e.name} value);" for e in sorted_enums]):
+        for line in indentLines([f"const char*\tget{e.name[2:]}Name\t({e.name} value);" for e in self.cts.enums]):
             yield line
         # save video enums
         for e in self.vk.videoStd.enums.keys():
             yield f"const char*\tget{e[2:]}Name\t({e} value);"
         yield "\n"
-        for line in indentLines([f"inline tcu::Format::Enum<{e.name}>\tget{e.name[2:]}Str\t({e.name} value)\t{{ return tcu::Format::Enum<{e.name}>(get{e.name[2:]}Name, value);\t}}" for e in sorted_enums]):
+        for line in indentLines([f"inline tcu::Format::Enum<{e.name}>\tget{e.name[2:]}Str\t({e.name} value)\t{{ return tcu::Format::Enum<{e.name}>(get{e.name[2:]}Name, value);\t}}" for e in self.cts.enums]):
             yield line
         yield "\n"
-        for line in indentLines([f"inline std::ostream&\toperator<<\t(std::ostream& s, {e.name} value)\t{{ return s << get{e.name[2:]}Str(value);\t}}" for e in sorted_enums]):
+        for line in indentLines([f"inline std::ostream&\toperator<<\t(std::ostream& s, {e.name} value)\t{{ return s << get{e.name[2:]}Str(value);\t}}" for e in self.cts.enums]):
             yield line
         yield "\n"
-        for line in indentLines([f"tcu::Format::Bitfield<{b.bitWidth}>\tget{b.flagName[2:]}Str\t({b.flagName} value);" for b in sorted_bitmasks]):
+        for line in indentLines([f"tcu::Format::Bitfield<{b.bitWidth}>\tget{b.flagName[2:]}Str\t({b.flagName} value);" for b in self.cts.bitmasks]):
             yield line
         yield "\n"
-        for line in indentLines([f"std::ostream&\toperator<<\t(std::ostream& s, const {s.name}& value);" for s in sorted_structs]):
+        for line in indentLines([f"std::ostream&\toperator<<\t(std::ostream& s, const {s.name}& value);" for s in self.cts.structs]):
             yield line
 
     def generate(self):
@@ -1235,13 +1433,12 @@ class StrUtilProtoGenerator(BaseGenerator):
         for l in self.makeStrUtilProto():
             self.write(l)
 
-class StrUtilImplGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class StrUtilImplGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def makeStrUtilImpl(self):
-        sorted_handles = sorted(self.vk.handles.keys())
-        for line in indentLines([f"template<> const char*\tgetTypeName<{h}>\t(void) {{ return \"{h}\";\t}}" for h in sorted_handles]):
+        for line in indentLines([f"template<> const char*\tgetTypeName<{h.name}>\t(void) {{ return \"{h.name}\";\t}}" for h in self.cts.handles]):
             yield line
 
         yield "\n"
@@ -1251,11 +1448,7 @@ class StrUtilImplGenerator(BaseGenerator):
             yield line
         yield "}"
 
-        all_enums = list(self.vk.enums.values())
-        all_enums.extend(self.vk.videoStd.enums.values())
-
-        all_enums = sorted(all_enums, key=lambda en: en.name)
-        for enum in all_enums:
+        for enum in self.cts.enumsIncludingVideo:
             yield "\n"
             yield "const char* get%sName (%s value)" % (enum.name[2:], enum.name)
             yield "{"
@@ -1271,8 +1464,7 @@ class StrUtilImplGenerator(BaseGenerator):
             yield "\t}"
             yield "}"
 
-        sorted_bitmasks = sorted(self.vk.bitmasks.values(), key=lambda item: item.name)
-        for bitmask in sorted_bitmasks:
+        for bitmask in self.cts.bitmasks:
             yield "\n"
             yield f"tcu::Format::Bitfield<{bitmask.bitWidth}> get{bitmask.flagName[2:]}Str ({bitmask.flagName} value)"
             yield "{"
@@ -1289,11 +1481,10 @@ class StrUtilImplGenerator(BaseGenerator):
             yield f"\treturn tcu::Format::Bitfield<{bitmask.bitWidth}>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));"
             yield "}"
 
-        bitfieldTypeNames = set([bitmask.flagName for bitmask in sorted_bitmasks])
+        bitfieldTypeNames = set([bitmask.flagName for bitmask in self.cts.bitmasks])
 
         yield "\n"
-        sorted_structs = sorted(self.vk.structs.values(), key=lambda item: item.name)
-        for type in sorted_structs:
+        for type in self.cts.structs:
             yield ""
             yield "std::ostream& operator<< (std::ostream& s, const %s& value)" % type.name
             yield "{"
@@ -1347,9 +1538,9 @@ class StrUtilImplGenerator(BaseGenerator):
         for l in self.makeStrUtilImpl():
             self.write(l)
 
-class ObjTypeImplGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class ObjTypeImplGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def makeObjTypeImpl (self):
         yield "namespace vk"
@@ -1357,7 +1548,7 @@ class ObjTypeImplGenerator(BaseGenerator):
 
         yield "template<typename T> VkObjectType getObjectType    (void);"
 
-        for line in indentLines(["template<> inline VkObjectType\tgetObjectType<%s>\t(void) { return %s;\t}" % (handle.name, prefixName("VK_OBJECT_TYPE_", handle.name)) for handle in self.vk.handles.values()]):
+        for line in indentLines(["template<> inline VkObjectType\tgetObjectType<%s>\t(void) { return %s;\t}" % (handle.name, prefixName("VK_OBJECT_TYPE_", handle.name)) for handle in self.cts.handles]):
             yield line
 
         yield "}"
@@ -1367,9 +1558,9 @@ class ObjTypeImplGenerator(BaseGenerator):
         for l in self.makeObjTypeImpl():
             self.write(l)
 
-class RefUtilGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class RefUtilGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
         self.savedFunctions = []
 
     class ConstructorFunction:
@@ -1382,8 +1573,7 @@ class RefUtilGenerator(BaseGenerator):
 
     def getConstructorFunctions (self):
         funcs = []
-        sortedFunctions = sorted(self.vk.commands.values(), key=lambda f: f.name)
-        for function in sortedFunctions:
+        for function in self.cts.commands:
             if (function.name[:8] == "vkCreate" or function.name == "vkAllocateMemory") and not "createInfoCount" in [a.name for a in function.params]:
                 if function.name in ["vkCreatePipelineBinariesKHR", "vkCreateDisplayModeKHR"]:
                     continue # No way to delete display modes (bug?)
@@ -1418,7 +1608,7 @@ class RefUtilGenerator(BaseGenerator):
         yield ""
 
         savedDeleters = []
-        sortedFunctions = sorted(self.vk.commands.values(), key=lambda f: f.name)
+        sortedFunctions = sorted(self.cts.commands, key=lambda f: f.name)
         for function in sortedFunctions:
             if not function.device:
                 continue
@@ -1462,13 +1652,12 @@ class RefUtilGenerator(BaseGenerator):
         for l in makeRefUtil():
             self.write(l)
 
-class GetStructureTypeImplGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class GetStructureTypeImplGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def gen (self):
-        sorted_structs = sorted(self.vk.structs.values(), key=lambda s: s.name)
-        for cType in sorted_structs:
+        for cType in self.cts.structs:
             if cType.members[0].name == "sType" and cType.name != "VkBaseOutStructure" and cType.name != "VkBaseInStructure":
                 yield "template<> VkStructureType getStructureType<%s> (void)" % cType.name
                 yield "{"
@@ -1480,9 +1669,9 @@ class GetStructureTypeImplGenerator(BaseGenerator):
         for l in self.gen():
             self.write(l)
 
-class NullDriverImplGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class NullDriverImplGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def genNullDriverImpl (self):
         specialFuncNames = [
@@ -1524,13 +1713,13 @@ class NullDriverImplGenerator(BaseGenerator):
                 "vkCreateShadersEXT",
             ]
 
-        specialFuncs = [f for f in self.vk.commands.values() if f.name in specialFuncNames]
-        createFuncs = [f for f in self.vk.commands.values() if (f.name[:8] == "vkCreate" or f.name == "vkAllocateMemory") and not f in specialFuncs]
-        destroyFuncs = [f for f in self.vk.commands.values() if (f.name[:9] == "vkDestroy" or f.name == "vkFreeMemory") and not f in specialFuncs]
-        dummyFuncs = [f for f in self.vk.commands.values() if f not in specialFuncs + createFuncs + destroyFuncs]
+        specialFuncs = [f for f in self.cts.commands if f.name in specialFuncNames]
+        createFuncs = [f for f in self.cts.commands if (f.name[:8] == "vkCreate" or f.name == "vkAllocateMemory") and not f in specialFuncs]
+        destroyFuncs = [f for f in self.cts.commands if (f.name[:9] == "vkDestroy" or f.name == "vkFreeMemory") and not f in specialFuncs]
+        dummyFuncs = [f for f in self.cts.commands if f not in specialFuncs + createFuncs + destroyFuncs]
 
         def getHandle (name):
-            for handle in self.vk.handles.values():
+            for handle in self.cts.handles:
                 if handle.name == name:
                     return handle
             raise Exception("No such handle: %s" % name)
@@ -1580,7 +1769,7 @@ class NullDriverImplGenerator(BaseGenerator):
         platformEntries = []
         instanceEntries = []
         deviceEntries = []
-        for f in self.vk.commands.values():
+        for f in self.cts.commands:
             functionType = getFunctionType(f)
             if functionType == 'Platform':
                 platformEntries.append(f.name)
@@ -1619,9 +1808,9 @@ class NullDriverImplGenerator(BaseGenerator):
         for l in self.genNullDriverImpl():
             self.write(l)
 
-class TypeUtilGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class TypeUtilGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
         # Structs filled by API queries are not often used in test code
         self.QUERY_RESULT_TYPES = set([
                 "VkPhysicalDeviceFeatures",
@@ -1643,7 +1832,7 @@ class TypeUtilGenerator(BaseGenerator):
         def hasCompositeMember (type):
             for member in type.members:
                 if member.pointer == False:
-                    match = [c for c in self.vk.structs.values() if member.type == c.name]
+                    match = [c for c in self.cts.structs if member.type == c.name]
                     if len(match) > 0:
                         return True
             return False
@@ -1654,8 +1843,7 @@ class TypeUtilGenerator(BaseGenerator):
         not hasCompositeMember(type)
 
     def gen (self):
-        sorted_structs = sorted(self.vk.structs.values(), key=lambda s: s.name)
-        for type in sorted_structs:
+        for type in self.cts.structs:
             if not self.isSimpleStruct(type):
                 continue
 
@@ -1674,9 +1862,9 @@ class TypeUtilGenerator(BaseGenerator):
         for l in self.gen():
             self.write(l)
 
-class DriverIdsGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class DriverIdsGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         self.write(INL_HEADER)
@@ -1695,9 +1883,9 @@ class DriverIdsGenerator(BaseGenerator):
         self.write("\t{\"VK_DRIVER_ID_MAX_ENUM\", 0x7FFFFFFF}")
         self.write("};")
 
-class SupportedExtensionsGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class SupportedExtensionsGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
         self.partiallyPromotedExtensions = [
             'VK_EXT_extended_dynamic_state',
             'VK_EXT_extended_dynamic_state2',
@@ -1749,9 +1937,9 @@ class SupportedExtensionsGenerator(BaseGenerator):
         self.writeExtensionsForVersions(instanceMap)
         self.write("}\n")
 
-class ExtensionFunctionsGenerator(BaseGenerator):
-    def __init__(self, params):
-        BaseGenerator.__init__(self)
+class ExtensionFunctionsGenerator(CTSGenerator):
+    def __init__(self, ctsLists, params):
+        CTSGenerator.__init__(self, ctsLists)
         self.rawVkXml = params
 
     def writeExtensionNameArrays (self):
@@ -1874,13 +2062,13 @@ class ExtensionFunctionsGenerator(BaseGenerator):
         for line in self.writeExtensionNameArrays():
             self.write(line)
 
-class CoreFunctionalitiesGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class CoreFunctionalitiesGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         functionNamesPerApiVersionDict = {}
-        for f in self.vk.commands.values():
+        for f in self.cts.commands:
             name = f.name
             # skip extension commands
             if name[-1].isupper():
@@ -1934,9 +2122,9 @@ class CoreFunctionalitiesGenerator(BaseGenerator):
             self.write(l)
         self.write("}")
 
-class DeviceFeatures2Generator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class DeviceFeatures2Generator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
 
@@ -1952,8 +2140,7 @@ class DeviceFeatures2Generator(BaseGenerator):
             return True
 
         # find structures that should be tested
-        structures = [c for c in self.vk.structs.values() if isStructValid(c)]
-        structures = sorted(structures, key=lambda item: item.name)
+        structures = [c for c in self.cts.structs if isStructValid(c)]
 
         # list of partially promoted extensions that are not marked in vk.xml as partially promoted in extension definition
         # note: for VK_EXT_host_image_copy there is a comment in require section for vk1.4
@@ -2098,9 +2285,9 @@ class DeviceFeatures2Generator(BaseGenerator):
             self.write('\taddFunctionCase(testGroup, "' + camelToSnake(x) + '", ' + x + ');')
         self.write('}\n')
 
-class FeaturesOrPropertiesGenericGenerator(BaseGenerator):
-    def __init__(self, params):
-        BaseGenerator.__init__(self)
+class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
+    def __init__(self, ctsLists, params):
+        CTSGenerator.__init__(self, ctsLists)
         self.structList = params
         self.structGroup = 'Features'
         self.blobList = []
@@ -2109,7 +2296,7 @@ class FeaturesOrPropertiesGenericGenerator(BaseGenerator):
         structPattern = fr'VkPhysicalDevice(\w+){self.structGroup}'
         blobPattern = fr'VkPhysicalDeviceVulkan(SC)?([1-9][0-9]){self.structGroup}'
         basePattern = f'VkPhysicalDevice{self.structGroup}2'
-        for struct in self.vk.structs.values():
+        for struct in self.cts.structs:
             if re.search(structPattern, struct.name, re.IGNORECASE):
                 # check if struct extends VkPhysicalDeviceFeatures(/Properties)2
                 if struct.extends is None or basePattern not in struct.extends:
@@ -2279,9 +2466,9 @@ class FeaturesOrPropertiesGenericGenerator(BaseGenerator):
         stream.append('} // vk')
         self.write(combineLines(stream, INL_HEADER))
 
-class FeaturesOrPropertiesMethodsGenerator(BaseGenerator):
-    def __init__(self, params):
-        BaseGenerator.__init__(self)
+class FeaturesOrPropertiesMethodsGenerator(CTSGenerator):
+    def __init__(self, ctsLists, params):
+        CTSGenerator.__init__(self, ctsLists)
         self.featureStructs, self.pattern = params
 
     def generate(self):
@@ -2333,9 +2520,9 @@ class FeaturesOrPropertiesMethodsGenerator(BaseGenerator):
             stream.append(constStr + self.pattern.format(fop.name, nameSubStr))
         self.write(combineLines(indentLines(stream), INL_HEADER))
 
-class DeviceFeatureTestGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class DeviceFeatureTestGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         coreFeaturesPattern = re.compile("^VkPhysicalDeviceVulkan([1-9][0-9])Features[0-9]*$")
@@ -2345,8 +2532,7 @@ class DeviceFeatureTestGenerator(BaseGenerator):
         # iterate over all feature structures
         allFeaturesPattern = re.compile(r"^VkPhysicalDevice\w+Features[1-9]*")
 
-        sortedStructs = sorted(self.vk.structs.values(), key=lambda s: s.name)
-        for struct in sortedStructs:
+        for struct in self.cts.structs:
             # skip structures that are not feature structures
             if not allFeaturesPattern.match(struct.name):
                 continue
@@ -2416,35 +2602,40 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
         stream.append('}\n')
         self.write(combineLines(stream, INL_HEADER))
 
-class MandatoryFeaturesGenerator(BaseGenerator):
+class MandatoryFeaturesGenerator(CTSGenerator):
     @dataclass
     class StructData:
         names: list[str]
         extensions: list[str]
         structObject: None
 
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
         self.usedFeatureStructs = []
         self.uniqueFeatureStructs = []
 
     def generate(self):
 
         if self.targetApiName == 'vulkan':
-            # check if any of he extensions in EXTENSIONS_TESTED_BY_CTS
-            # could be removed from the list because they are part of core
-            for extName in EXTENSIONS_TESTED_BY_CTS:
+            for extName in KHR_EXT_EXTENSIONS_TESTED_BY_CTS:
+                # check if any of he extensions in KHR_EXT_EXTENSIONS_TESTED_BY_CTS
+                # could be removed from the list because they are part of core
                 if extName in self.vk.extensions:
                     ext = self.vk.extensions[extName]
                     if ext.promotedTo and 'VK_VERSION' in ext.promotedTo:
-                        print(f'  {extName} is in core, it can be removed from EXTENSIONS_TESTED_BY_CTS list')
-            # check if there is no duplicates in EXTENSIONS_TESTED_BY_CTS
-            if len(EXTENSIONS_TESTED_BY_CTS) != len(set(EXTENSIONS_TESTED_BY_CTS)):
-                print(f'  Remove duplicates from EXTENSIONS_TESTED_BY_CTS list')
+                        print(f'  {extName} is in core, it can be removed from KHR_EXT_EXTENSIONS_TESTED_BY_CTS list')
+                # check if any of he extensions in KHR_EXT_EXTENSIONS_TESTED_BY_CTS
+                # does not start with vK_KHR or VK_EXT
+                if not (extName.startswith('VK_KHR') or extName.startswith('VK_EXT')) and len(extName):
+                    print(f'  {extName} does not end with KHR or EXT, please check if it should be in KHR_EXT_EXTENSIONS_TESTED_BY_CTS list')
+            # check if there is no duplicates in KHR_EXT_EXTENSIONS_TESTED_BY_CTS
+            if len(KHR_EXT_EXTENSIONS_TESTED_BY_CTS) != len(set(KHR_EXT_EXTENSIONS_TESTED_BY_CTS)):
+                print(f'  Remove duplicates from KHR_EXT_EXTENSIONS_TESTED_BY_CTS list')
 
         # iterate over all extensions and vulkan versions to
         # find all feature structures that have mandatory fields
-        self.addFeatureStructs(self.vk.extensions.values())
+        extensions = [e for e in self.vk.extensions.values() if e.name in self.cts.extensions]
+        self.addFeatureStructs(extensions)
         if self.targetApiName == 'vulkan':
             self.addFeatureStructs(self.vk.versions.values())
 
@@ -2531,25 +2722,12 @@ class MandatoryFeaturesGenerator(BaseGenerator):
 
         self.write('\tcontext.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &coreFeatures);\n')
 
-        skippedExtensions = []
         for ext in self.vk.extensions.values():
-            # KHR and EXT extensions that are not core need to be cross check with
-            # EXTENSIONS_TESTED_BY_CTS, we can check mandatory features only
-            # for extensions that are tested in the CTS
-            if ext.featureRequirement and ('KHR' in ext.name or 'EXT' in ext.name) and \
-               (not ext.promotedTo or 'VK_VERSION' not in ext.promotedTo) and \
-               (ext.name not in EXTENSIONS_TESTED_BY_CTS):
-               skippedExtensions.append(ext.name)
+            if ext.name not in self.cts.extensions:
                continue
             # generate check
             for fr in ext.featureRequirement:
                 self.checkRequirement(ext.name, fr, f'isExtensionStructSupported(deviceExtensions, RequiredExtension("{ext.name}"))')
-
-        if skippedExtensions:
-            print("  Not testing mandatory features for extensions that aren't on EXTENSIONS_TESTED_BY_CTS list:")
-            for extName in skippedExtensions:
-                print(f'    {extName}')
-            print("  If any of the above extensions should be tested, add them to the list.")
 
         if self.targetApiName == 'vulkan':
             for ver in self.vk.versions.values():
@@ -2645,9 +2823,9 @@ class MandatoryFeaturesGenerator(BaseGenerator):
                 return s[2].lower() + s[3:]
         assert False, f'Error: {structName} not found in uniqueFeatureStructs'
 
-class ExtensionListGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class ExtensionListGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         limitToDevice = 'Device' in self.filename
@@ -2668,9 +2846,9 @@ class ExtensionListGenerator(BaseGenerator):
             self.write('\t"' + n + '",')
         self.write('};\n')
 
-class ApiExtensionDependencyInfoGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class ApiExtensionDependencyInfoGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def genHelperFunctions(self):
         yield 'using namespace tcu;'
@@ -2830,9 +3008,9 @@ class ApiExtensionDependencyInfoGenerator(BaseGenerator):
         for l in self.genRequiredCoreVersions():
             self.write(l)
 
-class EntryPointValidationGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class EntryPointValidationGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         # keys are instance extension names and value is list of device-level functions
@@ -2858,9 +3036,9 @@ class EntryPointValidationGenerator(BaseGenerator):
             self.write('\t\t}\n\t},')
         self.write('};')
 
-class GetDeviceProcAddrGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class GetDeviceProcAddrGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate(self):
         testBlockStart = '''tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
@@ -2947,9 +3125,9 @@ class GetDeviceProcAddrGenerator(BaseGenerator):
         self.write('}\n')
         self.write('}\n')
 
-class ProfileTestsGenerator(BaseGenerator):
-    def __init__(self, jsonFilesList):
-        BaseGenerator.__init__(self)
+class ProfileTestsGenerator(CTSGenerator):
+    def __init__(self, ctsLists, jsonFilesList):
+        CTSGenerator.__init__(self, ctsLists)
         self.jsonFilesList = jsonFilesList
 
     # helper function; workaround for lack of information in json about limit type
@@ -3194,9 +3372,9 @@ class ProfileTestsGenerator(BaseGenerator):
             self.write(l)
         self.write("};")
 
-class FormatListsGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class FormatListsGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generate (self):
 
@@ -3406,9 +3584,9 @@ class FormatListsGenerator(BaseGenerator):
     def isPartOfVendorExtension(self, name):
         return any(name.endswith(postfix) for postfix in EXTENSION_POSTFIXES_VENDOR)
 
-class ConformanceVersionsGenerator(BaseGenerator):
-    def __init__(self, _):
-        BaseGenerator.__init__(self)
+class ConformanceVersionsGenerator(CTSGenerator):
+    def __init__(self, ctsLists, _):
+        CTSGenerator.__init__(self, ctsLists)
 
     def generateFromCache(self, cacheVkObjectData, genOpts):
         # on Jenkins, Git operations are not executed, resulting in empty file generation;
@@ -3470,81 +3648,6 @@ class ConformanceVersionsGenerator(BaseGenerator):
         self.write(combineLines(stream))
         OutputGenerator.endFile(self)
 
-# <vulkan_object_issue_workaround>
-# some functions and structures for Vulkan SC use names from regular Vulkan e.g.
-# vkCmdBindVertexBuffers2 is provided instead of non promoted vkCmdBindVertexBuffers2EXT
-def postProcess(vk):
-    khrCommands = [
-        # VK_KHR_copy_commands2
-        'vkCmdBlitImage2',
-        'vkCmdCopyBuffer2',
-        'vkCmdCopyBufferToImage2',
-        'vkCmdCopyImage2',
-        'vkCmdCopyImageToBuffer2',
-        'vkCmdResolveImage2',
-        # VK_KHR_synchronization2
-        'vkCmdPipelineBarrier2',
-        'vkCmdResetEvent2',
-        'vkCmdSetEvent2',
-        'vkCmdWaitEvents2',
-        'vkCmdWriteTimestamp2',
-        'vkQueueSubmit2',
-    ]
-    extCommands = [
-        # VK_EXT_extended_dynamic_state
-        'vkCmdBindVertexBuffers2',
-        'vkCmdSetCullMode',
-        'vkCmdSetDepthBoundsTestEnable',
-        'vkCmdSetDepthCompareOp',
-        'vkCmdSetDepthTestEnable',
-        'vkCmdSetDepthWriteEnable',
-        'vkCmdSetFrontFace',
-        'vkCmdSetPrimitiveTopology',
-        'vkCmdSetScissorWithCount',
-        'vkCmdSetStencilOp',
-        'vkCmdSetStencilTestEnable',
-        'vkCmdSetViewportWithCount',
-        # VK_EXT_extended_dynamic_state2
-        'vkCmdSetDepthBiasEnable',
-        'vkCmdSetLogicOp',
-        'vkCmdSetPatchControlPoints',
-        'vkCmdSetPrimitiveRestartEnable',
-        'vkCmdSetRasterizerDiscardEnable',
-        # VK_EXT_line_rasterization
-        'vkCmdSetLineStipple',
-    ]
-    # rename commands that shoud have EXT or KHR postfix for SC
-    def renameCommands(commandList, postfix):
-        for commandName in commandList:
-            if commandName in vk.commands:
-                newName = commandName + postfix
-                cObj = vk.commands.pop(commandName)
-                cObj.name = newName
-                vk.commands[newName] = cObj
-    renameCommands(khrCommands, 'KHR')
-    renameCommands(extCommands, 'EXT')
-    # remove incorrect commands
-    incorrectCommands = [
-        'vkGetDeviceImageSparseMemoryRequirements',
-    ]
-    for ic in incorrectCommands:
-        if ic in vk.commands:
-            vk.commands.pop(ic)
-    # add aliases for structures with incorrect names
-    khrStructs = [
-        # VK_KHR_global_priority
-        'VkQueueGlobalPriority',
-        # VK_KHR_vertex_attribute_divisor
-        'VkVertexInputBindingDivisorDescription',
-        'VkPhysicalDeviceVertexAttributeDivisorFeatures'
-        'VkPhysicalDeviceVertexAttributeDivisorProperties'
-        'VkPipelineVertexInputDivisorStateCreateInfo'
-    ]
-    for s in vk.structs.values():
-        if s.name in khrStructs:
-            s.alias = s.name + 'KHR'
-# </vulkan_object_issue_workaround>
-
 def parseCmdLineArgs():
     parser = argparse.ArgumentParser(description = "Generate Vulkan INL files",
                                      formatter_class=argparse.ArgumentDefaultsHelpFormatter)
@@ -3582,6 +3685,7 @@ if __name__ == "__main__":
 
     # objects shared betwean some generators
     rawVkXml = etree.parse(os.path.join(VULKAN_XML_DIR, "vk.xml"))
+    ctsLists = ConformanceItemLists()
     vkObject = None
     featureStructs = []
     propertyStructs = []
@@ -3590,12 +3694,12 @@ if __name__ == "__main__":
     @dataclass
     class GenData:
         filename: str
-        generatorType: BaseGenerator
+        generatorType: CTSGenerator
         params: (Any | None) = None
     generatorList = [
 
-        GenData('vkBasicTypes.inl',                           BasicTypesGenerator),
         GenData('vkHandleType.inl',                           HandleTypeGenerator),
+        GenData('vkBasicTypes.inl',                           BasicTypesGenerator),
         GenData('vkStructTypes.inl',                          StructTypesGenerator),
 
         GenData('vkDeviceFeatures.inl',                       FeaturesOrPropertiesGenericGenerator, (featureStructs)),
@@ -3653,7 +3757,7 @@ if __name__ == "__main__":
         GenData('vkFormatLists.inl',                          FormatListsGenerator),
         GenData('vkKnownConformanceVersions.inl',             ConformanceVersionsGenerator),
 
-        # NOTE: when new generators are added then they should also be added to the
+        # NOTE: when new generators are added, they should also be added to the
         # vk-gl-cts\external\vulkancts\framework\vulkan\CMakeLists.txt outputs list
     ]
 
@@ -3666,7 +3770,7 @@ if __name__ == "__main__":
         generatorList.append(GenData('vkProfileTests.inl', ProfileTestsGenerator, (profileList)))
 
     for i, generatorData in enumerate(generatorList):
-        gen = generatorData.generatorType(generatorData.params)
+        gen = generatorData.generatorType(ctsLists, generatorData.params)
         print('[' + (' ' * (i<9)) + f'{i+1}/{len(generatorList)}] Generating {generatorData.filename}')
 
         # execute generator; first generator creates vulkan_object, remaining generators reuse it
@@ -3677,11 +3781,6 @@ if __name__ == "__main__":
             reg.apiGen()
             # memorize vulkan object
             vkObject = gen.vk
-
-            # <vulkan_object_issue_workaround>
-            if isSC:
-                postProcess(vkObject)
-            # </vulkan_object_issue_workaround>
         else:
             # reuse vulkan object
             reg = Registry(gen, BaseGeneratorOptions(generatorData.filename))
