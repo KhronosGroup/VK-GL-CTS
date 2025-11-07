@@ -50,6 +50,7 @@ const vk::VkPhysicalDeviceLayeredApiPropertiesListKHR&					Context::getLayeredAp
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&					Context::getLayeredDriverPropertiesMSFT						(void) const { return m_device->getLayeredDriverPropertiesMSFT();					}
 const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&			Context::getLegacyVertexAttributesPropertiesEXT				(void) const { return m_device->getLegacyVertexAttributesPropertiesEXT();			}
 const vk::VkPhysicalDeviceLineRasterizationProperties&					Context::getLineRasterizationProperties						(void) const { return m_device->getLineRasterizationProperties();					}
+const vk::VkPhysicalDeviceMaintenance10PropertiesKHR&					Context::getMaintenance10Properties							(void) const { return m_device->getMaintenance10Properties();						}
 const vk::VkPhysicalDeviceMaintenance3Properties&						Context::getMaintenance3Properties							(void) const { return m_device->getMaintenance3Properties();						}
 const vk::VkPhysicalDeviceMaintenance4Properties&						Context::getMaintenance4Properties							(void) const { return m_device->getMaintenance4Properties();						}
 const vk::VkPhysicalDeviceMaintenance5Properties&						Context::getMaintenance5Properties							(void) const { return m_device->getMaintenance5Properties();						}
@@ -57,7 +58,7 @@ const vk::VkPhysicalDeviceMaintenance6Properties&						Context::getMaintenance6P
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&					Context::getMaintenance7Properties							(void) const { return m_device->getMaintenance7Properties();						}
 const vk::VkPhysicalDeviceMaintenance9PropertiesKHR&					Context::getMaintenance9Properties							(void) const { return m_device->getMaintenance9Properties();						}
 const vk::VkPhysicalDeviceMapMemoryPlacedPropertiesEXT&					Context::getMapMemoryPlacedPropertiesEXT					(void) const { return m_device->getMapMemoryPlacedPropertiesEXT();					}
-const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				Context::getMemoryDecompressionProperties					(void) const { return m_device->getMemoryDecompressionProperties();					}
+const vk::VkPhysicalDeviceMemoryDecompressionPropertiesEXT&				Context::getMemoryDecompressionPropertiesEXT				(void) const { return m_device->getMemoryDecompressionPropertiesEXT();				}
 const vk::VkPhysicalDeviceMeshShaderPropertiesEXT&						Context::getMeshShaderPropertiesEXT							(void) const { return m_device->getMeshShaderPropertiesEXT();						}
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&						Context::getMeshShaderProperties							(void) const { return m_device->getMeshShaderProperties();							}
 const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&						Context::getMultiDrawPropertiesEXT							(void) const { return m_device->getMultiDrawPropertiesEXT();						}
@@ -68,11 +69,13 @@ const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&					Context::getOpacityM
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&						Context::getOpticalFlowProperties							(void) const { return m_device->getOpticalFlowProperties();							}
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&						Context::getPCIBusInfoPropertiesEXT							(void) const { return m_device->getPCIBusInfoPropertiesEXT();						}
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	Context::getPartitionedAccelerationStructurePropertiesNV	(void) const { return m_device->getPartitionedAccelerationStructurePropertiesNV();	}
+const vk::VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&		Context::getPerformanceCountersByRegionPropertiesARM		(void) const { return m_device->getPerformanceCountersByRegionPropertiesARM();		}
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&				Context::getPerformanceQueryProperties						(void) const { return m_device->getPerformanceQueryProperties();					}
 const vk::VkPhysicalDevicePipelineBinaryPropertiesKHR&					Context::getPipelineBinaryProperties						(void) const { return m_device->getPipelineBinaryProperties();						}
 const vk::VkPhysicalDevicePipelineRobustnessProperties&					Context::getPipelineRobustnessProperties					(void) const { return m_device->getPipelineRobustnessProperties();					}
 const vk::VkPhysicalDevicePointClippingProperties&						Context::getPointClippingProperties							(void) const { return m_device->getPointClippingProperties();						}
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&				Context::getPortabilitySubsetProperties						(void) const { return m_device->getPortabilitySubsetProperties();					}
+const vk::VkPhysicalDevicePresentationPropertiesOHOS&					Context::getPresentationPropertiesOHOS						(void) const { return m_device->getPresentationPropertiesOHOS();					}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					Context::getProtectedMemoryProperties						(void) const { return m_device->getProtectedMemoryProperties();						}
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&					Context::getProvokingVertexPropertiesEXT					(void) const { return m_device->getProvokingVertexPropertiesEXT();					}
 const vk::VkPhysicalDevicePushDescriptorProperties&						Context::getPushDescriptorProperties						(void) const { return m_device->getPushDescriptorProperties();						}

@@ -1041,11 +1041,18 @@ void InstancedDrawInstance::draw(VkCommandBuffer cmdBuffer, const DrawData &draw
         if (m_params.testMultiview)
             addressFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
 
+        // test setStride
+        uint32_t stride = 0;
+        if (m_params.topology < VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+            stride = (uint32_t)sizeof(tcu::Vec4);
+
         VkBindVertexBuffer3InfoKHR vertexBuffer3Infos[2];
         vertexBuffer3Infos[0]              = initVulkanStructure();
         vertexBuffer3Infos[1]              = initVulkanStructure();
+        vertexBuffer3Infos[0].setStride    = false;
+        vertexBuffer3Infos[1].setStride    = (stride != 0);
         vertexBuffer3Infos[0].addressRange = {drawData.vertexBufferAddress, drawData.vertexBufferSize, 0};
-        vertexBuffer3Infos[1].addressRange = {drawData.instanceBufferAddress, drawData.instanceBufferSize, 0};
+        vertexBuffer3Infos[1].addressRange = {drawData.instanceBufferAddress, drawData.instanceBufferSize, stride};
         vertexBuffer3Infos[1].addressFlags = addressFlags;
 
         m_vk.cmdBindVertexBuffers3KHR(cmdBuffer, 0, 2, vertexBuffer3Infos);

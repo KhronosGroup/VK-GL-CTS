@@ -1519,33 +1519,72 @@ void RenderPassWrapper::end(const DeviceInterface &vk, const VkCommandBuffer com
     }
 }
 
+#ifndef CTS_USES_VULKANSC
+VkRenderingAttachmentFlagsKHR attDescriptionFlags2RenderingAttFlags(VkAttachmentDescriptionFlags flags)
+{
+    VkRenderingAttachmentFlagsKHR resultFlags = 0u;
+
+    if (flags & VK_ATTACHMENT_DESCRIPTION_RESOLVE_ENABLE_TRANSFER_FUNCTION_BIT_KHR)
+        resultFlags |= VK_RENDERING_ATTACHMENT_RESOLVE_ENABLE_TRANSFER_FUNCTION_BIT_KHR;
+
+    if (flags & VK_ATTACHMENT_DESCRIPTION_RESOLVE_SKIP_TRANSFER_FUNCTION_BIT_KHR)
+        resultFlags |= VK_RENDERING_ATTACHMENT_RESOLVE_SKIP_TRANSFER_FUNCTION_BIT_KHR;
+
+    return resultFlags;
+}
+#endif // CTS_USES_VULKANSC
+
 void RenderPassWrapper::beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const
 {
     DE_UNREF(vk);
     DE_UNREF(commandBuffer);
+
 #ifndef CTS_USES_VULKANSC
     const auto &subpass = m_subpasses[m_activeSubpass];
-    std::vector<vk::VkRenderingAttachmentInfo> colorAttachments;
-    for (uint32_t i = 0; i < (uint32_t)subpass.m_colorAttachments.size(); ++i)
+
+    std::vector<vk::VkRenderingAttachmentInfo> colorAttachments(subpass.m_colorAttachments.size());
+    std::vector<vk::VkRenderingAttachmentFlagsInfoKHR> colorAttachmentsFlags(colorAttachments.size());
+
+    for (uint32_t i = 0; i < colorAttachments.size(); ++i)
     {
-        colorAttachments.emplace_back();
-        auto &colorAttachment = colorAttachments.back();
-        colorAttachment       = vk::initVulkanStructure();
+        auto &colorAttachment      = colorAttachments.at(i);
+        auto &colorAttachmentFlags = colorAttachmentsFlags.at(i);
+
+        colorAttachment      = vk::initVulkanStructure();
+        colorAttachmentFlags = vk::initVulkanStructure();
+
         if (subpass.m_colorAttachments[i].index == VK_ATTACHMENT_UNUSED)
             continue;
+
         colorAttachment = subpass.m_colorAttachments[i].attachmentInfo;
         if (m_attachmentFeedbackLoopInfo.sType == VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT)
             colorAttachment.pNext = &m_attachmentFeedbackLoopInfo;
         colorAttachment.loadOp = vk::VK_ATTACHMENT_LOAD_OP_LOAD;
+
         if (!subpass.m_resolveAttachments.empty() && subpass.m_resolveAttachments[i].index != VK_ATTACHMENT_UNUSED)
         {
             if (isUintFormat(subpass.m_resolveAttachments[i].format) ||
                 isIntFormat(subpass.m_resolveAttachments[i].format))
+            {
                 colorAttachment.resolveMode = vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+            }
             else
+            {
                 colorAttachment.resolveMode = vk::VK_RESOLVE_MODE_AVERAGE_BIT;
+            }
             colorAttachment.resolveImageView   = subpass.m_resolveAttachments[i].attachmentInfo.imageView;
             colorAttachment.resolveImageLayout = subpass.m_resolveAttachments[i].attachmentInfo.imageLayout;
+
+            // Translate resolve attachment description flags to rendering attachment flags.
+            const auto &attFlags         = m_attachments[subpass.m_resolveAttachments[i].index].flags;
+            const auto renderingAttFlags = attDescriptionFlags2RenderingAttFlags(attFlags);
+
+            if (renderingAttFlags)
+            {
+                colorAttachmentFlags.flags   = renderingAttFlags;
+                const auto addAttachmentInfo = makeStructChainAdder(&colorAttachment);
+                addAttachmentInfo(&colorAttachmentFlags);
+            }
         }
     }
 

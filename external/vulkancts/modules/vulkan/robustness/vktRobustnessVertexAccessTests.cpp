@@ -377,21 +377,28 @@ DrawAccessTest::DrawAccessTest(tcu::TestContext &testContext, const std::string 
 
 TestInstance *DrawAccessTest::createInstance(Context &context) const
 {
-#ifdef CTS_USES_VULKANSC
-    de::MovePtr<CustomInstance> customInstance(new CustomInstance(createCustomInstanceFromContext(context)));
-#endif // CTS_USES_VULKANSC
-
-    Move<VkDevice> device = createRobustBufferAccessDevice(context
-#ifdef CTS_USES_VULKANSC
-                                                           ,
-                                                           *customInstance
-#endif // CTS_USES_VULKANSC
-    );
 #ifndef CTS_USES_VULKANSC
+    Move<VkDevice> device = createRobustBufferAccessDevice(context);
+
     de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
         new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(),
                          context.getTestContext().getCommandLine()));
 #else
+    de::MovePtr<CustomInstance> customInstance(new CustomInstance(createCustomInstanceFromContext(context)));
+
+    vk::VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
+    sblFeatures.scalarBlockLayout                             = true;
+
+    vk::VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&sblFeatures);
+    features2.features                      = context.getDeviceFeatures();
+    features2.features.robustBufferAccess   = true;
+
+    vk::VkPhysicalDeviceFeatures2 *enabledFeatures2 = nullptr;
+    if (context.getScalarBlockLayoutFeatures().scalarBlockLayout)
+        enabledFeatures2 = &features2;
+
+    Move<VkDevice> device = createRobustBufferAccessDevice(context, *customInstance, enabledFeatures2);
+
     de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =
         de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
             new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device,
@@ -442,24 +449,31 @@ DrawIndexedAccessTest::DrawIndexedAccessTest(tcu::TestContext &testContext, cons
 
 TestInstance *DrawIndexedAccessTest::createInstance(Context &context) const
 {
-#ifdef CTS_USES_VULKANSC
-    de::MovePtr<CustomInstance> customInstance(new CustomInstance(createCustomInstanceFromContext(context)));
-#endif // CTS_USES_VULKANSC
-
-    Move<VkDevice> device = createRobustBufferAccessDevice(context
-#ifdef CTS_USES_VULKANSC
-                                                           ,
-                                                           *customInstance
-#endif // CTS_USES_VULKANSC
-    );
 #ifndef CTS_USES_VULKANSC
+    Move<VkDevice> device = createRobustBufferAccessDevice(context);
+
     de::MovePtr<vk::DeviceDriver> deviceDriver = de::MovePtr<DeviceDriver>(
         new DeviceDriver(context.getPlatformInterface(), context.getInstance(), *device, context.getUsedApiVersion(),
                          context.getTestContext().getCommandLine()));
 #else
+    de::MovePtr<CustomInstance> customInstance(new CustomInstance(createCustomInstanceFromContext(context)));
+
+    vk::VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
+    sblFeatures.scalarBlockLayout                             = true;
+
+    vk::VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&sblFeatures);
+    features2.features                      = context.getDeviceFeatures();
+    features2.features.robustBufferAccess   = true;
+
+    vk::VkPhysicalDeviceFeatures2 *enabledFeatures2 = nullptr;
+    if (context.getScalarBlockLayoutFeatures().scalarBlockLayout)
+        enabledFeatures2 = &features2;
+
+    Move<VkDevice> device = createRobustBufferAccessDevice(context, *customInstance, enabledFeatures2);
+
     de::MovePtr<vk::DeviceDriverSC, vk::DeinitDeviceDeleter> deviceDriver =
         de::MovePtr<DeviceDriverSC, DeinitDeviceDeleter>(
-            new DeviceDriverSC(context.getPlatformInterface(), context.getInstance(), *device,
+            new DeviceDriverSC(context.getPlatformInterface(), *customInstance, *device,
                                context.getTestContext().getCommandLine(), context.getResourceInterface(),
                                context.getDeviceVulkanSC10Properties(), context.getDeviceProperties(),
                                context.getUsedApiVersion()),

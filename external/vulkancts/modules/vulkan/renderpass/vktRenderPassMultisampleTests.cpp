@@ -2351,7 +2351,7 @@ void checkSupport(Context &context, TestConfig config)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
 
 #ifndef CTS_USES_VULKANSC
-        if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0))
+        if (context.getEquivalentApiVersion() > VK_API_VERSION_1_3)
         {
             if (!context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
                 TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadMultisampledAttachments not supported");

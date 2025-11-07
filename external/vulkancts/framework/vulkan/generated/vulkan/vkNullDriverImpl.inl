@@ -758,6 +758,16 @@ VKAPI_ATTR VkResult VKAPI_CALL acquireFullScreenExclusiveModeEXT (VkDevice devic
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL acquireImageOHOS (VkDevice device, VkImage image, int32_t nativeFenceFd, VkSemaphore semaphore, VkFence fence)
+{
+	DE_UNREF(device);
+	DE_UNREF(image);
+	DE_UNREF(nativeFenceFd);
+	DE_UNREF(semaphore);
+	DE_UNREF(fence);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL acquireNextImage2KHR (VkDevice device, const VkAcquireNextImageInfoKHR* pAcquireInfo, uint32_t* pImageIndex)
 {
 	DE_UNREF(device);
@@ -1515,13 +1525,13 @@ VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResults (VkCommandBuffer commandBuffe
 	DE_UNREF(flags);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResultsToMemoryKHR (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, VkStridedDeviceAddressRangeKHR dstRange, VkAddressCommandFlagsKHR dstFlags, VkQueryResultFlags queryResultFlags)
+VKAPI_ATTR void VKAPI_CALL cmdCopyQueryPoolResultsToMemoryKHR (VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t firstQuery, uint32_t queryCount, const VkStridedDeviceAddressRangeKHR* pDstRange, VkAddressCommandFlagsKHR dstFlags, VkQueryResultFlags queryResultFlags)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(queryPool);
 	DE_UNREF(firstQuery);
 	DE_UNREF(queryCount);
-	DE_UNREF(dstRange);
+	DE_UNREF(pDstRange);
 	DE_UNREF(dstFlags);
 	DE_UNREF(queryResultFlags);
 }
@@ -1565,6 +1575,22 @@ VKAPI_ATTR void VKAPI_CALL cmdDecodeVideoKHR (VkCommandBuffer commandBuffer, con
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pDecodeInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDecompressMemoryEXT (VkCommandBuffer commandBuffer, const VkDecompressMemoryInfoEXT* pDecompressMemoryInfoEXT)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pDecompressMemoryInfoEXT);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdDecompressMemoryIndirectCountEXT (VkCommandBuffer commandBuffer, VkMemoryDecompressionMethodFlagsEXT decompressionMethod, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t maxDecompressionCount, uint32_t stride)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(decompressionMethod);
+	DE_UNREF(indirectCommandsAddress);
+	DE_UNREF(indirectCommandsCountAddress);
+	DE_UNREF(maxDecompressionCount);
+	DE_UNREF(stride);
 }
 
 VKAPI_ATTR void VKAPI_CALL cmdDecompressMemoryIndirectCountNV (VkCommandBuffer commandBuffer, VkDeviceAddress indirectCommandsAddress, VkDeviceAddress indirectCommandsCountAddress, uint32_t stride)
@@ -1972,7 +1998,13 @@ VKAPI_ATTR void VKAPI_CALL cmdEndRendering (VkCommandBuffer commandBuffer)
 	DE_UNREF(commandBuffer);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoEXT* pRenderingEndInfo)
+VKAPI_ATTR void VKAPI_CALL cmdEndRendering2EXT (VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pRenderingEndInfo);
+}
+
+VKAPI_ATTR void VKAPI_CALL cmdEndRendering2KHR (VkCommandBuffer commandBuffer, const VkRenderingEndInfoKHR* pRenderingEndInfo)
 {
 	DE_UNREF(commandBuffer);
 	DE_UNREF(pRenderingEndInfo);
@@ -2036,10 +2068,10 @@ VKAPI_ATTR void VKAPI_CALL cmdFillBuffer (VkCommandBuffer commandBuffer, VkBuffe
 	DE_UNREF(data);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdFillMemoryKHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR dstRange, VkAddressCommandFlagsKHR dstFlags, uint32_t data)
+VKAPI_ATTR void VKAPI_CALL cmdFillMemoryKHR (VkCommandBuffer commandBuffer, const VkDeviceAddressRangeKHR* pDstRange, VkAddressCommandFlagsKHR dstFlags, uint32_t data)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(dstRange);
+	DE_UNREF(pDstRange);
 	DE_UNREF(dstFlags);
 	DE_UNREF(data);
 }
@@ -3018,10 +3050,10 @@ VKAPI_ATTR void VKAPI_CALL cmdUpdateBuffer (VkCommandBuffer commandBuffer, VkBuf
 	DE_UNREF(pData);
 }
 
-VKAPI_ATTR void VKAPI_CALL cmdUpdateMemoryKHR (VkCommandBuffer commandBuffer, VkDeviceAddressRangeKHR dstRange, VkAddressCommandFlagsKHR dstFlags, VkDeviceSize dataSize, const void* pData)
+VKAPI_ATTR void VKAPI_CALL cmdUpdateMemoryKHR (VkCommandBuffer commandBuffer, const VkDeviceAddressRangeKHR* pDstRange, VkAddressCommandFlagsKHR dstFlags, VkDeviceSize dataSize, const void* pData)
 {
 	DE_UNREF(commandBuffer);
-	DE_UNREF(dstRange);
+	DE_UNREF(pDstRange);
 	DE_UNREF(dstFlags);
 	DE_UNREF(dataSize);
 	DE_UNREF(pData);
@@ -3335,6 +3367,16 @@ VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceGroupsKHR (VkInstance inst
 	DE_UNREF(instance);
 	DE_UNREF(pPhysicalDeviceGroupCount);
 	DE_UNREF(pPhysicalDeviceGroupProperties);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, uint32_t* pCounterCount, VkPerformanceCounterARM* pCounters, VkPerformanceCounterDescriptionARM* pCounterDescriptions)
+{
+	DE_UNREF(physicalDevice);
+	DE_UNREF(queueFamilyIndex);
+	DE_UNREF(pCounterCount);
+	DE_UNREF(pCounters);
+	DE_UNREF(pCounterDescriptions);
 	return VK_SUCCESS;
 }
 
@@ -4074,6 +4116,14 @@ VKAPI_ATTR VkResult VKAPI_CALL getMemoryMetalHandlePropertiesEXT (VkDevice devic
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getMemoryNativeBufferOHOS (VkDevice device, const VkMemoryGetNativeBufferInfoOHOS* pInfo, struct OH_NativeBuffer** pBuffer)
+{
+	DE_UNREF(device);
+	DE_UNREF(pInfo);
+	DE_UNREF(pBuffer);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getMemoryRemoteAddressNV (VkDevice device, const VkMemoryGetRemoteAddressInfoNV* pMemoryGetRemoteAddressInfo, VkRemoteAddressNV* pAddress)
 {
 	DE_UNREF(device);
@@ -4131,6 +4181,14 @@ VKAPI_ATTR void VKAPI_CALL getMicromapBuildSizesEXT (VkDevice device, VkAccelera
 	DE_UNREF(buildType);
 	DE_UNREF(pBuildInfo);
 	DE_UNREF(pSizeInfo);
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getNativeBufferPropertiesOHOS (VkDevice device, const struct OH_NativeBuffer* buffer, VkNativeBufferPropertiesOHOS* pProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(buffer);
+	DE_UNREF(pProperties);
+	return VK_SUCCESS;
 }
 
 VKAPI_ATTR void VKAPI_CALL getPartitionedAccelerationStructuresBuildSizesNV (VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo)
@@ -4903,6 +4961,15 @@ VKAPI_ATTR VkResult VKAPI_CALL getSwapchainCounterEXT (VkDevice device, VkSwapch
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainGrallocUsageOHOS (VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, uint64_t* grallocUsage)
+{
+	DE_UNREF(device);
+	DE_UNREF(format);
+	DE_UNREF(imageUsage);
+	DE_UNREF(grallocUsage);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages)
 {
 	DE_UNREF(device);
@@ -5103,6 +5170,16 @@ VKAPI_ATTR VkResult VKAPI_CALL queueSetPerformanceConfigurationINTEL (VkQueue qu
 {
 	DE_UNREF(queue);
 	DE_UNREF(configuration);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL queueSignalReleaseImageOHOS (VkQueue queue, uint32_t waitSemaphoreCount, const VkSemaphore* pWaitSemaphores, VkImage image, int32_t* pNativeFenceFd)
+{
+	DE_UNREF(queue);
+	DE_UNREF(waitSemaphoreCount);
+	DE_UNREF(pWaitSemaphores);
+	DE_UNREF(image);
+	DE_UNREF(pNativeFenceFd);
 	return VK_SUCCESS;
 }
 
@@ -5575,6 +5652,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceExtensionProperties,									enumerateDeviceExtensionProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumerateDeviceLayerProperties,										enumerateDeviceLayerProperties),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceGroups,											enumeratePhysicalDeviceGroups),
+	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM,		enumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR,			enumeratePhysicalDeviceQueueFamilyPerformanceQueryCountersKHR),
 	VK_NULL_FUNC_ENTRY(vkEnumeratePhysicalDevices,												enumeratePhysicalDevices),
 	VK_NULL_FUNC_ENTRY(vkGetDisplayModeProperties2KHR,											getDisplayModeProperties2KHR),
@@ -5646,6 +5724,7 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 {
 	VK_NULL_FUNC_ENTRY(vkAcquireFullScreenExclusiveModeEXT,							acquireFullScreenExclusiveModeEXT),
+	VK_NULL_FUNC_ENTRY(vkAcquireImageOHOS,											acquireImageOHOS),
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImage2KHR,										acquireNextImage2KHR),
 	VK_NULL_FUNC_ENTRY(vkAcquireNextImageKHR,										acquireNextImageKHR),
 	VK_NULL_FUNC_ENTRY(vkAcquirePerformanceConfigurationINTEL,						acquirePerformanceConfigurationINTEL),
@@ -5741,6 +5820,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerEndEXT,										cmdDebugMarkerEndEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDebugMarkerInsertEXT,									cmdDebugMarkerInsertEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDecodeVideoKHR,											cmdDecodeVideoKHR),
+	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryEXT,									cmdDecompressMemoryEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryIndirectCountEXT,						cmdDecompressMemoryIndirectCountEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryIndirectCountNV,						cmdDecompressMemoryIndirectCountNV),
 	VK_NULL_FUNC_ENTRY(vkCmdDecompressMemoryNV,										cmdDecompressMemoryNV),
 	VK_NULL_FUNC_ENTRY(vkCmdDispatch,												cmdDispatch),
@@ -5785,7 +5866,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass,											cmdEndRenderPass),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRenderPass2,											cmdEndRenderPass2),
 	VK_NULL_FUNC_ENTRY(vkCmdEndRendering,											cmdEndRendering),
-	VK_NULL_FUNC_ENTRY(vkCmdEndRendering2EXT,										cmdEndRendering2EXT),
+	VK_NULL_FUNC_ENTRY(vkCmdEndRendering2KHR,										cmdEndRendering2KHR),
 	VK_NULL_FUNC_ENTRY(vkCmdEndTransformFeedback2EXT,								cmdEndTransformFeedback2EXT),
 	VK_NULL_FUNC_ENTRY(vkCmdEndTransformFeedbackEXT,								cmdEndTransformFeedbackEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdEndVideoCodingKHR,										cmdEndVideoCodingKHR),
@@ -6112,6 +6193,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMemoryHostPointerPropertiesEXT,							getMemoryHostPointerPropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandleEXT,									getMemoryMetalHandleEXT),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryMetalHandlePropertiesEXT,							getMemoryMetalHandlePropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetMemoryNativeBufferOHOS,									getMemoryNativeBufferOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryRemoteAddressNV,									getMemoryRemoteAddressNV),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleKHR,									getMemoryWin32HandleKHR),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryWin32HandleNV,									getMemoryWin32HandleNV),
@@ -6119,6 +6201,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMemoryZirconHandleFUCHSIA,								getMemoryZirconHandleFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetMemoryZirconHandlePropertiesFUCHSIA,					getMemoryZirconHandlePropertiesFUCHSIA),
 	VK_NULL_FUNC_ENTRY(vkGetMicromapBuildSizesEXT,									getMicromapBuildSizesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetNativeBufferPropertiesOHOS,								getNativeBufferPropertiesOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetPartitionedAccelerationStructuresBuildSizesNV,			getPartitionedAccelerationStructuresBuildSizesNV),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,							getPastPresentationTimingGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkGetPerformanceParameterINTEL,								getPerformanceParameterINTEL),
@@ -6152,6 +6235,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleCreateInfoIdentifierEXT,					getShaderModuleCreateInfoIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetShaderModuleIdentifierEXT,								getShaderModuleIdentifierEXT),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainCounterEXT,									getSwapchainCounterEXT),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainGrallocUsageOHOS,								getSwapchainGrallocUsageOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainImagesKHR,										getSwapchainImagesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,										getSwapchainStatusKHR),
 	VK_NULL_FUNC_ENTRY(vkGetTensorMemoryRequirementsARM,							getTensorMemoryRequirementsARM),
@@ -6178,6 +6262,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkQueueNotifyOutOfBandNV,									queueNotifyOutOfBandNV),
 	VK_NULL_FUNC_ENTRY(vkQueuePresentKHR,											queuePresentKHR),
 	VK_NULL_FUNC_ENTRY(vkQueueSetPerformanceConfigurationINTEL,						queueSetPerformanceConfigurationINTEL),
+	VK_NULL_FUNC_ENTRY(vkQueueSignalReleaseImageOHOS,								queueSignalReleaseImageOHOS),
 	VK_NULL_FUNC_ENTRY(vkQueueSubmit,												queueSubmit),
 	VK_NULL_FUNC_ENTRY(vkQueueSubmit2,												queueSubmit2),
 	VK_NULL_FUNC_ENTRY(vkQueueWaitIdle,												queueWaitIdle),

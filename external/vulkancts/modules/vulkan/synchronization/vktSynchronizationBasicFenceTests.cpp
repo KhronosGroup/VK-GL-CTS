@@ -58,8 +58,8 @@ tcu::TestStatus basicOneFenceCase(Context &context, FenceConfig config)
         config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
-    const VkQueue queue             = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue             = getSyncQueue(videoDevice, context, false);
+    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, false);
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
@@ -176,8 +176,8 @@ tcu::TestStatus basicMultiFenceCase(Context &context, FenceConfig config)
         config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
-    const VkQueue queue             = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue             = getSyncQueue(videoDevice, context, false);
+    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, false);
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
@@ -241,7 +241,7 @@ tcu::TestStatus emptySubmitCase(Context &context, FenceConfig config)
         config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device     = getSyncDevice(videoDevice, context);
-    const VkQueue queue       = getSyncQueue(videoDevice, context);
+    const VkQueue queue       = getSyncQueue(videoDevice, context, false);
 
     const VkFenceCreateInfo fenceCreateInfo = {
         VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, // VkStructureType       sType;
@@ -271,8 +271,8 @@ tcu::TestStatus basicMultiFenceWaitAllFalseCase(Context &context, FenceConfig co
         config.videoCodecOperationFlags != 0 ? new VideoDevice(context, config.videoCodecOperationFlags) : nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
-    const VkQueue queue             = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue             = getSyncQueue(videoDevice, context, false);
+    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, false);
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));

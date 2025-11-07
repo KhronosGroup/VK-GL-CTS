@@ -1496,15 +1496,21 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        createInfo.usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
@@ -1842,6 +1848,12 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
@@ -2072,18 +2084,7 @@ tcu::TestStatus QueryTestInstance::iterate(void)
     vk::VkResult res =
         vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties);
 
-    if (hostImageCopyDevicePerformanceQuery.identicalMemoryLayout == VK_FALSE)
-    {
-        if (hostImageCopyDevicePerformanceQuery.optimalDeviceAccess != VK_FALSE)
-        {
-            log << tcu::TestLog::Message
-                << "VkHostImageCopyDevicePerformanceQueryEXT::identicalMemoryLayout is VK_FALSE, but "
-                   "VkHostImageCopyDevicePerformanceQueryEXT::optimalDeviceAccess is VK_TRUE"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    else
+    if (hostImageCopyDevicePerformanceQuery.identicalMemoryLayout == VK_TRUE)
     {
         if (hostImageCopyDevicePerformanceQuery.optimalDeviceAccess != VK_TRUE)
         {
@@ -3999,7 +4000,9 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
 
         if (!depthAndStencil)
         {
-            const vk::VkBufferImageCopy bufferImageCopy = {
+            const auto preBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                                  **srcBuffer, 0u, bufferSize);
+            const VkBufferImageCopy bufferImageCopy{
                 0u,                // VkDeviceSize bufferOffset;
                 0u,                // uint32_t bufferRowLength;
                 0u,                // uint32_t bufferImageHeight;
@@ -4008,6 +4011,8 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
                 imageSize          // VkExtent3D imageExtent;
             };
             vk::beginCommandBuffer(vk, *cmdBuffer);
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &preBufferBarrier, 0, nullptr);
             vk.cmdCopyBufferToImage(*cmdBuffer, **srcBuffer, **image2, m_params.dstLayout, 1u, &bufferImageCopy);
             vk::endCommandBuffer(vk, *cmdBuffer);
             submitCommandsAndWait(vk, device, queue, *cmdBuffer);

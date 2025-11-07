@@ -135,6 +135,10 @@ static tcu::TestPackage *createSingleConfigGL46TestPackage(tcu::TestContext &tes
 {
     return new glcts::SingleConfigGL45TestPackage(testCtx, "KHR-Single-GL46");
 }
+static tcu::TestPackage *createSingleConfigES31TestPackage(tcu::TestContext &testCtx)
+{
+    return new glcts::SingleConfigES31TestPackage(testCtx, "KHR-Single-GLES31");
+}
 static tcu::TestPackage *createSingleConfigES32TestPackage(tcu::TestContext &testCtx)
 {
     return new glcts::SingleConfigES32TestPackage(testCtx, "KHR-Single-GLES32");
@@ -224,6 +228,7 @@ void registerPackages(void)
     registry->registerPackage("KHR-Single-GL44", createSingleConfigGL44TestPackage);
     registry->registerPackage("KHR-Single-GL45", createSingleConfigGL45TestPackage);
     registry->registerPackage("KHR-Single-GL46", createSingleConfigGL46TestPackage);
+    registry->registerPackage("KHR-Single-GLES31", createSingleConfigES31TestPackage);
     registry->registerPackage("KHR-Single-GLES32", createSingleConfigES32TestPackage);
 
     registry->registerPackage("KHR-GL30", createGL30Package);

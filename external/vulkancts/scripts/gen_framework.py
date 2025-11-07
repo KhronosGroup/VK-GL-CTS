@@ -49,7 +49,7 @@ sys.path.insert(0, vulkanObjectPath)
 
 from reg import Registry
 from base_generator import BaseGenerator, BaseGeneratorOptions, SetTargetApiName, SetOutputDirectory, SetMergedApiNames, OutputGenerator
-from vulkan_object import Queues, Struct, Member, Enum, EnumField, Extension
+from vulkan_object import Struct, Member, Enum, EnumField, Extension
 
 # list of KHR and EXT extensions that are tested by CTS and that were not promoted to core
 # (core extensions are implicitly in that list because if they are core we know that tests
@@ -90,6 +90,7 @@ VK_EXT_index_type_uint8
 VK_EXT_legacy_dithering
 VK_EXT_legacy_vertex_attributes
 VK_EXT_line_rasterization
+VK_EXT_memory_decompression
 VK_EXT_memory_priority
 VK_EXT_mesh_shader
 VK_EXT_multi_draw
@@ -116,6 +117,7 @@ VK_EXT_shader_tile_image
 VK_EXT_subpass_merge_feedback
 VK_EXT_swapchain_maintenance1
 VK_EXT_transform_feedback
+VK_EXT_uniform_buffer_unsized_array
 VK_EXT_vertex_attribute_divisor
 VK_EXT_vertex_input_dynamic_state
 VK_EXT_ycbcr_image_arrays
@@ -144,6 +146,7 @@ VK_KHR_incremental_present
 VK_KHR_maintenance7
 VK_KHR_maintenance8
 VK_KHR_maintenance9
+VK_KHR_maintenance10
 VK_KHR_mir_surface
 VK_KHR_object_refresh
 VK_KHR_performance_query
@@ -164,6 +167,7 @@ VK_KHR_ray_tracing_position_fetch
 VK_KHR_robustness2
 VK_KHR_shader_bfloat16
 VK_KHR_shader_clock
+VK_KHR_shader_fma
 VK_KHR_shader_maximal_reconvergence
 VK_KHR_shader_quad_control
 VK_KHR_shader_relaxed_extended_instruction
@@ -1064,7 +1068,7 @@ class FuncPtrInterfaceImplGenerator(BaseGenerator):
     def generate(self):
         # populate compute only forbidden commands
         for fun in self.vk.commands.values():
-            if fun.queues & Queues.GRAPHICS and not (fun.queues & Queues.COMPUTE):
+            if "VK_QUEUE_GRAPHICS_BIT" in fun.queues and not ("VK_QUEUE_COMPUTE_BIT" in fun.queues):
                 # remove the 'vk' prefix and change the first character of the remaining string to lowercase
                 commandName = fun.name[2:3].lower() + fun.name[3:]
                 computeOnlyForbiddenCommands.append(commandName)
@@ -2219,7 +2223,9 @@ class FeaturesOrPropertiesGenericGenerator(BaseGenerator):
                 nameString = ext.nameString
             descDefinitions.append(f"template<> {structGroupSingular}Desc make{structGroupSingular}Desc<{struct.name}>(void) " \
                                    f"{{ return {structGroupSingular}Desc{{{struct.sType}, {nameString}}}; }}")
-            structWrappers.append(f"\t{{ create{structGroupSingular}StructWrapper<{struct.name}>, {nameString} }},")
+            pnext = next((m for m in struct.members if m.name == "pNext"), None)
+            constStr = "// Contains const pNext " if pnext and getattr(pnext, "const", False) else ""
+            structWrappers.append(f"\t{constStr}{{ create{structGroupSingular}StructWrapper<{struct.name}>, {nameString} }},")
 
         blobChecker = f"uint32_t getBlob{self.structGroup}Version (VkStructureType sType)\n{{\n" \
                       "\tconst std::map<VkStructureType, uint32_t> sTypeBlobMap\n\t{\n"
@@ -2319,7 +2325,9 @@ class FeaturesOrPropertiesMethodsGenerator(BaseGenerator):
                 if (nameSubStr in UNSUFFIXED_STRUCTURES):
                     suffix = ""
                 nameSubStr = nameSubStr + infix + suffix
-            stream.append(self.pattern.format(fop.name, nameSubStr))
+            pnext = next((m for m in fop.members if m.name == "pNext"), None)
+            constStr = "// Contains const pNext " if pnext and getattr(pnext, "const", False) else ""
+            stream.append(constStr + self.pattern.format(fop.name, nameSubStr))
         self.write(combineLines(indentLines(stream), INL_HEADER))
 
 class DeviceFeatureTestGenerator(BaseGenerator):

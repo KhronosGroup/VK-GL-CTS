@@ -250,6 +250,9 @@ void NonLineDrawCase::checkSupport(Context &context) const
 
     if (m_params.polygonMode != VK_POLYGON_MODE_FILL && !context.getDeviceFeatures().fillModeNonSolid)
         TCU_THROW(NotSupportedError, "Required polygon mode not supported");
+
+    if (m_params.useGeometryShader())
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SHADER_TESSELLATION_AND_GEOMETRY_POINT_SIZE);
 }
 
 void NonLineDrawCase::initPrograms(SourceCollections &dst) const

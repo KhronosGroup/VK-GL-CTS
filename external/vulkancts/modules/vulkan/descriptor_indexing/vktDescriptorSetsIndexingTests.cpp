@@ -30,6 +30,7 @@
 #include <vector>
 
 #include "vktDescriptorSetsIndexingTests.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -39,6 +40,7 @@
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuResource.hpp"
@@ -4485,6 +4487,217 @@ public:
     }
 };
 
+constexpr uint32_t kNonUniformAtomicsBuffersPerSet = 128u;
+constexpr uint32_t kNonUniformAtomicsSetCount      = 2u;
+constexpr uint32_t kNonUniformAtomicsTotalBuffers  = kNonUniformAtomicsBuffersPerSet * kNonUniformAtomicsSetCount;
+
+void nonUniformAtomicsPrograms(vk::SourceCollections &dst)
+{
+    std::ostringstream comp;
+    comp << "#version 450\n"
+         << "#extension GL_EXT_nonuniform_qualifier : require\n"
+         << "layout(local_size_x=64, local_size_y=1, local_size_z=1) in;\n"
+         << "\n"
+         << "layout(set=0, binding=0, std430) writeonly buffer SSBO\n"
+         << "{\n"
+         << "    uint singleValue[];\n"
+         << "} indicesSSBO[];\n"
+         << "\n"
+         << "layout(set=1, binding=0, std430) buffer AtomicCounterSSBO\n"
+         << "{\n"
+         << "    uint counter;\n"
+         << "} counterSSBO[];\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    if (gl_GlobalInvocationID.x < " << kNonUniformAtomicsBuffersPerSet << "u)\n"
+         << "    {\n"
+         << "        indicesSSBO[nonuniformEXT(gl_GlobalInvocationID.x)].singleValue[0u] = gl_GlobalInvocationID.x + "
+            "1u;\n"
+         << "        uint unused = atomicAdd(counterSSBO[nonuniformEXT(gl_GlobalInvocationID.x & 0x7FFFFCu)].counter, "
+            "1u);\n"
+         << "    }\n"
+         << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+void nonUniformAtomicsCheckSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_EXT_descriptor_indexing");
+
+    const auto &diFeatures = context.getDescriptorIndexingFeatures();
+
+    if (!diFeatures.runtimeDescriptorArray)
+        TCU_THROW(NotSupportedError, "runtimeDescriptorArray not supported");
+
+    if (!diFeatures.shaderStorageBufferArrayNonUniformIndexing)
+        TCU_THROW(NotSupportedError, "shaderStorageBufferArrayNonUniformIndexing not supported");
+
+    const auto &limits = context.getDeviceProperties().limits;
+
+    if (limits.maxPerStageResources < kNonUniformAtomicsTotalBuffers)
+        TCU_THROW(NotSupportedError, "maxPerStageResources too low for this test");
+
+    if (limits.maxPerStageDescriptorStorageBuffers < kNonUniformAtomicsTotalBuffers)
+        TCU_THROW(NotSupportedError, "maxPerStageDescriptorStorageBuffers too low for this test");
+
+    if (limits.maxDescriptorSetStorageBuffers < kNonUniformAtomicsBuffersPerSet)
+        TCU_THROW(NotSupportedError, "maxDescriptorSetStorageBuffers too low for this test");
+}
+
+tcu::TestStatus nonUniformAtomicsRun(Context &context)
+{
+    const auto ctx           = context.getContextCommonData();
+    const auto descType      = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto buffersPerSet = kNonUniformAtomicsBuffersPerSet;
+    const auto setCount      = kNonUniformAtomicsSetCount;
+    const auto shaderStages  = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto bufferSize    = DE_SIZEOF32(uint32_t);
+    const auto wgSize        = 64u;   // Must match the compute shader above.
+    const auto invCount      = 1024u; // Target total invocation count.
+    const auto groupCount    = invCount / wgSize;
+    const auto bindPoint     = VK_PIPELINE_BIND_POINT_COMPUTE;
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, buffersPerSet * setCount);
+    const auto descPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, setCount);
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addArrayBinding(descType, buffersPerSet, shaderStages);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    const auto indicesSet = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+    const auto counterSet = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+    const std::vector<VkDescriptorSet> descriptorSets{*indicesSet, *counterSet};
+
+    using BufferWithMemoryPtr = std::unique_ptr<BufferWithMemory>;
+    std::vector<BufferWithMemoryPtr> indexBuffers;
+    std::vector<BufferWithMemoryPtr> counterBuffers;
+
+    indexBuffers.reserve(buffersPerSet);
+    counterBuffers.reserve(buffersPerSet);
+
+    const auto bufferCreateInfo = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    for (uint32_t i = 0u; i < buffersPerSet; ++i)
+    {
+        indexBuffers.emplace_back(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::R));
+        counterBuffers.emplace_back(
+            new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, bufferCreateInfo, HostIntent::RW));
+    }
+
+    // Zero-out counter buffers.
+    for (const auto &buffer : counterBuffers)
+    {
+        auto &bufferAlloc = buffer->getAllocation();
+        void *dataPtr     = bufferAlloc.getHostPtr();
+        memset(dataPtr, 0, bufferSize);
+        flushAlloc(ctx.vkd, ctx.device, bufferAlloc);
+    }
+
+    // Update descriptor sets.
+    DescriptorSetUpdateBuilder updateBuilder;
+    std::vector<VkDescriptorBufferInfo> indexBufferInfos;
+    std::vector<VkDescriptorBufferInfo> counterBufferInfos;
+    indexBufferInfos.reserve(buffersPerSet);
+    counterBufferInfos.reserve(buffersPerSet);
+    for (uint32_t i = 0u; i < buffersPerSet; ++i)
+    {
+        indexBufferInfos.push_back(makeDescriptorBufferInfo(indexBuffers.at(i)->get(), 0ull, VK_WHOLE_SIZE));
+        counterBufferInfos.push_back(makeDescriptorBufferInfo(counterBuffers.at(i)->get(), 0ull, VK_WHOLE_SIZE));
+    }
+
+    const auto firstBinding = DescriptorSetUpdateBuilder::Location::binding(0u);
+    updateBuilder.writeArray(*indicesSet, firstBinding, descType, de::sizeU32(indexBufferInfos),
+                             de::dataOrNull(indexBufferInfos));
+    updateBuilder.writeArray(*counterSet, firstBinding, descType, de::sizeU32(counterBufferInfos),
+                             de::dataOrNull(counterBufferInfos));
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    const std::vector<VkDescriptorSetLayout> setLayouts{*setLayout, *setLayout};
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, setLayouts);
+
+    const auto &binaries    = context.getBinaryCollection();
+    const auto compShader   = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+    const auto compPipeline = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compShader);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, de::sizeU32(descriptorSets),
+                                  de::dataOrNull(descriptorSets), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *compPipeline);
+    ctx.vkd.cmdDispatch(cmdBuffer, groupCount, 1u, 1u);
+    {
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    for (uint32_t i = 0u; i < buffersPerSet; ++i)
+    {
+        auto &indicesAlloc = indexBuffers.at(i)->getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, indicesAlloc);
+
+        auto &countersAlloc = counterBuffers.at(i)->getAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, countersAlloc);
+    }
+
+    // Reference values.
+    std::vector<uint32_t> refIndices(buffersPerSet, 0u);
+    std::vector<uint32_t> refCounters(buffersPerSet, 0u);
+
+    for (uint32_t i = 0u; i < buffersPerSet; ++i)
+    {
+        refIndices.at(i)        = i + 1u;
+        const auto counterIndex = (i & 0x7FFFFCu);
+        ++refCounters.at(counterIndex);
+    }
+
+    bool fail = false;
+    auto &log = context.getTestContext().getLog();
+
+    for (uint32_t i = 0u; i < buffersPerSet; ++i)
+    {
+        uint32_t resultIndex;
+        uint32_t resultCounter;
+
+        auto &indexBufferAlloc   = indexBuffers.at(i)->getAllocation();
+        auto &counterBufferAlloc = counterBuffers.at(i)->getAllocation();
+
+        memcpy(&resultIndex, indexBufferAlloc.getHostPtr(), sizeof(resultIndex));
+        memcpy(&resultCounter, counterBufferAlloc.getHostPtr(), sizeof(resultCounter));
+
+        const auto &refIndex   = refIndices.at(i);
+        const auto &refCounter = refCounters.at(i);
+
+        if (refIndex != resultIndex)
+        {
+            std::ostringstream msg;
+            msg << "Result index " << i << " failed: expected " << refIndex << " but found " << resultIndex;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+
+        if (refCounter != resultCounter)
+        {
+            std::ostringstream msg;
+            msg << "Result counter " << i << " failed: expected " << refCounter << " but found " << resultCounter;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            fail = true;
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results found in output buffers; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 static bool descriptorTypeUsesMipmaps(VkDescriptorType t)
@@ -4693,6 +4906,9 @@ void descriptorIndexingDescriptorSetsCreateTests(tcu::TestCaseGroup *group)
         std::string caseName(std::string(info.name) + "_no_runtime_array");
         group->addChild(new DescriptorIndexingTestCase(context, caseName.c_str(), params));
     }
+
+    addFunctionCaseWithPrograms(group, "non_uniform_atomics", nonUniformAtomicsCheckSupport, nonUniformAtomicsPrograms,
+                                nonUniformAtomicsRun);
 }
 
 } // namespace DescriptorIndexing

@@ -1625,9 +1625,7 @@ tcu::TestCaseGroup *createBufferViewAccessTests(tcu::TestContext &testCtx)
 
             for (uint32_t formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
             {
-                const auto skip = strlen("VK_FORMAT_");
-                const std::string fmtName =
-                    de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
+                const std::string fmtName = getFormatSimpleName(testFormats[formatIdx]);
 
                 de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
 
@@ -1677,9 +1675,7 @@ tcu::TestCaseGroup *createBufferViewAccessTests(tcu::TestContext &testCtx)
 
             for (uint32_t formatIdx = 0; formatIdx < DE_LENGTH_OF_ARRAY(testFormats); formatIdx++)
             {
-                const auto skip = strlen("VK_FORMAT_");
-                const std::string fmtName =
-                    de::toLower(std::string(getFormatName(testFormats[formatIdx])).substr(skip));
+                const std::string fmtName = getFormatSimpleName(testFormats[formatIdx]);
 
                 de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, fmtName.c_str()));
 

@@ -2576,6 +2576,23 @@ struct VkDebugUtilsObjectTagInfoEXT
 	const void*		pTag;
 };
 
+struct VkDecompressMemoryRegionEXT
+{
+	VkDeviceAddress	srcAddress;
+	VkDeviceAddress	dstAddress;
+	VkDeviceSize	compressedSize;
+	VkDeviceSize	decompressedSize;
+};
+
+struct VkDecompressMemoryInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkMemoryDecompressionMethodFlagsEXT	decompressionMethod;
+	uint32_t							regionCount;
+	const VkDecompressMemoryRegionEXT*	pRegions;
+};
+
 struct VkDecompressMemoryRegionNV
 {
 	VkDeviceAddress						srcAddress;
@@ -3717,6 +3734,13 @@ struct VkExternalFormatANDROID
 	uint64_t		externalFormat;
 };
 
+struct VkExternalFormatOHOS
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		externalFormat;
+};
+
 struct VkExternalFormatQNX
 {
 	VkStructureType	sType;
@@ -4481,6 +4505,13 @@ struct VkImportMetalTextureInfoEXT
 	pt::MTLTexture_id		mtlTexture;
 };
 
+struct VkImportNativeBufferInfoOHOS
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	struct OH_NativeBuffer*	buffer;
+};
+
 struct VkImportScreenBufferInfoQNX
 {
 	VkStructureType			sType;
@@ -4843,6 +4874,13 @@ struct VkMemoryGetMetalHandleInfoEXT
 	VkExternalMemoryHandleTypeFlagBits	handleType;
 };
 
+struct VkMemoryGetNativeBufferInfoOHOS
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkDeviceMemory	memory;
+};
+
 struct VkMemoryGetRemoteAddressInfoNV
 {
 	VkStructureType						sType;
@@ -5143,6 +5181,42 @@ struct VkMutableDescriptorTypeCreateInfoEXT
 	const void*								pNext;
 	uint32_t								mutableDescriptorTypeListCount;
 	const VkMutableDescriptorTypeListEXT*	pMutableDescriptorTypeLists;
+};
+
+struct VkNativeBufferFormatPropertiesOHOS
+{
+	VkStructureType					sType;
+	void*							pNext;
+	VkFormat						format;
+	uint64_t						externalFormat;
+	VkFormatFeatureFlags			formatFeatures;
+	VkComponentMapping				samplerYcbcrConversionComponents;
+	VkSamplerYcbcrModelConversion	suggestedYcbcrModel;
+	VkSamplerYcbcrRange				suggestedYcbcrRange;
+	VkChromaLocation				suggestedXChromaOffset;
+	VkChromaLocation				suggestedYChromaOffset;
+};
+
+struct VkNativeBufferOHOS
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	struct OHBufferHandle*	handle;
+};
+
+struct VkNativeBufferPropertiesOHOS
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkDeviceSize	allocationSize;
+	uint32_t		memoryTypeBits;
+};
+
+struct VkNativeBufferUsageOHOS
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		OHOSNativeBufferUsage;
 };
 
 struct VkOffset2D
@@ -5527,6 +5601,21 @@ struct VkPerformanceConfigurationAcquireInfoINTEL
 	VkStructureType						sType;
 	const void*							pNext;
 	VkPerformanceConfigurationTypeINTEL	type;
+};
+
+struct VkPerformanceCounterARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		counterID;
+};
+
+struct VkPerformanceCounterDescriptionARM
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkPerformanceCounterDescriptionFlagsARM	flags;
+	char									name[VK_MAX_DESCRIPTION_SIZE];
 };
 
 struct VkPerformanceCounterDescriptionKHR
@@ -7222,6 +7311,22 @@ struct VkPhysicalDeviceLinearColorAttachmentFeaturesNV
 	VkBool32		linearColorAttachment;
 };
 
+struct VkPhysicalDeviceMaintenance10FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		maintenance10;
+};
+
+struct VkPhysicalDeviceMaintenance10PropertiesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rgba4OpaqueBlackSwizzled;
+	VkBool32		resolveSrgbFormatAppliesTransferFunction;
+	VkBool32		resolveSrgbFormatSupportsTransferFunctionControl;
+};
+
 struct VkPhysicalDeviceMaintenance3Properties
 {
 	VkStructureType	sType;
@@ -7346,18 +7451,18 @@ struct VkPhysicalDeviceMemoryBudgetPropertiesEXT
 	VkDeviceSize	heapUsage[VK_MAX_MEMORY_HEAPS];
 };
 
-struct VkPhysicalDeviceMemoryDecompressionFeaturesNV
+struct VkPhysicalDeviceMemoryDecompressionFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		memoryDecompression;
 };
 
-struct VkPhysicalDeviceMemoryDecompressionPropertiesNV
+struct VkPhysicalDeviceMemoryDecompressionPropertiesEXT
 {
 	VkStructureType						sType;
 	void*								pNext;
-	VkMemoryDecompressionMethodFlagsNV	decompressionMethods;
+	VkMemoryDecompressionMethodFlagsEXT	decompressionMethods;
 	uint64_t							maxDecompressionIndirectCount;
 };
 
@@ -7624,6 +7729,24 @@ struct VkPhysicalDevicePerStageDescriptorSetFeaturesNV
 	VkBool32		dynamicPipelineLayout;
 };
 
+struct VkPhysicalDevicePerformanceCountersByRegionFeaturesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		performanceCountersByRegion;
+};
+
+struct VkPhysicalDevicePerformanceCountersByRegionPropertiesARM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxPerRegionPerformanceCounters;
+	VkExtent2D		performanceCounterRegionSize;
+	uint32_t		rowStrideAlignment;
+	uint32_t		regionAlignment;
+	VkBool32		identityTransformOrder;
+};
+
 struct VkPhysicalDevicePerformanceQueryFeaturesKHR
 {
 	VkStructureType	sType;
@@ -7805,6 +7928,13 @@ struct VkPhysicalDevicePresentWaitFeaturesKHR
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		presentWait;
+};
+
+struct VkPhysicalDevicePresentationPropertiesOHOS
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		sharedImage;
 };
 
 struct VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT
@@ -8097,6 +8227,13 @@ struct VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
 	VkBool32		separateDepthStencilLayouts;
 };
 
+struct VkPhysicalDeviceShader64BitIndexingFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shader64BitIndexing;
+};
+
 struct VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV
 {
 	VkStructureType	sType;
@@ -8290,6 +8427,15 @@ struct VkPhysicalDeviceShaderFloatControls2Features
 	VkBool32		shaderFloatControls2;
 };
 
+struct VkPhysicalDeviceShaderFmaFeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFmaFloat16;
+	VkBool32		shaderFmaFloat32;
+	VkBool32		shaderFmaFloat64;
+};
+
 struct VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT
 {
 	VkStructureType	sType;
@@ -8472,6 +8618,13 @@ struct VkPhysicalDeviceShaderTileImagePropertiesEXT
 	VkBool32		shaderTileImageCoherentReadAccelerated;
 	VkBool32		shaderTileImageReadSampleFromPixelRateInvocation;
 	VkBool32		shaderTileImageReadFromHelperInvocation;
+};
+
+struct VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderUniformBufferUnsizedArray;
 };
 
 struct VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
@@ -10205,6 +10358,17 @@ struct VkRenderPassMultiviewCreateInfo
 	const uint32_t*	pCorrelationMasks;
 };
 
+struct VkRenderPassPerformanceCountersByRegionBeginInfoARM
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint32_t				counterAddressCount;
+	const VkDeviceAddress*	pCounterAddresses;
+	VkBool32				serializeRegions;
+	uint32_t				counterIndexCount;
+	uint32_t*				pCounterIndices;
+};
+
 struct VkRenderPassStripeInfoARM
 {
 	VkStructureType	sType;
@@ -10260,6 +10424,13 @@ struct VkRenderingAreaInfo
 	VkFormat		stencilAttachmentFormat;
 };
 
+struct VkRenderingAttachmentFlagsInfoKHR
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkRenderingAttachmentFlagsKHR	flags;
+};
+
 struct VkRenderingAttachmentInfo
 {
 	VkStructureType			sType;
@@ -10282,7 +10453,7 @@ struct VkRenderingAttachmentLocationInfo
 	const uint32_t*	pColorAttachmentLocations;
 };
 
-struct VkRenderingEndInfoEXT
+struct VkRenderingEndInfoKHR
 {
 	VkStructureType	sType;
 	const void*		pNext;
@@ -10339,6 +10510,15 @@ struct VkResolveImageInfo2
 	VkImageLayout			dstImageLayout;
 	uint32_t				regionCount;
 	const VkImageResolve2*	pRegions;
+};
+
+struct VkResolveImageModeInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkResolveImageFlagsKHR	flags;
+	VkResolveModeFlagBits	resolveMode;
+	VkResolveModeFlagBits	stencilResolveMode;
 };
 
 struct VkSRTDataNV
@@ -10977,6 +11157,7 @@ struct VkBindVertexBuffer3InfoKHR
 {
 	VkStructureType					sType;
 	const void*						pNext;
+	VkBool32						setStride;
 	VkStridedDeviceAddressRangeKHR	addressRange;
 	VkAddressCommandFlagsKHR		addressFlags;
 };
@@ -11415,6 +11596,13 @@ struct VkSwapchainDisplayNativeHdrCreateInfoAMD
 	VkStructureType	sType;
 	const void*		pNext;
 	VkBool32		localDimmingEnable;
+};
+
+struct VkSwapchainImageCreateInfoOHOS
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkSwapchainImageUsageFlagsOHOS	usage;
 };
 
 struct VkSwapchainLatencyCreateInfoNV
@@ -13598,6 +13786,12 @@ typedef VkPhysicalDeviceMaintenance6Features VkPhysicalDeviceMaintenance6Feature
 typedef VkPhysicalDeviceMaintenance6Properties VkPhysicalDeviceMaintenance6PropertiesKHR;
 
 
+typedef VkPhysicalDeviceMemoryDecompressionFeaturesEXT VkPhysicalDeviceMemoryDecompressionFeaturesNV;
+
+
+typedef VkPhysicalDeviceMemoryDecompressionPropertiesEXT VkPhysicalDeviceMemoryDecompressionPropertiesNV;
+
+
 typedef VkPhysicalDeviceMemoryProperties2 VkPhysicalDeviceMemoryProperties2KHR;
 
 
@@ -13839,6 +14033,9 @@ typedef VkRenderingAttachmentInfo VkRenderingAttachmentInfoKHR;
 
 
 typedef VkRenderingAttachmentLocationInfo VkRenderingAttachmentLocationInfoKHR;
+
+
+typedef VkRenderingEndInfoKHR VkRenderingEndInfoEXT;
 
 
 typedef VkRenderingInfo VkRenderingInfoKHR;

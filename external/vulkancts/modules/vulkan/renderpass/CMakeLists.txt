@@ -47,6 +47,8 @@ set(DEQP_VK_RENDER_PASS_SRCS
 	vktDynamicRenderingTests.hpp
 	vktDynamicRenderingLocalReadTests.cpp
 	vktDynamicRenderingLocalReadTests.hpp
+	vktDynamicRenderingLocalReadMaint10Tests.cpp
+	vktDynamicRenderingLocalReadMaint10Tests.hpp
 	vktRenderPassDepthStencilWriteConditionsTests.cpp
 	vktRenderPassDepthStencilWriteConditionsTests.hpp
 	vktRenderPassSubpassMergeFeedbackTests.cpp

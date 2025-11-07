@@ -2968,6 +2968,7 @@ tcu::TestStatus feedbackLoopDiffMipsRun(Context &context, bool largeFB)
         auto &alloc = texBuffer.getAllocation();
         void *data  = alloc.getHostPtr();
         memcpy(data, texAccess.getDataPtr(), static_cast<size_t>(texBufferSize));
+        flushAlloc(ctx.vkd, ctx.device, texBuffer.getAllocation());
     }
 
     tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
@@ -3008,6 +3009,7 @@ tcu::TestStatus feedbackLoopDiffMipsRun(Context &context, bool largeFB)
         auto &alloc = vertexBuffer.getAllocation();
         void *data  = alloc.getHostPtr();
         memcpy(data, de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, vertexBuffer.getAllocation());
     }
 
     // Sampler.

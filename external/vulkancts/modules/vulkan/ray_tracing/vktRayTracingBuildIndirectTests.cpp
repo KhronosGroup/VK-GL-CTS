@@ -121,17 +121,22 @@ Move<VkPipeline> makePipeline(const DeviceInterface &vkd, const VkDevice device,
 
 Move<VkPipeline> makePipeline(const DeviceInterface &vkd, const VkDevice device, vk::BinaryCollection &collection,
                               de::MovePtr<RayTracingPipeline> &rayTracingPipeline, VkPipelineLayout pipelineLayout,
-                              const uint32_t raygenGroup, const uint32_t missGroup, const uint32_t hitGroup)
+                              const uint32_t raygenGroup, const uint32_t missGroup, const uint32_t hitGroup,
+                              const vk::VkGeometryTypeKHR geometryType)
 {
-    Move<VkShaderModule> raygenShader       = createShaderModule(vkd, device, collection.get("rgen"), 0);
-    Move<VkShaderModule> hitShader          = createShaderModule(vkd, device, collection.get("chit"), 0);
-    Move<VkShaderModule> missShader         = createShaderModule(vkd, device, collection.get("miss"), 0);
-    Move<VkShaderModule> intersectionShader = createShaderModule(vkd, device, collection.get("rint"), 0);
+    Move<VkShaderModule> raygenShader = createShaderModule(vkd, device, collection.get("rgen"), 0);
+    Move<VkShaderModule> hitShader    = createShaderModule(vkd, device, collection.get("chit"), 0);
+    Move<VkShaderModule> missShader   = createShaderModule(vkd, device, collection.get("miss"), 0);
 
     rayTracingPipeline->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, raygenShader, raygenGroup);
     rayTracingPipeline->addShader(VK_SHADER_STAGE_CLOSEST_HIT_BIT_KHR, hitShader, hitGroup);
     rayTracingPipeline->addShader(VK_SHADER_STAGE_MISS_BIT_KHR, missShader, missGroup);
-    rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, intersectionShader, hitGroup);
+
+    if (geometryType == VK_GEOMETRY_TYPE_AABBS_KHR)
+    {
+        Move<VkShaderModule> intersectionShader = createShaderModule(vkd, device, collection.get("rint"), 0);
+        rayTracingPipeline->addShader(VK_SHADER_STAGE_INTERSECTION_BIT_KHR, intersectionShader, hitGroup);
+    }
 
     Move<VkPipeline> pipeline = rayTracingPipeline->createPipeline(vkd, device, pipelineLayout);
 
@@ -401,7 +406,8 @@ protected:
     void checkSupportInInstance(void) const;
     de::MovePtr<BufferWithMemory> prepareBuffer(VkDeviceSize bufferSizeBytes, const std::string &shaderName);
     de::MovePtr<BufferWithMemory> runTest(const VkBuffer indirectBottomAccelerationStructure,
-                                          const VkBuffer indirectTopAccelerationStructure);
+                                          const VkBuffer indirectTopAccelerationStructure,
+                                          const vk::VkGeometryTypeKHR geometryType);
 
     virtual de::SharedPtr<TopLevelAccelerationStructure> initTopAccelerationStructure(
         VkCommandBuffer cmdBuffer, de::SharedPtr<BottomLevelAccelerationStructure> &bottomLevelAccelerationStructure,
@@ -448,6 +454,7 @@ class RayTracingBuildAABBs : public RayTracingBuildIndirectTestInstance
 {
 public:
     RayTracingBuildAABBs(Context &context, const CaseDef &data) : RayTracingBuildIndirectTestInstance(context, data){};
+    tcu::TestStatus iterate(void) override;
 
 protected:
     de::SharedPtr<BottomLevelAccelerationStructure> initBottomAccelerationStructure(
@@ -957,7 +964,8 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::prepareBuffer
 }
 
 de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::runTest(
-    const VkBuffer indirectBottomAccelerationStructure, const VkBuffer indirectTopAccelerationStructure)
+    const VkBuffer indirectBottomAccelerationStructure, const VkBuffer indirectTopAccelerationStructure,
+    const vk::VkGeometryTypeKHR geometryType)
 {
     const InstanceInterface &vki            = m_context.getInstanceInterface();
     const DeviceInterface &vkd              = m_context.getDeviceInterface();
@@ -989,7 +997,7 @@ de::MovePtr<BufferWithMemory> RayTracingBuildIndirectTestInstance::runTest(
 
     de::MovePtr<RayTracingPipeline> rayTracingPipeline = de::newMovePtr<RayTracingPipeline>();
     const Move<VkPipeline> pipeline = makePipeline(vkd, device, m_context.getBinaryCollection(), rayTracingPipeline,
-                                                   *pipelineLayout, RAYGEN_GROUP, MISS_GROUP, HIT_GROUP);
+                                                   *pipelineLayout, RAYGEN_GROUP, MISS_GROUP, HIT_GROUP, geometryType);
     const de::MovePtr<BufferWithMemory> raygenShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
         vkd, device, *pipeline, allocator, shaderGroupHandleSize, shaderGroupBaseAlignment, RAYGEN_GROUP, 1u);
     const de::MovePtr<BufferWithMemory> missShaderBindingTable = rayTracingPipeline->createShaderBindingTable(
@@ -1144,8 +1152,8 @@ tcu::TestStatus RayTracingBuildIndirectTestInstance::iterate(void)
 
     const VkBuffer indirectAccelerationStructureBottom = initIndirectBottomAccelerationStructure();
     const VkBuffer indirectAccelerationStructureTop    = initIndirectTopAccelerationStructure();
-    const de::MovePtr<BufferWithMemory> buffer =
-        runTest(indirectAccelerationStructureBottom, indirectAccelerationStructureTop);
+    const de::MovePtr<BufferWithMemory> buffer         = runTest(
+        indirectAccelerationStructureBottom, indirectAccelerationStructureTop, vk::VK_GEOMETRY_TYPE_TRIANGLES_KHR);
     const uint32_t *bufferPtr = (uint32_t *)buffer->getAllocation().getHostPtr();
     uint32_t failures         = 0;
 
@@ -1161,6 +1169,41 @@ tcu::TestStatus RayTracingBuildIndirectTestInstance::iterate(void)
                 const uint32_t expectedValue =
                     (!IsValidInstance || isMissTriangle(n) || n >= m_data.primitiveCount) ? MISS : HIT;
                 if (bufferPtrLevel[n] != expectedValue)
+                    failures++;
+            }
+    }
+
+    if (failures == 0)
+        return tcu::TestStatus::pass("Pass");
+    else
+        return tcu::TestStatus::fail("failures=" + de::toString(failures));
+}
+
+tcu::TestStatus RayTracingBuildAABBs::iterate(void)
+{
+    checkSupportInInstance();
+
+    const VkBuffer indirectAccelerationStructureBottom = initIndirectBottomAccelerationStructure();
+    const VkBuffer indirectAccelerationStructureTop    = initIndirectTopAccelerationStructure();
+    const de::MovePtr<BufferWithMemory> buffer =
+        runTest(indirectAccelerationStructureBottom, indirectAccelerationStructureTop, vk::VK_GEOMETRY_TYPE_AABBS_KHR);
+    const uint32_t *bufferPtr = (uint32_t *)buffer->getAllocation().getHostPtr();
+    uint32_t failures         = 0;
+
+    for (uint32_t z = 0; z < m_data.depth; ++z)
+    {
+        const bool IsValidInstance     = (z % m_data.maxInstancesCount) < m_data.instancesCount;
+        const uint32_t *bufferPtrLevel = &bufferPtr[z * m_data.height * m_data.width];
+
+        // In the case of AABB geometries, implementations may increase their size in an acceleration structure
+        // in order to mitigate precision issues. This may result in false positives being reported to the application.
+        for (uint32_t y = 0; y < m_data.height; ++y)
+            for (uint32_t x = 0; x < m_data.width; ++x)
+            {
+                const uint32_t n = m_data.width * y + x;
+                const uint32_t expectedValue =
+                    (!IsValidInstance || isMissTriangle(n) || n >= m_data.primitiveCount) ? MISS : HIT;
+                if (bufferPtrLevel[n] != expectedValue && expectedValue == HIT)
                     failures++;
             }
     }

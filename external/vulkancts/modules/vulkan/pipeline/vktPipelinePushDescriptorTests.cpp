@@ -132,7 +132,7 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
     bool useFeatures2 = params.pipelineConstructionType != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
 
     vector<string> requiredExtensionsStr;
-    if (context.getUsedApiVersion() > VK_API_VERSION_1_3)
+    if (context.getEquivalentApiVersion() > VK_API_VERSION_1_3)
     {
         useFeatures2                             = true;
         vulkan14Features.pushDescriptor          = true;
@@ -159,7 +159,7 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
     else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
     {
         features2.pNext = &shaderObjectFeaturesEXT;
-        if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
+        if (context.getEquivalentApiVersion() < VK_API_VERSION_1_3)
             requiredExtensionsStr.push_back("VK_KHR_dynamic_rendering");
         requiredExtensionsStr.push_back("VK_EXT_shader_object");
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);

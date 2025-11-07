@@ -1533,7 +1533,7 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
             context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
 
             if ((m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT) &&
-                (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0)) &&
+                (context.getEquivalentApiVersion() > VK_API_VERSION_1_3) &&
                 !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
                 TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadMultisampledAttachments not supported");
         }
@@ -3049,7 +3049,7 @@ void FragmentDensityMapTestInstance::endRendering(const DeviceInterface &vk, VkC
             de::dataOrNull(offsets),
         };
         const VkRenderingEndInfoEXT renderingEndInfo = initVulkanStructureConst(&offsetEndInfo);
-        vk.cmdEndRendering2EXT(cmdBuffer, &renderingEndInfo);
+        vk.cmdEndRendering2KHR(cmdBuffer, &renderingEndInfo);
     }
     else
     {
@@ -3911,7 +3911,7 @@ tcu::TestStatus FDMOffsetBaseInstance::iterate()
             else
             {
                 renderingEndInfo.pNext = fdmEnd;
-                vkd.cmdEndRendering2EXT(cmd, &renderingEndInfo);
+                vkd.cmdEndRendering2KHR(cmd, &renderingEndInfo);
             }
         }
         else

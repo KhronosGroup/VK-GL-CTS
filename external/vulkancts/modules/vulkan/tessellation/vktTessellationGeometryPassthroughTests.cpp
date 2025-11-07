@@ -157,6 +157,8 @@ void IdentityGeometryShaderTestCase::checkSupport(Context &context) const
 #else
     DE_UNREF(context);
 #endif // CTS_USES_VULKANSC
+    const auto ctx = context.getContextCommonData();
+    requireFeatures(ctx.vki, ctx.physicalDevice, (FEATURE_TESSELLATION_SHADER | FEATURE_GEOMETRY_SHADER));
 }
 
 void IdentityGeometryShaderTestCase::initPrograms(vk::SourceCollections &programCollection) const
@@ -168,7 +170,7 @@ void IdentityGeometryShaderTestCase::initPrograms(vk::SourceCollections &program
         std::ostringstream src;
         src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_310_ES) << "\n"
             << "#extension GL_EXT_tessellation_shader : require\n"
-            << "layout(vertices = 4) out;\n"
+            << "layout(vertices = " << (m_primitiveType == TESSPRIMITIVETYPE_TRIANGLES ? 3 : 4) << ") out;\n"
             << "\n"
             << "layout(set = 0, binding = 0, std430) readonly restrict buffer TessLevels {\n"
             << "    float inner0;\n"
@@ -257,6 +259,8 @@ void IdentityTessellationShaderTestCase::checkSupport(Context &context) const
 #else
     DE_UNREF(context);
 #endif // CTS_USES_VULKANSC
+    const auto ctx = context.getContextCommonData();
+    requireFeatures(ctx.vki, ctx.physicalDevice, (FEATURE_TESSELLATION_SHADER | FEATURE_GEOMETRY_SHADER));
 }
 
 //! Geometry shader used in passthrough tessellation shader case.
@@ -460,8 +464,6 @@ private:
 
 tcu::TestStatus PassthroughTestInstance::iterate(void)
 {
-    requireFeatures(m_context.getInstanceInterface(), m_context.getPhysicalDevice(),
-                    FEATURE_TESSELLATION_SHADER | FEATURE_GEOMETRY_SHADER);
     DE_STATIC_ASSERT(PIPELINE_CASES == 2);
 
     const DeviceInterface &vk       = m_context.getDeviceInterface();
@@ -660,7 +662,7 @@ tcu::TestStatus PassthroughTestInstance::iterate(void)
 
     const bool ok = tcu::intThresholdPositionDeviationCompare(log, "ImageCompare", "Image comparison", image0, image1,
                                                               colorThreshold, positionDeviation, ignoreOutOfBounds,
-                                                              tcu::COMPARE_LOG_RESULT);
+                                                              tcu::COMPARE_LOG_ON_ERROR);
 
     return (ok ? tcu::TestStatus::pass("OK") : tcu::TestStatus::fail("Image comparison failed"));
 }

@@ -99,8 +99,8 @@ tcu::TestStatus basicOneQueueCase(Context &context, const TestConfig config)
             nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
-    const VkQueue queue             = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue             = getSyncQueue(videoDevice, context, false);
+    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, false);
     const Unique<VkSemaphore> semaphore(createTestSemaphore(context, vk, device, config));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -235,7 +235,7 @@ tcu::TestStatus basicChainCase(Context &context, TestConfig config)
 
     const DeviceInterface &vk = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device     = getSyncDevice(videoDevice, context);
-    const VkQueue queue       = getSyncQueue(videoDevice, context);
+    const VkQueue queue       = getSyncQueue(videoDevice, context, false);
     VkSemaphoreCreateInfo sci = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, nullptr, 0};
     VkFenceCreateInfo fci     = {VK_STRUCTURE_TYPE_FENCE_CREATE_INFO, nullptr, 0};
     VkFence fence;
@@ -303,7 +303,7 @@ tcu::TestStatus basicChainTimelineCase(Context &context, TestConfig config)
 
     const DeviceInterface &vk      = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device          = getSyncDevice(videoDevice, context);
-    const VkQueue queue            = getSyncQueue(videoDevice, context);
+    const VkQueue queue            = getSyncQueue(videoDevice, context, false);
     VkSemaphoreTypeCreateInfo scti = {VK_STRUCTURE_TYPE_SEMAPHORE_TYPE_CREATE_INFO, nullptr, VK_SEMAPHORE_TYPE_TIMELINE,
                                       0};
     VkSemaphoreCreateInfo sci      = {VK_STRUCTURE_TYPE_SEMAPHORE_CREATE_INFO, &scti, 0};

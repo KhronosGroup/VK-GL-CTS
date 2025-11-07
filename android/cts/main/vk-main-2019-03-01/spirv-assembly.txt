@@ -3100,7 +3100,6 @@ dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.array
 dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.bool
 dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.float32
 dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.matrix
-dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.pointer
 dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.sint32
 dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.struct
 dEQP-VK.spirv_assembly.instruction.compute.opconstantnull.uint32

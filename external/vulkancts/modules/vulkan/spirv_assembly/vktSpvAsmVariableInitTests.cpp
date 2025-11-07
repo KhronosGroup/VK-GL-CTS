@@ -72,7 +72,6 @@ const TestParams testParams[] = {{"float", "f32", 1, INITIALIZATION_SOURCE_CONST
 
                                  {"float_from_workgroup", "f32", 1, INITIALIZATION_SOURCE_GLOBAL},
                                  {"vec4_from_workgroup", "v4f32", 4, INITIALIZATION_SOURCE_GLOBAL},
-                                 {"matrix_from_workgroup", "matrix", 2 * 4, INITIALIZATION_SOURCE_GLOBAL},
                                  {"floatarray_from_workgroup", "floatArray", 8, INITIALIZATION_SOURCE_GLOBAL},
                                  {"struct_from_workgroup", "struct", 2 * 4 + 4 + 4, INITIALIZATION_SOURCE_GLOBAL}};
 
@@ -81,12 +80,12 @@ const string common =
     "                    %v4f32_1 = OpConstantComposite %v4f32 %f32_1 %f32_1 %f32_1 %f32_1\n"
     "                     %matrix = OpTypeMatrix %v4f32 2\n"
     "                   %matrix_1 = OpConstantComposite %matrix %v4f32_1 %v4f32_1\n"
-    "                     %struct = OpTypeStruct %matrix %v4f32 %f32 %f32 %f32 %f32\n"
-    "                   %struct_1 = OpConstantComposite %struct %matrix_1 %v4f32_1 %f32_1 %f32_1 %f32_1 %f32_1\n"
     "                    %c_u32_8 = OpConstant %u32 8\n"
     "                 %floatArray = OpTypeArray %f32 %c_u32_8\n"
     "               %floatArray_1 = OpConstantComposite %floatArray %f32_1 %f32_1 %f32_1 %f32_1 %f32_1 %f32_1 %f32_1 "
     "%f32_1\n"
+    "                     %struct = OpTypeStruct %floatArray %v4f32 %f32 %f32 %f32 %f32\n"
+    "                   %struct_1 = OpConstantComposite %struct %floatArray_1 %v4f32_1 %f32_1 %f32_1 %f32_1 %f32_1\n"
     "                %numElements = OpConstant %u32 ${count}\n"
     "                %outputArray = OpTypeArray %${type} %numElements\n"
     "                     %Output = OpTypeStruct %outputArray\n"
@@ -104,9 +103,7 @@ const string decorations = "${arrayStrideDecoration}"
                            "                               OpDecorate %dataOutput Binding 0\n"
                            "${extraDecorations:opt}"
                            "                               OpDecorate %floatArray ArrayStride 4\n"
-                           "                               OpMemberDecorate %struct 0 ColMajor\n"
                            "                               OpMemberDecorate %struct 0 Offset 0\n"
-                           "                               OpMemberDecorate %struct 0 MatrixStride 16\n"
                            "                               OpMemberDecorate %struct 1 Offset 32\n"
                            "                               OpMemberDecorate %struct 2 Offset 48\n"
                            "                               OpMemberDecorate %struct 3 Offset 52\n"

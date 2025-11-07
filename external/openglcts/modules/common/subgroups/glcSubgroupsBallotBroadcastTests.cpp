@@ -175,6 +175,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
 
         geometry << "${VERSION_DECL}\n"
                  << "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                 << "${GEOM_EXTENSION}\n"
                  << "layout(points) in;\n"
                  << "layout(points, max_vertices = 1) out;\n"
                  << "layout(location = 0) out float out_color;\n"
@@ -200,6 +201,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
 
         controlSource << "${VERSION_DECL}\n"
                       << "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                      << "${TESS_EXTENSION}\n"
                       << "layout(vertices = 2) out;\n"
                       << "layout(location = 0) out float out_color[];\n"
                       << "layout(binding = 0, std140) uniform Buffer0\n"
@@ -227,6 +229,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
         std::ostringstream evaluationSource;
         evaluationSource << "${VERSION_DECL}\n"
                          << "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                         << "${TESS_EXTENSION}\n"
                          << "layout(isolines, equal_spacing, ccw ) in;\n"
                          << "layout(location = 0) out float out_color;\n"
                          << "layout(binding = 0, std140) uniform Buffer0\n"
@@ -309,6 +312,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
 
         const string tesc = "${VERSION_DECL}\n"
                             "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                            "${TESS_EXTENSION}\n"
                             "layout(vertices=1) out;\n"
                             "layout(binding = 1, std430) buffer Buffer1\n"
                             "{\n"
@@ -335,6 +339,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
 
         const string tese = "${VERSION_DECL}\n"
                             "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                            "${TESS_EXTENSION}\n"
                             "layout(isolines) in;\n"
                             "layout(binding = 2, std430) buffer Buffer2\n"
                             "{\n"

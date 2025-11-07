@@ -42,8 +42,10 @@ enum OpType
     OPTYPE_SHUFFLE_XOR,
     OPTYPE_SHUFFLE_UP,
     OPTYPE_SHUFFLE_DOWN,
+#ifndef CTS_USES_VULKANSC
     OPTYPE_ROTATE,
     OPTYPE_CLUSTERED_ROTATE,
+#endif
     OPTYPE_LAST
 };
 
@@ -94,10 +96,12 @@ string getOpTypeName(OpType opType)
         return "subgroupShuffleUp";
     case OPTYPE_SHUFFLE_DOWN:
         return "subgroupShuffleDown";
+#ifndef CTS_USES_VULKANSC
     case OPTYPE_ROTATE:
         return "subgroupRotate";
     case OPTYPE_CLUSTERED_ROTATE:
         return "subgroupClusteredRotate";
+#endif
     default:
         TCU_THROW(InternalError, "Unsupported op type");
     }
@@ -115,10 +119,12 @@ string getExtensionForOpType(OpType opType)
         return "GL_KHR_shader_subgroup_shuffle_relative";
     case OPTYPE_SHUFFLE_DOWN:
         return "GL_KHR_shader_subgroup_shuffle_relative";
+#ifndef CTS_USES_VULKANSC
     case OPTYPE_ROTATE:
         return "GL_KHR_shader_subgroup_rotate";
     case OPTYPE_CLUSTERED_ROTATE:
         return "GL_KHR_shader_subgroup_rotate";
+#endif
     default:
         TCU_THROW(InternalError, "Unsupported op type");
     }
@@ -222,15 +228,20 @@ const string getNonClusteredTestSource(const CaseDefinition &caseDef)
                       caseDef.opType == OPTYPE_SHUFFLE_XOR  ? "gl_SubgroupInvocationID ^ id_in" :
                       caseDef.opType == OPTYPE_SHUFFLE_UP   ? "gl_SubgroupInvocationID - id_in" :
                       caseDef.opType == OPTYPE_SHUFFLE_DOWN ? "gl_SubgroupInvocationID + id_in" :
+#ifndef CTS_USES_VULKANSC
                       caseDef.opType == OPTYPE_ROTATE ? "(gl_SubgroupInvocationID + id_in) & (gl_SubgroupSize - 1)" :
+#endif
                                                         "";
     const string idInSource =
         caseDef.argType == ArgType::DYNAMIC ?
             "data2[gl_SubgroupInvocationID] & (gl_SubgroupSize - 1)" :
         caseDef.argType == ArgType::DYNAMICALLY_UNIFORM ?
+#ifndef CTS_USES_VULKANSC
             (caseDef.opType == OPTYPE_ROTATE ? "data2[0] & (gl_SubgroupSize * 2 - 1)" : "data2[0] % 32") :
-        caseDef.argType == ArgType::CONSTANT ? "5" :
-                                               "";
+#else
+            "data2[0] % 32" :
+#endif
+            caseDef.argType == ArgType::CONSTANT ? "5" : "";
     const string testSource = "  uint temp_res;\n"
                               "  uvec4 mask = subgroupBallot(true);\n"
                               "  uint id_in = " +
@@ -323,10 +334,12 @@ const string getClusteredTestSource(const CaseDefinition &caseDef)
 
 const string getTestSource(const CaseDefinition &caseDef)
 {
+#ifndef CTS_USES_VULKANSC
     if (caseDef.opType == OPTYPE_CLUSTERED_ROTATE)
     {
         return getClusteredTestSource(caseDef);
     }
+#endif
     return getNonClusteredTestSource(caseDef);
 }
 
@@ -698,9 +711,11 @@ TestCaseGroup *createSubgroupsShuffleTests(TestContext &testCtx)
                     if (opType == OPTYPE_SHUFFLE && argCase.argType != ArgType::DYNAMIC)
                         continue;
 
+#ifndef CTS_USES_VULKANSC
                     if ((opType == OPTYPE_ROTATE || opType == OPTYPE_CLUSTERED_ROTATE) &&
                         argCase.argType == ArgType::DYNAMIC)
                         continue;
+#endif
 
                     const string name = de::toLower(getOpTypeName(opType)) + "_" + formatName + argCase.suffix;
 
@@ -804,9 +819,11 @@ TestCaseGroup *createSubgroupsShuffleTests(TestContext &testCtx)
                     if (opType == OPTYPE_SHUFFLE && argCase.argType != ArgType::DYNAMIC)
                         continue;
 
+#ifndef CTS_USES_VULKANSC
                     if ((opType == OPTYPE_ROTATE || opType == OPTYPE_CLUSTERED_ROTATE) &&
                         argCase.argType == ArgType::DYNAMIC)
                         continue;
+#endif
 
                     const string name = de::toLower(getOpTypeName(opType)) + "_" + formatName + argCase.suffix;
                     const CaseDefinition caseDef = {

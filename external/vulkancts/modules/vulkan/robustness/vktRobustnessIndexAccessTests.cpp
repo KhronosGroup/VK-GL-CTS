@@ -341,6 +341,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
             addressFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
 
         VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+        vertexBuffer3Info.setStride                  = true;
         vertexBuffer3Info.addressRange               = {vertexBufferAddress, vertexBufferSize, 4u * sizeof(float)};
         vertexBuffer3Info.addressFlags               = addressFlags;
         vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1, &vertexBuffer3Info);
@@ -522,6 +523,10 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
     features2.features.robustBufferAccess = true;
 
     void **nextPtr = &features2.pNext;
+
+    VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
+    sblFeatures.scalarBlockLayout                         = true;
+    addToChainVulkanStructure(&nextPtr, sblFeatures);
 
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeatures = initVulkanStructure();
@@ -942,6 +947,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     if (m_params.useDeviceAddressCommands)
     {
         VkBindVertexBuffer3InfoKHR vertexBuffer3Info = initVulkanStructure();
+        vertexBuffer3Info.setStride                  = true;
         vertexBuffer3Info.addressRange               = {vertexBufferAddress, vertexBufferSize, sizeof(tcu::Vec4)};
         vk.cmdBindVertexBuffers3KHR(*cmdBuffer, 0, 1, &vertexBuffer3Info);
 

@@ -40,6 +40,9 @@ inline std::ostream &operator<<(std::ostream &s, const Handle<Type> &handle)
     return s << tcu::toHex(handle.getInternal());
 }
 
+// Returns the format in lowercase and without the VK_FORMAT_ prefix.
+std::string getFormatSimpleName(VkFormat);
+
 } // namespace vk
 
 #endif // _VKSTRUTIL_HPP

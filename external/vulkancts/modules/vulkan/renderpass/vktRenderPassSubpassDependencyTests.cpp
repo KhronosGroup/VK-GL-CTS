@@ -3952,7 +3952,7 @@ void checkSupport(Context &context, TestConfig config)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
 
 #ifndef CTS_USES_VULKANSC
-        if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0) &&
+        if (context.getEquivalentApiVersion() > VK_API_VERSION_1_3 &&
             !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
         {
             if ((config.format == VK_FORMAT_D24_UNORM_S8_UINT) || (config.format == VK_FORMAT_D32_SFLOAT_S8_UINT))
