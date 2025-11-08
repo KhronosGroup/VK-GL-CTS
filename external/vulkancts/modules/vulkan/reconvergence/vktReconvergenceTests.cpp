@@ -257,9 +257,6 @@ struct Ballots : protected std::vector<std::bitset<128>>
     Ballots(add_cref<Ballots> other) : super(upcast(other))
     {
     }
-    Ballots(Ballots &&other) : super(std::move(other))
-    {
-    }
     using super::operator[];
     using super::at;
     /**
@@ -504,13 +501,6 @@ Ballot bitsetToBallot(const Ballots &bitset, uint32_t subgroupSize, uint32_t inv
     return bitset.at(invocationID / subgroupSize) & subgroupSizeToMask(subgroupSize, bitset.subgroupCount());
 }
 
-// Pick out the mask for the subgroup that invocationID is a member of
-Ballot bitsetToBallot(add_cref<Ballots> bitset, add_cref<Ballot> subgroupSizeMask, uint32_t subgroupSize,
-                      uint32_t invocationID)
-{
-    return bitset.at(invocationID / subgroupSize) & subgroupSizeMask;
-}
-
 Ballot bitsetToBallot(uint64_t value, uint32_t subgroupCount, uint32_t subgroupSize, uint32_t invocationID)
 {
     Ballots bs = ballotsFromU64(value, subgroupSize, subgroupCount);
@@ -588,9 +578,6 @@ struct Vertex
 
 typedef Vertex Triangle[3];
 
-class RandomProgram;
-class ComputeRandomProgram;
-
 std::pair<vk::VkPhysicalDeviceSubgroupProperties, vk::VkPhysicalDeviceProperties2> getSubgroupProperties(
     vkt::Context &context)
 {
@@ -636,11 +623,7 @@ protected:
 class ReconvergenceTestComputeInstance : public ReconvergenceTestInstance
 {
 public:
-    ReconvergenceTestComputeInstance(Context &context, const CaseDef &data, std::shared_ptr<RandomProgram> program,
-                                     std::map<uint32_t, uint32_t> &&subgroupSizeToMaxLoc)
-        : ReconvergenceTestInstance(context, data)
-        , m_program(std::static_pointer_cast<ComputeRandomProgram>(program))
-        , m_subgroupSizeToMaxLoc(std::move(subgroupSizeToMaxLoc))
+    ReconvergenceTestComputeInstance(Context &context, const CaseDef &data) : ReconvergenceTestInstance(context, data)
     {
     }
     ~ReconvergenceTestComputeInstance(void) = default;
@@ -648,10 +631,6 @@ public:
     virtual tcu::TestStatus iterate(void) override;
     qpTestResult_e calculateAndLogResult(const tcu::UVec4 *result, const std::vector<tcu::UVec4> &ref,
                                          uint32_t invocationStride, uint32_t subgroupSize, uint32_t shaderMaxLoc);
-
-private:
-    std::shared_ptr<ComputeRandomProgram> m_program;
-    std::map<uint32_t, uint32_t> m_subgroupSizeToMaxLoc;
 };
 
 class ReconvergenceTestGraphicsInstance : public ReconvergenceTestInstance
@@ -1621,10 +1600,9 @@ public:
             ops.push_back({OP_NOISE, 1});
     }
 
-    std::map<uint32_t, uint32_t> generateRandomProgram(qpWatchDog *watchDog, add_ref<tcu::TestLog> log)
+    void generateRandomProgram(qpWatchDog *watchDog, add_ref<tcu::TestLog> log)
     {
         std::vector<tcu::UVec4> ref;
-        std::map<uint32_t, uint32_t> subgroupSizeToMaxLoc;
 
         do
         {
@@ -1639,13 +1617,10 @@ public:
                 for (int32_t subgroupSize = 4; subgroupSize <= 128; subgroupSize *= 2)
                 {
                     //simulate(true, subgroupSize, ref);
-                    const uint32_t maxLoc = execute(watchDog, true, subgroupSize, 0u, invocationStride, ref, log);
-                    subgroupSizeToMaxLoc[subgroupSize] = maxLoc;
+                    execute(watchDog, true, subgroupSize, 0u, invocationStride, ref, log);
                 }
             }
         } while (caseDef.isUCF() && !hasUCF());
-
-        return subgroupSizeToMaxLoc;
     }
 
     void printIndent(std::stringstream &css)
@@ -2091,7 +2066,7 @@ public:
                 {
                     for (uint32_t id = 0; id < invocationStride; id += subgroupSize)
                     {
-                        const Ballot subgroupMask = bitsetToBallot(activeMask, fullSubgroupMask, subgroupSize, id);
+                        const Ballot subgroupMask = bitsetToBallot(activeMask, subgroupSize, id);
                         // Flag that this ballot is subgroup-nonuniform
                         if (subgroupMask != 0 && subgroupMask != fullSubgroupMask)
                             ops[i].caseValue = 1;
@@ -2520,15 +2495,8 @@ public:
 
     struct ComputePrerequisites : Prerequisites
     {
-        const uint32_t subgroupSize;
-        const uint32_t subgroupCount;
-        const Ballot subgroupSizeMask;
-        std::vector<std::pair<bool, tcu::UVec4>> ballots;
-        ComputePrerequisites(uint32_t subgroupSize_, uint32_t subgroupCount_)
-            : subgroupSize(subgroupSize_)
-            , subgroupCount(subgroupCount_)
-            , subgroupSizeMask(subgroupSizeToMask(subgroupSize, subgroupCount))
-            , ballots(subgroupCount_)
+        const uint32_t m_subgroupSize;
+        ComputePrerequisites(uint32_t subgroupSize) : m_subgroupSize(subgroupSize)
         {
         }
     };
@@ -2573,11 +2541,8 @@ protected:
         DE_UNREF(logFailureCount);
         DE_UNREF(reason);
         DE_UNREF(cmp);
-        auto pre                     = static_pointer_cast<ComputePrerequisites>(prerequisites);
         const uint32_t subgroupCount = activeMask.subgroupCount();
-        const uint32_t subgroupSize  = pre->subgroupSize;
-
-        std::fill_n(pre->ballots.begin(), subgroupCount, std::pair<bool, tcu::UVec4>());
+        const uint32_t subgroupSize  = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
 
         for (uint32_t id = 0; id < invocationStride; ++id)
         {
@@ -2596,15 +2561,7 @@ protected:
                             bitsetToBallot(0x12345678, subgroupCount, subgroupSize, id);
                     }
                     else
-                    {
-                        add_ref<std::pair<bool, tcu::UVec4>> info(pre->ballots.at(id / subgroupSize));
-                        if (false == info.first)
-                        {
-                            info.first  = true;
-                            info.second = bitsetToBallot(activeMask, pre->subgroupSizeMask, subgroupSize, id);
-                        }
-                        ref[(outLoc[id]++) * invocationStride + id] = info.second;
-                    }
+                        ref[(outLoc[id]++) * invocationStride + id] = bitsetToBallot(activeMask, subgroupSize, id);
                 }
             }
         }
@@ -2621,7 +2578,7 @@ protected:
         DE_UNREF(logFailureCount);
         DE_UNREF(reason);
         DE_UNREF(cmp);
-        const uint32_t subgroupSize = static_pointer_cast<ComputePrerequisites>(prerequisites)->subgroupSize;
+        const uint32_t subgroupSize = static_pointer_cast<ComputePrerequisites>(prerequisites)->m_subgroupSize;
         for (uint32_t id = 0; id < invocationStride; ++id)
         {
             if (activeMask.test(Ballots::findBit(id, subgroupSize)))
@@ -2629,7 +2586,8 @@ protected:
                 if (countOnly)
                     outLoc[id]++;
                 else
-                    ref[(outLoc[id]++) * invocationStride + id][0] = uint32_t(storeValue & 0xFFFFFFFF);
+                    ref[(outLoc[id]++) * invocationStride + id] =
+                        Ballot(tcu::UVec4(uint32_t(storeValue & 0xFFFFFFFF), 0u, 0u, 0u));
             }
         }
     }
@@ -2644,8 +2602,8 @@ protected:
         DE_UNREF(outputP);
         DE_UNREF(fragmentStride);
         DE_ASSERT(invocationStride == primitiveStride);
+        auto prerequisites = std::make_shared<ComputePrerequisites>(subgroupSize);
         subgroupCount      = ROUNDUP(invocationStride, subgroupSize) / subgroupSize;
-        auto prerequisites = std::make_shared<ComputePrerequisites>(subgroupSize, subgroupCount);
         stateStack.resize(10u, SubgroupState2(subgroupCount));
         outLoc.resize(primitiveStride, 0u);
         add_ref<Ballots> activeMask(stateStack.at(0).activeMask);
@@ -4405,12 +4363,9 @@ public:
     ReconvergenceTestCase(tcu::TestContext &context, const std::string &name, const CaseDef data)
         : TestCase(context, name)
         , m_data(data)
-        , m_program()
-        , m_subgroupSizeToMaxLoc()
     {
     }
     ~ReconvergenceTestCase(void) = default;
-    virtual void delayedInit(void) override;
     virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
     virtual TestInstance *createInstance(Context &context) const override;
@@ -4418,8 +4373,6 @@ public:
 
 private:
     CaseDef m_data;
-    std::shared_ptr<RandomProgram> m_program;
-    mutable std::map<uint32_t, uint32_t> m_subgroupSizeToMaxLoc;
 };
 
 void ReconvergenceTestCase::checkSupport(Context &context) const
@@ -4555,16 +4508,11 @@ std::string genPassThroughTessEvalSource()
     return str.str();
 }
 
-void ReconvergenceTestCase::delayedInit(void)
-{
-    m_program = std::shared_ptr<RandomProgram>(selectProgram().release());
-}
-
 void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) const
 {
     de::MovePtr<RandomProgram> program = selectProgram();
 
-    m_subgroupSizeToMaxLoc = program->generateRandomProgram(m_testCtx.getWatchDog(), m_testCtx.getLog());
+    program->generateRandomProgram(m_testCtx.getWatchDog(), m_testCtx.getLog());
 
     std::stringstream header, layout, globals, prologue, epilogue, aux;
 
@@ -4992,7 +4940,7 @@ void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) c
     }
 
     std::stringstream css, functions, main;
-    m_program->printCode(functions, main);
+    program->printCode(functions, main);
 
     css << header.str();
     css << layout.str();
@@ -5054,7 +5002,7 @@ TestInstance *ReconvergenceTestCase::createInstance(Context &context) const
     switch (m_data.shaderStage)
     {
     case VK_SHADER_STAGE_COMPUTE_BIT:
-        return new ReconvergenceTestComputeInstance(context, m_data, m_program, std::move(m_subgroupSizeToMaxLoc));
+        return new ReconvergenceTestComputeInstance(context, m_data);
     case VK_SHADER_STAGE_FRAGMENT_BIT:
         return new ReconvergenceTestFragmentInstance(context, m_data);
     case VK_SHADER_STAGE_VERTEX_BIT:
@@ -5079,20 +5027,15 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
     tcu::TestLog &log                    = m_context.getTestContext().getLog();
     const VkPhysicalDeviceLimits &limits = m_context.getDeviceProperties().limits;
 
+    //const uint32_t invocationCount = (ROUNDUP(invocationCount, m_subgroupSize) / m_subgroupSize) * 128u;
     const uint32_t invocationStride = m_data.sizeX * m_data.sizeY;
 
     std::vector<tcu::UVec4> ref;
-    add_ref<ComputeRandomProgram> program(*m_program);
+    ComputeRandomProgram program(m_data);
+    program.generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
 
-    uint32_t precalculatedMaxLoc = 0u;
-    if (auto itPrecalculatedMaxLoc = m_subgroupSizeToMaxLoc.find(m_subgroupSize);
-        itPrecalculatedMaxLoc != m_subgroupSizeToMaxLoc.end())
-    {
-        precalculatedMaxLoc = itPrecalculatedMaxLoc->second;
-    }
-    uint32_t maxLoc       = precalculatedMaxLoc ? precalculatedMaxLoc :
-                                                  program.execute(m_context.getTestContext().getWatchDog(), true,
-                                                                  m_subgroupSize, 0u, invocationStride, ref, log);
+    uint32_t maxLoc =
+        program.execute(m_context.getTestContext().getWatchDog(), true, m_subgroupSize, 0u, invocationStride, ref, log);
     uint32_t shaderMaxLoc = maxLoc;
 
     // maxLoc is per-invocation. Add one (to make sure no additional writes are done) and multiply by
