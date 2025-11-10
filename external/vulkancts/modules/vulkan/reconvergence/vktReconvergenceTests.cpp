@@ -47,7 +47,9 @@
 #include "tcuTestLog.hpp"
 
 #include <array>
+#include <algorithm>
 #include <bitset>
+#include <cctype>
 #include <functional>
 #include <map>
 #include <numeric>
@@ -577,6 +579,8 @@ struct Vertex
 };
 
 typedef Vertex Triangle[3];
+class RandomProgram;
+class ComputeRandomProgram;
 
 std::pair<vk::VkPhysicalDeviceSubgroupProperties, vk::VkPhysicalDeviceProperties2> getSubgroupProperties(
     vkt::Context &context)
@@ -622,8 +626,12 @@ protected:
 
 class ReconvergenceTestComputeInstance : public ReconvergenceTestInstance
 {
+    std::shared_ptr<ComputeRandomProgram> m_program;
+
 public:
-    ReconvergenceTestComputeInstance(Context &context, const CaseDef &data) : ReconvergenceTestInstance(context, data)
+    ReconvergenceTestComputeInstance(Context &context, const CaseDef &data, std::shared_ptr<RandomProgram> program)
+        : ReconvergenceTestInstance(context, data)
+        , m_program(std::static_pointer_cast<ComputeRandomProgram>(program))
     {
     }
     ~ReconvergenceTestComputeInstance(void) = default;
@@ -4363,16 +4371,24 @@ public:
     ReconvergenceTestCase(tcu::TestContext &context, const std::string &name, const CaseDef data)
         : TestCase(context, name)
         , m_data(data)
+        , m_subgroupSize(4)
+        , m_computeFullSubgroups(false)
+
     {
     }
     ~ReconvergenceTestCase(void) = default;
+    virtual void delayedInit() override;
     virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
     virtual TestInstance *createInstance(Context &context) const override;
-    de::MovePtr<RandomProgram> selectProgram() const;
+    std::shared_ptr<RandomProgram> selectProgram() const;
+    CaseDef validateCaseDef() const;
 
 private:
     CaseDef m_data;
+    uint32_t m_subgroupSize;
+    bool m_computeFullSubgroups;
+    std::shared_ptr<RandomProgram> m_randomProgram;
 };
 
 void ReconvergenceTestCase::checkSupport(Context &context) const
@@ -4416,13 +4432,13 @@ void ReconvergenceTestCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "shaderMaximalReconvergence not supported");
 }
 
-de::MovePtr<RandomProgram> ReconvergenceTestCase::selectProgram() const
+std::shared_ptr<RandomProgram> ReconvergenceTestCase::selectProgram() const
 {
     RandomProgram *programPtr(nullptr);
     switch (m_data.shaderStage)
     {
     case VK_SHADER_STAGE_COMPUTE_BIT:
-        programPtr = new ComputeRandomProgram(m_data);
+        programPtr = new ComputeRandomProgram(validateCaseDef());
         break;
     case VK_SHADER_STAGE_FRAGMENT_BIT:
         programPtr = new FragmentRandomProgram(m_data);
@@ -4443,7 +4459,7 @@ de::MovePtr<RandomProgram> ReconvergenceTestCase::selectProgram() const
         DE_ASSERT(0);
     }
     DE_ASSERT(programPtr);
-    return de::MovePtr<RandomProgram>(programPtr);
+    return std::shared_ptr<RandomProgram>(programPtr);
 }
 
 std::string genPassThroughFragmentSource()
@@ -4508,11 +4524,28 @@ std::string genPassThroughTessEvalSource()
     return str.str();
 }
 
+void ReconvergenceTestCase::delayedInit()
+{
+    if (auto ctx = getContextManager(); ctx)
+    {
+        const DevFeaturesAndProperties &fp = ctx->getDeviceFeaturesAndProperties();
+        m_subgroupSize                     = fp.getSubgroupProperties().subgroupSize;
+        m_computeFullSubgroups             = fp.getSubgroupSizeControlFeatures().computeFullSubgroups == VK_TRUE;
+    }
+    m_randomProgram = selectProgram();
+}
+
+bool anyLetter(const std::string &s, std::size_t len)
+{
+    for (std::size_t i = 0; i < len; ++i)
+        if (std::isalpha(s[i]))
+            return true;
+    return false;
+}
+
 void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) const
 {
-    de::MovePtr<RandomProgram> program = selectProgram();
-
-    program->generateRandomProgram(m_testCtx.getWatchDog(), m_testCtx.getLog());
+    m_randomProgram->generateRandomProgram(m_testCtx.getWatchDog(), m_testCtx.getLog());
 
     std::stringstream header, layout, globals, prologue, epilogue, aux;
 
@@ -4940,7 +4973,12 @@ void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) c
     }
 
     std::stringstream css, functions, main;
-    program->printCode(functions, main);
+    m_randomProgram->printCode(functions, main);
+    const std::string mainstr = main.str();
+    if (false == anyLetter(mainstr, std::min(mainstr.length(), std::size_t(20))))
+    {
+        TCU_THROW(NotSupportedError, "The body of main shader function must not be empty");
+    }
 
     css << header.str();
     css << layout.str();
@@ -4997,12 +5035,23 @@ void ReconvergenceTestCase::initPrograms(SourceCollections &programCollection) c
     }
 }
 
+CaseDef ReconvergenceTestCase::validateCaseDef() const
+{
+    CaseDef tmp = m_data;
+    if (m_computeFullSubgroups)
+    {
+        tmp.sizeX = m_subgroupSize;
+        tmp.sizeY = ROUNDUP(m_data.sizeX * m_data.sizeY, m_subgroupSize) / m_subgroupSize;
+    }
+    return tmp;
+}
+
 TestInstance *ReconvergenceTestCase::createInstance(Context &context) const
 {
     switch (m_data.shaderStage)
     {
     case VK_SHADER_STAGE_COMPUTE_BIT:
-        return new ReconvergenceTestComputeInstance(context, m_data);
+        return new ReconvergenceTestComputeInstance(context, validateCaseDef(), m_randomProgram);
     case VK_SHADER_STAGE_FRAGMENT_BIT:
         return new ReconvergenceTestFragmentInstance(context, m_data);
     case VK_SHADER_STAGE_VERTEX_BIT:
@@ -5031,8 +5080,7 @@ tcu::TestStatus ReconvergenceTestComputeInstance::iterate(void)
     const uint32_t invocationStride = m_data.sizeX * m_data.sizeY;
 
     std::vector<tcu::UVec4> ref;
-    ComputeRandomProgram program(m_data);
-    program.generateRandomProgram(m_context.getTestContext().getWatchDog(), log);
+    ComputeRandomProgram &program(*m_program);
 
     uint32_t maxLoc =
         program.execute(m_context.getTestContext().getWatchDog(), true, m_subgroupSize, 0u, invocationStride, ref, log);
