@@ -2500,10 +2500,10 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                                               nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr,
                                               nullptr, pRenderingCreateInfo)
             .setupFragmentShaderState(uploadPipelineLayout, *renderPass, i, *uploadShaders.at(i), &dsStateCreateInfo,
-                                      multisampleStatePtr)
-            .setupFragmentOutputState(*renderPass, i, colorBlendStateCreateInfos.at(colorAttachmentCount).get(),
-                                      multisampleStatePtr, VK_NULL_HANDLE, nullptr, nullptr, nullptr,
+                                      multisampleStatePtr, nullptr, VK_NULL_HANDLE, nullptr, nullptr,
                                       pCustomResolveCreateInfo)
+            .setupFragmentOutputState(*renderPass, i, colorBlendStateCreateInfos.at(colorAttachmentCount).get(),
+                                      multisampleStatePtr)
             .buildPipeline();
     }
 
@@ -2560,10 +2560,10 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                                               nullptr, nullptr, pRenderingCreateInfo)
             .setupFragmentShaderState(resolvePipelineLayout, *renderPass, subpassIdx, *resolveShaders.at(i),
                                       &dsStateCreateInfo, multisampleStatePtr, nullptr, VK_NULL_HANDLE, nullptr,
-                                      pRenderingInputAttachmentIndexInfo)
-            .setupFragmentOutputState(
-                *renderPass, subpassIdx, colorBlendStateCreateInfos.at(colorAttachmentCount).get(), multisampleStatePtr,
-                VK_NULL_HANDLE, nullptr, pRenderingAttachmentLocationInfo, nullptr, pCustomResolveCreateInfo)
+                                      pRenderingInputAttachmentIndexInfo, pCustomResolveCreateInfo)
+            .setupFragmentOutputState(*renderPass, subpassIdx,
+                                      colorBlendStateCreateInfos.at(colorAttachmentCount).get(), multisampleStatePtr,
+                                      VK_NULL_HANDLE, nullptr, pRenderingAttachmentLocationInfo)
             .buildPipeline();
     }
 
@@ -5069,10 +5069,9 @@ tcu::TestStatus FDMInstance::iterate(void)
                                           ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
                                           pipelineRenderingCreateInfo.get())
         .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragFillShader, &dsStateCreateInfoFill,
-                                  &multisampleStateCreateInfoFill)
-        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleStateCreateInfoFill, VK_NULL_HANDLE,
-                                  PipelineCreationFeedbackCreateInfoWrapper(), RenderingAttachmentLocationInfoWrapper(),
-                                  PipelineBinaryInfoWrapper(), fillCustomResolveCreateInfo.get())
+                                  &multisampleStateCreateInfoFill, nullptr, VK_NULL_HANDLE, nullptr, nullptr,
+                                  fillCustomResolveCreateInfo.get())
+        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleStateCreateInfoFill)
         .buildPipeline();
 
     GraphicsPipelineWrapper resolvePipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
@@ -5085,10 +5084,9 @@ tcu::TestStatus FDMInstance::iterate(void)
                                           ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
                                           pipelineRenderingCreateInfo.get())
         .setupFragmentShaderState(pipelineLayout, *renderPass, 1u, fragResolveShader, &dsStateCreateInfoResolve,
-                                  &multisampleStateCreateInfoResolve)
-        .setupFragmentOutputState(*renderPass, 1u, &colorBlendState, &multisampleStateCreateInfoResolve, VK_NULL_HANDLE,
-                                  PipelineCreationFeedbackCreateInfoWrapper(), RenderingAttachmentLocationInfoWrapper(),
-                                  PipelineBinaryInfoWrapper(), resolveCustomResolveCreateInfo.get())
+                                  &multisampleStateCreateInfoResolve, nullptr, VK_NULL_HANDLE, nullptr, nullptr,
+                                  resolveCustomResolveCreateInfo.get())
+        .setupFragmentOutputState(*renderPass, 1u, &colorBlendState, &multisampleStateCreateInfoResolve)
         .buildPipeline();
 
     GraphicsPipelineWrapper copyPipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,

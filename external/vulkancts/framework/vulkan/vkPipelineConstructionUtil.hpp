@@ -620,7 +620,8 @@ public:
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
-            RenderingInputAttachmentIndexInfoWrapper());
+            RenderingInputAttachmentIndexInfoWrapper(),
+        PipelineCustomResolveCreateInfoWrapper customResolve = PipelineCustomResolveCreateInfoWrapper());
 
     // Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
     GraphicsPipelineWrapper &setupFragmentShaderState2(
@@ -635,7 +636,8 @@ public:
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
             RenderingInputAttachmentIndexInfoWrapper(),
-        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
+        PipelineBinaryInfoWrapper partBinaries               = PipelineBinaryInfoWrapper(),
+        PipelineCustomResolveCreateInfoWrapper customResolve = PipelineCustomResolveCreateInfoWrapper());
 
     // Setup fragment output state.
     GraphicsPipelineWrapper &setupFragmentOutputState(

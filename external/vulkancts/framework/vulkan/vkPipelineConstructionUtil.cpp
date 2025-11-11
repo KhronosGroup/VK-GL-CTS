@@ -3175,12 +3175,13 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState(
     const ShaderWrapper fragmentShader, const VkPipelineDepthStencilStateCreateInfo *depthStencilState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkSpecializationInfo *specializationInfo,
     const VkPipelineCache partPipelineCache, PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo)
+    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo,
+    PipelineCustomResolveCreateInfoWrapper customResolve)
 {
     return setupFragmentShaderState2(layout, renderPass, subpass, fragmentShader,
                                      PipelineShaderStageModuleIdentifierCreateInfoWrapper(), depthStencilState,
                                      multisampleState, specializationInfo, partPipelineCache, partCreationFeedback,
-                                     renderingInputAttachmentIndexInfo);
+                                     renderingInputAttachmentIndexInfo, PipelineBinaryInfoWrapper(), customResolve);
 }
 
 GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
@@ -3189,7 +3190,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
     const VkPipelineDepthStencilStateCreateInfo *depthStencilState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkSpecializationInfo *specializationInfo,
     const VkPipelineCache partPipelineCache, PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo, PipelineBinaryInfoWrapper partBinaries)
+    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo, PipelineBinaryInfoWrapper partBinaries,
+    PipelineCustomResolveCreateInfoWrapper customResolve)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -3209,6 +3211,15 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
 
     m_internalData->setupState |= PSS_FRAGMENT_SHADER;
     m_internalData->pRenderingInputAttachmentIndex.ptr = renderingInputAttachmentIndexInfo.ptr;
+
+    // Custom resolve information is used for both the fragment shader state and the fragment output state. However, the
+    // specification explains that the information for both parts can be different and it has slightly different
+    // semantics. For this reason, we allow passing custom resolve info in both calls separately.
+    //
+    // Custom resolve information passed for the fragment shader state will be used for the fragment shader library. If
+    // a non-null custom resolve pointer is *not* passed to the fragment output state, the information set here will
+    // also be used for the fragment output library, or the monolithic pipeline creation.
+    m_internalData->pPipelineCustomResolve.ptr = customResolve.ptr;
 
     const auto pDepthStencilState =
         depthStencilState ? depthStencilState :
@@ -3279,6 +3290,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
         addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
         addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineCustomResolve.ptr);
 
         auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[2];
         auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[2];
@@ -3342,7 +3354,11 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
                                  (PSS_VERTEX_INPUT_INTERFACE | PSS_PRE_RASTERIZATION_SHADERS | PSS_FRAGMENT_SHADER)));
     m_internalData->setupState |= PSS_FRAGMENT_OUTPUT_INTERFACE;
     m_internalData->pRenderingAttachmentLocation.ptr = renderingAttachmentLocationInfo.ptr;
-    m_internalData->pPipelineCustomResolve.ptr       = customResolve.ptr;
+
+    // If we provide a custom resolve pointer in this call, it overwrites the existing one and the new information will
+    // be used for fragment output library creation or monolithic pipeline creation.
+    if (customResolve.ptr)
+        m_internalData->pPipelineCustomResolve.ptr = customResolve.ptr;
 
     // Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
     DE_UNREF(renderPass);
@@ -3548,6 +3564,9 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo(VkShader
         shaderCreateInfo.pPushConstantRanges    = other.getPipelineLayout()->getPushConstantRanges();
     }
     shaderCreateInfo.pSpecializationInfo = shader.getSpecializationInfo();
+
+    if (stage == VK_SHADER_STAGE_FRAGMENT_BIT && m_internalData->pPipelineCustomResolve.ptr)
+        shaderCreateInfo.pNext = m_internalData->pPipelineCustomResolve.ptr;
 
     return shaderCreateInfo;
 }
