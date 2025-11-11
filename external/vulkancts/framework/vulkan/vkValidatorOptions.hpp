@@ -49,6 +49,7 @@ struct SpirvValidatorOptions
         FLAG_SPIRV_VALIDATOR_WORKGROUP_SCALAR_BLOCK_LAYOUT = (1u << 0),
         FLAG_SPIRV_VALIDATOR_ALLOW_LOCALSIZEID             = (1u << 1),
         FLAG_SPIRV_VALIDATOR_ALLOW_NON_CONST_OFFSETS       = (1u << 2),
+        FLAG_SPIRV_VALIDATOR_ALLOW_NON_32_BIT_BITWISE      = (1u << 3),
     };
 
     SpirvValidatorOptions(uint32_t the_vulkan_version = VK_MAKE_API_VERSION(0, 1, 0, 0),

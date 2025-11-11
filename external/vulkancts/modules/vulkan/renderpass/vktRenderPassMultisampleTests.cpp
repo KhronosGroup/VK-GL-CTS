@@ -1943,7 +1943,12 @@ struct Programs
                                                            tcu::hasDepthComponent(format.order));
         const bool testStencil(config.separateStencilUsage ? (config.separateStencilUsage == TEST_STENCIL) :
                                                              tcu::hasStencilComponent(format.order));
-
+        // Note: the vertex coordinates being set here ensure that only one of the triangles in the quad
+        // is actually on-screen. By only having one triangle visible we can be certain that all fragments
+        // are always completely covered which means that doing multisampled subpassLoads from inputAttachments
+        // will always work as expected. If we have two triangles and the seam is on screen then the coverage
+        // can affect the subpassLoad results.
+        // The spec says "The fragment can only access the covered samples in its input SampleMask"
         dst.glslSources.add("quad-vert") << glu::VertexSource(
             "#version 450\n"
             "out gl_PerVertex {\n"
@@ -1951,8 +1956,8 @@ struct Programs
             "};\n"
             "highp float;\n"
             "void main (void) {\n"
-            "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -1.0 : 1.0,\n"
-            "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 1.0, 0.0, 1.0);\n"
+            "\tgl_Position = vec4(((gl_VertexIndex + 2) / 3) % 2 == 0 ? -3.0 : 1.0,\n"
+            "\t                   ((gl_VertexIndex + 1) / 3) % 2 == 0 ? -1.0 : 3.0, 0.0, 1.0);\n"
             "}\n");
 
         if (testDepth)
@@ -2346,7 +2351,7 @@ void checkSupport(Context &context, TestConfig config)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
 
 #ifndef CTS_USES_VULKANSC
-        if (context.getUsedApiVersion() > VK_MAKE_API_VERSION(0, 1, 3, 0))
+        if (context.getEquivalentApiVersion() > VK_API_VERSION_1_3)
         {
             if (!context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
                 TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadMultisampledAttachments not supported");

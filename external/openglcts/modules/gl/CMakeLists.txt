@@ -15,6 +15,8 @@ set(GLCTS_GL_SRCS
 	gl3cGLSLnoperspectiveTests.hpp
 	gl3cPrimitiveRestart.cpp
 	gl3cPrimitiveRestart.hpp
+	gl3cTextureFilterMinmaxTests.cpp
+	gl3cTextureFilterMinmaxTests.hpp
 	gl3cTextureSizePromotion.cpp
 	gl3cTextureSizePromotion.hpp
 	gl3cTextureSwizzleTests.cpp
@@ -93,8 +95,6 @@ set(GLCTS_GL_SRCS
 	gl4cShaderImageSizeTests.cpp
 	gl4cSyncTests.cpp
 	gl4cSyncTests.hpp
-	gl4cTextureFilterMinmaxTests.cpp
-	gl4cTextureFilterMinmaxTests.hpp
 	gl4cTextureViewTests.cpp
 	gl4cTextureViewTests.hpp
 	gl4cTextureBarrierTests.cpp
@@ -115,16 +115,22 @@ set(GLCTS_GL_SRCS
 	gl4cSparseTextureClampTests.hpp
 	gl4cSpirvExtensionsTests.cpp
 	gl4cSpirvExtensionsTests.hpp
+	gl4cClearTexImageAndSubImageTests.hpp
+	gl4cClearTexImageAndSubImageTests.cpp
 	gl4cPostDepthCoverageTests.cpp
 	gl4cPostDepthCoverageTests.hpp
 	gl4cIndirectParametersTests.cpp
 	gl4cIndirectParametersTests.hpp
 	gl4cLimitsTests.cpp
 	gl4cLimitsTests.hpp
+	gl4cTextureQueryLevelsTests.hpp
+	gl4cTextureQueryLevelsTests.cpp
 	gl4cGlSpirvTests.cpp
 	gl4cGlSpirvTests.hpp
 	gl4cTextureQueryLodTests.hpp
 	gl4cTextureQueryLodTests.cpp
+	gl4cTextureBufferTests.hpp
+	gl4cTextureBufferTests.cpp
 	)
 
 set(GLCTS_GL_LIBS

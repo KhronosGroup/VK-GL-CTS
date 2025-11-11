@@ -11,6 +11,8 @@ set(DEQP_VK_UTIL_SRCS
 	vktExternalMemoryUtil.cpp
 	vktExternalMemoryUtil.hpp
 	vktConstexprVectorUtil.hpp
+	vktShaderObjectUtil.cpp
+	vktShaderObjectUtil.hpp
 )
 
 add_library(deqp-vk-util STATIC ${DEQP_VK_UTIL_SRCS})

@@ -95,7 +95,8 @@ inline VkImageCreateInfo makeImageCreateInfo(const Texture &texture, const VkFor
         createFlags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
 #ifndef CTS_USES_VULKANSC
     else if (is2DViewOf3D)
-        createFlags |= VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT;
+        // VUID-VkImageMemoryBarrier-subresourceRange-01725
+        createFlags |= VK_IMAGE_CREATE_2D_VIEW_COMPATIBLE_BIT_EXT | VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT;
 #else
     DE_UNREF(is2DViewOf3D);
 #endif // CTS_USES_VULKANSC
@@ -463,8 +464,9 @@ void ImageSizeTestInstance::commandBeforeCompute(const VkCommandBuffer cmdBuffer
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
-    const VkImageSubresourceRange subresourceRange =
-        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, m_texture.numLayers());
+    // VUID-vkCmdDraw-None-09600
+    const VkImageSubresourceRange subresourceRange = makeImageSubresourceRange(
+        VK_IMAGE_ASPECT_COLOR_BIT, 0u, VK_REMAINING_MIP_LEVELS, 0u, VK_REMAINING_ARRAY_LAYERS);
     const VkImageMemoryBarrier barrierSetImageLayout =
         makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
                                m_image->get(), subresourceRange);

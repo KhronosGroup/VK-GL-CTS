@@ -91,9 +91,13 @@
 #include "vktSpvAsmFloatControls2Tests.hpp"
 #include "vktSpvAsmIntegerDotProductTests.hpp"
 #include "vktSpvAsmComputeShaderDerivativesTests.hpp"
+#include "vktSpvAsmFmaTests.hpp"
 #endif // CTS_USES_VULKANSC
 #include "vktSpvAsmPhysicalStorageBufferPointerTests.hpp"
+#include "vktSpvAsmUntypedPointersTests.hpp"
 #include "vktSpvAsmRawAccessChainTests.hpp"
+#include "vktSpvAsmLdexpTests.hpp"
+#include "vktSpvAsmMaint9VectorizationTests.hpp"
 
 #include <cmath>
 #include <limits>
@@ -5772,8 +5776,7 @@ tcu::TestCaseGroup *createOpConstantNullGroup(tcu::TestContext &testCtx)
                                         "%fmat33    = OpTypeMatrix %fvec3 3\n"
                                         "%const100  = OpConstant %u32 100\n"
                                         "%uarr100   = OpTypeArray %i32 %const100\n"
-                                        "%struct    = OpTypeStruct %f32 %i32 %u32\n"
-                                        "%pointer   = OpTypePointer Function %i32\n" +
+                                        "%struct    = OpTypeStruct %f32 %i32 %u32\n" +
                                         string(getComputeAsmInputOutputBuffer()) +
 
                                         "%null      = OpConstantNull ${TYPE}\n"
@@ -5803,7 +5806,6 @@ tcu::TestCaseGroup *createOpConstantNullGroup(tcu::TestContext &testCtx)
     cases.push_back(CaseParameter("matrix", "%fmat33"));
     cases.push_back(CaseParameter("array", "%uarr100"));
     cases.push_back(CaseParameter("struct", "%struct"));
-    cases.push_back(CaseParameter("pointer", "%pointer"));
 
     fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -7300,46 +7302,46 @@ tcu::TestCaseGroup *createOpUndefGroup(tcu::TestContext &testCtx)
     const int numElements = 100;
     vector<float> positiveFloats(numElements, 0);
     vector<float> negativeFloats(numElements, 0);
-    const StringTemplate shaderTemplate(string(getComputeAsmShaderPreamble()) +
+    const StringTemplate shaderTemplate(
+        string(getComputeAsmShaderPreamble("${CAPABILITY}", "${EXTENSION}", "", "", "")) +
 
-                                        "OpSource GLSL 430\n"
-                                        "OpName %main           \"main\"\n"
-                                        "OpName %id             \"gl_GlobalInvocationID\"\n"
+        "OpSource GLSL 430\n"
+        "OpName %main           \"main\"\n"
+        "OpName %id             \"gl_GlobalInvocationID\"\n"
 
-                                        "OpDecorate %id BuiltIn GlobalInvocationId\n"
+        "OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-                                        + string(getComputeAsmInputOutputBufferTraits()) +
-                                        string(getComputeAsmCommonTypes()) +
-                                        "%uvec2     = OpTypeVector %u32 2\n"
-                                        "%fvec4     = OpTypeVector %f32 4\n"
-                                        "%fmat33    = OpTypeMatrix %fvec3 3\n"
-                                        "%image     = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
-                                        "%sampler   = OpTypeSampler\n"
-                                        "%simage    = OpTypeSampledImage %image\n"
-                                        "%const100  = OpConstant %u32 100\n"
-                                        "%uarr100   = OpTypeArray %i32 %const100\n"
-                                        "%struct    = OpTypeStruct %f32 %i32 %u32\n"
-                                        "%pointer   = OpTypePointer Function %i32\n" +
-                                        string(getComputeAsmInputOutputBuffer()) +
+        + string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
+        "%uvec2     = OpTypeVector %u32 2\n"
+        "%fvec4     = OpTypeVector %f32 4\n"
+        "%fmat33    = OpTypeMatrix %fvec3 3\n"
+        "%image     = OpTypeImage %f32 2D 0 0 0 1 Unknown\n"
+        "%sampler   = OpTypeSampler\n"
+        "%simage    = OpTypeSampledImage %image\n"
+        "%const100  = OpConstant %u32 100\n"
+        "%uarr100   = OpTypeArray %i32 %const100\n"
+        "%struct    = OpTypeStruct %f32 %i32 %u32\n"
+        "%pointer   = OpTypePointer Function %i32\n" +
+        string(getComputeAsmInputOutputBuffer()) +
 
-                                        "%id        = OpVariable %uvec3ptr Input\n"
-                                        "%zero      = OpConstant %i32 0\n"
+        "%id        = OpVariable %uvec3ptr Input\n"
+        "%zero      = OpConstant %i32 0\n"
 
-                                        "%main      = OpFunction %void None %voidf\n"
-                                        "%label     = OpLabel\n"
+        "%main      = OpFunction %void None %voidf\n"
+        "%label     = OpLabel\n"
 
-                                        "%undef     = OpUndef ${TYPE}\n"
+        "%undef     = OpUndef ${TYPE}\n"
 
-                                        "%idval     = OpLoad %uvec3 %id\n"
-                                        "%x         = OpCompositeExtract %u32 %idval 0\n"
+        "%idval     = OpLoad %uvec3 %id\n"
+        "%x         = OpCompositeExtract %u32 %idval 0\n"
 
-                                        "%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
-                                        "%inval     = OpLoad %f32 %inloc\n"
-                                        "%neg       = OpFNegate %f32 %inval\n"
-                                        "%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
-                                        "             OpStore %outloc %neg\n"
-                                        "             OpReturn\n"
-                                        "             OpFunctionEnd\n");
+        "%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+        "%inval     = OpLoad %f32 %inloc\n"
+        "%neg       = OpFNegate %f32 %inval\n"
+        "%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+        "             OpStore %outloc %neg\n"
+        "             OpReturn\n"
+        "             OpFunctionEnd\n");
 
     cases.push_back(CaseParameter("bool", "%bool"));
     cases.push_back(CaseParameter("sint32", "%i32"));
@@ -7366,8 +7368,19 @@ tcu::TestCaseGroup *createOpUndefGroup(tcu::TestContext &testCtx)
         map<string, string> specializations;
         ComputeShaderSpec spec;
 
-        specializations["TYPE"] = cases[caseNdx].param;
-        spec.assembly           = shaderTemplate.specialize(specializations);
+        // OpUndef with a pointer type requires the VariablePointers capability.
+        string capability = "";
+        string extension  = "";
+        if (strcmp(cases[caseNdx].name, "pointer") == 0)
+        {
+            spec.extensions.push_back("VK_KHR_variable_pointers");
+            capability = "OpCapability VariablePointers\n";
+            extension  = "OpExtension \"SPV_KHR_variable_pointers\"\n";
+        }
+        specializations["CAPABILITY"] = capability;
+        specializations["EXTENSION"]  = extension;
+        specializations["TYPE"]       = cases[caseNdx].param;
+        spec.assembly                 = shaderTemplate.specialize(specializations);
         spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
         spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
         spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -21291,6 +21304,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(createOpSDotAccSatKHRComputeGroup(testCtx));
     computeTests->addChild(createOpUDotAccSatKHRComputeGroup(testCtx));
     computeTests->addChild(createOpSUDotAccSatKHRComputeGroup(testCtx));
+    computeTests->addChild(createOpFmaComputeGroup(testCtx));
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createConvertComputeTests(testCtx, "OpSConvert", "sconvert"));
     computeTests->addChild(createConvertComputeTests(testCtx, "OpUConvert", "uconvert"));
@@ -21353,6 +21367,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     computeTests->addChild(create64bitCompareComputeGroup(testCtx));
 #ifndef CTS_USES_VULKANSC
     computeTests->addChild(createOpArrayLengthComputeGroup(testCtx));
+    computeTests->addChild(createUntypedPointersTestGroup(testCtx));
     computeTests->addChild(createComputeShaderDerivativesTests(testCtx));
 #endif // CTS_USES_VULKANSC
     computeTests->addChild(createPhysicalStorageBufferTestGroup(testCtx));
@@ -21369,6 +21384,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
 
         computeTests->addChild(maintenance8ComputeTests.release());
     }
+    computeTests->addChild(createLdexpGroup(testCtx));
 #endif // CTS_USES_VULKANSC
 
     graphicsTests->addChild(createCrossStageInterfaceTests(testCtx));
@@ -21464,6 +21480,7 @@ tcu::TestCaseGroup *createInstructionTests(tcu::TestContext &testCtx)
     instructionTests->addChild(createQueryGroup(testCtx));
     instructionTests->addChild(createTrinaryMinMaxGroup(testCtx));
     instructionTests->addChild(createTerminateInvocationGroup(testCtx));
+    instructionTests->addChild(createMaint9VectorizationTests(testCtx));
 
     return instructionTests.release();
 }

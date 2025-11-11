@@ -34,7 +34,7 @@ namespace vkt
 namespace FragmentShadingRate
 {
 
-void createFragmentShadingRateMiscTests(tcu::TestCaseGroup *group);
+void createFragmentShadingRateMiscTests(tcu::TestCaseGroup *group, SharedGroupParams groupParams);
 
 } // namespace FragmentShadingRate
 } // namespace vkt

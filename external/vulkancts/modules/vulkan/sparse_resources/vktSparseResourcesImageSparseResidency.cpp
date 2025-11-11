@@ -363,19 +363,21 @@ tcu::TestStatus ImageSparseResidencyInstance::iterate(void)
         const VkPhysicalDeviceProperties physicalDeviceProperties =
             getPhysicalDeviceProperties(instance, physicalDevice);
 
-        imageCreateInfo.sType         = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
-        imageCreateInfo.pNext         = nullptr;
-        imageCreateInfo.flags         = VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
-        imageCreateInfo.imageType     = mapImageType(m_imageType);
-        imageCreateInfo.format        = m_format;
-        imageCreateInfo.extent        = makeExtent3D(getLayerSize(m_imageType, m_imageSize));
-        imageCreateInfo.mipLevels     = 1u;
-        imageCreateInfo.arrayLayers   = getNumLayers(m_imageType, m_imageSize);
-        imageCreateInfo.samples       = VK_SAMPLE_COUNT_1_BIT;
-        imageCreateInfo.tiling        = VK_IMAGE_TILING_OPTIMAL;
-        imageCreateInfo.initialLayout = VK_IMAGE_LAYOUT_UNDEFINED;
-        imageCreateInfo.usage         = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
-        imageCreateInfo.sharingMode   = VK_SHARING_MODE_EXCLUSIVE;
+        imageCreateInfo.sType = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
+        imageCreateInfo.pNext = nullptr;
+        imageCreateInfo.flags = VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT | VK_IMAGE_CREATE_SPARSE_BINDING_BIT;
+        if (formatDescription.numPlanes > 1)
+            imageCreateInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        imageCreateInfo.imageType             = mapImageType(m_imageType);
+        imageCreateInfo.format                = m_format;
+        imageCreateInfo.extent                = makeExtent3D(getLayerSize(m_imageType, m_imageSize));
+        imageCreateInfo.mipLevels             = 1u;
+        imageCreateInfo.arrayLayers           = getNumLayers(m_imageType, m_imageSize);
+        imageCreateInfo.samples               = VK_SAMPLE_COUNT_1_BIT;
+        imageCreateInfo.tiling                = VK_IMAGE_TILING_OPTIMAL;
+        imageCreateInfo.initialLayout         = VK_IMAGE_LAYOUT_UNDEFINED;
+        imageCreateInfo.usage                 = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT;
+        imageCreateInfo.sharingMode           = VK_SHARING_MODE_EXCLUSIVE;
         imageCreateInfo.queueFamilyIndexCount = 0u;
         imageCreateInfo.pQueueFamilyIndices   = nullptr;
 
@@ -1614,90 +1616,95 @@ tcu::TestStatus ImageMutableSparseTestInstance::iterate(void)
             getSparseAspectRequirementsIndex(sparseMemoryRequirements, VK_IMAGE_ASPECT_METADATA_BIT);
 
         // Allocate left half of the image
-        const uint32_t mipLevelIdx      = 0u;
         const tcu::UVec3 numSparseBinds = alignedDivide(imageExt, imageGranularity);
         {
             for (uint32_t layerNdx = 0; layerNdx < imageCreateInfo.arrayLayers; ++layerNdx)
             {
-                const tcu::UVec3 lastBlockExtent =
-                    tcu::UVec3(imageExt.width % imageGranularity.width ? imageExt.width % imageGranularity.width :
-                                                                         imageGranularity.width,
-                               imageExt.height % imageGranularity.height ? imageExt.height % imageGranularity.height :
-                                                                           imageGranularity.height,
-                               imageExt.depth % imageGranularity.depth ? imageExt.depth % imageGranularity.depth :
-                                                                         imageGranularity.depth);
-
-                const VkImageSubresource subresource = {VK_IMAGE_ASPECT_COLOR_BIT, mipLevelIdx, layerNdx};
-
-                if (!(aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT))
+                for (uint32_t mipLevelNdx = 0; (mipLevelNdx < aspectRequirements.imageMipTailFirstLod) &&
+                                               (mipLevelNdx < imageCreateInfo.mipLevels);
+                     ++mipLevelNdx)
                 {
-                    for (uint32_t z = 0; z < numSparseBinds.z(); ++z)
+                    const tcu::UVec3 lastBlockExtent = tcu::UVec3(
+                        imageExt.width % imageGranularity.width ? imageExt.width % imageGranularity.width :
+                                                                  imageGranularity.width,
+                        imageExt.height % imageGranularity.height ? imageExt.height % imageGranularity.height :
+                                                                    imageGranularity.height,
+                        imageExt.depth % imageGranularity.depth ? imageExt.depth % imageGranularity.depth :
+                                                                  imageGranularity.depth);
+
+                    const VkImageSubresource subresource = {VK_IMAGE_ASPECT_COLOR_BIT, mipLevelNdx, layerNdx};
+
+                    // imageResidencyMemoryBinds
                     {
-                        for (uint32_t y = 0; y < numSparseBinds.y(); ++y)
+                        for (uint32_t z = 0; z < numSparseBinds.z(); ++z)
                         {
-                            for (uint32_t x = 0; x < numSparseBinds.x(); ++x)
+                            for (uint32_t y = 0; y < numSparseBinds.y(); ++y)
                             {
-                                VkOffset3D offset;
-                                offset.x = x * imageGranularity.width;
-                                offset.y = y * imageGranularity.height;
-                                offset.z = z * imageGranularity.depth;
+                                for (uint32_t x = 0; x < numSparseBinds.x(); ++x)
+                                {
+                                    VkOffset3D offset;
+                                    offset.x = x * imageGranularity.width;
+                                    offset.y = y * imageGranularity.height;
+                                    offset.z = z * imageGranularity.depth;
 
-                                VkExtent3D extent;
-                                extent.width =
-                                    (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : imageGranularity.width;
-                                extent.height =
-                                    (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
-                                extent.depth =
-                                    (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
+                                    VkExtent3D extent;
+                                    extent.width =
+                                        (x == numSparseBinds.x() - 1) ? lastBlockExtent.x() : imageGranularity.width;
+                                    extent.height =
+                                        (y == numSparseBinds.y() - 1) ? lastBlockExtent.y() : imageGranularity.height;
+                                    extent.depth =
+                                        (z == numSparseBinds.z() - 1) ? lastBlockExtent.z() : imageGranularity.depth;
 
-                                const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(
-                                    deviceInterface, getDevice(), imageMemoryRequirements.alignment, memoryType,
-                                    subresource, offset, extent);
+                                    const VkSparseImageMemoryBind imageMemoryBind = makeSparseImageMemoryBind(
+                                        deviceInterface, getDevice(), imageMemoryRequirements.alignment, memoryType,
+                                        subresource, offset, extent);
 
-                                deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(
-                                    check<VkDeviceMemory>(imageMemoryBind.memory),
-                                    Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
+                                    deviceMemUniquePtrVec.push_back(makeVkSharedPtr(Move<VkDeviceMemory>(
+                                        check<VkDeviceMemory>(imageMemoryBind.memory),
+                                        Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
-                                imageResidencyMemoryBinds.push_back(imageMemoryBind);
+                                    imageResidencyMemoryBinds.push_back(imageMemoryBind);
+                                }
                             }
                         }
                     }
+                }
 
-                    // Per-layer miptail allocation if per-layer maiptail
-                    if (aspectRequirements.imageMipTailFirstLod < imageCreateInfo.mipLevels)
+                // Per-layer miptail allocation if per-layer maiptail
+                if (!(aspectRequirements.formatProperties.flags & VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT) &&
+                    aspectRequirements.imageMipTailFirstLod < imageCreateInfo.mipLevels)
+                {
+                    const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(
+                        deviceInterface, getDevice(), aspectRequirements.imageMipTailSize, memoryType,
+                        aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride);
+
+                    deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
+                        Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory),
+                                             Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
+
+                    imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
+                }
+
+                // Per-layer metadata allocation if per-layer maiptail
+                if (metadataAspectIndex != NO_MATCH_FOUND)
+                {
+                    const VkSparseImageMemoryRequirements metadataAspectRequirements =
+                        sparseMemoryRequirements[metadataAspectIndex];
+
+                    if (!(metadataAspectRequirements.formatProperties.flags &
+                          VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT))
                     {
                         const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(
-                            deviceInterface, getDevice(), aspectRequirements.imageMipTailSize, memoryType,
-                            aspectRequirements.imageMipTailOffset + layerNdx * aspectRequirements.imageMipTailStride);
+                            deviceInterface, getDevice(), metadataAspectRequirements.imageMipTailSize, memoryType,
+                            metadataAspectRequirements.imageMipTailOffset +
+                                layerNdx * metadataAspectRequirements.imageMipTailStride,
+                            VK_SPARSE_MEMORY_BIND_METADATA_BIT);
 
                         deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
                             Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory),
                                                  Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
 
                         imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
-                    }
-
-                    // Per-layer metadata allocation if per-layer maiptail
-                    if (metadataAspectIndex != NO_MATCH_FOUND)
-                    {
-                        const VkSparseImageMemoryRequirements metadataAspectRequirements =
-                            sparseMemoryRequirements[metadataAspectIndex];
-
-                        if (!(metadataAspectRequirements.formatProperties.flags &
-                              VK_SPARSE_IMAGE_FORMAT_SINGLE_MIPTAIL_BIT))
-                        {
-                            const VkSparseMemoryBind imageMipTailMemoryBind = makeSparseMemoryBind(
-                                deviceInterface, getDevice(), metadataAspectRequirements.imageMipTailSize, memoryType,
-                                metadataAspectRequirements.imageMipTailOffset +
-                                    layerNdx * metadataAspectRequirements.imageMipTailStride,
-                                VK_SPARSE_MEMORY_BIND_METADATA_BIT);
-
-                            deviceMemUniquePtrVec.push_back(makeVkSharedPtr(
-                                Move<VkDeviceMemory>(check<VkDeviceMemory>(imageMipTailMemoryBind.memory),
-                                                     Deleter<VkDeviceMemory>(deviceInterface, getDevice(), nullptr))));
-
-                            imageMipTailMemoryBinds.push_back(imageMipTailMemoryBind);
-                        }
                     }
                 }
             }

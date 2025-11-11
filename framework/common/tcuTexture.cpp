@@ -529,6 +529,9 @@ void floatToChannel(uint8_t *dst, float src, TextureFormat::ChannelType type)
     case TextureFormat::SIGNED_INT32:
         *((int32_t *)dst) = convertSatRte<int32_t>(src);
         break;
+    case TextureFormat::SIGNED_INT64:
+        *((int64_t *)dst) = convertSatRte<int32_t>(src); // Note we convert as 32-bits, but store as 64.
+        break;
     case TextureFormat::UNSIGNED_INT8:
         *((uint8_t *)dst) = convertSatRte<uint8_t>(src);
         break;
@@ -540,6 +543,9 @@ void floatToChannel(uint8_t *dst, float src, TextureFormat::ChannelType type)
         break;
     case TextureFormat::UNSIGNED_INT32:
         *((uint32_t *)dst) = convertSatRte<uint32_t>(src);
+        break;
+    case TextureFormat::UNSIGNED_INT64:
+        *((uint64_t *)dst) = convertSatRte<uint32_t>(src); // Note we convert as 32-bits, but store as 64.
         break;
     case TextureFormat::HALF_FLOAT:
         *((deFloat16 *)dst) = deFloat32To16(src);
@@ -768,24 +774,6 @@ inline uint32_t intToChannel(int32_t src, int bits)
     return (uint32_t)de::clamp(src, minVal, maxVal) & mask;
 }
 
-tcu::Vec4 unpackRGB999E5(uint32_t color)
-{
-    const int mBits = 9;
-    const int eBias = 15;
-
-    uint32_t exp = color >> 27;
-    uint32_t bs  = (color >> 18) & ((1 << 9) - 1);
-    uint32_t gs  = (color >> 9) & ((1 << 9) - 1);
-    uint32_t rs  = color & ((1 << 9) - 1);
-
-    float e = deFloatPow(2.0f, (float)((int)exp - eBias - mBits));
-    float r = (float)rs * e;
-    float g = (float)gs * e;
-    float b = (float)bs * e;
-
-    return tcu::Vec4(r, g, b, 1.0f);
-}
-
 bool isColorOrder(TextureFormat::ChannelOrder order)
 {
     DE_STATIC_ASSERT(TextureFormat::CHANNELORDER_LAST == 22);
@@ -824,6 +812,24 @@ float getImageViewMinLod(ImageViewMinLod &l)
 }
 
 } // namespace
+
+tcu::Vec4 unpackRGB999E5(uint32_t color)
+{
+    const int mBits = 9;
+    const int eBias = 15;
+
+    uint32_t exp = color >> 27;
+    uint32_t bs  = (color >> 18) & ((1 << 9) - 1);
+    uint32_t gs  = (color >> 9) & ((1 << 9) - 1);
+    uint32_t rs  = color & ((1 << 9) - 1);
+
+    float e = deFloatPow(2.0f, (float)((int)exp - eBias - mBits));
+    float r = (float)rs * e;
+    float g = (float)gs * e;
+    float b = (float)bs * e;
+
+    return tcu::Vec4(r, g, b, 1.0f);
+}
 
 bool isValid(TextureFormat format)
 {
@@ -1531,8 +1537,11 @@ Vec4 ConstPixelBufferAccess::getPixel(int x, int y, int z) const
                          TextureFormat::RGBA)
             .cast<float>();
     case TextureFormat::SSCALED_INT_1010102_REV:
-    case TextureFormat::SIGNED_INT_1010102_REV:
         return swizzleGe(UVec4(SI32(0, 10), SI32(10, 10), SI32(20, 10), SI32(30, 2)), m_format.order,
+                         TextureFormat::RGBA)
+            .cast<float>();
+    case TextureFormat::SIGNED_INT_1010102_REV:
+        return swizzleGe(IVec4(SI32(0, 10), SI32(10, 10), SI32(20, 10), SI32(30, 2)), m_format.order,
                          TextureFormat::RGBA)
             .cast<float>();
     case TextureFormat::UNSIGNED_INT_999_E5_REV:
@@ -1813,6 +1822,8 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64(int x, int y, int z) const
     case TextureFormat::UNSIGNED_INT_1010102_REV:
         return swizzleGe(U64Vec4(U32(0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), m_format.order,
                          TextureFormat::RGBA);
+    case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+        return swizzleGe(U64Vec4(U32(0, 11), U32(11, 11), U32(22, 10), 1), m_format.order, TextureFormat::RGB);
     case TextureFormat::SNORM_INT_1010102_REV:   // Fall-through
     case TextureFormat::SSCALED_INT_1010102_REV: // Fall-through
     case TextureFormat::SIGNED_INT_1010102_REV:
@@ -1820,7 +1831,9 @@ U64Vec4 ConstPixelBufferAccess::getPixelBitsAsUint64(int x, int y, int z) const
                          TextureFormat::RGBA);
     case TextureFormat::UNORM_SHORT_1555:
         return swizzleGe(U64Vec4(U16(15, 1), U16(10, 5), U16(5, 5), U16(0, 5)), m_format.order, TextureFormat::RGBA);
-
+    case TextureFormat::UNSIGNED_INT_999_E5_REV:
+        // shared exponent in bits 27..31
+        return swizzleGe(U64Vec4(U32(0, 9), U32(9, 9), U32(18, 9), 1), m_format.order, TextureFormat::RGB);
     default:
         break; // To generic path.
     }

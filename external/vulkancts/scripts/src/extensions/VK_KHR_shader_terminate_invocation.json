@@ -11,6 +11,10 @@
                 ],
                 "requirements": [
                     "VK_KHR_shader_terminate_invocation"
+                ],
+                "mandatory_variant": [
+                    "vulkan",
+                    "vulkansc"
                 ]
             }
         ]

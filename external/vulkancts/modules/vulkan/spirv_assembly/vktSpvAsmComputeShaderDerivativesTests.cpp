@@ -2878,7 +2878,7 @@ void ComputeShaderDerivativeCase::checkSupport(Context &context) const
     // For subgroup operations
     if ((m_params.testType == TestType::VERIFY_NDX) || (m_params.testType == TestType::QUAD_OPERATIONS))
     {
-        if (context.getUsedApiVersion() < VK_API_VERSION_1_1)
+        if (context.getEquivalentApiVersion() < VK_API_VERSION_1_1)
             TCU_THROW(NotSupportedError, "Profile not supported");
 
         const VkPhysicalDeviceSubgroupProperties &subgroupProps = context.getSubgroupProperties();

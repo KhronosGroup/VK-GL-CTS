@@ -25,6 +25,7 @@
 #include "vktMeshShaderMiscTests.hpp"
 #include "vktMeshShaderUtil.hpp"
 #include "vktTestCase.hpp"
+#include "vktTestCaseUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
@@ -123,6 +124,11 @@ struct MiscTestParams
         if (needsTaskShader())
             return taskCount.get();
         return meshCount;
+    }
+
+    bool taskOnly() const
+    {
+        return (needsTaskShader() && meshCount == tcu::UVec3(0u, 0u, 0u));
     }
 };
 
@@ -270,7 +276,9 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
     const auto imageFormat = getOutputFormat();
     const auto tcuFormat   = mapVkFormat(imageFormat);
     const auto imageExtent = makeExtent3D(m_params->width, m_params->height, 1u);
-    const auto imageUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto imageUsage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT);
+    const bool taskOnly = m_params->taskOnly();
 
     const VkImageCreateInfo colorBufferInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
@@ -306,8 +314,36 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
     auto &verificationBufferAlloc = verificationBuffer.getAllocation();
     void *verificationBufferData  = verificationBufferAlloc.getHostPtr();
 
+    // Descriptor set layout.
+    Move<VkDescriptorSetLayout> setLayout;
+    if (taskOnly)
+    {
+        DescriptorSetLayoutBuilder setLayoutBuilder;
+        setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_TASK_BIT_EXT);
+        setLayout = setLayoutBuilder.build(vkd, device);
+    }
+
+    // Create and update descriptor set.
+    Move<VkDescriptorPool> descriptorPool;
+    Move<VkDescriptorSet> descriptorSet;
+
+    if (taskOnly)
+    {
+        DescriptorPoolBuilder descriptorPoolBuilder;
+        descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
+        descriptorPool =
+            descriptorPoolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+        descriptorSet = makeDescriptorSet(vkd, device, descriptorPool.get(), setLayout.get());
+
+        DescriptorSetUpdateBuilder updateBuilder;
+        const auto storageImageInfo = makeDescriptorImageInfo(VK_NULL_HANDLE, colorView.get(), VK_IMAGE_LAYOUT_GENERAL);
+        updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                                  VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageInfo);
+        updateBuilder.update(vkd, device);
+    }
+
     // Pipeline layout.
-    const auto pipelineLayout = makePipelineLayout(vkd, device);
+    const auto pipelineLayout = makePipelineLayout(vkd, device, setLayout.get());
 
     // Shader modules.
     const auto &binaries = m_context.getBinaryCollection();
@@ -321,11 +357,12 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
         taskShader = createShaderModule(vkd, device, binaries.get("task"));
 
     // Render pass.
-    const auto renderPass = makeRenderPass(vkd, device, imageFormat);
+    const auto renderPass = makeRenderPass(vkd, device, (taskOnly ? VK_FORMAT_UNDEFINED : imageFormat));
 
     // Framebuffer.
     const auto framebuffer =
-        makeFramebuffer(vkd, device, renderPass.get(), colorView.get(), imageExtent.width, imageExtent.height);
+        makeFramebuffer(vkd, device, *renderPass, (taskOnly ? 0u : 1u), (taskOnly ? nullptr : &colorView.get()),
+                        imageExtent.width, imageExtent.height);
 
     // Viewport and scissor.
     const std::vector<VkViewport> viewports(1u, makeViewport(imageExtent));
@@ -370,25 +407,43 @@ tcu::TestStatus MeshShaderMiscInstance::iterate()
     // Run pipeline.
     const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 0.0f);
     const auto drawCount = m_params->drawCount();
+    if (taskOnly)
+    {
+        // We will use the image as a storage image and we need to move it to the general layout.
+        const auto srcStage  = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        const auto dstStage  = VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT;
+        const auto srcAccess = 0u;
+        const auto dstAccess = VK_ACCESS_SHADER_WRITE_BIT;
+        const auto barrier   = makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                      VK_IMAGE_LAYOUT_GENERAL, colorImage.get(), colorSRR);
+        cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, srcStage, dstStage, &barrier);
+    }
     beginRenderPass(vkd, cmdBuffer, renderPass.get(), framebuffer.get(), scissors.at(0u), clearColor);
     vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipeline.get());
+    if (taskOnly)
+    {
+        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+    }
     vkd.cmdDrawMeshTasksEXT(cmdBuffer, drawCount.x(), drawCount.y(), drawCount.z());
     endRenderPass(vkd, cmdBuffer);
 
     // Copy color buffer to verification buffer.
-    const auto colorAccess   = (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT);
+    const auto colorAccess =
+        (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
     const auto transferRead  = VK_ACCESS_TRANSFER_READ_BIT;
     const auto transferWrite = VK_ACCESS_TRANSFER_WRITE_BIT;
     const auto hostRead      = VK_ACCESS_HOST_READ_BIT;
 
-    const auto preCopyBarrier =
-        makeImageMemoryBarrier(colorAccess, transferRead, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
-                               VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
+    const auto preCopyLayout  = (taskOnly ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+    const auto preCopyBarrier = makeImageMemoryBarrier(
+        colorAccess, transferRead, preCopyLayout, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, colorImage.get(), colorSRR);
     const auto postCopyBarrier = makeMemoryBarrier(transferWrite, hostRead);
     const auto copyRegion      = makeBufferImageCopy(imageExtent, colorSRL);
 
-    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
-                           0u, nullptr, 0u, nullptr, 1u, &preCopyBarrier);
+    const auto writeStages = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_TASK_SHADER_BIT_EXT);
+    vkd.cmdPipelineBarrier(cmdBuffer, writeStages, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                           &preCopyBarrier);
     vkd.cmdCopyImageToBuffer(cmdBuffer, colorImage.get(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
                              verificationBuffer.get(), 1u, &copyRegion);
     vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, 0u, 1u,
@@ -1213,6 +1268,7 @@ void LargeWorkGroupCase::initPrograms(vk::SourceCollections &programCollection) 
     const auto totalInvocations =
         params->localInvocations.x() * params->localInvocations.y() * params->localInvocations.z();
     const auto useTaskShader  = params->needsTaskShader();
+    const bool taskOnly       = params->taskOnly();
     uint32_t taskMultiplier   = 1u;
     const auto &meshCount     = params->meshCount;
     const auto meshMultiplier = meshCount.x() * meshCount.y() * meshCount.z();
@@ -1251,17 +1307,23 @@ void LargeWorkGroupCase::initPrograms(vk::SourceCollections &programCollection) 
              << "\n"
              << localSizeStr << "\n"
              << taskDataStr << "\n"
+             << (taskOnly ? "layout(binding = 0, rgba8) writeonly uniform highp image2D u_dstImg;\n" : "")
              << "void main () {\n"
              << "    const uint workGroupIndex = gl_NumWorkGroups.x * gl_NumWorkGroups.y * gl_WorkGroupID.z + "
                 "gl_NumWorkGroups.x * gl_WorkGroupID.y + gl_WorkGroupID.x;\n"
-             << "    td.parentTask[gl_LocalInvocationIndex] = workGroupIndex;\n"
-             << "    EmitMeshTasksEXT(" << meshCount.x() << ", " << meshCount.y() << ", " << meshCount.z() << ");\n"
+             << "    td.parentTask[gl_LocalInvocationIndex] = workGroupIndex;\n";
+        if (taskOnly)
+        {
+            task << "    imageStore(u_dstImg, ivec2(mod(workGroupIndex, " << params->width << "u), workGroupIndex / "
+                 << params->width << "u), vec4(0.0, 0.0, 1.0, 1.0));\n ";
+        }
+        task << "   EmitMeshTasksEXT(" << meshCount.x() << ", " << meshCount.y() << ", " << meshCount.z() << ");\n"
              << "}\n";
         programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << buildOptions;
     }
 
     // Needed for the code below to work.
-    DE_ASSERT(params->width * params->height == taskMultiplier * meshMultiplier * totalInvocations);
+    DE_ASSERT(params->width * params->height == taskMultiplier * std::max(meshMultiplier, 1u) * totalInvocations);
     DE_UNREF(taskMultiplier); // For release builds.
 
     // Emit one point per framebuffer pixel. The number of jobs (params->localInvocations in each mesh shader work group, multiplied
@@ -1683,13 +1745,15 @@ enum class MemoryBarrierType
 struct MemoryBarrierParams : public MiscTestParams
 {
     MemoryBarrierParams(const tcu::Maybe<tcu::UVec3> &taskCount_, const tcu::UVec3 &meshCount_, uint32_t width_,
-                        uint32_t height_, MemoryBarrierType memBarrierType_)
+                        uint32_t height_, MemoryBarrierType memBarrierType_, bool usePrimitiveTypePayload_)
         : MiscTestParams(taskCount_, meshCount_, width_, height_)
         , memBarrierType(memBarrierType_)
+        , usePrimitiveTypePayload(usePrimitiveTypePayload_)
     {
     }
 
     MemoryBarrierType memBarrierType;
+    bool usePrimitiveTypePayload = false;
 
     std::string glslFunc() const
     {
@@ -1792,10 +1856,14 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
 
     const bool taskShader = params->needsTaskShader();
 
-    const std::string taskDataDecl = "struct TaskData { float blue; }; taskPayloadSharedEXT TaskData td;\n\n";
+    const std::string taskDataDecl = params->usePrimitiveTypePayload ?
+                                         "taskPayloadSharedEXT float blue;\n\n" :
+                                         "struct TaskData { float blue; }; taskPayloadSharedEXT TaskData td;\n\n";
     const auto barrierFunc         = params->glslFunc();
 
-    const std::string taskAction = "td.blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n";
+    const std::string taskAction = params->usePrimitiveTypePayload ?
+                                       "blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n" :
+                                       "td.blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n";
     const std::string meshAction = "vertPrim = uvec2(1u, 1u);\n";
     const std::string action     = (taskShader ? taskAction : meshAction);
 
@@ -1859,7 +1927,7 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
         replacements["LOCAL_SIZE"] = "1";
         replacements["BODY"]       = meshAction;
         replacements["GLOBALS"]    = taskDataDecl;
-        replacements["BLUE"]       = "td.blue";
+        replacements["BLUE"]       = params->usePrimitiveTypePayload ? "blue" : "td.blue";
 
         const auto meshStr = meshTemplate.specialize(replacements);
 
@@ -4320,7 +4388,7 @@ void FirstInvocationCase::checkSupport(Context &context) const
 {
     MeshShaderMiscCase::checkSupport(context);
 
-    if (context.getUsedApiVersion() < VK_MAKE_VERSION(1, 1, 0))
+    if (context.getEquivalentApiVersion() < VK_API_VERSION_1_1)
         TCU_THROW(NotSupportedError, "Vulkan API version >= 1.1 required");
 
     const auto &subgroupProperties = context.getSubgroupProperties();
@@ -5642,6 +5710,688 @@ tcu::TestStatus RebindSetsInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+// Test that emits multiple constant outputs, one for each vertex, in the same mesh shader invocation.
+// The outputs should be interpolated in the result instead of being passed as flat to the frag shader.
+class MultipleOutputsVertsCase : public MeshShaderMiscCase
+{
+public:
+    MultipleOutputsVertsCase(tcu::TestContext &testCtx, const std::string &name, ParamsPtr params)
+        : MeshShaderMiscCase(testCtx, name, std::move(params))
+    {
+        const auto drawCount = m_params->drawCount();
+        DE_ASSERT(drawCount.x() == 1u && drawCount.y() == 1u && drawCount.z() == 1u);
+        DE_UNREF(drawCount); // For release builds.
+    }
+    virtual ~MultipleOutputsVertsCase(void) = default;
+
+    TestInstance *createInstance(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+};
+
+class MultipleOutputsVertsInstance : public MeshShaderMiscInstance
+{
+public:
+    MultipleOutputsVertsInstance(Context &context, const MiscTestParams *params)
+        : MeshShaderMiscInstance(context, params)
+    {
+    }
+
+    void generateReferenceLevel() override;
+};
+
+TestInstance *MultipleOutputsVertsCase::createInstance(Context &context) const
+{
+    return new MultipleOutputsVertsInstance(context, m_params.get());
+}
+
+void MultipleOutputsVertsCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : require\n"
+         << "\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (max_vertices=3, max_primitives=1) out;\n"
+         << "layout (triangles) out;\n"
+         << "\n"
+         << "layout (location=0) out vec4 color[];\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3, 1);\n"
+         << "\n"
+         << "    color[0] = vec4(0.0, 0.0, 0.0, 1.0);\n"
+         << "    color[1] = vec4(0.0, 0.0, 1.0, 1.0);\n"
+         << "    color[2] = vec4(1.0, 0.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_MeshVerticesEXT[0].gl_Position = vec4(-1.0, -1.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[1].gl_Position = vec4(-1.0,  3.0, 0.0, 1.0);\n"
+         << "    gl_MeshVerticesEXT[2].gl_Position = vec4( 3.0, -1.0, 0.0, 1.0);\n"
+         << "\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+void MultipleOutputsVertsInstance::generateReferenceLevel()
+{
+    const tcu::UVec3 uExtent(m_params->width, m_params->height, 1u);
+    const auto extent    = uExtent.asInt();
+    const auto fExtent   = uExtent.asFloat();
+    const auto tcuFormat = mapVkFormat(getOutputFormat());
+
+    m_referenceLevel.reset(new tcu::TextureLevel(tcuFormat, extent.x(), extent.y(), extent.z()));
+    tcu::PixelBufferAccess reference = m_referenceLevel->getAccess();
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            // We halve the red and green values because value 1.0 is at coordinate 3.0 for both.
+            const float red  = (static_cast<float>(x) + 0.5f) / fExtent.x() * 0.5f;
+            const float blue = (static_cast<float>(y) + 0.5f) / fExtent.y() * 0.5f;
+            reference.setPixel(tcu::Vec4(red, 0.0f, blue, 1.0f), x, y);
+        }
+}
+
+// The goal here is to make sure the compiler doesn't choke and also that it uses the right EmitMeshTasksEXT call.
+// We will launch a single workgroup and the task shader should only dispatch one mesh workgroup. That workgroup will
+// draw only on half the framebuffer. If the workgroup id of the task shader is non-zero (it should not be), the task
+// shader would dispatch 2 mesh workgroups that will draw over the full framebuffer instead.
+struct EmitInControlFlowParams
+{
+    bool wrongEmitLast; // Which branch of the control flow to put the wrong emit on.
+};
+
+class EmitInControlFlowInstance : public vkt::TestInstance
+{
+public:
+    EmitInControlFlowInstance(Context &context) : vkt::TestInstance(context)
+    {
+    }
+    virtual ~EmitInControlFlowInstance(void)
+    {
+    }
+
+    tcu::TestStatus iterate(void) override;
+};
+
+class EmitInControlFlowCase : public vkt::TestCase
+{
+public:
+    EmitInControlFlowCase(tcu::TestContext &testCtx, const std::string &name, const EmitInControlFlowParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~EmitInControlFlowCase(void) = default;
+
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override
+    {
+        checkTaskMeshShaderSupportEXT(context, true, true);
+    }
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new EmitInControlFlowInstance(context);
+    }
+
+protected:
+    const EmitInControlFlowParams m_params;
+};
+
+void EmitInControlFlowCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const auto buildOptions = getMinMeshEXTBuildOptions(programCollection.usedVulkanVersion);
+
+    std::ostringstream task;
+    task << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "\n"
+         << "layout (local_size_x=1) in;\n"
+         << "\n"
+         << "void main ()\n"
+         << "{\n";
+
+    if (m_params.wrongEmitLast)
+    {
+        task << "    if (gl_WorkGroupID.x == 0 && gl_WorkGroupID.y == 0 && gl_WorkGroupID.z == 0) {\n"
+             << "        EmitMeshTasksEXT(1u, 1u, 1u);\n"
+             << "    } else {\n"
+             << "        EmitMeshTasksEXT(2u, 1u, 1u);\n"
+             << "    }\n";
+    }
+    else
+    {
+        task << "    if (gl_WorkGroupID.x != 0 || gl_WorkGroupID.y != 0 || gl_WorkGroupID.z != 0) {\n"
+             << "        EmitMeshTasksEXT(2u, 1u, 1u);\n"
+             << "    } else {\n"
+             << "        EmitMeshTasksEXT(1u, 1u, 1u);\n"
+             << "    }\n";
+    }
+
+    task << "}\n";
+    programCollection.glslSources.add("task") << glu::TaskSource(task.str()) << buildOptions;
+
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : enable\n"
+         << "\n"
+         << "layout(local_size_x=1) in;\n"
+         << "layout(triangles) out;\n"
+         << "layout(max_vertices=3, max_primitives=1) out;\n"
+         << "\n"
+         << "void main ()\n"
+         << "{\n"
+         << "    SetMeshOutputsEXT(3u, 1u);\n"
+         << "    if (gl_WorkGroupID.x != 0) {\n"
+         << "        // Cover the right side of the framebuffer\n"
+         << "        gl_MeshVerticesEXT[0].gl_Position = vec4( 0.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[1].gl_Position = vec4( 0.0f,  3.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[2].gl_Position = vec4( 3.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "    } else {\n"
+         << "        // Cover the left side of the framebuffer\n"
+         << "        gl_MeshVerticesEXT[0].gl_Position = vec4( 0.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[1].gl_Position = vec4(-3.0f, -1.0f, 0.0f, 1.0f);\n"
+         << "        gl_MeshVerticesEXT[2].gl_Position = vec4( 0.0f,  3.0f, 0.0f, 1.0f);\n"
+         << "    }\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[0] = uvec3(0, 1, 2);\n"
+         << "}\n";
+    ;
+    programCollection.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) { outColor = vec4(0.0, 0.0, 1.0, 1.0); }\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus EmitInControlFlowInstance::iterate(void)
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 fbExtent(2, 1, 1);
+    const auto extentVk  = makeExtent3D(fbExtent);
+    const auto imgFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imgUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const tcu::Vec4 geomColor(0.0f, 0.0f, 1.0f, 1.0f);  // Must match frag color above.
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f); // Must be different from the frag shader color above.
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, imgFormat, imgUsage, VK_IMAGE_TYPE_2D);
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto taskShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("task"));
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device);
+    const auto renderPass     = makeRenderPass(ctx.vkd, ctx.device, imgFormat);
+    const auto framebuffer =
+        makeFramebuffer(ctx.vkd, ctx.device, *renderPass, colorBuffer.getImageView(), extentVk.width, extentVk.height);
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    const auto pipeline = makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *taskShader, *meshShader,
+                                               *fragShader, *renderPass, viewports, scissors);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), clearColor);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, 1u, 1u, 1u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(imgFormat);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    reference.setPixel(geomColor, 0, 0);
+    reference.setPixel(clearColor, 1, 0);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, fbExtent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f); // Expect exact results.
+    auto &log = m_context.getTestContext().getLog();
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void workGroupOrderingCheckSupport(Context &context)
+{
+    checkTaskMeshShaderSupportEXT(context, true, true);
+}
+
+// 256 task work groups.
+// 256 mesh work groups dispatched by each of them.
+// Each individual mesh work group draws over a whole 2x2 framebuffer multiple times.
+// Each individual mesh work group has 64 invocations, and each invocation draws a triangle over a single pixel.
+// Each of the 4 pixels ends up being drawn over 16 times (16*4=64).
+// Each task workgroup and mesh workgroup performs additional time-consuming work: more the lower the index is.
+// The goal is to attempt to delay earlier workgroups, making later work groups finish first.
+// Also, in each mesh WG, geometry is emitted in reverse order compared to invocation indices.
+void workGroupOrderingInitPrograms(vk::SourceCollections &dst)
+{
+    const auto buildOptions = getMinMeshEXTBuildOptions(dst.usedVulkanVersion);
+
+    const std::string payloadDecl = "struct GlobalIndices {\n"
+                                    "    uint values[256];\n"
+                                    "};\n"
+                                    "taskPayloadSharedEXT GlobalIndices globalIndices;\n";
+
+    const std::string pcDecl = "layout (push_constant, std430) uniform PushConstantBlock {\n"
+                               "    vec4 colorMultiplier;   // vec4(1.0, 1.0, 1.0, 1.0)\n"
+                               "    uint wgIndexMultiplier; // 1\n"
+                               "} pc;\n";
+
+    // The task shader passes down a global index to their children.
+    std::ostringstream task;
+    task << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : require\n"
+         << "\n"
+         << "layout(local_size_x=64, local_size_y=1, local_size_z=1) in;\n"
+         << "\n"
+         << payloadDecl << pcDecl << "\n"
+         << "void main() {\n"
+         << "    const uint totalTaskWGs = 256u; // Must match the vkCmdDrawMeshTasksEXT() call\n"
+         << "    const uint childMeshWGs = 256u; // Per task WG\n"
+         << "    const uint globalIndex = gl_WorkGroupID.x;\n"
+         << "    const uint wgLoad = totalTaskWGs - globalIndex; // More load the lower the WG index\n"
+         << "    const uint indicesPerInv = childMeshWGs / gl_WorkGroupSize.x;\n"
+         << "    for (uint i = 0u; i < indicesPerInv; ++i) {\n"
+         << "        const uint idx = gl_LocalInvocationIndex * indicesPerInv + i;\n"
+         << "        uint globalIndex = gl_WorkGroupID.x * childMeshWGs + idx;\n"
+         << "        for (uint i = 0u; i < wgLoad; ++i) {\n"
+         << "            globalIndex = globalIndex * pc.wgIndexMultiplier;\n"
+         << "        }\n"
+         << "        globalIndices.values[idx] = globalIndex;\n"
+         << "    }\n"
+         << "    EmitMeshTasksEXT(childMeshWGs, 1, 1);\n"
+         << "}\n";
+    dst.glslSources.add("task") << glu::TaskSource(task.str()) << buildOptions;
+
+    // The mesh shader reads the global workgroup index, calculates global triangle and vertex indices.
+    // Reads data from a geometry buffer, then generates 64 triangles with their colors to cover the framebuffer.
+    // It also does some no-op work with multiplications to try to make earlier WGs finish later, reversing the order.
+    std::ostringstream mesh;
+    mesh << "#version 460\n"
+         << "#extension GL_EXT_mesh_shader : require\n"
+         << "\n"
+         << "layout(local_size_x=64, local_size_y=1, local_size_z=1) in;\n"
+         << "layout(triangles, max_vertices=192, max_primitives=64) out;\n"
+         << "\n"
+         << payloadDecl << pcDecl << "\n"
+         << "struct PositionColor {\n"
+         << "    vec4 position;\n"
+         << "    vec4 color;\n"
+         << "};\n"
+         << "layout (set=0, binding=0, std430) readonly buffer BufferBlock {\n"
+         << "    PositionColor values[];\n"
+         << "} geomData;\n"
+         << "\n"
+         << "layout (location=0) out vec4 vertexColor[];\n"
+         << "\n"
+         << "void main() {\n"
+         << "    // invIndex is used so geometry is stored in reverse order compared to invocations\n"
+         << "    const uint invIndex = gl_WorkGroupSize.x - gl_LocalInvocationIndex - 1u;\n"
+         << "    const uint globalIndex = globalIndices.values[gl_WorkGroupID.x];\n"
+         << "    const uint globalTriangleIndex = globalIndex * gl_WorkGroupSize.x + invIndex;\n"
+         << "    const uint baseVtxIdx = invIndex * 3u;\n"
+         << "    const uint wgLoad = gl_NumWorkGroups.x - gl_WorkGroupID.x; // More load the lower the WG index\n"
+         << "    SetMeshOutputsEXT(192, 64);\n"
+         << "    for (uint i = 0u; i < 3u; ++i)\n"
+         << "    {\n"
+         << "        const uint globalVertexIndex = globalTriangleIndex * 3u + i;\n"
+         << "        const uint localVertexIndex = baseVtxIdx + i;\n"
+         << "        gl_MeshVerticesEXT[localVertexIndex].gl_Position = geomData.values[globalVertexIndex].position;\n"
+         << "        vec4 color = geomData.values[globalVertexIndex].color;\n"
+         << "        for (uint i = 0u; i < wgLoad; ++i) {\n"
+         << "            color = color * pc.colorMultiplier;\n"
+         << "        }\n"
+         << "        vertexColor[localVertexIndex] = color;\n"
+         << "    }\n"
+         << "    gl_PrimitiveTriangleIndicesEXT[invIndex] = uvec3(baseVtxIdx, baseVtxIdx + 1u, baseVtxIdx + 2u);\n"
+         << "}\n";
+    dst.glslSources.add("mesh") << glu::MeshSource(mesh.str()) << buildOptions;
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n" // Matches with vertexColor in the mesh shader.
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus workGroupOrderingRun(Context &context)
+{
+    const auto ctx        = context.getContextCommonData();
+    const auto meshWgSize = 64u;      // Must match the mesh shader.
+    const tcu::IVec3 extent(2, 2, 1); // As described above.
+    const auto extentVk    = makeExtent3D(extent);
+    const auto floatExtent = extent.asFloat();
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto colorSRR    = makeDefaultImageSubresourceRange();
+    const auto colorSRL    = makeDefaultImageSubresourceLayers();
+    const auto depthFormat = VK_FORMAT_D16_UNORM;
+    const auto depthUsage  = (VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto depthSRR    = makeImageSubresourceRange(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 1u, 0u, 1u);
+    const auto depthSRL    = makeImageSubresourceLayers(VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u);
+    const auto imageType   = VK_IMAGE_TYPE_2D;
+
+    // Color buffer.
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+
+    // Depth buffer.
+    const VkImageCreateInfo depthBufferInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        imageType,
+        depthFormat,
+        extentVk,
+        1u,
+        1u,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        depthUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+    ImageWithMemory depthBuffer(ctx.vkd, ctx.device, ctx.allocator, depthBufferInfo, MemoryRequirement::Any);
+    const auto depthView =
+        makeImageView(ctx.vkd, ctx.device, *depthBuffer, VK_IMAGE_VIEW_TYPE_2D, depthFormat, depthSRR);
+    const auto tcuDepthCopyFormat   = getDepthCopyFormat(depthFormat);
+    const auto depthVerifBufferSize = tcu::getPixelSize(tcuDepthCopyFormat) * extent.x() * extent.y() * extent.z();
+    const auto depthVerifBufferInfo = makeBufferCreateInfo(depthVerifBufferSize, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    BufferWithMemory depthVerifBuffer(ctx.vkd, ctx.device, ctx.allocator, depthVerifBufferInfo, HostIntent::R);
+
+    struct PositionColor
+    {
+        tcu::Vec4 position;
+        tcu::Vec4 color;
+    };
+
+    // Buffer with geometry data.
+    const auto verticesPerTriangle = 3u;
+    const auto taskWgCount         = 256u;
+    const auto meshWgPerTaskWg     = 256u;
+    const auto meshWgCount         = meshWgPerTaskWg * taskWgCount;
+    const auto triangleCount       = meshWgCount * meshWgSize;
+    const auto vertexCount         = triangleCount * verticesPerTriangle;
+
+    std::vector<PositionColor> geomData;
+    geomData.reserve(vertexCount);
+
+    de::Random rnd(1758709612u);
+
+    // Used to draw a triangle around the pixel center.
+    const float xDelta = (2.0f / floatExtent.x()) * 0.25f;
+    const float yDelta = (2.0f / floatExtent.y()) * 0.25f;
+
+    for (uint32_t t = 0u; t < taskWgCount; ++t)
+        for (uint32_t m = 0u; m < meshWgPerTaskWg; ++m)
+            for (uint32_t i = 0u; i < meshWgSize; ++i)
+            {
+                // The framebuffer is 2x2 and we have 64 invocations per WG.
+                // Each pixel is going to be covered 16 times.
+                const uint32_t modularIdx = (i & 0x3u);
+                const uint32_t x          = (modularIdx & 1);
+                const uint32_t y          = ((modularIdx >> 1) & 1);
+
+                const tcu::Vec4 color(rnd.getFloat(), rnd.getFloat(), rnd.getFloat(), 1.0f);
+                const float depth = rnd.getFloat();
+
+                const float xCenter = (static_cast<float>(x) + 0.5f) / floatExtent.x() * 2.0f - 1.0f;
+                const float yCenter = (static_cast<float>(y) + 0.5f) / floatExtent.y() * 2.0f - 1.0f;
+
+                geomData.push_back(PositionColor{
+                    tcu::Vec4(xCenter - xDelta, yCenter + yDelta, depth, 1.0f),
+                    color,
+                });
+                geomData.push_back(PositionColor{
+                    tcu::Vec4(xCenter + xDelta, yCenter + yDelta, depth, 1.0f),
+                    color,
+                });
+                geomData.push_back(PositionColor{
+                    tcu::Vec4(xCenter, yCenter - yDelta, depth, 1.0f),
+                    color,
+                });
+            }
+
+    // Geometry data is quite big, so we will use a device-local buffer and a staging buffer.
+    // The host-only buffer is chosen to be non-local if possible, so we don't accidentally fall into a non-resizable
+    // BAR section. If not available, we fall back on host-visible cached, or just host-visible memory.
+    const auto geomDataSize       = de::dataSize(geomData);
+    const auto geomHostBufferInfo = makeBufferCreateInfo(geomDataSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const std::vector<MemoryRequirement> hostMemReqCandidates{
+        (MemoryRequirement::HostVisible | MemoryRequirement::Cached | MemoryRequirement::NonLocal),
+        (MemoryRequirement::HostVisible | MemoryRequirement::Cached),
+        (MemoryRequirement::HostVisible),
+    };
+
+    std::unique_ptr<BufferWithMemory> geomHostBuffer;
+    for (const auto memReq : hostMemReqCandidates)
+    {
+        try
+        {
+            geomHostBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, geomHostBufferInfo, memReq));
+        }
+        catch (tcu::NotSupportedError &err)
+        {
+            continue;
+        }
+        break;
+    }
+
+    if (geomHostBuffer)
+    {
+        auto &alloc = geomHostBuffer->getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(geomData), geomDataSize);
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+    else
+        TCU_THROW(NotSupportedError, "No compatible memory types found");
+
+    const auto geomDevBufferUsage = (VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto geomDevBufferInfo  = makeBufferCreateInfo(geomDataSize, geomDevBufferUsage);
+    BufferWithMemory geomDevBuffer(ctx.vkd, ctx.device, ctx.allocator, geomDevBufferInfo, HostIntent::NONE);
+
+    // Prepare descriptor set.
+    const auto descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, VK_SHADER_STAGE_MESH_BIT_EXT);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    struct PushConstantBlock
+    {
+        const tcu::Vec4 ones;
+        const uint32_t one;
+
+        PushConstantBlock() : ones(1.0f, 1.0f, 1.0f, 1.0f), one(1u)
+        {
+        }
+    };
+    const PushConstantBlock pcValues;
+    const auto pcSize         = DE_SIZEOF32(pcValues);
+    const auto pcStages       = (VK_SHADER_STAGE_TASK_BIT_EXT | VK_SHADER_STAGE_MESH_BIT_EXT);
+    const auto pcRange        = makePushConstantRange(pcStages, 0u, pcSize);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType, 1u);
+    const auto descPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descPool, *setLayout);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto descBufferInfo = makeDescriptorBufferInfo(*geomDevBuffer, 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType, &descBufferInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    // Render pass and framebuffer.
+    const auto renderPass = makeRenderPass(ctx.vkd, ctx.device, colorFormat, depthFormat);
+    const std::vector<VkImageView> fbViews{colorBuffer.getImageView(), *depthView};
+    const auto framebuffer = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, de::sizeU32(fbViews),
+                                             de::dataOrNull(fbViews), extentVk.width, extentVk.height);
+
+    // Prepare pipeline.
+    const auto &binaries  = context.getBinaryCollection();
+    const auto taskShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("task"));
+    const auto meshShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("mesh"));
+    const auto fragShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    const auto stencilOp = makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP, VK_STENCIL_OP_KEEP,
+                                              VK_COMPARE_OP_NEVER, 0xFFu, 0xFFu, 0u);
+    const VkPipelineDepthStencilStateCreateInfo depthStencilStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_TRUE,
+        VK_TRUE,
+        VK_COMPARE_OP_ALWAYS,
+        VK_FALSE,
+        VK_FALSE,
+        stencilOp,
+        stencilOp,
+        0.0f,
+        1.0f,
+    };
+    const auto pipeline =
+        makeGraphicsPipeline(ctx.vkd, ctx.device, *pipelineLayout, *taskShader, *meshShader, *fragShader, *renderPass,
+                             viewports, scissors, 0u, nullptr, nullptr, &depthStencilStateCreateInfo);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const std::vector<VkClearValue> clearValues{
+        makeClearValueColor(tcu::Vec4(0.0f)),
+        makeClearValueDepthStencil(0.0f, 0u),
+    };
+
+    const auto bindPoint = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        // Transfer geometry data from the staging buffer to the device-only buffer.
+        const auto copyRegion = makeBufferCopy(0ull, 0ull, geomDataSize);
+        ctx.vkd.cmdCopyBuffer(cmdBuffer, geomHostBuffer->get(), *geomDevBuffer, 1u, &copyRegion);
+        const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                 VK_PIPELINE_STAGE_MESH_SHADER_BIT_EXT, &barrier);
+    }
+    beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.at(0u), de::sizeU32(clearValues),
+                    de::dataOrNull(clearValues));
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descSet.get(), 0u, nullptr);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcValues);
+    ctx.vkd.cmdDrawMeshTasksEXT(cmdBuffer, taskWgCount, 1u, 1u);
+    endRenderPass(ctx.vkd, cmdBuffer);
+    {
+        const std::vector<VkImageMemoryBarrier> layoutBarriers{
+            makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   colorBuffer.getImage(), colorSRR),
+            makeImageMemoryBarrier(VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *depthBuffer, depthSRR),
+        };
+        const auto srcStage = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                               VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+        const auto dstStage = VK_PIPELINE_STAGE_TRANSFER_BIT;
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, dstStage, de::dataOrNull(layoutBarriers),
+                                      layoutBarriers.size());
+
+        {
+            const auto copyRegion = makeBufferImageCopy(extentVk, colorSRL);
+            ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, colorBuffer.getImage(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                         colorBuffer.getBuffer(), 1u, &copyRegion);
+        }
+        {
+            const auto copyRegion = makeBufferImageCopy(extentVk, depthSRL);
+            ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, *depthBuffer, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                         *depthVerifBuffer, 1u, &copyRegion);
+        }
+
+        const auto hostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &hostBarrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    // We only need to verify that the color and depth in the framebuffer matches the last triangles stored in the
+    // geometry data buffer.
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    invalidateAlloc(ctx.vkd, ctx.device, depthVerifBuffer.getAllocation());
+
+    const auto tcuColorFormat = mapVkFormat(colorFormat);
+    const auto tcuDepthFormat = mapVkFormat(depthFormat);
+
+    tcu::ConstPixelBufferAccess resColorAccess(tcuColorFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+    tcu::ConstPixelBufferAccess resDepthAccess(tcuDepthFormat, extent, depthVerifBuffer.getAllocation().getHostPtr());
+
+    tcu::TextureLevel refColorLevel(tcuColorFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess refColorAccess = refColorLevel.getAccess();
+
+    tcu::TextureLevel refDepthLevel(tcuDepthFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess refDepthAccess = refDepthLevel.getAccess();
+
+    // For the start of the last batch of triangle data.
+    const auto baseIdx = de::sizeU32(geomData) - extentVk.width * extentVk.height * verticesPerTriangle;
+
+    for (int y = 0; y < extent.y(); ++y)
+        for (int x = 0; x < extent.x(); ++x)
+        {
+            const auto idx        = baseIdx + (y * extent.x() + x) * verticesPerTriangle;
+            const auto &pixelData = geomData.at(idx);
+            refColorAccess.setPixel(pixelData.color, x, y);
+            refDepthAccess.setPixDepth(pixelData.position.z(), x, y);
+        }
+
+    bool fail = false;
+    auto &log = context.getTestContext().getLog();
+
+    const float colorThresholdValue = 0.005f; // 1/255 < 0.005 < 2/255
+    const tcu::Vec4 colorThreshold(colorThresholdValue, colorThresholdValue, colorThresholdValue, 0.0f);
+
+    if (!tcu::floatThresholdCompare(log, "Color", "", refColorAccess, resColorAccess, colorThreshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        fail = true;
+
+    const float depthThreshold = 0.000025f; // 1/65535 < 0.000025f < 2/65535
+    if (!tcu::dsThresholdCompare(log, "Depth", "", refDepthAccess, resDepthAccess, depthThreshold,
+                                 tcu::COMPARE_LOG_ON_ERROR))
+        fail = true;
+
+    if (fail)
+        TCU_FAIL("Unexpected results in color or depth buffers; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // anonymous namespace
 
 tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
@@ -5763,7 +6513,7 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
 
             LargeWorkGroupParamsPtr lwgParamsPtr(new LargeWorkGroupParams(
                 /*taskCount*/ tcu::just(taskCount),
-                /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                /*meshCount*/ tcu::UVec3(0u, 0u, 0u),
                 /*width*/ 2040u,
                 /*height*/ 2056u,
                 /*localInvocations*/ tcu::UVec3(1u, 1u, 1u)));
@@ -5893,10 +6643,24 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
                     /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
                     /*width*/ 1u,
                     /*height*/ 1u,
-                    /*memBarrierType*/ barrierCase.memBarrierType));
+                    /*memBarrierType*/ barrierCase.memBarrierType,
+                    /*usePrimitiveTypePayload*/ false));
 
                 const std::string shader = (useTaskShader ? "task" : "mesh");
                 const std::string name   = barrierCase.caseName + "_in_" + shader;
+
+                miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
+            }
+            {
+                std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
+                    /*taskCount*/ tcu::just(tcu::UVec3(1u, 1u, 1u)),
+                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                    /*width*/ 1u,
+                    /*height*/ 1u,
+                    /*memBarrierType*/ barrierCase.memBarrierType,
+                    /*usePrimitiveTypePayload*/ true));
+
+                const std::string name = barrierCase.caseName + "_in_task_primitive_payload";
 
                 miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
             }
@@ -6090,6 +6854,26 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
 
         miscTests->addChild(new RebindSetsCase(testCtx, "rebind_sets", std::move(paramsPtr)));
     }
+
+    {
+        ParamsPtr paramsPtr(new MiscTestParams(
+            /*taskCount*/ tcu::Nothing,
+            /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+            /*width*/ 8u,
+            /*height*/ 8u));
+
+        miscTests->addChild(new MultipleOutputsVertsCase(testCtx, "multiple_outputs_vertices", std::move(paramsPtr)));
+    }
+
+    for (const bool badEmitLast : {false, true})
+    {
+        const auto testName = std::string("emit_in_control_flow") + (badEmitLast ? "_bad_emit_last" : "");
+        const EmitInControlFlowParams params{badEmitLast};
+        miscTests->addChild(new EmitInControlFlowCase(testCtx, testName, params));
+    }
+
+    addFunctionCaseWithPrograms(miscTests.get(), "work_group_ordering", workGroupOrderingCheckSupport,
+                                workGroupOrderingInitPrograms, workGroupOrderingRun);
 
     return miscTests.release();
 }

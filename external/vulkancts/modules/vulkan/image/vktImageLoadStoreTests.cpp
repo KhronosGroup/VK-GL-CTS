@@ -41,6 +41,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkFormatLists.hpp"
 
 #include "deMath.h"
 #include "deUniquePtr.hpp"
@@ -91,8 +92,9 @@ bool formatHasThreeComponents(VkFormat format)
 
 VkFormat getSingleComponentFormat(VkFormat format)
 {
-    tcu::TextureFormat texFormat = mapVkFormat(format);
-    texFormat                    = tcu::TextureFormat(tcu::TextureFormat::R, texFormat.type);
+    tcu::TextureFormat texFormat           = mapVkFormat(format);
+    tcu::TextureFormat::ChannelOrder order = isSrgbFormat(format) ? tcu::TextureFormat::sR : tcu::TextureFormat::R;
+    texFormat                              = tcu::TextureFormat(order, texFormat.type);
     return mapTextureFormat(texFormat);
 }
 
@@ -827,8 +829,9 @@ BaseTestInstance::BaseTestInstance(Context &context, const Texture &texture, con
     , m_minalign(minalign)
     , m_bufferLoadUniform(bufferLoadUniform)
     , m_srcViewOffset(getViewOffset(context, format, m_bufferLoadUniform))
-    , m_dstViewOffset(
-          getViewOffset(context, formatHasThreeComponents(format) ? getSingleComponentFormat(format) : format, false))
+    , m_dstViewOffset(getViewOffset(
+          context, formatHasThreeComponents(format) && m_bufferLoadUniform ? getSingleComponentFormat(format) : format,
+          false))
 {
 }
 
@@ -927,8 +930,9 @@ uint32_t BaseTestInstance::getViewOffset(Context &context, const VkFormat format
         VkDeviceSize align            = uniform ? alignmentProperties.uniformTexelBufferOffsetAlignmentBytes :
                                                   alignmentProperties.storageTexelBufferOffsetAlignmentBytes;
 
-        VkDeviceSize texelSize = formatHasThreeComponents(format) ? tcu::getChannelSize(vk::mapVkFormat(format).type) :
-                                                                    tcu::getPixelSize(vk::mapVkFormat(format));
+        VkDeviceSize texelSize = formatHasThreeComponents(format) && uniform ?
+                                     tcu::getChannelSize(vk::mapVkFormat(format).type) :
+                                     tcu::getPixelSize(vk::mapVkFormat(format));
 
         if (singleTexelAlignment)
             align = de::min(align, texelSize);
@@ -1284,6 +1288,8 @@ void LoadStoreTest::checkSupport(Context &context) const
 #ifndef CTS_USES_VULKANSC
     if (m_format == VK_FORMAT_A8_UNORM_KHR || m_format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
         context.requireDeviceFunctionality("VK_KHR_maintenance5");
+    if (m_imageFormat == VK_FORMAT_A8_UNORM_KHR || m_imageFormat == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     const VkFormatProperties3 formatProperties(context.getFormatProperties(m_format));
     const VkFormatProperties3 imageFormatProperties(context.getFormatProperties(m_imageFormat));
@@ -1331,7 +1337,7 @@ void LoadStoreTest::checkSupport(Context &context) const
     if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
         TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 
-    if (formatHasThreeComponents(m_format))
+    if (formatHasThreeComponents(m_format) && m_bufferLoadUniform)
     {
         // When the source buffer is three-component, the destination buffer is single-component.
         VkFormat dstFormat = getSingleComponentFormat(m_format);
@@ -1388,7 +1394,7 @@ void LoadStoreTest::checkSupport(Context &context) const
     if ((m_texture.type() == IMAGE_TYPE_BUFFER) && !(imageFormatProperties.bufferFeatures))
         TCU_THROW(NotSupportedError, "Underlying format not supported at all for buffers");
 
-    if (formatHasThreeComponents(m_format))
+    if (formatHasThreeComponents(m_format) && m_bufferLoadUniform)
     {
         // When the source buffer is three-component, the destination buffer is single-component.
         VkFormat dstFormat = getSingleComponentFormat(m_format);
@@ -1490,9 +1496,10 @@ void LoadStoreTest::makePrograms(SourceCollections &programCollection, const Dev
             src << "layout (binding = " << inputBinding << maybeFmtQualStrReads << ") " << maybeRestrictStr
                 << "readonly uniform " << imageTypeStr << " u_image0;\n";
 
-        // For three-component formats, the dst buffer is single-component and the shader expands the store into 3 component-wise stores.
-        // We always use the format qualifier for the dst buffer, except when splitting it up.
-        if (formatHasThreeComponents(m_format))
+        // For three-component formats used with UNIFORM_TEXEL_BUFFER, the dst buffer is single-component and the shader uses this
+        // dst buffer to create 3 component-wise stores. We always use the format qualifier for the dst buffer, except when splitting
+        // it up.
+        if (formatHasThreeComponents(m_format) && m_bufferLoadUniform)
             src << "layout (binding = " << outputBinding << ") " << maybeRestrictStr << "writeonly uniform "
                 << imageTypeStr << " u_image1;\n";
         else
@@ -2352,7 +2359,8 @@ VkDescriptorSetLayout BufferLoadStoreTestInstance::prepareDescriptors(void)
                            .addType(VK_DESCRIPTOR_TYPE_STORAGE_TEXEL_BUFFER)
                            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
-    VkFormat dstFormat = formatHasThreeComponents(m_format) ? getSingleComponentFormat(m_format) : m_format;
+    VkFormat dstFormat =
+        formatHasThreeComponents(m_format) && m_bufferLoadUniform ? getSingleComponentFormat(m_format) : m_format;
 
     m_descriptorSet = makeDescriptorSet(vk, device, *m_descriptorPool, *m_descriptorSetLayout);
     m_bufferViewSrc = makeBufferView(vk, device, m_imageBuffer->get(), m_format, m_srcViewOffset, m_imageSizeBytes);
@@ -2973,6 +2981,7 @@ const Texture &getTestTexture(const ImageType imageType)
     return s_textures[0];
 }
 
+// selected formats for testing
 static const VkFormat s_formats[] = {VK_FORMAT_R32G32B32A32_SFLOAT,
                                      VK_FORMAT_R16G16B16A16_SFLOAT,
                                      VK_FORMAT_R32_SFLOAT,
@@ -3069,13 +3078,12 @@ static const VkFormat s_formats[] = {VK_FORMAT_R32G32B32A32_SFLOAT,
                                      VK_FORMAT_B8G8R8A8_SRGB,
                                      VK_FORMAT_A8B8G8R8_SRGB_PACK32};
 
+// selected formats with three components
 static const VkFormat s_formatsThreeComponent[] = {
     VK_FORMAT_R8G8B8_UINT,      VK_FORMAT_R8G8B8_SINT,    VK_FORMAT_R8G8B8_UNORM,    VK_FORMAT_R8G8B8_SNORM,
     VK_FORMAT_R16G16B16_UINT,   VK_FORMAT_R16G16B16_SINT, VK_FORMAT_R16G16B16_UNORM, VK_FORMAT_R16G16B16_SNORM,
     VK_FORMAT_R16G16B16_SFLOAT, VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SINT,  VK_FORMAT_R32G32B32_SFLOAT,
 };
-
-static const VkFormat d_formats[] = {VK_FORMAT_D16_UNORM, VK_FORMAT_D32_SFLOAT};
 
 static const VkImageTiling s_tilings[] = {
     VK_IMAGE_TILING_OPTIMAL,
@@ -3180,7 +3188,7 @@ void ImageDeviceScopeAccessTest::checkSupport(Context &context) const
     if (!vkMemModelFeatures.vulkanMemoryModelDeviceScope)
         TCU_THROW(NotSupportedError, "vulkanMemoryModelDeviceScope not supported");
 
-    if (context.getUsedApiVersion() < SPIRV_VERSION_1_5)
+    if (context.getEquivalentApiVersion() < VK_API_VERSION_1_2)
         TCU_THROW(NotSupportedError,
                   std::string("Vulkan higher than or equal to spirv 1.5 is required for this test to run").c_str());
 
@@ -3452,30 +3460,29 @@ tcu::TestCaseGroup *createImageStoreTests(tcu::TestContext &testCtx)
             // Depth formats for storage images are only allowed with optimal tiling
             const auto testTilingType = VK_IMAGE_TILING_OPTIMAL;
 
-            for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(d_formats); ++formatNdx)
+            for (auto format : formats::depthOnlyFormats)
             {
                 const char *suffix           = tilingSuffix(testTilingType);
-                const auto testFormat        = d_formats[formatNdx];
-                const auto formatShortString = getFormatShortString(testFormat);
+                const auto formatShortString = getFormatShortString(format);
 
-                if (!isAllowedDepthFormat(texture, testFormat, testTilingType))
+                if (!isAllowedDepthFormat(texture, format, testTilingType))
                     continue;
 
                 groupWithoutFormatByImageViewType->addChild(
-                    new StoreTest(testCtx, formatShortString + suffix, texture, testFormat, testTilingType, 0));
+                    new StoreTest(testCtx, formatShortString + suffix, texture, format, testTilingType, 0));
 
 #if 0
                 /* 'with_format' tests require format declaration in shader.
                    Since depth format has no spirv equivalent, r16 can be used for d16 and r32f can be used for d32_sfloat.
                    The validation layers do not complain and it works on some implementations */
 
-                groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + suffix, texture, testFormat, testTilingType));
+                groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + suffix, texture, format, testTilingType));
                 // Additional tests where the shader uses constant data for imageStore.
-                groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + "_constant" + suffix, texture, testFormat, testTilingType, StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | StoreTest::FLAG_STORE_CONSTANT_VALUE));
+                groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + "_constant" + suffix, texture, format, testTilingType, StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER | StoreTest::FLAG_STORE_CONSTANT_VALUE));
 
                 if (isLayered)
                     groupWithFormatByImageViewType->addChild(new StoreTest(testCtx, formatShortString + "_single_layer" + suffix,
-                                                                            texture, testFormat, testTilingType,
+                                                                            texture, format, testTilingType,
                                                                             StoreTest::FLAG_SINGLE_LAYER_BIND | StoreTest::FLAG_DECLARE_IMAGE_FORMAT_IN_SHADER));
 #endif
             }
@@ -3607,24 +3614,23 @@ tcu::TestCaseGroup *createImageLoadStoreTests(tcu::TestContext &testCtx)
             // Depth formats for storage images are only allowed with optimal tiling
             const auto testTilingType = VK_IMAGE_TILING_OPTIMAL;
 
-            for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(d_formats); ++formatNdx)
+            for (auto format : formats::depthOnlyFormats)
             {
                 const char *suffix           = tilingSuffix(testTilingType);
-                const auto testFormat        = d_formats[formatNdx];
-                const auto formatShortString = getFormatShortString(testFormat);
+                const auto formatShortString = getFormatShortString(format);
 
-                if (!isAllowedDepthFormat(texture, testFormat, testTilingType))
+                if (!isAllowedDepthFormat(texture, format, testTilingType))
                     continue;
 
                 groupWithoutAnyFormatByImageViewType->addChild(new LoadStoreTest(
-                    testCtx, formatShortString + suffix, texture, testFormat, testFormat, testTilingType, 0u));
+                    testCtx, formatShortString + suffix, texture, format, format, testTilingType, 0u));
 #if 0
                 /* 'with_format' tests and tests that have FLAG_DECLARE_FORMAT_IN_SHADER_* flags require format declaration in shader.
                    Since depth format has no spirv equivalent, r16 can be used for d16 and r32f can be used for d32_sfloat.
                    The validation layers do not complain and it works on some implementations */
 
-                groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, testFormat, testFormat, testTilingType));
-                groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, testFormat, testFormat, testTilingType, LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
+                groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, format, format, testTilingType));
+                groupWithoutFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + suffix, texture, format, format, testTilingType, LoadStoreTest::FLAG_DECLARE_FORMAT_IN_SHADER_WRITES));
 
                 if (isLayered)
                     groupWithFormatByImageViewType->addChild(new LoadStoreTest(testCtx, formatShortString + "_single_layer" + suffix,

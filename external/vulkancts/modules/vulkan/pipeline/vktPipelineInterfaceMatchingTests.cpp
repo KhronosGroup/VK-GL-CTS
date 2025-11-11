@@ -57,6 +57,9 @@ enum class TestType
 {
     VECTOR_LENGTH = 0,
     DECORATION_MISMATCH,
+
+    // miscellaneous tests
+    SKIP_OUTPUT_VARIABLE,
 };
 
 enum class VecType
@@ -1040,6 +1043,211 @@ std::string InterfaceMatchingTestCase::generateName(const TestParams &testParams
            pipelineTypeMap.at(testParams.pipelineType);
 };
 
+class MiscInterfaceMatchingTestInstance : public vkt::TestInstance
+{
+public:
+    MiscInterfaceMatchingTestInstance(Context &context, const TestParamsSp params);
+    virtual ~MiscInterfaceMatchingTestInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+private:
+    TestParamsSp m_params;
+};
+
+MiscInterfaceMatchingTestInstance::MiscInterfaceMatchingTestInstance(Context &context, const TestParamsSp params)
+    : vkt::TestInstance(context)
+    , m_params(params)
+{
+}
+
+tcu::TestStatus MiscInterfaceMatchingTestInstance::iterate(void)
+{
+    const DeviceInterface &vk             = m_context.getDeviceInterface();
+    const InstanceInterface &vki          = m_context.getInstanceInterface();
+    const VkDevice device                 = m_context.getDevice();
+    const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
+    Allocator &memAlloc                   = m_context.getDefaultAllocator();
+
+    const VkFormat colorFormat(VK_FORMAT_R8G8B8A8_UNORM);
+    const tcu::IVec3 renderSize(8, 8, 1);
+    const VkExtent3D extent = makeExtent3D(renderSize);
+    const VkImageSubresourceRange subresourceRange{VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
+    const tcu::TextureFormat textureFormat = mapVkFormat(colorFormat);
+
+    // create color attachment
+    ImageWithBuffer imageWithBuffer(vk, device, memAlloc, extent, colorFormat,
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+                                    VK_IMAGE_TYPE_2D);
+    auto imageView =
+        makeImageView(vk, device, imageWithBuffer.getImage(), VK_IMAGE_VIEW_TYPE_2D, colorFormat, subresourceRange);
+
+    // create render pass
+    auto renderPass = RenderPassWrapper(m_params->pipelineConstructionType, vk, device, colorFormat);
+
+    // create framebuffer
+    {
+        const VkFramebufferCreateInfo framebufferParams{
+            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                   // const void* pNext;
+            0u,                                        // VkFramebufferCreateFlags flags;
+            *renderPass,                               // VkRenderPass renderPass;
+            1u,                                        // uint32_t attachmentCount;
+            &*imageView,                               // const VkImageView* pAttachments;
+            (uint32_t)renderSize.x(),                  // uint32_t width;
+            (uint32_t)renderSize.y(),                  // uint32_t height;
+            1u                                         // uint32_t layers;
+        };
+        renderPass.createFramebuffer(vk, device, &framebufferParams, imageWithBuffer.getImage());
+    }
+
+    // create pipeline layout
+    const VkPipelineLayoutCreateInfo pipelineLayoutParams = initVulkanStructure();
+    auto pipelineLayout = PipelineLayoutWrapper(m_params->pipelineConstructionType, vk, device, &pipelineLayoutParams);
+
+    auto &bc              = m_context.getBinaryCollection();
+    auto vertShaderModule = ShaderWrapper(vk, device, bc.get("vert"));
+    auto fragShaderModule = ShaderWrapper(vk, device, bc.get("frag"));
+
+    const std::vector<VkViewport> viewports{makeViewport(renderSize)};
+    const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+    GraphicsPipelineWrapper graphicsPipeline(vki, vk, physicalDevice, device, m_context.getDeviceExtensions(),
+                                             m_params->pipelineConstructionType);
+    graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShaderModule)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShaderModule)
+        .setupFragmentOutputState(*renderPass)
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .buildPipeline();
+
+    // create command pool and command buffer
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    auto cmdPool   = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
+    auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    // record command buffer
+    beginCommandBuffer(vk, *cmdBuffer, 0u);
+
+    // change image layout so we can use it as color attachment
+    const auto attachmentLayoutBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_NONE_KHR, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, imageWithBuffer.getImage(), subresourceRange);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          0u, 0u, nullptr, 0u, nullptr, 1u, &attachmentLayoutBarrier);
+
+    // render single triangle
+    renderPass.begin(vk, *cmdBuffer, scissors[0], Vec4(0.0f));
+    graphicsPipeline.bind(*cmdBuffer);
+    vk.cmdDraw(*cmdBuffer, 4u, 1u, 0, 0);
+    renderPass.end(vk, *cmdBuffer);
+
+    copyImageToBuffer(vk, *cmdBuffer, imageWithBuffer.getImage(), imageWithBuffer.getBuffer(),
+                      tcu::IVec2(renderSize.x(), renderSize.y()));
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    // submit commands
+    submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+    // read buffer data
+    invalidateAlloc(vk, device, imageWithBuffer.getBufferAllocation());
+
+    // validate result - expecting (0, 1, 1, 1) color in whole image
+    uint32_t wrongFragments  = 0;
+    const unsigned char *buf = static_cast<unsigned char *>(imageWithBuffer.getBufferAllocation().getHostPtr());
+    for (uint32_t i = 0; i < static_cast<uint32_t>(renderSize.x() * renderSize.y() * 4); i += 4)
+        wrongFragments += ((buf[i] > 2) || (buf[i + 1] < 253) || (buf[i + 2] < 253) || (buf[i + 3] < 253));
+
+    if (wrongFragments == 0)
+        return TestStatus::pass("Pass");
+
+    const tcu::ConstPixelBufferAccess resultAccess(textureFormat, renderSize, buf);
+    m_context.getTestContext().getLog() << tcu::TestLog::ImageSet("Result of rendering", "")
+                                        << TestLog::Image("Result", "", resultAccess) << tcu::TestLog::EndImageSet;
+
+    return TestStatus::fail("Fail");
+}
+
+class MiscInterfaceMatchingTestCase : public vkt::TestCase
+{
+public:
+    MiscInterfaceMatchingTestCase(tcu::TestContext &testContext, TestParamsSp params);
+    virtual ~MiscInterfaceMatchingTestCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+protected:
+    std::string generateName(const TestParams &testParams) const;
+
+private:
+    const TestParamsSp m_params;
+};
+
+MiscInterfaceMatchingTestCase::MiscInterfaceMatchingTestCase(tcu::TestContext &testContext, TestParamsSp params)
+    : vkt::TestCase(testContext, generateName(*params))
+    , m_params(params)
+{
+}
+
+void MiscInterfaceMatchingTestCase::checkSupport(Context &context) const
+{
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_params->pipelineConstructionType);
+}
+
+void MiscInterfaceMatchingTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    if (m_params->testType == TestType::SKIP_OUTPUT_VARIABLE)
+    {
+        programCollection.glslSources.add("vert")
+            << glu::VertexSource("#version 450\n"
+                                 "layout(location = 0) out vec4 v0;\n"
+                                 "layout(location = 1) out vec4 v1;\n"
+                                 "layout(location = 2) out vec4 v2;\n"
+                                 "void main (void)\n"
+                                 "{\n"
+                                 "  v0 = vec4(0.0, 1.0, 0.0, 0.0);\n"
+                                 "  v1 = vec4(1.0, 0.0, 0.0, 1.0);\n"
+                                 "  v2 = vec4(0.0, 0.0, 1.0, 1.0);\n"
+                                 "  const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+                                 "  const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+                                 "  gl_Position = vec4(x, y, 0.0, 1.0);\n"
+                                 "}\n");
+
+        programCollection.glslSources.add("frag")
+            << glu::FragmentSource("#version 450\n"
+                                   "layout(location = 0) in vec4 v0;\n"
+                                   // skip v1 input - expect v2 to have (0, 0, 1, 1) not (1, 0, 0, 1)
+                                   "layout(location = 2) in vec4 v2;\n"
+                                   "layout(location = 0) out vec4 fragColor;\n"
+                                   "void main (void)\n"
+                                   "{\n"
+                                   "  fragColor = v0 + v2;\n"
+                                   "}\n");
+    }
+}
+
+TestInstance *MiscInterfaceMatchingTestCase::createInstance(Context &context) const
+{
+    //if (testParams.testType == TestType::SKIP_OUTPUT_VARIABLE)
+    return new MiscInterfaceMatchingTestInstance(context, m_params);
+}
+
+std::string MiscInterfaceMatchingTestCase::generateName(const TestParams &) const
+{
+    //if (testParams.testType == TestType::SKIP_OUTPUT_VARIABLE)
+    return "skip_output_variable";
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createInterfaceMatchingTests(tcu::TestContext &testCtx,
@@ -1131,8 +1339,16 @@ tcu::TestCaseGroup *createInterfaceMatchingTests(tcu::TestContext &testCtx,
                                                  defType};
                 decorationMismatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
             }
-
     testGroup->addChild(decorationMismatching.release());
+
+    // miscellaneous tests
+    de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc"));
+    auto testParams                      = new TestParams{};
+    testParams->pipelineConstructionType = pipelineConstructionType;
+    testParams->testType                 = TestType::SKIP_OUTPUT_VARIABLE;
+    miscTests->addChild(new MiscInterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
+    testGroup->addChild(miscTests.release());
+
     return testGroup.release();
 }
 

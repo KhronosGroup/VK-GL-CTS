@@ -173,6 +173,8 @@ static const qpKeyStringMap s_qpTestResultMap[] = {
     {QP_TEST_RESULT_TIMEOUT, "Timeout"},
     {QP_TEST_RESULT_WAIVER, "Waiver"},
     {QP_TEST_RESULT_DEVICE_LOST, "DeviceLost"},
+    {QP_TEST_RESULT_ENFORCE_DEFAULT_CONTEXT, "EnforceDefaultContext"},
+    {QP_TEST_RESULT_ENFORCE_DEFAULT_INSTANCE, "EnforceDefaultInstance"},
 
     /* Add new values here if needed, remember to update qpTestResult enumeration. */
 
@@ -423,7 +425,8 @@ void qpTestLog_destroy(qpTestLog *log)
  * \param testCaseType    Test case type
  * \return true if ok, false otherwise
  *//*--------------------------------------------------------------------*/
-bool qpTestLog_startCase(qpTestLog *log, const char *testCasePath, qpTestCaseType testCaseType)
+bool qpTestLog_startCase(qpTestLog *log, const char *testCasePath, qpTestCaseType testCaseType,
+                         const char *testCaseSource)
 {
     const char *typeStr  = QP_LOOKUP_STRING(s_qpTestTypeMap, testCaseType);
     int numResultAttribs = 0;
@@ -450,6 +453,8 @@ bool qpTestLog_startCase(qpTestLog *log, const char *testCasePath, qpTestCaseTyp
     resultAttribs[numResultAttribs++] = qpSetStringAttrib("CasePath", testCasePath);
     if (!qpTestLog_isCompact(log))
     {
+        if (testCaseSource)
+            resultAttribs[numResultAttribs++] = qpSetStringAttrib("CaseSource", testCaseSource);
         resultAttribs[numResultAttribs++] = qpSetStringAttrib("Version", LOG_FORMAT_VERSION);
         resultAttribs[numResultAttribs++] = qpSetStringAttrib("CaseType", typeStr);
     }

@@ -65,6 +65,8 @@ struct ConditionalPreprocessParams
     bool conditionValue;
     bool inverted;
     bool executeOnCompute;
+    bool separateState;  // Use a separate command buffer for the preprocessing state.
+    bool preprocessOnly; // Only enable conditional rendering on the preprocessing step, which should be ignored.
 };
 
 inline void checkConditionalRenderingExt(Context &context)
@@ -445,20 +447,9 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     // These will be used to transfer buffers from the preprocess queue to the execution queue if needed.
     std::vector<VkBufferMemoryBarrier> ownershipBarriers;
 
-    auto queue     = ctx.queue;
-    auto cmdBuffer = *cmd.cmdBuffer;
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
-
-    // Record the preprocessing step with conditional rendering enabled.
-    beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
-    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *normalPipeline);
-    ctx.vkd.cmdPreprocessGeneratedCommandsEXT(cmdBuffer, &cmdsInfo.get(), cmdBuffer);
-    ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
-    preprocessToExecuteBarrierExt(ctx.vkd, cmdBuffer);
-
     if (params.executeOnCompute)
     {
+        // Prepare ownership barriers.
         compQueueIndex = static_cast<uint32_t>(context.getComputeQueueFamilyIndex());
 
         ownershipBarriers.push_back(
@@ -471,7 +462,88 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
             ownershipBarriers.push_back(makePreprocessToExecuteBarrier(
                 preprocessBuffer.get(), preprocessBuffer.getSize(), ctx.qfIndex, compQueueIndex));
         }
+    }
 
+    VkQueue queue             = VK_NULL_HANDLE;
+    VkCommandBuffer cmdBuffer = VK_NULL_HANDLE;
+
+    // This records the initial state (pipeline, descriptors, conditional rendering) in the current cmdBuffer.
+    const auto recordInitialState = [&](bool beginCR)
+    {
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *normalPipeline);
+        if (beginCR)
+            beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
+    };
+
+    // This allocates executeCmd if needed, and switches queue and cmdBuffer to it.
+    const auto switchToExecCmdAndAllocIfNeeded = [&]()
+    {
+        if (!executeCmd)
+        {
+            executeCmd.reset(new CommandPoolWithBuffer(ctx.vkd, ctx.device,
+                                                       (params.executeOnCompute ? compQueueIndex : ctx.qfIndex)));
+        }
+        cmdBuffer = *executeCmd->cmdBuffer;
+        queue     = (params.executeOnCompute ? context.getComputeQueue() : ctx.queue);
+    };
+
+    // Records the acquire barrier in the current command buffer if needed.
+    const auto maybeRecordAcquireBarrier = [&]()
+    {
+        if (params.executeOnCompute)
+        {
+            // This is the "acquire" barrier to transfer buffer ownership for execution. See above.
+            ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT,
+                                       VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0u, 0u, nullptr,
+                                       de::sizeU32(ownershipBarriers), de::dataOrNull(ownershipBarriers), 0u, nullptr);
+        }
+    };
+
+    // How separateState is handled:
+    //
+    // If we don't have separate state, we will record the preprocess buffer first directly. We will record state in it
+    // and use the preprocess command buffer as the initial state when recording the preprocessing command to itself.
+    //
+    // If we have separate state, we will record the initial part of the execution command buffer first (until just
+    // before the execution), then we will use the execution command buffer as state for preprocessing, without
+    // recording any state in the preprocessing command buffer itself. Later, we will finish recording the execution
+    // command buffer.
+
+    if (params.separateState)
+    {
+        // Record the inital state first in the execution command buffer.
+        switchToExecCmdAndAllocIfNeeded();
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+        maybeRecordAcquireBarrier();
+        recordInitialState(!params.preprocessOnly);
+    }
+
+    // Switch to the preprocess command buffer and record its contents.
+    queue     = ctx.queue;
+    cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    if (!params.separateState)
+    {
+        // Record the initial state on the preprocess command buffer itself. If we don't use a separate command buffer
+        // for state, we cannot be recording the conditional rendering commands on the preprocess command buffer only.
+        DE_ASSERT(!params.preprocessOnly);
+        recordInitialState(true);
+    }
+    else if (params.preprocessOnly)
+    {
+        beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
+    }
+    const auto stateCmdBuffer = (params.separateState ? *executeCmd->cmdBuffer : cmdBuffer);
+    ctx.vkd.cmdPreprocessGeneratedCommandsEXT(cmdBuffer, &cmdsInfo.get(), stateCmdBuffer);
+    if (!params.separateState || params.preprocessOnly)
+        ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
+    preprocessToExecuteBarrierExt(ctx.vkd, cmdBuffer);
+
+    if (params.executeOnCompute)
+    {
+        // Record release barrier in the preprocess command buffer.
         ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT,
                                    VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0u, 0u, nullptr, de::sizeU32(ownershipBarriers),
                                    de::dataOrNull(ownershipBarriers), 0u, nullptr);
@@ -480,27 +552,20 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
 
-    // Execute on a separate command buffer.
-    executeCmd.reset(
-        new CommandPoolWithBuffer(ctx.vkd, ctx.device, (params.executeOnCompute ? compQueueIndex : ctx.qfIndex)));
-    cmdBuffer = *executeCmd->cmdBuffer;
-    queue     = (params.executeOnCompute ? context.getComputeQueue() : ctx.queue);
+    // Switch to the execution command buffer, allocating it if not done yet.
+    switchToExecCmdAndAllocIfNeeded();
 
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
-
-    if (params.executeOnCompute)
+    // If the state has not been recorded yet, do it now.
+    if (!params.separateState)
     {
-        // This is the "acquire" barrier to transfer buffer ownership for execution. See above.
-        ctx.vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COMMAND_PREPROCESS_BIT_EXT,
-                                   VK_PIPELINE_STAGE_DRAW_INDIRECT_BIT, 0u, 0u, nullptr, de::sizeU32(ownershipBarriers),
-                                   de::dataOrNull(ownershipBarriers), 0u, nullptr);
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+        maybeRecordAcquireBarrier();
+        recordInitialState(!params.preprocessOnly);
     }
 
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
-    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *normalPipeline);
-    beginConditionalRendering(ctx.vkd, cmdBuffer, *conditionBuffer, params.inverted);
     ctx.vkd.cmdExecuteGeneratedCommandsEXT(cmdBuffer, VK_TRUE, &cmdsInfo.get());
-    ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
+    if (!params.preprocessOnly)
+        ctx.vkd.cmdEndConditionalRenderingEXT(cmdBuffer);
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
 
@@ -509,7 +574,7 @@ tcu::TestStatus conditionalPreprocessRun(Context &context, ConditionalPreprocess
     invalidateAlloc(ctx.vkd, ctx.device, outputBufferAlloc);
     deMemcpy(&outputValue, outputBufferData, sizeof(outputValue));
 
-    const auto expectedValue = ((params.inverted != params.conditionValue) ? pcValue : 0u);
+    const auto expectedValue = (((params.inverted != params.conditionValue) || params.preprocessOnly) ? pcValue : 0u);
     if (outputValue != expectedValue)
     {
         std::ostringstream msg;
@@ -553,20 +618,29 @@ tcu::TestCaseGroup *createDGCComputeConditionalTestsExt(tcu::TestContext &testCt
     for (const auto conditionValue : {false, true})
         for (const auto inverted : {false, true})
             for (const auto execOnCompute : {false, true})
-            {
-                const ConditionalPreprocessParams params{
-                    conditionValue,
-                    inverted,
-                    execOnCompute,
-                };
+                for (const auto separateState : {false, true})
+                    for (const auto preprocessOnly : {false, true})
+                    {
+                        // If we intend to record the conditional rendering commands on the preprocess command buffer
+                        // only, but we will not use a separate command buffer for the state, we would end up in an
+                        // illegal situation: the state command buffer indicates conditional rendering will be active,
+                        // but the execution command buffer will not use it.
+                        if (preprocessOnly && !separateState)
+                            continue;
 
-                const std::string testName = std::string() + (conditionValue ? "condition_true" : "condition_false") +
-                                             (inverted ? "_inverted_flag" : "") +
-                                             (execOnCompute ? "_exec_on_compute" : "");
+                        const ConditionalPreprocessParams params{
+                            conditionValue, inverted, execOnCompute, separateState, preprocessOnly,
+                        };
 
-                addFunctionCaseWithPrograms(preprocessGroup.get(), testName, checkConditionalPreprocessSupport,
-                                            storePushConstantProgramPreprocessParams, conditionalPreprocessRun, params);
-            }
+                        const std::string testName =
+                            std::string() + (conditionValue ? "condition_true" : "condition_false") +
+                            (inverted ? "_inverted_flag" : "") + (preprocessOnly ? "_preprocess_only" : "") +
+                            (separateState ? "_separate_state" : "") + (execOnCompute ? "_exec_on_compute" : "");
+
+                        addFunctionCaseWithPrograms(preprocessGroup.get(), testName, checkConditionalPreprocessSupport,
+                                                    storePushConstantProgramPreprocessParams, conditionalPreprocessRun,
+                                                    params);
+                    }
 
     mainGroup->addChild(generalGroup.release());
     mainGroup->addChild(preprocessGroup.release());

@@ -357,7 +357,6 @@ dEQP-VK.spirv_assembly.instruction.compute.unused_variables.variable_set_0_bindi
 dEQP-VK.spirv_assembly.instruction.compute.unused_variables.variable_set_5_binding_5
 dEQP-VK.spirv_assembly.instruction.compute.variable_init.private.float_from_workgroup
 dEQP-VK.spirv_assembly.instruction.compute.variable_init.private.floatarray_from_workgroup
-dEQP-VK.spirv_assembly.instruction.compute.variable_init.private.matrix_from_workgroup
 dEQP-VK.spirv_assembly.instruction.compute.variable_init.private.struct_from_workgroup
 dEQP-VK.spirv_assembly.instruction.compute.variable_init.private.vec4_from_workgroup
 dEQP-VK.spirv_assembly.instruction.graphics.64bit_compare.double.frag_opfordequal_nonan_single

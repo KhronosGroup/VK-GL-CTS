@@ -112,7 +112,7 @@ public:
     virtual tcu::TestStatus iterate(void);
 
 protected:
-    virtual tcu::TestStatus verifyImage(void);
+    virtual tcu::TestStatus verifyImage(const bool useGeneralLayout);
     virtual void setup(void);
 
     typedef vk::Unique<vk::VkImage> UniqueImage;

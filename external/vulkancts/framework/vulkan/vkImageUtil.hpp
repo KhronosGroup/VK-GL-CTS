@@ -273,7 +273,18 @@ void copyBufferToImage(const DeviceInterface &vk, const VkCommandBuffer &cmdBuff
                        VkImageLayout destImageLayout               = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
                        VkPipelineStageFlags destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
                        VkAccessFlags destImageDstAccessMask = VK_ACCESS_SHADER_READ_BIT, uint32_t baseMipLevel = 0);
-
+#ifndef CTS_USES_VULKANSC
+void copyBufferToImageIndirect(const DeviceInterface &vk, const InstanceInterface &vki,
+                               const VkPhysicalDevice vkPhysDevice, VkDevice device, VkQueue queue,
+                               uint32_t queueFamilyIndex, const VkBuffer &buffer, VkDeviceSize bufferSize,
+                               const std::vector<VkBufferImageCopy> &copyRegions, const VkSemaphore *waitSemaphore,
+                               VkImageAspectFlags imageAspectFlags, uint32_t mipLevels, uint32_t arrayLayers,
+                               VkImage destImage,
+                               VkImageLayout destImageLayout               = VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                               VkPipelineStageFlags destImageDstStageFlags = VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                               VkAccessFlags destImageDstAccessMask        = VK_ACCESS_SHADER_READ_BIT,
+                               const VkCommandPool *externalCommandPool = nullptr, uint32_t baseMipLevel = 0);
+#endif
 /*--------------------------------------------------------------------*//*!
  * Copies image data into a buffer. The buffer is expected to be
  * read by the host.

@@ -30,6 +30,7 @@
 #include "vktPipelineVertexUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vktCustomInstancesDevices.hpp"
 
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -111,6 +112,7 @@ struct CaseDef
     VkFormat colorFormat;
     VkFormat depthStencilFormat; //! A depth/stencil format, or UNDEFINED if not used
     AllocationKind allocationKind;
+    bool maintenance9;
 };
 
 template <typename T>
@@ -742,16 +744,117 @@ void initPrograms(SourceCollections &programCollection, const CaseDef caseDef)
     }
 }
 
+class SingletonDevice
+{
+    SingletonDevice(Context &context) : m_context(context), m_logicalDevice()
+    {
+        const float queuePriority              = 1.0;
+        const VkDeviceQueueCreateInfo queues[] = {{
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr, (VkDeviceQueueCreateFlags)0,
+            m_context.getUniversalQueueFamilyIndex(),
+            1u,             // queueCount
+            &queuePriority, // pQueuePriorities
+        }};
+
+        const auto &vkp                              = m_context.getPlatformInterface();
+        const auto &vki                              = m_context.getInstanceInterface();
+        const auto instance                          = m_context.getInstance();
+        const auto physicalDevice                    = m_context.getPhysicalDevice();
+        std::vector<const char *> creationExtensions = m_context.getDeviceCreationExtensions();
+
+        for (auto it = creationExtensions.begin(); it != creationExtensions.end(); ++it)
+        {
+            if (strcmp(*it, "VK_KHR_maintenance9") == 0)
+            {
+                creationExtensions.erase(it);
+                break;
+            }
+        }
+
+        auto features2 = m_context.getDeviceFeatures2();
+
+        VkDeviceCreateInfo createInfo      = initVulkanStructure(&features2);
+        createInfo.flags                   = 0u;
+        createInfo.queueCreateInfoCount    = (uint32_t)de::arrayLength(queues);
+        createInfo.pQueueCreateInfos       = queues;
+        createInfo.enabledLayerCount       = 0u;
+        createInfo.ppEnabledLayerNames     = nullptr;
+        createInfo.enabledExtensionCount   = de::sizeU32(creationExtensions);
+        createInfo.ppEnabledExtensionNames = de::dataOrNull(creationExtensions);
+        createInfo.pEnabledFeatures        = nullptr;
+
+        m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(), vkp,
+                                             instance, vki, physicalDevice, &createInfo, nullptr);
+
+        m_deviceDriver = de::MovePtr<DeviceDriver>(new DeviceDriver(
+            vkp, instance, *m_logicalDevice, m_context.getUsedApiVersion(), context.getTestContext().getCommandLine()));
+
+        m_allocator = de::MovePtr<SimpleAllocator>(new SimpleAllocator(
+            *m_deviceDriver, *m_logicalDevice, getPhysicalDeviceMemoryProperties(vki, physicalDevice)));
+    }
+
+public:
+    ~SingletonDevice()
+    {
+    }
+
+    static VkDevice getDevice(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return m_singletonDevice->m_logicalDevice.get();
+    }
+
+    static VkQueue getUniversalQueue(Context &context)
+    {
+        return getDeviceQueue(getDeviceInterface(context), getDevice(context), context.getUniversalQueueFamilyIndex(),
+                              0);
+    }
+
+    static const DeviceInterface &getDeviceInterface(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return *(m_singletonDevice->m_deviceDriver.get());
+    }
+
+    static Allocator *getAllocator(Context &context)
+    {
+        if (!m_singletonDevice)
+            m_singletonDevice = SharedPtr<SingletonDevice>(new SingletonDevice(context));
+        DE_ASSERT(m_singletonDevice);
+        return m_singletonDevice->m_allocator.get();
+    }
+
+    static void destroy()
+    {
+        m_singletonDevice.clear();
+    }
+
+private:
+    const Context &m_context;
+    Move<vk::VkDevice> m_logicalDevice;
+    de::MovePtr<vk::DeviceDriver> m_deviceDriver;
+    de::MovePtr<vk::SimpleAllocator> m_allocator;
+    static SharedPtr<SingletonDevice> m_singletonDevice;
+};
+SharedPtr<SingletonDevice> SingletonDevice::m_singletonDevice;
+
 //! See testAttachmentSize() description
 tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 {
-    const DeviceInterface &vk         = context.getDeviceInterface();
     const InstanceInterface &vki      = context.getInstanceInterface();
-    const VkDevice device             = context.getDevice();
     const VkPhysicalDevice physDevice = context.getPhysicalDevice();
-    const VkQueue queue               = context.getUniversalQueue();
-    const uint32_t queueFamilyIndex   = context.getUniversalQueueFamilyIndex();
-    Allocator &allocator              = context.getDefaultAllocator();
+
+    bool needCustomDevice = (!caseDef.maintenance9 && context.isDeviceFunctionalitySupported("VK_KHR_maintenance9"));
+    const DeviceInterface &vk =
+        needCustomDevice ? SingletonDevice::getDeviceInterface(context) : context.getDeviceInterface();
+    const VkDevice device = needCustomDevice ? SingletonDevice::getDevice(context) : context.getDevice();
+    const VkQueue queue = needCustomDevice ? SingletonDevice::getUniversalQueue(context) : context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    Allocator &allocator = needCustomDevice ? *(SingletonDevice::getAllocator(context)) : context.getDefaultAllocator();
 
     IVec4 imageSize = getMaxImageSize(caseDef.viewType, caseDef.imageSizeHint);
 
@@ -846,11 +949,16 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             // Use the color image memory requirements, assume depth stencil uses the same memory type
             memoryTypeNdx =
                 selectMatchingMemoryType(memoryProperties, colorImageMemReqs.memoryTypeBits, MemoryRequirement::Any);
+#ifdef CTS_USES_VULKANSC // Don't artificially limit image size to totalSystemMemory in Vulkan SC
+            VkDeviceSize maxMemory =
+                memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size;
+#else
             tcu::PlatformMemoryLimits memoryLimits;
             context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
             VkDeviceSize maxMemory =
                 std::min(memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size,
                          VkDeviceSize(memoryLimits.totalSystemMemory));
+#endif
 
             if (neededMemory > maxMemory)
             {
@@ -863,6 +971,9 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             }
         }
 
+#ifdef CTS_USES_VULKANSC // Memory can't be freed in Vulkan SC, so don't waste any here doing a trial allocation
+        allocationPossible = true;
+#else
         // Attempt a memory allocation
         {
             VkDeviceMemory object                   = VK_NULL_HANDLE;
@@ -894,6 +1005,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
                 allocationPossible = true;
             }
         }
+#endif
     }
 
     context.getTestContext().getLog() << tcu::TestLog::Message
@@ -921,11 +1033,12 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
     const ShaderWrapper vertexModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
     const ShaderWrapper fragmentModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
+    const VkImageLayout initialLayout = (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D && !caseDef.maintenance9) ?
+                                            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+                                            VK_IMAGE_LAYOUT_UNDEFINED;
     RenderPassWrapper renderPass(makeRenderPass(vk, device, caseDef.pipelineConstructionType, caseDef.colorFormat,
                                                 caseDef.depthStencilFormat, static_cast<uint32_t>(numSlices),
-                                                (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D) ?
-                                                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
-                                                    VK_IMAGE_LAYOUT_UNDEFINED));
+                                                initialLayout));
     const PipelineLayoutWrapper pipelineLayout(caseDef.pipelineConstructionType, vk, device);
     vector<GraphicsPipelineWrapper> pipelines;
 
@@ -972,7 +1085,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
     // Prepare color image upfront for rendering to individual slices.  3D slices aren't separate subresources, so they shouldn't be transitioned
     // during each subpass like array layers.
-    if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D)
+    if (caseDef.viewType == VK_IMAGE_VIEW_TYPE_3D && !caseDef.maintenance9)
     {
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -1092,17 +1205,19 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
 
         // Copy colorImage -> host visible colorBuffer
         {
+            const uint32_t layers = caseDef.maintenance9 ? imageSize.z() : imageSize.w();
+
             const VkImageMemoryBarrier imageBarriers[] = {{
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,     // VkStructureType sType;
-                nullptr,                                    // const void* pNext;
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,       // VkAccessFlags outputMask;
-                VK_ACCESS_TRANSFER_READ_BIT,                // VkAccessFlags inputMask;
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout oldLayout;
-                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,       // VkImageLayout newLayout;
-                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t srcQueueFamilyIndex;
-                VK_QUEUE_FAMILY_IGNORED,                    // uint32_t destQueueFamilyIndex;
-                *colorImage,                                // VkImage image;
-                makeColorSubresourceRange(0, imageSize.w()) // VkImageSubresourceRange subresourceRange;
+                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
+                nullptr,                                  // const void* pNext;
+                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags outputMask;
+                VK_ACCESS_TRANSFER_READ_BIT,              // VkAccessFlags inputMask;
+                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout oldLayout;
+                VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,     // VkImageLayout newLayout;
+                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex;
+                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t destQueueFamilyIndex;
+                *colorImage,                              // VkImage image;
+                makeColorSubresourceRange(0, layers)      // VkImageSubresourceRange subresourceRange;
             }};
 
             vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
@@ -1238,6 +1353,9 @@ void checkSupportAttachmentSize(Context &context, const CaseDef caseDef)
 
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           caseDef.pipelineConstructionType);
+
+    if (caseDef.maintenance9)
+        context.requireDeviceFunctionality("VK_KHR_maintenance9");
 }
 
 //! A test that can exercise very big color and depth/stencil attachment sizes.
@@ -1499,11 +1617,11 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                 *colorImage,                              // VkImage                    image;
                 {
                     // VkImageSubresourceRange    subresourceRange;
-                    VK_IMAGE_ASPECT_COLOR_BIT,            // VkImageAspectFlags    aspectMask;
-                    0u,                                   // uint32_t              baseMipLevel;
-                    static_cast<uint32_t>(numMipLevels),  // uint32_t              levelCount;
-                    0u,                                   // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(imageSize.w()), // uint32_t              layerCount;
+                    VK_IMAGE_ASPECT_COLOR_BIT,           // VkImageAspectFlags    aspectMask;
+                    0u,                                  // uint32_t              baseMipLevel;
+                    static_cast<uint32_t>(numMipLevels), // uint32_t              levelCount;
+                    0u,                                  // uint32_t              baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS,           // uint32_t              layerCount;
                 },
             },
             {
@@ -1522,7 +1640,7 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                     0u,                                               // uint32_t              baseMipLevel;
                     static_cast<uint32_t>(numMipLevels),              // uint32_t              levelCount;
                     0u,                                               // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(numSlices),                 // uint32_t              layerCount;
+                    VK_REMAINING_ARRAY_LAYERS,                        // uint32_t              layerCount;
                 },
             }};
 
@@ -1569,11 +1687,11 @@ tcu::TestStatus testRenderToMipMaps(Context &context, const CaseDef caseDef)
                 *colorImage,                              // VkImage                    image;
                 {
                     // VkImageSubresourceRange    subresourceRange;
-                    VK_IMAGE_ASPECT_COLOR_BIT,            // VkImageAspectFlags    aspectMask;
-                    0u,                                   // uint32_t              baseMipLevel;
-                    static_cast<uint32_t>(numMipLevels),  // uint32_t              levelCount;
-                    0u,                                   // uint32_t              baseArrayLayer;
-                    static_cast<uint32_t>(imageSize.w()), // uint32_t              layerCount;
+                    VK_IMAGE_ASPECT_COLOR_BIT,           // VkImageAspectFlags    aspectMask;
+                    0u,                                  // uint32_t              baseMipLevel;
+                    static_cast<uint32_t>(numMipLevels), // uint32_t              levelCount;
+                    0u,                                  // uint32_t              baseArrayLayer;
+                    VK_REMAINING_ARRAY_LAYERS,           // uint32_t              layerCount;
                 },
             }};
 
@@ -1808,17 +1926,29 @@ void addTestCasesWithFunctions(tcu::TestCaseGroup *group, PipelineConstructionTy
                     for (int dsFormatNdx = 0; dsFormatNdx < DE_LENGTH_OF_ARRAY(depthStencilFormat); ++dsFormatNdx)
                         for (int formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(format); ++formatNdx)
                         {
-                            const CaseDef caseDef{
+                            CaseDef caseDef{
                                 pipelineConstructionType,        // PipelineConstructionType pipelineConstructionType;
                                 testCase[caseNdx].viewType,      // VkImageViewType imageType;
                                 *sizeIter,                       // IVec4 imageSizeHint;
                                 format[formatNdx],               // VkFormat colorFormat;
                                 depthStencilFormat[dsFormatNdx], // VkFormat depthStencilFormat;
-                                allocationKind                   // AllocationKind allocationKind;
+                                allocationKind,                  // AllocationKind allocationKind;
+                                false                            // bool maintenance9
                             };
                             addFunctionCaseWithPrograms(
                                 smallGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]),
                                 checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+
+                            if (testCase[caseNdx].viewType == VK_IMAGE_VIEW_TYPE_3D)
+                            {
+                                caseDef.maintenance9 = true;
+
+                                addFunctionCaseWithPrograms(
+                                    smallGroup.get(),
+                                    getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]) +
+                                        "_2d_compatible",
+                                    checkSupportAttachmentSize, initPrograms, testAttachmentSize, caseDef);
+                            }
                         }
                 }
                 else // All huge cases go into a separate group
@@ -1838,7 +1968,8 @@ void addTestCasesWithFunctions(tcu::TestCaseGroup *group, PipelineConstructionTy
                                 *sizeIter,                       // IVec4 imageSizeHint;
                                 colorFormat,                     // VkFormat colorFormat;
                                 depthStencilFormat[dsFormatNdx], // VkFormat depthStencilFormat;
-                                allocationKind                   // AllocationKind allocationKind;
+                                allocationKind,                  // AllocationKind allocationKind;
+                                false                            // bool maintenance9
                             };
                             addFunctionCaseWithPrograms(
                                 sizeGroup.get(), getFormatString(colorFormat, depthStencilFormat[dsFormatNdx]),
@@ -1865,7 +1996,8 @@ void addTestCasesWithFunctions(tcu::TestCaseGroup *group, PipelineConstructionTy
                         testCase[caseNdx].baselineSize,  // IVec4 imageSizeHint;
                         format[formatNdx],               // VkFormat colorFormat;
                         depthStencilFormat[dsFormatNdx], // VkFormat depthStencilFormat;
-                        allocationKind                   // AllocationKind allocationKind;
+                        allocationKind,                  // AllocationKind allocationKind;
+                        false                            // bool maintenance9
                     };
                     addFunctionCaseWithPrograms(
                         mipmapGroup.get(), getFormatString(format[formatNdx], depthStencilFormat[dsFormatNdx]),
@@ -1896,11 +2028,14 @@ tcu::TestCaseGroup *createRenderToImageTests(tcu::TestContext &testCtx,
 {
     de::MovePtr<tcu::TestCaseGroup> renderToImageTests(new tcu::TestCaseGroup(testCtx, "render_to_image"));
 
+    const auto cleanupGroup = [](tcu::TestCaseGroup *, PipelineConstructionType) { SingletonDevice::destroy(); };
     // Core render to image tests
-    renderToImageTests->addChild(createTestGroup(testCtx, "core", addCoreRenderToImageTests, pipelineConstructionType));
+    renderToImageTests->addChild(
+        createTestGroup(testCtx, "core", addCoreRenderToImageTests, pipelineConstructionType, cleanupGroup));
     // Render to image tests for dedicated memory allocation
     renderToImageTests->addChild(createTestGroup(testCtx, "dedicated_allocation",
-                                                 addDedicatedAllocationRenderToImageTests, pipelineConstructionType));
+                                                 addDedicatedAllocationRenderToImageTests, pipelineConstructionType,
+                                                 cleanupGroup));
 
     return renderToImageTests.release();
 }

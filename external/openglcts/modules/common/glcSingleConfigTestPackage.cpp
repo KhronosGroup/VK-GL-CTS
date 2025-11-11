@@ -31,6 +31,7 @@
 #include "tcuWaiverUtil.hpp"
 
 #include "glcSubgroupsTests.hpp"
+#include "glcMeshShaderTests.hpp"
 #include "gl4cEnhancedLayoutsTests.hpp"
 #include "../gles31/es31cArrayOfArraysTests.hpp"
 
@@ -191,6 +192,7 @@ void SingleConfigGL45TestPackage::init(void)
     {
         // Add main test groups
         addChild(new glc::subgroups::GlSubgroupTests(getContext()));
+        addChild(new glc::meshShader::MeshShaderTests(getContext()));
     }
     catch (...)
     {
@@ -227,9 +229,42 @@ void SingleConfigGL46TestPackage::init(void)
     }
 }
 
-SingleConfigES32TestPackage::SingleConfigES32TestPackage(tcu::TestContext &testCtx, const char *packageName,
+SingleConfigES31TestPackage::SingleConfigES31TestPackage(tcu::TestContext &testCtx, const char *packageName,
                                                          const char *description, glu::ContextType renderContextType)
     : deqp::TestPackage(testCtx, packageName, description, renderContextType, "gl_cts/data/")
+{
+}
+
+SingleConfigES31TestPackage::~SingleConfigES31TestPackage(void)
+{
+}
+
+void SingleConfigES31TestPackage::init(void)
+{
+    // Call init() in parent - this creates context.
+    deqp::TestPackage::init();
+
+    try
+    {
+        // Add main test groups
+        addChild(new glc::subgroups::GlSubgroupTests(getContext()));
+    }
+    catch (...)
+    {
+        // Destroy context.
+        deqp::TestPackage::deinit();
+        throw;
+    }
+}
+
+tcu::TestCaseExecutor *SingleConfigES31TestPackage::createExecutor(void) const
+{
+    return new TestCaseWrapper(const_cast<SingleConfigES31TestPackage &>(*this), m_waiverMechanism);
+}
+
+SingleConfigES32TestPackage::SingleConfigES32TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                                                         const char *description, glu::ContextType renderContextType)
+    : SingleConfigES31TestPackage(testCtx, packageName, description, renderContextType)
 {
 }
 
@@ -240,12 +275,11 @@ SingleConfigES32TestPackage::~SingleConfigES32TestPackage(void)
 void SingleConfigES32TestPackage::init(void)
 {
     // Call init() in parent - this creates context.
-    deqp::TestPackage::init();
+    SingleConfigES31TestPackage::init();
 
     try
     {
         // Add main test groups
-        addChild(new glc::subgroups::GlSubgroupTests(getContext()));
     }
     catch (...)
     {

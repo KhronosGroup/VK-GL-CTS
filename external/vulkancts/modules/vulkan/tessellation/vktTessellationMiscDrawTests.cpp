@@ -25,6 +25,7 @@
 #include "vktTessellationMiscDrawTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTessellationUtil.hpp"
+#include "vktAmberTestCase.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuImageIO.hpp"
@@ -679,11 +680,9 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
          << "out gl_PerVertex\n"
          << "{\n"
          << "  vec4 gl_Position;\n"
-         << "  float gl_PointSize;\n"
          << "};\n"
          << "void main() {\n"
          << "    gl_Position = inPos + vec4(pc.offset, 0.0, 0.0);\n"
-         << "    gl_PointSize = 1.0;\n"
          << "}\n";
     programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 
@@ -696,18 +695,16 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "in gl_PerVertex\n"
              << "{\n"
              << "    vec4 gl_Position;\n"
-             << "    float gl_PointSize;\n"
              << "} gl_in[3];\n"
              << "out gl_PerVertex\n"
              << "{\n"
              << "    vec4 gl_Position;\n"
-             << "    float gl_PointSize;\n"
              << "};\n"
              << "void main() {\n"
-             << "    gl_Position    = gl_in[0].gl_Position; gl_PointSize = gl_in[0].gl_PointSize; EmitVertex();\n"
-             << "    gl_Position    = gl_in[1].gl_Position; gl_PointSize = gl_in[0].gl_PointSize; EmitVertex();\n"
-             << "    gl_Position    = gl_in[2].gl_Position; gl_PointSize = gl_in[0].gl_PointSize; EmitVertex();\n"
-             << "    gl_PrimitiveID = gl_PrimitiveIDIn;                                           EndPrimitive();\n"
+             << "    gl_Position    = gl_in[0].gl_Position; EmitVertex();\n"
+             << "    gl_Position    = gl_in[1].gl_Position; EmitVertex();\n"
+             << "    gl_Position    = gl_in[2].gl_Position; EmitVertex();\n"
+             << "    gl_PrimitiveID = gl_PrimitiveIDIn;     EndPrimitive();\n"
              << "}\n";
         programCollection.glslSources.add("geom") << glu::GeometrySource(geom.str());
     }
@@ -725,12 +722,10 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "in gl_PerVertex\n"
              << "{\n"
              << "  vec4 gl_Position;\n"
-             << "  float gl_PointSize;\n"
              << "} gl_in[gl_MaxPatchVertices];\n"
              << "out gl_PerVertex\n"
              << "{\n"
              << "  vec4 gl_Position;\n"
-             << "  float gl_PointSize;\n"
              << "} gl_out[];\n"
              << "void main() {\n"
              << "    const float extraLevel = " << extraLevel << ";\n"
@@ -741,7 +736,6 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "    gl_TessLevelOuter[2] = 30.0 + extraLevel;\n"
              << "    gl_TessLevelOuter[3] = 20.0 + extraLevel;\n"
              << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
-             << "    gl_out[gl_InvocationID].gl_PointSize = gl_in[gl_InvocationID].gl_PointSize;\n"
              << "}\n";
         programCollection.glslSources.add("tesc" + std::to_string(i)) << glu::TessellationControlSource(tesc.str());
     }
@@ -764,12 +758,10 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "in gl_PerVertex\n"
              << "{\n"
              << "  vec4 gl_Position;\n"
-             << "  float gl_PointSize;\n"
              << "} gl_in[gl_MaxPatchVertices];\n"
              << "out gl_PerVertex\n"
              << "{\n"
              << "  vec4 gl_Position;\n"
-             << "  float gl_PointSize;\n"
              << "};\n"
              << "\n"
              << "// This assumes 2D, calculates barycentrics for point p inside triangle (a, b, c)\n"
@@ -788,7 +780,6 @@ void TessStateSwitchCase::initPrograms(vk::SourceCollections &programCollection)
              << "}\n"
              << "\n"
              << "void main() {\n"
-             << "    gl_PointSize  = gl_in[0].gl_PointSize;\n"
              << "    const vec4 p0 = gl_in[0].gl_Position;\n"
              << "    const vec4 p1 = gl_in[1].gl_Position;\n"
              << "    const vec4 p2 = gl_in[2].gl_Position;\n"
@@ -1102,7 +1093,7 @@ tcu::TestStatus TessStateSwitchInstance::iterate(void)
     const tcu::Vec4 thresholdVec(threshold, threshold, threshold, 0.0f);
 
     if (!tcu::floatThresholdCompare(log, "Result", "", referenceAccess, resultAccess, thresholdVec,
-                                    tcu::COMPARE_LOG_EVERYTHING))
+                                    tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Color result does not match reference image -- check log for details");
 
     return tcu::TestStatus::pass("Pass");
@@ -1320,7 +1311,7 @@ void TessInstancedDrawTestCase::initPrograms(vk::SourceCollections &programColle
     if (m_params.primitiveType == TESSPRIMITIVETYPE_TRIANGLES)
     {
         tessEvel << "    gl_Position = (1 - u) * (1 - v) * gl_in[0].gl_Position + (1 - u) * v * gl_in[1].gl_Position "
-                 << "+ u * (1 - v) * gl_in[2].gl_Position + u * v * gl_in[3].gl_Position;\n";
+                 << "+ u * (1 - v) * gl_in[2].gl_Position;\n";
     }
     else // m_params.primitiveType == TESSPRIMITIVETYPE_QUADS
     {
@@ -2078,6 +2069,17 @@ tcu::TestCaseGroup *createMiscDrawTests(tcu::TestContext &testCtx)
                     }
             }
         }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        const auto testName = std::string("tess_factor_barrier_bug");
+        const auto dataDir  = "tessellation";
+        const std::vector<std::string> requirements{"Features.tessellationShader",
+                                                    "Features.vertexPipelineStoresAndAtomics"};
+        group->addChild(
+            cts_amber::createAmberTestCase(testCtx, testName.c_str(), dataDir, testName + ".amber", requirements));
+    }
+#endif // CTS_USES_VULKANSC
 
     return group.release();
 }

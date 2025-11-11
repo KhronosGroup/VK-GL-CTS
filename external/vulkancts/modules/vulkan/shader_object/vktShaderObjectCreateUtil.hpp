@@ -44,11 +44,13 @@ void addBasicShaderObjectShaders(vk::SourceCollections &programCollection);
 
 vk::VkShaderCreateInfoEXT makeShaderCreateInfo(vk::VkShaderStageFlagBits stage, const vk::ProgramBinary &programBinary,
                                                bool tessellationShaderFeature, bool geometryShaderFeature,
-                                               const vk::VkDescriptorSetLayout *descriptorSetLayout = nullptr);
+                                               const vk::VkDescriptorSetLayout *descriptorSetLayout = nullptr,
+                                               const vk::VkPushConstantRange *pushConstantRange     = nullptr);
 void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
                                          const std::vector<std::string> &deviceExtensions,
                                          vk::VkPrimitiveTopology topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
-                                         bool meshShader = false, bool setViewport = false);
+                                         bool meshShader = false, bool setViewport = false, uint32_t width = 32u,
+                                         uint32_t height = 32u);
 void bindGraphicsShaders(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer, vk::VkShaderEXT vertShader,
                          vk::VkShaderEXT tescShader, vk::VkShaderEXT teseShader, vk::VkShaderEXT geomShader,
                          vk::VkShaderEXT fragShader, bool taskShaderSupported, bool meshShaderSupported);

@@ -2,14 +2,5 @@
     "register_extension": {
         "type": "device",
         "core": ""
-    },
-    "mandatory_features": {
-        "": [
-            {
-                "mandatory_variant": [
-                    "vulkansc"
-                ]
-            }
-        ]
     }
 }

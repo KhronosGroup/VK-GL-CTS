@@ -25,7 +25,7 @@
 
 #include "vkPrograms.hpp"
 
-#include "vkDefs.hpp"
+#include "vksDefs.hpp"
 using namespace vk;
 
 namespace Json

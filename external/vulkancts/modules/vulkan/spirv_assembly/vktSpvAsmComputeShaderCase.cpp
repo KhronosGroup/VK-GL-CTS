@@ -206,12 +206,27 @@ void invalidateMemory(const DeviceInterface &vkdi, const VkDevice &device, Alloc
  * All descriptors are created for compute pipeline.
  *//*--------------------------------------------------------------------*/
 Move<VkDescriptorSetLayout> createDescriptorSetLayout(const DeviceInterface &vkdi, const VkDevice &device,
-                                                      const vector<VkDescriptorType> &dtypes)
+                                                      const vector<VkDescriptorType> &dtypes, size_t numInputs = 0,
+                                                      size_t numArrayInputs = 0)
 {
     DescriptorSetLayoutBuilder builder;
 
-    for (size_t bindingNdx = 0; bindingNdx < dtypes.size(); ++bindingNdx)
-        builder.addSingleBinding(dtypes[bindingNdx], VK_SHADER_STAGE_COMPUTE_BIT);
+    DE_ASSERT(numArrayInputs == 0 || dtypes.size() >= numInputs);
+    DE_ASSERT(numInputs >= numArrayInputs);
+    for (size_t bindingNdx = 0; bindingNdx < dtypes.size();)
+    {
+        if (numArrayInputs > 0 && bindingNdx == (numInputs - numArrayInputs))
+        {
+            builder.addArrayBinding(dtypes[bindingNdx], static_cast<uint32_t>(numArrayInputs),
+                                    VK_SHADER_STAGE_COMPUTE_BIT);
+            bindingNdx += numArrayInputs;
+        }
+        else
+        {
+            builder.addSingleBinding(dtypes[bindingNdx], VK_SHADER_STAGE_COMPUTE_BIT);
+            ++bindingNdx;
+        }
+    }
 
     return builder.build(vkdi, device);
 }
@@ -276,9 +291,12 @@ inline Move<VkDescriptorPool> createDescriptorPool(const DeviceInterface &vkdi, 
 Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkDevice &device, VkDescriptorPool pool,
                                           VkDescriptorSetLayout layout, const vector<VkDescriptorType> &dtypes,
                                           const vector<VkDescriptorBufferInfo> &descriptorInfos,
-                                          const vector<VkDescriptorImageInfo> &descriptorImageInfos)
+                                          const vector<VkDescriptorImageInfo> &descriptorImageInfos,
+                                          size_t numInputs = 0, size_t numArrayInputs = 0)
 {
     DE_ASSERT(dtypes.size() == descriptorInfos.size() + descriptorImageInfos.size());
+    DE_ASSERT(numArrayInputs == 0 || dtypes.size() >= numInputs);
+    DE_ASSERT(numInputs >= numArrayInputs);
 
     const VkDescriptorSetAllocateInfo allocInfo = {VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO, nullptr, pool, 1u,
                                                    &layout};
@@ -288,16 +306,29 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkD
 
     uint32_t bufferNdx = 0u;
     uint32_t imageNdx  = 0u;
+    uint32_t binding   = 0u;
 
-    for (uint32_t descriptorNdx = 0; descriptorNdx < dtypes.size(); ++descriptorNdx)
+    for (uint32_t descriptorNdx = 0; descriptorNdx < dtypes.size();)
     {
+        const auto location = DescriptorSetUpdateBuilder::Location::binding(binding++);
+
         switch (dtypes[descriptorNdx])
         {
         // Write buffer descriptor
         case VK_DESCRIPTOR_TYPE_STORAGE_BUFFER:
         case VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER:
-            builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx),
-                                dtypes[descriptorNdx], &descriptorInfos[bufferNdx++]);
+            if (numArrayInputs > 0 && descriptorNdx == (numInputs - numArrayInputs))
+            {
+                uint32_t count = static_cast<uint32_t>(numArrayInputs);
+                builder.writeArray(*descriptorSet, location, dtypes[descriptorNdx], count, &descriptorInfos[bufferNdx]);
+                descriptorNdx += count;
+                bufferNdx += count;
+            }
+            else
+            {
+                builder.writeSingle(*descriptorSet, location, dtypes[descriptorNdx], &descriptorInfos[bufferNdx++]);
+                ++descriptorNdx;
+            }
             break;
 
         // Write image/sampler descriptor
@@ -305,8 +336,18 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkD
         case VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE:
         case VK_DESCRIPTOR_TYPE_SAMPLER:
         case VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER:
-            builder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(descriptorNdx),
-                                dtypes[descriptorNdx], &descriptorImageInfos[imageNdx++]);
+            if (numArrayInputs > 0 && descriptorNdx == (numInputs - numArrayInputs))
+            {
+                uint32_t count = static_cast<uint32_t>(numArrayInputs);
+                builder.writeArray(*descriptorSet, location, dtypes[descriptorNdx], count, &descriptorInfos[imageNdx]);
+                descriptorNdx += count;
+                imageNdx += count;
+            }
+            else
+            {
+                builder.writeSingle(*descriptorSet, location, dtypes[descriptorNdx], &descriptorImageInfos[imageNdx++]);
+                ++descriptorNdx;
+            }
             break;
 
         default:
@@ -323,7 +364,7 @@ Move<VkDescriptorSet> createDescriptorSet(const DeviceInterface &vkdi, const VkD
  *//*--------------------------------------------------------------------*/
 Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevice &device,
                                        VkPipelineLayout pipelineLayout, VkShaderModule shader, const char *entryPoint,
-                                       const vkt::SpirVAssembly::SpecConstants &specConstants)
+                                       const vkt::SpirVAssembly::SpecConstants &specConstants, bool uses64BitIndexing)
 {
     const uint32_t numSpecConstants = (uint32_t)specConstants.getValuesCount();
     vector<VkSpecializationMapEntry> entries;
@@ -360,9 +401,22 @@ Move<VkPipeline> createComputePipeline(const DeviceInterface &vkdi, const VkDevi
         entryPoint,                                          // pName
         (numSpecConstants == 0) ? nullptr : &specInfo,       // pSpecializationInfo
     };
+
+    const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+    if (uses64BitIndexing)
+    {
+        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+        pNext                          = &pipelineFlags2CreateInfo;
+    }
+#else
+    DE_UNREF(uses64BitIndexing);
+#endif
+
     const VkComputePipelineCreateInfo pipelineCreateInfo = {
         VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // sType
-        nullptr,                                        // pNext
+        pNext,                                          // pNext
         (VkPipelineCreateFlags)0,
         pipelineShaderStageCreateInfo, // cs
         pipelineLayout,                // layout
@@ -439,6 +493,11 @@ void SpvAsmComputeShaderCase::checkSupport(Context &context) const
     // Extension features
     if (m_shaderSpec.usesPhysStorageBuffer && !context.isBufferDeviceAddressSupported())
         TCU_THROW(NotSupportedError, "Request physical storage buffer feature not supported");
+
+#ifndef CTS_USES_VULKANSC
+    if (m_shaderSpec.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+#endif
 }
 
 void SpvAsmComputeShaderCase::initPrograms(SourceCollections &programCollection) const
@@ -447,11 +506,16 @@ void SpvAsmComputeShaderCase::initPrograms(SourceCollections &programCollection)
     const bool allowSpirv14 = (std::find(extensions.begin(), extensions.end(), "VK_KHR_spirv_1_4") != extensions.end());
     const bool allowMaintenance4 =
         (std::find(extensions.begin(), extensions.end(), "VK_KHR_maintenance4") != extensions.end());
+#ifndef CTS_USES_VULKANSC
+    const bool allowMaintenance9 = m_shaderSpec.requestedVulkanFeatures.maint9Features.maintenance9;
+#else
+    const bool allowMaintenance9 = false;
+#endif // CTS_USES_VULKANSC
 
     programCollection.spirvAsmSources.add("compute")
         << m_shaderSpec.assembly.c_str()
         << SpirVAsmBuildOptions(programCollection.usedVulkanVersion, m_shaderSpec.spirvVersion, allowSpirv14,
-                                allowMaintenance4);
+                                allowMaintenance4, allowMaintenance9);
 }
 
 TestInstance *SpvAsmComputeShaderCase::createInstance(Context &ctx) const
@@ -804,12 +868,14 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
 
     // Create layouts and descriptor set.
 
-    Unique<VkDescriptorSetLayout> descriptorSetLayout(createDescriptorSetLayout(vkdi, device, descriptorTypes));
+    Unique<VkDescriptorSetLayout> descriptorSetLayout(createDescriptorSetLayout(
+        vkdi, device, descriptorTypes, m_shaderSpec.inputs.size(), m_shaderSpec.numArrayInputs));
     Unique<VkPipelineLayout> pipelineLayout(
         createPipelineLayout(vkdi, device, *descriptorSetLayout, m_shaderSpec.pushConstants));
     Unique<VkDescriptorPool> descriptorPool(createDescriptorPool(vkdi, device, descriptorTypes));
     Unique<VkDescriptorSet> descriptorSet(createDescriptorSet(vkdi, device, *descriptorPool, *descriptorSetLayout,
-                                                              descriptorTypes, descriptorInfos, descriptorImageInfos));
+                                                              descriptorTypes, descriptorInfos, descriptorImageInfos,
+                                                              m_shaderSpec.inputs.size(), m_shaderSpec.numArrayInputs));
 
     // Create compute shader and pipeline.
 
@@ -820,8 +886,9 @@ tcu::TestStatus SpvAsmComputeShaderInstance::iterate(void)
     }
     Unique<VkShaderModule> module(createShaderModule(vkdi, device, binary, (VkShaderModuleCreateFlags)0u));
 
-    Unique<VkPipeline> computePipeline(createComputePipeline(
-        vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(), m_shaderSpec.specConstants));
+    Unique<VkPipeline> computePipeline(
+        createComputePipeline(vkdi, device, *pipelineLayout, *module, m_shaderSpec.entryPoint.c_str(),
+                              m_shaderSpec.specConstants, m_shaderSpec.uses64BitIndexing));
 
     // Create command buffer and record commands
 

@@ -253,10 +253,20 @@ SubpassEndInfo1::SubpassEndInfo1(const void *pNext_)
     DE_UNREF(pNext_);
 }
 
+const void *SubpassEndInfo1::getPNext() const
+{
+    return nullptr;
+}
+
 SubpassEndInfo2::SubpassEndInfo2(const void *pNext_)
 {
     sType = VK_STRUCTURE_TYPE_SUBPASS_END_INFO;
     pNext = pNext_;
+}
+
+const void *SubpassEndInfo2::getPNext() const
+{
+    return pNext;
 }
 
 void RenderpassSubpass1::cmdBeginRenderPass(const DeviceInterface &vk, VkCommandBuffer cmdBuffer,

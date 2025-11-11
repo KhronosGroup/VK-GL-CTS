@@ -167,7 +167,7 @@ uint32_t getBaseOffsetForSingleInputBuffer(uint32_t indexOuterStruct, uint32_t i
     return offset;
 }
 
-void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool physPtrs)
+void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool physPtrs, bool uses64BitIndexing)
 {
     tcu::TestContext &testCtx = group->getTestContext();
     de::Random rnd(deStringHash(group->getName()));
@@ -367,6 +367,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
             specs["ResultStrategy"] =
                 "%mux_output_var_ptr = OpSelect %sb_f32ptr %is_neg" + muxInput1 + muxInput2 + "\n";
             spec.usesPhysStorageBuffer   = physPtrs;
+            spec.uses64BitIndexing       = uses64BitIndexing;
             spec.assembly                = shaderTemplate.specialize(specs);
             spec.numWorkGroups           = IVec3(numMuxes, 1, 1);
             spec.requestedVulkanFeatures = requiredFeatures;
@@ -395,6 +396,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
             specs["ResultStrategy"] = "%mux_output_var_ptr = OpFunctionCall %sb_f32ptr %choose_input_func %is_neg" +
                                       muxInput1 + muxInput2 + "\n";
             spec.usesPhysStorageBuffer   = physPtrs;
+            spec.uses64BitIndexing       = uses64BitIndexing;
             spec.assembly                = shaderTemplate.specialize(specs);
             spec.numWorkGroups           = IVec3(numMuxes, 1, 1);
             spec.requestedVulkanFeatures = requiredFeatures;
@@ -431,6 +433,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
                 "%mux_output_var_ptr = OpPhi %sb_f32ptr" +
                 muxInput1 + "%take_mux_input_1" + muxInput2 + "%take_mux_input_2\n";
             spec.usesPhysStorageBuffer   = physPtrs;
+            spec.uses64BitIndexing       = uses64BitIndexing;
             spec.assembly                = shaderTemplate.specialize(specs);
             spec.numWorkGroups           = IVec3(numMuxes, 1, 1);
             spec.requestedVulkanFeatures = requiredFeatures;
@@ -464,6 +467,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
                 "\n"
                 "%mux_output_var_ptr = OpSelect %sb_f32ptr %is_neg %mux_input_1_copy %mux_input_2_copy\n";
             spec.usesPhysStorageBuffer   = physPtrs;
+            spec.uses64BitIndexing       = uses64BitIndexing;
             spec.assembly                = shaderTemplate.specialize(specs);
             spec.numWorkGroups           = IVec3(numMuxes, 1, 1);
             spec.requestedVulkanFeatures = requiredFeatures;
@@ -499,6 +503,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
                                           "                              OpStore %mux_output_copy %opselect_result\n"
                                           "%mux_output_var_ptr = OpLoad %sb_f32ptr %mux_output_copy Aligned 4\n";
                 spec.usesPhysStorageBuffer   = physPtrs;
+                spec.uses64BitIndexing       = uses64BitIndexing;
                 spec.assembly                = shaderTemplate.specialize(specs);
                 spec.numWorkGroups           = IVec3(numMuxes, 1, 1);
                 spec.requestedVulkanFeatures = requiredFeatures;
@@ -539,6 +544,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
                                               "%mux_output_var_ptr    = OpSelect %sb_f32ptr %is_neg " +
                                       in_1 + in_2 + "\n";
             spec.usesPhysStorageBuffer   = physPtrs;
+            spec.uses64BitIndexing       = uses64BitIndexing;
             spec.assembly                = shaderTemplate.specialize(specs);
             spec.numWorkGroups           = IVec3(numMuxes, 1, 1);
             spec.requestedVulkanFeatures = requiredFeatures;
@@ -570,6 +576,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
                                       "        %val_plus_1 = OpFAdd %f32 %val %fone\n"
                                       "                         OpStore %mux_output_var_ptr %val_plus_1 Aligned 4\n";
             spec.usesPhysStorageBuffer   = physPtrs;
+            spec.uses64BitIndexing       = uses64BitIndexing;
             spec.assembly                = shaderTemplate.specialize(specs);
             spec.numWorkGroups           = IVec3(numMuxes, 1, 1);
             spec.requestedVulkanFeatures = requiredFeatures;
@@ -614,6 +621,7 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
                                               "                          OpStore %loc_BW_i %inval_b_i\n"
                                               "%output_var_ptr = OpSelect %f32_wrkgrp_ptr %is_neg %loc_AW_i %loc_BW_i\n";
             spec.usesPhysStorageBuffer      = physPtrs;
+            spec.uses64BitIndexing          = uses64BitIndexing;
             spec.assembly                   = shaderTemplate.specialize(specs);
             spec.numWorkGroups              = IVec3(numMuxes, 1, 1);
             spec.requestedVulkanFeatures    = requiredFeatures;
@@ -631,17 +639,8 @@ void addPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool p
     }
 }
 
-void addVariablePointersComputeGroup(tcu::TestCaseGroup *group)
-{
-    addPhysicalOrVariablePointersComputeGroup(group, false);
-}
-
-void addPhysicalPointersComputeGroup(tcu::TestCaseGroup *group)
-{
-    addPhysicalOrVariablePointersComputeGroup(group, true);
-}
-
-void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool physPtrs)
+void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool physPtrs,
+                                                           bool uses64BitIndexing)
 {
     tcu::TestContext &testCtx = group->getTestContext();
     const int numFloats       = 64;
@@ -1069,6 +1068,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *g
                                                   baseBNameAtLevel[indexLevel] + "\n";
                     expectedOutput[0]            = selectedInput[baseOffset];
                     spec.usesPhysStorageBuffer   = physPtrs;
+                    spec.uses64BitIndexing       = uses64BitIndexing;
                     spec.assembly                = shaderTemplate.specialize(specs);
                     spec.numWorkGroups           = IVec3(1, 1, 1);
                     spec.requestedVulkanFeatures = requiredFeatures;
@@ -1106,6 +1106,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *g
                                                   "\n";
                     expectedOutput[0]            = selectedInput[baseOffset];
                     spec.usesPhysStorageBuffer   = physPtrs;
+                    spec.uses64BitIndexing       = uses64BitIndexing;
                     spec.assembly                = shaderTemplate.specialize(specs);
                     spec.numWorkGroups           = IVec3(1, 1, 1);
                     spec.requestedVulkanFeatures = requiredFeatures;
@@ -1152,6 +1153,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *g
                                                   " %take_input_a " + baseBNameAtLevel[indexLevel] + " %take_input_b\n";
                     expectedOutput[0]            = selectedInput[baseOffset];
                     spec.usesPhysStorageBuffer   = physPtrs;
+                    spec.uses64BitIndexing       = uses64BitIndexing;
                     spec.assembly                = shaderTemplate.specialize(specs);
                     spec.numWorkGroups           = IVec3(1, 1, 1);
                     spec.requestedVulkanFeatures = requiredFeatures;
@@ -1194,6 +1196,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *g
                                                   " %in_a_copy %in_b_copy\n";
                     expectedOutput[0]            = selectedInput[baseOffset];
                     spec.usesPhysStorageBuffer   = physPtrs;
+                    spec.uses64BitIndexing       = uses64BitIndexing;
                     spec.assembly                = shaderTemplate.specialize(specs);
                     spec.numWorkGroups           = IVec3(1, 1, 1);
                     spec.requestedVulkanFeatures = requiredFeatures;
@@ -1230,6 +1233,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *g
                                                   baseBNameAtLevel[indexLevel] + "\n";
                     expectedOutput[0]            = selectedInput[baseOffset];
                     spec.usesPhysStorageBuffer   = physPtrs;
+                    spec.uses64BitIndexing       = uses64BitIndexing;
                     spec.assembly                = shaderTemplate.specialize(specs);
                     spec.numWorkGroups           = IVec3(1, 1, 1);
                     spec.requestedVulkanFeatures = requiredFeatures;
@@ -1249,17 +1253,7 @@ void addComplexTypesPhysicalOrVariablePointersComputeGroup(tcu::TestCaseGroup *g
     }
 }
 
-void addComplexTypesVariablePointersComputeGroup(tcu::TestCaseGroup *group)
-{
-    addComplexTypesPhysicalOrVariablePointersComputeGroup(group, false);
-}
-
-void addComplexTypesPhysicalPointersComputeGroup(tcu::TestCaseGroup *group)
-{
-    addComplexTypesPhysicalOrVariablePointersComputeGroup(group, true);
-}
-
-void addNullptrVariablePointersComputeGroup(tcu::TestCaseGroup *group)
+void addNullptrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool uses64BitIndexing)
 {
     tcu::TestContext &testCtx = group->getTestContext();
     float someFloat           = 78;
@@ -1361,6 +1355,7 @@ void addNullptrVariablePointersComputeGroup(tcu::TestCaseGroup *group)
                                           "                  OpStore %output_loc  %loaded_f32     \n";
 
         spec.assembly                = shaderTemplate.specialize(specs);
+        spec.uses64BitIndexing       = uses64BitIndexing;
         spec.numWorkGroups           = IVec3(1, 1, 1);
         spec.requestedVulkanFeatures = requiredFeatures;
         spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(input)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
@@ -1379,6 +1374,7 @@ void addNullptrVariablePointersComputeGroup(tcu::TestCaseGroup *group)
                                           "OpStore %output_loc %loaded_var\n";
 
         spec.assembly                = shaderTemplate.specialize(specs);
+        spec.uses64BitIndexing       = uses64BitIndexing;
         spec.numWorkGroups           = IVec3(1, 1, 1);
         spec.requestedVulkanFeatures = requiredFeatures;
         spec.inputs.push_back(Resource(BufferSp(new Float32Buffer(input)), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER));
@@ -1386,37 +1382,6 @@ void addNullptrVariablePointersComputeGroup(tcu::TestCaseGroup *group)
         spec.extensions.push_back("VK_KHR_variable_pointers");
         group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
     }
-}
-
-void addDynamicOffsetComputeGroup(tcu::TestCaseGroup *group)
-{
-#ifndef CTS_USES_VULKANSC
-    tcu::TestContext &testCtx = group->getTestContext();
-
-    static const char dataDir[] = "spirv_assembly/instruction/compute/variable_pointer/dynamic_offset";
-
-    struct Case
-    {
-        string name;
-    };
-
-    static const Case cases[] = {
-        // Test accessing a descriptor array using a variable pointer from OpSelect
-        {"select_descriptor_array"},
-    };
-
-    for (const auto &testCase : cases)
-    {
-        const string fileName = testCase.name + ".amber";
-
-        group->addChild(cts_amber::createAmberTestCase(
-            testCtx, testCase.name.c_str(), dataDir, fileName,
-            {"VK_KHR_variable_pointers", "VK_KHR_storage_buffer_storage_class",
-             "VariablePointerFeatures.variablePointers", "VariablePointerFeatures.variablePointersStorageBuffer"}));
-    }
-#else
-    DE_UNREF(group);
-#endif // CTS_USES_VULKANSC
 }
 
 void addVariablePointersGraphicsGroup(tcu::TestCaseGroup *testGroup)
@@ -2763,13 +2728,27 @@ tcu::TestCaseGroup *createVariablePointersComputeGroup(tcu::TestContext &testCtx
     // Compute tests for SPV_KHR_variable_pointers extension
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "variable_pointers"));
     // Test the variable pointer extension using a compute shader
-    addTestGroup(group.get(), "compute", addVariablePointersComputeGroup);
+    addTestGroup(group.get(), "compute", addPhysicalOrVariablePointersComputeGroup, false, false);
     // Testing Variable Pointers pointing to various types in different input buffers
-    addTestGroup(group.get(), "complex_types_compute", addComplexTypesVariablePointersComputeGroup);
+    addTestGroup(group.get(), "complex_types_compute", addComplexTypesPhysicalOrVariablePointersComputeGroup, false,
+                 false);
     // Test the usage of nullptr using the variable pointers extension in a compute shader
-    addTestGroup(group.get(), "nullptr_compute", addNullptrVariablePointersComputeGroup);
-    // Testing variable pointers referring to descriptors using dynamic offset
-    addTestGroup(group.get(), "dynamic_offset", addDynamicOffsetComputeGroup);
+    addTestGroup(group.get(), "nullptr_compute", addNullptrVariablePointersComputeGroup, false);
+
+#ifndef CTS_USES_VULKANSC
+    // Compute tests for variable pointers with 64bit indexing
+    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
+
+    // Test the variable pointer extension using a compute shader
+    addTestGroup(group64.get(), "compute", addPhysicalOrVariablePointersComputeGroup, false, true);
+    // Testing Variable Pointers pointing to various types in different input buffers
+    addTestGroup(group64.get(), "complex_types_compute", addComplexTypesPhysicalOrVariablePointersComputeGroup, false,
+                 true);
+    // Test the usage of nullptr using the variable pointers extension in a compute shader
+    addTestGroup(group64.get(), "nullptr_compute", addNullptrVariablePointersComputeGroup, true);
+
+    group->addChild(group64.release());
+#endif
 
     return group.release();
 }
@@ -2779,9 +2758,22 @@ tcu::TestCaseGroup *createPhysicalPointersComputeGroup(tcu::TestContext &testCtx
     // Compute tests for SPV_KHR_physical_storage_buffer extension
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "physical_pointers"));
     // Test the physical storage buffer extension using a compute shader
-    addTestGroup(group.get(), "compute", addPhysicalPointersComputeGroup);
+    addTestGroup(group.get(), "compute", addPhysicalOrVariablePointersComputeGroup, true, false);
     // Testing physical pointers pointing to various types in different input buffers
-    addTestGroup(group.get(), "complex_types_compute", addComplexTypesPhysicalPointersComputeGroup);
+    addTestGroup(group.get(), "complex_types_compute", addComplexTypesPhysicalOrVariablePointersComputeGroup, true,
+                 false);
+
+#ifndef CTS_USES_VULKANSC
+    // Compute tests for physical pointers with 64bit indexing
+    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
+    // Test the physical storage buffer extension using a compute shader
+    addTestGroup(group64.get(), "compute", addPhysicalOrVariablePointersComputeGroup, true, true);
+    // Testing physical pointers pointing to various types in different input buffers
+    addTestGroup(group64.get(), "complex_types_compute", addComplexTypesPhysicalOrVariablePointersComputeGroup, true,
+                 true);
+
+    group->addChild(group64.release());
+#endif
 
     return group.release();
 }

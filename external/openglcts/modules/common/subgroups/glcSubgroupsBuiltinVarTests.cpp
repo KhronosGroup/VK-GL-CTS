@@ -376,6 +376,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
     {
         const string geometryGLSL = "${VERSION_DECL}\n"
                                     "#extension GL_KHR_shader_subgroup_basic: enable\n"
+                                    "${GEOM_EXTENSION}\n"
                                     "layout(points) in;\n"
                                     "layout(points, max_vertices = 1) out;\n"
                                     "layout(location = 0) out vec4 out_color;\n"
@@ -445,6 +446,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
             const string tescGLSL =
                 "${VERSION_DECL}\n"
                 "#extension GL_KHR_shader_subgroup_basic: enable\n"
+                "${TESS_EXTENSION}\n"
                 "layout(vertices=1) out;\n"
                 "layout(binding = 1, std430) buffer Output1\n"
                 "{\n"
@@ -467,6 +469,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
         {
             const string teseGLSL = "${VERSION_DECL}\n"
                                     "#extension GL_KHR_shader_subgroup_basic: enable\n"
+                                    "${TESS_EXTENSION}\n"
                                     "layout(isolines) in;\n"
                                     "layout(binding = 2, std430) buffer Output2\n"
                                     "{\n"
@@ -485,7 +488,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
 
         {
             const string geometryGLSL =
-                // version string is added by addGeometryShadersFromTemplate
+                // version and geometry extension string is added by addGeometryShadersFromTemplate
                 "#extension GL_KHR_shader_subgroup_basic: enable\n"
                 "layout(${TOPOLOGY}) in;\n"
                 "layout(points, max_vertices = 1) out;\n"

@@ -1,0 +1,118 @@
+#!amber
+# Copyright 2025 Google LLC
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#     https://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+
+# The purpose of this test is to check the nan behavior of NClamp
+# NClamp will be called on vec2(nan, 1.0) with the low=0.0 and high = 1.0
+# The y component of the vec2 will be checked and should remain 1.0
+#
+# crbug.com/407109052
+#
+# fn compute() -> f32 {
+#   var k = 0.0;
+#   var x = vec2(k/0.0, 1.0);
+#   var p = clamp(x, vec2(0), vec2(1));
+#   return p.y;
+# }
+#
+# @group(0) @binding(0) var<storage, read_write> _shader_output: array<f32>;
+#
+# @compute @workgroup_size(1) fn _computeSomething() {
+#   _shader_output[0] = compute();
+# }
+#
+
+SHADER compute dawn_entry_point SPIRV-ASM
+; SPIR-V
+; Version: 1.3
+; Generator: Google Tint Compiler; 1
+; Bound: 39
+; Schema: 0
+               OpCapability Shader
+               OpExtension "SPV_KHR_storage_buffer_storage_class"
+         %21 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %_computeSomething "main"
+               OpExecutionMode %_computeSomething LocalSize 1 1 1
+               OpMemberName %_shader_output_block_tint_explicit_layout 0 "inner"
+               OpName %_shader_output_block_tint_explicit_layout "_shader_output_block_tint_explicit_layout"
+               OpName %compute "compute"
+               OpName %k "k"
+               OpName %x "x"
+               OpName %p "p"
+               OpName %_computeSomething "_computeSomething"
+               OpDecorate %_runtimearr_float ArrayStride 4
+               OpMemberDecorate %_shader_output_block_tint_explicit_layout 0 Offset 0
+               OpDecorate %_shader_output_block_tint_explicit_layout Block
+               OpDecorate %1 DescriptorSet 0
+               OpDecorate %1 Binding 0
+               OpDecorate %1 Coherent
+      %float = OpTypeFloat 32
+%_runtimearr_float = OpTypeRuntimeArray %float
+%_shader_output_block_tint_explicit_layout = OpTypeStruct %_runtimearr_float
+%_ptr_StorageBuffer__shader_output_block_tint_explicit_layout = OpTypePointer StorageBuffer %_shader_output_block_tint_explicit_layout
+          %1 = OpVariable %_ptr_StorageBuffer__shader_output_block_tint_explicit_layout StorageBuffer
+          %7 = OpTypeFunction %float
+%_ptr_Function_float = OpTypePointer Function %float
+    %float_0 = OpConstant %float 0
+    %v2float = OpTypeVector %float 2
+    %float_1 = OpConstant %float 1
+%_ptr_Function_v2float = OpTypePointer Function %v2float
+         %22 = OpConstantNull %v2float
+         %23 = OpConstantComposite %v2float %float_1 %float_1
+       %uint = OpTypeInt 32 0
+     %uint_1 = OpConstant %uint 1
+       %void = OpTypeVoid
+         %31 = OpTypeFunction %void
+%_ptr_StorageBuffer_float = OpTypePointer StorageBuffer %float
+     %uint_0 = OpConstant %uint 0
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+    %compute = OpFunction %float None %7
+          %8 = OpLabel
+          %k = OpVariable %_ptr_Function_float Function
+          %x = OpVariable %_ptr_Function_v2float Function
+          %p = OpVariable %_ptr_Function_v2float Function
+               OpStore %k %float_0
+         %12 = OpLoad %float %k None
+         %13 = OpFDiv %float %12 %float_0
+         %15 = OpCompositeConstruct %v2float %13 %float_1
+               OpStore %x %15
+         %19 = OpLoad %v2float %x None
+         %20 = OpExtInst %v2float %21 NClamp %19 %22 %23
+               OpStore %p %20
+         %25 = OpAccessChain %_ptr_Function_float %p %uint_1
+         %28 = OpLoad %float %25 None
+               OpReturnValue %28
+               OpFunctionEnd
+%_computeSomething = OpFunction %void None %31
+         %32 = OpLabel
+         %33 = OpAccessChain %_ptr_StorageBuffer_float %1 %uint_0 %int_0
+         %38 = OpFunctionCall %float %compute
+               OpStore %33 %38 None
+               OpReturn
+               OpFunctionEnd
+END
+
+BUFFER buf_float DATA_TYPE float SIZE 1000 FILL 777.0
+
+PIPELINE compute pipeline
+  ATTACH dawn_entry_point
+  BIND BUFFER buf_float AS storage DESCRIPTOR_SET 0 BINDING 0
+END
+
+RUN pipeline 1 1 1
+
+EXPECT buf_float IDX 0 EQ 1.0

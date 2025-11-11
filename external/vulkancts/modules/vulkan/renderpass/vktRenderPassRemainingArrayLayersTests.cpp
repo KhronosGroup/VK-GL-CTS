@@ -19,7 +19,7 @@
  *
  *//*!
  * \file
- * \brief Tests vkCmdClearAttachments with unused attachments.
+ * \brief Test framebuffer with image view created with VK_REMAINING_ARRAY_LAYERS.
  *//*--------------------------------------------------------------------*/
 
 #include "vktRenderPassRemainingArrayLayersTests.hpp"
@@ -94,25 +94,24 @@ template <typename AttachmentDesc, typename AttachmentRef, typename SubpassDesc,
 Move<VkRenderPass> createRenderPass(const DeviceInterface &vk, VkDevice vkDevice)
 {
     const AttachmentDesc attachmentDescription(
-        nullptr,                                 // const void*                      pNext
-        (VkAttachmentDescriptionFlags)0,         // VkAttachmentDescriptionFlags     flags
-        VK_FORMAT_R8G8B8A8_UNORM,                // VkFormat                         format
-        VK_SAMPLE_COUNT_1_BIT,                   // VkSampleCountFlagBits            samples
-        VK_ATTACHMENT_LOAD_OP_CLEAR,             // VkAttachmentLoadOp               loadOp
-        VK_ATTACHMENT_STORE_OP_STORE,            // VkAttachmentStoreOp              storeOp
-        VK_ATTACHMENT_LOAD_OP_DONT_CARE,         // VkAttachmentLoadOp               stencilLoadOp
-        VK_ATTACHMENT_STORE_OP_DONT_CARE,        // VkAttachmentStoreOp              stencilStoreOp
-        VK_IMAGE_LAYOUT_UNDEFINED,               // VkImageLayout                    initialLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL // VkImageLayout                    finalLayout
+        nullptr,                          // const void*                      pNext
+        (VkAttachmentDescriptionFlags)0,  // VkAttachmentDescriptionFlags     flags
+        VK_FORMAT_R8G8B8A8_UNORM,         // VkFormat                         format
+        VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits            samples
+        VK_ATTACHMENT_LOAD_OP_CLEAR,      // VkAttachmentLoadOp               loadOp
+        VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp              storeOp
+        VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp               stencilLoadOp
+        VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp              stencilStoreOp
+        VK_IMAGE_LAYOUT_UNDEFINED,        // VkImageLayout                    initialLayout
+        VK_IMAGE_LAYOUT_GENERAL           // VkImageLayout                    finalLayout
     );
 
     // Mark attachments as used or not depending on the test parameters.
-    AttachmentRef attachmentReference =
-        AttachmentRef(nullptr,                                  // const void*            pNext
-                      0u,                                       // uint32_t                attachment
-                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout        layout
-                      VK_IMAGE_ASPECT_COLOR_BIT                 // VkImageAspectFlags    aspectMask
-        );
+    AttachmentRef attachmentReference = AttachmentRef(nullptr,                  // const void*            pNext
+                                                      0u,                       // uint32_t                attachment
+                                                      VK_IMAGE_LAYOUT_GENERAL,  // VkImageLayout        layout
+                                                      VK_IMAGE_ASPECT_COLOR_BIT // VkImageAspectFlags    aspectMask
+    );
 
     // Create subpass description with the previous color attachment references.
     const SubpassDesc subpassDescription(
@@ -335,6 +334,13 @@ tcu::TestStatus RemainingArrayLayersTestInstance::iterate(void)
     // Draw
     vk::beginCommandBuffer(vk, *cmdBuffer);
 
+    const auto sr =
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, m_testParams.baseLayer, framebufferLayers);
+    auto imageBarrier = makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                               VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL, **image, sr);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u, &imageBarrier);
+
     if (m_testParams.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY)
         beginRenderPass<RenderpassSubpass1>(vk, cmdBuffer);
     else
@@ -349,13 +355,9 @@ tcu::TestStatus RemainingArrayLayersTestInstance::iterate(void)
     else
         endRenderPass<RenderpassSubpass2>(vk, cmdBuffer);
 
-    const auto subresourceRange = makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
-    vk::VkImageMemoryBarrier postImageBarrier = vk::makeImageMemoryBarrier(
-        vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
-    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
-                          &postImageBarrier);
+    auto memoryBarrier = makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                          (vk::VkDependencyFlags)0u, 1u, &memoryBarrier, 0u, nullptr, 0u, nullptr);
 
     const vk::VkBufferImageCopy copyRegion = {
         0u, // VkDeviceSize bufferOffset;
@@ -375,6 +377,7 @@ tcu::TestStatus RemainingArrayLayersTestInstance::iterate(void)
     vk::endCommandBuffer(vk, *cmdBuffer);
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
 
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
     tcu::ConstPixelBufferAccess resultBuffer =
         tcu::ConstPixelBufferAccess(vk::mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), render_size, render_size, instanceCount,
                                     (const void *)colorOutputBuffer->getAllocation().getHostPtr());

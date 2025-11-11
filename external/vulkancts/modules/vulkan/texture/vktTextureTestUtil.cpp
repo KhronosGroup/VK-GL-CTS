@@ -794,7 +794,8 @@ TextureRenderer::TextureRenderer(Context &context, VkSampleCountFlagBits sampleC
 #endif
         if (m_requireRobustness2)
         {
-            DE_ASSERT(context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
+            DE_ASSERT(context.isDeviceFunctionalitySupported("VK_KHR_robustness2") ||
+                      context.isDeviceFunctionalitySupported("VK_EXT_robustness2"));
             robustness2Features.robustImageAccess2 = true;
         }
 

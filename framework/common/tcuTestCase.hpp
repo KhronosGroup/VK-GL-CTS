@@ -134,6 +134,12 @@ public:
     {
         return m_name.c_str();
     }
+#if defined(DEQP_LOG_NODE_SOURCE)
+    const char *getSource(void) const
+    {
+        return m_source.c_str();
+    }
+#endif
     void getChildren(std::vector<TestNode *> &children) const;
     void addRootChild(const std::string &groupName, const CaseListFilter *caseListFilter,
                       TestCaseGroup *(*createTestGroup)(tcu::TestContext &testCtx, const std::string &name));
@@ -154,15 +160,36 @@ public:
     {
         return true;
     }
+#if defined(DEQP_LOG_NODE_SOURCE)
+    virtual void setSource(const std::string &source)
+    {
+        m_source = source;
+    }
+#endif
+
+    // Set useFraction0 to true to force a test group to run in fraction zero.
+    // Must be applied to the bottom-level group.
+    void setUseFraction0(bool u)
+    {
+        m_useFraction0 = u;
+    }
+    bool getUseFraction0() const
+    {
+        return m_useFraction0;
+    }
 
 protected:
     TestContext &m_testCtx;
     std::string m_name;
+#if defined(DEQP_LOG_NODE_SOURCE)
+    std::string m_source;
+#endif
 
 private:
     const TestNodeType m_nodeType;
     std::vector<TestNode *> m_children;
     bool m_duplicateCheck;
+    bool m_useFraction0{false};
 };
 
 /*--------------------------------------------------------------------*//*!

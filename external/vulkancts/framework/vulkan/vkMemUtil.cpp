@@ -124,6 +124,9 @@ const MemoryRequirement MemoryRequirement::NonLocal        = MemoryRequirement(M
 const MemoryRequirement MemoryRequirement::DeviceAddress   = MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS);
 const MemoryRequirement MemoryRequirement::DeviceAddressCaptureReplay =
     MemoryRequirement(MemoryRequirement::FLAG_DEVICE_ADDRESS_CAPTURE_REPLAY);
+#ifndef CTS_USES_VULKANSC
+const MemoryRequirement MemoryRequirement::ZeroInitialize = MemoryRequirement(MemoryRequirement::FLAG_ZERO_INITIALIZE);
+#endif // CTS_USES_VULKANSC
 
 bool MemoryRequirement::matchesHeap(VkMemoryPropertyFlags heapFlags) const
 {
@@ -262,7 +265,7 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
         0,                                            //    uint32_t                deviceMask
     };
 
-    VkMemoryOpaqueCaptureAddressAllocateInfoKHR captureInfo = {
+    VkMemoryOpaqueCaptureAddressAllocateInfo captureInfo = {
         VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO, // VkStructureType sType
         nullptr,                                                       // const void*     pNext
         memoryOpaqueCaptureAddr,                                       // uint64_t        opaqueCaptureAddress
@@ -278,6 +281,11 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
         if (memoryOpaqueCaptureAddr)
             allocFlagsInfo.pNext = &captureInfo;
     }
+
+#ifndef CTS_USES_VULKANSC
+    if (requirement & MemoryRequirement::ZeroInitialize)
+        allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_ZERO_INITIALIZE_BIT_EXT;
+#endif // CTS_USES_VULKANSC
 
     if (allocFlagsInfo.flags)
         allocInfo.pNext = &allocFlagsInfo;
@@ -305,12 +313,22 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
 {
     const bool devAddrCR = (allocFlags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT);
     const bool devAddr   = (allocFlags & VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT);
+#ifndef CTS_USES_VULKANSC
+    const bool zeroInit = (allocFlags & VK_MEMORY_ALLOCATE_ZERO_INITIALIZE_BIT_EXT);
+#endif // CTS_USES_VULKANSC
 
     const auto baseReq = ((intent == HostIntent::NONE) ? MemoryRequirement::Any : MemoryRequirement::HostVisible);
     const auto crReq   = (devAddrCR ? MemoryRequirement::DeviceAddressCaptureReplay : MemoryRequirement::Any);
     const auto daReq   = (devAddr ? MemoryRequirement::DeviceAddress : MemoryRequirement::Any);
+#ifndef CTS_USES_VULKANSC
+    const auto ziReq = (zeroInit ? MemoryRequirement::ZeroInitialize : MemoryRequirement::Any);
+#endif // CTS_USES_VULKANSC
 
-    const auto requirement = (baseReq | crReq | daReq);
+    const auto requirement = (baseReq | crReq | daReq
+#ifndef CTS_USES_VULKANSC
+                              | ziReq
+#endif // CTS_USES_VULKANSC
+    );
     return SimpleAllocator::allocate(memReqs, requirement, tcu::just(intent));
 }
 

@@ -1,0 +1,308 @@
+#!amber
+# Copyright (c) 2025 The Khronos Group Inc.
+# Copyright (c) 2025 Valve Corporation.
+#
+# Licensed under the Apache License, Version 2.0 (the "License");
+# you may not use this file except in compliance with the License.
+# You may obtain a copy of the License at
+#
+#      http://www.apache.org/licenses/LICENSE-2.0
+#
+# Unless required by applicable law or agreed to in writing, software
+# distributed under the License is distributed on an "AS IS" BASIS,
+# WITHOUT WARRANTIES OR CONDITIONS OF ANY KIND, either express or implied.
+# See the License for the specific language governing permissions and
+# limitations under the License.
+
+DEVICE_FEATURE Float16Int8Features.shaderFloat16
+DEVICE_FEATURE Float16Int8Features.shaderInt8
+DEVICE_FEATURE Storage16BitFeatures.storageBuffer16BitAccess
+DEVICE_FEATURE Storage16BitFeatures.uniformAndStorageBuffer16BitAccess
+DEVICE_FEATURE Storage8BitFeatures.uniformAndStorageBuffer8BitAccess
+
+SHADER compute compute_shader SPIRV-ASM
+; SPIR-V
+; Version: 1.0
+; Generator: Khronos Glslang Reference Front End; 11
+; Bound: 63
+; Schema: 0
+               OpCapability Shader
+               OpCapability Float16
+               OpCapability Int8
+               OpCapability StorageBuffer16BitAccess
+               OpCapability UniformAndStorageBuffer8BitAccess
+               OpExtension "SPV_KHR_16bit_storage"
+               OpExtension "SPV_KHR_8bit_storage"
+          %1 = OpExtInstImport "GLSL.std.450"
+               OpMemoryModel Logical GLSL450
+               OpEntryPoint GLCompute %main "main" %gl_LocalInvocationIndex
+               OpExecutionMode %main LocalSize 64 1 1
+               OpSource GLSL 460
+               OpSourceExtension "GL_EXT_shader_explicit_arithmetic_types"
+               OpName %main "main"
+               OpName %idx "idx"
+               OpName %gl_LocalInvocationIndex "gl_LocalInvocationIndex"
+               OpName %PushConstantBlock "PushConstantBlock"
+               OpMemberName %PushConstantBlock 0 "count"
+               OpName %_ ""
+               OpName %s "s"
+               OpName %SignificandBlock "SignificandBlock"
+               OpMemberName %SignificandBlock 0 "significands"
+               OpName %__0 ""
+               OpName %e "e"
+               OpName %ExponentsBlock "ExponentsBlock"
+               OpMemberName %ExponentsBlock 0 "exponents"
+               OpName %__1 ""
+               OpName %r "r"
+               OpName %ResultsBlock "ResultsBlock"
+               OpMemberName %ResultsBlock 0 "results"
+               OpName %__2 ""
+               OpDecorate %gl_LocalInvocationIndex BuiltIn LocalInvocationIndex
+               OpDecorate %PushConstantBlock Block
+               OpMemberDecorate %PushConstantBlock 0 Offset 0
+               OpDecorate %_runtimearr_half ArrayStride 2
+               OpDecorate %SignificandBlock BufferBlock
+               OpMemberDecorate %SignificandBlock 0 NonWritable
+               OpMemberDecorate %SignificandBlock 0 Offset 0
+               OpDecorate %__0 NonWritable
+               OpDecorate %__0 Binding 0
+               OpDecorate %__0 DescriptorSet 0
+               OpDecorate %_runtimearr_char ArrayStride 1
+               OpDecorate %ExponentsBlock BufferBlock
+               OpMemberDecorate %ExponentsBlock 0 NonWritable
+               OpMemberDecorate %ExponentsBlock 0 Offset 0
+               OpDecorate %__1 NonWritable
+               OpDecorate %__1 Binding 1
+               OpDecorate %__1 DescriptorSet 0
+               OpDecorate %_runtimearr_half_0 ArrayStride 2
+               OpDecorate %ResultsBlock BufferBlock
+               OpMemberDecorate %ResultsBlock 0 Offset 0
+               OpDecorate %__2 Binding 2
+               OpDecorate %__2 DescriptorSet 0
+               OpDecorate %gl_WorkGroupSize BuiltIn WorkgroupSize
+       %void = OpTypeVoid
+          %3 = OpTypeFunction %void
+       %uint = OpTypeInt 32 0
+%_ptr_Function_uint = OpTypePointer Function %uint
+%_ptr_Input_uint = OpTypePointer Input %uint
+%gl_LocalInvocationIndex = OpVariable %_ptr_Input_uint Input
+%PushConstantBlock = OpTypeStruct %uint
+%_ptr_PushConstant_PushConstantBlock = OpTypePointer PushConstant %PushConstantBlock
+          %_ = OpVariable %_ptr_PushConstant_PushConstantBlock PushConstant
+        %int = OpTypeInt 32 1
+      %int_0 = OpConstant %int 0
+%_ptr_PushConstant_uint = OpTypePointer PushConstant %uint
+       %bool = OpTypeBool
+       %half = OpTypeFloat 16
+%_ptr_Function_half = OpTypePointer Function %half
+%_runtimearr_half = OpTypeRuntimeArray %half
+%SignificandBlock = OpTypeStruct %_runtimearr_half
+%_ptr_Uniform_SignificandBlock = OpTypePointer Uniform %SignificandBlock
+        %__0 = OpVariable %_ptr_Uniform_SignificandBlock Uniform
+%_ptr_Uniform_half = OpTypePointer Uniform %half
+       %char = OpTypeInt 8 1
+%_ptr_Function_char = OpTypePointer Function %char
+%_runtimearr_char = OpTypeRuntimeArray %char
+%ExponentsBlock = OpTypeStruct %_runtimearr_char
+%_ptr_Uniform_ExponentsBlock = OpTypePointer Uniform %ExponentsBlock
+        %__1 = OpVariable %_ptr_Uniform_ExponentsBlock Uniform
+%_ptr_Uniform_char = OpTypePointer Uniform %char
+%_runtimearr_half_0 = OpTypeRuntimeArray %half
+%ResultsBlock = OpTypeStruct %_runtimearr_half_0
+%_ptr_Uniform_ResultsBlock = OpTypePointer Uniform %ResultsBlock
+        %__2 = OpVariable %_ptr_Uniform_ResultsBlock Uniform
+     %v3uint = OpTypeVector %uint 3
+    %uint_64 = OpConstant %uint 64
+     %uint_1 = OpConstant %uint 1
+%gl_WorkGroupSize = OpConstantComposite %v3uint %uint_64 %uint_1 %uint_1
+       %main = OpFunction %void None %3
+          %5 = OpLabel
+        %idx = OpVariable %_ptr_Function_uint Function
+          %s = OpVariable %_ptr_Function_half Function
+          %e = OpVariable %_ptr_Function_char Function
+          %r = OpVariable %_ptr_Function_half Function
+         %11 = OpLoad %uint %gl_LocalInvocationIndex
+               OpStore %idx %11
+         %12 = OpLoad %uint %idx
+         %19 = OpAccessChain %_ptr_PushConstant_uint %_ %int_0
+         %20 = OpLoad %uint %19
+         %22 = OpULessThan %bool %12 %20
+               OpSelectionMerge %24 None
+               OpBranchConditional %22 %23 %24
+         %23 = OpLabel
+         %32 = OpLoad %uint %idx
+         %34 = OpAccessChain %_ptr_Uniform_half %__0 %int_0 %32
+         %35 = OpLoad %half %34
+               OpStore %s %35
+         %43 = OpLoad %uint %idx
+         %45 = OpAccessChain %_ptr_Uniform_char %__1 %int_0 %43
+         %46 = OpLoad %char %45
+               OpStore %e %46
+         %48 = OpLoad %half %s
+         %49 = OpLoad %char %e
+         %51 = OpExtInst %half %1 Ldexp %48 %49
+               OpStore %r %51
+         %56 = OpLoad %uint %idx
+         %57 = OpLoad %half %r
+         %58 = OpAccessChain %_ptr_Uniform_half %__2 %int_0 %56
+               OpStore %58 %57
+               OpBranch %24
+         %24 = OpLabel
+               OpReturn
+               OpFunctionEnd
+
+END
+
+BUFFER significands DATA_TYPE float16 DATA
+-1.0
+-1.0
+-1.0
+-1.0
+-1.0
+-1.0
+-1.0
+-1.0
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+0.5
+1.25
+1.25
+1.25
+1.25
+1.25
+1.25
+1.25
+1.25
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+2.0
+END
+
+BUFFER exponents DATA_TYPE int8 DATA
+1
+0
+-1
+-2
+-122
+-123
+-124
+-125
+1
+0
+-1
+-2
+-122
+-123
+-124
+-125
+1
+0
+-1
+-2
+-122
+-123
+-124
+-125
+1
+0
+-1
+-2
+-122
+-123
+-124
+-125
+END
+
+BUFFER results DATA_TYPE float16 DATA
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+0.0
+END
+
+BUFFER pc DATA_TYPE uint32 DATA
+32
+END
+
+PIPELINE compute pipeline
+  ATTACH compute_shader
+
+  BIND BUFFER significands AS storage DESCRIPTOR_SET 0 BINDING 0
+  BIND BUFFER exponents AS storage DESCRIPTOR_SET 0 BINDING 1
+  BIND BUFFER results AS storage DESCRIPTOR_SET 0 BINDING 2
+  BIND BUFFER pc AS push_constant
+END
+
+RUN pipeline 1 1 1
+
+EXPECT results IDX 0 TOLERANCE .0001 EQ -2.0
+EXPECT results IDX 2 TOLERANCE .0001 EQ -1.0
+EXPECT results IDX 4 TOLERANCE .0001 EQ -0.5
+EXPECT results IDX 6 TOLERANCE .0001 EQ -0.25
+EXPECT results IDX 8 TOLERANCE .0001 EQ -1.88079096131566e-37
+EXPECT results IDX 10 TOLERANCE .0001 EQ -9.4039548065783e-38
+EXPECT results IDX 12 TOLERANCE .0001 EQ -4.70197740328915e-38
+EXPECT results IDX 14 TOLERANCE .0001 EQ -2.350988701644575e-38
+EXPECT results IDX 16 TOLERANCE .0001 EQ 1.0
+EXPECT results IDX 18 TOLERANCE .0001 EQ 0.5
+EXPECT results IDX 20 TOLERANCE .0001 EQ 0.25
+EXPECT results IDX 22 TOLERANCE .0001 EQ 0.125
+EXPECT results IDX 24 TOLERANCE .0001 EQ 9.4039548065783e-38
+EXPECT results IDX 26 TOLERANCE .0001 EQ 4.70197740328915e-38
+EXPECT results IDX 28 TOLERANCE .0001 EQ 2.350988701644575e-38
+EXPECT results IDX 30 TOLERANCE .0001 EQ 1.1754943508222875e-38
+EXPECT results IDX 32 TOLERANCE .0001 EQ 2.5
+EXPECT results IDX 34 TOLERANCE .0001 EQ 1.25
+EXPECT results IDX 36 TOLERANCE .0001 EQ 0.625
+EXPECT results IDX 38 TOLERANCE .0001 EQ 0.3125
+EXPECT results IDX 40 TOLERANCE .0001 EQ 2.350988701644575e-37
+EXPECT results IDX 42 TOLERANCE .0001 EQ 1.1754943508222875e-37
+EXPECT results IDX 44 TOLERANCE .0001 EQ 5.877471754111438e-38
+EXPECT results IDX 46 TOLERANCE .0001 EQ 2.938735877055719e-38
+EXPECT results IDX 48 TOLERANCE .0001 EQ 4.0
+EXPECT results IDX 50 TOLERANCE .0001 EQ 2.0
+EXPECT results IDX 52 TOLERANCE .0001 EQ 1.0
+EXPECT results IDX 54 TOLERANCE .0001 EQ 0.5
+EXPECT results IDX 56 TOLERANCE .0001 EQ 3.76158192263132e-37
+EXPECT results IDX 58 TOLERANCE .0001 EQ 1.88079096131566e-37
+EXPECT results IDX 60 TOLERANCE .0001 EQ 9.4039548065783e-38
+EXPECT results IDX 62 TOLERANCE .0001 EQ 4.70197740328915e-38
+

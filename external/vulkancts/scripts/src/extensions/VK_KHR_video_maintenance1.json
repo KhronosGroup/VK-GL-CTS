@@ -2,5 +2,17 @@
     "register_extension": {
         "type": "device",
         "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceVideoMaintenance1FeaturesKHR": [
+            {
+                "features": [
+                    "videoMaintenance1"
+                ],
+                "requirements": [
+                    "VK_KHR_video_maintenance1"
+                ]
+            }
+        ]
     }
 }

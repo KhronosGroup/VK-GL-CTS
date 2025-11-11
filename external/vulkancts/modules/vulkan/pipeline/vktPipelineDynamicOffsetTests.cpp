@@ -85,6 +85,7 @@ struct TestParams
     uint32_t numDynamicBindings;
     uint32_t numNonDynamicBindings;
     GroupingStrategy groupingStrategy;
+    bool bind2;
 };
 #ifndef CTS_USES_VULKANSC
 vector<Vertex4RGBA> createQuads(uint32_t numQuads, float size)
@@ -654,9 +655,30 @@ void DynamicOffsetGraphicsTestInstance::init(void)
             for (uint32_t dynamicBindingIdx = 0; dynamicBindingIdx < m_params.numDynamicBindings; dynamicBindingIdx++)
                 offsets.push_back(offset + (uint32_t)colorBlockInputSize * dynamicBindingIdx);
 
-            vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u,
-                                     static_cast<uint32_t>(descriptorSetsPlain.size()), descriptorSetsPlain.data(),
-                                     m_params.numDynamicBindings, offsets.data());
+            if (m_params.bind2)
+            {
+#ifndef CTS_USES_VULKANSC
+                vk::VkBindDescriptorSetsInfoKHR bindDescriptorSetsInfo = {
+                    vk::VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR, // VkStructureType sType;
+                    nullptr,                                             // const void* pNext;
+                    VK_SHADER_STAGE_ALL_GRAPHICS,                        // VkShaderStageFlags stageFlags;
+                    *m_pipelineLayout,                                   // VkPipelineLayout layout;
+                    0u,                                                  // uint32_t firstSet;
+                    static_cast<uint32_t>(descriptorSetsPlain.size()),   // uint32_t descriptorSetCount;
+                    descriptorSetsPlain.data(),                          // const VkDescriptorSet* pDescriptorSets;
+                    (uint32_t)offsets.size(),                            // uint32_t dynamicOffsetCount;
+                    offsets.data()                                       // const uint32_t* pDynamicOffsets;
+                };
+                vk.cmdBindDescriptorSets2(**m_cmdBuffers[idx], &bindDescriptorSetsInfo);
+#endif
+            }
+            else
+            {
+                vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u,
+                                         static_cast<uint32_t>(descriptorSetsPlain.size()), descriptorSetsPlain.data(),
+                                         m_params.numDynamicBindings, offsets.data());
+            }
+
             offset += (uint32_t)colorBlockInputSize;
 
             // Draw quad
@@ -768,6 +790,8 @@ void DynamicOffsetGraphicsTest::checkSupport(Context &context) const
 {
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
+    if (m_params.bind2)
+        context.requireDeviceFunctionality("VK_KHR_maintenance6");
 }
 
 void DynamicOffsetGraphicsTest::initPrograms(SourceCollections &sourceCollections) const
@@ -1233,9 +1257,29 @@ void DynamicOffsetComputeTestInstance::init(void)
             offsets.push_back(outputOffset);
             outputOffset += colorBlockOutputSizeU32;
 
-            vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u,
-                                     static_cast<uint32_t>(descriptorSetsPlain.size()), descriptorSetsPlain.data(),
-                                     (uint32_t)offsets.size(), offsets.data());
+            if (m_params.bind2)
+            {
+#ifndef CTS_USES_VULKANSC
+                vk::VkBindDescriptorSetsInfoKHR bindDescriptorSetsInfo = {
+                    vk::VK_STRUCTURE_TYPE_BIND_DESCRIPTOR_SETS_INFO_KHR, // VkStructureType sType;
+                    nullptr,                                             // const void* pNext;
+                    VK_SHADER_STAGE_COMPUTE_BIT,                         // VkShaderStageFlags stageFlags;
+                    *m_pipelineLayout,                                   // VkPipelineLayout layout;
+                    0u,                                                  // uint32_t firstSet;
+                    static_cast<uint32_t>(descriptorSetsPlain.size()),   // uint32_t descriptorSetCount;
+                    descriptorSetsPlain.data(),                          // const VkDescriptorSet* pDescriptorSets;
+                    (uint32_t)offsets.size(),                            // uint32_t dynamicOffsetCount;
+                    offsets.data()                                       // const uint32_t* pDynamicOffsets;
+                };
+                vk.cmdBindDescriptorSets2(**m_cmdBuffers[idx], &bindDescriptorSetsInfo);
+#endif
+            }
+            else
+            {
+                vk.cmdBindDescriptorSets(**m_cmdBuffers[idx], VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0u,
+                                         static_cast<uint32_t>(descriptorSetsPlain.size()), descriptorSetsPlain.data(),
+                                         (uint32_t)offsets.size(), offsets.data());
+            }
 
             // Dispatch
             vk.cmdDispatch(**m_cmdBuffers[idx], 1, 1, 1);
@@ -1332,6 +1376,8 @@ void DynamicOffsetComputeTest::checkSupport(Context &context) const
 {
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
+    if (m_params.bind2)
+        context.requireDeviceFunctionality("VK_KHR_maintenance6");
 }
 
 void DynamicOffsetComputeTest::initPrograms(SourceCollections &sourceCollections) const
@@ -2313,6 +2359,16 @@ tcu::TestCaseGroup *createDynamicOffsetTests(tcu::TestContext &testCtx,
         uint32_t num;
     } const numNonDynamicBindings[] = {{"numnondynamicbindings_0", 0u}, {"numnondynamicbindings_1", 1u}};
 
+    struct
+    {
+        const char *name;
+        bool bind2;
+    } const descriptorBindCommands[] = {{"bind", false},
+#ifndef CTS_USES_VULKANSC
+                                        {"bind2", true}
+#endif
+    };
+
     de::MovePtr<tcu::TestCaseGroup> dynamicOffsetTests(new tcu::TestCaseGroup(testCtx, "dynamic_offset"));
 
     for (uint32_t pipelineTypeIdx = 0; pipelineTypeIdx < DE_LENGTH_OF_ARRAY(pipelineTypes); pipelineTypeIdx++)
@@ -2371,22 +2427,31 @@ tcu::TestCaseGroup *createDynamicOffsetTests(tcu::TestContext &testCtx,
                                      numNonDynamicBindingsIdx < DE_LENGTH_OF_ARRAY(numNonDynamicBindings);
                                      numNonDynamicBindingsIdx++)
                                 {
-                                    TestParams params{pipelineConstructionType,
-                                                      descriptorTypes[descriptorTypeIdx].type,
-                                                      numCmdBuffers[numCmdBuffersIdx].num,
-                                                      reverseOrders[reverseOrderIdx].reverse,
-                                                      numDescriptorSetBindings[numDescriptorSetBindingsIdx].num,
-                                                      numDynamicBindings[numDynamicBindingsIdx].num,
-                                                      numNonDynamicBindings[numNonDynamicBindingsIdx].num,
-                                                      groupingTypes[groupingTypeIdx].strategy};
+                                    de::MovePtr<tcu::TestCaseGroup> numNonDynamicBindingsGroup(new tcu::TestCaseGroup(
+                                        testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name));
+                                    for (uint32_t bindCommandIdx = 0;
+                                         bindCommandIdx < DE_LENGTH_OF_ARRAY(descriptorBindCommands); bindCommandIdx++)
+                                    {
+                                        TestParams params{pipelineConstructionType,
+                                                          descriptorTypes[descriptorTypeIdx].type,
+                                                          numCmdBuffers[numCmdBuffersIdx].num,
+                                                          reverseOrders[reverseOrderIdx].reverse,
+                                                          numDescriptorSetBindings[numDescriptorSetBindingsIdx].num,
+                                                          numDynamicBindings[numDynamicBindingsIdx].num,
+                                                          numNonDynamicBindings[numNonDynamicBindingsIdx].num,
+                                                          groupingTypes[groupingTypeIdx].strategy,
+                                                          descriptorBindCommands[bindCommandIdx].bind2};
 #ifndef CTS_USES_VULKANSC
-                                    if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
-                                        numDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(
-                                            testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, params));
-                                    else
+                                        if (strcmp(pipelineTypes[pipelineTypeIdx], "graphics") == 0)
+                                            numNonDynamicBindingsGroup->addChild(new DynamicOffsetGraphicsTest(
+                                                testCtx, descriptorBindCommands[bindCommandIdx].name, params));
+                                        else
 #endif // CTS_USES_VULKANSC
-                                        numDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(
-                                            testCtx, numNonDynamicBindings[numNonDynamicBindingsIdx].name, params));
+                                            numNonDynamicBindingsGroup->addChild(new DynamicOffsetComputeTest(
+                                                testCtx, descriptorBindCommands[bindCommandIdx].name, params));
+                                    }
+
+                                    numDynamicBindingsGroup->addChild(numNonDynamicBindingsGroup.release());
                                 }
 
                                 numDescriptorSetBindingsGroup->addChild(numDynamicBindingsGroup.release());

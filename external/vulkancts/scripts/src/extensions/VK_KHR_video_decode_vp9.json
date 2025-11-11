@@ -1,0 +1,18 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceVideoDecodeVP9FeaturesKHR": [
+            {
+                "features": [
+                    "videoDecodeVP9"
+                ],
+                "requirements": [
+                    "VK_KHR_video_decode_vp9"
+                ]
+            }
+        ]
+    }
+}

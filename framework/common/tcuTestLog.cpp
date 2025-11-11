@@ -535,11 +535,11 @@ void TestLog::endEglConfigSet(void)
         throw LogWriteFailedError();
 }
 
-void TestLog::startCase(const char *testCasePath, qpTestCaseType testCaseType)
+void TestLog::startCase(const char *testCasePath, qpTestCaseType testCaseType, const char *testCaseSource)
 {
     if (m_logSupressed)
         return;
-    if (qpTestLog_startCase(m_log, testCasePath, testCaseType) == false)
+    if (qpTestLog_startCase(m_log, testCasePath, testCaseType, testCaseSource) == false)
         throw LogWriteFailedError();
     // Check if the test is one of those we want to print fully in the log
     m_skipAdditionalDataInLog = false;

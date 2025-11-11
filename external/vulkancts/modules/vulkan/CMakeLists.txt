@@ -18,6 +18,7 @@ add_subdirectory(draw)
 add_subdirectory(device_group)
 add_subdirectory(compute)
 add_subdirectory(image)
+add_subdirectory(image_processing)
 add_subdirectory(wsi)
 add_subdirectory(sparse_resources)
 add_subdirectory(tessellation)
@@ -71,6 +72,7 @@ include_directories(
 	device_group
 	compute
 	image
+        image_processing
 	wsi
 	sparse_resources
 	tessellation
@@ -126,6 +128,8 @@ set(DEQP_VK_SRCS
 	vktInfoTests.hpp
 	vktCustomInstancesDevices.cpp
 	vktCustomInstancesDevices.hpp
+	vktContextManager.cpp
+	vktContextManager.hpp
 	)
 
 set(DEQP_VK_LIBS
@@ -148,6 +152,7 @@ set(DEQP_VK_LIBS
 	deqp-vk-device-group
 	deqp-vk-compute
 	deqp-vk-image
+	deqp-vk-image-processing
 	deqp-vk-wsi
 	deqp-vk-sparse-resources
 	deqp-vk-tessellation

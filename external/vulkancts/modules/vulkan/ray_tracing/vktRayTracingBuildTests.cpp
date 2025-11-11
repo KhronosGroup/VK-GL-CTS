@@ -500,7 +500,20 @@ de::MovePtr<BufferWithMemory> RayTracingBuildTestInstance::runTest(bool useGpuBu
     BottomLevelAccelerationStructurePool blasPool;
 
     initBottomAccelerationStructures(blasPool, useGpuBuild, workerThreadsCount);
+
+    // Disable watchdog timeout prior to building BLAS with large geom on CPU to avoid timeouts on low clocked cpus
+    if ((watchDog != nullptr) && (useGpuBuild == false))
+    {
+        qpWatchDog_touchAndDisableIntervalTimeLimit(watchDog);
+    }
+
     blasPool.batchBuild(vkd, device, *cmdPool, queue, watchDog);
+
+    // Re-enable watchdog timeout
+    if ((watchDog != nullptr) && (useGpuBuild == false))
+    {
+        qpWatchDog_touchAndEnableIntervalTimeLimit(watchDog);
+    }
 
     beginCommandBuffer(vkd, *cmdBuffer, 0u);
     {

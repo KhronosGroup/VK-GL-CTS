@@ -246,17 +246,12 @@ public:
         // VPS
         const VkVideoRefCountBase *pStdVps;
 
-        // AV1
-        const VkVideoRefCountBase *pStdAV1Sps;
-
         ReferencedObjectsInfo(const VkVideoRefCountBase *pBitstreamDataRef, const VkVideoRefCountBase *pStdPpsRef,
-                              const VkVideoRefCountBase *pStdSpsRef, const VkVideoRefCountBase *pStdVpsRef,
-                              const VkVideoRefCountBase *pStdAV1SpsRef)
+                              const VkVideoRefCountBase *pStdSpsRef, const VkVideoRefCountBase *pStdVpsRef)
             : pBitstreamData(pBitstreamDataRef)
             , pStdPps(pStdPpsRef)
             , pStdSps(pStdSpsRef)
             , pStdVps(pStdVpsRef)
-            , pStdAV1Sps(pStdAV1SpsRef)
         {
         }
     };

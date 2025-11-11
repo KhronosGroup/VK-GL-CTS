@@ -1301,42 +1301,62 @@ void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext &cont
                                const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
-    SpirvVersion targetSpirvVersion;
+    const SpirvVersion targetSpirvVersion =
+        ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
 
-    if (spirVAsmBuildOptions == nullptr)
-        targetSpirvVersion = context.resources.spirvVersion;
-    else
-        targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+    SpirVAsmBuildOptions usedOptions;
+    if (spirVAsmBuildOptions)
+        usedOptions = *spirVAsmBuildOptions;
+
+    usedOptions.vulkanVersion = vulkanVersion;
+    usedOptions.targetVersion = targetSpirvVersion;
 
     if (!context.interfaces.empty())
     {
         // Inject boilerplate code to wire up additional input/output variables between stages.
         // Just copy the contents in input variable to output variable in all stages except
         // the customized stage.
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
-                   .specialize(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
-                   .specialize(passthruInterface(context.interfaces.getOutputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
+                                               .specialize(context.testCodeFragments)
+                                        << usedOptions;
+        dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
+                                               .specialize(passthruInterface(context.interfaces.getOutputType()))
+                                        << usedOptions;
     }
     else
     {
         map<string, string> passthru = passthruFragments();
 
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << makeVertexShaderAssembly(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(context.testCodeFragments) << usedOptions;
+        dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru) << usedOptions;
     }
+}
+
+using SpirVAsmBuildOptionsPtr = std::unique_ptr<SpirVAsmBuildOptions>;
+
+SpirVAsmBuildOptionsPtr getSpirVAsmBuildOptionsFromTestInstanceContext(const vk::SourceCollections &dst,
+                                                                       const InstanceContext &context)
+{
+    SpirVAsmBuildOptionsPtr opts;
+
+#ifndef CTS_USES_VULKANSC
+    if (context.requestedFeatures.maint9Features.maintenance9)
+    {
+        opts.reset(new SpirVAsmBuildOptions(dst.usedVulkanVersion, context.resources.spirvVersion));
+        opts->supports_VK_KHR_maintenance9 = true;
+    }
+#else
+    DE_UNREF(dst);
+    DE_UNREF(context);
+#endif // CTS_USES_VULKANSC
+
+    return opts;
 }
 
 void addShaderCodeCustomVertex(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomVertex(dst, context, nullptr);
+    const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
+    addShaderCodeCustomVertex(dst, context, opts.get());
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1346,54 +1366,51 @@ void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext 
                                     const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
-    SpirvVersion targetSpirvVersion;
+    const SpirvVersion targetSpirvVersion =
+        ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
 
-    if (spirVAsmBuildOptions == nullptr)
-        targetSpirvVersion = context.resources.spirvVersion;
-    else
-        targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+    SpirVAsmBuildOptions usedOptions;
+    if (spirVAsmBuildOptions)
+        usedOptions = *spirVAsmBuildOptions;
+
+    usedOptions.vulkanVersion = vulkanVersion;
+    usedOptions.targetVersion = targetSpirvVersion;
 
     if (!context.interfaces.empty())
     {
         // Inject boilerplate code to wire up additional input/output variables between stages.
         // Just copy the contents in input variable to output variable in all stages except
         // the customized stage.
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
-                   .specialize(passthruInterface(context.interfaces.getInputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions)
-            << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl()))
-                   .specialize(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions)
-            << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom()))
-                   .specialize(passthruInterface(context.interfaces.getOutputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
-                   .specialize(passthruInterface(context.interfaces.getOutputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
+                                               .specialize(passthruInterface(context.interfaces.getInputType()))
+                                        << usedOptions;
+        dst.spirvAsmSources.add("tessc") << StringTemplate(
+                                                makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl()))
+                                                .specialize(context.testCodeFragments)
+                                         << usedOptions;
+        dst.spirvAsmSources.add("tesse") << StringTemplate(
+                                                makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom()))
+                                                .specialize(passthruInterface(context.interfaces.getOutputType()))
+                                         << usedOptions;
+        dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
+                                               .specialize(passthruInterface(context.interfaces.getOutputType()))
+                                        << usedOptions;
     }
     else
     {
         map<string, string> passthru = passthruFragments();
 
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions)
-            << makeTessControlShaderAssembly(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions)
-            << makeTessEvalShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru) << usedOptions;
+        dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(context.testCodeFragments) << usedOptions;
+        dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(passthru) << usedOptions;
+        dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru) << usedOptions;
     }
 }
 
 void addShaderCodeCustomTessControl(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomTessControl(dst, context, nullptr);
+    const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
+    addShaderCodeCustomTessControl(dst, context, opts.get());
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1403,53 +1420,50 @@ void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext &co
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
-    SpirvVersion targetSpirvVersion;
+    const SpirvVersion targetSpirvVersion =
+        ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
 
-    if (spirVAsmBuildOptions == nullptr)
-        targetSpirvVersion = context.resources.spirvVersion;
-    else
-        targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+    SpirVAsmBuildOptions usedOptions;
+    if (spirVAsmBuildOptions)
+        usedOptions = *spirVAsmBuildOptions;
+
+    usedOptions.vulkanVersion = vulkanVersion;
+    usedOptions.targetVersion = targetSpirvVersion;
 
     if (!context.interfaces.empty())
     {
         // Inject boilerplate code to wire up additional input/output variables between stages.
         // Just copy the contents in input variable to output variable in all stages except
         // the customized stage.
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
-                   .specialize(passthruInterface(context.interfaces.getInputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions)
-            << StringTemplate(makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl()))
-                   .specialize(passthruInterface(context.interfaces.getInputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions)
-            << StringTemplate(makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom()))
-                   .specialize(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
-                   .specialize(passthruInterface(context.interfaces.getOutputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
+                                               .specialize(passthruInterface(context.interfaces.getInputType()))
+                                        << usedOptions;
+        dst.spirvAsmSources.add("tessc") << StringTemplate(
+                                                makeTessControlShaderAssembly(fillInterfacePlaceholderTessCtrl()))
+                                                .specialize(passthruInterface(context.interfaces.getInputType()))
+                                         << usedOptions;
+        dst.spirvAsmSources.add("tesse") << StringTemplate(
+                                                makeTessEvalShaderAssembly(fillInterfacePlaceholderTessEvalGeom()))
+                                                .specialize(context.testCodeFragments)
+                                         << usedOptions;
+        dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
+                                               .specialize(passthruInterface(context.interfaces.getOutputType()))
+                                        << usedOptions;
     }
     else
     {
         map<string, string> passthru = passthruFragments();
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tessc", spirVAsmBuildOptions)
-            << makeTessControlShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("tesse", spirVAsmBuildOptions)
-            << makeTessEvalShaderAssembly(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru) << usedOptions;
+        dst.spirvAsmSources.add("tessc") << makeTessControlShaderAssembly(passthru) << usedOptions;
+        dst.spirvAsmSources.add("tesse") << makeTessEvalShaderAssembly(context.testCodeFragments) << usedOptions;
+        dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru) << usedOptions;
     }
 }
 
 void addShaderCodeCustomTessEval(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomTessEval(dst, context, nullptr);
+    const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
+    addShaderCodeCustomTessEval(dst, context, opts.get());
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1458,47 +1472,45 @@ void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext &co
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
-    SpirvVersion targetSpirvVersion;
+    const SpirvVersion targetSpirvVersion =
+        ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
 
-    if (spirVAsmBuildOptions == nullptr)
-        targetSpirvVersion = context.resources.spirvVersion;
-    else
-        targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+    SpirVAsmBuildOptions usedOptions;
+    if (spirVAsmBuildOptions)
+        usedOptions = *spirVAsmBuildOptions;
+
+    usedOptions.vulkanVersion = vulkanVersion;
+    usedOptions.targetVersion = targetSpirvVersion;
 
     if (!context.interfaces.empty())
     {
         // Inject boilerplate code to wire up additional input/output variables between stages.
         // Just copy the contents in input variable to output variable in all stages except
         // the customized stage.
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
-                   .specialize(passthruInterface(context.interfaces.getInputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("geom", spirVAsmBuildOptions)
-            << StringTemplate(makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom()))
-                   .specialize(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
-                   .specialize(passthruInterface(context.interfaces.getOutputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
+                                               .specialize(passthruInterface(context.interfaces.getInputType()))
+                                        << usedOptions;
+        dst.spirvAsmSources.add("geom") << StringTemplate(
+                                               makeGeometryShaderAssembly(fillInterfacePlaceholderTessEvalGeom()))
+                                               .specialize(context.testCodeFragments)
+                                        << usedOptions;
+        dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
+                                               .specialize(passthruInterface(context.interfaces.getOutputType()))
+                                        << usedOptions;
     }
     else
     {
         map<string, string> passthru = passthruFragments();
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("geom", spirVAsmBuildOptions)
-            << makeGeometryShaderAssembly(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << makeFragmentShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru) << usedOptions;
+        dst.spirvAsmSources.add("geom") << makeGeometryShaderAssembly(context.testCodeFragments) << usedOptions;
+        dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(passthru) << usedOptions;
     }
 }
 
 void addShaderCodeCustomGeometry(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomGeometry(dst, context, nullptr);
+    const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
+    addShaderCodeCustomGeometry(dst, context, opts.get());
 }
 
 // Adds shader assembly text to dst.spirvAsmSources for all shader kinds.
@@ -1507,41 +1519,40 @@ void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext &co
                                  const SpirVAsmBuildOptions *spirVAsmBuildOptions)
 {
     const uint32_t vulkanVersion = dst.usedVulkanVersion;
-    SpirvVersion targetSpirvVersion;
+    const SpirvVersion targetSpirvVersion =
+        ((spirVAsmBuildOptions == nullptr) ? context.resources.spirvVersion : spirVAsmBuildOptions->targetVersion);
 
-    if (spirVAsmBuildOptions == nullptr)
-        targetSpirvVersion = context.resources.spirvVersion;
-    else
-        targetSpirvVersion = spirVAsmBuildOptions->targetVersion;
+    SpirVAsmBuildOptions usedOptions;
+    if (spirVAsmBuildOptions)
+        usedOptions = *spirVAsmBuildOptions;
+
+    usedOptions.vulkanVersion = vulkanVersion;
+    usedOptions.targetVersion = targetSpirvVersion;
 
     if (!context.interfaces.empty())
     {
         // Inject boilerplate code to wire up additional input/output variables between stages.
         // Just copy the contents in input variable to output variable in all stages except
         // the customized stage.
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
-                   .specialize(passthruInterface(context.interfaces.getInputType()))
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
-                   .specialize(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << StringTemplate(makeVertexShaderAssembly(fillInterfacePlaceholderVert()))
+                                               .specialize(passthruInterface(context.interfaces.getInputType()))
+                                        << usedOptions;
+        dst.spirvAsmSources.add("frag") << StringTemplate(makeFragmentShaderAssembly(fillInterfacePlaceholderFrag()))
+                                               .specialize(context.testCodeFragments)
+                                        << usedOptions;
     }
     else
     {
         map<string, string> passthru = passthruFragments();
-        dst.spirvAsmSources.add("vert", spirVAsmBuildOptions)
-            << makeVertexShaderAssembly(passthru) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
-        dst.spirvAsmSources.add("frag", spirVAsmBuildOptions)
-            << makeFragmentShaderAssembly(context.testCodeFragments)
-            << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
+        dst.spirvAsmSources.add("vert") << makeVertexShaderAssembly(passthru) << usedOptions;
+        dst.spirvAsmSources.add("frag") << makeFragmentShaderAssembly(context.testCodeFragments) << usedOptions;
     }
 }
 
 void addShaderCodeCustomFragment(vk::SourceCollections &dst, InstanceContext context)
 {
-    addShaderCodeCustomFragment(dst, context, nullptr);
+    const auto opts = getSpirVAsmBuildOptionsFromTestInstanceContext(dst, context);
+    addShaderCodeCustomFragment(dst, context, opts.get());
 }
 
 void createCombinedModule(vk::SourceCollections &dst, InstanceContext ctx)
@@ -3116,7 +3127,7 @@ TestStatus runAndVerifyUnusedVariablePipeline(Context &context, UnusedVariableCo
 
 TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instance)
 {
-    if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getUsedApiVersion())
+    if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getEquivalentApiVersion())
     {
         TCU_THROW(NotSupportedError,
                   string("Vulkan higher than or equal to " +
@@ -3170,6 +3181,13 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     {
         TCU_THROW(NotSupportedError, "Tessellation not supported");
     }
+
+#ifndef CTS_USES_VULKANSC
+    if (instance.resources.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+    {
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+    }
+#endif
 
     // Check all required extensions are supported
     for (std::vector<std::string>::const_iterator i = instance.requiredDeviceExtensions.begin();
@@ -4209,10 +4227,20 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         dynamicStates                                         // pDynamicStates
     };
 
+    const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+    if (instance.resources.uses64BitIndexing)
+    {
+        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+        pNext                          = &pipelineFlags2CreateInfo;
+    }
+#endif
+
     const VkPipelineTessellationStateCreateInfo *tessellationInfo = hasTessellation ? &tessellationState : nullptr;
     const VkGraphicsPipelineCreateInfo pipelineParams             = {
         VK_STRUCTURE_TYPE_GRAPHICS_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                         // const void* pNext;
+        pNext,                                           // const void* pNext;
         0u,                                              // VkPipelineCreateFlags flags;
         (uint32_t)shaderStageParams.size(),              // uint32_t stageCount;
         &shaderStageParams[0],                           // const VkPipelineShaderStageCreateInfo* pStages;

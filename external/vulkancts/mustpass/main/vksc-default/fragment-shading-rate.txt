@@ -18077,6 +18077,7 @@ dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.no_frag_shader
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.shading_rates
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment_robustness2
+dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc_tests.helper_invocation
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.misc_tests.sample_mask_test
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.151x431.samples1.vs
 dEQP-VKSC.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.1x1.samples1.vs

@@ -30,6 +30,7 @@
 #include "vkImageUtil.hpp"
 #include "vktShaderObjectCreateUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkFormatLists.hpp"
 #include "deRandom.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
@@ -1224,11 +1225,6 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                             {2u, BETWEEN, "extra_output_between_2"},
                             {2u, AFTER, "extra_output_after_2"}};
 
-    const vk::VkFormat depthStencilFormats[] = {
-        vk::VK_FORMAT_D16_UNORM,         vk::VK_FORMAT_X8_D24_UNORM_PACK32, vk::VK_FORMAT_D32_SFLOAT,
-        vk::VK_FORMAT_D16_UNORM_S8_UINT, vk::VK_FORMAT_D24_UNORM_S8_UINT,   vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
-    };
-
     const struct
     {
         DummyRenderPass dummyRenderPass;
@@ -1308,9 +1304,8 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                                     if (writeGlFragDepth)
                                         continue;
 
-                                    for (uint32_t j = 0; j < DE_LENGTH_OF_ARRAY(depthStencilFormats); ++j)
+                                    for (const auto depthFormat : formats::depthFormats)
                                     {
-                                        const auto depthFormat    = depthStencilFormats[j];
                                         params.useDepthAttachment = true;
                                         params.depthFormat        = depthFormat;
 

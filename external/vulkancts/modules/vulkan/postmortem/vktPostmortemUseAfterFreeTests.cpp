@@ -22,16 +22,11 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktTestCase.hpp"
-#include "vktTestCaseUtil.hpp"
-#include "vktTestGroupUtil.hpp"
-#include "vktCustomInstancesDevices.hpp"
-#include "vktPostmortemTests.hpp"
 #include "vktPostmortemUseAfterFreeTests.hpp"
 
 #include "vkDefs.hpp"
 #include "vkRef.hpp"
 #include "vkRefUtil.hpp"
-#include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkRefUtil.hpp"
 #include "vkMemUtil.hpp"
@@ -39,21 +34,12 @@
 #include "vkQueryUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
-#include "vkDeviceUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "vkBufferWithMemory.hpp"
 
-#include "tcuCommandLine.hpp"
-#include "tcuTestLog.hpp"
-
-#include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include "deRandom.hpp"
 #include "vktPostmortemUtil.hpp"
-
-#include <vector>
-#include <memory>
 
 using namespace vk;
 
@@ -137,15 +123,14 @@ private:
 class UseAfterFreeTestInstance : public PostmortemTestInstance
 {
 public:
-    UseAfterFreeTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &localSize,
-                             const tcu::IVec3 &workSize, const BufferType bufferType);
+    UseAfterFreeTestInstance(Context &context, const uint32_t numValues, const tcu::IVec3 &workSize,
+                             const BufferType bufferType);
 
     tcu::TestStatus iterate(void);
 
 private:
     const BufferType m_bufferType;
     const uint32_t m_numValues;
-    const tcu::IVec3 m_localSize;
     const tcu::IVec3 m_workSize;
 };
 
@@ -238,16 +223,14 @@ void UseAfterFreeTestCase::initPrograms(SourceCollections &sourceCollections) co
 
 TestInstance *UseAfterFreeTestCase::createInstance(Context &context) const
 {
-    return new UseAfterFreeTestInstance(context, m_numValues, m_localSize, m_workSize, m_bufferType);
+    return new UseAfterFreeTestInstance(context, m_numValues, m_workSize, m_bufferType);
 }
 
 UseAfterFreeTestInstance::UseAfterFreeTestInstance(Context &context, const uint32_t numValues,
-                                                   const tcu::IVec3 &localSize, const tcu::IVec3 &workSize,
-                                                   const BufferType bufferType)
+                                                   const tcu::IVec3 &workSize, const BufferType bufferType)
     : PostmortemTestInstance(context)
     , m_bufferType(bufferType)
     , m_numValues(numValues)
-    , m_localSize(localSize)
     , m_workSize(workSize)
 {
 }

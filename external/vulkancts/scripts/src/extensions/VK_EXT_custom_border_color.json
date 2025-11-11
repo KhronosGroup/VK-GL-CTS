@@ -13,7 +13,8 @@
                     "VK_EXT_custom_border_color"
                 ],
                 "mandatory_variant": [
-                    "vulkan"
+                    "vulkan",
+                    "vulkansc"
                 ]
             }
         ]

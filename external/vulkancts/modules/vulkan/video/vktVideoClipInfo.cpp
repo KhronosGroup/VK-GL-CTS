@@ -22,6 +22,9 @@
  *
  * See the <vulkan_data_dir>/vulkan/video/frame_checksums.py file for
  * instructions on generating the checksums for new tests.
+ *
+ * Another option would be to run:
+ * ffmpeg -i file -f framemd5 frame_hashes.txt
  *--------------------------------------------------------------------*/
 
 #include "vktVideoClipInfo.hpp"
@@ -304,6 +307,141 @@ static const char *argonTest787[10] = {
     "58cf033ef8015fc3a34d8e2f1213d160",
 };
 
+static const char *vp9Key[10] = {
+    "22d7a1f4c4de3090b8f355dbc868155d", "1ba2c3e6afd30d9eb39a56e65580f4d7", "068513b8d436c718fe4ab43d224cc644",
+    "6d19ebf4967334a205d9b9f95fea9c3c", "ebeb6c20c0ef9df90aeb720e45921472", "b38a9add57304c9201c8535313b43cf5",
+    "76689133db73fbacf62e516ec2b7fa38", "dc559c4653e5655d1cc041bb24319416", "9f63bbffa3f895a1e74aa5b0d9fc866f",
+    "784f48e71c5ea61302b90e4ed1fea19d",
+};
+
+static const char *vp9Basic[10] = {
+    "63182478e0c6d19f68fe33c52c05cacb", "dac743d4f969ad1524c326720d3a755f", "7a4cf4bb41ee588ff58f5f25b9884a48",
+    "c8c3d661503a4a30c5762fba4fd40c43", "968dd8f17320b6f8ef3f51699b5ae14d", "d5c3da6c2f255fc75a51764f86de8573",
+    "3535c99abec7335fe9bf8407cf30ab39", "6a4c815da4fa19a0cf22f2dc6f8b5807", "a03b0ddd18c57f55d79aad6dabfb2e41",
+    "a20fac6557d17cbc511930fb087bd07a",
+};
+
+static const char *vp9ExistingFrames[10] = {
+    "b71ca5ad650170ac921a71a6440fb508", "edc30ba14b73198ca827c1b216957dec", "1902c5b3a82f6bdeb80a5b053909df04",
+    "9a96e33ed546d7961c6e5bc48244a5c7", "b02a48630b0f3c08c61dd2518b55ea39", "8ac9cec1101a46bf4ba20191b7ba3f07",
+    "88ea8c3cb9eca47152b5d22435a06675", "bff3406209ec0d592a891dff2b58d6cd", "b71ca5ad650170ac921a71a6440fb508",
+    "edc30ba14b73198ca827c1b216957dec",
+};
+/// @brief Generated using ffmpeg
+static const char *vp9_351x287[10] = {
+    "f82842800bee8e31ab7c9abe960412ce", "5448dc1a6662fcd6b2acf1440a76bb1d", "ac2c9263c142ef66d024e6be793581ef",
+    "95c3a7d0b2efe962aabcfb873bb6cbd5", "91997eadcb32e03bb693e08b3730a689", "edc112b7a057a76e19866ed0f99f5ac2",
+    "584e083ec1e75a3f38d088a485afd589", "250f730b029c5fc5ee08633cce9c6a19", "9fac7e9a1c0700c58b7b6663b9729f50",
+    "868409da3b0b39f3f3297b96c6ce7689",
+};
+
+static const char *vp9_tile_1x2[10] = {
+    "124dcaf4393bbc676cefc1dcfc1474b9", "5f3357dc102c9db11e7b68d277f31f99", "a5fb34b4a52fbc7b8290bffe988ffb01",
+    "1405fa1086ac63d4f5e8ed1ca0ad192a", "0ead62c1d7c7c44f316e601d8fea16ba", "204e05b399becce6e936bb3ac739fbe3",
+    "a27c70e46f6b2c40d6d0a13befede3ac", "71434072992ec693ae809086760cad22", "790a525234048c0645cc81f6a042c9c3",
+    "751b37a7b9401a5ca30dc2673070f881",
+};
+
+static const char *vp9_tile_1x4[10] = {
+    "c8a7f0299fb945318bbb6fd531885339", "22dde3e7feb2177aa350db7331e8fa8f", "ba644eea2bd5cded05a7b82224a02d30",
+    "0611f83948b22eb4bd5973fa0485dcda", "a8eea6193af51dbd06d953165b3de261", "1e76d8ec66941c9185e0747307a1496c",
+    "d8404c3e80c2773173e362ff622b6f3c", "beed5600864a9b961c983d7a7a670bc1", "9efbe9228f6a437fe450215f711ea429",
+    "1b65f47a5c11c5b763123d337482bd92",
+};
+
+static const char *vp9_tile_1x8[10] = {
+    "f91ceda125d592a3f9537d02df06c4f3", "a911be78a743ed0f21463bfb82efbd44", "85d7cddba48b9e26b089da7f40fd4c71",
+    "39241fe3e171fafbc95966c03042699d", "7b8500c53fce2702d204b6fc888f33fb", "8197c61dcecdbd975fe54771f34c5df2",
+    "f28ebf18412521df51b9d6a3ffd44f4b", "0d576800a02952e825f1721fc13ac695", "0eb34a14d7a89ee4c951759a35673b13",
+    "11fb21038d63e3b431f92e0a4152c2f4",
+};
+
+static const char *vp9_tile_4x4[5] = {"a3b9b715a7e2aed15430faabb3c8b7b3", "85fa2105aa554e680056d1a413ac9673",
+                                      "4abb371be22d7914bb62b30d901c30ce", "83c2528204ae3fd4d4cc8fc67b641d3a",
+                                      "86fcc862b8c8d64690ba3c4a6bff9f74"};
+
+static const char *vp9_resize[10] = {
+    "539e9964364c1db09ad18f2e01713799", "fb76e673ba2a5342bfed8a1523e0a425", "b0e6881ac6c1e0d839f80f292cb1afd4",
+    "f0dbe138413e55c3ee9aa94717fc9f2a", "ff1ff9a16be47910e17f5d0aa857e6d1", "79ccc2a656c80c8d4f2bc3c154ebc408",
+    "2c6f7b8c72a0103cd1fa37270f6d9962", "9f837ba58bf07d1e1a8b6a30a9a588e8", "81ecfd1810b25395af999e557ed4b938",
+    "cee53e71d6347333fd76d421ece1740f",
+};
+
+/// @brief Generated using ffmpeg
+static const char *vp9_lf[30] = {
+    "a83c7f4602f595fd09e97f8c8a7277ec", "53e1a3fd44932883a8dd112bbb0e359f", "4bb16d168f9f0a7702c31a68bb8ff36c",
+    "1b2df157913aba96553aaf8d51491bf3", "9d041532e42fca7a4062cd3e9b75413b", "0dbac5ca06e13714d10e99042aefe375",
+    "bb83a507a65d2a640b08f42a77bb37f6", "176f992d37c7daa36135cddb49398de3", "c41834f72b3281cf6aaa66fd7416e6c3",
+    "790d4e6b1609dec782ff978e2003d318", "449622f741f7577c1d721f2e9eb25091", "8ef8543f7895c87ab04491b0150628e5",
+    "88ef626aca4b2bcb8c58a69db20a7b02", "4b2f7adc2e1872ecdd9ffa7d1f1df4a6", "7b162660225022ef31e39c34fee3418e",
+    "2b439a4b846edcc69cdf6075de5ac8fb", "ba2eb1ba0ed9abf701a53a94c9c626fc", "9fbec5d5334fd5e917feee756b652d93",
+    "93b5eb99ea54abc5fa90c5674499e27e", "04a98408e9b0aed28932ef1dfdcfdb6c", "9856ba976bed30bc790a3f28e926b092",
+    "2b0f450e9724cfc57b846148ff876e51", "163757f3529369b9789ea606387b831d", "de5ed2aff936c54f3378d0dcc2575d13",
+    "1f642826b8a6fb111c7c6130481dab89", "b8e3a77c7d3c5c56f67aa7409fb5404c", "eb06cb4f471e42d7fc06929a442cca8b",
+    "53471649a5080b306d2c04a4f7673bdf", "70996be0cc5d2bd97025015dd50caa99", "ff3280a8562fdf6697c4a7cb9c1bf0a0",
+};
+
+static const char *vp9_10bits[10] = {
+    "dcc69dd5e2863fa4732dae921fd24c52", "4a5e28fff3874b168c530a46fe186d2b", "9182e2b3eca74ac8b1ee7e0f9d0c2803",
+    "d4c2a6198c896ecc4cc657c3a709679a", "a34a52a934526f53dc1038717d74f1b4", "0bdd189f2f4f936587601076a37149f2",
+    "9e1ec66ddf45843caa26b2df5fafabed", "b21f27c3d4bd8e1d2558279e7075996f", "9446ca626e10a164f9670a523c45595f",
+    "582e5e1875e4641db89aaa96f3e7f085",
+};
+
+static const char *vp9_intra_only[7] = {
+    "d57529601178948afa4818c3c8938884", "d47e00250c45733d64af067a417bcd06", "984e41cd8350808ac6129746b2377818",
+    "a5fa62996b4bb52e72e335722cf55bef", "b71ca5ad650170ac921a71a6440fb508", "76ba63001170b8992fc72be5c4ace731",
+    "c4e7f96a8fd58d901b1d881926ddae09",
+};
+
+static const char *vp9_seg_key[30] = {
+    "d4f0e4b606ddb40b482aecb24cf3bc63", "692ec092bc5928fa6430d056e883759a", "dad790df33430899fed98886a24b37e5",
+    "7e66e793ac9462a40dd5b963fb62e667", "0d795c6e20f42f09aca0ddb9dffaa6e8", "0ef3739c4ab2c51f0ab8e290eadad77e",
+    "04a15f765960263c1b4a5a8822e17322", "116d518830c958bf46759fd79bc74198", "58ea67addab05825cc2e5f2ab99fca4b",
+    "590f6e5deea6dde21dc1098fa2017c2f", "895479957b0882ccce4159782dee8deb", "cc8e05afdfb6f9c7042fd6f9e9d49140",
+    "3e47c556a63af90f1ca4609f97f25d2c", "e5ca5dce8cbd39412db2fe219d6d2594", "c62b456e12230660d26eb7226f257d0c",
+    "e184c961b373de465d3242f32f7cf3ed", "7466b91858f740fc28965a63effe05d6", "c8f06a3b1e471c4e7a9efd71a30dfe3b",
+    "d4fb95148963b2eaff0211ddc5117c13", "c646526b40277289520d47ed8ca3b644", "e441ae686fa444e4e3584543611043ba",
+    "68d707ef6909bfbc02dcbd9e392a04f6", "1ff285d17a26622b61bd2651754602b1", "c272192987e44e54e5335e6416bd15a5",
+    "8f6f02572181eb4855dcd4c957e57d2e", "baf03eb567fd092eeb6f08ff5e098350", "479c78bd3da0892b8d4e32c99ec4739f",
+    "d39a52f6e30ef10462bdef1006809e88", "d58395369806221efe9ba88513319d8a", "459e77e83c510ee1d79bf069752d44e5",
+};
+
+static const char *vp9_quant_00[2] = {
+    "c3fbb7abbdb5bd4ed4a7e34768c17df1",
+    "08203c2595bdb2d58ead6f921345d699",
+};
+
+static const char *vp9_quant_26[2] = {
+    "4f645e0f354da77b9e2f2a6753c361da",
+    "b7542998ec298273ca662bc9b658d10e",
+};
+
+static const char *vp9_quant_59[2] = {
+    "ae9d99e9d16ef20073300559566844ae",
+    "da9405e5a6bfe4ed18d927ba2004008e",
+};
+
+static const char *vp9_resize_1_2[30] = {
+    "a8a62e90b20b9ef6488d90a5dea2da8a", "b2e46d14db6191e1449e46b7188c5f2f", "12c31b571e4e2d90fcd512d77965b4cb",
+    "b3119bc49d4623c8ea3becd05e07463f", "1675882b0ea5bd4a5065040752d5fe3e", "923daa2c6d59e03ae8cf1af2c78c5bb2",
+    "08f2140d69cc820051a85892b2ff2a01", "06d914b93342b270be99db67602d7793", "c28cb062ec28f1e75e0eb29bd647a5de",
+    "82af7516ed6442bc185d6596d83ad9b8", "d871744118e744aca6276bebeda410fc", "c5b1807e36e91956cc0229c4756ea61e",
+    "9f167be5df53f45f9cc1c6ab9bc950cf", "d1c3488d466f5b30bca9d8b36130afb6", "b0088f83d803caa9ec01be43dc551d47",
+    "10ac93e04d1b4e9bae012263f3d15738", "fda2014ed3bd8bf097086e93605f450c", "3ddc4680540a6f205183476027ad204a",
+    "efefcdbc50a9b47b12bf50ff3d010490", "994f082fedeb452d5f3f98c58efaf5d0", "fe4e8f7e62c6706767d68b9bd6313518",
+    "52c3f80fb43f903c90087200ef8452f6", "f480f19eb44c6bc260644167f5806e95", "22c2d55bdee971a50d3517d95d99d0bf",
+    "3b496ba30d015b81a2b55afc7cdb2d35", "0f721548463ea46ea9d4902a3e1c6800", "5795396282033a1c656457fece4419d6",
+    "47bde85a833d372569fc4c89a56dfd80", "32b6085b561145488cd12d42199a3b64", "f31254d89f891ba7a0a98423118303a4",
+};
+
+static const char *vp9_svc[10] = {
+    "4c307af45bb8a5aefb8cca2641c9128f", "8e373b92a12a505c2621ce323f41ad43", "54adf6d4707e9a1eb761c0fe2c631316",
+    "b9402d695a11b175cb06a4405d7c0bc1", "ef28c80472bf0ac41da24a926d0d7906", "ffb2d69beaa0cdb81a8f614bf7e5c82a",
+    "dfc43af1792c5a0442b37754a85fb623", "3ed7fc511566d222f9b6ff259b193372", "7c14dfb85421cbb721747cbcd92cc612",
+    "41bfaf416e5ed47069eda94354fed92b",
+};
+
 static auto H264_420_8BIT_HIGH_DECODE_PROFILE = VideoProfileInfo{
     VK_VIDEO_CODEC_OPERATION_DECODE_H264_BIT_KHR, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
     VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, STD_VIDEO_H264_PROFILE_IDC_HIGH};
@@ -327,6 +465,13 @@ static auto AV1_420_10BIT_MAIN_DECODE_PROFILE = VideoProfileInfo{
 static auto AV1_MONOCHROME_10BIT_MAIN_DECODE_PROFILE = VideoProfileInfo{
     VK_VIDEO_CODEC_OPERATION_DECODE_AV1_BIT_KHR, VK_VIDEO_CHROMA_SUBSAMPLING_MONOCHROME_BIT_KHR,
     VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR, STD_VIDEO_AV1_PROFILE_MAIN};
+
+static auto VP9_420_8BIT_0_DECODE_PROFILE = VideoProfileInfo{
+    VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+    VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_8_BIT_KHR, STD_VIDEO_VP9_PROFILE_0};
+static auto VP9_420_10BIT_0_DECODE_PROFILE = VideoProfileInfo{
+    VK_VIDEO_CODEC_OPERATION_DECODE_VP9_BIT_KHR, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
+    VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR, VK_VIDEO_COMPONENT_BIT_DEPTH_10_BIT_KHR, STD_VIDEO_VP9_PROFILE_2};
 
 static auto H264_420_8BIT_MAIN_ENCODE_PROFILE = VideoProfileInfo{
     VK_VIDEO_CODEC_OPERATION_ENCODE_H264_BIT_KHR, VK_VIDEO_CHROMA_SUBSAMPLING_420_BIT_KHR,
@@ -383,11 +528,11 @@ static ClipInfo Clips[] = {
     },
     {
         CLIP_H265_ENC_F,
-        "yuv/176x144_30_i420.yuv",
+        "yuv/720x480_420_8le.yuv",
         {H265_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN,
-        176,
-        144,
+        720,
+        480,
         24,
     },
     {
@@ -401,11 +546,11 @@ static ClipInfo Clips[] = {
     },
     {
         CLIP_H265_ENC_H,
-        "yuv/352x288_15_i420.yuv",
+        "yuv/1920x1080_420_8le.yuv",
         {H265_420_8BIT_MAIN_ENCODE_PROFILE},
         ElementaryStreamFraming::UNKNOWN,
-        352,
-        288,
+        1920,
+        1080,
         15,
     },
     {
@@ -660,6 +805,222 @@ static ClipInfo Clips[] = {
         10,
         0,
         argonTest787,
+    },
+    {
+        CLIP_VP9_DEC_KEYFRAME_10,
+        "vp9/vp9-176x144-key-10.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9Key,
+    },
+    {
+        CLIP_VP9_DEC_BASIC_10,
+        "vp9/vp9-512x288-basic-10.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9Basic,
+    },
+    {
+        CLIP_VP9_DEC_SHOW_EXISTING_FRAMES_10,
+        "vp9/vp9-352x288-show-existing-frames.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9ExistingFrames,
+    },
+    {
+        CLIP_VP9_DEC_351_287_10,
+        "vp9/vp9-351x287-basic.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9_351x287,
+    },
+    {
+        CLIP_VP9_DEC_TILE_1X2_10,
+        "vp9/vp9-1920x1080-tile-1x2.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9_tile_1x2,
+    },
+    {
+        CLIP_VP9_DEC_TILE_1X4_10,
+        "vp9/vp9-1920x1080-tile-1x4.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9_tile_1x4,
+    },
+    {
+        CLIP_VP9_DEC_TILE_1X8_10,
+        "vp9/vp9-3980x2160-tile-1x8.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9_tile_1x8,
+    },
+    {
+        CLIP_VP9_DEC_TILE_4X4_5,
+        "vp9/vp9-1920x1080-tile-4x4.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        5,
+        0,
+        vp9_tile_4x4,
+    },
+    {
+        CLIP_VP9_DEC_RESIZE_10,
+        "vp9/vp9-resize.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9_resize,
+    },
+    {
+        CLIP_VP9_DEC_LF,
+        "vp9/vp9-352x240-lf.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        30,
+        0,
+        vp9_lf,
+    },
+    {
+        CLIP_VP9_DEC_10BITS_10,
+        "vp9/vp9-320x240-10bits.ivf",
+        {VP9_420_10BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9_10bits,
+    },
+    {
+        CLIP_VP9_DEC_INTRA_ONLY,
+        "vp9/vp9-352x288-intra-only.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        7,
+        0,
+        vp9_intra_only,
+    },
+    {
+        CLIP_VP9_DEC_SEG_KEY_30,
+        "vp9/vp9-852x480-segkey.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        30,
+        0,
+        vp9_seg_key,
+    },
+    {
+        CLIP_VP9_DEC_QUANT_00,
+        "vp9/vp9-352x288-quant-00.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        2,
+        0,
+        vp9_quant_00,
+    },
+    {
+        CLIP_VP9_DEC_QUANT_26,
+        "vp9/vp9-352x288-quant-26.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        2,
+        0,
+        vp9_quant_26,
+    },
+    {
+        CLIP_VP9_DEC_QUANT_59,
+        "vp9/vp9-352x288-quant-59.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        2,
+        0,
+        vp9_quant_59,
+    },
+    {
+        CLIP_VP9_DEC_RESIZE_1_2,
+        "vp9/vp9-resize-1-2.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        30,
+        0,
+        vp9_resize_1_2,
+    },
+    {
+        CLIP_VP9_DEC_SVC_10,
+        "vp9/vp9-1280x720-svc.ivf",
+        {VP9_420_8BIT_0_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        0,
+        0,
+        0,
+        10,
+        0,
+        vp9_svc,
     },
 };
 

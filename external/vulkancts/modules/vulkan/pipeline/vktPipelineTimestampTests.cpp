@@ -60,12 +60,6 @@
 #include <time.h>
 #include <algorithm>
 
-#ifdef CTS_USES_VULKANSC
-// VulkanSC supports VK_EXT_calibrated_timestamps but not VK_KHR_calibrated_timestamps
-#define VkCalibratedTimestampInfoKHR VkCalibratedTimestampInfoEXT
-#define VkTimeDomainKHR VkTimeDomainEXT
-#endif // CTS_USES_VULKANSC
-
 #if (DE_OS == DE_OS_WIN32)
 #define VC_EXTRALEAN
 #define WIN32_LEAN_AND_MEAN
@@ -737,7 +731,10 @@ tcu::TestStatus TimestampTestInstance::verifyTimestamp(void)
                 return tcu::TestStatus::fail("Timestamp query not available");
             }
 
-            if (m_timestampValues[first] < m_timestampValues[second])
+            const bool canCompare = m_stages[first] == VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT ||
+                                    m_stages[second] == VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT ||
+                                    m_stages[first] == m_stages[second];
+            if (canCompare && m_timestampValues[first] < m_timestampValues[second])
             {
                 return tcu::TestStatus::fail("Latter stage timestamp is smaller than the former stage timestamp.");
             }
@@ -875,7 +872,7 @@ void TimestampTestInstance::createCustomDeviceWithTransferOnlyQueue(void)
     auto deviceFeatures2      = m_context.getDeviceFeatures2();
 
     const void *pNext = &deviceFeatures2;
-    if (m_context.getUsedApiVersion() < VK_API_VERSION_1_2)
+    if (m_context.getEquivalentApiVersion() < VK_API_VERSION_1_2)
     {
         queryResetFeatures.pNext = &deviceFeatures2;
         pNext                    = &queryResetFeatures;

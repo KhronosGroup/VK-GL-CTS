@@ -50,6 +50,7 @@
 #include <algorithm>
 #include <sstream>
 #include <vector>
+#include <limits>
 
 namespace vkt
 {
@@ -1731,6 +1732,457 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveTopologyTests(tcu::TestContext &t
 }
 
 #ifndef CTS_USES_VULKANSC
+// RADV had an issue where it would not reset some of the primitive restart state properly when mixing indexed with
+// non-indexed draws. The purpose of these tests is to try to exercise some of those circumstances and make sure
+// implementations work correctly when mixing indexed and non-indexed draws with primitive restart.
+//
+// * extraIndexedDraws: we normally proceed to draw with indices first, then switch to normal draws. When this is
+//   true, go back to indexed draws after the last non-indexed one, to check the transition in the opposite direction.
+//
+// * triangleList: use triangle lists instead of triangle strips.
+//
+// * dynamicTopology: make the topology dynamic to make things a bit more complicated.
+//
+// * largeNonIndexedDraw: if the implementation incorrectly disables primitive restart, it may run into issues when
+//   drawing a large number of vertices in a single draw call. Specifically, when the vertex index goes over the restart
+//   index. Since we use 16-bit indices in these tests, largeNonIndexedDraw exchanges the set of non-indexed draws for a
+//   single call that draws over one of the quadrants, using a large vertex count, and makes sure only the last couple
+//   of triangles actually cover the quadrant, so the implementation needs to reach the end correctly.
+//
+struct PrimitiveRestartMixParams
+{
+    PipelineConstructionType constructionType;
+    bool extraIndexedDraws; // Draw using indices after the first draw without them; otherwise, skip those quadrants.
+    bool triangleList;      // true == triangle list, false == triangle strip
+    bool dynamicTopology;
+    bool largeNonIndexedDraw; // For the non-indexed draw, use a separate large vertex buffer.
+};
+
+class PrimitiveRestartMixTest : public vkt::TestInstance
+{
+public:
+    PrimitiveRestartMixTest(Context &context, const PrimitiveRestartMixParams &params)
+        : vkt::TestInstance(context)
+        , m_params(params)
+    {
+    }
+    ~PrimitiveRestartMixTest() = default;
+
+    tcu::TestStatus iterate() override;
+
+protected:
+    const PrimitiveRestartMixParams m_params;
+};
+
+class PrimitiveRestartMixCase : public vkt::TestCase
+{
+public:
+    PrimitiveRestartMixCase(tcu::TestContext &testCtx, const std::string &name, const PrimitiveRestartMixParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~PrimitiveRestartMixCase(void) = default;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new PrimitiveRestartMixTest(context, m_params);
+    }
+
+protected:
+    const PrimitiveRestartMixParams m_params;
+};
+
+void PrimitiveRestartMixCase::checkSupport(Context &context) const
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.constructionType);
+
+    if (m_params.dynamicTopology)
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
+
+    if (m_params.triangleList)
+        context.requireDeviceFunctionality("VK_EXT_primitive_topology_list_restart");
+}
+
+void PrimitiveRestartMixCase::initPrograms(vk::SourceCollections &dst) const
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "layout (location=0) in vec4 inPos;\n"
+         << "layout (location=1) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 vtxColor;\n"
+         << "void main (void) {\n"
+         << "    gl_Position = inPos;\n"
+         << "    vtxColor = inColor;\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 vtxColor;\n"
+         << "layout (location=0) out vec4 fragColor;\n"
+         << "void main (void) {\n"
+         << "    fragColor = vtxColor;\n"
+         << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+// The idea is drawing once with indices and primitive restart enabled and then drawing again without indices and
+// without disabling primitive restart. For this, we will create a framebuffer and draw over each quadrant in each step.
+tcu::TestStatus PrimitiveRestartMixTest::iterate()
+{
+    const auto ctx = m_context.getContextCommonData();
+    const tcu::IVec3 fbExtent(32, 32, 1);
+    const auto extent  = makeExtent3D(fbExtent);
+    const auto format  = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto fbUsage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+
+    const auto quadrantExtent      = fbExtent / tcu::IVec3(2, 2, 1);
+    const auto quadrantExtentU     = quadrantExtent.asUint();
+    const auto verticesPerPixel    = (m_params.triangleList ? 6u : 4u);
+    const auto totalVertices       = verticesPerPixel * extent.width * extent.height;
+    const auto verticesPerQuadrant = verticesPerPixel * quadrantExtentU.x() * quadrantExtentU.y();
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extent, format, fbUsage, VK_IMAGE_TYPE_2D);
+
+    const std::vector<tcu::Vec4> quadrantColors{
+        tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 1.0f, 1.0f, 1.0f),
+        tcu::Vec4(1.0f, 0.0f, 1.0f, 1.0f),
+        tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f),
+    };
+
+    std::vector<Vertex4RGBA> vertices;
+    std::vector<Vertex4RGBA> extraVertices;
+
+    const auto kRestart = std::numeric_limits<uint16_t>::max(); // Restart index value.
+    DE_ASSERT(totalVertices < static_cast<uint32_t>(kRestart)); // Or else we would run into the restart value.
+    std::vector<uint16_t> indices;
+
+    const auto normalizeCoords = [](int c, int len)
+    { return static_cast<float>(c) / static_cast<float>(len) * 2.0f - 1.0f; };
+
+    const auto appendTrianglesForPixel = [&](int pixX, int pixY, int width, int height, const tcu::Vec4 &color)
+    {
+        const float xLeft   = normalizeCoords(pixX, width);
+        const float xRight  = normalizeCoords(pixX + 1, width);
+        const float yTop    = normalizeCoords(pixY, height);
+        const float yBottom = normalizeCoords(pixY + 1, height);
+
+        const std::vector<tcu::Vec4> pixelCorners{
+            tcu::Vec4(xLeft, yTop, 0.0f, 1.0f),
+            tcu::Vec4(xLeft, yBottom, 0.0f, 1.0f),
+            tcu::Vec4(xRight, yTop, 0.0f, 1.0f),
+            tcu::Vec4(xRight, yBottom, 0.0f, 1.0f),
+        };
+
+        if (m_params.triangleList)
+        {
+            vertices.push_back({pixelCorners.at(0u), color});
+            vertices.push_back({pixelCorners.at(1u), color});
+            vertices.push_back({pixelCorners.at(2u), color});
+            vertices.push_back({pixelCorners.at(2u), color});
+            vertices.push_back({pixelCorners.at(1u), color});
+            vertices.push_back({pixelCorners.at(3u), color});
+        }
+        else
+        {
+            for (const auto &coords : pixelCorners)
+                vertices.push_back({coords, color});
+        }
+    };
+
+    struct Quadrant
+    {
+        int offsetX;
+        int offsetY;
+        int width;
+        int height;
+        bool skipGeometry; // Insert restart indices for this quadrant so no geometry is drawn.
+        bool indexedDraw;  // Draw this quadrant with/without indices.
+    };
+
+    // clang-format off
+    const std::vector<Quadrant> quadrants{
+        {0,                  0,                  quadrantExtent.x(), quadrantExtent.y(), false, true},  // Top left.
+        {quadrantExtent.x(), quadrantExtent.y(), quadrantExtent.x(), quadrantExtent.y(), true,  true},  // Bottom right.
+        {quadrantExtent.x(), 0,                  quadrantExtent.x(), quadrantExtent.y(), false, false}, // Top right.
+        {0,                  quadrantExtent.y(), quadrantExtent.x(), quadrantExtent.y(), false, true},  // Bottom left.
+    };
+    // clang-format on
+
+    DE_ASSERT(quadrants.size() == quadrantColors.size());
+    uint32_t vertexCount = 0u;
+
+    const auto vertexCountWithAppendix = static_cast<uint32_t>(kRestart) + 1u;
+    vertices.reserve(vertexCountWithAppendix);
+    indices.reserve(totalVertices);
+
+    for (size_t i = 0; i < quadrants.size(); ++i)
+    {
+        const auto &quadrant = quadrants.at(i);
+        const auto &color    = quadrantColors.at(i);
+
+        for (int y = 0; y < quadrant.height; ++y)
+            for (int x = 0; x < quadrant.width; ++x)
+            {
+                // Append the vertices for this pixel.
+                appendTrianglesForPixel(x + quadrant.offsetX, y + quadrant.offsetY, fbExtent.x(), fbExtent.y(), color);
+
+                // Append the vertex indices for this pixel.
+                for (uint32_t j = 0; j < verticesPerPixel; ++j)
+                    indices.push_back(static_cast<uint16_t>(vertexCount + j));
+
+                // Make sure indices for quadrants without geometry are set up in ways that restart the primitive.
+                if (quadrant.skipGeometry)
+                {
+                    if (m_params.triangleList)
+                    {
+                        // Use the primitive restart index for both added triangles.
+                        indices.at(indices.size() - 1u) = kRestart;
+                        indices.at(indices.size() - 4u) = kRestart;
+                    }
+                    else
+                    {
+                        // Similar for the strip, but we overwrite the indices of the last two vertices in the quad.
+                        indices.at(indices.size() - 1u) = kRestart;
+                        indices.at(indices.size() - 2u) = kRestart;
+                    }
+                }
+                vertexCount += verticesPerPixel;
+            }
+
+        // Maybe use an alternative large vertex buffer for quadrants that do not use indexed draws.
+        if (m_params.largeNonIndexedDraw && !quadrant.indexedDraw)
+        {
+            // This should only happen with one quadrant.
+            DE_ASSERT(extraVertices.empty());
+            DE_ASSERT(m_params.triangleList);
+
+            // We'll add a large list of out-of-screen vertinces and, after that, we'll append a couple of triangles
+            // that cover the whole quadrant, to make sure they are used correctly.
+            extraVertices.reserve(vertexCountWithAppendix * 2u);
+
+            while (extraVertices.size() <= static_cast<size_t>(vertexCountWithAppendix))
+            {
+                extraVertices.push_back({{100.0f, 100.0f, 0.0f, 1.0f}, color});
+                extraVertices.push_back({{100.0f, 110.0f, 0.0f, 1.0f}, color});
+                extraVertices.push_back({{110.0f, 100.0f, 0.0f, 1.0f}, color});
+            }
+
+            // Final meaningfull triangles.
+            {
+                const auto xLeft   = normalizeCoords(quadrant.offsetX, fbExtent.x());
+                const auto xRight  = normalizeCoords(quadrant.offsetX + quadrant.width, fbExtent.x());
+                const auto yTop    = normalizeCoords(quadrant.offsetY, fbExtent.y());
+                const auto yBottom = normalizeCoords(quadrant.offsetY + quadrant.height, fbExtent.y());
+
+                extraVertices.push_back({tcu::Vec4(xLeft, yTop, 0.0f, 1.0f), color});
+                extraVertices.push_back({tcu::Vec4(xLeft, yBottom, 0.0f, 1.0f), color});
+                extraVertices.push_back({tcu::Vec4(xRight, yTop, 0.0f, 1.0f), color});
+                extraVertices.push_back({tcu::Vec4(xRight, yTop, 0.0f, 1.0f), color});
+                extraVertices.push_back({tcu::Vec4(xLeft, yBottom, 0.0f, 1.0f), color});
+                extraVertices.push_back({tcu::Vec4(xRight, yBottom, 0.0f, 1.0f), color});
+            }
+        }
+    }
+
+    // Make sure the restart index is valid and contains coordinates that will trigger a problem by creating valid
+    // triangles that provide coverage to one or more pixel in the framebuffer. As the restart indices will be used for
+    // the bottom right quadrant, we use the middle of the right edge of the framebuffer as the invalid coordinate. If
+    // it's used, it should provide some coverage.
+    while (de::sizeU32(vertices) < vertexCountWithAppendix)
+        vertices.push_back({tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f), quadrantColors.at(1u)});
+
+    const VkDeviceSize vtxBufferOffset = 0;
+    const auto vtxBuffer =
+        makeBufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, vertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+    const auto idxBuffer =
+        makeBufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, indices, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+
+    // Extra vertices buffer, if needed.
+    std::unique_ptr<BufferWithMemory> extraVtxBuffer;
+    if (!extraVertices.empty())
+        extraVtxBuffer.reset(
+            makeBufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, extraVertices, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT)
+                .release());
+
+    const std::vector<VkVertexInputBindingDescription> inputBindings{
+        makeVertexInputBindingDescription(0u, DE_SIZEOF32(Vertex4RGBA), VK_VERTEX_INPUT_RATE_VERTEX),
+    };
+
+    const std::vector<VkVertexInputAttributeDescription> inputAttributes{
+        makeVertexInputAttributeDescription(0u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(Vertex4RGBA, position))),
+        makeVertexInputAttributeDescription(1u, 0u, VK_FORMAT_R32G32B32A32_SFLOAT,
+                                            static_cast<uint32_t>(offsetof(Vertex4RGBA, color))),
+    };
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(inputBindings),
+        de::dataOrNull(inputBindings),
+        de::sizeU32(inputAttributes),
+        de::dataOrNull(inputAttributes),
+    };
+
+    const auto goodTopology =
+        (m_params.triangleList ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP);
+    const auto badTopology =
+        (m_params.triangleList ? VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP : VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+    const auto staticTopology = (m_params.dynamicTopology ? badTopology : goodTopology);
+
+    const VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, nullptr, 0u, staticTopology, VK_TRUE,
+    };
+
+    std::vector<VkDynamicState> dynamicStates;
+    if (m_params.dynamicTopology)
+        dynamicStates.push_back(VK_DYNAMIC_STATE_PRIMITIVE_TOPOLOGY);
+
+    const VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(fbExtent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(fbExtent));
+
+    PipelineLayoutWrapper pipelineLayout(m_params.constructionType, ctx.vkd, ctx.device);
+    const auto &binaries = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    RenderPassWrapper renderPass(m_params.constructionType, ctx.vkd, ctx.device, format);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(), extent.width,
+                                 extent.height);
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
+                                     m_params.constructionType);
+    pipeline.setDefaultRasterizationState()
+        .setDefaultColorBlendState()
+        .setDefaultMultisampleState()
+        .setDynamicState(&dynamicStateCreateInfo)
+        .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragShader)
+        .setupFragmentOutputState(renderPass.get(), 0u)
+        .buildPipeline();
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), clearColor);
+    pipeline.bind(cmdBuffer);
+    if (m_params.dynamicTopology)
+        ctx.vkd.cmdSetPrimitiveTopology(cmdBuffer, goodTopology);
+    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vtxBuffer->get(), &vtxBufferOffset);
+    ctx.vkd.cmdBindIndexBuffer(cmdBuffer, idxBuffer->get(), 0, VK_INDEX_TYPE_UINT16);
+
+    // Draw loop.
+    uint32_t vertexDrawOffset = 0u;
+    bool drewWithoutIndices   = false;
+
+    for (size_t i = 0; i < quadrants.size(); ++i)
+    {
+        const auto &quadrant = quadrants.at(i);
+
+        // If we've already drawn without indices and this quadrant would be drawn with them, but we do not want extra
+        // indexed draws, skip the quadrant.
+        if (drewWithoutIndices && quadrant.indexedDraw && !m_params.extraIndexedDraws)
+            continue;
+
+        bool breakLoop = false; // Helper to break out of both loops.
+        for (int y = 0; y < quadrantExtent.y(); ++y)
+        {
+            for (int x = 0; x < quadrantExtent.x(); ++x)
+            {
+                const auto firstVertex =
+                    static_cast<uint32_t>(y * quadrantExtent.x() + x) * verticesPerPixel + vertexDrawOffset;
+
+                if (quadrant.indexedDraw)
+                    ctx.vkd.cmdDrawIndexed(cmdBuffer, verticesPerPixel, 1u, firstVertex, 0, 0u);
+                else
+                {
+                    drewWithoutIndices = true;
+
+                    if (m_params.largeNonIndexedDraw)
+                    {
+                        // Single draw for the whole quadrant, as a large triangle list.
+                        DE_ASSERT(extraVtxBuffer);
+                        DE_ASSERT(m_params.triangleList);
+
+                        if (x == 0 && y == 0)
+                        {
+                            ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &extraVtxBuffer->get(), &vtxBufferOffset);
+                            ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(extraVertices), 1u, 0u, 0u);
+                            ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vtxBuffer->get(), &vtxBufferOffset);
+
+                            breakLoop = true;
+                            break;
+                        }
+                    }
+                    else
+                        ctx.vkd.cmdDraw(cmdBuffer, verticesPerPixel, 1u, firstVertex, 0u);
+                }
+            }
+
+            if (breakLoop)
+                break;
+        }
+
+        vertexDrawOffset += verticesPerQuadrant;
+    }
+
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(format);
+    tcu::TextureLevel refLevel(tcuFormat, fbExtent.x(), fbExtent.y(), fbExtent.z());
+
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, clearColor);
+
+    {
+        const auto topLeft = tcu::getSubregion(reference, 0, 0, quadrantExtent.x(), quadrantExtent.y());
+        tcu::clear(topLeft, quadrantColors.at(0u));
+
+        const auto topRight =
+            tcu::getSubregion(reference, quadrantExtent.x(), 0, quadrantExtent.x(), quadrantExtent.y());
+        tcu::clear(topRight, quadrantColors.at(2u));
+
+        if (m_params.extraIndexedDraws)
+        {
+            const auto bottomLeft =
+                tcu::getSubregion(reference, 0, quadrantExtent.y(), quadrantExtent.x(), quadrantExtent.y());
+            tcu::clear(bottomLeft, quadrantColors.at(3u));
+        }
+    }
+
+    auto &colorBufferAlloc = colorBuffer.getBufferAllocation();
+    invalidateAlloc(ctx.vkd, ctx.device, colorBufferAlloc);
+    tcu::ConstPixelBufferAccess result(tcuFormat, fbExtent, colorBufferAlloc.getHostPtr());
+
+    auto &log = m_context.getTestContext().getLog();
+    const tcu::Vec4 threshold(0.0f);
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_EVERYTHING))
+        TCU_FAIL("Unexpected colors found in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests(tcu::TestContext &testCtx,
                                                             PipelineConstructionType pipelineConstructionType)
 {
@@ -1857,6 +2309,27 @@ de::MovePtr<tcu::TestCaseGroup> createPrimitiveRestartTests(tcu::TestContext &te
     primitiveRestartTests->addChild(indexUint16Tests.release());
     primitiveRestartTests->addChild(indexUint32Tests.release());
     primitiveRestartTests->addChild(indexUint8Tests.release());
+
+    {
+        de::MovePtr<tcu::TestCaseGroup> restartMixGroup(new tcu::TestCaseGroup(testCtx, "restart_mix"));
+        for (const bool extraDraw : {false, true})
+            for (const bool triangleList : {false, true})
+                for (const bool dynamicTopology : {false, true})
+                    for (const bool largeNonIndexedDraw : {false, true})
+                    {
+                        if (largeNonIndexedDraw && !triangleList)
+                            continue;
+
+                        const auto testName = std::string("restart_mix") + (extraDraw ? "_extra_draw" : "") +
+                                              (triangleList ? "_triangle_list" : "") +
+                                              (dynamicTopology ? "_dynamic_topo" : "") +
+                                              (largeNonIndexedDraw ? "_large_non_indexed_draw" : "");
+                        const PrimitiveRestartMixParams params{pipelineConstructionType, extraDraw, triangleList,
+                                                               dynamicTopology, largeNonIndexedDraw};
+                        restartMixGroup->addChild(new PrimitiveRestartMixCase(testCtx, testName, params));
+                    }
+        primitiveRestartTests->addChild(restartMixGroup.release());
+    }
 
     return primitiveRestartTests;
 }

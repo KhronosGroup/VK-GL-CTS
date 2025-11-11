@@ -394,7 +394,10 @@ void DrawIndexedTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_EXT_multi_draw");
     if (m_robustnessVersion == 2)
     {
-        context.requireDeviceFunctionality("VK_EXT_robustness2");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_robustness2") &&
+            !context.isDeviceFunctionalitySupported("VK_EXT_robustness2"))
+
+            TCU_THROW(NotSupportedError, "VK_KHR_robustness2 and VK_EXT_robustness2 are not supported");
 
         const auto &vki           = context.getInstanceInterface();
         const auto physicalDevice = context.getPhysicalDevice();
@@ -419,6 +422,10 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
     features2.features.robustBufferAccess = true;
 
     void **nextPtr = &features2.pNext;
+
+    VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
+    sblFeatures.scalarBlockLayout                         = true;
+    addToChainVulkanStructure(&nextPtr, sblFeatures);
 
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeatures = initVulkanStructure();

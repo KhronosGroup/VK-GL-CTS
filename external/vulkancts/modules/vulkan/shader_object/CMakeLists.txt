@@ -18,6 +18,8 @@ set(DEQP_VK_SHADER_OBJECT_SRCS
 	vktShaderObjectLinkTests.cpp
 	vktShaderObjectLinkTests.hpp
 	${DEQP_VK_SHADER_OBJECT_UTIL_SRCS}
+	vktShaderObjectTessellationTests.cpp
+	vktShaderObjectTessellationTests.hpp
 	vktShaderObjectBinaryTests.cpp
 	vktShaderObjectBinaryTests.hpp
 	vktShaderObjectPipelineInteractionTests.cpp

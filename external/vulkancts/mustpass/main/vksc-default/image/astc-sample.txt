@@ -1,0 +1,3 @@
+dEQP-VKSC.image.astc_sample.copy_from_image
+dEQP-VKSC.image.astc_sample.copy_into_image
+dEQP-VKSC.image.astc_sample.sample_alias

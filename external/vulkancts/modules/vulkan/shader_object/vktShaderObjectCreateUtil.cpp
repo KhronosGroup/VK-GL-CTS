@@ -212,7 +212,8 @@ void addBasicShaderObjectShaders(vk::SourceCollections &programCollection)
 
 vk::VkShaderCreateInfoEXT makeShaderCreateInfo(vk::VkShaderStageFlagBits stage, const vk::ProgramBinary &programBinary,
                                                bool tessellationShaderFeature, bool geometryShaderFeature,
-                                               const vk::VkDescriptorSetLayout *descriptorSetLayout)
+                                               const vk::VkDescriptorSetLayout *descriptorSetLayout,
+                                               const vk::VkPushConstantRange *pushConstantRange)
 {
     vk::VkShaderCreateInfoEXT shaderCreateInfo = {
         vk::VK_STRUCTURE_TYPE_SHADER_CREATE_INFO_EXT, // VkStructureType sType;
@@ -227,8 +228,8 @@ vk::VkShaderCreateInfoEXT makeShaderCreateInfo(vk::VkShaderStageFlagBits stage, 
         "main",                                                           // const char* pName;
         (descriptorSetLayout != nullptr) ? 1u : 0u,                       // uint32_t setLayoutCount;
         (descriptorSetLayout != nullptr) ? descriptorSetLayout : nullptr, // VkDescriptorSetLayout* pSetLayouts;
-        0u,                                                               // uint32_t pushConstantRangeCount;
-        nullptr, // const VkPushConstantRange* pPushConstantRanges;
+        (pushConstantRange != nullptr) ? 1u : 0u,                         // uint32_t pushConstantRangeCount;
+        (pushConstantRange != nullptr) ? pushConstantRange : nullptr, // const VkPushConstantRange* pPushConstantRanges;
         nullptr, // const VkSpecializationInfo* pSpecializationInfo;
     };
 
@@ -242,10 +243,11 @@ bool extensionEnabled(const std::vector<std::string> &deviceExtensions, const st
 
 void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCommandBuffer cmdBuffer,
                                          const std::vector<std::string> &deviceExtensions,
-                                         vk::VkPrimitiveTopology topology, bool meshShader, bool setViewport)
+                                         vk::VkPrimitiveTopology topology, bool meshShader, bool setViewport,
+                                         uint32_t width, uint32_t height)
 {
     vk::VkViewport viewport = {
-        0, 0, 32, 32, 0.0f, 1.0f,
+        0.0f, 0.0f, static_cast<float>(width), static_cast<float>(height), 0.0f, 1.0f,
     };
     if (setViewport)
         vk.cmdSetViewport(cmdBuffer, 0u, 1u, &viewport);
@@ -256,8 +258,8 @@ void setDefaultShaderObjectDynamicStates(const vk::DeviceInterface &vk, vk::VkCo
             0,
         },
         {
-            32,
-            32,
+            width,
+            height,
         },
     };
     if (setViewport)

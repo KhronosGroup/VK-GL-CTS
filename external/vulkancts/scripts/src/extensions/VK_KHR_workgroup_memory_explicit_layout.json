@@ -7,10 +7,7 @@
         "VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR": [
             {
                 "features": [
-                    "workgroupMemoryExplicitLayout",
-                    "workgroupMemoryExplicitLayoutScalarBlockLayout",
-                    "workgroupMemoryExplicitLayout8BitAccess",
-                    "workgroupMemoryExplicitLayout16BitAccess"
+                    "workgroupMemoryExplicitLayout"
                 ],
                 "requirements": [
                     "VK_KHR_workgroup_memory_explicit_layout"

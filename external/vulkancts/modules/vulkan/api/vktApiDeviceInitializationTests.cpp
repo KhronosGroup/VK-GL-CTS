@@ -997,7 +997,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
     const VkPhysicalDevice physicalDevice =
         chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const vector<float> queuePriorities(1, 1.0f);
-    const VkQueueGlobalPriorityEXT globalPriorities[] = {
+    const VkQueueGlobalPriority globalPriorities[] = {
         VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR,
         VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR};
 
@@ -1044,9 +1044,9 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
         enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
     }
 
-    for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
+    for (VkQueueGlobalPriority globalPriority : globalPriorities)
     {
-        const VkDeviceQueueGlobalPriorityCreateInfoEXT queueGlobalPriority = {
+        const VkDeviceQueueGlobalPriorityCreateInfo queueGlobalPriority{
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR, //sType;
             nullptr,                                                        //pNext;
             globalPriority                                                  //globalPriority;
@@ -2306,14 +2306,20 @@ tcu::TestStatus createDeviceQueue2WithMultipleQueueCombinations(Context &context
         { return count * (uint32_t)item.second.size(); };
         const uint32_t itemCount = accumulate(queuesPerFamily.begin(), queuesPerFamily.end(), 1u, multiplyConfigCounts);
 
+        // Extract queue famielies from queuesPerFamily map
+        vector<uint32_t> queueFamiliesVect;
+        for (const auto &[key, _] : queuesPerFamily)
+            queueFamiliesVect.push_back(key);
+
         for (uint32_t count = 0u; count < itemCount; count++)
         {
             DeviceQueueConfig testCombination;
 
             // Select queue configurations from each family
-            for (uint32_t ndx = 0u; ndx < static_cast<uint32_t>(itemIndices.size()); ndx++)
+            for (size_t ndx = 0u; ndx < itemIndices.size(); ndx++)
             {
-                const auto &familyConfigurations           = queuesPerFamily[ndx];
+                const uint32_t queueFamily                 = queueFamiliesVect[ndx];
+                const auto &familyConfigurations           = queuesPerFamily[queueFamily];
                 const DeviceQueueConfig &targetQueueConfig = familyConfigurations[itemIndices[ndx]];
 
                 std::copy(targetQueueConfig.begin(), targetQueueConfig.end(), std::back_inserter(testCombination));
@@ -2321,7 +2327,7 @@ tcu::TestStatus createDeviceQueue2WithMultipleQueueCombinations(Context &context
 
             queueCreateCombinations.push_back(testCombination);
 
-            // Increment the indices.
+            // Increment the indices of permutations in each family.
             for (uint32_t ndx = 0u; ndx < static_cast<uint32_t>(itemIndices.size()); ndx++)
             {
                 itemIndices[ndx]++;

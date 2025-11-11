@@ -143,8 +143,8 @@ public:
     }
 
 private:
-    UniquePtr<XlibDisplay> m_display;
     Library m_library;
+    UniquePtr<XlibDisplay> m_display;
 };
 
 class Window : public NativeWindow
