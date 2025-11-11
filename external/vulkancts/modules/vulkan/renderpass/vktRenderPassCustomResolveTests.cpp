@@ -205,12 +205,12 @@ struct AttachmentInfo
     {
     }
 
-    AttachmentInfo(VkFormat format, VkSampleCountFlagBits samples, VkFormat resolveFmt, uint32_t location,
+    AttachmentInfo(VkFormat format, VkSampleCountFlagBits samples, VkFormat resolveFmt, uint32_t resolveLoc,
                    bool usedInPipeline_, bool usedInRendering_)
         : attachmentFormat(format)
         , sampleCount(samples)
         , resolveFormat(resolveFmt)
-        , resolveLocation(location)
+        , resolveLocation(resolveLoc)
         , usedInResolvePipeline(usedInPipeline_)
         , usedInResolveRendering(usedInRendering_)
         , padding(0)
@@ -288,6 +288,11 @@ struct TestParams
 
     // Disable stencil exports, using the stencil reference value from the pipeline instead.
     bool disableStencilExport = false;
+
+    // In dynamic rendering and GPL, we can omit custom resolve information in some circumstances.
+    bool uploadCustomResolveFragOutOnly = false; // In upload pipelines, only include custom resolve info in frag out.
+    bool emptyCustomResolveInFragShader = false; // In resolve pipelines, omit format info from the frag shader state.
+    bool unusedAttNoUploadCustomInfo    = false; // In upload pipelines, omit all custom resolve info with unused att.
 
     tcu::IVec3 getExtent() const
     {
@@ -654,7 +659,7 @@ void CustomResolveCase::checkSupport(Context &context) const
         }
     }
 
-    if (unusedAttachments)
+    if (unusedAttachments || m_params.unusedAttNoUploadCustomInfo)
     {
         DE_ASSERT(m_params.useDynamicRendering());
         context.requireDeviceFunctionality("VK_EXT_dynamic_rendering_unused_attachments");
@@ -1272,6 +1277,17 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
     std::vector<VkPipelineRenderingCreateInfo> resolveAttFormats;
     std::vector<VkCustomResolveCreateInfoEXT> pipelineCustomResolveCreateInfo;
     std::vector<VkCustomResolveCreateInfoEXT> inheritanceCustomResolveCreateInfo;
+
+    // Custom resolve create info without formats.
+    VkCustomResolveCreateInfoEXT pipelineCustomResolveCreateInfoNoFormats = {
+        VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT,
+        nullptr,
+        VK_TRUE,
+        0u,
+        nullptr,
+        VK_FORMAT_UNDEFINED,
+        VK_FORMAT_UNDEFINED,
+    };
 
     // Rendering attachment location info for the resolve pipelines.
     std::vector<U32VecPtr> resolveColorLocations;
@@ -2499,11 +2515,18 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             .setupPreRasterizationShaderState(viewports, scissors, uploadPipelineLayout, *renderPass, i, vertShader,
                                               nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr,
                                               nullptr, pRenderingCreateInfo)
-            .setupFragmentShaderState(uploadPipelineLayout, *renderPass, i, *uploadShaders.at(i), &dsStateCreateInfo,
-                                      multisampleStatePtr, nullptr, VK_NULL_HANDLE, nullptr, nullptr,
-                                      pCustomResolveCreateInfo)
-            .setupFragmentOutputState(*renderPass, i, colorBlendStateCreateInfos.at(colorAttachmentCount).get(),
-                                      multisampleStatePtr)
+            .setupFragmentShaderState(
+                uploadPipelineLayout, *renderPass, i, *uploadShaders.at(i), &dsStateCreateInfo, multisampleStatePtr,
+                nullptr, VK_NULL_HANDLE, nullptr, nullptr,
+                ((m_params.uploadCustomResolveFragOutOnly || m_params.unusedAttNoUploadCustomInfo) ?
+                     nullptr :
+                     pCustomResolveCreateInfo))
+            .setupFragmentOutputState(
+                *renderPass, i, colorBlendStateCreateInfos.at(colorAttachmentCount).get(), multisampleStatePtr,
+                VK_NULL_HANDLE, nullptr, nullptr, nullptr,
+                ((m_params.uploadCustomResolveFragOutOnly && !m_params.unusedAttNoUploadCustomInfo) ?
+                     pCustomResolveCreateInfo :
+                     nullptr))
             .buildPipeline();
     }
 
@@ -2522,16 +2545,19 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         auto &wrapper = *resolvePipelines.back();
 
         VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo                  = nullptr;
+        VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfoNoFormats         = nullptr;
         VkRenderingAttachmentLocationInfo *pRenderingAttachmentLocationInfo     = nullptr;
         VkPipelineRenderingCreateInfoKHR *pRenderingCreateInfo                  = nullptr;
         VkRenderingInputAttachmentIndexInfo *pRenderingInputAttachmentIndexInfo = nullptr;
 
         if (dynamicRendering)
         {
-            pRenderingCreateInfo               = &resolveAttFormats.at(i);
-            pCustomResolveCreateInfo           = &pipelineCustomResolveCreateInfo.at(i);
-            pRenderingAttachmentLocationInfo   = resolveAttLocations.at(i).get();
-            pRenderingInputAttachmentIndexInfo = resolveInputAttachmentIndexInfos.at(i).get();
+            pRenderingCreateInfo                     = &resolveAttFormats.at(i);
+            pCustomResolveCreateInfo                 = &pipelineCustomResolveCreateInfo.at(i);
+            pRenderingAttachmentLocationInfo         = resolveAttLocations.at(i).get();
+            pRenderingInputAttachmentIndexInfo       = resolveInputAttachmentIndexInfos.at(i).get();
+            pCustomResolveCreateInfoNoFormats        = &pipelineCustomResolveCreateInfoNoFormats;
+            pCustomResolveCreateInfoNoFormats->pNext = nullptr; // Same structure is reused multiple times.
         }
 
         const auto colorAttachmentCount = (dynamicRendering ? pRenderingCreateInfo->colorAttachmentCount :
@@ -2553,6 +2579,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         if (m_params.disableDepthWrites)
             dsStateCreateInfo.depthWriteEnable = VK_FALSE;
 
+        pipelineCustomResolveCreateInfoNoFormats.pNext = nullptr;
+
         wrapper.setDefaultRasterizationState()
             .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
             .setupPreRasterizationShaderState(viewports, scissors, resolvePipelineLayout, *renderPass, subpassIdx,
@@ -2560,10 +2588,13 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                                               nullptr, nullptr, pRenderingCreateInfo)
             .setupFragmentShaderState(resolvePipelineLayout, *renderPass, subpassIdx, *resolveShaders.at(i),
                                       &dsStateCreateInfo, multisampleStatePtr, nullptr, VK_NULL_HANDLE, nullptr,
-                                      pRenderingInputAttachmentIndexInfo, pCustomResolveCreateInfo)
+                                      pRenderingInputAttachmentIndexInfo,
+                                      (m_params.emptyCustomResolveInFragShader ? pCustomResolveCreateInfoNoFormats :
+                                                                                 pCustomResolveCreateInfo))
             .setupFragmentOutputState(*renderPass, subpassIdx,
                                       colorBlendStateCreateInfos.at(colorAttachmentCount).get(), multisampleStatePtr,
-                                      VK_NULL_HANDLE, nullptr, pRenderingAttachmentLocationInfo)
+                                      VK_NULL_HANDLE, nullptr, pRenderingAttachmentLocationInfo, nullptr,
+                                      (m_params.emptyCustomResolveInFragShader ? pCustomResolveCreateInfo : nullptr))
             .buildPipeline();
     }
 
@@ -4269,6 +4300,8 @@ struct FDMParams
     bool subsampledImages;
     bool multiLayer;
     bool multiView;
+    bool fillCustomResolveFragOutOnly;   // In the fill pipeline, only include custom resolve info in frag out.
+    bool emptyCustomResolveInFragShader; // In the frag shader state of the resolve pipeline, omit format info.
 
     bool useDynamicRendering() const
     {
@@ -4790,6 +4823,7 @@ tcu::TestStatus FDMInstance::iterate(void)
 
     std::unique_ptr<VkCustomResolveCreateInfoEXT> fillCustomResolveCreateInfo;
     std::unique_ptr<VkCustomResolveCreateInfoEXT> resolveCustomResolveCreateInfo;
+    std::unique_ptr<VkCustomResolveCreateInfoEXT> resolveCustomResolveCreateInfoNoFormats;
     std::unique_ptr<VkPipelineRenderingCreateInfo> pipelineRenderingCreateInfo;
     std::unique_ptr<VkPipelineRenderingCreateInfo> copyPipelineRenderingCreateInfo;
     std::vector<VkFormat> drColorFormats;
@@ -4818,6 +4852,17 @@ tcu::TestStatus FDMInstance::iterate(void)
             VK_TRUE,
             de::sizeU32(drColorFormats),
             de::dataOrNull(drColorFormats),
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        };
+
+        resolveCustomResolveCreateInfoNoFormats.reset(new VkCustomResolveCreateInfoEXT);
+        *resolveCustomResolveCreateInfoNoFormats = VkCustomResolveCreateInfoEXT{
+            VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT,
+            nullptr,
+            VK_TRUE,
+            0u,
+            nullptr,
             VK_FORMAT_UNDEFINED,
             VK_FORMAT_UNDEFINED,
         };
@@ -5070,8 +5115,10 @@ tcu::TestStatus FDMInstance::iterate(void)
                                           pipelineRenderingCreateInfo.get())
         .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragFillShader, &dsStateCreateInfoFill,
                                   &multisampleStateCreateInfoFill, nullptr, VK_NULL_HANDLE, nullptr, nullptr,
-                                  fillCustomResolveCreateInfo.get())
-        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleStateCreateInfoFill)
+                                  (m_params.fillCustomResolveFragOutOnly ? nullptr : fillCustomResolveCreateInfo.get()))
+        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleStateCreateInfoFill, VK_NULL_HANDLE,
+                                  nullptr, nullptr, nullptr,
+                                  (m_params.fillCustomResolveFragOutOnly ? fillCustomResolveCreateInfo.get() : nullptr))
         .buildPipeline();
 
     GraphicsPipelineWrapper resolvePipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
@@ -5085,8 +5132,12 @@ tcu::TestStatus FDMInstance::iterate(void)
                                           pipelineRenderingCreateInfo.get())
         .setupFragmentShaderState(pipelineLayout, *renderPass, 1u, fragResolveShader, &dsStateCreateInfoResolve,
                                   &multisampleStateCreateInfoResolve, nullptr, VK_NULL_HANDLE, nullptr, nullptr,
-                                  resolveCustomResolveCreateInfo.get())
-        .setupFragmentOutputState(*renderPass, 1u, &colorBlendState, &multisampleStateCreateInfoResolve)
+                                  (m_params.emptyCustomResolveInFragShader ?
+                                       resolveCustomResolveCreateInfoNoFormats.get() :
+                                       resolveCustomResolveCreateInfo.get()))
+        .setupFragmentOutputState(
+            *renderPass, 1u, &colorBlendState, &multisampleStateCreateInfoResolve, VK_NULL_HANDLE, nullptr, nullptr,
+            nullptr, (m_params.emptyCustomResolveInFragShader ? resolveCustomResolveCreateInfo.get() : nullptr))
         .buildPipeline();
 
     GraphicsPipelineWrapper copyPipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
@@ -5631,6 +5682,28 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                 resolve.resolveType   = ResolveType::SELECTED_SAMPLE;
                 resolve.resolveParams = StrategyParams(2u);
                 constructionGroup->addChild(new CustomResolveCase(testCtx, "simple_sample_2", params));
+            }
+
+            {
+                // Test omitting some information.
+                if (params.useDynamicRendering() &&
+                    isConstructionTypeLibrary(params.groupParams->pipelineConstructionType))
+                {
+                    params.uploadCustomResolveFragOutOnly = true;
+                    constructionGroup->addChild(
+                        new CustomResolveCase(testCtx, "simple_sample_2_no_frag_state_upload_info", params));
+                    params.uploadCustomResolveFragOutOnly = false;
+
+                    params.emptyCustomResolveInFragShader = true;
+                    constructionGroup->addChild(
+                        new CustomResolveCase(testCtx, "simple_sample_2_no_formats_frag_state_resolve", params));
+                    params.emptyCustomResolveInFragShader = false;
+
+                    params.unusedAttNoUploadCustomInfo = true;
+                    constructionGroup->addChild(
+                        new CustomResolveCase(testCtx, "simple_sample_2_no_upload_custom_info", params));
+                    params.unusedAttNoUploadCustomInfo = false;
+                }
             }
         }
         {
@@ -6338,55 +6411,131 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
 
         if (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
         {
-            // Test unused attachments. The base configuration is two color attachments, both uploaded and resolved in
-            // a single upload and resolve pass. However, some variants will remap resolve locations, and the unused
-            // flag for one of the attachments will vary.
-            TestParams params;
-            params.groupParams = groupParams;
-            params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
-            params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
-                                               VK_FORMAT_R8G8B8A8_UNORM, 1u, true, true);
-
-            // Upload both, and resolve both.
-            params.uploadPasses.push_back(UploadPass{
-                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
-                {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT),
-                 AttachmentIndexAspect(1u, VK_IMAGE_ASPECT_COLOR_BIT)},
-            });
-
-            params.resolvePasses.push_back(ResolvePass{
-                CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
-                {
-                    AttachmentResolve(0u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE, StrategyParams(1u)),
-                    AttachmentResolve(1u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE, StrategyParams(2u)),
-                },
-            });
-
-            for (const bool swapResolveLocations : {false, true})
+            // Test unused attachments. The base configuration is two color attachments, both uploaded and resolved in a
+            // single upload and resolve pass. However, some variants will remap resolve locations, and the unused flag
+            // for one of the attachments will vary.
             {
-                if (swapResolveLocations)
-                    std::swap(params.attachmentList.front().resolveLocation,
-                              params.attachmentList.back().resolveLocation);
+                TestParams params;
+                params.groupParams = groupParams;
+                params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
+                                                   VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
+                params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
+                                                   VK_FORMAT_R8G8B8A8_UNORM, 1u, true, true);
 
-                for (const auto unusedIndex : {0u, 1u})
-                    for (const bool usedInPipeline : {false, true})
-                        for (const bool usedInRenderPass : {false, true})
-                        {
-                            if (usedInPipeline && usedInRenderPass)
-                                continue;
+                // Upload both, and resolve both.
+                params.uploadPasses.push_back(UploadPass{
+                    CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                    {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT),
+                     AttachmentIndexAspect(1u, VK_IMAGE_ASPECT_COLOR_BIT)},
+                });
 
-                            params.attachmentList.at(unusedIndex).usedInResolvePipeline       = usedInPipeline;
-                            params.attachmentList.at(unusedIndex).usedInResolveRendering      = usedInRenderPass;
-                            params.attachmentList.at(1u - unusedIndex).usedInResolvePipeline  = true;
-                            params.attachmentList.at(1u - unusedIndex).usedInResolveRendering = true;
+                params.resolvePasses.push_back(ResolvePass{
+                    CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                    {
+                        AttachmentResolve(0u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE,
+                                          StrategyParams(1u)),
+                        AttachmentResolve(1u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE,
+                                          StrategyParams(2u)),
+                    },
+                });
 
-                            const auto testName = "unused_attachments_index_" + std::to_string(unusedIndex) +
-                                                  "_usage_pipe_" + yesNo(usedInPipeline) + "_render_" +
-                                                  yesNo(usedInRenderPass) +
-                                                  (swapResolveLocations ? "_swap_resolve_locations" : "");
-                            constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
-                        }
+                for (const bool swapResolveLocations : {false, true})
+                {
+                    if (swapResolveLocations)
+                        std::swap(params.attachmentList.front().resolveLocation,
+                                  params.attachmentList.back().resolveLocation);
+
+                    for (const auto unusedIndex : {0u, 1u})
+                        for (const bool usedInPipeline : {false, true})
+                            for (const bool usedInRenderPass : {false, true})
+                            {
+                                if (usedInPipeline && usedInRenderPass)
+                                    continue;
+
+                                params.attachmentList.at(unusedIndex).usedInResolvePipeline       = usedInPipeline;
+                                params.attachmentList.at(unusedIndex).usedInResolveRendering      = usedInRenderPass;
+                                params.attachmentList.at(1u - unusedIndex).usedInResolvePipeline  = true;
+                                params.attachmentList.at(1u - unusedIndex).usedInResolveRendering = true;
+
+                                const auto testName = "unused_attachments_index_" + std::to_string(unusedIndex) +
+                                                      "_usage_pipe_" + yesNo(usedInPipeline) + "_render_" +
+                                                      yesNo(usedInRenderPass) +
+                                                      (swapResolveLocations ? "_swap_resolve_locations" : "");
+                                constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                            }
+                }
+            }
+
+            // The previous tests, due to different VUIDs, do not allow merging the upload and resolve passes. The
+            // following tests have separate upload and resolve passes to be able to test merged passes combined with
+            // unused attachments.
+            {
+                TestParams params;
+                params.groupParams = groupParams;
+                params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
+                                                   VK_FORMAT_R8G8B8A8_UNORM, 0u, true, true);
+                params.attachmentList.emplace_back(VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_4_BIT,
+                                                   VK_FORMAT_R8G8B8A8_UNORM, 1u, true, true);
+
+                // Upload one at a time, and resolve one at a time.
+                params.uploadPasses.push_back(UploadPass{
+                    CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                    {AttachmentIndexAspect(0u, VK_IMAGE_ASPECT_COLOR_BIT)},
+                });
+
+                params.uploadPasses.push_back(UploadPass{
+                    CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                    {AttachmentIndexAspect(1u, VK_IMAGE_ASPECT_COLOR_BIT)},
+                });
+
+                params.resolvePasses.push_back(ResolvePass{
+                    CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                    {
+                        AttachmentResolve(1u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE,
+                                          StrategyParams(2u)),
+                    },
+                });
+
+                params.resolvePasses.push_back(ResolvePass{
+                    CoveredArea(tcu::Vec2(2.0f, 2.0f), tcu::Vec2(-1.0f, -1.0f)),
+                    {
+                        AttachmentResolve(0u, VK_IMAGE_ASPECT_COLOR_BIT, ResolveType::SELECTED_SAMPLE,
+                                          StrategyParams(1u)),
+                    },
+                });
+
+                for (const bool noUploadInfo : {false, true})
+                {
+                    // Testing the no-upload-info flag for merged passes.
+                    params.unusedAttNoUploadCustomInfo = noUploadInfo;
+
+                    for (const bool swapResolveLocations : {false, true})
+                    {
+                        if (swapResolveLocations)
+                            std::swap(params.attachmentList.front().resolveLocation,
+                                      params.attachmentList.back().resolveLocation);
+
+                        for (const auto unusedIndex : {0u, 1u})
+                            for (const bool usedInPipeline : {false, true})
+                                for (const bool usedInRenderPass : {false, true})
+                                {
+                                    if (usedInPipeline && usedInRenderPass)
+                                        continue;
+
+                                    params.attachmentList.at(unusedIndex).usedInResolvePipeline      = usedInPipeline;
+                                    params.attachmentList.at(unusedIndex).usedInResolveRendering     = usedInRenderPass;
+                                    params.attachmentList.at(1u - unusedIndex).usedInResolvePipeline = true;
+                                    params.attachmentList.at(1u - unusedIndex).usedInResolveRendering = true;
+
+                                    const auto testName = "unused_attachments_separate_index_" +
+                                                          std::to_string(unusedIndex) + "_usage_pipe_" +
+                                                          yesNo(usedInPipeline) + "_render_" + yesNo(usedInRenderPass) +
+                                                          (swapResolveLocations ? "_swap_resolve_locations" : "") +
+                                                          (noUploadInfo ? "_no_upload_info" : "");
+                                    constructionGroup->addChild(new CustomResolveCase(testCtx, testName, params));
+                                }
+                    }
+                }
             }
         }
 
@@ -6411,25 +6560,34 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
             for (const bool subsampledImages : {true, false})
                 for (const bool multiLayer : {false, true})
                     for (const bool multiView : {false, true})
-                    {
-                        if (multiLayer && multiView)
-                            continue;
+                        for (const bool crInfoFragOutOnly : {false, true})
+                            for (const bool emptyCrInfoFragShader : {false, true})
+                            {
+                                if (multiLayer && multiView)
+                                    continue;
 
-                        // Multiview cannot be used with shader objects.
-                        if (multiView && isConstructionTypeShaderObject(groupParams->pipelineConstructionType))
-                            continue;
+                                // Multiview cannot be used with shader objects.
+                                if (multiView && isConstructionTypeShaderObject(groupParams->pipelineConstructionType))
+                                    continue;
 
-                        const FDMParams params{
-                            groupParams,
-                            subsampledImages,
-                            multiLayer,
-                            multiView,
-                        };
-                        const auto testName = std::string("fdm") +
-                                              (subsampledImages ? "_subsampled" : "_nonsubsampled") +
-                                              (multiLayer ? "_multilayer" : "") + (multiView ? "_multiview" : "");
-                        constructionGroup->addChild(new FDMCase(testCtx, testName, params));
-                    }
+                                if ((groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING ||
+                                     !isConstructionTypeLibrary(groupParams->pipelineConstructionType)) &&
+                                    (crInfoFragOutOnly || emptyCrInfoFragShader))
+                                {
+                                    continue;
+                                }
+
+                                const FDMParams params{
+                                    groupParams, subsampledImages,  multiLayer,
+                                    multiView,   crInfoFragOutOnly, emptyCrInfoFragShader,
+                                };
+                                const auto testName =
+                                    std::string("fdm") + (subsampledImages ? "_subsampled" : "_nonsubsampled") +
+                                    (multiLayer ? "_multilayer" : "") + (multiView ? "_multiview" : "") +
+                                    (crInfoFragOutOnly ? "_pre_resolve_info_frag_out_only" : "") +
+                                    (emptyCrInfoFragShader ? "_resolve_info_frag_shader_no_formats" : "");
+                                constructionGroup->addChild(new FDMCase(testCtx, testName, params));
+                            }
         }
 
         mainGroup->addChild(constructionGroup.release());
