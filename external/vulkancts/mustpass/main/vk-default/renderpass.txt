@@ -90,6 +90,12 @@ dEQP-VK.renderpass.custom_resolve.fast_lib.depth_stencil_upload_both_separate_re
 dEQP-VK.renderpass.custom_resolve.fast_lib.depth_stencil_upload_depth_resolve_depth_d16s8
 dEQP-VK.renderpass.custom_resolve.fast_lib.depth_stencil_upload_depth_resolve_depth_d24s8
 dEQP-VK.renderpass.custom_resolve.fast_lib.depth_stencil_upload_depth_resolve_depth_d32s8
+dEQP-VK.renderpass.custom_resolve.fast_lib.fdm_nonsubsampled
+dEQP-VK.renderpass.custom_resolve.fast_lib.fdm_nonsubsampled_multilayer
+dEQP-VK.renderpass.custom_resolve.fast_lib.fdm_nonsubsampled_multiview
+dEQP-VK.renderpass.custom_resolve.fast_lib.fdm_subsampled
+dEQP-VK.renderpass.custom_resolve.fast_lib.fdm_subsampled_multilayer
+dEQP-VK.renderpass.custom_resolve.fast_lib.fdm_subsampled_multiview
 dEQP-VK.renderpass.custom_resolve.fast_lib.format_change
 dEQP-VK.renderpass.custom_resolve.fast_lib.format_change_reverse
 dEQP-VK.renderpass.custom_resolve.fast_lib.fragment_region_close_large
@@ -219,6 +225,12 @@ dEQP-VK.renderpass.custom_resolve.monolithic.depth_stencil_upload_both_separate_
 dEQP-VK.renderpass.custom_resolve.monolithic.depth_stencil_upload_depth_resolve_depth_d16s8
 dEQP-VK.renderpass.custom_resolve.monolithic.depth_stencil_upload_depth_resolve_depth_d24s8
 dEQP-VK.renderpass.custom_resolve.monolithic.depth_stencil_upload_depth_resolve_depth_d32s8
+dEQP-VK.renderpass.custom_resolve.monolithic.fdm_nonsubsampled
+dEQP-VK.renderpass.custom_resolve.monolithic.fdm_nonsubsampled_multilayer
+dEQP-VK.renderpass.custom_resolve.monolithic.fdm_nonsubsampled_multiview
+dEQP-VK.renderpass.custom_resolve.monolithic.fdm_subsampled
+dEQP-VK.renderpass.custom_resolve.monolithic.fdm_subsampled_multilayer
+dEQP-VK.renderpass.custom_resolve.monolithic.fdm_subsampled_multiview
 dEQP-VK.renderpass.custom_resolve.monolithic.format_change
 dEQP-VK.renderpass.custom_resolve.monolithic.format_change_reverse
 dEQP-VK.renderpass.custom_resolve.monolithic.fragment_region_close_large

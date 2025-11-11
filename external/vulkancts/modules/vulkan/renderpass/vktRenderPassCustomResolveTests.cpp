@@ -35,6 +35,7 @@
 
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
+#include "tcuVectorUtil.hpp"
 
 #include "deRandom.hpp"
 
@@ -4213,7 +4214,6 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
     }
     endCommandBuffer(ctx.vkd, cmdBuffer);
     submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
-    ctx.vkd.deviceWaitIdle(ctx.device); // XXX
 
     auto &log            = m_context.getTestContext().getLog();
     const auto tcuFormat = mapVkFormat(imageFormat);
@@ -4259,6 +4259,1300 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
     const tcu::Vec4 threshold(thresholdValue, thresholdValue, thresholdValue, 0.0f);
     if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
         TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+struct FDMParams
+{
+    SharedGroupParams groupParams;
+    bool subsampledImages;
+    bool multiLayer;
+    bool multiView;
+
+    bool useDynamicRendering() const
+    {
+        return (groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING);
+    }
+
+    tcu::IVec3 getExtent() const
+    {
+        return tcu::IVec3(256, 256, (multiLayer || multiView ? 2 : 1));
+    }
+};
+
+// Check interaction with VK_EXT_fragment_density_map.
+class FDMInstance : public vkt::TestInstance
+{
+public:
+    FDMInstance(Context &context, const FDMParams &params) : vkt::TestInstance(context), m_params(params)
+    {
+    }
+    virtual ~FDMInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    const FDMParams m_params;
+};
+
+class FDMCase : public vkt::TestCase
+{
+public:
+    FDMCase(tcu::TestContext &testCtx, const std::string &name, const FDMParams &params)
+        : vkt::TestCase(testCtx, name)
+        , m_params(params)
+    {
+    }
+    virtual ~FDMCase(void) = default;
+
+    std::string getRequiredCapabilitiesId() const override;
+    void initDeviceCapabilities(DevCaps &caps) override;
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new FDMInstance(context, m_params);
+    }
+
+protected:
+    const FDMParams m_params;
+};
+
+std::string FDMCase::getRequiredCapabilitiesId() const
+{
+    return typeid(FDMCase).name();
+}
+
+void FDMCase::initDeviceCapabilities(DevCaps &caps)
+{
+    caps.addExtension("VK_KHR_multiview");
+    caps.addExtension("VK_KHR_dynamic_rendering");
+    caps.addExtension("VK_KHR_depth_stencil_resolve");
+    caps.addExtension("VK_KHR_create_renderpass2");
+    caps.addExtension("VK_KHR_maintenance2");
+    caps.addExtension("VK_KHR_dynamic_rendering_local_read");
+    caps.addExtension("VK_EXT_fragment_density_map");
+    caps.addExtension("VK_EXT_fragment_density_map2");
+    caps.addExtension("VK_EXT_custom_resolve");
+    caps.addExtension("VK_EXT_shader_object");
+    caps.addExtension("VK_EXT_graphics_pipeline_library");
+    caps.addExtension("VK_KHR_pipeline_library");
+    caps.addExtension("VK_KHR_synchronization2");
+
+    caps.addFeature<VkPhysicalDeviceFragmentDensityMapFeaturesEXT>();
+    caps.addFeature<VkPhysicalDeviceFragmentDensityMap2FeaturesEXT>();
+    caps.addFeature<VkPhysicalDeviceDynamicRenderingLocalReadFeatures>();
+    caps.addFeature<VkPhysicalDeviceDynamicRenderingFeatures>();
+    caps.addFeature<VkPhysicalDeviceCustomResolveFeaturesEXT>();
+    caps.addFeature<VkPhysicalDeviceShaderObjectFeaturesEXT>();
+    caps.addFeature<VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT>();
+    caps.addFeature(&VkPhysicalDeviceFeatures::geometryShader);
+    caps.addFeature<VkPhysicalDeviceVulkan12Features>();
+    caps.addFeature<VkPhysicalDeviceSynchronization2Features>();
+    caps.addFeature<VkPhysicalDeviceMultiviewFeatures>();
+}
+
+void FDMCase::checkSupport(Context &context) const
+{
+    // The fragment density map feature is disabled by default if FSR is available, so we need to check the physical
+    // device.
+    context.requireDeviceFunctionality("VK_EXT_fragment_density_map");
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+    const auto ctx = context.getContextCommonData();
+
+    VkPhysicalDeviceFragmentDensityMapFeaturesEXT fdmFeatures = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 features2                       = initVulkanStructure(&fdmFeatures);
+    ctx.vki.getPhysicalDeviceFeatures2(ctx.physicalDevice, &features2);
+    if (!fdmFeatures.fragmentDensityMap)
+        TCU_THROW(NotSupportedError, "fragmentDensityMap not supported");
+
+    const auto &crFeatures = context.getCustomResolveFeaturesEXT();
+    if (!crFeatures.customResolve)
+        TCU_THROW(NotSupportedError, "customResolve not supported");
+
+    if (!m_params.subsampledImages && !fdmFeatures.fragmentDensityMapNonSubsampledImages)
+        TCU_THROW(NotSupportedError, "fragmentDensityMapNonSubsampledImages not supported");
+
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, m_params.groupParams->pipelineConstructionType);
+
+    if (m_params.useDynamicRendering())
+    {
+        const auto &drFeatures = context.getDynamicRenderingFeatures();
+        if (!drFeatures.dynamicRendering)
+            TCU_THROW(NotSupportedError, "dynamicRendering not supported");
+
+        const auto &drlrFeatures = context.getDynamicRenderingLocalReadFeatures();
+        if (!drlrFeatures.dynamicRenderingLocalRead)
+            TCU_THROW(NotSupportedError, "dynamicRenderingLocalRead not supported");
+
+        const auto &sync2Features = context.getSynchronization2Features();
+        if (!sync2Features.synchronization2)
+            TCU_THROW(NotSupportedError, "synchronization2 not supported");
+    }
+    else
+    {
+        // We're not going to bother with render pass 2 for these tests.
+        DE_ASSERT(m_params.groupParams->renderingType == RENDERING_TYPE_RENDERPASS_LEGACY);
+    }
+
+    // We always need Vulkan 1.2 and shaderOutputLayer due to the fragment copy shader.
+    if (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 2, 0))
+        TCU_THROW(NotSupportedError, "Vulkan 1.2 required");
+
+    const auto &vk12Features = context.getDeviceVulkan12Features();
+    if (!vk12Features.shaderOutputLayer)
+        TCU_THROW(NotSupportedError, "shaderOutputLayer not supported");
+
+    if (m_params.multiLayer || m_params.multiView)
+    {
+        // For Layer in the frag shader. gl_Layer is always used in the frag copy shader for these cases.
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+    }
+
+    if (m_params.multiView)
+    {
+        const auto &mvFeatures = context.getMultiviewFeatures();
+        if (!mvFeatures.multiview)
+            TCU_THROW(NotSupportedError, "multiview not supported");
+    }
+
+    if (m_params.subsampledImages)
+    {
+        const auto extent = m_params.getExtent();
+        if (extent.z() > 1)
+        {
+            // The features struct does not contain a general flag for the feature.
+            context.requireDeviceFunctionality("VK_EXT_fragment_density_map2");
+
+            const auto &fdm2Properties = context.getFragmentDensityMap2PropertiesEXT();
+            if (fdm2Properties.maxSubsampledArrayLayers < static_cast<uint32_t>(extent.z()))
+                TCU_THROW(NotSupportedError, "maxSubsampledArrayLayers too low");
+        }
+    }
+}
+
+void FDMCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    const vk::ShaderBuildOptions spvOpts(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_5, 0u, false);
+
+    {
+        // Full-screen quad as a triangle strip.
+        std::ostringstream vert;
+        vert << "#version 460\n"
+             << (m_params.multiLayer ? "#extension GL_ARB_shader_viewport_layer_array : enable\n" : "") << "\n"
+             << "void main (void) {\n"
+             << "    float xCoord = float(gl_VertexIndex & 1) * 2.0 - 1.0;\n"
+             << "    float yCoord = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+             << "    gl_Position = vec4(xCoord, yCoord, 0.0, 1.0);\n"
+             << (m_params.multiLayer ? "    gl_Layer = gl_InstanceIndex;\n" : "") << "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str()) << spvOpts;
+    }
+
+    {
+        // Full-screen quad as a triangle strip.
+        std::ostringstream vert;
+        vert << "#version 460\n"
+             << "#extension GL_ARB_shader_viewport_layer_array : enable\n"
+             << "\n"
+             << "void main (void) {\n"
+             << "    float xCoord = float(gl_VertexIndex & 1) * 2.0 - 1.0;\n"
+             << "    float yCoord = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+             << "    gl_Position = vec4(xCoord, yCoord, 0.0, 1.0);\n"
+             << "    gl_Layer = gl_InstanceIndex;\n"
+             << "}\n";
+        programCollection.glslSources.add("vert-copy") << glu::VertexSource(vert.str()) << spvOpts;
+    }
+
+    // Code to generate an rg vec2 with a gradient in red and green based on gl_FragCoord.
+    std::ostringstream gradientStream;
+    gradientStream << "    float xPix = floor(gl_FragCoord.x);\n"
+                   << "    float yPix = floor(gl_FragCoord.y);\n"
+                   << "    float red = (xPix + 0.5) / pc.fbSize.x;\n"
+                   << "    float green = (yPix + 0.5) / pc.fbSize.y;\n"
+                   << "    vec2 rg = vec2(red, green);\n";
+    const auto gradientCode = gradientStream.str();
+
+    // Code to generate a ba vec2 with blue and alpha values based on gl_FragSize.
+    std::ostringstream fragSizeStream;
+    fragSizeStream
+        // gl_FragSizeEXT is typically (1, 1), (1, 2), (2, 1) or (2, 2). Encode that in blue as 0, 0.3, 0.6, 1 by
+        // mapping them first to binary 00, 01, 10 and 11 and then dividing them by 3. If gl_FragSize is smaller, we
+        // signal that in the alpha component as unexpected.
+        << "    bool goodFragSize = (gl_FragSizeEXT.x > 0 && gl_FragSizeEXT.y > 0);\n"
+        << "    float alpha = (goodFragSize ? 1.0 : 0.5);\n"
+        << "    float blue = 0.0;\n"
+        << "    if (goodFragSize) {\n"
+        << "        blue = float(((gl_FragSizeEXT.x-1)&1)*2 + ((gl_FragSizeEXT.y-1)&1)) / 3.0;\n"
+        << "    }\n"
+        << "    vec2 ba = vec2(blue, alpha);\n";
+    const auto fragSizeCode = fragSizeStream.str();
+
+    {
+        // Fill the X and Y axis with a gradient in red and green, depending on the layer/view.
+        std::ostringstream frag;
+        frag << "#version 460\n"
+             << "#extension GL_EXT_fragment_invocation_density : enable\n"
+             << (m_params.multiView ? "#extension GL_EXT_multiview : enable\n" : "")
+             << (m_params.multiLayer ? "#extension GL_ARB_shader_viewport_layer_array : enable\n" : "")
+             << "layout (push_constant, std430) uniform PCBlock { vec4 fbSize; } pc;\n"
+             << "layout (location=0) out vec4 outColor;\n"
+             << "void main(void) {\n"
+             << gradientCode << fragSizeCode
+             << "    int idx = " << (m_params.multiLayer ? "gl_Layer" : (m_params.multiView ? "gl_ViewIndex" : "0"))
+             << ";\n"
+             << "    outColor = vec4((idx == 0 ? rg.xy : rg.yx), ba);\n"
+             << "}\n";
+        programCollection.glslSources.add("frag-fill") << glu::FragmentSource(frag.str()) << spvOpts;
+    }
+
+    {
+        // Resolve with the same gradient and the gl_FragSize values in blue.
+        std::ostringstream frag;
+        frag << "#version 460\n"
+             << "#extension GL_EXT_fragment_invocation_density : enable\n"
+             << (m_params.multiView ? "#extension GL_EXT_multiview : enable\n" : "")
+             << (m_params.multiLayer ? "#extension GL_ARB_shader_viewport_layer_array : enable\n" : "")
+             << "layout (set=0, binding=0, input_attachment_index=0) uniform subpassInputMS inColor;\n"
+             << "layout (push_constant, std430) uniform PCBlock { vec4 fbSize; } pc;\n"
+             << "layout (location=0) out vec4 outColor0;\n"
+             << "layout (location=1) out vec4 outColor1;\n"
+             << "void main(void) {\n"
+             << "    vec4 accum = vec4(0.0, 0.0, 0.0, 0.0);\n"
+             << "    int sampleCount = int(pc.fbSize.w);\n"
+             << "    for (int i = 0; i < sampleCount; ++i) {\n"
+             << "        accum += subpassLoad(inColor, i);\n"
+             << "    }\n"
+             << "    accum = accum / pc.fbSize.wwww;\n"
+             << "    outColor0 = vec4(accum);\n"
+             << gradientCode
+             << fragSizeCode
+             //<< "    vec2 ba = vec2(0.0, 1.0);\n"
+             << "    int idx = " << (m_params.multiLayer ? "gl_Layer" : (m_params.multiView ? "gl_ViewIndex" : "0"))
+             << ";\n"
+             << "    outColor1 = vec4((idx == 0 ? rg.xy : rg.yx), ba);\n"
+             << "}\n";
+        programCollection.glslSources.add(("frag-resolve")) << glu::FragmentSource(frag.str()) << spvOpts;
+    }
+
+    {
+        const auto extent   = m_params.getExtent();
+        const bool isArray  = (m_params.multiLayer || m_params.multiView);
+        const auto descType = (isArray ? "sampler2DArray" : "sampler2D");
+        const auto fragCoordNorm =
+            "(gl_FragCoord.xy / vec2(" + std::to_string(extent.x()) + ", " + std::to_string(extent.y()) + "))";
+        const auto layerNorm = "(float(gl_Layer) / float(" + std::to_string(extent.z()) + "))";
+        const auto coords    = (isArray ? "vec3(" + fragCoordNorm + ", " + layerNorm + ")" : fragCoordNorm);
+
+        std::ostringstream frag;
+        frag << "#version 460\n"
+             << "layout (set=0, binding=0) uniform " << descType << " inColor0;\n"
+             << "layout (set=0, binding=1) uniform " << descType << " inColor1;\n"
+             << "layout (location=0) out vec4 outColor0;\n"
+             << "layout (location=1) out vec4 outColor1;\n"
+             << "void main(void) {\n"
+             << "    outColor0 = texture(inColor0, " << coords << ", 0);\n"
+             << "    outColor1 = texture(inColor1, " << coords << ", 0);\n"
+             << "}\n";
+        programCollection.glslSources.add("frag-copy") << glu::FragmentSource(frag.str()) << spvOpts;
+    }
+}
+
+tcu::TestStatus FDMInstance::iterate(void)
+{
+    const auto ctx            = m_context.getContextCommonData();
+    const auto extent         = m_params.getExtent();
+    const auto viewMask       = (m_params.multiView ? 3u /*0b11 (both views)*/ : 0u);
+    const auto inputAttLayout = (m_params.useDynamicRendering() ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL :
+                                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+
+    const auto extent2d      = tcu::IVec3(extent.x(), extent.y(), 1);
+    const auto extentFloat   = extent2d.asFloat();
+    const auto extentVk      = makeExtent3D(extent2d);
+    const auto layerCount    = static_cast<uint32_t>(extent.z());
+    const auto fdmLayerCount = (m_params.multiLayer ? 1u : layerCount);
+    const auto imageViewType = (layerCount > 1u ? VK_IMAGE_VIEW_TYPE_2D_ARRAY : VK_IMAGE_VIEW_TYPE_2D);
+    const auto colorSRR      = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, layerCount);
+    const auto fdmSRR        = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, fdmLayerCount);
+    const auto colorSRL      = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, layerCount);
+    const auto dsSRR =
+        makeImageSubresourceRange((VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT), 0u, 1u, 0u, layerCount);
+
+    const auto fdmFormat      = VK_FORMAT_R8G8_UNORM;
+    const auto colorFormat    = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto imageType      = VK_IMAGE_TYPE_2D;
+    const auto imageTiling    = VK_IMAGE_TILING_OPTIMAL;
+    const auto sharingMode    = VK_SHARING_MODE_EXCLUSIVE;
+    const auto msColorUsage   = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+    const auto ssColorUsage   = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
+    const auto copyColorUsage = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto fdmUsage       = (VK_IMAGE_USAGE_FRAGMENT_DENSITY_MAP_BIT_EXT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto bindPoint      = VK_PIPELINE_BIND_POINT_GRAPHICS;
+
+    VkImageCreateFlags fbImageFlags = 0u;
+    if (m_params.subsampledImages)
+        fbImageFlags |= VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT;
+
+    const VkImageCreateInfo msImageCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        fbImageFlags,
+        imageType,
+        colorFormat,
+        extentVk,
+        1u,
+        layerCount,
+        VK_SAMPLE_COUNT_4_BIT,
+        imageTiling,
+        msColorUsage,
+        sharingMode,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    // The first color and resolve buffers will contain the result of the fill operation, with an RG gradient and BA
+    // values that depend on the FragSize used in that subpass.
+    ImageWithMemory colorBuffer0(ctx.vkd, ctx.device, ctx.allocator, msImageCreateInfo, MemoryRequirement::Any);
+    const auto colorView0 = makeImageView(ctx.vkd, ctx.device, *colorBuffer0, imageViewType, colorFormat, colorSRR);
+
+    // The second color and resolve buffers are used to write addition information from the resolve shader which, apart
+    // from averaging the colors of the fill operation, will perform an independent write to see a separate gradient
+    // and possibly separate FragSize values.
+    ImageWithMemory colorBuffer1(ctx.vkd, ctx.device, ctx.allocator, msImageCreateInfo, MemoryRequirement::Any);
+    const auto colorView1 = makeImageView(ctx.vkd, ctx.device, *colorBuffer1, imageViewType, colorFormat, colorSRR);
+
+    // Choose depth/stencil format. Depth/stencil is not actually relevant for the test mechanism but it helps increase
+    // tile memory requirements for tiling architectures, which makes the scenario more realistic. Note support for
+    // one of these two formats is mandatory, hence the TCU_FAIL.
+    const VkFormat dsFormatCandidates[] = {
+        VK_FORMAT_D24_UNORM_S8_UINT,
+        VK_FORMAT_D32_SFLOAT_S8_UINT,
+    };
+    VkFormat chosenDSFormat = VK_FORMAT_UNDEFINED;
+    for (const auto &candidateformat : dsFormatCandidates)
+    {
+        const auto properties = getPhysicalDeviceFormatProperties(ctx.vki, ctx.physicalDevice, candidateformat);
+        if (properties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        {
+            chosenDSFormat = candidateformat;
+            break;
+        }
+    }
+
+    if (chosenDSFormat == VK_FORMAT_UNDEFINED)
+        TCU_FAIL("Unable to find appropriate depth/stencil format");
+
+    auto dsImageCreateInfo   = msImageCreateInfo;
+    dsImageCreateInfo.format = chosenDSFormat;
+    dsImageCreateInfo.usage  = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+
+    ImageWithMemory dsBuffer(ctx.vkd, ctx.device, ctx.allocator, dsImageCreateInfo, MemoryRequirement::Any);
+    const auto dsView = makeImageView(ctx.vkd, ctx.device, *dsBuffer, imageViewType, chosenDSFormat, dsSRR);
+
+    auto ssImageCreateInfo    = msImageCreateInfo;
+    ssImageCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+    ssImageCreateInfo.usage   = ssColorUsage;
+
+    ImageWithMemory resolveBuffer0(ctx.vkd, ctx.device, ctx.allocator, ssImageCreateInfo, MemoryRequirement::Any);
+    const auto resolveView0 = makeImageView(ctx.vkd, ctx.device, *resolveBuffer0, imageViewType, colorFormat, colorSRR);
+
+    ImageWithMemory resolveBuffer1(ctx.vkd, ctx.device, ctx.allocator, ssImageCreateInfo, MemoryRequirement::Any);
+    const auto resolveView1 = makeImageView(ctx.vkd, ctx.device, *resolveBuffer1, imageViewType, colorFormat, colorSRR);
+
+    // We will sample the resolve buffer and copy its contents to the copy buffer for verification.
+    auto copyImageCreateInfo  = ssImageCreateInfo;
+    copyImageCreateInfo.flags = 0u;
+    copyImageCreateInfo.usage = copyColorUsage;
+
+    // We need 2 copy views and buffers, one for each of the single-sample color attachments.
+    ImageWithMemory copyBuffer0(ctx.vkd, ctx.device, ctx.allocator, copyImageCreateInfo, MemoryRequirement::Any);
+    const auto copyView0 = makeImageView(ctx.vkd, ctx.device, *copyBuffer0, imageViewType, colorFormat, colorSRR);
+
+    ImageWithMemory copyBuffer1(ctx.vkd, ctx.device, ctx.allocator, copyImageCreateInfo, MemoryRequirement::Any);
+    const auto copyView1 = makeImageView(ctx.vkd, ctx.device, *copyBuffer1, imageViewType, colorFormat, colorSRR);
+
+    const auto &fdmProperties = m_context.getFragmentDensityMapPropertiesEXT();
+    const auto minTexelSize   = tcu::UVec3(std::max(fdmProperties.minFragmentDensityTexelSize.width, 1u),
+                                           std::max(fdmProperties.minFragmentDensityTexelSize.height, 1u), 1u)
+                                  .asInt();
+    const auto fdmExtent   = extent2d / minTexelSize;
+    const auto fdmExtentVk = makeExtent3D(fdmExtent);
+
+    const VkImageCreateInfo fdmCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        imageType,
+        fdmFormat,
+        fdmExtentVk,
+        1u,
+        fdmLayerCount,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        fdmUsage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+    ImageWithMemory fdmBuffer(ctx.vkd, ctx.device, ctx.allocator, fdmCreateInfo, MemoryRequirement::Any);
+    const auto fdmView = makeImageView(ctx.vkd, ctx.device, *fdmBuffer, imageViewType, fdmFormat, fdmSRR);
+
+    VkSamplerCreateFlags samplerFlags = 0u;
+    if (m_params.subsampledImages)
+        samplerFlags |= VK_SAMPLER_CREATE_SUBSAMPLED_BIT_EXT;
+
+    const VkSamplerCreateInfo samplerCreateInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
+        nullptr,
+        samplerFlags,
+        VK_FILTER_NEAREST,
+        VK_FILTER_NEAREST,
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        0.0f,
+        VK_FALSE,
+        1.0f,
+        VK_FALSE,
+        VK_COMPARE_OP_ALWAYS,
+        0.0f,
+        0.0f,
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
+        VK_FALSE,
+    };
+    const auto sampler = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
+
+    const auto tcuFormat        = mapVkFormat(colorFormat);
+    const auto verifBufferSize  = (tcu::getPixelSize(tcuFormat) * extent.x() * extent.y() * extent.z());
+    const auto verifBufferUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
+    const auto verifBufferInfo  = makeBufferCreateInfo(verifBufferSize, verifBufferUsage);
+    BufferWithMemory verifBuffer0(ctx.vkd, ctx.device, ctx.allocator, verifBufferInfo, HostIntent::R);
+    BufferWithMemory verifBuffer1(ctx.vkd, ctx.device, ctx.allocator, verifBufferInfo, HostIntent::R);
+
+    // Push constants.
+    const auto pcStages = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto pcSize   = DE_SIZEOF32(tcu::Vec4);
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
+    const auto pcValues =
+        tcu::Vec4(extentFloat.x(), extentFloat.y(), extentFloat.z(), static_cast<float>(msImageCreateInfo.samples));
+
+    // Descriptor sets.
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    DescriptorSetLayoutBuilder copySetLayoutBuilder;
+    copySetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    copySetLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto copySetLayout = copySetLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    PipelineLayoutWrapper pipelineLayout(m_params.groupParams->pipelineConstructionType, ctx.vkd, ctx.device,
+                                         *setLayout, &pcRange);
+    PipelineLayoutWrapper copyPipelineLayout(m_params.groupParams->pipelineConstructionType, ctx.vkd, ctx.device,
+                                             *copySetLayout, nullptr);
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, 2);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u);
+    const auto descriptorSet     = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+    const auto copyDescriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *copySetLayout);
+
+    // Update descriptor sets.
+    DescriptorSetUpdateBuilder setUpdateBuilder;
+    const auto binding    = DescriptorSetUpdateBuilder::Location::binding;
+    const auto inputDesc0 = makeDescriptorImageInfo(VK_NULL_HANDLE, *colorView0, inputAttLayout);
+    const auto samplerDesc0 =
+        makeDescriptorImageInfo(*sampler, *resolveView0, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    const auto samplerDesc1 =
+        makeDescriptorImageInfo(*sampler, *resolveView1, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    setUpdateBuilder.writeSingle(*descriptorSet, binding(0u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &inputDesc0);
+    setUpdateBuilder.writeSingle(*copyDescriptorSet, binding(0u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                 &samplerDesc0);
+    setUpdateBuilder.writeSingle(*copyDescriptorSet, binding(1u), VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                 &samplerDesc1);
+    setUpdateBuilder.update(ctx.vkd, ctx.device);
+
+    // Render pass and framebuffer.
+    Move<VkRenderPass> renderPass;
+    Move<VkFramebuffer> framebuffer;
+
+    // For the texture copy pass.
+    Move<VkRenderPass> renderPassCopy;
+    Move<VkFramebuffer> framebufferCopy;
+
+    std::unique_ptr<VkCustomResolveCreateInfoEXT> fillCustomResolveCreateInfo;
+    std::unique_ptr<VkCustomResolveCreateInfoEXT> resolveCustomResolveCreateInfo;
+    std::unique_ptr<VkPipelineRenderingCreateInfo> pipelineRenderingCreateInfo;
+    std::unique_ptr<VkPipelineRenderingCreateInfo> copyPipelineRenderingCreateInfo;
+    std::vector<VkFormat> drColorFormats;
+
+    if (m_params.useDynamicRendering())
+    {
+        drColorFormats.reserve(2u);
+        drColorFormats.push_back(colorFormat);
+        drColorFormats.push_back(colorFormat);
+
+        fillCustomResolveCreateInfo.reset(new VkCustomResolveCreateInfoEXT);
+        *fillCustomResolveCreateInfo = VkCustomResolveCreateInfoEXT{
+            VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT,
+            nullptr,
+            VK_FALSE,
+            de::sizeU32(drColorFormats),
+            de::dataOrNull(drColorFormats),
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        };
+
+        resolveCustomResolveCreateInfo.reset(new VkCustomResolveCreateInfoEXT);
+        *resolveCustomResolveCreateInfo = VkCustomResolveCreateInfoEXT{
+            VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT,
+            nullptr,
+            VK_TRUE,
+            de::sizeU32(drColorFormats),
+            de::dataOrNull(drColorFormats),
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        };
+
+        pipelineRenderingCreateInfo.reset(new VkPipelineRenderingCreateInfo);
+        *pipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+            nullptr,
+            viewMask,
+            de::sizeU32(drColorFormats),
+            de::dataOrNull(drColorFormats),
+            chosenDSFormat,
+            chosenDSFormat,
+        };
+
+        copyPipelineRenderingCreateInfo.reset(new VkPipelineRenderingCreateInfo);
+        *copyPipelineRenderingCreateInfo = VkPipelineRenderingCreateInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+            nullptr,
+            0u, // Never multiview.
+            de::sizeU32(drColorFormats),
+            de::dataOrNull(drColorFormats),
+            VK_FORMAT_UNDEFINED,
+            VK_FORMAT_UNDEFINED,
+        };
+    }
+    else
+    {
+        const std::vector<VkAttachmentDescription> attachmentDescriptions{
+            // 0: ms color attachment, 1: ms depth attachment, 2: ss color attachment, 3: fdm attachment, 4: second ms color attachment, 5: second ss color attachment
+            makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_4_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentDescription(0u, chosenDSFormat, VK_SAMPLE_COUNT_4_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+            makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentDescription(
+                0u, fdmFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_LOAD, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_ATTACHMENT_LOAD_OP_DONT_CARE, VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT, VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT),
+            makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_4_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        };
+
+        const std::vector<VkAttachmentReference> msColorAttRefs{
+            makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentReference(4u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        };
+        const std::vector<VkAttachmentReference> ssColorAttRefs{
+            makeAttachmentReference(2u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentReference(5u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        };
+        const auto msInputAttRef = makeAttachmentReference(0u, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+        const auto dsAttRef      = makeAttachmentReference(1u, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
+
+        const std::vector<VkSubpassDescription> subpassDescriptions{
+            makeSubpassDescription(0u, bindPoint, 0u, nullptr, de::sizeU32(msColorAttRefs),
+                                   de::dataOrNull(msColorAttRefs), nullptr, &dsAttRef, 0u, nullptr),
+            makeSubpassDescription(VK_SUBPASS_DESCRIPTION_CUSTOM_RESOLVE_BIT_EXT, bindPoint, 1u, &msInputAttRef,
+                                   de::sizeU32(ssColorAttRefs), de::dataOrNull(ssColorAttRefs), nullptr, nullptr, 0u,
+                                   nullptr),
+        };
+
+        const std::vector<VkSubpassDependency> subpassDependencies{makeSubpassDependency(
+            0u, 1u, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+            (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT),
+            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+            (VK_ACCESS_INPUT_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT), VK_DEPENDENCY_BY_REGION_BIT)};
+
+        const std::vector<uint32_t> multiviewMasks(subpassDescriptions.size(), viewMask);
+
+        VkRenderPassMultiviewCreateInfo multiviewCreateInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_MULTIVIEW_CREATE_INFO,
+            nullptr,
+            de::sizeU32(multiviewMasks),
+            de::dataOrNull(multiviewMasks),
+            0u,
+            nullptr,
+            0u,
+            nullptr,
+        };
+
+        VkRenderPassFragmentDensityMapCreateInfoEXT rpFDMCreateInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_FRAGMENT_DENSITY_MAP_CREATE_INFO_EXT, nullptr,
+            makeAttachmentReference(3u, VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT)};
+
+        VkRenderPassCreateInfo rpCreateInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            nullptr,
+            0u,
+            de::sizeU32(attachmentDescriptions),
+            de::dataOrNull(attachmentDescriptions),
+            de::sizeU32(subpassDescriptions),
+            de::dataOrNull(subpassDescriptions),
+            de::sizeU32(subpassDependencies),
+            de::dataOrNull(subpassDependencies),
+        };
+
+        // Add the needed extension structures.
+        const auto addRenderPassInfo = makeStructChainAdder(&rpCreateInfo);
+        addRenderPassInfo(&rpFDMCreateInfo);
+        if (m_params.multiView)
+            addRenderPassInfo(&multiviewCreateInfo);
+
+        renderPass = createRenderPass(ctx.vkd, ctx.device, &rpCreateInfo);
+
+        const std::vector<VkImageView> fbViews{
+            *colorView0, *dsView, *resolveView0, *fdmView, *colorView1, *resolveView1,
+        };
+        const auto fbLayerCount = (m_params.multiLayer ? layerCount : 1u);
+        framebuffer = makeFramebuffer(ctx.vkd, ctx.device, *renderPass, de::sizeU32(fbViews), de::dataOrNull(fbViews),
+                                      extentVk.width, extentVk.height, fbLayerCount);
+
+        const std::vector<VkAttachmentDescription> copyAttDescs{
+            makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentDescription(0u, colorFormat, VK_SAMPLE_COUNT_1_BIT, VK_ATTACHMENT_LOAD_OP_CLEAR,
+                                      VK_ATTACHMENT_STORE_OP_STORE, VK_ATTACHMENT_LOAD_OP_DONT_CARE,
+                                      VK_ATTACHMENT_STORE_OP_DONT_CARE, VK_IMAGE_LAYOUT_UNDEFINED,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        };
+        const std::vector<VkAttachmentReference> copyAttRefs{
+            makeAttachmentReference(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+            makeAttachmentReference(1u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL),
+        };
+        const auto copySubpass = makeSubpassDescription(0u, bindPoint, 0u, nullptr, de::sizeU32(copyAttRefs),
+                                                        de::dataOrNull(copyAttRefs), nullptr, nullptr, 0u, nullptr);
+        const VkRenderPassCreateInfo copyRPCreateInfo = {
+            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO,
+            nullptr,
+            0u,
+            de::sizeU32(copyAttDescs),
+            de::dataOrNull(copyAttDescs),
+            1u,
+            &copySubpass,
+            0u,
+            nullptr,
+        };
+        renderPassCopy = createRenderPass(ctx.vkd, ctx.device, &copyRPCreateInfo);
+        const std::vector<VkImageView> copyViews{*copyView0, *copyView1};
+        framebufferCopy = makeFramebuffer(ctx.vkd, ctx.device, *renderPassCopy, de::sizeU32(copyViews),
+                                          de::dataOrNull(copyViews), extentVk.width, extentVk.height, layerCount);
+    }
+
+    const auto &binaries = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper vertCopyShader(ctx.vkd, ctx.device, binaries.get("vert-copy"));
+    ShaderWrapper fragFillShader(ctx.vkd, ctx.device, binaries.get("frag-fill"));
+    ShaderWrapper fragResolveShader(ctx.vkd, ctx.device, binaries.get("frag-resolve"));
+    ShaderWrapper fragCopyShader(ctx.vkd, ctx.device, binaries.get("frag-copy"));
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extentVk));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extentVk));
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = initVulkanStructure();
+
+    const auto stencilOpFill = makeStencilOpState(VK_STENCIL_OP_KEEP, VK_STENCIL_OP_REPLACE, VK_STENCIL_OP_KEEP,
+                                                  VK_COMPARE_OP_GREATER, 0xFFu, 0xFFu, 0xFFu);
+
+    const VkPipelineDepthStencilStateCreateInfo dsStateCreateInfoFill = {
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_TRUE,
+        VK_TRUE,
+        VK_COMPARE_OP_LESS_OR_EQUAL, // Cleared to zero, filled with zeros: pass.
+        VK_FALSE,
+        VK_TRUE,
+        stencilOpFill,
+        stencilOpFill,
+        0.0f,
+        1.0f,
+    };
+
+    // For the resolve and copy passes we're not going to rely on existing depth/stencil buffer values.
+    const VkPipelineDepthStencilStateCreateInfo dsStateCreateInfoResolve = initVulkanStructure();
+    const VkPipelineDepthStencilStateCreateInfo dsStateCreateInfoCopy    = initVulkanStructure();
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfoFill = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_SAMPLE_COUNT_4_BIT,
+        VK_FALSE,
+        0.0f,
+        nullptr,
+        VK_FALSE,
+        VK_FALSE,
+    };
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfoResolve = {
+        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_SAMPLE_COUNT_1_BIT,
+        VK_FALSE,
+        0.0f,
+        nullptr,
+        VK_FALSE,
+        VK_FALSE,
+    };
+
+    const VkPipelineMultisampleStateCreateInfo multisampleStateCreateInfoCopy = multisampleStateCreateInfoResolve;
+
+    const auto pipelineCreateFlags =
+        (m_params.useDynamicRendering() ?
+             static_cast<VkPipelineCreateFlags>(VK_PIPELINE_CREATE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_BIT_EXT) :
+             0u);
+
+    VkPipelineColorBlendAttachmentState blendAttState;
+    memset(&blendAttState, 0, sizeof(blendAttState));
+    blendAttState.colorWriteMask =
+        (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+
+    const std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttStates{blendAttState, blendAttState};
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendState = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_LOGIC_OP_CLEAR,
+        de::sizeU32(colorBlendAttStates),
+        de::dataOrNull(colorBlendAttStates),
+        {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    GraphicsPipelineWrapper fillPipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                         m_context.getDeviceExtensions(),
+                                         m_params.groupParams->pipelineConstructionType, pipelineCreateFlags);
+    fillPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setupVertexInputState(&vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertShader, nullptr,
+                                          ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                          pipelineRenderingCreateInfo.get())
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragFillShader, &dsStateCreateInfoFill,
+                                  &multisampleStateCreateInfoFill)
+        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleStateCreateInfoFill, VK_NULL_HANDLE,
+                                  PipelineCreationFeedbackCreateInfoWrapper(), RenderingAttachmentLocationInfoWrapper(),
+                                  PipelineBinaryInfoWrapper(), fillCustomResolveCreateInfo.get())
+        .buildPipeline();
+
+    GraphicsPipelineWrapper resolvePipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                            m_context.getDeviceExtensions(),
+                                            m_params.groupParams->pipelineConstructionType, pipelineCreateFlags);
+    resolvePipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setupVertexInputState(&vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 1u, vertShader, nullptr,
+                                          ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                          pipelineRenderingCreateInfo.get())
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 1u, fragResolveShader, &dsStateCreateInfoResolve,
+                                  &multisampleStateCreateInfoResolve)
+        .setupFragmentOutputState(*renderPass, 1u, &colorBlendState, &multisampleStateCreateInfoResolve, VK_NULL_HANDLE,
+                                  PipelineCreationFeedbackCreateInfoWrapper(), RenderingAttachmentLocationInfoWrapper(),
+                                  PipelineBinaryInfoWrapper(), resolveCustomResolveCreateInfo.get())
+        .buildPipeline();
+
+    GraphicsPipelineWrapper copyPipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                         m_context.getDeviceExtensions(),
+                                         m_params.groupParams->pipelineConstructionType);
+    copyPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setupVertexInputState(&vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(viewports, scissors, copyPipelineLayout, *renderPassCopy, 0u, vertCopyShader,
+                                          nullptr, ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
+                                          copyPipelineRenderingCreateInfo.get())
+        .setupFragmentShaderState(copyPipelineLayout, *renderPassCopy, 0u, fragCopyShader, &dsStateCreateInfoCopy,
+                                  &multisampleStateCreateInfoCopy)
+        .setupFragmentOutputState(*renderPassCopy, 0u, &colorBlendState, &multisampleStateCreateInfoCopy)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const std::vector<VkClearValue> clearValues{
+        makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)), makeClearValueDepthStencil(0.0f, 0u),
+        makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)), // unused
+        makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)), // unused
+        makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f)),
+    };
+
+    const auto vertexCount   = 4u; // For the full-screen triangle strip.
+    const auto instanceCount = (m_params.multiLayer ? layerCount : 1u);
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Fill FDM with the proper density values.
+    {
+        const auto densityValue =
+            (0.5f - 1.0f / 255.0f); // The delta makes sure the implementation accepts density (2,2)
+        const auto fdmClearValue = makeClearValueColor(tcu::Vec4(densityValue, densityValue, 0.0f, 0.0f));
+
+        const auto preBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                       VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, *fdmBuffer, fdmSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, &preBarrier);
+
+        ctx.vkd.cmdClearColorImage(cmdBuffer, *fdmBuffer, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &fdmClearValue.color,
+                                   1u, &fdmSRR);
+
+        const auto postBarrier = makeImageMemoryBarrier(
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_FRAGMENT_DENSITY_MAP_READ_BIT_EXT,
+            VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT, *fdmBuffer, fdmSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                      VK_PIPELINE_STAGE_FRAGMENT_DENSITY_PROCESS_BIT_EXT, &postBarrier);
+    }
+
+    VkImageLayout ssFinalLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+
+    if (m_params.useDynamicRendering())
+    {
+        // Move all images to the attachment layout.
+        ssFinalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+
+        const auto srcStages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
+        const auto srcAccess = 0u;
+
+        const auto dstAccess =
+            (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_SHADER_READ_BIT |
+             VK_ACCESS_SHADER_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
+             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+        const auto dstStages = (VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+
+        const std::vector<VkImageMemoryBarrier> barriers{
+            makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, ssFinalLayout, *colorBuffer0,
+                                   colorSRR),
+            makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, ssFinalLayout, *resolveBuffer0,
+                                   colorSRR),
+            makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, ssFinalLayout, *colorBuffer1,
+                                   colorSRR),
+            makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, ssFinalLayout, *resolveBuffer1,
+                                   colorSRR),
+            makeImageMemoryBarrier(srcAccess, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, ssFinalLayout, *dsBuffer, dsSRR),
+        };
+
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, srcStages, dstStages, de::dataOrNull(barriers),
+                                      barriers.size());
+
+        const std::vector<VkRenderingAttachmentInfo> colorAttInfos{
+            VkRenderingAttachmentInfo{
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                nullptr,
+                *colorView0,
+                ssFinalLayout,
+                VK_RESOLVE_MODE_CUSTOM_BIT_EXT,
+                *resolveView0,
+                ssFinalLayout,
+                VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                clearValues.front(),
+            },
+            VkRenderingAttachmentInfo{
+                VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                nullptr,
+                *colorView1,
+                ssFinalLayout,
+                VK_RESOLVE_MODE_CUSTOM_BIT_EXT,
+                *resolveView1,
+                ssFinalLayout,
+                VK_ATTACHMENT_LOAD_OP_CLEAR,
+                VK_ATTACHMENT_STORE_OP_DONT_CARE,
+                clearValues.back(),
+            },
+        };
+
+        const VkRenderingAttachmentInfo dsAttInfo = {
+            VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+            nullptr,
+            *dsView,
+            ssFinalLayout,
+            VK_RESOLVE_MODE_NONE,
+            VK_NULL_HANDLE,
+            VK_IMAGE_LAYOUT_UNDEFINED,
+            VK_ATTACHMENT_LOAD_OP_CLEAR,
+            VK_ATTACHMENT_STORE_OP_DONT_CARE,
+            clearValues.back(),
+        };
+
+        const VkRenderingFragmentDensityMapAttachmentInfoEXT fdmAttInfo = {
+            VK_STRUCTURE_TYPE_RENDERING_FRAGMENT_DENSITY_MAP_ATTACHMENT_INFO_EXT,
+            nullptr,
+            *fdmView,
+            VK_IMAGE_LAYOUT_FRAGMENT_DENSITY_MAP_OPTIMAL_EXT,
+        };
+
+        const VkRenderingInfo renderingInfo = {
+            VK_STRUCTURE_TYPE_RENDERING_INFO,
+            &fdmAttInfo,
+            VK_RENDERING_CUSTOM_RESOLVE_BIT_EXT,
+            scissors.front(),
+            layerCount,
+            viewMask,
+            de::sizeU32(colorAttInfos),
+            de::dataOrNull(colorAttInfos),
+            &dsAttInfo,
+            &dsAttInfo,
+        };
+
+        const VkBeginCustomResolveInfoEXT beginCustomResolveInfo = initVulkanStructure();
+
+        ctx.vkd.cmdBeginRendering(cmdBuffer, &renderingInfo);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcValues);
+        fillPipeline.bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, vertexCount, instanceCount, 0u, 0u);
+        syncAttachmentLoadsStores(ctx.vkd, cmdBuffer, true);
+        ctx.vkd.cmdBeginCustomResolveEXT(cmdBuffer, &beginCustomResolveInfo);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcValues);
+        resolvePipeline.bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, vertexCount, instanceCount, 0u, 0u);
+        ctx.vkd.cmdEndRendering(cmdBuffer);
+    }
+    else
+    {
+        beginRenderPass(ctx.vkd, cmdBuffer, *renderPass, *framebuffer, scissors.front(), de::sizeU32(clearValues),
+                        de::dataOrNull(clearValues));
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcValues);
+        fillPipeline.bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, vertexCount, instanceCount, 0u, 0u);
+        ctx.vkd.cmdNextSubpass(cmdBuffer, VK_SUBPASS_CONTENTS_INLINE);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &pcValues);
+        resolvePipeline.bind(cmdBuffer);
+        ctx.vkd.cmdDraw(cmdBuffer, vertexCount, instanceCount, 0u, 0u);
+        endRenderPass(ctx.vkd, cmdBuffer);
+        ssFinalLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    }
+
+    // Run the copy render pass.
+    {
+        const std::vector<VkImageMemoryBarrier> prepareImages{
+            makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, ssFinalLayout,
+                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *resolveBuffer0, colorSRR),
+            makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, ssFinalLayout,
+                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *resolveBuffer1, colorSRR),
+        };
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                      VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, de::dataOrNull(prepareImages),
+                                      prepareImages.size());
+
+        if (m_params.useDynamicRendering())
+        {
+            const std::vector<VkImageMemoryBarrier> prepareCopies{
+                makeImageMemoryBarrier(0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *copyBuffer0, colorSRR),
+                makeImageMemoryBarrier(0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                       VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, *copyBuffer1, colorSRR),
+            };
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, de::dataOrNull(prepareCopies),
+                                          prepareCopies.size());
+
+            const std::vector<VkRenderingAttachmentInfo> copyAttInfos{
+                VkRenderingAttachmentInfo{
+                    VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                    nullptr,
+                    *copyView0,
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    VK_RESOLVE_MODE_NONE,
+                    VK_NULL_HANDLE,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    VK_ATTACHMENT_STORE_OP_STORE,
+                    clearValues.front(),
+                },
+                VkRenderingAttachmentInfo{
+                    VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
+                    nullptr,
+                    *copyView1,
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                    VK_RESOLVE_MODE_NONE,
+                    VK_NULL_HANDLE,
+                    VK_IMAGE_LAYOUT_UNDEFINED,
+                    VK_ATTACHMENT_LOAD_OP_CLEAR,
+                    VK_ATTACHMENT_STORE_OP_STORE,
+                    clearValues.front(),
+                },
+            };
+
+            const VkRenderingInfo copyRenderingInfo = {
+                VK_STRUCTURE_TYPE_RENDERING_INFO,
+                nullptr,
+                0u,
+                scissors.front(),
+                layerCount,
+                0u,
+                de::sizeU32(copyAttInfos),
+                de::dataOrNull(copyAttInfos),
+                nullptr,
+                nullptr,
+            };
+            ctx.vkd.cmdBeginRendering(cmdBuffer, &copyRenderingInfo);
+            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *copyPipelineLayout, 0u, 1u, &copyDescriptorSet.get(),
+                                          0u, nullptr);
+            copyPipeline.bind(cmdBuffer);
+            ctx.vkd.cmdDraw(cmdBuffer, vertexCount, layerCount, 0u, 0u);
+            endRendering(ctx.vkd, cmdBuffer);
+        }
+        else
+        {
+            const std::vector<VkClearValue> copyClearValues{clearValues.front(), clearValues.front()};
+            beginRenderPass(ctx.vkd, cmdBuffer, *renderPassCopy, *framebufferCopy, scissors.front(),
+                            de::sizeU32(copyClearValues), de::dataOrNull(copyClearValues));
+            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *copyPipelineLayout, 0u, 1u, &copyDescriptorSet.get(),
+                                          0u, nullptr);
+            copyPipeline.bind(cmdBuffer);
+            ctx.vkd.cmdDraw(cmdBuffer, vertexCount, layerCount, 0u, 0u);
+            endRenderPass(ctx.vkd, cmdBuffer);
+        }
+    }
+
+    // Sync and copy to verification buffer.
+    {
+        const std::vector<VkImageMemoryBarrier> preCopyBarriers{
+            makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   *copyBuffer0, colorSRR),
+            makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                   *copyBuffer1, colorSRR),
+        };
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(preCopyBarriers),
+                                      preCopyBarriers.size());
+        const auto copyRegion = makeBufferImageCopy(extentVk, colorSRL);
+        ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, *copyBuffer0, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *verifBuffer0, 1u,
+                                     &copyRegion);
+        ctx.vkd.cmdCopyImageToBuffer(cmdBuffer, *copyBuffer1, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *verifBuffer1, 1u,
+                                     &copyRegion);
+        const auto preHostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                 &preHostBarrier);
+    }
+
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    invalidateAlloc(ctx.vkd, ctx.device, verifBuffer0.getAllocation());
+    invalidateAlloc(ctx.vkd, ctx.device, verifBuffer1.getAllocation());
+
+    tcu::ConstPixelBufferAccess result0(tcuFormat, extent, verifBuffer0.getAllocation().getHostPtr());
+    tcu::ConstPixelBufferAccess result1(tcuFormat, extent, verifBuffer1.getAllocation().getHostPtr());
+
+    tcu::TextureLevel errorMaskLevel0(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::TextureLevel errorMaskLevel1(tcuFormat, extent.x(), extent.y(), extent.z());
+
+    tcu::PixelBufferAccess errorMask0 = errorMaskLevel0.getAccess();
+    tcu::PixelBufferAccess errorMask1 = errorMaskLevel1.getAccess();
+
+    bool fail = false;
+    auto &log = m_context.getTestContext().getLog();
+
+    // For a pixel to consider it has the same value as another one, the alpha value needs to match (it should be 1.0),
+    // the blue values needs to be within 1 unit (it should be enough, considering only 0, 0.3, 0.6 and 1 will be used),
+    // and the red and green values can differ slighly (because of precission issues), but below a unit.
+    const tcu::Vec4 neighborThreshold(0.0038f, 0.0038f, 0.005f, 0.0f);
+
+    // For the red and green values, we expect them to be within an acceptable range of the calculated ideal value for
+    // the gradient in that pixel, but that may match the previous or subsequent pixels in the row/column instead.
+    // 0.010 is less than 3 units.
+    const tcu::Vec2 redGreenThreshold(0.010f, 0.010f);
+
+    // For the error masks.
+    const tcu::Vec4 red(1.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 green(0.0f, 1.0f, 0.0f, 1.0f);
+
+    // When looking at pixels blocks, some pixels may not have the expected number of neighbor clones according to the
+    // stored frag size. This is prone to happen in the borders of the image, so for each layer we will accept a number
+    // of pixels that fail to meet this criteria.
+    const int acceptedLayerFailures = extent.x() * 2 + extent.y() * 2;
+
+    for (int z = 0; z < extent.z(); ++z)
+    {
+        const auto result0Layer = tcu::getSubregion(result0, 0, 0, z, extent.x(), extent.y(), 1);
+        const auto result1Layer = tcu::getSubregion(result1, 0, 0, z, extent.x(), extent.y(), 1);
+
+        const auto errorMask0Layer = tcu::getSubregion(errorMask0, 0, 0, z, extent.x(), extent.y(), 1);
+        const auto errorMask1Layer = tcu::getSubregion(errorMask1, 0, 0, z, extent.x(), extent.y(), 1);
+
+        const std::vector<const tcu::ConstPixelBufferAccess *> resultLayers{&result0Layer, &result1Layer};
+        const std::vector<const tcu::PixelBufferAccess *> errorMaskLayers{&errorMask0Layer, &errorMask1Layer};
+        DE_ASSERT(resultLayers.size() == errorMaskLayers.size());
+
+        for (size_t attIdx = 0; attIdx < resultLayers.size(); ++attIdx)
+        {
+            const auto &layer      = *resultLayers.at(attIdx);
+            const auto &errorLayer = *errorMaskLayers.at(attIdx);
+
+            int layerFails = 0;
+
+            for (int y = 0; y < extent.y(); ++y)
+                for (int x = 0; x < extent.x(); ++x)
+                {
+                    bool pixelOk     = true;
+                    const auto pixel = layer.getPixel(x, y);
+
+                    // Alpha needs to be 1.
+                    if (pixel.w() != 1.0f)
+                    {
+                        // This failure is not acceptable: disqualify the whole layer.
+                        layerFails += acceptedLayerFailures + 1;
+                        pixelOk = false;
+
+                        std::ostringstream msg;
+                        msg << "FAIL: Attachment " << attIdx << " Layer " << z << " invalid alpha at (" << x << ", "
+                            << y << "): " << pixel.w();
+                        log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+                    }
+
+                    // RG values need to be in the expected range.
+                    if (pixelOk)
+                    {
+                        const auto expectedRed = (static_cast<float>(x) + 0.5f) / static_cast<float>(layer.getWidth());
+                        const auto expectedGreen =
+                            (static_cast<float>(y) + 0.5f) / static_cast<float>(layer.getHeight());
+                        tcu::Vec2 expectedRG(expectedRed, expectedGreen);
+                        if (z != 0)
+                            std::swap(expectedRG.x(), expectedRG.y());
+                        const auto resultRG = pixel.swizzle(0, 1);
+
+                        const auto diff   = tcu::abs(expectedRG - resultRG);
+                        const bool goodRG = tcu::boolAll(tcu::lessThanEqual(diff, redGreenThreshold));
+
+                        if (!goodRG)
+                        {
+                            // This failure is not acceptable: disqualify the whole layer.
+                            layerFails += acceptedLayerFailures + 1;
+                            pixelOk = false;
+
+                            std::ostringstream msg;
+                            msg << "FAIL: Attachment " << attIdx << " Layer " << z << " invalid RG at pixel (" << x
+                                << ", " << y << "): "
+                                << "expected around " << expectedRG << " but found " << resultRG << " (diff=" << diff
+                                << " threshold=" << redGreenThreshold << ")";
+                            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+                        }
+                    }
+
+                    if (pixelOk)
+                    {
+                        // Check stored pixel density, undoing the encoding that the frag shader did.
+                        const auto blue = pixel.z();
+                        const auto val  = static_cast<int>(blue * 3.0f + 0.5f);           // val = 0, 1, 2, 3
+                        const tcu::IVec2 fragSize(((val >> 1) & 1) + 1, ((val & 1) + 1)); // (1,1), (1,2), (2,1), (2,2)
+
+                        // According to the frag size, some neighbors to this pixel should have the same value.
+                        const auto expectedClones = fragSize.x() * fragSize.y() - 1;
+
+                        if (expectedClones > 0)
+                        {
+                            // Take a look at the surrounding pixels.
+                            int cloneCount = 0;
+
+                            for (int offsetX = -1; offsetX <= 1; ++offsetX)
+                                for (int offsetY = -1; offsetY <= 1; ++offsetY)
+                                {
+                                    // Skip the reference pixel itself.
+                                    if (offsetX == 0 && offsetY == 0)
+                                        continue;
+
+                                    const auto neighborX = x + offsetX;
+                                    const auto neighborY = y + offsetY;
+
+                                    if (neighborX < 0 || neighborX >= layer.getWidth() || neighborY < 0 ||
+                                        neighborY >= layer.getHeight())
+                                    {
+                                        // We're in an edge or corner pixel and this falls outside the image.
+                                        continue;
+                                    }
+
+                                    const auto neighborPixel = layer.getPixel(neighborX, neighborY);
+                                    const auto diff          = tcu::abs(pixel - neighborPixel);
+                                    const bool isClone       = boolAll(lessThanEqual(diff, neighborThreshold));
+
+                                    if (isClone)
+                                        ++cloneCount;
+                                }
+
+                            if (cloneCount < expectedClones)
+                            {
+                                // One more failure, may disqualify the whole layer.
+                                ++layerFails;
+                                pixelOk = false;
+
+                                std::ostringstream msg;
+                                msg << "WARM: Attachment " << attIdx << " Layer " << z << " pixel (" << x << ", " << y
+                                    << ") expected " << expectedClones
+                                    << " identical pixels in the neighborhood, but only found " << cloneCount;
+                                log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+                            }
+                        }
+                    }
+
+                    errorLayer.setPixel((pixelOk ? green : red), x, y);
+                }
+
+            if (layerFails > acceptedLayerFailures)
+            {
+                fail = true;
+
+                std::ostringstream msg;
+                msg << "FAIL: Attachment " << attIdx << " Layer " << z << " considered failed";
+                log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            }
+
+            if (layerFails > acceptedLayerFailures || log.logAllImages())
+            {
+                const auto setName = "Attachment" + std::to_string(attIdx) + "-Layer" + std::to_string(z);
+                log << tcu::TestLog::ImageSet(setName, "") << tcu::TestLog::Image("Result", "", layer)
+                    << tcu::TestLog::Image("ErrorMask", "", errorLayer) << tcu::TestLog::EndImageSet;
+            }
+        }
+    }
+
+    if (fail)
+        TCU_FAIL("Unexpected results; check log **messages** and logged images for details --");
 
     return tcu::TestStatus::pass("Pass");
 }
@@ -5112,6 +6406,32 @@ tcu::TestCaseGroup *createRenderPassCustomResolveTests(tcu::TestContext &testCtx
                         std::string("fragment_region") + (close ? "_close" : "_far") + (large ? "_large" : "_small");
                     constructionGroup->addChild(new FragmentRegionCase(testCtx, testName, params));
                 }
+        }
+
+        if (!origGroupParams->useSecondaryCmdBuffer)
+        {
+            for (const bool subsampledImages : {true, false})
+                for (const bool multiLayer : {false, true})
+                    for (const bool multiView : {false, true})
+                    {
+                        if (multiLayer && multiView)
+                            continue;
+
+                        // Multiview cannot be used with shader objects.
+                        if (multiView && isConstructionTypeShaderObject(groupParams->pipelineConstructionType))
+                            continue;
+
+                        const FDMParams params{
+                            groupParams,
+                            subsampledImages,
+                            multiLayer,
+                            multiView,
+                        };
+                        const auto testName = std::string("fdm") +
+                                              (subsampledImages ? "_subsampled" : "_nonsubsampled") +
+                                              (multiLayer ? "_multilayer" : "") + (multiView ? "_multiview" : "");
+                        constructionGroup->addChild(new FDMCase(testCtx, testName, params));
+                    }
         }
 
         mainGroup->addChild(constructionGroup.release());
