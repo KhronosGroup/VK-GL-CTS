@@ -20354,7 +20354,6 @@ void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocat
     });
     addTestGroup(group, "image_to_buffer_transfer_queue", addImageToBufferTests, transferOnlyGroup);
     addTestGroup(group, "buffer_to_image_transfer_queue", addBufferToImageTests, transferOnlyGroup);
-    addTestGroup(group, "image_to_image_transfer_queue", addImageToImageTests, transferOnlyGroup);
     addTestGroup(group, "buffer_to_buffer_transfer_queue", addBufferToBufferTests, transferOnlyGroup);
 
     TestGroupParamsPtr computeOnlyGroup(new TestGroupParams{
@@ -20370,6 +20369,8 @@ void addCopiesAndBlittingTests(tcu::TestCaseGroup *group, AllocationKind allocat
 
     if (extensionFlags == COPY_COMMANDS_2)
     {
+        addTestGroup(group, "image_to_image_transfer_queue", addImageToImageTests, transferOnlyGroup);
+
         TestGroupParamsPtr transferWithSecondaryBuffer(new TestGroupParams{
             allocationKind,
             extensionFlags,
