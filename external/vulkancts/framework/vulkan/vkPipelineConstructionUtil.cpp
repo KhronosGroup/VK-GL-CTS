@@ -954,8 +954,10 @@ RenderPassWrapper &RenderPassWrapper::operator=(RenderPassWrapper &&rhs) noexcep
 
 #ifndef CTS_USES_VULKANSC
 
-void RenderPassWrapper::clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const
+bool RenderPassWrapper::clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const
 {
+    bool didClear = false;
+
     for (uint32_t i = 0; i < (uint32_t)m_attachments.size() && i < (uint32_t)m_clearValues.size(); ++i)
     {
         const auto tcuFormat  = vk::mapVkFormat(m_attachments[i].format);
@@ -990,7 +992,10 @@ void RenderPassWrapper::clearAttachments(const DeviceInterface &vk, const VkComm
 
         vk.cmdBeginRendering(commandBuffer, &renderingInfo);
         vk.cmdEndRendering(commandBuffer);
+        didClear = true;
     }
+
+    return didClear;
 }
 
 void RenderPassWrapper::updateLayout(VkImage updatedImage, VkImageLayout newLayout) const
@@ -1295,7 +1300,21 @@ void RenderPassWrapper::begin(const DeviceInterface &vk, const VkCommandBuffer c
         m_renderingInfo.layerCount = m_layers;
         m_renderingInfo.viewMask   = 0x0;
 
-        clearAttachments(vk, commandBuffer);
+        if (clearAttachments(vk, commandBuffer))
+        {
+            // Make sure clears take place before loads at beginRendering time.
+            const auto srcAccess =
+                (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+            const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT);
+            const auto srcStages =
+                (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                 VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+            const auto dstStages        = srcStages;
+            const auto clearLoadBarrier = makeMemoryBarrier(srcAccess, dstAccess);
+
+            vk.cmdPipelineBarrier(commandBuffer, srcStages, dstStages, 0u, 1u, &clearLoadBarrier, 0u, nullptr, 0u,
+                                  nullptr);
+        }
 
         beginRendering(vk, commandBuffer);
 #endif
