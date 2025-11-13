@@ -4915,6 +4915,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
 	std::make_tuple(1, 0, "VK_EXT_shader_stencil_export"),
 	std::make_tuple(1, 0, "VK_EXT_shader_subgroup_ballot"),
+	std::make_tuple(1, 0, "VK_EXT_shader_subgroup_partitioned"),
 	std::make_tuple(1, 0, "VK_EXT_shader_subgroup_vote"),
 	std::make_tuple(1, 3, "VK_EXT_shader_tile_image"),
 	std::make_tuple(1, 0, "VK_EXT_shader_uniform_buffer_unsized_array"),

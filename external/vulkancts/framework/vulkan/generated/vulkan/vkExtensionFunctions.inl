@@ -666,6 +666,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_subgroup_partitioned")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_subgroup_vote")
 	{
 		return;
@@ -2825,6 +2829,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_subgroup_partitioned")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_subgroup_vote")
 	{
 		return;
@@ -4692,6 +4700,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_QCOM_data_graph_model",
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_EXT_shader_uniform_buffer_unsized_array",
+	"VK_EXT_shader_subgroup_partitioned",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

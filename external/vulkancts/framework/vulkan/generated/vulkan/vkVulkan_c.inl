@@ -3479,6 +3479,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_RESOLVE_IMAGE_MODE_INFO_KHR = 1000630004,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC = 1000637000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT = 1000642000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_PARTITIONED_FEATURES_EXT = 1000662000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
   // VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT is a legacy alias
@@ -7605,7 +7606,8 @@ typedef enum VkSubgroupFeatureFlagBits {
     VK_SUBGROUP_FEATURE_QUAD_BIT = 0x00000080,
     VK_SUBGROUP_FEATURE_ROTATE_BIT = 0x00000200,
     VK_SUBGROUP_FEATURE_ROTATE_CLUSTERED_BIT = 0x00000400,
-    VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV = 0x00000100,
+    VK_SUBGROUP_FEATURE_PARTITIONED_BIT_EXT = 0x00000100,
+    VK_SUBGROUP_FEATURE_PARTITIONED_BIT_NV = VK_SUBGROUP_FEATURE_PARTITIONED_BIT_EXT,
     VK_SUBGROUP_FEATURE_ROTATE_BIT_KHR = VK_SUBGROUP_FEATURE_ROTATE_BIT,
     VK_SUBGROUP_FEATURE_ROTATE_CLUSTERED_BIT_KHR = VK_SUBGROUP_FEATURE_ROTATE_CLUSTERED_BIT,
     VK_SUBGROUP_FEATURE_FLAG_BITS_MAX_ENUM = 0x7FFFFFFF
@@ -13766,7 +13768,7 @@ typedef struct VkPhysicalDeviceShaderQuadControlFeaturesKHR {
 #define VK_KHR_SURFACE_PROTECTED_CAPABILITIES_EXTENSION_NAME "VK_KHR_surface_protected_capabilities"
 typedef struct VkSurfaceProtectedCapabilitiesKHR {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     VkBool32           supportsProtected;
 } VkSurfaceProtectedCapabilitiesKHR;
 
@@ -23226,7 +23228,7 @@ typedef struct VkWriteDescriptorSetTensorARM {
 
 typedef struct VkTensorFormatPropertiesARM {
     VkStructureType          sType;
-    const void*              pNext;
+    void*                    pNext;
     VkFormatFeatureFlags2    optimalTilingTensorFeatures;
     VkFormatFeatureFlags2    linearTilingTensorFeatures;
 } VkTensorFormatPropertiesARM;
@@ -23611,7 +23613,7 @@ typedef struct VkOpticalFlowImageFormatInfoNV {
 
 typedef struct VkOpticalFlowImageFormatPropertiesNV {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     VkFormat           format;
 } VkOpticalFlowImageFormatPropertiesNV;
 
@@ -24226,7 +24228,7 @@ typedef struct VkSetLatencyMarkerInfoNV {
 
 typedef struct VkLatencyTimingsFrameReportNV {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     uint64_t           presentID;
     uint64_t           inputSampleTimeUs;
     uint64_t           simStartTimeUs;
@@ -24915,7 +24917,7 @@ typedef struct VkDisplaySurfaceStereoCreateInfoNV {
 
 typedef struct VkDisplayModeStereoPropertiesNV {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     VkBool32           hdmi3DSupported;
 } VkDisplayModeStereoPropertiesNV;
 
@@ -25273,7 +25275,7 @@ typedef struct VkClusterAccelerationStructureGetTemplateIndicesInfoNV {
 
 typedef struct VkAccelerationStructureBuildSizesInfoKHR {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     VkDeviceSize       accelerationStructureSize;
     VkDeviceSize       updateScratchSize;
     VkDeviceSize       buildScratchSize;
@@ -26035,7 +26037,7 @@ typedef struct VkDataGraphPipelineBuiltinModelCreateInfoQCOM {
 
 typedef struct VkPhysicalDeviceDataGraphModelFeaturesQCOM {
     VkStructureType    sType;
-    const void*        pNext;
+    void*              pNext;
     VkBool32           dataGraphModel;
 } VkPhysicalDeviceDataGraphModelFeaturesQCOM;
 
@@ -26062,6 +26064,18 @@ typedef struct VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT {
     void*              pNext;
     VkBool32           shaderUniformBufferUnsizedArray;
 } VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT;
+
+
+
+// VK_EXT_shader_subgroup_partitioned is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_shader_subgroup_partitioned 1
+#define VK_EXT_SHADER_SUBGROUP_PARTITIONED_SPEC_VERSION 1
+#define VK_EXT_SHADER_SUBGROUP_PARTITIONED_EXTENSION_NAME "VK_EXT_shader_subgroup_partitioned"
+typedef struct VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           shaderSubgroupPartitioned;
+} VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT;
 
 
 

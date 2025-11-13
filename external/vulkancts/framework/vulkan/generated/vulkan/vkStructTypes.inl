@@ -1308,7 +1308,7 @@ struct VkAccelerationStructureBuildRangeInfoKHR
 struct VkAccelerationStructureBuildSizesInfoKHR
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkDeviceSize	accelerationStructureSize;
 	VkDeviceSize	updateScratchSize;
 	VkDeviceSize	buildScratchSize;
@@ -3303,7 +3303,7 @@ struct VkDisplayEventInfoEXT
 struct VkDisplayModeStereoPropertiesNV
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		hdmi3DSupported;
 };
 
@@ -4639,7 +4639,7 @@ struct VkLatencySurfaceCapabilitiesNV
 struct VkLatencyTimingsFrameReportNV
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	uint64_t		presentID;
 	uint64_t		inputSampleTimeUs;
 	uint64_t		simStartTimeUs;
@@ -5382,7 +5382,7 @@ struct VkOpticalFlowImageFormatInfoNV
 struct VkOpticalFlowImageFormatPropertiesNV
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkFormat		format;
 };
 
@@ -5986,7 +5986,7 @@ struct VkPhysicalDeviceDataGraphFeaturesARM
 struct VkPhysicalDeviceDataGraphModelFeaturesQCOM
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		dataGraphModel;
 };
 
@@ -8470,6 +8470,13 @@ struct VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		shaderSubgroupExtendedTypes;
+};
+
+struct VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupPartitioned;
 };
 
 struct VkPhysicalDeviceShaderSubgroupRotateFeatures
@@ -11422,7 +11429,7 @@ struct VkSurfacePresentScalingCapabilitiesKHR
 struct VkSurfaceProtectedCapabilitiesKHR
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		supportsProtected;
 };
 
@@ -11624,7 +11631,7 @@ struct VkTensorCreateInfoARM
 struct VkTensorFormatPropertiesARM
 {
 	VkStructureType			sType;
-	const void*				pNext;
+	void*					pNext;
 	VkFormatFeatureFlags2	optimalTilingTensorFeatures;
 	VkFormatFeatureFlags2	linearTilingTensorFeatures;
 };

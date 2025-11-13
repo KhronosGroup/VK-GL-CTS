@@ -114,6 +114,7 @@ VK_EXT_shader_float8
 VK_EXT_shader_image_atomic_int64
 VK_EXT_shader_module_identifier
 VK_EXT_shader_object
+VK_EXT_shader_subgroup_partitioned
 VK_EXT_shader_tile_image
 VK_EXT_subpass_merge_feedback
 VK_EXT_swapchain_maintenance1
