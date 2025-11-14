@@ -33,6 +33,7 @@ typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BindVideoSessionMemoryKHRFunc)						
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BuildAccelerationStructuresKHRFunc)										(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos);
 typedef VKAPI_ATTR VkResult				(VKAPI_CALL* BuildMicromapsEXTFunc)														(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginConditionalRenderingEXTFunc)										(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin);
+typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginCustomResolveEXTFunc)												(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginDebugUtilsLabelEXTFunc)											(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginPerTileExecutionQCOMFunc)											(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo);
 typedef VKAPI_ATTR void					(VKAPI_CALL* CmdBeginQueryFunc)															(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags);

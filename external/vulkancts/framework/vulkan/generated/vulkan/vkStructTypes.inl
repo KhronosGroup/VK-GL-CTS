@@ -1308,7 +1308,7 @@ struct VkAccelerationStructureBuildRangeInfoKHR
 struct VkAccelerationStructureBuildSizesInfoKHR
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkDeviceSize	accelerationStructureSize;
 	VkDeviceSize	updateScratchSize;
 	VkDeviceSize	buildScratchSize;
@@ -1543,6 +1543,12 @@ struct VkBaseOutStructure
 {
 	VkStructureType				sType;
 	struct VkBaseOutStructure*	pNext;
+};
+
+struct VkBeginCustomResolveInfoEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
 };
 
 struct VkBindAccelerationStructureMemoryInfoNV
@@ -2364,6 +2370,17 @@ struct VkCudaModuleCreateInfoNV
 	const void*		pNext;
 	size_t			dataSize;
 	const void*		pData;
+};
+
+struct VkCustomResolveCreateInfoEXT
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	VkBool32		customResolve;
+	uint32_t		colorAttachmentCount;
+	const VkFormat*	pColorAttachmentFormats;
+	VkFormat		depthAttachmentFormat;
+	VkFormat		stencilAttachmentFormat;
 };
 
 struct VkD3D12FenceSubmitInfoKHR
@@ -3303,7 +3320,7 @@ struct VkDisplayEventInfoEXT
 struct VkDisplayModeStereoPropertiesNV
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		hdmi3DSupported;
 };
 
@@ -4639,7 +4656,7 @@ struct VkLatencySurfaceCapabilitiesNV
 struct VkLatencyTimingsFrameReportNV
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	uint64_t		presentID;
 	uint64_t		inputSampleTimeUs;
 	uint64_t		simStartTimeUs;
@@ -5382,7 +5399,7 @@ struct VkOpticalFlowImageFormatInfoNV
 struct VkOpticalFlowImageFormatPropertiesNV
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkFormat		format;
 };
 
@@ -5972,6 +5989,13 @@ struct VkPhysicalDeviceCustomBorderColorPropertiesEXT
 	uint32_t		maxCustomBorderColorSamplers;
 };
 
+struct VkPhysicalDeviceCustomResolveFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		customResolve;
+};
+
 struct VkPhysicalDeviceDataGraphFeaturesARM
 {
 	VkStructureType	sType;
@@ -5986,7 +6010,7 @@ struct VkPhysicalDeviceDataGraphFeaturesARM
 struct VkPhysicalDeviceDataGraphModelFeaturesQCOM
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		dataGraphModel;
 };
 
@@ -7928,18 +7952,26 @@ struct VkPhysicalDeviceRayQueryFeaturesKHR
 	VkBool32		rayQuery;
 };
 
-struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
+struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT
 {
 	VkStructureType	sType;
 	void*			pNext;
 	VkBool32		rayTracingInvocationReorder;
 };
 
+struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT
+{
+	VkStructureType							sType;
+	void*									pNext;
+	VkRayTracingInvocationReorderModeEXT	rayTracingInvocationReorderReorderingHint;
+	uint32_t								maxShaderBindingTableRecordIndex;
+};
+
 struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV
 {
-	VkStructureType						sType;
-	void*								pNext;
-	VkRayTracingInvocationReorderModeNV	rayTracingInvocationReorderReorderingHint;
+	VkStructureType							sType;
+	void*									pNext;
+	VkRayTracingInvocationReorderModeEXT	rayTracingInvocationReorderReorderingHint;
 };
 
 struct VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV
@@ -11422,7 +11454,7 @@ struct VkSurfacePresentScalingCapabilitiesKHR
 struct VkSurfaceProtectedCapabilitiesKHR
 {
 	VkStructureType	sType;
-	const void*		pNext;
+	void*			pNext;
 	VkBool32		supportsProtected;
 };
 
@@ -11624,7 +11656,7 @@ struct VkTensorCreateInfoARM
 struct VkTensorFormatPropertiesARM
 {
 	VkStructureType			sType;
-	const void*				pNext;
+	void*					pNext;
 	VkFormatFeatureFlags2	optimalTilingTensorFeatures;
 	VkFormatFeatureFlags2	linearTilingTensorFeatures;
 };
@@ -13696,6 +13728,9 @@ typedef VkPhysicalDevicePushDescriptorProperties VkPhysicalDevicePushDescriptorP
 
 
 typedef VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM;
+
+
+typedef VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV;
 
 
 typedef VkPhysicalDeviceRobustness2FeaturesKHR VkPhysicalDeviceRobustness2FeaturesEXT;

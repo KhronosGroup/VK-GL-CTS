@@ -79,6 +79,7 @@ const vk::VkPhysicalDevicePresentationPropertiesOHOS&					getPresentationPropert
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					getProtectedMemoryProperties					(void) const;
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&					getProvokingVertexPropertiesEXT					(void) const;
 const vk::VkPhysicalDevicePushDescriptorProperties&						getPushDescriptorProperties						(void) const;
+const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT&		getRayTracingInvocationReorderPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&		getRayTracingInvocationReorderProperties		(void) const;
 const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&				getRayTracingPipelineProperties					(void) const;
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&						getRayTracingProperties							(void) const;

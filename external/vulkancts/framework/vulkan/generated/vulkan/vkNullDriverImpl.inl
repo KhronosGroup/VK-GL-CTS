@@ -942,6 +942,12 @@ VKAPI_ATTR void VKAPI_CALL cmdBeginConditionalRenderingEXT (VkCommandBuffer comm
 	DE_UNREF(pConditionalRenderingBegin);
 }
 
+VKAPI_ATTR void VKAPI_CALL cmdBeginCustomResolveEXT (VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo)
+{
+	DE_UNREF(commandBuffer);
+	DE_UNREF(pBeginCustomResolveInfo);
+}
+
 VKAPI_ATTR void VKAPI_CALL cmdBeginDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -5592,6 +5598,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkBuildAccelerationStructuresKHR,							buildAccelerationStructuresKHR),
 	VK_NULL_FUNC_ENTRY(vkBuildMicromapsEXT,											buildMicromapsEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginConditionalRenderingEXT,							cmdBeginConditionalRenderingEXT),
+	VK_NULL_FUNC_ENTRY(vkCmdBeginCustomResolveEXT,									cmdBeginCustomResolveEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginDebugUtilsLabelEXT,								cmdBeginDebugUtilsLabelEXT),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginPerTileExecutionQCOM,								cmdBeginPerTileExecutionQCOM),
 	VK_NULL_FUNC_ENTRY(vkCmdBeginQuery,												cmdBeginQuery),

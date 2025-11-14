@@ -143,6 +143,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
 
+		// "VK_EXT_custom_resolve
+		"vkCmdBeginCustomResolveEXT",
+
 		// "VK_EXT_debug_marker
 		"vkCmdDebugMarkerBeginEXT",
 		"vkCmdDebugMarkerEndEXT",

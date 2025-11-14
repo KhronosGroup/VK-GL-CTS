@@ -833,6 +833,18 @@ bool check_VK_EXT_custom_border_color(const tcu::UVec2& v, const ExtPropVect& vI
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_EXT_custom_resolve(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_custom_resolve"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_EXT_debug_marker(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -1705,6 +1717,18 @@ bool check_VK_EXT_rasterization_order_attachment_access(const tcu::UVec2& v, con
 
 	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
+bool check_VK_EXT_ray_tracing_invocation_reorder(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_ray_tracing_invocation_reorder"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_ray_tracing_pipeline
+	return isSupported(vDEP, "VK_KHR_ray_tracing_pipeline");
 }
 
 bool check_VK_EXT_rgba10x6_formats(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
@@ -4460,6 +4484,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_conditional_rendering",							&check_VK_EXT_conditional_rendering),
 	std::make_pair("VK_EXT_conservative_rasterization",						&check_VK_EXT_conservative_rasterization),
 	std::make_pair("VK_EXT_custom_border_color",							&check_VK_EXT_custom_border_color),
+	std::make_pair("VK_EXT_custom_resolve",									&check_VK_EXT_custom_resolve),
 	std::make_pair("VK_EXT_debug_marker",									&check_VK_EXT_debug_marker),
 	std::make_pair("VK_EXT_depth_bias_control",								&check_VK_EXT_depth_bias_control),
 	std::make_pair("VK_EXT_depth_clamp_control",							&check_VK_EXT_depth_clamp_control),
@@ -4531,6 +4556,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_provoking_vertex",								&check_VK_EXT_provoking_vertex),
 	std::make_pair("VK_EXT_queue_family_foreign",							&check_VK_EXT_queue_family_foreign),
 	std::make_pair("VK_EXT_rasterization_order_attachment_access",			&check_VK_EXT_rasterization_order_attachment_access),
+	std::make_pair("VK_EXT_ray_tracing_invocation_reorder",					&check_VK_EXT_ray_tracing_invocation_reorder),
 	std::make_pair("VK_EXT_rgba10x6_formats",								&check_VK_EXT_rgba10x6_formats),
 	std::make_pair("VK_EXT_robustness2",									&check_VK_EXT_robustness2),
 	std::make_pair("VK_EXT_sample_locations",								&check_VK_EXT_sample_locations),
@@ -4812,6 +4838,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_conditional_rendering"),
 	std::make_tuple(1, 0, "VK_EXT_conservative_rasterization"),
 	std::make_tuple(1, 0, "VK_EXT_custom_border_color"),
+	std::make_tuple(1, 0, "VK_EXT_custom_resolve"),
 	std::make_tuple(1, 0, "VK_EXT_debug_marker"),
 	std::make_tuple(1, 0, "VK_EXT_debug_report"),
 	std::make_tuple(1, 0, "VK_EXT_debug_utils"),
@@ -4898,6 +4925,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_provoking_vertex"),
 	std::make_tuple(1, 0, "VK_EXT_queue_family_foreign"),
 	std::make_tuple(1, 0, "VK_EXT_rasterization_order_attachment_access"),
+	std::make_tuple(1, 0, "VK_EXT_ray_tracing_invocation_reorder"),
 	std::make_tuple(1, 0, "VK_EXT_rgba10x6_formats"),
 	std::make_tuple(1, 0, "VK_EXT_robustness2"),
 	std::make_tuple(1, 0, "VK_EXT_sample_locations"),

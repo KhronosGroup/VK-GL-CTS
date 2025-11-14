@@ -270,6 +270,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceCubicClampFeaturesQCOM>(VkPh
 template<> void initFeatureFromBlob<VkPhysicalDeviceCubicWeightsFeaturesQCOM>(VkPhysicalDeviceCubicWeightsFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCudaKernelLaunchFeaturesNV>(VkPhysicalDeviceCudaKernelLaunchFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceCustomBorderColorFeaturesEXT>(VkPhysicalDeviceCustomBorderColorFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceCustomResolveFeaturesEXT>(VkPhysicalDeviceCustomResolveFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDataGraphFeaturesARM>(VkPhysicalDeviceDataGraphFeaturesARM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDataGraphModelFeaturesQCOM>(VkPhysicalDeviceDataGraphModelFeaturesQCOM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>(VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV&, const AllFeaturesBlobs&) {}
@@ -368,7 +369,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceRGBA10X6FormatsFeaturesEXT>(
 template<> void initFeatureFromBlob<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>(VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRawAccessChainsFeaturesNV>(VkPhysicalDeviceRawAccessChainsFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayQueryFeaturesKHR>(VkPhysicalDeviceRayQueryFeaturesKHR&, const AllFeaturesBlobs&) {}
-template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV>(VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT>(VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>(VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>(VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&, const AllFeaturesBlobs&) {}
@@ -464,6 +465,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCubicClampFeaturesQCOM>(v
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCubicWeightsFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUBIC_WEIGHTS_FEATURES_QCOM, VK_QCOM_FILTER_CUBIC_WEIGHTS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCudaKernelLaunchFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUDA_KERNEL_LAUNCH_FEATURES_NV, VK_NV_CUDA_KERNEL_LAUNCH_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCustomBorderColorFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceCustomResolveFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_RESOLVE_FEATURES_EXT, VK_EXT_CUSTOM_RESOLVE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDataGraphFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_FEATURES_ARM, VK_ARM_DATA_GRAPH_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDataGraphModelFeaturesQCOM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_MODEL_FEATURES_QCOM, VK_QCOM_DATA_GRAPH_MODEL_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEDICATED_ALLOCATION_IMAGE_ALIASING_FEATURES_NV, VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING_EXTENSION_NAME}; }
@@ -582,7 +584,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRGBA10X6FormatsFeaturesEX
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT, VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRawAccessChainsFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAW_ACCESS_CHAINS_FEATURES_NV, VK_NV_RAW_ACCESS_CHAINS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayQueryFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR, VK_KHR_RAY_QUERY_EXTENSION_NAME}; }
-template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV, VK_NV_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT, VK_EXT_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR, VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV, VK_NV_RAY_TRACING_MOTION_BLUR_EXTENSION_NAME}; }
@@ -702,8 +704,9 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceCubicWeightsFeaturesQCOM>, VK_QCOM_FILTER_CUBIC_WEIGHTS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCudaKernelLaunchFeaturesNV>, VK_NV_CUDA_KERNEL_LAUNCH_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceCustomBorderColorFeaturesEXT>, VK_EXT_CUSTOM_BORDER_COLOR_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceCustomResolveFeaturesEXT>, VK_EXT_CUSTOM_RESOLVE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDataGraphFeaturesARM>, VK_ARM_DATA_GRAPH_EXTENSION_NAME },
-	// Contains const pNext { createFeatureStructWrapper<VkPhysicalDeviceDataGraphModelFeaturesQCOM>, VK_QCOM_DATA_GRAPH_MODEL_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceDataGraphModelFeaturesQCOM>, VK_QCOM_DATA_GRAPH_MODEL_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV>, VK_NV_DEDICATED_ALLOCATION_IMAGE_ALIASING_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX>, VK_AMDX_DENSE_GEOMETRY_FORMAT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceDepthBiasControlFeaturesEXT>, VK_EXT_DEPTH_BIAS_CONTROL_EXTENSION_NAME },
@@ -820,7 +823,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT>, VK_EXT_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRawAccessChainsFeaturesNV>, VK_NV_RAW_ACCESS_CHAINS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayQueryFeaturesKHR>, VK_KHR_RAY_QUERY_EXTENSION_NAME },
-	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV>, VK_NV_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT>, VK_EXT_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>, VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>, VK_NV_RAY_TRACING_MOTION_BLUR_EXTENSION_NAME },
@@ -920,6 +923,7 @@ const std::string getPreviousFeatureExtName (const std::string &name)
 		{ "VK_EXT_mutable_descriptor_type", "VK_VALVE_mutable_descriptor_type" },
 		{ "VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready" },
 		{ "VK_EXT_rasterization_order_attachment_access", "VK_ARM_rasterization_order_attachment_access" },
+		{ "VK_EXT_ray_tracing_invocation_reorder", "VK_NV_ray_tracing_invocation_reorder" },
 		{ "VK_KHR_robustness2", "VK_EXT_robustness2" },
 		{ "VK_KHR_swapchain_maintenance1", "VK_EXT_swapchain_maintenance1" },
 		{ "VK_KHR_vertex_attribute_divisor", "VK_EXT_vertex_attribute_divisor" },

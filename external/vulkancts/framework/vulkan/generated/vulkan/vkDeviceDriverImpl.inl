@@ -118,6 +118,12 @@ void DeviceDriver::cmdBeginConditionalRenderingEXT (VkCommandBuffer commandBuffe
     m_vk.cmdBeginConditionalRenderingEXT(commandBuffer, pConditionalRenderingBegin);
 }
 
+void DeviceDriver::cmdBeginCustomResolveEXT (VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo) const
+{
+    if( m_computeOnlyMode ) THROW_NOT_SUPPORTED_COMPUTE_ONLY();
+    m_vk.cmdBeginCustomResolveEXT(commandBuffer, pBeginCustomResolveInfo);
+}
+
 void DeviceDriver::cmdBeginDebugUtilsLabelEXT (VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) const
 {
     m_vk.cmdBeginDebugUtilsLabelEXT(commandBuffer, pLabelInfo);

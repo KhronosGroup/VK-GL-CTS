@@ -117,7 +117,7 @@ const char*	getQueryResultStatusKHRName								(VkQueryResultStatusKHR value);
 const char*	getQueryTypeName										(VkQueryType value);
 const char*	getQueueGlobalPriorityName								(VkQueueGlobalPriority value);
 const char*	getRasterizationOrderAMDName							(VkRasterizationOrderAMD value);
-const char*	getRayTracingInvocationReorderModeNVName				(VkRayTracingInvocationReorderModeNV value);
+const char*	getRayTracingInvocationReorderModeEXTName				(VkRayTracingInvocationReorderModeEXT value);
 const char*	getRayTracingLssIndexingModeNVName						(VkRayTracingLssIndexingModeNV value);
 const char*	getRayTracingLssPrimitiveEndCapsModeNVName				(VkRayTracingLssPrimitiveEndCapsModeNV value);
 const char*	getRayTracingShaderGroupTypeKHRName						(VkRayTracingShaderGroupTypeKHR value);
@@ -306,7 +306,7 @@ inline tcu::Format::Enum<VkQueryResultStatusKHR>							getQueryResultStatusKHRSt
 inline tcu::Format::Enum<VkQueryType>										getQueryTypeStr											(VkQueryType value)											{ return tcu::Format::Enum<VkQueryType>(getQueryTypeName, value);																			}
 inline tcu::Format::Enum<VkQueueGlobalPriority>								getQueueGlobalPriorityStr								(VkQueueGlobalPriority value)								{ return tcu::Format::Enum<VkQueueGlobalPriority>(getQueueGlobalPriorityName, value);														}
 inline tcu::Format::Enum<VkRasterizationOrderAMD>							getRasterizationOrderAMDStr								(VkRasterizationOrderAMD value)								{ return tcu::Format::Enum<VkRasterizationOrderAMD>(getRasterizationOrderAMDName, value);													}
-inline tcu::Format::Enum<VkRayTracingInvocationReorderModeNV>				getRayTracingInvocationReorderModeNVStr					(VkRayTracingInvocationReorderModeNV value)					{ return tcu::Format::Enum<VkRayTracingInvocationReorderModeNV>(getRayTracingInvocationReorderModeNVName, value);							}
+inline tcu::Format::Enum<VkRayTracingInvocationReorderModeEXT>				getRayTracingInvocationReorderModeEXTStr				(VkRayTracingInvocationReorderModeEXT value)				{ return tcu::Format::Enum<VkRayTracingInvocationReorderModeEXT>(getRayTracingInvocationReorderModeEXTName, value);							}
 inline tcu::Format::Enum<VkRayTracingLssIndexingModeNV>						getRayTracingLssIndexingModeNVStr						(VkRayTracingLssIndexingModeNV value)						{ return tcu::Format::Enum<VkRayTracingLssIndexingModeNV>(getRayTracingLssIndexingModeNVName, value);										}
 inline tcu::Format::Enum<VkRayTracingLssPrimitiveEndCapsModeNV>				getRayTracingLssPrimitiveEndCapsModeNVStr				(VkRayTracingLssPrimitiveEndCapsModeNV value)				{ return tcu::Format::Enum<VkRayTracingLssPrimitiveEndCapsModeNV>(getRayTracingLssPrimitiveEndCapsModeNVName, value);						}
 inline tcu::Format::Enum<VkRayTracingShaderGroupTypeKHR>					getRayTracingShaderGroupTypeKHRStr						(VkRayTracingShaderGroupTypeKHR value)						{ return tcu::Format::Enum<VkRayTracingShaderGroupTypeKHR>(getRayTracingShaderGroupTypeKHRName, value);										}
@@ -458,7 +458,7 @@ inline std::ostream&	operator<<	(std::ostream& s, VkQueryResultStatusKHR value)	
 inline std::ostream&	operator<<	(std::ostream& s, VkQueryType value)										{ return s << getQueryTypeStr(value);										}
 inline std::ostream&	operator<<	(std::ostream& s, VkQueueGlobalPriority value)								{ return s << getQueueGlobalPriorityStr(value);								}
 inline std::ostream&	operator<<	(std::ostream& s, VkRasterizationOrderAMD value)							{ return s << getRasterizationOrderAMDStr(value);							}
-inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingInvocationReorderModeNV value)				{ return s << getRayTracingInvocationReorderModeNVStr(value);				}
+inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingInvocationReorderModeEXT value)				{ return s << getRayTracingInvocationReorderModeEXTStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingLssIndexingModeNV value)						{ return s << getRayTracingLssIndexingModeNVStr(value);						}
 inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingLssPrimitiveEndCapsModeNV value)				{ return s << getRayTracingLssPrimitiveEndCapsModeNVStr(value);				}
 inline std::ostream&	operator<<	(std::ostream& s, VkRayTracingShaderGroupTypeKHR value)						{ return s << getRayTracingShaderGroupTypeKHRStr(value);					}
@@ -712,6 +712,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkAttachmentSampleCountInfoAMD&
 std::ostream&	operator<<	(std::ostream& s, const VkAttachmentSampleLocationsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseInStructure& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBaseOutStructure& value);
+std::ostream&	operator<<	(std::ostream& s, const VkBeginCustomResolveInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindAccelerationStructureMemoryInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindBufferMemoryDeviceGroupInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkBindBufferMemoryInfo& value);
@@ -827,6 +828,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkCuModuleTexturingModeCreateIn
 std::ostream&	operator<<	(std::ostream& s, const VkCudaFunctionCreateInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCudaLaunchInfoNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkCudaModuleCreateInfoNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkCustomResolveCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkD3D12FenceSubmitInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineBuiltinModelCreateInfoQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkDataGraphPipelineCompilerControlCreateInfoARM& value);
@@ -1241,6 +1243,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCudaKernelLaunc
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCudaKernelLaunchPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCustomBorderColorFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCustomBorderColorPropertiesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceCustomResolveFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphFeaturesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphModelFeaturesQCOM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceDataGraphOperationSupportARM& value);
@@ -1446,7 +1449,8 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRGBA10X6Formats
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRawAccessChainsFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayQueryFeaturesKHR& value);
-std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR& value);

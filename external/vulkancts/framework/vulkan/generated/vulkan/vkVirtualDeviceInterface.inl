@@ -26,6 +26,7 @@ virtual VkResult			bindVideoSessionMemoryKHR								(VkDevice device, VkVideoSes
 virtual VkResult			buildAccelerationStructuresKHR							(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkAccelerationStructureBuildGeometryInfoKHR* pInfos, const VkAccelerationStructureBuildRangeInfoKHR* const* ppBuildRangeInfos) const = 0;
 virtual VkResult			buildMicromapsEXT										(VkDevice device, VkDeferredOperationKHR deferredOperation, uint32_t infoCount, const VkMicromapBuildInfoEXT* pInfos) const = 0;
 virtual void				cmdBeginConditionalRenderingEXT							(VkCommandBuffer commandBuffer, const VkConditionalRenderingBeginInfoEXT* pConditionalRenderingBegin) const = 0;
+virtual void				cmdBeginCustomResolveEXT								(VkCommandBuffer commandBuffer, const VkBeginCustomResolveInfoEXT* pBeginCustomResolveInfo) const = 0;
 virtual void				cmdBeginDebugUtilsLabelEXT								(VkCommandBuffer commandBuffer, const VkDebugUtilsLabelEXT* pLabelInfo) const = 0;
 virtual void				cmdBeginPerTileExecutionQCOM							(VkCommandBuffer commandBuffer, const VkPerTileBeginInfoQCOM* pPerTileBeginInfo) const = 0;
 virtual void				cmdBeginQuery											(VkCommandBuffer commandBuffer, VkQueryPool queryPool, uint32_t query, VkQueryControlFlags flags) const = 0;

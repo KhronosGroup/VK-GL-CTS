@@ -26,6 +26,7 @@ BindVideoSessionMemoryKHRFunc								bindVideoSessionMemoryKHR;
 BuildAccelerationStructuresKHRFunc							buildAccelerationStructuresKHR;
 BuildMicromapsEXTFunc										buildMicromapsEXT;
 CmdBeginConditionalRenderingEXTFunc							cmdBeginConditionalRenderingEXT;
+CmdBeginCustomResolveEXTFunc								cmdBeginCustomResolveEXT;
 CmdBeginDebugUtilsLabelEXTFunc								cmdBeginDebugUtilsLabelEXT;
 CmdBeginPerTileExecutionQCOMFunc							cmdBeginPerTileExecutionQCOM;
 CmdBeginQueryFunc											cmdBeginQuery;

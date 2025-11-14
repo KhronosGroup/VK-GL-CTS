@@ -79,6 +79,7 @@ const vk::VkPhysicalDevicePresentationPropertiesOHOS&					Context::getPresentati
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					Context::getProtectedMemoryProperties						(void) const { return m_device->getProtectedMemoryProperties();						}
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&					Context::getProvokingVertexPropertiesEXT					(void) const { return m_device->getProvokingVertexPropertiesEXT();					}
 const vk::VkPhysicalDevicePushDescriptorProperties&						Context::getPushDescriptorProperties						(void) const { return m_device->getPushDescriptorProperties();						}
+const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT&		Context::getRayTracingInvocationReorderPropertiesEXT		(void) const { return m_device->getRayTracingInvocationReorderPropertiesEXT();		}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&		Context::getRayTracingInvocationReorderProperties			(void) const { return m_device->getRayTracingInvocationReorderProperties();			}
 const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&				Context::getRayTracingPipelineProperties					(void) const { return m_device->getRayTracingPipelineProperties();					}
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&						Context::getRayTracingProperties							(void) const { return m_device->getRayTracingProperties();							}

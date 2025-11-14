@@ -181,6 +181,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_custom_border_color"))
 		addFeatures(&physicalDeviceCustomBorderColorFeaturesEXT);
 
+	// VkPhysicalDeviceCustomResolveFeaturesEXT for ext [VK_EXT_custom_resolve]
+	vk::VkPhysicalDeviceCustomResolveFeaturesEXT physicalDeviceCustomResolveFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_custom_resolve"))
+		addFeatures(&physicalDeviceCustomResolveFeaturesEXT);
+
 	// VkPhysicalDeviceDataGraphFeaturesARM for ext [VK_ARM_data_graph]
 	vk::VkPhysicalDeviceDataGraphFeaturesARM physicalDeviceDataGraphFeaturesARM = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ARM_data_graph"))
@@ -756,10 +761,10 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_query"))
 		addFeatures(&physicalDeviceRayQueryFeaturesKHR);
 
-	// VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV for ext [VK_NV_ray_tracing_invocation_reorder]
-	vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV physicalDeviceRayTracingInvocationReorderFeaturesNV = initVulkanStructure();
-	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_ray_tracing_invocation_reorder"))
-		addFeatures(&physicalDeviceRayTracingInvocationReorderFeaturesNV);
+	// VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT, VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV for ext [VK_NV_ray_tracing_invocation_reorder, VK_EXT_ray_tracing_invocation_reorder]
+	vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT physicalDeviceRayTracingInvocationReorderFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_ray_tracing_invocation_reorder", "VK_EXT_ray_tracing_invocation_reorder"))
+		addFeatures(&physicalDeviceRayTracingInvocationReorderFeaturesEXT);
 
 	// VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV for ext [VK_NV_ray_tracing_linear_swept_spheres]
 	vk::VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV physicalDeviceRayTracingLinearSweptSpheresFeaturesNV = initVulkanStructure();
@@ -2790,7 +2795,7 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	// VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_ray_tracing_invocation_reorder")) )
 	{
-		if ( physicalDeviceRayTracingInvocationReorderFeaturesNV.rayTracingInvocationReorder == VK_FALSE )
+		if ( physicalDeviceRayTracingInvocationReorderFeaturesEXT.rayTracingInvocationReorder == VK_FALSE )
 			failMesages.push_back("rayTracingInvocationReorder");
 	}
 

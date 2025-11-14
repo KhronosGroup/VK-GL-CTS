@@ -764,6 +764,45 @@ tcu::TestStatus testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT (Context& 
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureCustomResolveFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceCustomResolveFeaturesEXT deviceCustomResolveFeaturesEXT[count];
+    const bool                               isCustomResolveFeaturesEXT = checkExtension(properties, "VK_EXT_custom_resolve");
+
+    if (!isCustomResolveFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceCustomResolveFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceCustomResolveFeaturesEXT));
+        deviceCustomResolveFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_RESOLVE_FEATURES_EXT;
+        deviceCustomResolveFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceCustomResolveFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceCustomResolveFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceCustomResolveFeaturesEXT[0].customResolve != deviceCustomResolveFeaturesEXT[1].customResolve)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceCustomResolveFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureDepthBiasControlFeaturesEXT (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -4067,6 +4106,45 @@ tcu::TestStatus testPhysicalDeviceFeatureRayQueryFeaturesKHR (Context& context)
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureRayTracingInvocationReorderFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT deviceRayTracingInvocationReorderFeaturesEXT[count];
+    const bool                                             isRayTracingInvocationReorderFeaturesEXT = checkExtension(properties, "VK_NV_ray_tracing_invocation_reorder") || checkExtension(properties, "VK_EXT_ray_tracing_invocation_reorder");
+
+    if (!isRayTracingInvocationReorderFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceRayTracingInvocationReorderFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT));
+        deviceRayTracingInvocationReorderFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT;
+        deviceRayTracingInvocationReorderFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceRayTracingInvocationReorderFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceRayTracingInvocationReorderFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceRayTracingInvocationReorderFeaturesEXT[0].rayTracingInvocationReorder != deviceRayTracingInvocationReorderFeaturesEXT[1].rayTracingInvocationReorder)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureRayTracingMaintenance1FeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7022,6 +7100,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "cooperative_matrix_features_khr", testPhysicalDeviceFeatureCooperativeMatrixFeaturesKHR);
 	addFunctionCase(testGroup, "copy_memory_indirect_features_khr", testPhysicalDeviceFeatureCopyMemoryIndirectFeaturesKHR);
 	addFunctionCase(testGroup, "custom_border_color_features_ext", testPhysicalDeviceFeatureCustomBorderColorFeaturesEXT);
+	addFunctionCase(testGroup, "custom_resolve_features_ext", testPhysicalDeviceFeatureCustomResolveFeaturesEXT);
 	addFunctionCase(testGroup, "depth_bias_control_features_ext", testPhysicalDeviceFeatureDepthBiasControlFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_control_features_ext", testPhysicalDeviceFeatureDepthClampControlFeaturesEXT);
 	addFunctionCase(testGroup, "depth_clamp_zero_one_features_khr", testPhysicalDeviceFeatureDepthClampZeroOneFeaturesKHR);
@@ -7104,6 +7183,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "rgba10_x6_formats_features_ext", testPhysicalDeviceFeatureRGBA10X6FormatsFeaturesEXT);
 	addFunctionCase(testGroup, "rasterization_order_attachment_access_features_ext", testPhysicalDeviceFeatureRasterizationOrderAttachmentAccessFeaturesEXT);
 	addFunctionCase(testGroup, "ray_query_features_khr", testPhysicalDeviceFeatureRayQueryFeaturesKHR);
+	addFunctionCase(testGroup, "ray_tracing_invocation_reorder_features_ext", testPhysicalDeviceFeatureRayTracingInvocationReorderFeaturesEXT);
 	addFunctionCase(testGroup, "ray_tracing_maintenance1_features_khr", testPhysicalDeviceFeatureRayTracingMaintenance1FeaturesKHR);
 	addFunctionCase(testGroup, "ray_tracing_pipeline_features_khr", testPhysicalDeviceFeatureRayTracingPipelineFeaturesKHR);
 	addFunctionCase(testGroup, "ray_tracing_position_fetch_features_khr", testPhysicalDeviceFeatureRayTracingPositionFetchFeaturesKHR);
