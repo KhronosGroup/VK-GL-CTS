@@ -915,7 +915,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
     // VUID-vkAcquireNextImageKHR-surface-07783
-    const uint64_t foreverNs = 1000000000ul;
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -957,7 +957,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
                 if (!isSharedPresentMode[j] || i == 0)
                 {
-                    VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem.back(),
+                    VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], kAcquireImageTimeout, acquireSem.back(),
                                                      VK_NULL_HANDLE, &imageIndex[j]));
                 }
                 else
@@ -1737,7 +1737,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
     // VUID-vkAcquireNextImageKHR-surface-07783
-    const uint64_t foreverNs = 1000000000ul;
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -1802,8 +1802,8 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
 
             if (!isSharedPresentMode || i == 0)
             {
-                VK_CHECK(
-                    vkd.acquireNextImageKHR(device, *swapchain, foreverNs, acquireSem, VK_NULL_HANDLE, &imageIndex));
+                VK_CHECK(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout, acquireSem, VK_NULL_HANDLE,
+                                                 &imageIndex));
             }
             else
             {
@@ -2237,7 +2237,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
     // VUID-vkAcquireNextImageKHR-surface-7782
-    const uint64_t foreverNs = 1000000000ul;
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -2287,7 +2287,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             VkResult result = VK_SUCCESS;
             if (!isSharedPresentMode || needSharedPresentAcquire)
             {
-                result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                result = vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
 
@@ -2316,7 +2316,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     TCU_THROW(InternalError,
                               "Unexpected change in number of swapchain images when recreated during window resize");
 
-                result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                result = vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
                 if (result == VK_SUCCESS)
@@ -2341,7 +2341,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             DE_ASSERT(!isSharedPresentMode || acquireCount == 1);
             for (uint32_t j = 1; j < acquireCount; ++j)
             {
-                VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                      presentIndex == j ? acquireSem : VK_NULL_HANDLE,
                                                      **acquireFences[j], &acquiredIndices[j]));
                 VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[j], VK_TRUE, kMaxFenceWaitTimeout));

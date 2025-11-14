@@ -810,10 +810,11 @@ void IncrementalPresentTestInstance::deinitSwapchainResources(void)
 void IncrementalPresentTestInstance::render(void)
 {
     // VUID-vkAcquireNextImageKHR-surface-07783
-    const uint64_t foreverNs = 1000000000ul;
-    const vk::VkFence fence  = m_fences[m_frameNdx % m_fences.size()];
-    const uint32_t width     = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.width;
-    const uint32_t height    = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.height;
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
+    const uint64_t foreverNs            = 0xFFFFFFFFFFFFFFFFul;
+    const vk::VkFence fence             = m_fences[m_frameNdx % m_fences.size()];
+    const uint32_t width                = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.width;
+    const uint32_t height               = m_swapchainConfigs[m_swapchainConfigNdx].imageExtent.height;
     size_t imageNextFrame;
 
     // Throttle execution
@@ -832,8 +833,8 @@ void IncrementalPresentTestInstance::render(void)
     uint32_t imageIndex;
 
     // Acquire next image
-    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, VK_NULL_HANDLE,
-                                           &imageIndex));
+    VK_CHECK_WSI(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
+                                           VK_NULL_HANDLE, &imageIndex));
 
     // Create command buffer
     {

@@ -698,11 +698,13 @@ void SwapchainCounterTestInstance::deinitSwapchainResources(void)
 
 void SwapchainCounterTestInstance::render(void)
 {
-    const uint64_t foreverNs       = ~0x0ull;
-    VkCommandBuffer &commandBuffer = m_commandBuffers[m_frameNdx % m_commandBuffers.size()];
-    const VkFence fence            = m_fences[m_frameNdx % m_fences.size()];
-    const uint32_t width           = m_swapchainConfig.imageExtent.width;
-    const uint32_t height          = m_swapchainConfig.imageExtent.height;
+    const uint64_t foreverNs = ~0x0ull;
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
+    VkCommandBuffer &commandBuffer      = m_commandBuffers[m_frameNdx % m_commandBuffers.size()];
+    const VkFence fence                 = m_fences[m_frameNdx % m_fences.size()];
+    const uint32_t width                = m_swapchainConfig.imageExtent.width;
+    const uint32_t height               = m_swapchainConfig.imageExtent.height;
 
     if (m_frameNdx >= m_fences.size())
         VK_CHECK(m_vkd.waitForFences(*m_device, 1u, &fence, VK_TRUE, foreverNs));
@@ -713,8 +715,8 @@ void SwapchainCounterTestInstance::render(void)
 
     // Acquire next image
     uint32_t imageIndex;
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, VK_NULL_HANDLE,
-                                       &imageIndex));
+    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
+                                       VK_NULL_HANDLE, &imageIndex));
 
     // Create command buffer
     commandBuffer = createCommandBuffer(m_vkd, *m_device, *m_commandPool, *m_renderPass, m_swapchainImages[imageIndex],

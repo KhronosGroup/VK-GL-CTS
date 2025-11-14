@@ -732,10 +732,12 @@ vector<vk::VkPastPresentationTimingGOOGLE> getPastPresentationTiming(const vk::D
 void DisplayTimingTestInstance::render(void)
 {
     const uint64_t foreverNs = ~0x0ull;
-    const vk::VkFence fence  = m_fences[m_frameNdx % m_fences.size()];
-    const uint32_t width     = m_swapchainConfig.imageExtent.width;
-    const uint32_t height    = m_swapchainConfig.imageExtent.height;
-    tcu::TestLog &log        = m_context.getTestContext().getLog();
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
+    const vk::VkFence fence             = m_fences[m_frameNdx % m_fences.size()];
+    const uint32_t width                = m_swapchainConfig.imageExtent.width;
+    const uint32_t height               = m_swapchainConfig.imageExtent.height;
+    tcu::TestLog &log                   = m_context.getTestContext().getLog();
 
     // Throttle execution
     if (m_frameNdx >= m_fences.size())
@@ -753,8 +755,8 @@ void DisplayTimingTestInstance::render(void)
     uint32_t imageIndex;
 
     // Acquire next image
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, VK_NULL_HANDLE,
-                                       &imageIndex));
+    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
+                                       VK_NULL_HANDLE, &imageIndex));
 
     // Create command buffer
     m_commandBuffers[m_frameNdx % m_commandBuffers.size()] =
