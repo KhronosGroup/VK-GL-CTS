@@ -48,6 +48,7 @@
 #include "vktRayTracingPipelineFlagsTests.hpp"
 #include "vktRayTracingOpacityMicromapTests.hpp"
 #include "vktRayTracingPositionFetchTests.hpp"
+#include "vktRayTracingLinearSweptSpheresTests.hpp"
 
 #include "deUniquePtr.hpp"
 
@@ -92,6 +93,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     group->addChild(createTraceRays2Tests(testCtx));
     group->addChild(createOpacityMicromapTests(testCtx));
     group->addChild(createPositionFetchTests(testCtx));
+    group->addChild(createLinearSweptSpheresTests(testCtx));
 
     return group.release();
 }
