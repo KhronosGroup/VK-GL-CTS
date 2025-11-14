@@ -2446,32 +2446,6 @@ TransformFeedbackIndirectDrawTestInstance::TransformFeedbackIndirectDrawTestInst
     , m_multiview(multiview)
     , m_counterOffset(counterOffset)
 {
-    const InstanceInterface &vki               = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice          = m_context.getPhysicalDevice();
-    const VkPhysicalDeviceLimits limits        = getPhysicalDeviceProperties(vki, physDevice).limits;
-    const uint32_t tfBufferDataSizeSupported   = m_transformFeedbackProperties.maxTransformFeedbackBufferDataSize;
-    const uint32_t tfBufferDataStrideSupported = m_transformFeedbackProperties.maxTransformFeedbackBufferDataStride;
-
-    if (m_transformFeedbackProperties.transformFeedbackDraw == false)
-        TCU_THROW(NotSupportedError, "transformFeedbackDraw feature is not supported");
-
-    if (limits.maxVertexInputBindingStride < m_parameters.vertexStride)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxVertexInputBindingStride=" + de::toString(limits.maxVertexInputBindingStride) +
-                              ", while test requires " + de::toString(m_parameters.vertexStride))
-                      .c_str());
-
-    if (tfBufferDataSizeSupported < m_parameters.vertexStride)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
-                              ", while test requires " + de::toString(m_parameters.vertexStride))
-                      .c_str());
-
-    if (tfBufferDataStrideSupported < m_parameters.vertexStride)
-        TCU_THROW(NotSupportedError,
-                  std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
-                              ", while test requires " + de::toString(m_parameters.vertexStride))
-                      .c_str());
 }
 
 bool TransformFeedbackIndirectDrawTestInstance::verifyImage(const VkFormat imageFormat, const VkExtent2D &size,
@@ -2693,8 +2667,6 @@ TransformFeedbackBackwardDependencyTestInstance::TransformFeedbackBackwardDepend
     Context &context, const TestParameters &parameters)
     : TransformFeedbackTestInstance(context, parameters)
 {
-    if (m_transformFeedbackProperties.transformFeedbackDraw == false)
-        TCU_THROW(NotSupportedError, "transformFeedbackDraw feature is not supported");
 }
 
 std::vector<VkDeviceSize> TransformFeedbackBackwardDependencyTestInstance::generateSizesList(const size_t bufBytes,
@@ -4256,6 +4228,44 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
         const auto &features = context.getMultiviewFeatures();
         if (!features.multiview)
             TCU_THROW(NotSupportedError, "multiview not supported");
+    }
+
+    if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY ||
+        m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT)
+    {
+        if (!xfbProperties.transformFeedbackDraw)
+            TCU_THROW(NotSupportedError, "transformFeedbackDraw not supported");
+    }
+
+    if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW)
+    {
+        const auto &limits                         = context.getDeviceProperties().limits;
+        const uint32_t tfBufferDataSizeSupported   = xfbProperties.maxTransformFeedbackBufferDataSize;
+        const uint32_t tfBufferDataStrideSupported = xfbProperties.maxTransformFeedbackBufferDataStride;
+
+        if (xfbProperties.transformFeedbackDraw == false)
+            TCU_THROW(NotSupportedError, "transformFeedbackDraw feature is not supported");
+
+        if (limits.maxVertexInputBindingStride < m_parameters.vertexStride)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxVertexInputBindingStride=" + de::toString(limits.maxVertexInputBindingStride) +
+                                  ", while test requires " + de::toString(m_parameters.vertexStride))
+                          .c_str());
+
+        if (tfBufferDataSizeSupported < m_parameters.vertexStride)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxTransformFeedbackBufferDataSize=" + de::toString(tfBufferDataSizeSupported) +
+                                  ", while test requires " + de::toString(m_parameters.vertexStride))
+                          .c_str());
+
+        if (tfBufferDataStrideSupported < m_parameters.vertexStride)
+            TCU_THROW(NotSupportedError,
+                      std::string("maxTransformFeedbackBufferDataStride=" + de::toString(tfBufferDataStrideSupported) +
+                                  ", while test requires " + de::toString(m_parameters.vertexStride))
+                          .c_str());
     }
 
     if (m_parameters.testType == TEST_TYPE_BACKWARD_DEPENDENCY_INDIRECT)
