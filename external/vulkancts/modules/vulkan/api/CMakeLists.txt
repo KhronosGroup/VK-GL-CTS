@@ -33,6 +33,34 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiComputeInstanceResultBuffer.hpp
 	vktApiBufferComputeInstance.cpp
 	vktApiBufferComputeInstance.hpp
+	vktApiCopyImageToImageTests.cpp
+	vktApiCopyImageToImageTests.hpp
+	vktApiCopyBufferToBufferTests.cpp
+	vktApiCopyBufferToBufferTests.hpp
+	vktApiCopyImageToBufferTests.cpp
+	vktApiCopyImageToBufferTests.hpp
+	vktApiCopyBufferToImageTests.cpp
+	vktApiCopyBufferToImageTests.hpp
+	vktApiCopyDepthStencilToBufferTests.cpp
+	vktApiCopyDepthStencilToBufferTests.hpp
+	vktApiCopyBufferToDepthStencilTests.cpp
+	vktApiCopyBufferToDepthStencilTests.hpp
+	vktApiCopyDepthStencilMSAATests.cpp
+	vktApiCopyDepthStencilMSAATests.hpp
+	vktApiCopyMultiplaneImageTransferQueueTests.cpp
+	vktApiCopyMultiplaneImageTransferQueueTests.hpp
+	vktApiBlittingTests.cpp
+	vktApiBlittingTests.hpp
+	vktApiResolveTests.cpp
+	vktApiResolveTests.hpp
+	vktApiCopyMemoryIndirectTests.cpp
+	vktApiCopyMemoryIndirectTests.hpp
+	vktApiCopiesAndBlittingDynamicStateMetaOpsTests.cpp
+	vktApiCopiesAndBlittingDynamicStateMetaOpsTests.hpp
+	vktApiCopiesAndBlittingReinterpretTests.cpp
+	vktApiCopiesAndBlittingReinterpretTests.hpp
+	vktApiCopiesAndBlittingUtil.cpp
+	vktApiCopiesAndBlittingUtil.hpp
 	vktApiCopiesAndBlittingTests.cpp
 	vktApiCopiesAndBlittingTests.hpp
 	vktApiImageClearingTests.cpp
