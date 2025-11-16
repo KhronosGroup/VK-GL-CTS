@@ -1095,6 +1095,9 @@ public:
         caps.addExtension(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
         caps.addFeature(&vk::VkPhysicalDeviceMaintenance6FeaturesKHR::maintenance6);
 
+        caps.addFeature(&vk::VkPhysicalDeviceVulkan12Features::drawIndirectCount);
+        caps.addFeature(&vk::VkPhysicalDeviceFeatures::fragmentStoresAndAtomics);
+
         caps.addExtension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
         caps.addFeature(&vk::VkPhysicalDeviceMaintenance5FeaturesKHR::maintenance5);
         if (m_testSpec.nullDescriptor)
