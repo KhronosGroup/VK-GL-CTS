@@ -99,6 +99,7 @@ class SingletonDevice
         VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = initVulkanStructure();
         VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures       = initVulkanStructure();
         VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT gplFeatures                 = initVulkanStructure();
+        VkPhysicalDeviceShader64BitIndexingFeaturesEXT shader64BitIndexingFeatures     = initVulkanStructure();
 #endif // CTS_USES_VULKANSC
         VkPhysicalDeviceFeatures2 features2 = initVulkanStructure();
 
@@ -123,6 +124,9 @@ class SingletonDevice
 
         if (context.isDeviceFunctionalitySupported("VK_EXT_graphics_pipeline_library"))
             addFeatures(&gplFeatures);
+
+        if (context.isDeviceFunctionalitySupported("VK_EXT_shader_64bit_indexing"))
+            addFeatures(&shader64BitIndexingFeatures);
 #endif // CTS_USES_VULKANSC
 
         if (context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
