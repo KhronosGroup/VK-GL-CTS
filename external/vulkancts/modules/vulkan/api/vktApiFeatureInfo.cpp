@@ -542,7 +542,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties *properties, VkPhysicalDev
                 {
                     log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
                         << " not valid-limit type bitmask actual is "
-                        << *((uint64_t *)((uint8_t *)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+                        << *((uint32_t *)((uint8_t *)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
                     limitsOk = false;
                 }
             }
