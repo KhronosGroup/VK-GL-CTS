@@ -2485,6 +2485,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_img_multisampled_render_to_tex
 dEQP-EGL.functional.get_proc_address.extension.gl_img_user_clip_plane
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_fence
 dEQP-EGL.functional.get_proc_address.extension.gl_oes_egl_image
+dEQP-EGL.functional.get_proc_address.extension.gl_oes_egl_image_external
 dEQP-EGL.functional.get_proc_address.extension.gl_oes_blend_equation_separate
 dEQP-EGL.functional.get_proc_address.extension.gl_oes_blend_func_separate
 dEQP-EGL.functional.get_proc_address.extension.gl_oes_blend_subtract
@@ -2508,6 +2509,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_angle_framebuffer_blit
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_framebuffer_multisample
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_angle_translated_shader_source
+dEQP-EGL.functional.get_proc_address.extension.gl_arm_shader_core_properties
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_egl_image_storage
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_base_instance
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_blend_func_extended
@@ -2524,11 +2526,13 @@ dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_instanced
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_draw_transform_feedback
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_external_buffer
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_fragment_shading_rate
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_framebuffer_blit_layers
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_geometry_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_instanced_arrays
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_memory_object
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_memory_object_fd
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_memory_object_win32
+dEQP-EGL.functional.get_proc_address.extension.gl_ext_mesh_shader
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_multi_draw_indirect
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_multiview_draw_buffers
 dEQP-EGL.functional.get_proc_address.extension.gl_ext_occlusion_query_boolean
@@ -2559,6 +2563,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_khr_debug
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_robustness
 dEQP-EGL.functional.get_proc_address.extension.gl_khr_parallel_shader_compile
 dEQP-EGL.functional.get_proc_address.extension.gl_mesa_framebuffer_flip_y
+dEQP-EGL.functional.get_proc_address.extension.gl_mesa_sampler_objects
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_bindless_texture
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_blend_equation_advanced
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_clip_space_w_scaling
@@ -2587,6 +2592,7 @@ dEQP-EGL.functional.get_proc_address.extension.gl_nv_read_buffer
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_sample_locations
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_scissor_exclusive
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_shading_rate_image
+dEQP-EGL.functional.get_proc_address.extension.gl_nv_texture_barrier
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_viewport_array
 dEQP-EGL.functional.get_proc_address.extension.gl_nv_viewport_swizzle
 dEQP-EGL.functional.get_proc_address.extension.gl_oes_copy_image
