@@ -70,6 +70,7 @@ FragmentShadingRateCombined::FragmentShadingRateCombined(
     , m_to_id(0)
     , m_sr_to_id(0)
     , m_fbo_id(0)
+    , m_vao_id(0)
     , m_vbo_id(0)
     , m_simulationCache(kShadingRateCount * kShadingRateCount * kShadingRateCount, 0xFFFFFFFF)
     , m_framebufferFormat(GL_NONE)
@@ -163,10 +164,12 @@ void FragmentShadingRateCombined::deinit(void)
     gl.bindTexture(GL_TEXTURE_2D, 0);
     gl.bindTexture(GL_TEXTURE_2D_MULTISAMPLE, 0);
     gl.bindBuffer(GL_ARRAY_BUFFER, 0);
+    gl.bindVertexArray(0);
     gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 
     gl.deleteTextures(1, &m_to_id);
     gl.deleteFramebuffers(1, &m_fbo_id);
+    gl.deleteVertexArrays(1, &m_vao_id);
     gl.deleteBuffers(1, &m_vbo_id);
 
     if (m_tcParam.useShadingRateAttachment)
@@ -384,6 +387,12 @@ void FragmentShadingRateCombined::setupTest(void)
     {
         randomVertices[i] = deRandom_getFloat(&rnd) * 2.0f - 1.0f;
     }
+
+    gl.genVertexArrays(1, &m_vao_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error generate vertex arrays");
+
+    gl.bindVertexArray(m_vao_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error bind vertex array");
 
     gl.genBuffers(1, &m_vbo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error setting up buffer objects");
