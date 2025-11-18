@@ -2027,7 +2027,7 @@ class DeviceFeatures2Generator(BaseGenerator):
             versionStrA = version.name[-3:]
             versionStrB = versionStrA.replace('_', '.')
             versionStrA = versionStrA.replace('_', ', ')
-            promotedStructs = [struct for struct in structures if struct.version and struct.version.name == version.name and re.search('Vulkan(SC)?\d\d', struct.name) == None]
+            promotedStructs = [struct for struct in structures if struct.version and struct.version.name == version.name and re.search(r'Vulkan(SC)?\d\d', struct.name) == None]
             if not promotedStructs:
                 continue
             promotedStructs = sorted(promotedStructs, key=lambda item: item.name)
