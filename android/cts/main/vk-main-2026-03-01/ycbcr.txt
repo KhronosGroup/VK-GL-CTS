@@ -7551,3 +7551,11 @@ dEQP-VK.ycbcr.plane_view.memory_alias.g8_b8r8_2plane_444_unorm_plane_1_compatibl
 dEQP-VK.ycbcr.plane_view.memory_alias.g8_b8r8_2plane_444_unorm_plane_1_compatible_format_r8g8_uint_fragment
 dEQP-VK.ycbcr.plane_view.memory_alias.g8_b8r8_2plane_444_unorm_plane_1_compute
 dEQP-VK.ycbcr.plane_view.memory_alias.g8_b8r8_2plane_444_unorm_plane_1_fragment
+dEQP-VK.ycbcr.single_plane_copy.linear.linear.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VK.ycbcr.single_plane_copy.linear.linear.r8g8b8a8_to_g8b8g8r8_422
+dEQP-VK.ycbcr.single_plane_copy.linear.optimal.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VK.ycbcr.single_plane_copy.linear.optimal.r8g8b8a8_to_g8b8g8r8_422
+dEQP-VK.ycbcr.single_plane_copy.optimal.linear.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VK.ycbcr.single_plane_copy.optimal.linear.r8g8b8a8_to_g8b8g8r8_422
+dEQP-VK.ycbcr.single_plane_copy.optimal.optimal.g8b8g8r8_422_to_r8g8b8a8
+dEQP-VK.ycbcr.single_plane_copy.optimal.optimal.r8g8b8a8_to_g8b8g8r8_422
