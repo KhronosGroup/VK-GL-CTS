@@ -589,6 +589,10 @@ private:
     // The size of each pseudo-structure above is saved to one of the correspoding union members below.
     union BlockSize
     {
+        BlockSize()
+        {
+            memset(this, 0, sizeof(*this));
+        }
         size_t trianglesBlockSize;
         size_t aabbsBlockSize;
         size_t spheresBlockSize;
@@ -618,6 +622,7 @@ RaytracedGeometry<V, I>::RaytracedGeometry(VkGeometryTypeKHR geometryType, uint3
     , m_paddingBlocks(paddingBlocks)
     , m_vertexCount(0)
     , m_minAlign(minAlign)
+    , kRadiusSize(0)
 {
     init();
 }
@@ -631,6 +636,7 @@ RaytracedGeometry<V, I>::RaytracedGeometry(VkGeometryTypeKHR geometryType, const
     , m_minAlign(minAlign)
     , m_vertices()
     , m_indices(indices)
+    , kRadiusSize(0)
 {
     init();
     for (const auto &vertex : vertices)
@@ -750,8 +756,6 @@ template <typename V, typename I>
 size_t RaytracedGeometry<V, I>::getRadiusByteSize(void) const
 {
     const auto radiusCount = getRadiusCount();
-    DE_ASSERT(radiusCount > 0u);
-
     return (radiusCount * kRadiusSize);
 }
 

@@ -175,6 +175,8 @@ RaytracedGeometryBase::RaytracedGeometryBase(VkGeometryTypeKHR geometryType, VkF
     , m_indexType(indexType)
     , m_geometryFlags((VkGeometryFlagsKHR)0u)
     , m_hasOpacityMicromap(false)
+    , m_useEndcaps(false)
+    , m_doBLASCopy(false)
 {
     if (m_geometryType == VK_GEOMETRY_TYPE_AABBS_KHR)
         DE_ASSERT(m_vertexFormat == VK_FORMAT_R32G32B32_SFLOAT);
@@ -1596,7 +1598,7 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
 
         m_accelerationStructureKHR =
             createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, nullptr);
-        if (m_geometriesData[0]->doBLASCopy())
+        if (!m_geometriesData.empty() && m_geometriesData.front()->doBLASCopy())
         {
             const VkBufferCreateInfo bufferCreateInfo =
                 makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
@@ -3011,7 +3013,7 @@ void BottomLevelAccelerationStructurePool::batchBuild(const DeviceInterface &vk,
 
 auto BottomLevelAccelerationStructurePoolMember::computeBuildSize(const DeviceInterface &vk, const VkDevice device,
                                                                   const VkDeviceSize strSize) const
-    //            accStrSize,  updateScratch, buildScratch, vertexSize,   indexSize,    transformSize,   radiusSIze
+    //            accStrSize,  updateScratch, buildScratch, vertexSize,   indexSize,    transformSize,   radiusSize
     -> std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize>
 {
     DE_ASSERT(!m_geometriesData.empty() != !(strSize == 0)); // logical xor
