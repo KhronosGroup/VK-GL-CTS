@@ -10601,6 +10601,7 @@ dEQP-VK.ray_tracing_pipeline.misc.reuse_creation_buffer_top
 dEQP-VK.ray_tracing_pipeline.misc.reuse_scratch_buffer
 dEQP-VK.ray_tracing_pipeline.misc.update_empty_bottom
 dEQP-VK.ray_tracing_pipeline.misc.update_empty_top
+dEQP-VK.ray_tracing_pipeline.null_as.mixed_dispatches
 dEQP-VK.ray_tracing_pipeline.opacity_micromap.NoFlags.map_value.2.level_0_non_zero_base
 dEQP-VK.ray_tracing_pipeline.opacity_micromap.NoFlags.map_value.2.level_10_non_zero_base
 dEQP-VK.ray_tracing_pipeline.opacity_micromap.NoFlags.map_value.2.level_11_non_zero_base
