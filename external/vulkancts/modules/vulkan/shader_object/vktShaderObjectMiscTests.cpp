@@ -3227,6 +3227,271 @@ tcu::TestStatus tessPatchNonMatchRun(Context &context, TessPatchNonMatchParams p
     return tcu::TestStatus::pass("Pass");
 }
 
+class ShaderObjectPushConstInstance : public vkt::TestInstance
+{
+public:
+    ShaderObjectPushConstInstance(Context &context, const uint32_t pushOffset, const uint32_t pushCount,
+                                  const bool allBytesInLayout)
+        : vkt::TestInstance(context)
+        , m_pushOffset(pushOffset)
+        , m_pushCount(pushCount)
+        , m_allBytesInLayout(allBytesInLayout)
+    {
+    }
+    virtual ~ShaderObjectPushConstInstance(void)
+    {
+    }
+
+    tcu::TestStatus iterate(void) override;
+
+private:
+    const uint32_t m_pushOffset;
+    const uint32_t m_pushCount;
+    const bool m_allBytesInLayout;
+};
+
+tcu::TestStatus ShaderObjectPushConstInstance::iterate(void)
+{
+    const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
+    const vk::VkDevice device       = m_context.getDevice();
+    const vk::VkQueue queue         = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    auto &alloc                     = m_context.getDefaultAllocator();
+    tcu::TestLog &log               = m_context.getTestContext().getLog();
+
+    const auto &deviceExtensions     = m_context.getDeviceExtensions();
+    const bool tessellationSupported = m_context.getDeviceFeatures().tessellationShader;
+    const bool geometrySupported     = m_context.getDeviceFeatures().geometryShader;
+    const bool taskSupported         = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported         = m_context.getMeshShaderFeaturesEXT().meshShader;
+
+    uint8_t r = 17;
+    uint8_t g = 49;
+    uint8_t b = 111;
+    uint8_t a = 255;
+
+    const uint32_t zero                      = 0;
+    const uint32_t inColor                   = a << 24 | b << 16 | g << 8 | r;
+    const uint32_t outColor                  = r << 24 | g << 16 | b << 8 | a;
+    const vk::VkFormat colorAttachmentFormat = vk::VK_FORMAT_R8G8B8A8_UINT;
+    const auto subresourceRange              = vk::makeDefaultImageSubresourceRange();
+    const auto subresourceLayers = vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const auto clearValue = vk::makeClearValueColor(clearColor);
+
+    const uint32_t offset = sizeof(uint32_t) * m_pushOffset;
+
+    vk::VkPushConstantRange pushConstRange;
+    pushConstRange.stageFlags = vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+    if (m_allBytesInLayout)
+    {
+        pushConstRange.offset = 0;
+        pushConstRange.size   = m_pushCount * sizeof(uint32_t);
+    }
+    else
+    {
+        pushConstRange.offset = offset;
+        pushConstRange.size   = sizeof(uint32_t);
+    }
+
+    const vk::VkRect2D renderArea = vk::makeRect2D(0, 0, 32, 32);
+    const vk::VkExtent3D extent   = vk::makeExtent3D(renderArea.extent.width, renderArea.extent.height, 1);
+    const vk::VkDeviceSize colorOutputBufferSize =
+        renderArea.extent.width * renderArea.extent.height * tcu::getPixelSize(vk::mapVkFormat(colorAttachmentFormat));
+
+    const vk::VkImageCreateInfo createInfo = {
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
+        nullptr,                                 // const void*                pNext
+        0u,                                      // VkImageCreateFlags        flags
+        vk::VK_IMAGE_TYPE_2D,                    // VkImageType                imageType
+        colorAttachmentFormat,                   // VkFormat                    format
+        extent,                                  // VkExtent3D                extent
+        1u,                                      // uint32_t                    mipLevels
+        1u,                                      // uint32_t                    arrayLayers
+        vk::VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples
+        vk::VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling            tiling
+        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags        usage
+        vk::VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode            sharingMode
+        0,                             // uint32_t                    queueFamilyIndexCount
+        nullptr,                       // const uint32_t*            pQueueFamilyIndices
+        vk::VK_IMAGE_LAYOUT_UNDEFINED  // VkImageLayout            initialLayout
+    };
+
+    de::MovePtr<vk::ImageWithMemory> image = de::MovePtr<vk::ImageWithMemory>(
+        new vk::ImageWithMemory(vk, device, alloc, createInfo, vk::MemoryRequirement::Any));
+    const auto imageView =
+        vk::makeImageView(vk, device, **image, vk::VK_IMAGE_VIEW_TYPE_2D, colorAttachmentFormat, subresourceRange);
+    vk::BufferWithMemory colorOutputBuffer(
+        vk, device, alloc, makeBufferCreateInfo(colorOutputBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+        vk::MemoryRequirement::HostVisible);
+
+    const auto &binaries = m_context.getBinaryCollection();
+    const auto vertShader =
+        vk::createShader(vk, device,
+                         vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_VERTEX_BIT, binaries.get("vert"),
+                                                  tessellationSupported, geometrySupported, nullptr, &pushConstRange));
+    const auto fragShader =
+        vk::createShader(vk, device,
+                         vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_FRAGMENT_BIT, binaries.get("frag"),
+                                                  tessellationSupported, geometrySupported, nullptr, &pushConstRange));
+
+    const auto pipelineLayout = vk::makePipelineLayout(vk, device, 0u, nullptr, 1u, &pushConstRange);
+
+    const vk::Move<vk::VkCommandPool> cmdPool(vk::createCommandPool(vk, device, 0u, queueFamilyIndex));
+    const vk::Move<vk::VkCommandBuffer> cmdBuffer(
+        vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    vk::beginCommandBuffer(vk, *cmdBuffer);
+
+    vk::VkImageMemoryBarrier preImageBarrier = vk::makeImageMemoryBarrier(
+        vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+        vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &preImageBarrier);
+
+    if (m_allBytesInLayout)
+    {
+        for (uint32_t i = 0; i < m_pushCount; ++i)
+        {
+            vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, i * sizeof(uint32_t),
+                                sizeof(uint32_t), &zero);
+        }
+    }
+    vk.cmdPushConstants(*cmdBuffer, *pipelineLayout, vk::VK_SHADER_STAGE_FRAGMENT_BIT, offset, sizeof(uint32_t),
+                        &inColor);
+    vk::bindGraphicsShaders(vk, *cmdBuffer, *vertShader, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragShader,
+                            taskSupported, meshSupported);
+
+    vk::setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP,
+                                            false);
+
+    vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
+                       vk::VK_ATTACHMENT_LOAD_OP_CLEAR);
+    vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
+    vk::endRendering(vk, *cmdBuffer);
+
+    vk::VkImageMemoryBarrier postImageBarrier =
+        vk::makeImageMemoryBarrier(vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT,
+                                   vk::VK_IMAGE_LAYOUT_GENERAL, vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
+                          &postImageBarrier);
+
+    const vk::VkBufferImageCopy copyRegion = vk::makeBufferImageCopy(extent, subresourceLayers);
+    vk.cmdCopyImageToBuffer(*cmdBuffer, **image, vk::VK_IMAGE_LAYOUT_GENERAL, *colorOutputBuffer, 1u, &copyRegion);
+    vk::endCommandBuffer(vk, *cmdBuffer);
+    vk::submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    tcu::ConstPixelBufferAccess result = tcu::ConstPixelBufferAccess(
+        vk::mapVkFormat(colorAttachmentFormat), renderArea.extent.width, renderArea.extent.height, 1,
+        (const void *)colorOutputBuffer.getAllocation().getHostPtr());
+
+    uint32_t *data = (uint32_t *)result.getDataPtr();
+
+    bool fail = false;
+    for (uint32_t i = 0; i < renderArea.extent.width * renderArea.extent.height; ++i)
+        fail |= data[i] != outColor;
+
+    if (fail)
+    {
+        log << tcu::TestLog::Message << "Push constant value mismatch: expected " << outColor << ", got " << *data
+            << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class ShaderObjectPushConstCase : public vkt::TestCase
+{
+public:
+    ShaderObjectPushConstCase(tcu::TestContext &testCtx, const std::string &name, const uint32_t pushOffset,
+                              const uint32_t pushCount, const bool allBytesInLayout)
+        : vkt::TestCase(testCtx, name)
+        , m_pushOffset(pushOffset)
+        , m_pushCount(pushCount)
+        , m_allBytesInLayout(allBytesInLayout)
+    {
+        DE_ASSERT(pushOffset < pushCount);
+    }
+    virtual ~ShaderObjectPushConstCase(void)
+    {
+    }
+
+    void checkSupport(vkt::Context &context) const override;
+    virtual void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new ShaderObjectPushConstInstance(context, m_pushOffset, m_pushCount, m_allBytesInLayout);
+    }
+
+private:
+    const uint32_t m_pushOffset;
+    const uint32_t m_pushCount;
+    const uint32_t m_allBytesInLayout;
+};
+
+void ShaderObjectPushConstCase::checkSupport(vkt::Context &context) const
+{
+    context.requireDeviceFunctionality("VK_EXT_shader_object");
+    context.requireDeviceFunctionality("VK_KHR_8bit_storage");
+}
+
+void ShaderObjectPushConstCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    std::stringstream vert;
+    std::stringstream frag;
+
+    vert << "#version 450\n"
+         << "void main() {\n"
+         << "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+         << "    gl_Position = vec4(pos * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+         << "}\n";
+
+    frag << "#version 450\n"
+         << "#extension GL_EXT_shader_8bit_storage : require\n"
+         << "layout(push_constant) uniform PushConsts {\n";
+    if (m_allBytesInLayout)
+    {
+        for (uint32_t i = 0; i < m_pushCount; ++i)
+        {
+            frag << "    uint8_t r" << i << ";\n"
+                 << "    uint8_t g" << i << ";\n"
+                 << "    uint8_t b" << i << ";\n"
+                 << "    uint8_t a" << i << ";\n";
+        }
+    }
+    else
+    {
+        frag << "    layout(offset = " << m_pushOffset * sizeof(uint32_t) + 1 << ") uint8_t g" << m_pushOffset << ";\n"
+             << "    uint8_t b" << m_pushOffset << ";\n";
+    }
+    frag << "} pushConst;\n"
+         << "layout (location = 0) out uvec4 outColor;\n"
+         << "void main() {\n"
+         << "    uvec4 color = uvec4(0);\n";
+    for (uint32_t i = 0; i < m_pushCount; ++i)
+    {
+        if (i == m_pushOffset)
+        {
+            frag << "    color += uvec4(255, pushConst.b" << m_pushOffset << ", pushConst.g" << m_pushOffset
+                 << ", 17);\n";
+        }
+        else if (m_allBytesInLayout)
+        {
+            frag << "color += uvec4(pushConst.r" << i << ", pushConst.g" << i << ", pushConst.b" << i << ", pushConst.a"
+                 << i << ");\n";
+        }
+    }
+    frag << "    outColor = color;\n"
+         << "}\n";
+
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
@@ -3237,24 +3502,7 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
     {
         uint32_t stride;
         const char *name;
-    } strideTests[] = {
-        {
-            16,
-            "16",
-        },
-        {
-            32,
-            "32",
-        },
-        {
-            48,
-            "48",
-        },
-        {
-            40,
-            "40",
-        },
-    };
+    } strideTests[] = {{16, "16"}, {32, "32"}, {48, "48"}, {40, "40"}};
 
     for (uint32_t i = 0; i < 2; ++i)
     {
@@ -3817,6 +4065,17 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
                                     tessPatchNonMatchInitPrograms, tessPatchNonMatchRun, params);
     }
     miscGroup->addChild(tessPatchNonMatchGroup.release());
+
+    de::MovePtr<tcu::TestCaseGroup> pushConstGroup(new tcu::TestCaseGroup(testCtx, "push_const"));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "57_64_all", 57, 64, true));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "63_64_all", 63, 64, true));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "17_64", 17, 64, false));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "63_64", 63, 64, false));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "17_37_all", 17, 37, true));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "36_37_all", 36, 37, true));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "17_37", 17, 37, false));
+    pushConstGroup->addChild(new ShaderObjectPushConstCase(testCtx, "36_37", 36, 37, false));
+    miscGroup->addChild(pushConstGroup.release());
 
     return miscGroup.release();
 }
