@@ -879,12 +879,6 @@ TestConfig::ImageMemory operator|(TestConfig::ImageMemory a, TestConfig::ImageMe
     return (TestConfig::ImageMemory)(((uint32_t)a) | ((uint32_t)b));
 }
 
-void checkSupport(Context &context, TestConfig config)
-{
-    for (size_t featureNdx = 0; featureNdx < config.requiredFeatures.size(); featureNdx++)
-        context.requireDeviceCoreFeature(config.requiredFeatures[featureNdx]);
-}
-
 void logRenderPassInfo(TestLog &log, const RenderPass &renderPass)
 {
     const bool useExternalInputAspect = !renderPass.getInputAspects().empty();
@@ -4924,330 +4918,6 @@ std::string getAttachmentType(VkFormat vkFormat, bool useFormatCompCount)
     }
 }
 
-void createTestShaders(SourceCollections &dst, TestConfig config)
-{
-    if (config.renderTypes & TestConfig::RENDERTYPES_DRAW)
-    {
-        const vector<Subpass> &subpasses = config.renderPass.getSubpasses();
-
-        for (size_t subpassNdx = 0; subpassNdx < subpasses.size(); subpassNdx++)
-        {
-            const Subpass &subpass          = subpasses[subpassNdx];
-            uint32_t inputAttachmentBinding = 0;
-            std::ostringstream vertexShader;
-            std::ostringstream fragmentShader;
-
-            vertexShader << "#version 310 es\n"
-                         << "layout(location = 0) in highp vec2 a_position;\n"
-                         << "void main (void) {\n"
-                         << "\tgl_Position = vec4(a_position, 1.0, 1.0);\n"
-                         << "}\n";
-
-            fragmentShader << "#version 450\n";
-
-            bool hasAnyDepthFormats = false;
-
-            for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getInputAttachments().size();
-                 attachmentNdx++)
-            {
-                const uint32_t attachmentIndex  = subpass.getInputAttachments()[attachmentNdx].getAttachment();
-                const VkImageLayout layout      = subpass.getInputAttachments()[attachmentNdx].getImageLayout();
-                const Attachment attachment     = config.renderPass.getAttachments()[attachmentIndex];
-                const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
-                const bool isDepthFormat        = tcu::hasDepthComponent(format.order);
-                const bool isStencilFormat      = tcu::hasStencilComponent(format.order);
-
-                if (isDepthFormat || isStencilFormat)
-                {
-                    if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
-                    {
-                        hasAnyDepthFormats = true;
-                        fragmentShader << "layout(input_attachment_index = " << attachmentNdx
-                                       << ", set=0, binding=" << inputAttachmentBinding
-                                       << ") uniform highp subpassInput i_depth" << attachmentNdx << ";\n";
-                        inputAttachmentBinding++;
-                    }
-
-                    if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                    {
-                        fragmentShader << "layout(input_attachment_index = " << attachmentNdx
-                                       << ", set=0, binding=" << inputAttachmentBinding
-                                       << ") uniform highp usubpassInput i_stencil" << attachmentNdx << ";\n";
-                        inputAttachmentBinding++;
-                    }
-                }
-                else
-                {
-                    const std::string attachmentType =
-                        getInputAttachmentType(attachment.getFormat(), attachment.getSamples());
-
-                    fragmentShader << "layout(input_attachment_index = " << attachmentNdx
-                                   << ", set=0, binding=" << inputAttachmentBinding << ") uniform highp "
-                                   << attachmentType << " i_color" << attachmentNdx << ";\n";
-                    inputAttachmentBinding++;
-                }
-            }
-
-            for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size();
-                 attachmentNdx++)
-            {
-                const std::string attachmentType = getAttachmentType(
-                    config.renderPass.getAttachments()[getAttachmentNdx(subpass.getColorAttachments(), attachmentNdx)]
-                        .getFormat(),
-                    config.useFormatCompCount);
-                fragmentShader << "layout(location = " << attachmentNdx << ") out highp " << attachmentType
-                               << " o_color" << attachmentNdx << ";\n";
-            }
-
-            if (hasAnyDepthFormats)
-                fragmentShader << "\nbool depthsEqual(float a, float b, float epsilon) {\n"
-                               << "\treturn abs(a - b) <= epsilon;\n}\n\n";
-
-            fragmentShader << "void main (void) {\n";
-
-            if (subpass.getInputAttachments().empty())
-            {
-                for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size();
-                     attachmentNdx++)
-                {
-                    const uint32_t attachmentIndex = subpass.getColorAttachments()[attachmentNdx].getAttachment();
-
-                    if (attachmentIndex == VK_ATTACHMENT_UNUSED)
-                        continue;
-
-                    const Attachment attachment     = config.renderPass.getAttachments()[attachmentIndex];
-                    const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
-                    const size_t componentCount =
-                        config.useFormatCompCount ? (size_t)getShaderNumChannels(format.order) : 4;
-                    const std::string attachmentType =
-                        getAttachmentType(attachment.getFormat(), config.useFormatCompCount);
-
-                    fragmentShader << "\to_color" << attachmentNdx << " = " << attachmentType << "("
-                                   << attachmentType + "(";
-
-                    for (size_t compNdx = 0; compNdx < componentCount; compNdx++)
-                    {
-                        const size_t index = subpassNdx + attachmentIndex + compNdx;
-                        const BoolOp op    = boolOpFromIndex(index);
-
-                        if (compNdx > 0)
-                            fragmentShader << ",\n\t\t";
-
-                        fragmentShader << "((int(gl_FragCoord.x) % 2 == " << (index % 2) << ") " << boolOpToString(op)
-                                       << " ("
-                                       << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ") ? 1.0 : 0.0)";
-                    }
-
-                    fragmentShader << "));\n";
-                }
-
-                if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED &&
-                    subpass.getDepthStencilAttachment().getImageLayout() !=
-                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL &&
-                    subpass.getDepthStencilAttachment().getImageLayout() !=
-                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                {
-                    const size_t index = subpassNdx + 1;
-                    const BoolOp op    = boolOpFromIndex(index);
-
-                    fragmentShader << "\tgl_FragDepth = ((int(gl_FragCoord.x) % 2 == " << (index % 2) << ") "
-                                   << boolOpToString(op) << " ("
-                                   << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ") ? "
-                                   << uint32_t(config.depthValues[1])
-                                   << ".0f/255.0f : " << uint32_t(config.depthValues[0]) << ".0f/255.0f);\n";
-                }
-            }
-            else
-            {
-                size_t inputComponentCount  = 0;
-                size_t outputComponentCount = 0;
-
-                for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getInputAttachments().size();
-                     attachmentNdx++)
-                {
-                    const uint32_t attachmentIndex  = subpass.getInputAttachments()[attachmentNdx].getAttachment();
-                    const VkImageLayout layout      = subpass.getInputAttachments()[attachmentNdx].getImageLayout();
-                    const Attachment attachment     = config.renderPass.getAttachments()[attachmentIndex];
-                    const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
-                    const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
-
-                    if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                        inputComponentCount += 1;
-                    else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
-                        inputComponentCount += 1;
-                    else
-                        inputComponentCount += componentCount;
-                }
-
-                for (size_t attachmentNdx = config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size();
-                     attachmentNdx++)
-                {
-                    const uint32_t attachmentIndex  = subpass.getColorAttachments()[attachmentNdx].getAttachment();
-                    const Attachment attachment     = config.renderPass.getAttachments()[attachmentIndex];
-                    const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
-                    const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
-
-                    outputComponentCount += componentCount;
-                }
-
-                if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED &&
-                    subpass.getDepthStencilAttachment().getImageLayout() !=
-                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL &&
-                    subpass.getDepthStencilAttachment().getImageLayout() !=
-                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                {
-                    outputComponentCount++;
-                }
-
-                if (outputComponentCount > 0)
-                {
-                    const size_t inputsPerOutput = inputComponentCount >= outputComponentCount ?
-                                                       ((inputComponentCount / outputComponentCount) +
-                                                        ((inputComponentCount % outputComponentCount) != 0 ? 1 : 0)) :
-                                                       1;
-
-                    fragmentShader << "\tbool inputs[" << inputComponentCount << "];\n";
-
-                    if (outputComponentCount > 0)
-                        fragmentShader << "\tbool outputs[" << outputComponentCount << "];\n";
-
-                    size_t inputValueNdx = 0;
-
-                    for (size_t attachmentNdx = config.drawStartNdx;
-                         attachmentNdx < subpass.getInputAttachments().size(); attachmentNdx++)
-                    {
-                        const char *const components[]  = {"x", "y", "z", "w"};
-                        const uint32_t attachmentIndex  = subpass.getInputAttachments()[attachmentNdx].getAttachment();
-                        const VkImageLayout layout      = subpass.getInputAttachments()[attachmentNdx].getImageLayout();
-                        const Attachment attachment     = config.renderPass.getAttachments()[attachmentIndex];
-                        const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
-                        const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
-                        const bool isDepthFormat        = tcu::hasDepthComponent(format.order);
-                        const bool isStencilFormat      = tcu::hasStencilComponent(format.order);
-
-                        if (isDepthFormat || isStencilFormat)
-                        {
-                            if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
-                            {
-                                fragmentShader << "\tinputs[" << inputValueNdx << "] = depthsEqual("
-                                               << uint32_t(config.depthValues[1])
-                                               << ".0f/255.0f, float(subpassLoad(i_depth" << attachmentNdx << ").x), "
-                                               << std::fixed << std::setprecision(12)
-                                               << requiredDepthEpsilon(attachment.getFormat()) << ");\n";
-                                inputValueNdx++;
-                            }
-
-                            if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                            {
-                                fragmentShader << "\tinputs[" << inputValueNdx << "] = 255u == subpassLoad(i_stencil"
-                                               << attachmentNdx << ").x;\n";
-                                inputValueNdx++;
-                            }
-                        }
-                        else
-                        {
-                            for (size_t compNdx = 0; compNdx < componentCount; compNdx++)
-                            {
-                                if (attachment.getSamples() == VK_SAMPLE_COUNT_1_BIT)
-                                {
-                                    fragmentShader << "\tinputs[" << inputValueNdx
-                                                   << "] = 1.0 == float(subpassLoad(i_color" << attachmentNdx << ")."
-                                                   << components[compNdx] << ");\n";
-                                }
-                                else
-                                {
-                                    fragmentShader << "\tinputs[" << inputValueNdx
-                                                   << "] = 1.0 == float(subpassLoad(i_color" << attachmentNdx
-                                                   << ", gl_SampleID)." << components[compNdx] << ");\n";
-                                }
-                                inputValueNdx++;
-                            }
-                        }
-                    }
-
-                    size_t outputValueNdx = 0;
-
-                    for (size_t attachmentNdx = config.drawStartNdx;
-                         attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
-                    {
-                        const uint32_t attachmentIndex   = subpass.getColorAttachments()[attachmentNdx].getAttachment();
-                        const Attachment attachment      = config.renderPass.getAttachments()[attachmentIndex];
-                        const std::string attachmentType = getAttachmentType(
-                            config.renderPass.getAttachments()[attachmentIndex].getFormat(), config.useFormatCompCount);
-                        const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
-                        const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
-
-                        for (size_t compNdx = 0; compNdx < componentCount; compNdx++)
-                        {
-                            const size_t index = subpassNdx + attachmentIndex + outputValueNdx;
-                            const BoolOp op    = boolOpFromIndex(index);
-
-                            fragmentShader << "\toutputs[" << outputValueNdx + compNdx << "] = "
-                                           << "(int(gl_FragCoord.x) % 2 == " << (index % 2) << ") "
-                                           << boolOpToString(op) << " ("
-                                           << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ");\n";
-
-                            for (size_t i = 0; i < inputsPerOutput; i++)
-                                fragmentShader
-                                    << "\toutputs[" << outputValueNdx + compNdx << "] = outputs["
-                                    << outputValueNdx + compNdx << "] == inputs["
-                                    << ((outputValueNdx + compNdx) * inputsPerOutput + i) % inputComponentCount
-                                    << "];\n";
-                        }
-
-                        fragmentShader << "\to_color" << attachmentNdx << " = " << attachmentType << "(";
-
-                        for (size_t compNdx = 0; compNdx < (config.useFormatCompCount ? componentCount : 4); compNdx++)
-                        {
-                            if (compNdx > 0)
-                                fragmentShader << ", ";
-
-                            if (compNdx < componentCount)
-                                fragmentShader << "outputs[" << outputValueNdx + compNdx << "]";
-                            else
-                                fragmentShader << "0";
-                        }
-
-                        outputValueNdx += componentCount;
-
-                        fragmentShader << ");\n";
-                    }
-
-                    if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED &&
-                        subpass.getDepthStencilAttachment().getImageLayout() !=
-                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL &&
-                        subpass.getDepthStencilAttachment().getImageLayout() !=
-                            VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                    {
-                        const uint32_t attachmentIndex = subpass.getDepthStencilAttachment().getAttachment();
-                        const size_t index             = subpassNdx + attachmentIndex;
-                        const BoolOp op                = boolOpFromIndex(index);
-
-                        fragmentShader << "\toutputs[" << outputValueNdx << "] = "
-                                       << "(int(gl_FragCoord.x) % 2 == " << (index % 2) << ") " << boolOpToString(op)
-                                       << " ("
-                                       << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ");\n";
-
-                        for (size_t i = 0; i < inputsPerOutput; i++)
-                            fragmentShader << "\toutputs[" << outputValueNdx << "] = outputs[" << outputValueNdx
-                                           << "] == inputs["
-                                           << (outputValueNdx * inputsPerOutput + i) % inputComponentCount << "];\n";
-
-                        fragmentShader << "\tgl_FragDepth = outputs[" << outputValueNdx << "] ? "
-                                       << uint32_t(config.depthValues[1])
-                                       << ".0f/255.0f : " << uint32_t(config.depthValues[0]) << ".0f/255.0f;\n";
-                    }
-                }
-            }
-
-            fragmentShader << "}\n";
-
-            dst.glslSources.add(de::toString(subpassNdx) + "-vert") << glu::VertexSource(vertexShader.str());
-            dst.glslSources.add(de::toString(subpassNdx) + "-frag") << glu::FragmentSource(fragmentShader.str());
-        }
-    }
-}
-
 void initializeAttachmentIsLazy(vector<bool> &attachmentIsLazy, const vector<Attachment> &attachments,
                                 TestConfig::ImageMemory imageMemory)
 {
@@ -5664,47 +5334,33 @@ void initializeSubpassRenderInfo(vector<SubpassRenderInfo> &renderInfos, de::Ran
     }
 }
 
-void checkTextureFormatSupport(TestLog &log, const InstanceInterface &vk, VkPhysicalDevice device,
-                               const vector<Attachment> &attachments)
+class RenderPassTestInstance : public vkt::TestInstance
 {
-    bool supported = true;
+public:
+    RenderPassTestInstance(Context &context, const TestConfig &config);
+    virtual tcu::TestStatus iterate(void) final;
 
-    for (size_t attachmentNdx = 0; attachmentNdx < attachments.size(); attachmentNdx++)
-    {
-        const Attachment &attachment          = attachments[attachmentNdx];
-        const tcu::TextureFormat format       = mapVkFormat(attachment.getFormat());
-        const bool isDepthOrStencilAttachment = hasDepthComponent(format.order) || hasStencilComponent(format.order);
-        const VkFormatFeatureFlags flags = isDepthOrStencilAttachment ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT :
-                                                                        VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
-        VkFormatProperties properties;
+private:
+    const TestConfig m_config;
+};
 
-        vk.getPhysicalDeviceFormatProperties(device, attachment.getFormat(), &properties);
-
-        if ((properties.optimalTilingFeatures & flags) != flags)
-        {
-            supported = false;
-            log << TestLog::Message << "Format: " << attachment.getFormat() << " not supported as "
-                << (isDepthOrStencilAttachment ? "depth stencil attachment" : "color attachment")
-                << TestLog::EndMessage;
-        }
-    }
-
-    if (!supported)
-        TCU_THROW(NotSupportedError, "Format not supported");
+RenderPassTestInstance::RenderPassTestInstance(Context &context, const TestConfig &config)
+    : vkt::TestInstance(context)
+    , m_config(config)
+{
 }
 
-tcu::TestStatus renderPassTest(Context &context, TestConfig config)
+tcu::TestStatus RenderPassTestInstance::iterate(void)
 {
-    const UVec2 targetSize             = config.targetSize;
-    const UVec2 renderPos              = config.renderPos;
-    const UVec2 renderSize             = config.renderSize;
-    const RenderPass &renderPassInfo   = config.renderPass;
-    const InstanceInterface &vki       = context.getInstanceInterface();
-    const VkPhysicalDevice &physDevice = context.getPhysicalDevice();
-    const auto &properties             = getPhysicalDeviceProperties(vki, physDevice);
+    const UVec2 targetSize             = m_config.targetSize;
+    const UVec2 renderPos              = m_config.renderPos;
+    const UVec2 renderSize             = m_config.renderSize;
+    const RenderPass &renderPassInfo   = m_config.renderPass;
+    const InstanceInterface &vki       = m_context.getInstanceInterface();
+    const VkPhysicalDevice &physDevice = m_context.getPhysicalDevice();
 
-    TestLog &log = context.getTestContext().getLog();
-    de::Random rng(config.seed);
+    TestLog &log = m_context.getTestContext().getLog();
+    de::Random rng(m_config.seed);
 
     vector<bool> attachmentIsLazy;
     vector<VkImageUsageFlags> attachmentImageUsage;
@@ -5713,6 +5369,142 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
 
     vector<bool> subpassIsSecondary;
     vector<SubpassRenderInfo> subpassRenderInfo;
+
+    initializeAttachmentIsLazy(attachmentIsLazy, renderPassInfo.getAttachments(), m_config.imageMemory);
+    initializeImageClearValues(rng, imageClearValues, renderPassInfo.getAttachments(), attachmentIsLazy,
+                               m_config.useFormatCompCount, m_config.depthValues);
+    initializeAttachmentImageUsage(m_context, attachmentImageUsage, renderPassInfo, attachmentIsLazy, imageClearValues);
+    initializeRenderPassClearValues(rng, renderPassClearValues, renderPassInfo.getAttachments(),
+                                    m_config.useFormatCompCount, m_config.depthValues);
+
+    initializeSubpassIsSecondary(subpassIsSecondary, renderPassInfo.getSubpasses(), m_config.commandBufferTypes);
+    initializeSubpassRenderInfo(subpassRenderInfo, rng, renderPassInfo, m_config);
+
+    logTestCaseInfo(log, m_config, attachmentIsLazy, imageClearValues, renderPassClearValues, subpassRenderInfo);
+
+    const VkDevice device     = m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkQueue queue       = m_context.getUniversalQueue();
+    const uint32_t queueIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+
+    const Unique<VkCommandPool> commandBufferPool(createCommandPool(vk, device, 0, queueIndex));
+    const Unique<VkCommandBuffer> initializeImagesCommandBuffer(
+        allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    const Unique<VkCommandBuffer> renderCommandBuffer(
+        allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+    const Unique<VkCommandBuffer> readImagesToBuffersCommandBuffer(
+        allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    vector<de::SharedPtr<AttachmentResources>> attachmentResources;
+    vector<de::SharedPtr<SubpassRenderer>> subpassRenderers;
+    vector<VkImage> attachmentImages;
+    vector<VkImageView> attachmentViews;
+    vector<pair<VkImageView, VkImageView>> inputAttachmentViews;
+
+    Move<VkRenderPass> renderPass;
+    if (m_config.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+        renderPass = createRenderPass(vk, device, renderPassInfo, m_config.groupParams->renderingType);
+
+    for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
+    {
+        const Attachment &attachmentInfo = renderPassInfo.getAttachments()[attachmentNdx];
+
+        attachmentResources.push_back(de::SharedPtr<AttachmentResources>(
+            new AttachmentResources(vki, physDevice, vk, device, allocator, queueIndex, targetSize, attachmentInfo,
+                                    attachmentImageUsage[attachmentNdx], m_config.allocationKind)));
+        attachmentViews.push_back(attachmentResources[attachmentNdx]->getAttachmentView());
+        attachmentImages.push_back(attachmentResources[attachmentNdx]->getImage());
+
+        inputAttachmentViews.push_back(attachmentResources[attachmentNdx]->getInputAttachmentViews());
+    }
+
+    beginCommandBuffer(vk, *initializeImagesCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
+                       (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
+    pushImageInitializationCommands(vk, *initializeImagesCommandBuffer, renderPassInfo.getAttachments(),
+                                    attachmentResources, queueIndex, imageClearValues);
+    endCommandBuffer(vk, *initializeImagesCommandBuffer);
+
+    {
+        Move<VkFramebuffer> framebuffer;
+        if (m_config.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
+            framebuffer = createFramebuffer(vk, device, *renderPass, targetSize, attachmentViews);
+
+        const VkRect2D renderArea{{(int32_t)renderPos.x(), (int32_t)renderPos.y()}, {renderSize.x(), renderSize.y()}};
+        const bool secondaryCmdBufferCompletelyContainsDynamicRenderpass =
+            (m_config.commandBufferTypes == TestConfig::COMMANDBUFFERTYPES_SECONDARY) &&
+            m_config.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass;
+
+        for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
+        {
+            subpassRenderers.push_back(de::SharedPtr<SubpassRenderer>(
+                new SubpassRenderer(m_context, vk, device, allocator, renderPassInfo, attachmentResources, renderArea,
+                                    renderPassClearValues, *renderPass, *framebuffer, *commandBufferPool, queueIndex,
+                                    attachmentImages, inputAttachmentViews, subpassRenderInfo[subpassNdx], m_config)));
+        }
+
+        beginCommandBuffer(vk, *renderCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
+                           (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
+        pushRenderPassCommands(vk, *renderCommandBuffer, *renderPass, renderPassInfo, attachmentResources, *framebuffer,
+                               subpassRenderers, renderArea, renderPassClearValues, queueIndex, m_config,
+                               secondaryCmdBufferCompletelyContainsDynamicRenderpass);
+        endCommandBuffer(vk, *renderCommandBuffer);
+
+        beginCommandBuffer(vk, *readImagesToBuffersCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
+                           (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
+        pushReadImagesToBuffers(vk, *readImagesToBuffersCommandBuffer, queueIndex, attachmentResources,
+                                renderPassInfo.getAttachments(), attachmentIsLazy, targetSize);
+        endCommandBuffer(vk, *readImagesToBuffersCommandBuffer);
+        {
+            const VkCommandBuffer commandBuffers[] = {*initializeImagesCommandBuffer, *renderCommandBuffer,
+                                                      *readImagesToBuffersCommandBuffer};
+            const Unique<VkFence> fence(createFence(vk, device, 0u));
+
+            queueSubmit(vk, queue, DE_LENGTH_OF_ARRAY(commandBuffers), commandBuffers, *fence);
+            waitForFences(vk, device, 1, &fence.get(), VK_TRUE, ~0ull);
+        }
+    }
+
+#ifdef CTS_USES_VULKANSC
+    if (!m_context.getTestContext().getCommandLine().isSubProcess())
+        return tcu::TestStatus::pass("Pass");
+#endif
+
+    if (logAndVerifyImages(log, vk, device, attachmentResources, attachmentIsLazy, renderPassInfo,
+                           renderPassClearValues, imageClearValues, subpassRenderInfo, targetSize, m_config))
+        return tcu::TestStatus::pass("Pass");
+
+    return tcu::TestStatus::fail("Result verification failed");
+}
+
+class RenderPassTestCase : public vkt::TestCase
+{
+public:
+    RenderPassTestCase(tcu::TestContext &context, const std::string &name, const TestConfig &config);
+
+    void checkSupport(Context &context) const override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+private:
+    bool checkTextureFormatSupport(Context &context) const;
+
+private:
+    const TestConfig m_config;
+};
+
+RenderPassTestCase::RenderPassTestCase(tcu::TestContext &context, const std::string &name, const TestConfig &config)
+    : vkt::TestCase(context, name)
+    , m_config(config)
+{
+}
+
+void RenderPassTestCase::checkSupport(Context &context) const
+{
+    const RenderPass &renderPassInfo   = m_config.renderPass;
+    const InstanceInterface &vki       = context.getInstanceInterface();
+    const VkPhysicalDevice &physDevice = context.getPhysicalDevice();
+    const auto &properties             = getPhysicalDeviceProperties(vki, physDevice);
 
 #ifndef CTS_USES_VULKANSC
     for (const auto &att : renderPassInfo.getAttachments())
@@ -5725,10 +5517,10 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
     }
 #endif // CTS_USES_VULKANSC
 
-    if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+    if (m_config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
         context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
-    if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+    if (m_config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
     {
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
@@ -5780,7 +5572,7 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
         }
     }
 
-    if (config.allocationKind == ALLOCATION_KIND_DEDICATED)
+    if (m_config.allocationKind == ALLOCATION_KIND_DEDICATED)
     {
         if (!context.isDeviceFunctionalitySupported("VK_KHR_dedicated_allocation"))
             TCU_THROW(NotSupportedError, "VK_KHR_dedicated_allocation is not supported");
@@ -5792,20 +5584,36 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
             TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance2 not supported.");
     }
 
-    checkPipelineConstructionRequirements(vki, physDevice, config.groupParams->pipelineConstructionType);
+    checkPipelineConstructionRequirements(vki, physDevice, m_config.groupParams->pipelineConstructionType);
 
+    bool requireDepthStencilLayout = false;
+
+    for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
     {
-        bool requireDepthStencilLayout = false;
-
-        for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
+        if (renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() ==
+                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
+            renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() ==
+                VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+            renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() ==
+                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
+            renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() ==
+                VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
         {
-            if (renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() ==
+            requireDepthStencilLayout = true;
+            break;
+        }
+    }
+
+    for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size() && !requireDepthStencilLayout;
+         subpassNdx++)
+    {
+        const Subpass &subpass(renderPassInfo.getSubpasses()[subpassNdx]);
+
+        for (size_t attachmentNdx = 0; attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
+        {
+            if (subpass.getColorAttachments()[attachmentNdx].getImageLayout() ==
                     VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
-                renderPassInfo.getAttachments()[attachmentNdx].getInitialLayout() ==
-                    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
-                renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() ==
-                    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
-                renderPassInfo.getAttachments()[attachmentNdx].getFinalLayout() ==
+                subpass.getColorAttachments()[attachmentNdx].getImageLayout() ==
                     VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
             {
                 requireDepthStencilLayout = true;
@@ -5813,52 +5621,12 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
             }
         }
 
-        for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size() && !requireDepthStencilLayout;
-             subpassNdx++)
+        for (size_t attachmentNdx = 0;
+             !requireDepthStencilLayout && attachmentNdx < subpass.getInputAttachments().size(); attachmentNdx++)
         {
-            const Subpass &subpass(renderPassInfo.getSubpasses()[subpassNdx]);
-
-            for (size_t attachmentNdx = 0; attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
-            {
-                if (subpass.getColorAttachments()[attachmentNdx].getImageLayout() ==
-                        VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
-                    subpass.getColorAttachments()[attachmentNdx].getImageLayout() ==
-                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                {
-                    requireDepthStencilLayout = true;
-                    break;
-                }
-            }
-
-            for (size_t attachmentNdx = 0;
-                 !requireDepthStencilLayout && attachmentNdx < subpass.getInputAttachments().size(); attachmentNdx++)
-            {
-                if (subpass.getInputAttachments()[attachmentNdx].getImageLayout() ==
-                        VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
-                    subpass.getInputAttachments()[attachmentNdx].getImageLayout() ==
-                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                {
-                    requireDepthStencilLayout = true;
-                    break;
-                }
-            }
-
-            for (size_t attachmentNdx = 0;
-                 !requireDepthStencilLayout && attachmentNdx < subpass.getResolveAttachments().size(); attachmentNdx++)
-            {
-                if (subpass.getResolveAttachments()[attachmentNdx].getImageLayout() ==
-                        VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
-                    subpass.getResolveAttachments()[attachmentNdx].getImageLayout() ==
-                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
-                {
-                    requireDepthStencilLayout = true;
-                    break;
-                }
-            }
-
-            if (subpass.getDepthStencilAttachment().getImageLayout() ==
+            if (subpass.getInputAttachments()[attachmentNdx].getImageLayout() ==
                     VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
-                subpass.getDepthStencilAttachment().getImageLayout() ==
+                subpass.getInputAttachments()[attachmentNdx].getImageLayout() ==
                     VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
             {
                 requireDepthStencilLayout = true;
@@ -5866,130 +5634,406 @@ tcu::TestStatus renderPassTest(Context &context, TestConfig config)
             }
         }
 
-        if (requireDepthStencilLayout && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
-            TCU_THROW(NotSupportedError, "VK_KHR_maintenance2 is not supported");
-    }
-
-    initializeAttachmentIsLazy(attachmentIsLazy, renderPassInfo.getAttachments(), config.imageMemory);
-    initializeImageClearValues(rng, imageClearValues, renderPassInfo.getAttachments(), attachmentIsLazy,
-                               config.useFormatCompCount, config.depthValues);
-    initializeAttachmentImageUsage(context, attachmentImageUsage, renderPassInfo, attachmentIsLazy, imageClearValues);
-    initializeRenderPassClearValues(rng, renderPassClearValues, renderPassInfo.getAttachments(),
-                                    config.useFormatCompCount, config.depthValues);
-
-    initializeSubpassIsSecondary(subpassIsSecondary, renderPassInfo.getSubpasses(), config.commandBufferTypes);
-    initializeSubpassRenderInfo(subpassRenderInfo, rng, renderPassInfo, config);
-
-    logTestCaseInfo(log, config, attachmentIsLazy, imageClearValues, renderPassClearValues, subpassRenderInfo);
-
-    checkTextureFormatSupport(log, vki, physDevice, config.renderPass.getAttachments());
-
-    {
-        log << TestLog::Message << "Max color attachments: " << properties.limits.maxColorAttachments
-            << TestLog::EndMessage;
-
-        for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
+        for (size_t attachmentNdx = 0;
+             !requireDepthStencilLayout && attachmentNdx < subpass.getResolveAttachments().size(); attachmentNdx++)
         {
-            if (renderPassInfo.getSubpasses()[subpassNdx].getColorAttachments().size() >
-                (size_t)properties.limits.maxColorAttachments)
-                TCU_THROW(NotSupportedError, "Subpass uses more than maxColorAttachments.");
-        }
-    }
-
-    {
-        const VkDevice device     = context.getDevice();
-        const DeviceInterface &vk = context.getDeviceInterface();
-        const VkQueue queue       = context.getUniversalQueue();
-        const uint32_t queueIndex = context.getUniversalQueueFamilyIndex();
-        Allocator &allocator      = context.getDefaultAllocator();
-
-        const Unique<VkCommandPool> commandBufferPool(createCommandPool(vk, device, 0, queueIndex));
-        const Unique<VkCommandBuffer> initializeImagesCommandBuffer(
-            allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-        const Unique<VkCommandBuffer> renderCommandBuffer(
-            allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-        const Unique<VkCommandBuffer> readImagesToBuffersCommandBuffer(
-            allocateCommandBuffer(vk, device, *commandBufferPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
-        vector<de::SharedPtr<AttachmentResources>> attachmentResources;
-        vector<de::SharedPtr<SubpassRenderer>> subpassRenderers;
-        vector<VkImage> attachmentImages;
-        vector<VkImageView> attachmentViews;
-        vector<pair<VkImageView, VkImageView>> inputAttachmentViews;
-
-        Move<VkRenderPass> renderPass;
-        if (config.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
-            renderPass = createRenderPass(vk, device, renderPassInfo, config.groupParams->renderingType);
-
-        for (size_t attachmentNdx = 0; attachmentNdx < renderPassInfo.getAttachments().size(); attachmentNdx++)
-        {
-            const Attachment &attachmentInfo = renderPassInfo.getAttachments()[attachmentNdx];
-
-            attachmentResources.push_back(de::SharedPtr<AttachmentResources>(
-                new AttachmentResources(vki, physDevice, vk, device, allocator, queueIndex, targetSize, attachmentInfo,
-                                        attachmentImageUsage[attachmentNdx], config.allocationKind)));
-            attachmentViews.push_back(attachmentResources[attachmentNdx]->getAttachmentView());
-            attachmentImages.push_back(attachmentResources[attachmentNdx]->getImage());
-
-            inputAttachmentViews.push_back(attachmentResources[attachmentNdx]->getInputAttachmentViews());
-        }
-
-        beginCommandBuffer(vk, *initializeImagesCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
-                           (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
-        pushImageInitializationCommands(vk, *initializeImagesCommandBuffer, renderPassInfo.getAttachments(),
-                                        attachmentResources, queueIndex, imageClearValues);
-        endCommandBuffer(vk, *initializeImagesCommandBuffer);
-
-        {
-            Move<VkFramebuffer> framebuffer;
-            if (config.groupParams->renderingType != RENDERING_TYPE_DYNAMIC_RENDERING)
-                framebuffer = createFramebuffer(vk, device, *renderPass, targetSize, attachmentViews);
-
-            const VkRect2D renderArea{{(int32_t)renderPos.x(), (int32_t)renderPos.y()},
-                                      {renderSize.x(), renderSize.y()}};
-            const bool secondaryCmdBufferCompletelyContainsDynamicRenderpass =
-                (config.commandBufferTypes == TestConfig::COMMANDBUFFERTYPES_SECONDARY) &&
-                config.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass;
-
-            for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
+            if (subpass.getResolveAttachments()[attachmentNdx].getImageLayout() ==
+                    VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
+                subpass.getResolveAttachments()[attachmentNdx].getImageLayout() ==
+                    VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
             {
-                subpassRenderers.push_back(de::SharedPtr<SubpassRenderer>(new SubpassRenderer(
-                    context, vk, device, allocator, renderPassInfo, attachmentResources, renderArea,
-                    renderPassClearValues, *renderPass, *framebuffer, *commandBufferPool, queueIndex, attachmentImages,
-                    inputAttachmentViews, subpassRenderInfo[subpassNdx], config)));
-            }
-
-            beginCommandBuffer(vk, *renderCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
-                               (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
-            pushRenderPassCommands(vk, *renderCommandBuffer, *renderPass, renderPassInfo, attachmentResources,
-                                   *framebuffer, subpassRenderers, renderArea, renderPassClearValues, queueIndex,
-                                   config, secondaryCmdBufferCompletelyContainsDynamicRenderpass);
-            endCommandBuffer(vk, *renderCommandBuffer);
-
-            beginCommandBuffer(vk, *readImagesToBuffersCommandBuffer, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, VK_FALSE,
-                               (VkQueryControlFlags)0, (VkQueryPipelineStatisticFlags)0);
-            pushReadImagesToBuffers(vk, *readImagesToBuffersCommandBuffer, queueIndex, attachmentResources,
-                                    renderPassInfo.getAttachments(), attachmentIsLazy, targetSize);
-            endCommandBuffer(vk, *readImagesToBuffersCommandBuffer);
-            {
-                const VkCommandBuffer commandBuffers[] = {*initializeImagesCommandBuffer, *renderCommandBuffer,
-                                                          *readImagesToBuffersCommandBuffer};
-                const Unique<VkFence> fence(createFence(vk, device, 0u));
-
-                queueSubmit(vk, queue, DE_LENGTH_OF_ARRAY(commandBuffers), commandBuffers, *fence);
-                waitForFences(vk, device, 1, &fence.get(), VK_TRUE, ~0ull);
+                requireDepthStencilLayout = true;
+                break;
             }
         }
-#ifdef CTS_USES_VULKANSC
-        if (!context.getTestContext().getCommandLine().isSubProcess())
-            return tcu::TestStatus::pass("Pass");
-#endif
-        if (logAndVerifyImages(log, vk, device, attachmentResources, attachmentIsLazy, renderPassInfo,
-                               renderPassClearValues, imageClearValues, subpassRenderInfo, targetSize, config))
-            return tcu::TestStatus::pass("Pass");
-        else
-            return tcu::TestStatus::fail("Result verification failed");
+
+        if (subpass.getDepthStencilAttachment().getImageLayout() ==
+                VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
+            subpass.getDepthStencilAttachment().getImageLayout() ==
+                VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+        {
+            requireDepthStencilLayout = true;
+            break;
+        }
     }
+
+    if (requireDepthStencilLayout && !context.isDeviceFunctionalitySupported("VK_KHR_maintenance2"))
+        TCU_THROW(NotSupportedError, "VK_KHR_maintenance2 is not supported");
+
+    for (const auto feature : m_config.requiredFeatures)
+        context.requireDeviceCoreFeature(feature);
+
+    if (!checkTextureFormatSupport(context))
+        TCU_THROW(NotSupportedError, "Format not supported");
+
+    for (size_t subpassNdx = 0; subpassNdx < renderPassInfo.getSubpasses().size(); subpassNdx++)
+    {
+        if (renderPassInfo.getSubpasses()[subpassNdx].getColorAttachments().size() >
+            (size_t)properties.limits.maxColorAttachments)
+            TCU_THROW(NotSupportedError, "Subpass uses more than maxColorAttachments.");
+    }
+}
+
+void RenderPassTestCase::initPrograms(vk::SourceCollections &programCollection) const
+{
+    if (m_config.renderTypes & TestConfig::RENDERTYPES_DRAW)
+    {
+        const vector<Subpass> &subpasses = m_config.renderPass.getSubpasses();
+
+        for (size_t subpassNdx = 0; subpassNdx < subpasses.size(); subpassNdx++)
+        {
+            const Subpass &subpass          = subpasses[subpassNdx];
+            uint32_t inputAttachmentBinding = 0;
+            std::ostringstream vertexShader;
+            std::ostringstream fragmentShader;
+
+            vertexShader << "#version 310 es\n"
+                         << "layout(location = 0) in highp vec2 a_position;\n"
+                         << "void main (void) {\n"
+                         << "\tgl_Position = vec4(a_position, 1.0, 1.0);\n"
+                         << "}\n";
+
+            fragmentShader << "#version 450\n";
+
+            bool hasAnyDepthFormats = false;
+
+            for (size_t attachmentNdx = m_config.drawStartNdx; attachmentNdx < subpass.getInputAttachments().size();
+                 attachmentNdx++)
+            {
+                const uint32_t attachmentIndex  = subpass.getInputAttachments()[attachmentNdx].getAttachment();
+                const VkImageLayout layout      = subpass.getInputAttachments()[attachmentNdx].getImageLayout();
+                const Attachment attachment     = m_config.renderPass.getAttachments()[attachmentIndex];
+                const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
+                const bool isDepthFormat        = tcu::hasDepthComponent(format.order);
+                const bool isStencilFormat      = tcu::hasStencilComponent(format.order);
+
+                if (isDepthFormat || isStencilFormat)
+                {
+                    if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+                    {
+                        hasAnyDepthFormats = true;
+                        fragmentShader << "layout(input_attachment_index = " << attachmentNdx
+                                       << ", set=0, binding=" << inputAttachmentBinding
+                                       << ") uniform highp subpassInput i_depth" << attachmentNdx << ";\n";
+                        inputAttachmentBinding++;
+                    }
+
+                    if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+                    {
+                        fragmentShader << "layout(input_attachment_index = " << attachmentNdx
+                                       << ", set=0, binding=" << inputAttachmentBinding
+                                       << ") uniform highp usubpassInput i_stencil" << attachmentNdx << ";\n";
+                        inputAttachmentBinding++;
+                    }
+                }
+                else
+                {
+                    const std::string attachmentType =
+                        getInputAttachmentType(attachment.getFormat(), attachment.getSamples());
+
+                    fragmentShader << "layout(input_attachment_index = " << attachmentNdx
+                                   << ", set=0, binding=" << inputAttachmentBinding << ") uniform highp "
+                                   << attachmentType << " i_color" << attachmentNdx << ";\n";
+                    inputAttachmentBinding++;
+                }
+            }
+
+            for (size_t attachmentNdx = m_config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size();
+                 attachmentNdx++)
+            {
+                const std::string attachmentType = getAttachmentType(
+                    m_config.renderPass.getAttachments()[getAttachmentNdx(subpass.getColorAttachments(), attachmentNdx)]
+                        .getFormat(),
+                    m_config.useFormatCompCount);
+                fragmentShader << "layout(location = " << attachmentNdx << ") out highp " << attachmentType
+                               << " o_color" << attachmentNdx << ";\n";
+            }
+
+            if (hasAnyDepthFormats)
+                fragmentShader << "\nbool depthsEqual(float a, float b, float epsilon) {\n"
+                               << "\treturn abs(a - b) <= epsilon;\n}\n\n";
+
+            fragmentShader << "void main (void) {\n";
+
+            if (subpass.getInputAttachments().empty())
+            {
+                for (size_t attachmentNdx = m_config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size();
+                     attachmentNdx++)
+                {
+                    const uint32_t attachmentIndex = subpass.getColorAttachments()[attachmentNdx].getAttachment();
+
+                    if (attachmentIndex == VK_ATTACHMENT_UNUSED)
+                        continue;
+
+                    const Attachment attachment     = m_config.renderPass.getAttachments()[attachmentIndex];
+                    const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
+                    const size_t componentCount =
+                        m_config.useFormatCompCount ? (size_t)getShaderNumChannels(format.order) : 4;
+                    const std::string attachmentType =
+                        getAttachmentType(attachment.getFormat(), m_config.useFormatCompCount);
+
+                    fragmentShader << "\to_color" << attachmentNdx << " = " << attachmentType << "("
+                                   << attachmentType + "(";
+
+                    for (size_t compNdx = 0; compNdx < componentCount; compNdx++)
+                    {
+                        const size_t index = subpassNdx + attachmentIndex + compNdx;
+                        const BoolOp op    = boolOpFromIndex(index);
+
+                        if (compNdx > 0)
+                            fragmentShader << ",\n\t\t";
+
+                        fragmentShader << "((int(gl_FragCoord.x) % 2 == " << (index % 2) << ") " << boolOpToString(op)
+                                       << " ("
+                                       << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ") ? 1.0 : 0.0)";
+                    }
+
+                    fragmentShader << "));\n";
+                }
+
+                if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED &&
+                    subpass.getDepthStencilAttachment().getImageLayout() !=
+                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL &&
+                    subpass.getDepthStencilAttachment().getImageLayout() !=
+                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+                {
+                    const size_t index = subpassNdx + 1;
+                    const BoolOp op    = boolOpFromIndex(index);
+
+                    fragmentShader << "\tgl_FragDepth = ((int(gl_FragCoord.x) % 2 == " << (index % 2) << ") "
+                                   << boolOpToString(op) << " ("
+                                   << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ") ? "
+                                   << uint32_t(m_config.depthValues[1])
+                                   << ".0f/255.0f : " << uint32_t(m_config.depthValues[0]) << ".0f/255.0f);\n";
+                }
+            }
+            else
+            {
+                size_t inputComponentCount  = 0;
+                size_t outputComponentCount = 0;
+
+                for (size_t attachmentNdx = m_config.drawStartNdx; attachmentNdx < subpass.getInputAttachments().size();
+                     attachmentNdx++)
+                {
+                    const uint32_t attachmentIndex  = subpass.getInputAttachments()[attachmentNdx].getAttachment();
+                    const VkImageLayout layout      = subpass.getInputAttachments()[attachmentNdx].getImageLayout();
+                    const Attachment attachment     = m_config.renderPass.getAttachments()[attachmentIndex];
+                    const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
+                    const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
+
+                    if (layout == VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+                        inputComponentCount += 1;
+                    else if (layout == VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+                        inputComponentCount += 1;
+                    else
+                        inputComponentCount += componentCount;
+                }
+
+                for (size_t attachmentNdx = m_config.drawStartNdx; attachmentNdx < subpass.getColorAttachments().size();
+                     attachmentNdx++)
+                {
+                    const uint32_t attachmentIndex  = subpass.getColorAttachments()[attachmentNdx].getAttachment();
+                    const Attachment attachment     = m_config.renderPass.getAttachments()[attachmentIndex];
+                    const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
+                    const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
+
+                    outputComponentCount += componentCount;
+                }
+
+                if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED &&
+                    subpass.getDepthStencilAttachment().getImageLayout() !=
+                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL &&
+                    subpass.getDepthStencilAttachment().getImageLayout() !=
+                        VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+                {
+                    outputComponentCount++;
+                }
+
+                if (outputComponentCount > 0)
+                {
+                    const size_t inputsPerOutput = inputComponentCount >= outputComponentCount ?
+                                                       ((inputComponentCount / outputComponentCount) +
+                                                        ((inputComponentCount % outputComponentCount) != 0 ? 1 : 0)) :
+                                                       1;
+
+                    fragmentShader << "\tbool inputs[" << inputComponentCount << "];\n";
+
+                    if (outputComponentCount > 0)
+                        fragmentShader << "\tbool outputs[" << outputComponentCount << "];\n";
+
+                    size_t inputValueNdx = 0;
+
+                    for (size_t attachmentNdx = m_config.drawStartNdx;
+                         attachmentNdx < subpass.getInputAttachments().size(); attachmentNdx++)
+                    {
+                        const char *const components[]  = {"x", "y", "z", "w"};
+                        const uint32_t attachmentIndex  = subpass.getInputAttachments()[attachmentNdx].getAttachment();
+                        const VkImageLayout layout      = subpass.getInputAttachments()[attachmentNdx].getImageLayout();
+                        const Attachment attachment     = m_config.renderPass.getAttachments()[attachmentIndex];
+                        const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
+                        const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
+                        const bool isDepthFormat        = tcu::hasDepthComponent(format.order);
+                        const bool isStencilFormat      = tcu::hasStencilComponent(format.order);
+
+                        if (isDepthFormat || isStencilFormat)
+                        {
+                            if (isDepthFormat && layout != VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+                            {
+                                fragmentShader << "\tinputs[" << inputValueNdx << "] = depthsEqual("
+                                               << uint32_t(m_config.depthValues[1])
+                                               << ".0f/255.0f, float(subpassLoad(i_depth" << attachmentNdx << ").x), "
+                                               << std::fixed << std::setprecision(12)
+                                               << requiredDepthEpsilon(attachment.getFormat()) << ");\n";
+                                inputValueNdx++;
+                            }
+
+                            if (isStencilFormat && layout != VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+                            {
+                                fragmentShader << "\tinputs[" << inputValueNdx << "] = 255u == subpassLoad(i_stencil"
+                                               << attachmentNdx << ").x;\n";
+                                inputValueNdx++;
+                            }
+                        }
+                        else
+                        {
+                            for (size_t compNdx = 0; compNdx < componentCount; compNdx++)
+                            {
+                                if (attachment.getSamples() == VK_SAMPLE_COUNT_1_BIT)
+                                {
+                                    fragmentShader << "\tinputs[" << inputValueNdx
+                                                   << "] = 1.0 == float(subpassLoad(i_color" << attachmentNdx << ")."
+                                                   << components[compNdx] << ");\n";
+                                }
+                                else
+                                {
+                                    fragmentShader << "\tinputs[" << inputValueNdx
+                                                   << "] = 1.0 == float(subpassLoad(i_color" << attachmentNdx
+                                                   << ", gl_SampleID)." << components[compNdx] << ");\n";
+                                }
+                                inputValueNdx++;
+                            }
+                        }
+                    }
+
+                    size_t outputValueNdx = 0;
+
+                    for (size_t attachmentNdx = m_config.drawStartNdx;
+                         attachmentNdx < subpass.getColorAttachments().size(); attachmentNdx++)
+                    {
+                        const uint32_t attachmentIndex = subpass.getColorAttachments()[attachmentNdx].getAttachment();
+                        const Attachment attachment    = m_config.renderPass.getAttachments()[attachmentIndex];
+                        const std::string attachmentType =
+                            getAttachmentType(m_config.renderPass.getAttachments()[attachmentIndex].getFormat(),
+                                              m_config.useFormatCompCount);
+                        const tcu::TextureFormat format = mapVkFormat(attachment.getFormat());
+                        const size_t componentCount     = (size_t)getShaderNumChannels(format.order);
+
+                        for (size_t compNdx = 0; compNdx < componentCount; compNdx++)
+                        {
+                            const size_t index = subpassNdx + attachmentIndex + outputValueNdx;
+                            const BoolOp op    = boolOpFromIndex(index);
+
+                            fragmentShader << "\toutputs[" << outputValueNdx + compNdx << "] = "
+                                           << "(int(gl_FragCoord.x) % 2 == " << (index % 2) << ") "
+                                           << boolOpToString(op) << " ("
+                                           << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ");\n";
+
+                            for (size_t i = 0; i < inputsPerOutput; i++)
+                                fragmentShader
+                                    << "\toutputs[" << outputValueNdx + compNdx << "] = outputs["
+                                    << outputValueNdx + compNdx << "] == inputs["
+                                    << ((outputValueNdx + compNdx) * inputsPerOutput + i) % inputComponentCount
+                                    << "];\n";
+                        }
+
+                        fragmentShader << "\to_color" << attachmentNdx << " = " << attachmentType << "(";
+
+                        for (size_t compNdx = 0; compNdx < (m_config.useFormatCompCount ? componentCount : 4);
+                             compNdx++)
+                        {
+                            if (compNdx > 0)
+                                fragmentShader << ", ";
+
+                            if (compNdx < componentCount)
+                                fragmentShader << "outputs[" << outputValueNdx + compNdx << "]";
+                            else
+                                fragmentShader << "0";
+                        }
+
+                        outputValueNdx += componentCount;
+
+                        fragmentShader << ");\n";
+                    }
+
+                    if (subpass.getDepthStencilAttachment().getAttachment() != VK_ATTACHMENT_UNUSED &&
+                        subpass.getDepthStencilAttachment().getImageLayout() !=
+                            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL &&
+                        subpass.getDepthStencilAttachment().getImageLayout() !=
+                            VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL)
+                    {
+                        const uint32_t attachmentIndex = subpass.getDepthStencilAttachment().getAttachment();
+                        const size_t index             = subpassNdx + attachmentIndex;
+                        const BoolOp op                = boolOpFromIndex(index);
+
+                        fragmentShader << "\toutputs[" << outputValueNdx << "] = "
+                                       << "(int(gl_FragCoord.x) % 2 == " << (index % 2) << ") " << boolOpToString(op)
+                                       << " ("
+                                       << "int(gl_FragCoord.y) % 2 == " << ((index / 2) % 2) << ");\n";
+
+                        for (size_t i = 0; i < inputsPerOutput; i++)
+                            fragmentShader << "\toutputs[" << outputValueNdx << "] = outputs[" << outputValueNdx
+                                           << "] == inputs["
+                                           << (outputValueNdx * inputsPerOutput + i) % inputComponentCount << "];\n";
+
+                        fragmentShader << "\tgl_FragDepth = outputs[" << outputValueNdx << "] ? "
+                                       << uint32_t(m_config.depthValues[1])
+                                       << ".0f/255.0f : " << uint32_t(m_config.depthValues[0]) << ".0f/255.0f;\n";
+                    }
+                }
+            }
+
+            fragmentShader << "}\n";
+
+            programCollection.glslSources.add(de::toString(subpassNdx) + "-vert")
+                << glu::VertexSource(vertexShader.str());
+            programCollection.glslSources.add(de::toString(subpassNdx) + "-frag")
+                << glu::FragmentSource(fragmentShader.str());
+        }
+    }
+}
+
+bool RenderPassTestCase::checkTextureFormatSupport(Context &context) const
+{
+    TestLog &log                       = context.getTestContext().getLog();
+    const InstanceInterface &vki       = context.getInstanceInterface();
+    const VkPhysicalDevice &physDevice = context.getPhysicalDevice();
+    bool supported                     = true;
+
+    for (const Attachment &attachment : m_config.renderPass.getAttachments())
+    {
+        const tcu::TextureFormat format       = mapVkFormat(attachment.getFormat());
+        const bool isDepthOrStencilAttachment = hasDepthComponent(format.order) || hasStencilComponent(format.order);
+        const VkFormatFeatureFlags flags = isDepthOrStencilAttachment ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT :
+                                                                        VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT;
+        VkFormatProperties properties;
+
+        vki.getPhysicalDeviceFormatProperties(physDevice, attachment.getFormat(), &properties);
+
+        if ((properties.optimalTilingFeatures & flags) != flags)
+        {
+            supported = false;
+            log << TestLog::Message << "Format: " << attachment.getFormat() << " not supported as "
+                << (isDepthOrStencilAttachment ? "depth stencil attachment" : "color attachment")
+                << TestLog::EndMessage;
+        }
+    }
+
+    return supported;
+}
+
+TestInstance *RenderPassTestCase::createInstance(Context &context) const
+{
+    return new RenderPassTestInstance(context, m_config);
 }
 
 class RenderPassNoDrawLoadStoreTestCase : public vkt::TestCase
@@ -6527,8 +6571,7 @@ void addAttachmentTests(tcu::TestCaseGroup *group, const TestConfigExternal test
                                             renderSize, false, 1293809, 0, testConfigExternal.allocationKind,
                                             testConfigExternal.groupParams);
 
-                addFunctionCaseWithPrograms<TestConfig>(attachmentCountGroup.get(), testCaseName.c_str(),
-                                                        createTestShaders, renderPassTest, testConfig);
+                attachmentCountGroup->addChild(new RenderPassTestCase(testCtx, testCaseName, testConfig));
             }
         }
 
@@ -6606,8 +6649,7 @@ void addAttachmentWriteMaskTests(tcu::TestCaseGroup *group, const TestConfigExte
                                             testConfigExternal.allocationKind, testConfigExternal.groupParams,
                                             requiredFeatures);
 
-                addFunctionCaseWithPrograms<TestConfig>(attachmentCountGroup.get(), testCaseName.c_str(), checkSupport,
-                                                        createTestShaders, renderPassTest, testConfig);
+                attachmentCountGroup->addChild(new RenderPassTestCase(testCtx, testCaseName, testConfig));
             }
         }
 
@@ -7084,8 +7126,7 @@ void addAttachmentAllocationTests(tcu::TestCaseGroup *group, const TestConfigExt
                                                 renderSize, false, 80329, 0, testConfigExternal.allocationKind,
                                                 testConfigExternal.groupParams);
 
-                    addFunctionCaseWithPrograms<TestConfig>(allocationTypeGroup.get(), testCaseName.c_str(),
-                                                            createTestShaders, renderPassTest, testConfig);
+                    allocationTypeGroup->addChild(new RenderPassTestCase(testCtx, testCaseName, testConfig));
                 }
             }
             else
@@ -7299,8 +7340,7 @@ void addAttachmentAllocationTests(tcu::TestCaseGroup *group, const TestConfigExt
                                                 renderSize, false, 80329, 0, testConfigExternal.allocationKind,
                                                 testConfigExternal.groupParams);
 
-                    addFunctionCaseWithPrograms<TestConfig>(allocationTypeGroup.get(), testCaseName.c_str(),
-                                                            createTestShaders, renderPassTest, testConfig);
+                    allocationTypeGroup->addChild(new RenderPassTestCase(testCtx, testCaseName, testConfig));
                 }
             }
         }
@@ -7333,7 +7373,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-        addFunctionCaseWithPrograms<TestConfig>(group, "color", createTestShaders, renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "color", testConfig));
     }
 
     // depth
@@ -7353,7 +7393,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-        addFunctionCaseWithPrograms<TestConfig>(group, "depth", createTestShaders, renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "depth", testConfig));
     }
 
     // stencil
@@ -7373,7 +7413,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-        addFunctionCaseWithPrograms<TestConfig>(group, "stencil", createTestShaders, renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "stencil", testConfig));
     }
 
     // depth_stencil
@@ -7393,7 +7433,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-        addFunctionCaseWithPrograms<TestConfig>(group, "depth_stencil", createTestShaders, renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "depth_stencil", testConfig));
     }
 
     // color_depth
@@ -7421,7 +7461,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-        addFunctionCaseWithPrograms<TestConfig>(group, "color_depth", createTestShaders, renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "color_depth", testConfig));
     }
 
     // color_stencil
@@ -7449,7 +7489,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-        addFunctionCaseWithPrograms<TestConfig>(group, "color_stencil", createTestShaders, renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "color_stencil", testConfig));
     }
 
     // color_depth_stencil
@@ -7478,8 +7518,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
         // Color, depth and stencil attachment case.
-        addFunctionCaseWithPrograms<TestConfig>(group, "color_depth_stencil", createTestShaders, renderPassTest,
-                                                testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "color_depth_stencil", testConfig));
     }
 
     // no attachments
@@ -7496,7 +7535,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
         // No attachments case.
-        addFunctionCaseWithPrograms<TestConfig>(group, "no_attachments", createTestShaders, renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "no_attachments", testConfig));
     }
 
     // color_unused_omit_blend_state
@@ -7531,8 +7570,7 @@ void addSimpleTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     TestConfig::IMAGEMEMORY_STRICT, targetSize, renderPos, renderSize, false, 90239, 0,
                                     testConfigExternal.allocationKind, testConfigExternal.groupParams);
         // Two unused color attachment case without blend state
-        addFunctionCaseWithPrograms<TestConfig>(group, "color_unused_omit_blend_state", createTestShaders,
-                                                renderPassTest, testConfig);
+        group->addChild(new RenderPassTestCase(group->getTestContext(), "color_unused_omit_blend_state", testConfig));
     }
 }
 
@@ -7618,8 +7656,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                             targetSize, renderPos, renderSize, false, 90239, 0,
                                             testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-                addFunctionCaseWithPrograms<TestConfig>(loadOpGroup.get(), renderTypes[renderTypeNdx].str,
-                                                        createTestShaders, renderPassTest, testConfig);
+                loadOpGroup->addChild(
+                    new RenderPassTestCase(group->getTestContext(), renderTypes[renderTypeNdx].str, testConfig));
             }
 
             formatGroup->addChild(loadOpGroup.release());
@@ -7724,8 +7762,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     const string testName(renderTypes[renderTypeNdx].str +
                                                           string(useInputAspect ? "_use_input_aspect" : ""));
 
-                                    addFunctionCaseWithPrograms<TestConfig>(
-                                        storeOpGroup.get(), testName, createTestShaders, renderPassTest, testConfig);
+                                    storeOpGroup->addChild(
+                                        new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                 }
                             }
 
@@ -7791,8 +7829,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                                           (useInputAspect ? "_use_input_aspect" : "") +
                                                           sampleCounts[i].str);
 
-                                    addFunctionCaseWithPrograms<TestConfig>(
-                                        storeOpGroup.get(), testName, createTestShaders, renderPassTest, testConfig);
+                                    storeOpGroup->addChild(
+                                        new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                 }
                             }
                         }
@@ -7851,8 +7889,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                                 targetSize, renderPos, renderSize, false, 90239, 0,
                                                 testConfigExternal.allocationKind, testConfigExternal.groupParams);
 
-                    addFunctionCaseWithPrograms<TestConfig>(loadOpGroup.get(), renderTypes[renderTypeNdx].str,
-                                                            createTestShaders, renderPassTest, testConfig);
+                    loadOpGroup->addChild(
+                        new RenderPassTestCase(group->getTestContext(), renderTypes[renderTypeNdx].str, testConfig));
                 }
 
                 if (isStencilAttachment && isDepthAttachment && loadOp != VK_ATTACHMENT_LOAD_OP_CLEAR)
@@ -7882,8 +7920,7 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                             testConfigExternal.allocationKind, testConfigExternal.groupParams);
                         const string testName(string(renderTypes[renderTypeNdx].str) + "_depth_read_only");
 
-                        addFunctionCaseWithPrograms<TestConfig>(loadOpGroup.get(), testName, createTestShaders,
-                                                                renderPassTest, testConfig);
+                        loadOpGroup->addChild(new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                     }
 
                     {
@@ -7911,8 +7948,7 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                             testConfigExternal.allocationKind, testConfigExternal.groupParams);
                         const string testName(string(renderTypes[renderTypeNdx].str) + "_stencil_read_only");
 
-                        addFunctionCaseWithPrograms<TestConfig>(loadOpGroup.get(), testName, createTestShaders,
-                                                                renderPassTest, testConfig);
+                        loadOpGroup->addChild(new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                     }
                 }
             }
@@ -8011,8 +8047,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     const string testName(renderTypes[renderTypeNdx].str +
                                                           string(useInputAspect ? "_use_input_aspect" : ""));
 
-                                    addFunctionCaseWithPrograms<TestConfig>(
-                                        storeOpGroup.get(), testName, createTestShaders, renderPassTest, testConfig);
+                                    storeOpGroup->addChild(
+                                        new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                 }
                             }
                             {
@@ -8077,8 +8113,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                     const string testName(string("self_dep_") + renderTypes[renderTypeNdx].str +
                                                           (useInputAspect ? "_use_input_aspect" : ""));
 
-                                    addFunctionCaseWithPrograms<TestConfig>(
-                                        storeOpGroup.get(), testName, createTestShaders, renderPassTest, testConfig);
+                                    storeOpGroup->addChild(
+                                        new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                 }
                             }
 
@@ -8151,9 +8187,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                                               string(useInputAspect ? "_use_input_aspect" : "") +
                                                               "_depth_read_only");
 
-                                        addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), testName,
-                                                                                createTestShaders, renderPassTest,
-                                                                                testConfig);
+                                        storeOpGroup->addChild(
+                                            new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                     }
                                 }
                                 {
@@ -8224,9 +8259,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                                               (useInputAspect ? "_use_input_aspect" : "") +
                                                               "_depth_read_only");
 
-                                        addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), testName,
-                                                                                createTestShaders, renderPassTest,
-                                                                                testConfig);
+                                        storeOpGroup->addChild(
+                                            new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                     }
                                 }
                                 // Stencil read only
@@ -8299,9 +8333,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                                               string(useInputAspect ? "_use_input_aspect" : "") +
                                                               "_stencil_read_only");
 
-                                        addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), testName,
-                                                                                createTestShaders, renderPassTest,
-                                                                                testConfig);
+                                        storeOpGroup->addChild(
+                                            new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                     }
                                 }
                                 {
@@ -8372,9 +8405,8 @@ void addFormatTests(tcu::TestCaseGroup *group, const TestConfigExternal testConf
                                                               (useInputAspect ? "_use_input_aspect" : "") +
                                                               "_stencil_read_only");
 
-                                        addFunctionCaseWithPrograms<TestConfig>(storeOpGroup.get(), testName,
-                                                                                createTestShaders, renderPassTest,
-                                                                                testConfig);
+                                        storeOpGroup->addChild(
+                                            new RenderPassTestCase(group->getTestContext(), testName, testConfig));
                                     }
                                 }
                             }

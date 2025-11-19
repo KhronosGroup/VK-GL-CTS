@@ -73,9 +73,7 @@ typedef de::SharedPtr<vk::Unique<VkBuffer>> VkBufferSp;
 typedef de::SharedPtr<vk::Unique<VkPipeline>> VkPipelineSp;
 typedef de::SharedPtr<Allocation> AllocationSp;
 
-namespace vkt
-{
-namespace renderpass
+namespace vkt::renderpass
 {
 namespace
 {
@@ -153,18 +151,40 @@ float get32bitDepthComponent(uint8_t *pixelPtr)
     return *(reinterpret_cast<float *>(pixelPtr));
 }
 
+VkSampleCountFlagBits sampleCountBitFromSampleCount(uint32_t count)
+{
+    switch (count)
+    {
+    case 1:
+        return VK_SAMPLE_COUNT_1_BIT;
+    case 2:
+        return VK_SAMPLE_COUNT_2_BIT;
+    case 4:
+        return VK_SAMPLE_COUNT_4_BIT;
+    case 8:
+        return VK_SAMPLE_COUNT_8_BIT;
+    case 16:
+        return VK_SAMPLE_COUNT_16_BIT;
+    case 32:
+        return VK_SAMPLE_COUNT_32_BIT;
+    case 64:
+        return VK_SAMPLE_COUNT_64_BIT;
+
+    default:
+        DE_FATAL("Invalid sample count");
+        return (VkSampleCountFlagBits)0x0;
+    }
+}
+
 class DepthStencilResolveTest : public TestInstance
 {
 public:
     DepthStencilResolveTest(Context &context, TestConfig config);
-    virtual ~DepthStencilResolveTest(void);
+    virtual ~DepthStencilResolveTest(void) = default;
 
     virtual tcu::TestStatus iterate(void);
 
 protected:
-    bool isFeaturesSupported(void);
-    VkSampleCountFlagBits sampleCountBitFromSampleCount(uint32_t count) const;
-
     VkImageSp createImage(VkFormat vkformat, uint32_t sampleCount, VkImageUsageFlags additionalUsage = 0u);
     AllocationSp createImageMemory(VkImageSp image);
     VkImageViewSp createImageView(VkImageSp image, VkFormat vkformat, uint32_t baseArrayLayer);
@@ -185,7 +205,6 @@ protected:
 
 protected:
     const TestConfig m_config;
-    const bool m_featureSupported;
 
     const InstanceInterface &m_vki;
     const DeviceInterface &m_vkd;
@@ -211,7 +230,6 @@ protected:
 DepthStencilResolveTest::DepthStencilResolveTest(Context &context, TestConfig config)
     : TestInstance(context)
     , m_config(config)
-    , m_featureSupported(isFeaturesSupported())
     , m_vki(context.getInstanceInterface())
     , m_vkd(context.getDeviceInterface())
     , m_device(context.getDevice())
@@ -238,124 +256,13 @@ DepthStencilResolveTest::DepthStencilResolveTest(Context &context, TestConfig co
 {
 }
 
-DepthStencilResolveTest::~DepthStencilResolveTest(void)
-{
-}
-
-bool DepthStencilResolveTest::isFeaturesSupported()
-{
-    m_context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
-    m_context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
-    if (m_config.imageLayers > 1)
-        m_context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
-
-    if (m_config.separateDepthStencilLayouts)
-        m_context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
-
-    VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties;
-    deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolveProperties));
-    dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
-    dsResolveProperties.pNext = nullptr;
-
-    VkPhysicalDeviceProperties2 deviceProperties;
-    deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-    deviceProperties.pNext = &dsResolveProperties;
-
-    // perform query to get supported float control properties
-    const VkPhysicalDevice physicalDevice          = m_context.getPhysicalDevice();
-    const vk::InstanceInterface &instanceInterface = m_context.getInstanceInterface();
-    instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
-
-    // check if both modes are supported
-    VkResolveModeFlagBits depthResolveMode   = m_config.depthResolveMode;
-    VkResolveModeFlagBits stencilResolveMode = m_config.stencilResolveMode;
-
-    if ((depthResolveMode != VK_RESOLVE_MODE_NONE) &&
-        !(depthResolveMode & dsResolveProperties.supportedDepthResolveModes))
-        TCU_THROW(NotSupportedError, "Depth resolve mode not supported");
-
-    if ((stencilResolveMode != VK_RESOLVE_MODE_NONE) &&
-        !(stencilResolveMode & dsResolveProperties.supportedStencilResolveModes))
-        TCU_THROW(NotSupportedError, "Stencil resolve mode not supported");
-
-    // check if the implementation supports setting the depth and stencil resolve
-    // modes to different values when one of those modes is VK_RESOLVE_MODE_NONE
-    if (dsResolveProperties.independentResolveNone)
-    {
-        if ((!dsResolveProperties.independentResolve) && (depthResolveMode != stencilResolveMode) &&
-            (depthResolveMode != VK_RESOLVE_MODE_NONE) && (stencilResolveMode != VK_RESOLVE_MODE_NONE))
-            TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
-    }
-    else if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
-    {
-        // when independentResolveNone and independentResolve are VK_FALSE then both modes must be the same
-        TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
-    }
-
-    return true;
-}
-
-VkSampleCountFlagBits DepthStencilResolveTest::sampleCountBitFromSampleCount(uint32_t count) const
-{
-    switch (count)
-    {
-    case 1:
-        return VK_SAMPLE_COUNT_1_BIT;
-    case 2:
-        return VK_SAMPLE_COUNT_2_BIT;
-    case 4:
-        return VK_SAMPLE_COUNT_4_BIT;
-    case 8:
-        return VK_SAMPLE_COUNT_8_BIT;
-    case 16:
-        return VK_SAMPLE_COUNT_16_BIT;
-    case 32:
-        return VK_SAMPLE_COUNT_32_BIT;
-    case 64:
-        return VK_SAMPLE_COUNT_64_BIT;
-
-    default:
-        DE_FATAL("Invalid sample count");
-        return (VkSampleCountFlagBits)0x0;
-    }
-}
-
 VkImageSp DepthStencilResolveTest::createImage(VkFormat vkformat, uint32_t sampleCount,
                                                VkImageUsageFlags additionalUsage)
 {
-    const tcu::TextureFormat format(mapVkFormat(m_config.format));
     const VkImageTiling imageTiling(VK_IMAGE_TILING_OPTIMAL);
     VkSampleCountFlagBits sampleCountBit(sampleCountBitFromSampleCount(sampleCount));
-    VkImageUsageFlags usage = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | additionalUsage;
-
-    VkImageFormatProperties imageFormatProperties;
-    if (m_vki.getPhysicalDeviceImageFormatProperties(m_physicalDevice, m_config.format, VK_IMAGE_TYPE_2D, imageTiling,
-                                                     usage, 0u,
-                                                     &imageFormatProperties) == VK_ERROR_FORMAT_NOT_SUPPORTED)
-    {
-        TCU_THROW(NotSupportedError, "Format not supported");
-    }
-    if (imageFormatProperties.sampleCounts < sampleCount)
-    {
-        TCU_THROW(NotSupportedError, "Sample count not supported");
-    }
-    if (imageFormatProperties.maxArrayLayers < m_config.imageLayers)
-    {
-        TCU_THROW(NotSupportedError, "Layers count not supported");
-    }
-
+    VkImageUsageFlags usage      = VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | additionalUsage;
     const VkExtent3D imageExtent = {m_config.width, m_config.height, 1u};
-
-    if (!(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order)))
-        TCU_THROW(NotSupportedError, "Format can't be used as depth/stencil attachment");
-
-    if (imageFormatProperties.maxExtent.width < imageExtent.width ||
-        imageFormatProperties.maxExtent.height < imageExtent.height ||
-        ((imageFormatProperties.sampleCounts & sampleCountBit) == 0) ||
-        imageFormatProperties.maxArrayLayers < m_config.imageLayers)
-    {
-        TCU_THROW(NotSupportedError, "Image type not supported");
-    }
 
     const VkImageCreateInfo pCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
@@ -1271,16 +1178,100 @@ struct Programs
     }
 };
 
-void checkSupport(Context &context)
+void checkSupport(Context &context, TestConfig config)
 {
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+    context.requireDeviceFunctionality("VK_KHR_depth_stencil_resolve");
+
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
+    if (config.imageLayers > 1)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+
+    if (config.separateDepthStencilLayouts)
+        context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
+
+    VkPhysicalDeviceDepthStencilResolveProperties dsResolveProperties;
+    deMemset(&dsResolveProperties, 0, sizeof(VkPhysicalDeviceDepthStencilResolveProperties));
+    dsResolveProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_STENCIL_RESOLVE_PROPERTIES;
+    dsResolveProperties.pNext = nullptr;
+
+    VkPhysicalDeviceProperties2 deviceProperties;
+    deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+    deviceProperties.pNext = &dsResolveProperties;
+
+    // perform query to get supported float control properties
+    const VkPhysicalDevice physicalDevice          = context.getPhysicalDevice();
+    const vk::InstanceInterface &instanceInterface = context.getInstanceInterface();
+    instanceInterface.getPhysicalDeviceProperties2(physicalDevice, &deviceProperties);
+
+    // check if both modes are supported
+    VkResolveModeFlagBits depthResolveMode   = config.depthResolveMode;
+    VkResolveModeFlagBits stencilResolveMode = config.stencilResolveMode;
+
+    if ((depthResolveMode != VK_RESOLVE_MODE_NONE) &&
+        !(depthResolveMode & dsResolveProperties.supportedDepthResolveModes))
+        TCU_THROW(NotSupportedError, "Depth resolve mode not supported");
+
+    if ((stencilResolveMode != VK_RESOLVE_MODE_NONE) &&
+        !(stencilResolveMode & dsResolveProperties.supportedStencilResolveModes))
+        TCU_THROW(NotSupportedError, "Stencil resolve mode not supported");
+
+    // check if the implementation supports setting the depth and stencil resolve
+    // modes to different values when one of those modes is VK_RESOLVE_MODE_NONE
+    if (dsResolveProperties.independentResolveNone)
+    {
+        if ((!dsResolveProperties.independentResolve) && (depthResolveMode != stencilResolveMode) &&
+            (depthResolveMode != VK_RESOLVE_MODE_NONE) && (stencilResolveMode != VK_RESOLVE_MODE_NONE))
+            TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
+    }
+    else if (!dsResolveProperties.independentResolve && (depthResolveMode != stencilResolveMode))
+    {
+        // when independentResolveNone and independentResolve are VK_FALSE then both modes must be the same
+        TCU_THROW(NotSupportedError, "Implementation doesn't support diferent resolve modes");
+    }
+
+    const tcu::TextureFormat format(mapVkFormat(config.format));
+    const VkImageTiling imageTiling(VK_IMAGE_TILING_OPTIMAL);
+    VkSampleCountFlagBits sampleCountBit(sampleCountBitFromSampleCount(config.sampleCount));
+    VkImageUsageFlags usage =
+        VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    VkImageFormatProperties imageFormatProperties;
+    if (instanceInterface.getPhysicalDeviceImageFormatProperties(physicalDevice, config.format, VK_IMAGE_TYPE_2D,
+                                                                 imageTiling, usage, 0u, &imageFormatProperties) ==
+        VK_ERROR_FORMAT_NOT_SUPPORTED)
+    {
+        TCU_THROW(NotSupportedError, "Format not supported");
+    }
+    if (imageFormatProperties.sampleCounts < config.sampleCount)
+    {
+        TCU_THROW(NotSupportedError, "Sample count not supported");
+    }
+    if (imageFormatProperties.maxArrayLayers < config.imageLayers)
+    {
+        TCU_THROW(NotSupportedError, "Layers count not supported");
+    }
+
+    const VkExtent3D imageExtent = {config.width, config.height, 1u};
+
+    if (!(tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order)))
+        TCU_THROW(NotSupportedError, "Format can't be used as depth/stencil attachment");
+
+    if (imageFormatProperties.maxExtent.width < imageExtent.width ||
+        imageFormatProperties.maxExtent.height < imageExtent.height ||
+        ((imageFormatProperties.sampleCounts & sampleCountBit) == 0) ||
+        imageFormatProperties.maxArrayLayers < config.imageLayers)
+    {
+        TCU_THROW(NotSupportedError, "Image type not supported");
+    }
 }
 
 class DepthStencilPushConstResolveTest : public DepthStencilResolveTest
 {
 public:
     DepthStencilPushConstResolveTest(Context &context, TestConfig config);
-    virtual ~DepthStencilPushConstResolveTest(void);
+    virtual ~DepthStencilPushConstResolveTest(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -1360,16 +1351,7 @@ DepthStencilPushConstResolveTest::DepthStencilPushConstResolveTest(Context &cont
     const Unique<VkShaderModule> vertModule(createShaderModule(m_vkd, m_device, binaryCollection.get("vert-pc"), 0u));
     const Unique<VkShaderModule> fragModule(createShaderModule(m_vkd, m_device, binaryCollection.get("frag-pc"), 0u));
 
-    const VkPipelineVertexInputStateCreateInfo vertexInputState = {
-        VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
-        nullptr,                                                   // const void*                                 pNext
-        (VkPipelineVertexInputStateCreateFlags)0u,                 // VkPipelineVertexInputStateCreateFlags       flags
-        0u,      // uint32_t                                    vertexBindingDescriptionCount
-        nullptr, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
-        0u,      // uint32_t                                    vertexAttributeDescriptionCount
-        nullptr  // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
-    };
-
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
     const std::vector<VkViewport> viewports(1, makeViewport(m_pcImageSize));
     const std::vector<VkRect2D> scissors(1, makeRect2D(m_pcImageSize.x(), m_pcImageSize.y()));
 
@@ -1414,10 +1396,6 @@ DepthStencilPushConstResolveTest::DepthStencilPushConstResolveTest(Context &cont
 
     m_outputColorBuffer = de::MovePtr<BufferWithMemory>(
         new BufferWithMemory(m_vkd, m_device, allocator, outputBufferInfo, MemoryRequirement::HostVisible));
-}
-
-DepthStencilPushConstResolveTest::~DepthStencilPushConstResolveTest()
-{
 }
 
 void DepthStencilPushConstResolveTest::submit(void)
@@ -1681,11 +1659,10 @@ tcu::TestStatus DepthStencilPushConstResolveTest::iterate(void)
 
 void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
 {
-    typedef InstanceFactory1WithSupport<DepthStencilResolveTest, TestConfig, FunctionSupport0, Programs>
-        DSResolveTestInstance;
-
-    typedef InstanceFactory1WithSupport<DepthStencilPushConstResolveTest, TestConfig, FunctionSupport0, Programs>
-        DSResolvePushConstTestInstance;
+    typedef FunctionSupport1<TestConfig> CheckSupport;
+    typedef InstanceFactory1WithSupport<DepthStencilResolveTest, TestConfig, CheckSupport, Programs> DSResolveTest;
+    typedef InstanceFactory1WithSupport<DepthStencilPushConstResolveTest, TestConfig, CheckSupport, Programs>
+        DSResolvePushConstTest;
 
     struct FormatData
     {
@@ -1839,8 +1816,8 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                                                            useSeparateDepthStencilLayouts,
                                                            groupParams,
                                                            false};
-                            formatGroup->addChild(
-                                new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
+                            formatGroup->addChild(new DSResolveTest(testCtx, testName, testConfig,
+                                                                    CheckSupport::Args(checkSupport, testConfig)));
                         }
 
                         if (hasStencil)
@@ -1867,8 +1844,8 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                                                            useSeparateDepthStencilLayouts,
                                                            groupParams,
                                                            false};
-                            formatGroup->addChild(
-                                new DSResolveTestInstance(testCtx, testName, testConfig, checkSupport));
+                            formatGroup->addChild(new DSResolveTest(testCtx, testName, testConfig,
+                                                                    CheckSupport::Args(checkSupport, testConfig)));
                         }
 
                         // Corner case: first depth/stencil resolve with multisampled layered images
@@ -1900,8 +1877,8 @@ void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)
                                 useSeparateDepthStencilLayouts, // bool separateDepthStencilLayouts
                                 groupParams,                    // const SharedGroupParams groupParams
                                 true};                          // const bool enablePushConsts
-                            formatGroup->addChild(
-                                new DSResolvePushConstTestInstance(testCtx, testName, testConfig, checkSupport));
+                            formatGroup->addChild(new DSResolvePushConstTest(
+                                testCtx, testName, testConfig, CheckSupport::Args(checkSupport, testConfig)));
                         }
                     }
                 }
@@ -1921,5 +1898,4 @@ tcu::TestCaseGroup *createDynamicRenderingDepthStencilResolveTests(tcu::TestCont
     return createTestGroup(testCtx, "depth_stencil_resolve", initTests, groupParams);
 };
 
-} // namespace renderpass
-} // namespace vkt
+} // namespace vkt::renderpass

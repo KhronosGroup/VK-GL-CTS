@@ -104,9 +104,6 @@ Move<VkImage> createSparseImageAndMemory(const DeviceInterface &vk, VkDevice dev
                                                queueFamilyIndices,
                                                VK_IMAGE_LAYOUT_UNDEFINED};
 
-    if (!checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo))
-        TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
-
     Move<VkImage> destImage = createImage(vk, device, &imageCreateInfo);
     allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue,
                                allocator, allocations, mapVkFormat(format), *destImage);
@@ -373,7 +370,7 @@ class SparseRenderTargetTestInstance : public TestInstance
 {
 public:
     SparseRenderTargetTestInstance(Context &context, TestConfig testConfig);
-    ~SparseRenderTargetTestInstance(void);
+    ~SparseRenderTargetTestInstance(void) = default;
 
     tcu::TestStatus iterate(void);
 
@@ -437,10 +434,6 @@ SparseRenderTargetTestInstance::SparseRenderTargetTestInstance(Context &context,
                                             m_width, m_height))
     , m_commandPool(createCommandPool(context.getDeviceInterface(), context.getDevice(),
                                       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
-{
-}
-
-SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance(void)
 {
 }
 
@@ -780,14 +773,19 @@ void checkSupport(Context &context, TestConfigType config)
 
     const auto &vki            = context.getInstanceInterface();
     const auto &physicalDevice = context.getPhysicalDevice();
+    const auto usage           = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     VkImageFormatProperties formatProperties;
     const auto result = vki.getPhysicalDeviceImageFormatProperties(
-        physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+        physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u, &formatProperties);
     if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
     {
         TCU_THROW(NotSupportedError, "Image format not supported");
     }
+
+    const auto propVec = getPhysicalDeviceSparseImageFormatProperties(
+        vki, physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_SAMPLE_COUNT_1_BIT, usage, VK_IMAGE_TILING_OPTIMAL);
+    if (propVec.empty())
+        TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
 }
 
 void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)

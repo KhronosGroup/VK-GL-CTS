@@ -74,8 +74,9 @@ class SubpassMergeFeedbackTest : public vkt::TestCase
 {
 public:
     SubpassMergeFeedbackTest(tcu::TestContext &testContext, const std::string &name, const TestParams &testParams);
-    virtual ~SubpassMergeFeedbackTest(void);
-    virtual TestInstance *createInstance(Context &context) const;
+    virtual ~SubpassMergeFeedbackTest(void) = default;
+    void checkSupport(Context &context) const override;
+    virtual TestInstance *createInstance(Context &context) const override;
 
 private:
     const TestParams m_testParams;
@@ -85,8 +86,8 @@ class SubpassMergeFeedbackTestInstance : public vkt::TestInstance
 {
 public:
     SubpassMergeFeedbackTestInstance(Context &context, const TestParams &testParams);
-    virtual ~SubpassMergeFeedbackTestInstance(void);
-    virtual tcu::TestStatus iterate(void);
+    virtual ~SubpassMergeFeedbackTestInstance(void) = default;
+    virtual tcu::TestStatus iterate(void) override;
 
 private:
     tcu::TestStatus createRenderPassAndVerify(const DeviceInterface &vk, VkDevice vkDevice);
@@ -101,8 +102,13 @@ SubpassMergeFeedbackTest::SubpassMergeFeedbackTest(tcu::TestContext &testContext
 {
 }
 
-SubpassMergeFeedbackTest::~SubpassMergeFeedbackTest(void)
+void SubpassMergeFeedbackTest::checkSupport(Context &context) const
 {
+    // Check for renderpass2 extension
+    context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+
+    // Check for subpass merge feedback extension
+    context.requireDeviceFunctionality("VK_EXT_subpass_merge_feedback");
 }
 
 TestInstance *SubpassMergeFeedbackTest::createInstance(Context &context) const
@@ -113,15 +119,6 @@ TestInstance *SubpassMergeFeedbackTest::createInstance(Context &context) const
 SubpassMergeFeedbackTestInstance::SubpassMergeFeedbackTestInstance(Context &context, const TestParams &testParams)
     : vkt::TestInstance(context)
     , m_testParams(testParams)
-{
-    // Check for renderpass2 extension
-    context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
-
-    // Check for subpass merge feedback extension
-    context.requireDeviceFunctionality("VK_EXT_subpass_merge_feedback");
-}
-
-SubpassMergeFeedbackTestInstance::~SubpassMergeFeedbackTestInstance(void)
 {
 }
 

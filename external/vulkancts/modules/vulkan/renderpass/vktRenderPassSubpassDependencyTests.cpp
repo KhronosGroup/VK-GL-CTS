@@ -435,7 +435,7 @@ class ExternalDependencyTestInstance : public TestInstance
 {
 public:
     ExternalDependencyTestInstance(Context &context, ExternalTestConfig testConfig);
-    ~ExternalDependencyTestInstance(void);
+    ~ExternalDependencyTestInstance(void) = default;
 
     vector<SharedPtrVkImage> createAndAllocateImages(const DeviceInterface &vk, VkDevice device, Allocator &allocator,
                                                      vector<de::SharedPtr<Allocation>> &imageMemories,
@@ -477,8 +477,6 @@ public:
     tcu::TestStatus iterateInternal(void);
 
 private:
-    const bool m_renderPass2Supported;
-    const bool m_synchronization2Supported;
     const SharedGroupParams m_groupParams;
 
     const uint32_t m_width;
@@ -510,10 +508,6 @@ private:
 
 ExternalDependencyTestInstance::ExternalDependencyTestInstance(Context &context, ExternalTestConfig testConfig)
     : TestInstance(context)
-    , m_renderPass2Supported((testConfig.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2) &&
-                             context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
-    , m_synchronization2Supported((testConfig.synchronizationType == SYNCHRONIZATION_TYPE_SYNCHRONIZATION2) &&
-                                  context.requireDeviceFunctionality("VK_KHR_synchronization2"))
     , m_groupParams(testConfig.groupParams)
     , m_width(testConfig.imageSize.x())
     , m_height(testConfig.imageSize.y())
@@ -547,10 +541,6 @@ ExternalDependencyTestInstance::ExternalDependencyTestInstance(Context &context,
                                               m_height))
     , m_commandPool(createCommandPool(context.getDeviceInterface(), context.getDevice(),
                                       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
-{
-}
-
-ExternalDependencyTestInstance::~ExternalDependencyTestInstance(void)
 {
 }
 
@@ -1139,19 +1129,6 @@ vector<SharedPtrVkImage> SubpassDependencyTestInstance::createAndAllocateImages(
     const DeviceInterface &vk, VkDevice device, Allocator &allocator, vector<de::SharedPtr<Allocation>> &imageMemories,
     uint32_t universalQueueFamilyIndex, RenderPass renderPassInfo, VkFormat format, uint32_t width, uint32_t height)
 {
-    // Verify format support
-    {
-        const VkFormatFeatureFlags flags =
-            (isDepthStencilFormat(m_format) ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT :
-                                              VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) |
-            VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
-        const VkFormatProperties properties = vk::getPhysicalDeviceFormatProperties(
-            m_context.getInstanceInterface(), m_context.getPhysicalDevice(), format);
-
-        if ((properties.optimalTilingFeatures & flags) != flags)
-            TCU_THROW(NotSupportedError, "Format not supported");
-    }
-
     vector<SharedPtrVkImage> images;
 
     for (size_t imageNdx = 0; imageNdx < renderPassInfo.getAttachments().size(); imageNdx++)
@@ -1824,7 +1801,7 @@ class SubpassSelfDependencyBackwardsTestInstance : public TestInstance
 public:
     SubpassSelfDependencyBackwardsTestInstance(Context &context, SubpassSelfDependencyBackwardsTestConfig testConfig);
 
-    ~SubpassSelfDependencyBackwardsTestInstance(void);
+    ~SubpassSelfDependencyBackwardsTestInstance(void) = default;
 
     tcu::TestStatus iterate(void);
 
@@ -1832,8 +1809,6 @@ public:
     tcu::TestStatus iterateInternal(void);
 
 private:
-    const bool m_extensionSupported;
-    const bool m_featuresSupported;
     const RenderingType m_renderingType;
 
     const uint32_t m_width;
@@ -1845,17 +1820,10 @@ private:
 SubpassSelfDependencyBackwardsTestInstance::SubpassSelfDependencyBackwardsTestInstance(
     Context &context, SubpassSelfDependencyBackwardsTestConfig testConfig)
     : TestInstance(context)
-    , m_extensionSupported((testConfig.renderingType == RENDERING_TYPE_RENDERPASS2) &&
-                           context.requireDeviceFunctionality("VK_KHR_create_renderpass2"))
-    , m_featuresSupported(context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER))
     , m_renderingType(testConfig.renderingType)
     , m_width(testConfig.imageSize.x())
     , m_height(testConfig.imageSize.y())
     , m_format(testConfig.format)
-{
-}
-
-SubpassSelfDependencyBackwardsTestInstance::~SubpassSelfDependencyBackwardsTestInstance(void)
 {
 }
 
@@ -3960,6 +3928,36 @@ void checkSupport(Context &context, TestConfig config)
         }
 #endif
     }
+
+    if constexpr (std::is_same<TestConfig, SubpassTestConfig>::value)
+    {
+        VkFormatFeatureFlags flags = VK_FORMAT_FEATURE_TRANSFER_SRC_BIT;
+        flags |= (isDepthStencilFormat(config.format) ? VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT :
+                                                        VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
+        const auto properties = getPhysicalDeviceFormatProperties(vki, physicalDevice, config.format);
+
+        if ((properties.optimalTilingFeatures & flags) != flags)
+            TCU_THROW(NotSupportedError, "Format not supported");
+    }
+}
+
+// checkSupport specialization for ExternalDependencyTestInstance
+template <>
+void checkSupport(Context &context, ExternalTestConfig config)
+{
+    if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
+    if (config.synchronizationType == SYNCHRONIZATION_TYPE_SYNCHRONIZATION2)
+        context.requireDeviceFunctionality("VK_KHR_synchronization2");
+}
+
+// checkSupport specialization for SubpassSelfDependencyBackwardsTestInstance
+template <>
+void checkSupport(Context &context, SubpassSelfDependencyBackwardsTestConfig config)
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+    if (config.renderingType == RENDERING_TYPE_RENDERPASS2)
+        context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 }
 
 // Shader programs for testing dependencies between subpasses
@@ -4180,6 +4178,16 @@ std::string formatToName(VkFormat format)
 
 void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams groupParams)
 {
+    using SubpassSupport                        = FunctionSupport1<SubpassTestConfig>::Args;
+    using SubpassSelfDependencyBackwardsSupport = FunctionSupport1<SubpassSelfDependencyBackwardsTestConfig>::Args;
+    using ExternalSupport                       = FunctionSupport1<ExternalTestConfig>::Args;
+    using SeparateChannelsSupport               = FunctionSupport1<SeparateChannelsTestConfig>::Args;
+    using SingleAttachmentSupport               = FunctionSupport1<SingleAttachmentTestConfig>::Args;
+
+    using ExternalDependencyInstanceFactory =
+        InstanceFactory1WithSupport<ExternalDependencyTestInstance, ExternalTestConfig,
+                                    FunctionSupport1<ExternalTestConfig>, ExternalPrograms>;
+
     tcu::TestContext &testCtx(group->getTestContext());
 
     // Test external subpass dependencies
@@ -4217,9 +4225,9 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                     const VkImageLayout finalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                     const VkImageLayout subpassLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-                    attachments.push_back(Attachment(format, sampleCount, loadOp, storeOp, stencilLoadOp,
-                                                     stencilStoreOp, initialLayout, finalLayout));
-                    colorAttachmentReferences.push_back(AttachmentReference((uint32_t)0, subpassLayout));
+                    attachments.emplace_back(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp,
+                                             initialLayout, finalLayout);
+                    colorAttachmentReferences.emplace_back((uint32_t)0, subpassLayout);
 
                     const VkImageLayout depthStencilLayout(VK_IMAGE_LAYOUT_GENERAL);
                     const vector<Subpass> subpasses(
@@ -4228,7 +4236,7 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                                    AttachmentReference(VK_ATTACHMENT_UNUSED, depthStencilLayout), vector<uint32_t>()));
                     vector<SubpassDependency> deps;
 
-                    deps.push_back(SubpassDependency(
+                    deps.emplace_back(
                         VK_SUBPASS_EXTERNAL,                           // uint32_t                srcPass
                         0,                                             // uint32_t                dstPass
                         VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, // VkPipelineStageFlags    srcStageMask
@@ -4237,9 +4245,9 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,              // VkAccessFlags        srcAccessMask
                         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags        dstAccessMask
-                        0));                                      // VkDependencyFlags    flags
+                        0);                                       // VkDependencyFlags    flags
 
-                    deps.push_back(SubpassDependency(
+                    deps.emplace_back(
                         0,                   // uint32_t                srcPass
                         VK_SUBPASS_EXTERNAL, // uint32_t                dstPass
                         VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT |
@@ -4248,11 +4256,9 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                         VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT |
                             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags        srcAccessMask
                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags        dstAccessMask
-                        0));                                      // VkDependencyFlags    flags
+                        0);                                       // VkDependencyFlags    flags
 
-                    RenderPass renderPass(attachments, subpasses, deps);
-
-                    renderPasses.push_back(renderPass);
+                    renderPasses.emplace_back(attachments, subpasses, deps);
                 }
 
                 const uint32_t blurKernel(12u);
@@ -4264,16 +4270,17 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                                               SYNCHRONIZATION_TYPE_LEGACY,
                                               blurKernel};
 
-                renderSizeGroup->addChild(
-                    new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(
-                        testCtx, testName.c_str(), testConfig));
+                renderSizeGroup->addChild(new ExternalDependencyInstanceFactory(
+                    testCtx, testName.c_str(), testConfig,
+                    ExternalSupport(checkSupport<ExternalTestConfig>, testConfig)));
+
                 if (groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
                 {
                     testName += "_sync_2";
                     testConfig.synchronizationType = SYNCHRONIZATION_TYPE_SYNCHRONIZATION2;
-                    renderSizeGroup->addChild(
-                        new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(
-                            testCtx, testName.c_str(), testConfig));
+                    renderSizeGroup->addChild(new ExternalDependencyInstanceFactory(
+                        testCtx, testName.c_str(), testConfig,
+                        ExternalSupport(checkSupport<ExternalTestConfig>, testConfig)));
                 }
             }
 
@@ -4310,9 +4317,9 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                 const VkImageLayout finalLayout(VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
                 const VkImageLayout subpassLayout(VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
 
-                attachments.push_back(Attachment(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp,
-                                                 initialLayout, finalLayout));
-                colorAttachmentReferences.push_back(AttachmentReference((uint32_t)0, subpassLayout));
+                attachments.emplace_back(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp,
+                                         initialLayout, finalLayout);
+                colorAttachmentReferences.emplace_back((uint32_t)0, subpassLayout);
 
                 const VkImageLayout depthStencilLayout(VK_IMAGE_LAYOUT_GENERAL);
                 const vector<Subpass> subpasses(
@@ -4327,21 +4334,18 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                 // the dependency from subpass 0 to external is added implicitly by the implementation.
                 if (renderPassNdx > 0)
                 {
-                    deps.push_back(SubpassDependency(
-                        VK_SUBPASS_EXTERNAL,                  // uint32_t                srcPass
-                        0,                                    // uint32_t                dstPass
-                        VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // VkPipelineStageFlags    srcStageMask
-                        VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // VkPipelineStageFlags    dstStageMask
-                        0,                                         // VkAccessFlags        srcAccessMask
-                        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT |
-                            VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags        dstAccessMask
-                        0));                            // VkDependencyFlags    flags
+                    deps.emplace_back(VK_SUBPASS_EXTERNAL,                  // uint32_t                srcPass
+                                      0,                                    // uint32_t                dstPass
+                                      VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, // VkPipelineStageFlags    srcStageMask
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
+                                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // VkPipelineStageFlags    dstStageMask
+                                      0,                                         // VkAccessFlags        srcAccessMask
+                                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_SHADER_READ_BIT |
+                                          VK_ACCESS_SHADER_WRITE_BIT, // VkAccessFlags        dstAccessMask
+                                      0);                             // VkDependencyFlags    flags
                 }
 
-                RenderPass renderPass(attachments, subpasses, deps);
-
-                renderPasses.push_back(renderPass);
+                renderPasses.emplace_back(attachments, subpasses, deps);
             }
 
             const uint32_t blurKernel(12u);
@@ -4349,9 +4353,8 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                                                 SYNCHRONIZATION_TYPE_LEGACY, blurKernel);
             const string testName("render_passes_" + de::toString(renderPassCounts[renderPassCountNdx]));
 
-            implicitGroup->addChild(
-                new InstanceFactory1<ExternalDependencyTestInstance, ExternalTestConfig, ExternalPrograms>(
-                    testCtx, testName.c_str(), testConfig));
+            implicitGroup->addChild(new ExternalDependencyInstanceFactory(
+                testCtx, testName.c_str(), testConfig, ExternalSupport(checkSupport<ExternalTestConfig>, testConfig)));
         }
 
         group->addChild(implicitGroup.release());
@@ -4407,8 +4410,8 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                         const VkImageLayout initialLayout(VK_IMAGE_LAYOUT_UNDEFINED);
                         const VkImageLayout finalLayout(VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL);
 
-                        attachments.push_back(Attachment(format, sampleCount, loadOp, storeOp, stencilLoadOp,
-                                                         stencilStoreOp, initialLayout, finalLayout));
+                        attachments.emplace_back(format, sampleCount, loadOp, storeOp, stencilLoadOp, stencilStoreOp,
+                                                 initialLayout, finalLayout);
                     }
 
                     // Subpasses
@@ -4422,22 +4425,22 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
 
                         // Input attachment references
                         if (subpassNdx > 0)
-                            inputAttachmentReferences.push_back(AttachmentReference(
-                                (uint32_t)subpassNdx - 1, VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
-                                inputAttachmentAspectMask));
+                            inputAttachmentReferences.emplace_back((uint32_t)subpassNdx - 1,
+                                                                   VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL,
+                                                                   inputAttachmentAspectMask);
 
-                        subpasses.push_back(Subpass(
+                        subpasses.emplace_back(
                             VK_PIPELINE_BIND_POINT_GRAPHICS, 0u, inputAttachmentReferences,
                             vector<AttachmentReference>(), vector<AttachmentReference>(),
                             AttachmentReference((uint32_t)subpassNdx, VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
-                            vector<uint32_t>()));
+                            vector<uint32_t>());
 
                         // Subpass dependencies from current subpass to previous subpass.
                         // Subpasses will wait for the late fragment operations before reading the contents
                         // of previous subpass.
                         if (subpassNdx > 0)
                         {
-                            deps.push_back(SubpassDependency(
+                            deps.emplace_back(
                                 (uint32_t)subpassNdx - 1,                  // uint32_t                srcPass
                                 (uint32_t)subpassNdx,                      // uint32_t                dstPass
                                 VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // VkPipelineStageFlags    srcStageMask
@@ -4445,10 +4448,10 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                                     VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // VkPipelineStageFlags    dstStageMask
                                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,  // VkAccessFlags        srcAccessMask
                                 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,           // VkAccessFlags        dstAccessMask
-                                VK_DEPENDENCY_BY_REGION_BIT));                 // VkDependencyFlags    flags
+                                VK_DEPENDENCY_BY_REGION_BIT);                  // VkDependencyFlags    flags
                         }
                     }
-                    deps.push_back(SubpassDependency(
+                    deps.emplace_back(
                         (uint32_t)subpassCount - 1,                   // uint32_t                srcPass
                         VK_SUBPASS_EXTERNAL,                          // uint32_t                dstPass
                         VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,    // VkPipelineStageFlags    srcStageMask
@@ -4456,7 +4459,7 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags        srcAccessMask
                         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT |
                             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags        dstAccessMask
-                        VK_DEPENDENCY_BY_REGION_BIT));                    // VkDependencyFlags    flags
+                        VK_DEPENDENCY_BY_REGION_BIT);                     // VkDependencyFlags    flags
 
                     const RenderPass renderPass(attachments, subpasses, deps);
                     const SubpassTestConfig testConfig(formats[formatNdx], renderSizes[renderSizeNdx], renderPass,
@@ -4466,9 +4469,7 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                     subpassCountGroup->addChild(
                         new InstanceFactory1WithSupport<SubpassDependencyTestInstance, SubpassTestConfig,
                                                         FunctionSupport1<SubpassTestConfig>, SubpassPrograms>(
-                            testCtx, format, testConfig,
-                            typename FunctionSupport1<SubpassTestConfig>::Args(checkSupport<SubpassTestConfig>,
-                                                                               testConfig)));
+                            testCtx, format, testConfig, SubpassSupport(checkSupport<SubpassTestConfig>, testConfig)));
                 }
 
                 renderSizeGroup->addChild(subpassCountGroup.release());
@@ -4496,9 +4497,12 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
             const SubpassSelfDependencyBackwardsTestConfig testConfig(
                 VK_FORMAT_R8G8B8A8_UNORM, renderSizes[renderSizeNdx], groupParams->renderingType);
             renderSizeGroup->addChild(
-                new InstanceFactory1<SubpassSelfDependencyBackwardsTestInstance,
-                                     SubpassSelfDependencyBackwardsTestConfig, SubpassSelfDependencyBackwardsPrograms>(
-                    testCtx, "geometry_to_indirectdraw", testConfig));
+                new InstanceFactory1WithSupport<
+                    SubpassSelfDependencyBackwardsTestInstance, SubpassSelfDependencyBackwardsTestConfig,
+                    FunctionSupport1<SubpassSelfDependencyBackwardsTestConfig>, SubpassSelfDependencyBackwardsPrograms>(
+                    testCtx, "geometry_to_indirectdraw", testConfig,
+                    SubpassSelfDependencyBackwardsSupport(checkSupport<SubpassSelfDependencyBackwardsTestConfig>,
+                                                          testConfig)));
 
             selfDependencyGroup->addChild(renderSizeGroup.release());
         }
@@ -4527,8 +4531,7 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                 new InstanceFactory1WithSupport<SeparateChannelsTestInstance, SeparateChannelsTestConfig,
                                                 FunctionSupport1<SeparateChannelsTestConfig>, SeparateChannelsPrograms>(
                     testCtx, configs[configIdx].name, testConfig,
-                    typename FunctionSupport1<SeparateChannelsTestConfig>::Args(
-                        checkSupport<SeparateChannelsTestConfig>, testConfig)));
+                    SeparateChannelsSupport(checkSupport<SeparateChannelsTestConfig>, testConfig)));
         }
 
         group->addChild(separateChannelsGroup.release());
@@ -4556,8 +4559,7 @@ void initTests(tcu::TestCaseGroup *group, const renderpass::SharedGroupParams gr
                 new InstanceFactory1WithSupport<SingleAttachmentTestInstance, SingleAttachmentTestConfig,
                                                 FunctionSupport1<SingleAttachmentTestConfig>, SingleAttachmentPrograms>(
                     testCtx, configs[configIdx].name, testConfig,
-                    typename FunctionSupport1<SingleAttachmentTestConfig>::Args(
-                        checkSupport<SingleAttachmentTestConfig>, testConfig)));
+                    SingleAttachmentSupport(checkSupport<SingleAttachmentTestConfig>, testConfig)));
         }
 
         group->addChild(singleAttachmentGroup.release());
