@@ -1758,7 +1758,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
                     const VkRenderingAttachmentInfo dsRenderingAttachmentInfo = {
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, nullptr, *attViews.at(j),
-                        (isMS ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
+                        (isMS ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
+                                VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL),
                         // Note the upload pass contains no resolve information.
                         VK_RESOLVE_MODE_NONE, VK_NULL_HANDLE, VK_IMAGE_LAYOUT_UNDEFINED, VK_ATTACHMENT_LOAD_OP_LOAD,
                         VK_ATTACHMENT_STORE_OP_STORE, makeClearValueDepthStencil(0.0f, 0u), // Not used.
@@ -1786,7 +1787,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                         nullptr,
                         (isUsed ? *attViews.at(j) : VK_NULL_HANDLE),
                         (isUsed ?
-                             (isMS ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) :
+                             (isMS ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL) :
                              VK_IMAGE_LAYOUT_UNDEFINED),
                         // Note the upload pass contains no resolve information.
                         VK_RESOLVE_MODE_NONE,
@@ -2054,7 +2055,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                         nullptr,
                         imageView,
-                        VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                        VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ,
                         VK_RESOLVE_MODE_CUSTOM_BIT_EXT,
                         resolveImageView,
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
@@ -2082,7 +2083,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                         VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                         nullptr,
                         ((isUsed && usedInResolve) ? *attViews.at(attIndex) : VK_NULL_HANDLE),
-                        (isUsed ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED),
+                        (isUsed ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ : VK_IMAGE_LAYOUT_UNDEFINED),
                         (isUsed ? VK_RESOLVE_MODE_CUSTOM_BIT_EXT : VK_RESOLVE_MODE_NONE),
                         ((isUsed && usedInResolve) ? resolveViews.at(attIndex)->get() : VK_NULL_HANDLE),
                         (isUsed ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED),
@@ -2101,7 +2102,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                     VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                     nullptr,
                     *attViews.at(depthStencilAttIndexAspects->index),
-                    VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                    VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ,
                     VK_RESOLVE_MODE_CUSTOM_BIT_EXT,
                     resolveViews.at(depthStencilAttIndexAspects->index)->get(),
                     VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
@@ -2227,7 +2228,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
         for (uint32_t i = 0u; i < de::sizeU32(m_params.attachmentList); ++i)
         {
             const auto imgLayout =
-                (dynamicRendering ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+                (dynamicRendering ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ : VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
             const auto &attInfo = m_params.attachmentList.at(i);
 
             if (attInfo.isMultiSample())
@@ -2726,19 +2727,14 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
 
             // Custom resolve info and input attachment index info if this upload pass will be merged with the first
             // resolve.
-            VkCustomResolveCreateInfoEXT customResolveCreateInfo           = initVulkanStructure();
-            VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo         = nullptr;
-            VkRenderingInputAttachmentIndexInfo *pInputAttachmentIndexInfo = nullptr;
+            VkCustomResolveCreateInfoEXT customResolveCreateInfo   = initVulkanStructure();
+            VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo = nullptr;
 
             if (mergeThisPass)
             {
                 customResolveCreateInfo               = inheritanceCustomResolveCreateInfo.front();
                 customResolveCreateInfo.customResolve = VK_FALSE;
                 pCustomResolveCreateInfo              = &customResolveCreateInfo;
-
-                pInputAttachmentIndexInfo = resolveInputAttachmentIndexInfos.front().get();
-                if (pInputAttachmentIndexInfo)
-                    pInputAttachmentIndexInfo->pNext = nullptr;
             }
 
             VkCommandBufferInheritanceRenderingInfo inheritanceRenderingInfo = {
@@ -2772,8 +2768,6 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             addInheritanceInfo(&inheritanceRenderingInfo);
             if (pCustomResolveCreateInfo)
                 addInheritanceInfo(pCustomResolveCreateInfo);
-            if (pInputAttachmentIndexInfo)
-                addInheritanceInfo(pInputAttachmentIndexInfo);
 
             const VkCommandBufferBeginInfo beginInfo = {
                 VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO,
@@ -2800,10 +2794,8 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
             // Use the rendering info from the resolve pipeline.
             const VkPipelineRenderingCreateInfo *pRenderingCreateInfo = &resolveAttFormats.at(i);
 
-            // Take the sample count from the first attachment.
-            const auto sampleCount =
-                m_params.attachmentList.at(m_params.resolvePasses.at(i).attachmentResolves.front().attachment.index)
-                    .sampleCount;
+            // Resolve passes use sample count 1. See VUID-vkCmdExecuteCommands-resolveImageView-11526.
+            const auto sampleCount = VK_SAMPLE_COUNT_1_BIT;
 
             VkCustomResolveCreateInfoEXT *pCustomResolveCreateInfo = &inheritanceCustomResolveCreateInfo.at(i);
 
@@ -2952,7 +2944,7 @@ tcu::TestStatus CustomResolveInstance::iterate(void)
                 if (isMS)
                 {
                     const auto msImage    = attImages.at(i)->get();
-                    imageLayouts[msImage] = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+                    imageLayouts[msImage] = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ;
                     imageFormats[msImage] = attInfo.attachmentFormat;
 
                     const auto itr = resolveImages.find(i);
@@ -3991,7 +3983,7 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
     const auto binding      = DescriptorSetUpdateBuilder::Location::binding;
     {
         DescriptorSetUpdateBuilder updateBuilder;
-        const auto imgLayout = (m_params.useDynamicRendering() ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL :
+        const auto imgLayout = (m_params.useDynamicRendering() ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
                                                                  VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         const auto imgInfo   = makeDescriptorImageInfo(VK_NULL_HANDLE, msViews.front().get(), imgLayout);
         updateBuilder.writeSingle(*fragCopySet, binding(0u), VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &imgInfo);
@@ -4054,15 +4046,15 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
     beginCommandBuffer(ctx.vkd, cmdBuffer);
     if (m_params.useDynamicRendering())
     {
-        // Move multisample images to the VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL layout.
+        // Move multisample images to the VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ layout.
         const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                                 VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
         const auto dstStages = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
         const std::vector<VkImageMemoryBarrier> barriers{
-            makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+            makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ,
                                    msImages.front()->get(), colorSRR),
-            makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+            makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ,
                                    msImages.back()->get(), colorSRR),
         };
         cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStages,
@@ -4073,7 +4065,7 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
                 VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                 nullptr,
                 msViews.front().get(),
-                VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ,
                 VK_RESOLVE_MODE_NONE,
                 VK_NULL_HANDLE,
                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -4085,7 +4077,7 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
                 VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,
                 nullptr,
                 msViews.back().get(),
-                VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL,
+                VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ,
                 VK_RESOLVE_MODE_NONE,
                 VK_NULL_HANDLE,
                 VK_IMAGE_LAYOUT_UNDEFINED,
@@ -4177,7 +4169,7 @@ tcu::TestStatus FragmentRegionInstance::iterate(void)
         endRenderPass(ctx.vkd, cmdBuffer);
     {
         // Synchronize both render passes.
-        const auto oldLayout = (m_params.useDynamicRendering() ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL :
+        const auto oldLayout = (m_params.useDynamicRendering() ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
                                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
         const auto barrier =
             makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, oldLayout,
@@ -4598,7 +4590,7 @@ tcu::TestStatus FDMInstance::iterate(void)
     const auto ctx            = m_context.getContextCommonData();
     const auto extent         = m_params.getExtent();
     const auto viewMask       = (m_params.multiView ? 3u /*0b11 (both views)*/ : 0u);
-    const auto inputAttLayout = (m_params.useDynamicRendering() ? VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL :
+    const auto inputAttLayout = (m_params.useDynamicRendering() ? VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
                                                                   VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
 
     const auto extent2d      = tcu::IVec3(extent.x(), extent.y(), 1);
@@ -5195,7 +5187,7 @@ tcu::TestStatus FDMInstance::iterate(void)
     if (m_params.useDynamicRendering())
     {
         // Move all images to the attachment layout.
-        ssFinalLayout = VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL;
+        ssFinalLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ;
 
         const auto srcStages = VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT;
         const auto srcAccess = 0u;
