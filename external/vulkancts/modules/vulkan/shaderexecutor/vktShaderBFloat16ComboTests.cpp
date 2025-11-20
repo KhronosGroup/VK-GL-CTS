@@ -844,7 +844,9 @@ tcu::TestStatus BFloat16ComboTestInstance::iterate()
     Move<VkCommandBuffer> cmd             = allocateCommandBuffer(di, dev, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 
     clearBuffer(outBuffer);
+    flushAlloc(di, dev, outBuffer.getAllocation());
     genInput(&inBuffer, false);
+    flushAlloc(di, dev, inBuffer.getAllocation());
     auto variantInfo  = getVariants();
     auto variantRange = bf16::makeStdBeginEnd<VariantItem>(variantInfo.first, variantInfo.second);
 

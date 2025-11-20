@@ -109,7 +109,8 @@ static void validate(const InstanceInterface &vki, const DeviceInterface &vkd, t
     for (int planeIndex = 0; planeIndex < numPlanes; planeIndex++)
     {
         VkImageAspectFlags aspect = VK_IMAGE_ASPECT_COLOR_BIT;
-        if (isYCbCr)
+        // VUID-vkGetImageSubresourceLayout2-format-08886
+        if (isYCbCr && numPlanes > 1)
         {
             aspect = planeAspects[planeIndex];
         }

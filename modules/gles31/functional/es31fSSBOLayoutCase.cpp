@@ -1158,10 +1158,10 @@ string getShaderName(const BufferBlock &block, int instanceNdx, const BufferVar 
 int computeOffset(const BufferVarLayoutEntry &varLayout, const glu::TypeComponentVector &accessPath)
 {
     const int topLevelNdx = (accessPath.size() > 1 && accessPath.front().type == glu::VarTypeComponent::ARRAY_ELEMENT) ?
-                                accessPath.front().index :
+                                (int)accessPath.front().index :
                                 0;
     const int bottomLevelNdx = (!accessPath.empty() && accessPath.back().type == glu::VarTypeComponent::ARRAY_ELEMENT) ?
-                                   accessPath.back().index :
+                                   (int)accessPath.back().index :
                                    0;
 
     return varLayout.offset + varLayout.topLevelArrayStride * topLevelNdx + varLayout.arrayStride * bottomLevelNdx;

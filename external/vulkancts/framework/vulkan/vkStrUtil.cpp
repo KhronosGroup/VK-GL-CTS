@@ -22,6 +22,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vkStrUtil.hpp"
+#include "deStringUtil.hpp"
+#include <cstring>
 
 #if (DE_OS == DE_OS_WIN32)
 
@@ -94,5 +96,12 @@ inline CharPtr getWStr(pt::Win32LPCWSTR pt_wstr)
 #endif
 
 #include "vkStrUtilImpl.inl"
+
+std::string getFormatSimpleName(VkFormat format)
+{
+    const static auto kPrefixLen = std::strlen("VK_FORMAT_");
+    const std::string baseName   = getFormatName(format);
+    return de::toLower(baseName.substr(kPrefixLen));
+}
 
 } // namespace vk

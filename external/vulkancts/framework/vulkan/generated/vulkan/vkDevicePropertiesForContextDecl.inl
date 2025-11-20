@@ -50,6 +50,7 @@ const vk::VkPhysicalDeviceLayeredApiPropertiesListKHR&					getLayeredApiProperti
 const vk::VkPhysicalDeviceLayeredDriverPropertiesMSFT&					getLayeredDriverPropertiesMSFT					(void) const;
 const vk::VkPhysicalDeviceLegacyVertexAttributesPropertiesEXT&			getLegacyVertexAttributesPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceLineRasterizationProperties&					getLineRasterizationProperties					(void) const;
+const vk::VkPhysicalDeviceMaintenance10PropertiesKHR&					getMaintenance10Properties						(void) const;
 const vk::VkPhysicalDeviceMaintenance3Properties&						getMaintenance3Properties						(void) const;
 const vk::VkPhysicalDeviceMaintenance4Properties&						getMaintenance4Properties						(void) const;
 const vk::VkPhysicalDeviceMaintenance5Properties&						getMaintenance5Properties						(void) const;
@@ -57,7 +58,7 @@ const vk::VkPhysicalDeviceMaintenance6Properties&						getMaintenance6Properties
 const vk::VkPhysicalDeviceMaintenance7PropertiesKHR&					getMaintenance7Properties						(void) const;
 const vk::VkPhysicalDeviceMaintenance9PropertiesKHR&					getMaintenance9Properties						(void) const;
 const vk::VkPhysicalDeviceMapMemoryPlacedPropertiesEXT&					getMapMemoryPlacedPropertiesEXT					(void) const;
-const vk::VkPhysicalDeviceMemoryDecompressionPropertiesNV&				getMemoryDecompressionProperties				(void) const;
+const vk::VkPhysicalDeviceMemoryDecompressionPropertiesEXT&				getMemoryDecompressionPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceMeshShaderPropertiesEXT&						getMeshShaderPropertiesEXT						(void) const;
 const vk::VkPhysicalDeviceMeshShaderPropertiesNV&						getMeshShaderProperties							(void) const;
 const vk::VkPhysicalDeviceMultiDrawPropertiesEXT&						getMultiDrawPropertiesEXT						(void) const;
@@ -68,11 +69,13 @@ const vk::VkPhysicalDeviceOpacityMicromapPropertiesEXT&					getOpacityMicromapPr
 const vk::VkPhysicalDeviceOpticalFlowPropertiesNV&						getOpticalFlowProperties						(void) const;
 const vk::VkPhysicalDevicePCIBusInfoPropertiesEXT&						getPCIBusInfoPropertiesEXT						(void) const;
 const vk::VkPhysicalDevicePartitionedAccelerationStructurePropertiesNV&	getPartitionedAccelerationStructurePropertiesNV	(void) const;
+const vk::VkPhysicalDevicePerformanceCountersByRegionPropertiesARM&		getPerformanceCountersByRegionPropertiesARM		(void) const;
 const vk::VkPhysicalDevicePerformanceQueryPropertiesKHR&				getPerformanceQueryProperties					(void) const;
 const vk::VkPhysicalDevicePipelineBinaryPropertiesKHR&					getPipelineBinaryProperties						(void) const;
 const vk::VkPhysicalDevicePipelineRobustnessProperties&					getPipelineRobustnessProperties					(void) const;
 const vk::VkPhysicalDevicePointClippingProperties&						getPointClippingProperties						(void) const;
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&				getPortabilitySubsetProperties					(void) const;
+const vk::VkPhysicalDevicePresentationPropertiesOHOS&					getPresentationPropertiesOHOS					(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					getProtectedMemoryProperties					(void) const;
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&					getProvokingVertexPropertiesEXT					(void) const;
 const vk::VkPhysicalDevicePushDescriptorProperties&						getPushDescriptorProperties						(void) const;

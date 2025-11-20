@@ -586,6 +586,7 @@ tcu::TestStatus PrimitivesGeneratedQueryTestInstance::iterate(void)
     }
 
     fillVertexBuffer(static_cast<tcu::Vec2 *>(vtxBufferAlloc.get()->getHostPtr()), primitivesGenerated);
+    flushAlloc(vk, device, *vtxBufferAlloc);
 
     VK_CHECK(vk.bindBufferMemory(device, *vtxBuffer, vtxBufferAlloc->getMemory(), vtxBufferAlloc->getOffset()));
 
@@ -1705,6 +1706,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
     }
 
     fillVertexBuffer(static_cast<tcu::Vec2 *>(vtxBufferAlloc.get()->getHostPtr()), primitivesGenerated);
+    flushAlloc(vk, device, *vtxBufferAlloc);
 
     VK_CHECK(vk.bindBufferMemory(device, *vtxBuffer, vtxBufferAlloc->getMemory(), vtxBufferAlloc->getOffset()));
 
@@ -2068,6 +2070,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
     const auto iWidth    = static_cast<int>(m_imageWidth);
     const auto iHeight   = static_cast<int>(m_imageHeight);
 
+    invalidateAlloc(vk, device, colorOutputBuffer->getAllocation());
     tcu::ConstPixelBufferAccess resultBuffer =
         tcu::ConstPixelBufferAccess(tcuFormat, iWidth, iHeight, 1, colorOutputBuffer->getAllocation().getHostPtr());
     tcu::TextureLevel referenceLevel(tcuFormat, iWidth, iHeight);

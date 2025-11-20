@@ -141,6 +141,30 @@ public:
     virtual size_t getByteSize(void) const                         = 0;
 };
 
+class UninitializedBuffer : public BufferInterface
+{
+public:
+    UninitializedBuffer(size_t sz) : size(sz)
+    {
+    }
+
+    virtual void getBytes(std::vector<uint8_t> &bytes) const override
+    {
+        bytes.resize(size);
+    }
+    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const override
+    {
+        bytes.resize(size);
+    }
+    virtual size_t getByteSize(void) const override
+    {
+        return size;
+    }
+
+private:
+    size_t size;
+};
+
 typedef de::SharedPtr<BufferInterface> BufferSp;
 typedef de::MovePtr<vk::Allocation> AllocationMp;
 typedef de::SharedPtr<vk::Allocation> AllocationSp;
@@ -167,6 +191,10 @@ public:
     virtual void getBytes(std::vector<uint8_t> &bytes) const
     {
         buffer->getBytes(bytes);
+    }
+    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const
+    {
+        buffer->getPackedBytes(bytes);
     }
     virtual size_t getByteSize(void) const
     {
@@ -270,6 +298,7 @@ struct VulkanFeatures
     vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR extCooperativeMatrix;
     vk::VkPhysicalDeviceMaintenance8FeaturesKHR extMaintenance8;
     vk::VkPhysicalDeviceMaintenance9FeaturesKHR maint9Features;
+    vk::VkPhysicalDeviceShaderFmaFeaturesKHR extFma;
 #endif // CTS_USES_VULKANSC
     vk::VkPhysicalDeviceFloatControlsProperties floatControlsProperties;
 
@@ -293,6 +322,7 @@ struct VulkanFeatures
         deMemset(&extCooperativeMatrix, 0, sizeof(vk::VkPhysicalDeviceCooperativeMatrixFeaturesKHR));
         deMemset(&extMaintenance8, 0, sizeof(vk::VkPhysicalDeviceMaintenance8FeaturesKHR));
         deMemset(&maint9Features, 0, sizeof(maint9Features));
+        deMemset(&extFma, 0, sizeof(vk::VkPhysicalDeviceShaderFmaFeaturesKHR));
 #endif // CTS_USES_VULKANSC
         deMemset(&floatControlsProperties, 0, sizeof(vk::VkPhysicalDeviceFloatControlsProperties));
         floatControlsProperties.denormBehaviorIndependence = vk::VK_SHADER_FLOAT_CONTROLS_INDEPENDENCE_NONE;

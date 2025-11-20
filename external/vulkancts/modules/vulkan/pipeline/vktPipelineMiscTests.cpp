@@ -1993,6 +1993,9 @@ void PipelineNoRenderingTestCase::checkSupport(Context &context) const
 
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
+
+    if (!context.getDynamicRenderingUnusedAttachmentsFeaturesEXT().dynamicRenderingUnusedAttachments)
+        TCU_THROW(NotSupportedError, "dynamicRenderingUnusedAttachments");
 }
 
 void PipelineNoRenderingTestCase::initPrograms(SourceCollections &sources) const

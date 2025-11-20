@@ -161,6 +161,32 @@ void checkSupport(Context &context, const TestParameters params)
             }
         }
     }
+    {
+        const PlanarFormatDescription formatDescription = getPlanarFormatDescription(params.format);
+        VkFormat planeCompatibleFormat0                 = getPlaneCompatibleFormatForWriting(formatDescription, 0);
+
+        VkImageCreateFlags imageCreateFlags = params.flags;
+        if (planeCompatibleFormat0 != params.format)
+        {
+            imageCreateFlags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        }
+        const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
+            VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,        // sType;
+            nullptr,                                                      // pNext;
+            params.format,                                                // format;
+            VK_IMAGE_TYPE_2D,                                             // type;
+            VK_IMAGE_TILING_OPTIMAL,                                      // tiling;
+            VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_STORAGE_BIT, // usage;
+            imageCreateFlags                                              // flags
+        };
+
+        VkImageFormatProperties2 imageFormatProperties = initVulkanStructure();
+
+        VkResult result = instInt.getPhysicalDeviceImageFormatProperties2(context.getPhysicalDevice(), &imageFormatInfo,
+                                                                          &imageFormatProperties);
+        if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
+            TCU_THROW(NotSupportedError, "Format not supported.");
+    }
 
     {
         const VkFormatProperties formatProperties = getPhysicalDeviceFormatProperties(

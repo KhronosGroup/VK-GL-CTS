@@ -335,6 +335,9 @@ happen due to an unintentional device disconnection.
 	      -DDEQP_TARGET=android -DDEQP_ANDROID_EXE=ON
 	ninja all
 
+Optionally, `-DDEQP_ANDROID_EXE_LOGCAT=ON` can be added to also enable printing
+the test output to Android's logcat in addition to the terminal.
+
 The build needs to be transferred to the device via `adb push` to a directory
 under `/data/` on the device, such as `/data/local/tmp/` which should be writeable
 for non-rooted devices. It should be noted that anywhere on `/sdcard/` won't work
@@ -553,7 +556,7 @@ Full list of parameters for the `glcts` binary:
     Suppress messages to standard output
 
   -n, --deqp-case=<value>
-    Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
+    Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to separate multiple patterns
 
   --deqp-caselist=<value>
     Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})

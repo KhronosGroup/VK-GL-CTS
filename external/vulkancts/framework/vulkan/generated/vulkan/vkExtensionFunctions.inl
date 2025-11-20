@@ -145,6 +145,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_ARM_performance_counters_by_region")
+	{
+		functions.push_back("vkEnumeratePhysicalDeviceQueueFamilyPerformanceCountersByRegionARM");
+		return;
+	}
 	if (extName == "VK_ARM_pipeline_opacity_micromap")
 	{
 		return;
@@ -232,6 +237,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_custom_border_color")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_custom_resolve")
 	{
 		return;
 	}
@@ -479,6 +488,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_memory_decompression")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_memory_priority")
 	{
 		return;
@@ -617,6 +630,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_64bit_indexing")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float")
 	{
 		return;
@@ -662,6 +679,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_shader_tile_image")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_uniform_buffer_unsized_array")
 	{
 		return;
 	}
@@ -1062,6 +1083,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_KHR_maintenance1")
+	{
+		return;
+	}
+	if (extName == "VK_KHR_maintenance10")
 	{
 		return;
 	}
@@ -1730,9 +1755,21 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_OHOS_external_memory")
+	{
+		return;
+	}
+	if (extName == "VK_OHOS_native_buffer")
+	{
+		return;
+	}
 	if (extName == "VK_OHOS_surface")
 	{
 		functions.push_back("vkCreateSurfaceOHOS");
+		return;
+	}
+	if (extName == "VK_QCOM_data_graph_model")
+	{
 		return;
 	}
 	if (extName == "VK_QCOM_filter_cubic_clamp")
@@ -1979,6 +2016,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_ARM_performance_counters_by_region")
+	{
+		return;
+	}
 	if (extName == "VK_ARM_pipeline_opacity_micromap")
 	{
 		return;
@@ -2080,6 +2121,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	}
 	if (extName == "VK_EXT_custom_border_color")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_custom_resolve")
+	{
+		// Dependencies: VK_KHR_dynamic_rendering,VK_VERSION_1_3
+		if ((extensionIsSupported(vDEP, "VK_KHR_dynamic_rendering") || checkVersion(1, 3, apiVersion))) {
+			functions.push_back("vkCmdBeginCustomResolveEXT");
+		}
 		return;
 	}
 	if (extName == "VK_EXT_debug_marker")
@@ -2476,6 +2525,12 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_memory_decompression")
+	{
+		functions.push_back("vkCmdDecompressMemoryEXT");
+		functions.push_back("vkCmdDecompressMemoryIndirectCountEXT");
+		return;
+	}
 	if (extName == "VK_EXT_memory_priority")
 	{
 		return;
@@ -2642,6 +2697,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_64bit_indexing")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_atomic_float")
 	{
 		return;
@@ -2791,6 +2850,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_shader_tile_image")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_uniform_buffer_unsized_array")
 	{
 		return;
 	}
@@ -3285,6 +3348,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	if (extName == "VK_KHR_maintenance1")
 	{
 		functions.push_back("vkTrimCommandPoolKHR");
+		return;
+	}
+	if (extName == "VK_KHR_maintenance10")
+	{
+		functions.push_back("vkCmdEndRendering2KHR");
 		return;
 	}
 	if (extName == "VK_KHR_maintenance2")
@@ -4084,7 +4152,24 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_OHOS_external_memory")
+	{
+		functions.push_back("vkGetNativeBufferPropertiesOHOS");
+		functions.push_back("vkGetMemoryNativeBufferOHOS");
+		return;
+	}
+	if (extName == "VK_OHOS_native_buffer")
+	{
+		functions.push_back("vkGetSwapchainGrallocUsageOHOS");
+		functions.push_back("vkAcquireImageOHOS");
+		functions.push_back("vkQueueSignalReleaseImageOHOS");
+		return;
+	}
 	if (extName == "VK_OHOS_surface")
+	{
+		return;
+	}
+	if (extName == "VK_QCOM_data_graph_model")
 	{
 		return;
 	}
@@ -4358,6 +4443,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_depth_clamp_zero_one",
 	"VK_KHR_robustness2",
 	"VK_KHR_present_mode_fifo_latest_ready",
+	"VK_KHR_maintenance10",
 	"VK_NV_glsl_shader",
 	"VK_EXT_depth_range_unrestricted",
 	"VK_IMG_filter_cubic",
@@ -4559,6 +4645,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_image_compression_control_swapchain",
 	"VK_QCOM_image_processing",
 	"VK_EXT_nested_command_buffer",
+	"VK_OHOS_external_memory",
 	"VK_EXT_external_memory_acquire_unmodified",
 	"VK_EXT_extended_dynamic_state3",
 	"VK_EXT_subpass_merge_feedback",
@@ -4596,6 +4683,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_MSFT_layered_driver",
 	"VK_NV_descriptor_pool_overallocation",
 	"VK_QCOM_tile_memory_heap",
+	"VK_EXT_memory_decompression",
 	"VK_NV_raw_access_chains",
 	"VK_NV_external_compute_queue",
 	"VK_NV_command_buffer_inheritance",
@@ -4609,17 +4697,23 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_MESA_image_alignment_control",
 	"VK_EXT_ray_tracing_invocation_reorder",
 	"VK_EXT_depth_clamp_control",
+	"VK_OHOS_native_buffer",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
 	"VK_ARM_pipeline_opacity_micromap",
 	"VK_EXT_external_memory_metal",
+	"VK_ARM_performance_counters_by_region",
 	"VK_EXT_vertex_attribute_robustness",
 	"VK_ARM_format_pack",
 	"VK_VALVE_fragment_density_map_layered",
 	"VK_NV_present_metering",
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
+	"VK_EXT_shader_64bit_indexing",
+	"VK_EXT_custom_resolve",
+	"VK_QCOM_data_graph_model",
 	"VK_SEC_pipeline_cache_incremental_mode",
+	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

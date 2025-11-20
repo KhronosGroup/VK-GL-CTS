@@ -85,6 +85,7 @@
 #include "vktComputeTests.hpp"
 #include "vktConditionalTests.hpp"
 #include "vktImageTests.hpp"
+#include "vktImageProcessingTests.hpp"
 #include "vktInfoTests.hpp"
 #include "vktWsiTests.hpp"
 #include "vktSynchronizationTests.hpp"
@@ -1308,6 +1309,7 @@ void TestPackage::init(void)
     addRootChild("draw", m_caseListFilter, Draw::createTests);
     addRootChild("compute", m_caseListFilter, compute::createTests);
     addRootChild("image", m_caseListFilter, image::createTests);
+    addRootChild("image_processing", m_caseListFilter, ImageProcessing::createTests);
     addRootChild("wsi", m_caseListFilter, wsi::createTests);
     addRootChild("synchronization", m_caseListFilter, createSynchronizationTests);
     addRootChild("synchronization2", m_caseListFilter, createSynchronization2Tests);

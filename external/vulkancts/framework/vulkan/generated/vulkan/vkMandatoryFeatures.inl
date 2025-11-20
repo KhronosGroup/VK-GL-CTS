@@ -181,10 +181,20 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_custom_border_color"))
 		addFeatures(&physicalDeviceCustomBorderColorFeaturesEXT);
 
+	// VkPhysicalDeviceCustomResolveFeaturesEXT for ext [VK_EXT_custom_resolve]
+	vk::VkPhysicalDeviceCustomResolveFeaturesEXT physicalDeviceCustomResolveFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_custom_resolve"))
+		addFeatures(&physicalDeviceCustomResolveFeaturesEXT);
+
 	// VkPhysicalDeviceDataGraphFeaturesARM for ext [VK_ARM_data_graph]
 	vk::VkPhysicalDeviceDataGraphFeaturesARM physicalDeviceDataGraphFeaturesARM = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ARM_data_graph"))
 		addFeatures(&physicalDeviceDataGraphFeaturesARM);
+
+	// VkPhysicalDeviceDataGraphModelFeaturesQCOM for ext [VK_QCOM_data_graph_model]
+	vk::VkPhysicalDeviceDataGraphModelFeaturesQCOM physicalDeviceDataGraphModelFeaturesQCOM = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_QCOM_data_graph_model"))
+		addFeatures(&physicalDeviceDataGraphModelFeaturesQCOM);
 
 	// VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV for ext [VK_NV_dedicated_allocation_image_aliasing]
 	vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV physicalDeviceDedicatedAllocationImageAliasingFeaturesNV = initVulkanStructure();
@@ -496,6 +506,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_linear_color_attachment"))
 		addFeatures(&physicalDeviceLinearColorAttachmentFeaturesNV);
 
+	// VkPhysicalDeviceMaintenance10FeaturesKHR for ext [VK_KHR_maintenance10]
+	vk::VkPhysicalDeviceMaintenance10FeaturesKHR physicalDeviceMaintenance10FeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance10"))
+		addFeatures(&physicalDeviceMaintenance10FeaturesKHR);
+
 	// VkPhysicalDeviceMaintenance4Features, VkPhysicalDeviceMaintenance4FeaturesKHR for ext [VK_KHR_maintenance4]
 	vk::VkPhysicalDeviceMaintenance4Features physicalDeviceMaintenance4Features = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_maintenance4"))
@@ -531,10 +546,10 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_map_memory_placed"))
 		addFeatures(&physicalDeviceMapMemoryPlacedFeaturesEXT);
 
-	// VkPhysicalDeviceMemoryDecompressionFeaturesNV for ext [VK_NV_memory_decompression]
-	vk::VkPhysicalDeviceMemoryDecompressionFeaturesNV physicalDeviceMemoryDecompressionFeaturesNV = initVulkanStructure();
-	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_memory_decompression"))
-		addFeatures(&physicalDeviceMemoryDecompressionFeaturesNV);
+	// VkPhysicalDeviceMemoryDecompressionFeaturesEXT, VkPhysicalDeviceMemoryDecompressionFeaturesNV for ext [VK_NV_memory_decompression, VK_EXT_memory_decompression]
+	vk::VkPhysicalDeviceMemoryDecompressionFeaturesEXT physicalDeviceMemoryDecompressionFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_memory_decompression", "VK_EXT_memory_decompression"))
+		addFeatures(&physicalDeviceMemoryDecompressionFeaturesEXT);
 
 	// VkPhysicalDeviceMemoryPriorityFeaturesEXT for ext [VK_EXT_memory_priority]
 	vk::VkPhysicalDeviceMemoryPriorityFeaturesEXT physicalDeviceMemoryPriorityFeaturesEXT = initVulkanStructure();
@@ -615,6 +630,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDevicePerStageDescriptorSetFeaturesNV physicalDevicePerStageDescriptorSetFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_per_stage_descriptor_set"))
 		addFeatures(&physicalDevicePerStageDescriptorSetFeaturesNV);
+
+	// VkPhysicalDevicePerformanceCountersByRegionFeaturesARM for ext [VK_ARM_performance_counters_by_region]
+	vk::VkPhysicalDevicePerformanceCountersByRegionFeaturesARM physicalDevicePerformanceCountersByRegionFeaturesARM = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ARM_performance_counters_by_region"))
+		addFeatures(&physicalDevicePerformanceCountersByRegionFeaturesARM);
 
 	// VkPhysicalDevicePerformanceQueryFeaturesKHR for ext [VK_KHR_performance_query]
 	vk::VkPhysicalDevicePerformanceQueryFeaturesKHR physicalDevicePerformanceQueryFeaturesKHR = initVulkanStructure();
@@ -816,6 +836,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_separate_depth_stencil_layouts"))
 		addFeatures(&physicalDeviceSeparateDepthStencilLayoutsFeatures);
 
+	// VkPhysicalDeviceShader64BitIndexingFeaturesEXT for ext [VK_EXT_shader_64bit_indexing]
+	vk::VkPhysicalDeviceShader64BitIndexingFeaturesEXT physicalDeviceShader64BitIndexingFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_64bit_indexing"))
+		addFeatures(&physicalDeviceShader64BitIndexingFeaturesEXT);
+
 	// VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV for ext [VK_NV_shader_atomic_float16_vector]
 	vk::VkPhysicalDeviceShaderAtomicFloat16VectorFeaturesNV physicalDeviceShaderAtomicFloat16VectorFeaturesNV = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_shader_atomic_float16_vector"))
@@ -975,6 +1000,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceShaderTileImageFeaturesEXT physicalDeviceShaderTileImageFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_tile_image"))
 		addFeatures(&physicalDeviceShaderTileImageFeaturesEXT);
+
+	// VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT for ext [VK_EXT_shader_uniform_buffer_unsized_array]
+	vk::VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT physicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_uniform_buffer_unsized_array"))
+		addFeatures(&physicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT);
 
 	// VkPhysicalDeviceShaderUntypedPointersFeaturesKHR for ext [VK_KHR_shader_untyped_pointers]
 	vk::VkPhysicalDeviceShaderUntypedPointersFeaturesKHR physicalDeviceShaderUntypedPointersFeaturesKHR = initVulkanStructure();
@@ -1607,6 +1637,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("maintenance8");
 	}
 
+	// VkPhysicalDeviceShaderFmaFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_shader_fma")) )
+	{
+		if ( physicalDeviceShaderFmaFeaturesKHR.shaderFmaFloat32 == VK_FALSE )
+			failMesages.push_back("shaderFmaFloat32");
+	}
+
 	// VkPhysicalDeviceMaintenance9FeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance9")) )
 	{
@@ -1640,6 +1677,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDevicePresentModeFifoLatestReadyFeaturesKHR.presentModeFifoLatestReady == VK_FALSE )
 			failMesages.push_back("presentModeFifoLatestReady");
+	}
+
+	// VkPhysicalDeviceMaintenance10FeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_maintenance10")) )
+	{
+		if ( physicalDeviceMaintenance10FeaturesKHR.maintenance10 == VK_FALSE )
+			failMesages.push_back("maintenance10");
 	}
 
 	// VkPhysicalDeviceTransformFeedbackFeaturesEXT
@@ -2555,7 +2599,7 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	// VkPhysicalDeviceMemoryDecompressionFeaturesNV
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_memory_decompression")) )
 	{
-		if ( physicalDeviceMemoryDecompressionFeaturesNV.memoryDecompression == VK_FALSE )
+		if ( physicalDeviceMemoryDecompressionFeaturesEXT.memoryDecompression == VK_FALSE )
 			failMesages.push_back("memoryDecompression");
 	}
 
@@ -2881,6 +2925,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("tileMemoryHeap");
 	}
 
+	// VkPhysicalDeviceMemoryDecompressionFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_memory_decompression")) )
+	{
+		if ( physicalDeviceMemoryDecompressionFeaturesEXT.memoryDecompression == VK_FALSE )
+			failMesages.push_back("memoryDecompression");
+	}
+
 	// VkPhysicalDeviceRawAccessChainsFeaturesNV
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_raw_access_chains")) )
 	{
@@ -2972,6 +3023,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("pipelineOpacityMicromap");
 	}
 
+	// VkPhysicalDevicePerformanceCountersByRegionFeaturesARM
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_ARM_performance_counters_by_region")) )
+	{
+		if ( physicalDevicePerformanceCountersByRegionFeaturesARM.performanceCountersByRegion == VK_FALSE )
+			failMesages.push_back("performanceCountersByRegion");
+	}
+
 	// VkPhysicalDeviceFormatPackFeaturesARM
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_ARM_format_pack")) )
 	{
@@ -3005,6 +3063,20 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.zeroInitializeDeviceMemory == VK_FALSE )
 			failMesages.push_back("zeroInitializeDeviceMemory");
+	}
+
+	// VkPhysicalDeviceShader64BitIndexingFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_64bit_indexing")) )
+	{
+		if ( physicalDeviceShader64BitIndexingFeaturesEXT.shader64BitIndexing == VK_FALSE )
+			failMesages.push_back("shader64BitIndexing");
+	}
+
+	// VkPhysicalDeviceDataGraphModelFeaturesQCOM
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_QCOM_data_graph_model")) )
+	{
+		if ( physicalDeviceDataGraphModelFeaturesQCOM.dataGraphModel == VK_FALSE )
+			failMesages.push_back("dataGraphModel");
 	}
 
 	// VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
@@ -3091,18 +3163,18 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("primitiveFragmentShadingRate");
 	}
 
-	// VkPhysicalDevice16BitStorageFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && physicalDevice16BitStorageFeatures.uniformAndStorageBuffer16BitAccess )
-	{
-		if ( physicalDevice16BitStorageFeatures.storageBuffer16BitAccess == VK_FALSE )
-			failMesages.push_back("storageBuffer16BitAccess");
-	}
-
 	// VkPhysicalDeviceMultiviewFeatures
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) )
 	{
 		if ( physicalDeviceMultiviewFeatures.multiview == VK_FALSE )
 			failMesages.push_back("multiview");
+	}
+
+	// VkPhysicalDevice16BitStorageFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 1, 0)) && physicalDevice16BitStorageFeatures.uniformAndStorageBuffer16BitAccess )
+	{
+		if ( physicalDevice16BitStorageFeatures.storageBuffer16BitAccess == VK_FALSE )
+			failMesages.push_back("storageBuffer16BitAccess");
 	}
 
 	// VkPhysicalDeviceShaderDrawParametersFeatures
@@ -3117,6 +3189,90 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceVulkan12Features.subgroupBroadcastDynamicId == VK_FALSE )
 			failMesages.push_back("subgroupBroadcastDynamicId");
+	}
+
+	// VkPhysicalDeviceImagelessFramebufferFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceImagelessFramebufferFeatures.imagelessFramebuffer == VK_FALSE )
+			failMesages.push_back("imagelessFramebuffer");
+	}
+
+	// VkPhysicalDeviceVulkan12Features
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan12Features.imagelessFramebuffer == VK_FALSE )
+			failMesages.push_back("imagelessFramebuffer");
+	}
+
+	// VkPhysicalDeviceUniformBufferStandardLayoutFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceUniformBufferStandardLayoutFeatures.uniformBufferStandardLayout == VK_FALSE )
+			failMesages.push_back("uniformBufferStandardLayout");
+	}
+
+	// VkPhysicalDeviceVulkan12Features
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan12Features.uniformBufferStandardLayout == VK_FALSE )
+			failMesages.push_back("uniformBufferStandardLayout");
+	}
+
+	// VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceShaderSubgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes == VK_FALSE )
+			failMesages.push_back("shaderSubgroupExtendedTypes");
+	}
+
+	// VkPhysicalDeviceVulkan12Features
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan12Features.shaderSubgroupExtendedTypes == VK_FALSE )
+			failMesages.push_back("shaderSubgroupExtendedTypes");
+	}
+
+	// VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceSeparateDepthStencilLayoutsFeatures.separateDepthStencilLayouts == VK_FALSE )
+			failMesages.push_back("separateDepthStencilLayouts");
+	}
+
+	// VkPhysicalDeviceVulkan12Features
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan12Features.separateDepthStencilLayouts == VK_FALSE )
+			failMesages.push_back("separateDepthStencilLayouts");
+	}
+
+	// VkPhysicalDeviceHostQueryResetFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceHostQueryResetFeatures.hostQueryReset == VK_FALSE )
+			failMesages.push_back("hostQueryReset");
+	}
+
+	// VkPhysicalDeviceVulkan12Features
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan12Features.hostQueryReset == VK_FALSE )
+			failMesages.push_back("hostQueryReset");
+	}
+
+	// VkPhysicalDeviceTimelineSemaphoreFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceTimelineSemaphoreFeatures.timelineSemaphore == VK_FALSE )
+			failMesages.push_back("timelineSemaphore");
+	}
+
+	// VkPhysicalDeviceVulkan12Features
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
+	{
+		if ( physicalDeviceVulkan12Features.timelineSemaphore == VK_FALSE )
+			failMesages.push_back("timelineSemaphore");
 	}
 
 	// VkPhysicalDeviceVulkan12Features
@@ -3285,90 +3441,6 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceVulkan12Features.samplerFilterMinmax == VK_FALSE )
 			failMesages.push_back("samplerFilterMinmax");
-	}
-
-	// VkPhysicalDeviceImagelessFramebufferFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceImagelessFramebufferFeatures.imagelessFramebuffer == VK_FALSE )
-			failMesages.push_back("imagelessFramebuffer");
-	}
-
-	// VkPhysicalDeviceVulkan12Features
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.imagelessFramebuffer == VK_FALSE )
-			failMesages.push_back("imagelessFramebuffer");
-	}
-
-	// VkPhysicalDeviceUniformBufferStandardLayoutFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceUniformBufferStandardLayoutFeatures.uniformBufferStandardLayout == VK_FALSE )
-			failMesages.push_back("uniformBufferStandardLayout");
-	}
-
-	// VkPhysicalDeviceVulkan12Features
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.uniformBufferStandardLayout == VK_FALSE )
-			failMesages.push_back("uniformBufferStandardLayout");
-	}
-
-	// VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceShaderSubgroupExtendedTypesFeatures.shaderSubgroupExtendedTypes == VK_FALSE )
-			failMesages.push_back("shaderSubgroupExtendedTypes");
-	}
-
-	// VkPhysicalDeviceVulkan12Features
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.shaderSubgroupExtendedTypes == VK_FALSE )
-			failMesages.push_back("shaderSubgroupExtendedTypes");
-	}
-
-	// VkPhysicalDeviceSeparateDepthStencilLayoutsFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceSeparateDepthStencilLayoutsFeatures.separateDepthStencilLayouts == VK_FALSE )
-			failMesages.push_back("separateDepthStencilLayouts");
-	}
-
-	// VkPhysicalDeviceVulkan12Features
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.separateDepthStencilLayouts == VK_FALSE )
-			failMesages.push_back("separateDepthStencilLayouts");
-	}
-
-	// VkPhysicalDeviceHostQueryResetFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceHostQueryResetFeatures.hostQueryReset == VK_FALSE )
-			failMesages.push_back("hostQueryReset");
-	}
-
-	// VkPhysicalDeviceVulkan12Features
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.hostQueryReset == VK_FALSE )
-			failMesages.push_back("hostQueryReset");
-	}
-
-	// VkPhysicalDeviceTimelineSemaphoreFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceTimelineSemaphoreFeatures.timelineSemaphore == VK_FALSE )
-			failMesages.push_back("timelineSemaphore");
-	}
-
-	// VkPhysicalDeviceVulkan12Features
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 2, 0)) )
-	{
-		if ( physicalDeviceVulkan12Features.timelineSemaphore == VK_FALSE )
-			failMesages.push_back("timelineSemaphore");
 	}
 
 	// VkPhysicalDeviceShaderTerminateInvocationFeatures
@@ -3882,6 +3954,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("maintenance6");
 	}
 
+	// VkPhysicalDevicePipelineRobustnessFeatures
+	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
+	{
+		if ( physicalDevicePipelineRobustnessFeatures.pipelineRobustness == VK_FALSE )
+			failMesages.push_back("pipelineRobustness");
+	}
+
 	// VkPhysicalDevicePipelineProtectedAccessFeatures
 	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) && physicalDeviceProtectedMemoryFeatures.protectedMemory )
 	{
@@ -3894,13 +3973,6 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceVulkan14Features.pipelineProtectedAccess == VK_FALSE )
 			failMesages.push_back("pipelineProtectedAccess");
-	}
-
-	// VkPhysicalDevicePipelineRobustnessFeatures
-	if ( context.contextSupports(vk::ApiVersion(0, 1, 4, 0)) )
-	{
-		if ( physicalDevicePipelineRobustnessFeatures.pipelineRobustness == VK_FALSE )
-			failMesages.push_back("pipelineRobustness");
 	}
 
 }

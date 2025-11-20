@@ -46,9 +46,20 @@ using vkt::synchronization::VideoCodecOperationFlags;
 
 struct TestConfig
 {
+    TestConfig(SynchronizationType type_, VkEventCreateFlags flags_, VideoCodecOperationFlags videoCodecOperationFlags_,
+               bool computeQueue_)
+        : type(type_)
+        , flags(flags_)
+        , videoCodecOperationFlags(videoCodecOperationFlags_)
+        , computeQueue(computeQueue_)
+    {
+        DE_ASSERT(!computeQueue || (videoCodecOperationFlags == 0u));
+    }
+
     SynchronizationType type;
     VkEventCreateFlags flags;
     VideoCodecOperationFlags videoCodecOperationFlags;
+    bool computeQueue;
 };
 
 tcu::TestStatus hostResetSetEventCase(Context &context, TestConfig config)
@@ -97,8 +108,8 @@ tcu::TestStatus deviceResetSetEventCase(Context &context, TestConfig config)
             nullptr);
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
-    const VkQueue queue             = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue             = getSyncQueue(videoDevice, context, config.computeQueue);
+    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, config.computeQueue);
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
     const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
@@ -251,8 +262,8 @@ tcu::TestStatus singleSubmissionCase(Context &context, TestConfig config)
             nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
-    const VkQueue queue             = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue             = getSyncQueue(videoDevice, context, config.computeQueue);
+    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, config.computeQueue);
     const Unique<VkFence> fence(createFence(vk, device));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -307,8 +318,8 @@ tcu::TestStatus multiSubmissionCase(Context &context, TestConfig config)
             nullptr);
     const DeviceInterface &vk           = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device               = getSyncDevice(videoDevice, context);
-    const VkQueue queue                 = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex     = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue                 = getSyncQueue(videoDevice, context, config.computeQueue);
+    const uint32_t queueFamilyIndex     = getSyncQueueFamilyIndex(videoDevice, context, config.computeQueue);
     const Move<VkFence> ptrFence[COUNT] = {createFence(vk, device), createFence(vk, device)};
     VkFence fence[COUNT]                = {*ptrFence[SET], *ptrFence[WAIT]};
     const Unique<VkCommandPool> cmdPool(
@@ -375,8 +386,8 @@ tcu::TestStatus secondaryCommandBufferCase(Context &context, TestConfig config)
                                              nullptr);
     const DeviceInterface &vk       = getSyncDeviceInterface(videoDevice, context);
     const VkDevice device           = getSyncDevice(videoDevice, context);
-    const VkQueue queue             = getSyncQueue(videoDevice, context);
-    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context);
+    const VkQueue queue             = getSyncQueue(videoDevice, context, config.computeQueue);
+    const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, config.computeQueue);
     const Unique<VkFence> fence(createFence(vk, device));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
@@ -456,6 +467,9 @@ void checkSupport(Context &context, TestConfig config)
         !context.getPortabilitySubsetFeatures().events)
         TCU_THROW(NotSupportedError, "VK_KHR_portability_subset: Events are not supported by this implementation");
 #endif // CTS_USES_VULKANSC
+
+    if (config.computeQueue)
+        context.getComputeQueue(); // Will throw NotSupportedError if not available.
 }
 
 void checkSecondaryBufferSupport(Context &context, TestConfig config)
@@ -472,24 +486,42 @@ void checkSecondaryBufferSupport(Context &context, TestConfig config)
 
 tcu::TestCaseGroup *createBasicEventTests(tcu::TestContext &testCtx, VideoCodecOperationFlags videoCodecOperationFlags)
 {
-    TestConfig config{SynchronizationType::LEGACY, 0U, videoCodecOperationFlags};
+    TestConfig config{SynchronizationType::LEGACY, 0U, videoCodecOperationFlags, false};
 
     // Basic event tests
     de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "event"));
 
-    // Basic event tests set and reset on host
-    addFunctionCase(basicTests.get(), "host_set_reset", checkSupport, hostResetSetEventCase, config);
-    // Basic event tests set and reset on device
-    addFunctionCase(basicTests.get(), "device_set_reset", checkSupport, deviceResetSetEventCase, config);
-    // Wait and set event single submission on device
-    addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", checkSupport, singleSubmissionCase, config);
-    // Wait and set event mutli submission on device
-    addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", checkSupport, multiSubmissionCase, config);
-    // Secondary command buffer does not apply to video queues and should not be a part of test plan
-    if (!videoCodecOperationFlags)
-        // Event used on secondary command buffer
-        addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", checkSecondaryBufferSupport,
-                        secondaryCommandBufferCase, config);
+    for (const bool computeQueue : {false, true})
+    {
+        // Video tests run on the video queue.
+        if (videoCodecOperationFlags && computeQueue)
+            continue;
+
+        config.computeQueue = computeQueue;
+
+        std::string nameSuffix;
+        if (computeQueue)
+            nameSuffix = "_cq";
+
+        // Basic event tests set and reset on host
+        addFunctionCase(basicTests.get(), "host_set_reset" + nameSuffix, checkSupport, hostResetSetEventCase, config);
+        // Basic event tests set and reset on device
+        addFunctionCase(basicTests.get(), "device_set_reset" + nameSuffix, checkSupport, deviceResetSetEventCase,
+                        config);
+        // Wait and set event single submission on device
+        addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer" + nameSuffix, checkSupport,
+                        singleSubmissionCase, config);
+        // Wait and set event mutli submission on device
+        addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer" + nameSuffix, checkSupport,
+                        multiSubmissionCase, config);
+        // Secondary command buffer does not apply to video queues and should not be a part of test plan
+        if (!videoCodecOperationFlags)
+        {
+            // Event used on secondary command buffer
+            addFunctionCase(basicTests.get(), "multi_secondary_command_buffer" + nameSuffix,
+                            checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
+        }
+    }
 
     return basicTests.release();
 }
@@ -497,34 +529,50 @@ tcu::TestCaseGroup *createBasicEventTests(tcu::TestContext &testCtx, VideoCodecO
 tcu::TestCaseGroup *createSynchronization2BasicEventTests(tcu::TestContext &testCtx,
                                                           VideoCodecOperationFlags videoCodecOperationFlags)
 {
-    TestConfig config{SynchronizationType::SYNCHRONIZATION2, 0U, videoCodecOperationFlags};
+    TestConfig config{SynchronizationType::SYNCHRONIZATION2, 0U, videoCodecOperationFlags, false};
 
     // Basic event tests
     de::MovePtr<tcu::TestCaseGroup> basicTests(new tcu::TestCaseGroup(testCtx, "event"));
 
-    // Basic event tests set and reset on device
-    addFunctionCase(basicTests.get(), "device_set_reset", checkSupport, deviceResetSetEventCase, config);
-    // Wait and set event single submission on device
-    addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer", checkSupport, singleSubmissionCase, config);
-    // Wait and set event mutli submission on device
-    addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer", checkSupport, multiSubmissionCase, config);
-    // Event used on secondary command buffer
-    if (!videoCodecOperationFlags)
-        addFunctionCase(basicTests.get(), "multi_secondary_command_buffer", checkSecondaryBufferSupport,
-                        secondaryCommandBufferCase, config);
-    // Event set and reset using the none pipeline stage
-    addFunctionCase(basicTests.get(), "none_set_reset", checkSupport, eventSetResetNoneStage, config);
+    for (const bool computeQueue : {false, true})
+    {
+        // Video tests run on the video queue.
+        if (videoCodecOperationFlags && computeQueue)
+            continue;
 
-    config.flags = VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR;
-    // Wait and set GPU-only event single submission
-    addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer_device_only", checkSupport,
-                    singleSubmissionCase, config);
-    // Wait and set GPU-only event mutli submission
-    addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer_device_only", checkSupport,
-                    multiSubmissionCase, config);
-    // GPU-only event used on secondary command buffer
-    addFunctionCase(basicTests.get(), "multi_secondary_command_buffer_device_only", checkSecondaryBufferSupport,
-                    secondaryCommandBufferCase, config);
+        config.computeQueue = computeQueue;
+
+        std::string nameSuffix;
+        if (computeQueue)
+            nameSuffix = "_cq";
+
+        // Basic event tests set and reset on device
+        addFunctionCase(basicTests.get(), "device_set_reset" + nameSuffix, checkSupport, deviceResetSetEventCase,
+                        config);
+        // Wait and set event single submission on device
+        addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer" + nameSuffix, checkSupport,
+                        singleSubmissionCase, config);
+        // Wait and set event mutli submission on device
+        addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer" + nameSuffix, checkSupport,
+                        multiSubmissionCase, config);
+        // Event used on secondary command buffer
+        if (!videoCodecOperationFlags)
+            addFunctionCase(basicTests.get(), "multi_secondary_command_buffer" + nameSuffix,
+                            checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
+        // Event set and reset using the none pipeline stage
+        addFunctionCase(basicTests.get(), "none_set_reset" + nameSuffix, checkSupport, eventSetResetNoneStage, config);
+
+        config.flags = VK_EVENT_CREATE_DEVICE_ONLY_BIT_KHR;
+        // Wait and set GPU-only event single submission
+        addFunctionCase(basicTests.get(), "single_submit_multi_command_buffer_device_only" + nameSuffix, checkSupport,
+                        singleSubmissionCase, config);
+        // Wait and set GPU-only event mutli submission
+        addFunctionCase(basicTests.get(), "multi_submit_multi_command_buffer_device_only" + nameSuffix, checkSupport,
+                        multiSubmissionCase, config);
+        // GPU-only event used on secondary command buffer
+        addFunctionCase(basicTests.get(), "multi_secondary_command_buffer_device_only" + nameSuffix,
+                        checkSecondaryBufferSupport, secondaryCommandBufferCase, config);
+    }
 
     return basicTests.release();
 }

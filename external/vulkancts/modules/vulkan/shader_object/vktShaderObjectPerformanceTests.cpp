@@ -596,11 +596,46 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     const vk::VkPipelineDynamicStateCreateInfo *pDynamicStateCreateInfo =
         (m_type == DRAW_DYNAMIC_PIPELINE) ? &dynamicStateCreateInfo : nullptr;
 
+    //  VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639
+    const bool needsConservativeRasterization =
+        (m_type == DRAW_DYNAMIC_PIPELINE) &&
+        std::find(dynamicStates.begin(), dynamicStates.end(),
+                  vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT) != dynamicStates.end() &&
+        std::find(dynamicStates.begin(), dynamicStates.end(),
+                  vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT) == dynamicStates.end();
+
+    const vk::VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterizationState = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, // VkStructureType sType;
+        nullptr,                                                                         // const void* pNext;
+        (vk::VkPipelineRasterizationConservativeStateCreateFlagsEXT)0u, // VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
+        vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT, // VkConservativeRasterizationModeEXT conservativeRasterizationMode;
+        0.0f                                                 // float extraPrimitiveOverestimationSize;
+    };
+
+    const vk::VkPipelineRasterizationStateCreateInfo rasterizationState = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,             // VkStructureType sType;
+        needsConservativeRasterization ? &conservativeRasterizationState : nullptr, // const void* pNext;
+        (vk::VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
+        VK_FALSE,                                       // VkBool32 depthClampEnable;
+        VK_FALSE,                                       // VkBool32 rasterizerDiscardEnable;
+        vk::VK_POLYGON_MODE_FILL,                       // VkPolygonMode polygonMode;
+        vk::VK_CULL_MODE_NONE,                          // VkCullModeFlags cullMode;
+        vk::VK_FRONT_FACE_CLOCKWISE,                    // VkFrontFace frontFace;
+        VK_FALSE,                                       // VkBool32 depthBiasEnable;
+        0.0f,                                           // float depthBiasConstantFactor;
+        0.0f,                                           // float depthBiasClamp;
+        0.0f,                                           // float depthBiasSlopeFactor;
+        1.0f                                            // float lineWidth;
+    };
+
+    const vk::VkPipelineRasterizationStateCreateInfo *pRasterizationState =
+        needsConservativeRasterization ? &rasterizationState : nullptr;
+
     const auto pipeline = makeGraphicsPipeline(
         vk, device, emptyPipelineLayout.get(), vertShaderModule.get(), tescShaderModule.get(), teseShaderModule.get(),
         geomShaderModule.get(), fragShaderModule.get(), VK_NULL_HANDLE, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
-        nullptr, pDynamicStateCreateInfo, &pipelineRenderingCreateInfo);
+        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, pRasterizationState, nullptr,
+        nullptr, nullptr, pDynamicStateCreateInfo, &pipelineRenderingCreateInfo);
     pipelineInputAssemblyStateInfo.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     viewportStateCreateInfo.viewportCount   = 1u;
     viewportStateCreateInfo.scissorCount    = 1u;

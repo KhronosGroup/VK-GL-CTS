@@ -82,22 +82,25 @@ protected:
 class EventTestInstance : public BaseTestInstance
 {
     bool m_maintenance9;
+    bool m_computeQueue;
 
 public:
     EventTestInstance(Context &context, SynchronizationType type, const ResourceDescription &resourceDesc,
                       const OperationSupport &writeOp, const OperationSupport &readOp,
-                      PipelineCacheData &pipelineCacheData, bool maintenance9)
+                      PipelineCacheData &pipelineCacheData, bool maintenance9, bool computeQueue)
         : BaseTestInstance(context, type, resourceDesc, writeOp, readOp, pipelineCacheData)
         , m_maintenance9(maintenance9)
+        , m_computeQueue(computeQueue)
     {
     }
 
     tcu::TestStatus iterate(void)
     {
-        const DeviceInterface &vk       = m_context.getDeviceInterface();
-        const VkDevice device           = m_context.getDevice();
-        const VkQueue queue             = m_context.getUniversalQueue();
-        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        const DeviceInterface &vk = m_context.getDeviceInterface();
+        const VkDevice device     = m_context.getDevice();
+        const VkQueue queue       = (m_computeQueue ? m_context.getComputeQueue() : m_context.getUniversalQueue());
+        const uint32_t queueFamilyIndex =
+            (m_computeQueue ? m_context.getComputeQueueFamilyIndex() : m_context.getUniversalQueueFamilyIndex());
         const Unique<VkCommandPool> cmdPool(
             createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
         const Unique<VkCommandBuffer> cmdBuffer(makeCommandBuffer(vk, device, *cmdPool));
@@ -825,7 +828,7 @@ public:
     SyncTestCase(tcu::TestContext &testCtx, const std::string &name, SynchronizationType type,
                  const SyncPrimitive syncPrimitive, const ResourceDescription resourceDesc, const OperationName writeOp,
                  const OperationName readOp, const bool specializedAccess, PipelineCacheData &pipelineCacheData,
-                 bool maintenance9)
+                 bool maintenance9, bool computeQueue)
         : TestCase(testCtx, name)
         , m_type(type)
         , m_resourceDesc(resourceDesc)
@@ -834,6 +837,7 @@ public:
         , m_syncPrimitive(syncPrimitive)
         , m_pipelineCacheData(pipelineCacheData)
         , m_maintenance9(maintenance9)
+        , m_computeQueue(computeQueue)
     {
     }
 
@@ -889,6 +893,9 @@ public:
 
         if (m_maintenance9)
             context.requireDeviceFunctionality("VK_KHR_maintenance9");
+
+        if (m_computeQueue)
+            context.getComputeQueue(); // Will throw NotSupportedError if not available.
     }
 
     TestInstance *createInstance(Context &context) const
@@ -907,7 +914,7 @@ public:
             return new BarrierTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData);
         case SYNC_PRIMITIVE_EVENT:
             return new EventTestInstance(context, m_type, m_resourceDesc, *m_writeOp, *m_readOp, m_pipelineCacheData,
-                                         m_maintenance9);
+                                         m_maintenance9, m_computeQueue);
         }
 
         DE_ASSERT(0);
@@ -922,6 +929,7 @@ private:
     const SyncPrimitive m_syncPrimitive;
     PipelineCacheData &m_pipelineCacheData;
     const bool m_maintenance9;
+    const bool m_computeQueue;
 };
 
 class SyncEventsTestCase : public TestCase
@@ -1230,24 +1238,33 @@ void createTests(tcu::TestCaseGroup *group, TestData data)
                             if ((isSpecializedAccessFlagSupported(writeOp) || isSpecializedAccessFlagSupported(readOp)))
                             {
                                 const std::string nameSp = name + "_specialized_access_flag";
-                                opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
-                                                                   groups[groupNdx].syncPrimitive, resource, writeOp,
-                                                                   readOp, true, *data.pipelineCacheData, false));
+                                opGroup->addChild(new SyncTestCase(
+                                    testCtx, nameSp, data.type, groups[groupNdx].syncPrimitive, resource, writeOp,
+                                    readOp, true, *data.pipelineCacheData, false, false));
                             }
 #ifndef CTS_USES_VULKANSC
                             if (groups[groupNdx].syncPrimitive == SYNC_PRIMITIVE_EVENT)
                             {
                                 const std::string nameSp = name + "_maintenance9";
-                                opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
-                                                                   groups[groupNdx].syncPrimitive, resource, writeOp,
-                                                                   readOp, false, *data.pipelineCacheData, true));
+                                opGroup->addChild(new SyncTestCase(
+                                    testCtx, nameSp, data.type, groups[groupNdx].syncPrimitive, resource, writeOp,
+                                    readOp, false, *data.pipelineCacheData, true, false));
                             }
 #endif
                         }
 
+                        if (groups[groupNdx].syncPrimitive == SYNC_PRIMITIVE_EVENT && opCanRunOnCompute(writeOp) &&
+                            opCanRunOnCompute(readOp) && resourceSupportsComputeQueue(resource))
+                        {
+                            const std::string nameSp = name + "_cq";
+                            opGroup->addChild(new SyncTestCase(testCtx, nameSp, data.type,
+                                                               groups[groupNdx].syncPrimitive, resource, writeOp,
+                                                               readOp, false, *data.pipelineCacheData, false, true));
+                        }
+
                         opGroup->addChild(new SyncTestCase(testCtx, name, data.type, groups[groupNdx].syncPrimitive,
                                                            resource, writeOp, readOp, false, *data.pipelineCacheData,
-                                                           false));
+                                                           false, false));
 
                         empty = false;
                     }

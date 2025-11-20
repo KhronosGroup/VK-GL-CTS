@@ -37,6 +37,7 @@
 #include "vkImageWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRayTracingUtil.hpp"
+#include "vkFormatLists.hpp"
 #include "vktTestCase.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
@@ -821,10 +822,7 @@ VkFormat getSupportedDepthFormat(const InstanceInterface &vk, const VkPhysicalDe
 {
     VkFormatProperties properties;
 
-    const VkFormat DepthFormats[] = {VK_FORMAT_D32_SFLOAT, VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D24_UNORM_S8_UINT,
-                                     VK_FORMAT_D32_SFLOAT_S8_UINT};
-
-    for (const auto format : DepthFormats)
+    for (const auto format : formats::depthFormats)
     {
         vk.getPhysicalDeviceFormatProperties(physicalDevice, format, &properties);
 

@@ -38,6 +38,7 @@
 #include "vkBuilderUtil.hpp"
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
+#include "vkFormatLists.hpp"
 #include "vktImageTestsUtil.hpp"
 #include "ycbcr/vktYCbCrUtil.hpp"
 
@@ -1496,15 +1497,21 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
 
     if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    else if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
-             m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         createInfo.usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        createInfo.usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
@@ -1842,6 +1849,12 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
         m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
         usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
 
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
@@ -2072,18 +2085,7 @@ tcu::TestStatus QueryTestInstance::iterate(void)
     vk::VkResult res =
         vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &imageFormatProperties);
 
-    if (hostImageCopyDevicePerformanceQuery.identicalMemoryLayout == VK_FALSE)
-    {
-        if (hostImageCopyDevicePerformanceQuery.optimalDeviceAccess != VK_FALSE)
-        {
-            log << tcu::TestLog::Message
-                << "VkHostImageCopyDevicePerformanceQueryEXT::identicalMemoryLayout is VK_FALSE, but "
-                   "VkHostImageCopyDevicePerformanceQueryEXT::optimalDeviceAccess is VK_TRUE"
-                << tcu::TestLog::EndMessage;
-            return tcu::TestStatus::fail("Fail");
-        }
-    }
-    else
+    if (hostImageCopyDevicePerformanceQuery.identicalMemoryLayout == VK_TRUE)
     {
         if (hostImageCopyDevicePerformanceQuery.optimalDeviceAccess != VK_TRUE)
         {
@@ -3999,7 +4001,9 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
 
         if (!depthAndStencil)
         {
-            const vk::VkBufferImageCopy bufferImageCopy = {
+            const auto preBufferBarrier = makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                                  **srcBuffer, 0u, bufferSize);
+            const VkBufferImageCopy bufferImageCopy{
                 0u,                // VkDeviceSize bufferOffset;
                 0u,                // uint32_t bufferRowLength;
                 0u,                // uint32_t bufferImageHeight;
@@ -4008,6 +4012,8 @@ tcu::TestStatus SimpleHostImageCopyTestInstance::iterate(void)
                 imageSize          // VkExtent3D imageExtent;
             };
             vk::beginCommandBuffer(vk, *cmdBuffer);
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &preBufferBarrier, 0, nullptr);
             vk.cmdCopyBufferToImage(*cmdBuffer, **srcBuffer, **image2, m_params.dstLayout, 1u, &bufferImageCopy);
             vk::endCommandBuffer(vk, *cmdBuffer);
             submitCommandsAndWait(vk, device, queue, *cmdBuffer);
@@ -4890,13 +4896,8 @@ void testGenerator(tcu::TestCaseGroup *group)
     }
 
     {
-        const std::vector<VkFormat> dsFormats{
-            VK_FORMAT_D16_UNORM,         VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,         VK_FORMAT_S8_UINT,
-            VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,   VK_FORMAT_D32_SFLOAT_S8_UINT,
-        };
-
         de::MovePtr<tcu::TestCaseGroup> depthStencilGroup(new tcu::TestCaseGroup(testCtx, "depth_stencil"));
-        for (const auto &format : dsFormats)
+        for (const auto &format : formats::depthAndStencilFormats)
         {
             const DepthStencilHICParams params{
                 format,
@@ -4911,225 +4912,6 @@ void testGenerator(tcu::TestCaseGroup *group)
 
     group->addChild(identicalMemoryLayoutGroup.release());
 
-    const std::set<vk::VkFormat> allFormats{
-        vk::VK_FORMAT_R4G4_UNORM_PACK8,
-        vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-        vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-        vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
-        vk::VK_FORMAT_B5G6R5_UNORM_PACK16,
-        vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-        vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-        vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-        vk::VK_FORMAT_R8_UNORM,
-        vk::VK_FORMAT_R8_SNORM,
-        vk::VK_FORMAT_R8_USCALED,
-        vk::VK_FORMAT_R8_SSCALED,
-        vk::VK_FORMAT_R8_UINT,
-        vk::VK_FORMAT_R8_SINT,
-        vk::VK_FORMAT_R8_SRGB,
-        vk::VK_FORMAT_R8G8_UNORM,
-        vk::VK_FORMAT_R8G8_SNORM,
-        vk::VK_FORMAT_R8G8_USCALED,
-        vk::VK_FORMAT_R8G8_SSCALED,
-        vk::VK_FORMAT_R8G8_UINT,
-        vk::VK_FORMAT_R8G8_SINT,
-        vk::VK_FORMAT_R8G8_SRGB,
-        vk::VK_FORMAT_R8G8B8_UNORM,
-        vk::VK_FORMAT_R8G8B8_SNORM,
-        vk::VK_FORMAT_R8G8B8_USCALED,
-        vk::VK_FORMAT_R8G8B8_SSCALED,
-        vk::VK_FORMAT_R8G8B8_UINT,
-        vk::VK_FORMAT_R8G8B8_SINT,
-        vk::VK_FORMAT_R8G8B8_SRGB,
-        vk::VK_FORMAT_B8G8R8_UNORM,
-        vk::VK_FORMAT_B8G8R8_SNORM,
-        vk::VK_FORMAT_B8G8R8_USCALED,
-        vk::VK_FORMAT_B8G8R8_SSCALED,
-        vk::VK_FORMAT_B8G8R8_UINT,
-        vk::VK_FORMAT_B8G8R8_SINT,
-        vk::VK_FORMAT_B8G8R8_SRGB,
-        vk::VK_FORMAT_R8G8B8A8_UNORM,
-        vk::VK_FORMAT_R8G8B8A8_SNORM,
-        vk::VK_FORMAT_R8G8B8A8_USCALED,
-        vk::VK_FORMAT_R8G8B8A8_SSCALED,
-        vk::VK_FORMAT_R8G8B8A8_UINT,
-        vk::VK_FORMAT_R8G8B8A8_SINT,
-        vk::VK_FORMAT_R8G8B8A8_SRGB,
-        vk::VK_FORMAT_B8G8R8A8_UNORM,
-        vk::VK_FORMAT_B8G8R8A8_SNORM,
-        vk::VK_FORMAT_B8G8R8A8_USCALED,
-        vk::VK_FORMAT_B8G8R8A8_SSCALED,
-        vk::VK_FORMAT_B8G8R8A8_UINT,
-        vk::VK_FORMAT_B8G8R8A8_SINT,
-        vk::VK_FORMAT_B8G8R8A8_SRGB,
-        vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-        vk::VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-        vk::VK_FORMAT_A8B8G8R8_USCALED_PACK32,
-        vk::VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
-        vk::VK_FORMAT_A8B8G8R8_UINT_PACK32,
-        vk::VK_FORMAT_A8B8G8R8_SINT_PACK32,
-        vk::VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_UINT_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_SINT_PACK32,
-        vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-        vk::VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-        vk::VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-        vk::VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-        vk::VK_FORMAT_A2B10G10R10_UINT_PACK32,
-        vk::VK_FORMAT_A2B10G10R10_SINT_PACK32,
-        vk::VK_FORMAT_R16_UNORM,
-        vk::VK_FORMAT_R16_SNORM,
-        vk::VK_FORMAT_R16_USCALED,
-        vk::VK_FORMAT_R16_SSCALED,
-        vk::VK_FORMAT_R16_UINT,
-        vk::VK_FORMAT_R16_SINT,
-        vk::VK_FORMAT_R16_SFLOAT,
-        vk::VK_FORMAT_R16G16_UNORM,
-        vk::VK_FORMAT_R16G16_SNORM,
-        vk::VK_FORMAT_R16G16_USCALED,
-        vk::VK_FORMAT_R16G16_SSCALED,
-        vk::VK_FORMAT_R16G16_UINT,
-        vk::VK_FORMAT_R16G16_SINT,
-        vk::VK_FORMAT_R16G16_SFLOAT,
-        vk::VK_FORMAT_R16G16B16_UNORM,
-        vk::VK_FORMAT_R16G16B16_SNORM,
-        vk::VK_FORMAT_R16G16B16_USCALED,
-        vk::VK_FORMAT_R16G16B16_SSCALED,
-        vk::VK_FORMAT_R16G16B16_UINT,
-        vk::VK_FORMAT_R16G16B16_SINT,
-        vk::VK_FORMAT_R16G16B16_SFLOAT,
-        vk::VK_FORMAT_R16G16B16A16_UNORM,
-        vk::VK_FORMAT_R16G16B16A16_SNORM,
-        vk::VK_FORMAT_R16G16B16A16_USCALED,
-        vk::VK_FORMAT_R16G16B16A16_SSCALED,
-        vk::VK_FORMAT_R16G16B16A16_UINT,
-        vk::VK_FORMAT_R16G16B16A16_SINT,
-        vk::VK_FORMAT_R16G16B16A16_SFLOAT,
-        vk::VK_FORMAT_R32_UINT,
-        vk::VK_FORMAT_R32_SINT,
-        vk::VK_FORMAT_R32_SFLOAT,
-        vk::VK_FORMAT_R32G32_UINT,
-        vk::VK_FORMAT_R32G32_SINT,
-        vk::VK_FORMAT_R32G32_SFLOAT,
-        vk::VK_FORMAT_R32G32B32_UINT,
-        vk::VK_FORMAT_R32G32B32_SINT,
-        vk::VK_FORMAT_R32G32B32_SFLOAT,
-        vk::VK_FORMAT_R32G32B32A32_UINT,
-        vk::VK_FORMAT_R32G32B32A32_SINT,
-        vk::VK_FORMAT_R32G32B32A32_SFLOAT,
-        vk::VK_FORMAT_R64_UINT,
-        vk::VK_FORMAT_R64_SINT,
-        vk::VK_FORMAT_R64_SFLOAT,
-        vk::VK_FORMAT_R64G64_UINT,
-        vk::VK_FORMAT_R64G64_SINT,
-        vk::VK_FORMAT_R64G64_SFLOAT,
-        vk::VK_FORMAT_R64G64B64_UINT,
-        vk::VK_FORMAT_R64G64B64_SINT,
-        vk::VK_FORMAT_R64G64B64_SFLOAT,
-        vk::VK_FORMAT_R64G64B64A64_UINT,
-        vk::VK_FORMAT_R64G64B64A64_SINT,
-        vk::VK_FORMAT_R64G64B64A64_SFLOAT,
-        vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-        vk::VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-        vk::VK_FORMAT_D16_UNORM,
-        vk::VK_FORMAT_X8_D24_UNORM_PACK32,
-        vk::VK_FORMAT_D32_SFLOAT,
-        vk::VK_FORMAT_S8_UINT,
-        vk::VK_FORMAT_D16_UNORM_S8_UINT,
-        vk::VK_FORMAT_D24_UNORM_S8_UINT,
-        vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
-        vk::VK_FORMAT_BC1_RGB_UNORM_BLOCK,
-        vk::VK_FORMAT_BC1_RGB_SRGB_BLOCK,
-        vk::VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
-        vk::VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
-        vk::VK_FORMAT_BC2_UNORM_BLOCK,
-        vk::VK_FORMAT_BC2_SRGB_BLOCK,
-        vk::VK_FORMAT_BC3_UNORM_BLOCK,
-        vk::VK_FORMAT_BC3_SRGB_BLOCK,
-        vk::VK_FORMAT_BC4_UNORM_BLOCK,
-        vk::VK_FORMAT_BC4_SNORM_BLOCK,
-        vk::VK_FORMAT_BC5_UNORM_BLOCK,
-        vk::VK_FORMAT_BC5_SNORM_BLOCK,
-        vk::VK_FORMAT_BC6H_UFLOAT_BLOCK,
-        vk::VK_FORMAT_BC6H_SFLOAT_BLOCK,
-        vk::VK_FORMAT_BC7_UNORM_BLOCK,
-        vk::VK_FORMAT_BC7_SRGB_BLOCK,
-        vk::VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
-        vk::VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
-        vk::VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
-        vk::VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
-        vk::VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
-        vk::VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
-        vk::VK_FORMAT_EAC_R11_UNORM_BLOCK,
-        vk::VK_FORMAT_EAC_R11_SNORM_BLOCK,
-        vk::VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
-        vk::VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-        vk::VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
-        vk::VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK,
-        vk::VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK,
-        vk::VK_FORMAT_G8B8G8R8_422_UNORM,
-        vk::VK_FORMAT_B8G8R8G8_422_UNORM,
-        vk::VK_FORMAT_R10X6_UNORM_PACK16,
-        vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
-        vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-        vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_R12X4_UNORM_PACK16,
-        vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
-        vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
-        vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_G16B16G16R16_422_UNORM,
-        vk::VK_FORMAT_B16G16R16G16_422_UNORM,
-        vk::VK_FORMAT_A4R4G4B4_UNORM_PACK16,
-        vk::VK_FORMAT_A4B4G4R4_UNORM_PACK16,
-        vk::VK_FORMAT_A1B5G5R5_UNORM_PACK16,
-        vk::VK_FORMAT_A8_UNORM,
-    };
-
     constexpr struct ImageParams
     {
         uint32_t depth;
@@ -5141,45 +4923,8 @@ void testGenerator(tcu::TestCaseGroup *group)
         {1, 4, "1_4"},
     };
 
-    std::vector<VkFormat> ycbcrFormats = {
-        VK_FORMAT_G8B8G8R8_422_UNORM,
-        VK_FORMAT_B8G8R8G8_422_UNORM,
-        VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
-        VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-        VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
-        VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
-        VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
-        VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-        VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
-        VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
-        VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
-        VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
-        VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
-        VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
-        VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
-        VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
-        VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
-        VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
-        VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
-        VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
-        VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
-        VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
-        VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16,
-        VK_FORMAT_G16B16G16R16_422_UNORM,
-        VK_FORMAT_B16G16R16G16_422_UNORM,
-        VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
-        VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
-        VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
-        VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
-        VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
-        VK_FORMAT_G8_B8R8_2PLANE_444_UNORM,
-        VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16,
-        VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16,
-        VK_FORMAT_G16_B16R16_2PLANE_444_UNORM,
-    };
-
     de::MovePtr<tcu::TestCaseGroup> simpleGroup(new tcu::TestCaseGroup(testCtx, "simple"));
-    for (const auto &format : allFormats)
+    for (const auto &format : formats::nonPlanarFormats)
     {
         de::MovePtr<tcu::TestCaseGroup> formatGroup(
             new tcu::TestCaseGroup(testCtx, getFormatShortString(format).c_str()));
@@ -5192,11 +4937,9 @@ void testGenerator(tcu::TestCaseGroup *group)
                 for (const auto imageParamsTest : imageParamsTests)
                 {
                     // Formats that require ycbcr conversion can not be 3d
-                    if (imageParamsTest.depth > 1 &&
-                        std::find(ycbcrFormats.begin(), ycbcrFormats.end(), format) != ycbcrFormats.end())
-                    {
+                    if (imageParamsTest.depth > 1 && de::contains(formats::ycbcrFormats, format))
                         continue;
-                    }
+
                     SimpleHostImageCopyTestParameters params;
                     params.format      = format;
                     params.tiling      = tiling.tiling;

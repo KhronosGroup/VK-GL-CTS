@@ -72,7 +72,8 @@ bool compileHlslToSpirV(const HlslSource &src, std::vector<uint32_t> *dst, glu::
  * If deqp was built without glslang (and thus compiler is not available)
  * tcu::NotSupportedError will be thrown instead.
  *//*--------------------------------------------------------------------*/
-void stripSpirVDebugInfo(const size_t numSrcInstrs, const uint32_t *srcInstrs, std::vector<uint32_t> *dst);
+void stripSpirVDebugInfo(const size_t numSrcInstrs, const uint32_t *srcInstrs, std::vector<uint32_t> *dst,
+                         const SpirvValidatorOptions &options);
 
 } // namespace vk
 

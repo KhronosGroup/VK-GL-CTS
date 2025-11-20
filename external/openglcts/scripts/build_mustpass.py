@@ -100,6 +100,7 @@ ES32KHR_MODULE = getModuleByName("KHR-GLES32")
 ESEXTKHR_MODULE = getModuleByName("KHR-GLESEXT")
 NOCTX_ES2_KHR_MODULE = getModuleByName("KHR-NOCTX-ES2")
 NOCTX_ES32_KHR_MODULE = getModuleByName("KHR-NOCTX-ES32")
+SINGLE_ES31_KHR_MODULE = getModuleByName("KHR-Single-GLES31")
 SINGLE_ES32_KHR_MODULE = getModuleByName("KHR-Single-GLES32")
 
 GLCTS_GLES2_PKG = Package(module = ES2CTS_MODULE, configurations = [
@@ -766,6 +767,15 @@ GLCTS_NOCTX_ES32_KHR_PKG = Package(module = NOCTX_ES32_KHR_MODULE, configuration
                     filters = MAIN_GLES32_COMMON_FILTERS),
     ])
 
+GLCTS_SINGLE_ES31_KHR_PKG = Package(module = SINGLE_ES31_KHR_MODULE, configurations = [
+        # Main
+        Configuration(name = "khr-single",
+                    surfacewidth = "64",
+                    surfaceheight = "64",
+                    baseseed = "1",
+                    filters = [include("gles31-khr-single.txt")]),
+    ])
+
 GLCTS_SINGLE_ES32_KHR_PKG = Package(module = SINGLE_ES32_KHR_MODULE, configurations = [
         # Main
         Configuration(name = "khr-single",
@@ -887,7 +897,7 @@ ES_MUSTPASS_LISTS = [
             packages = [GLCTS_NOCTX_ES2_KHR_PKG, GLCTS_NOCTX_ES32_KHR_PKG]),
 
     Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "3.2.6.x", isCurrent=False,
-            packages = [GLCTS_SINGLE_ES32_KHR_PKG]),
+            packages = [GLCTS_SINGLE_ES31_KHR_PKG, GLCTS_SINGLE_ES32_KHR_PKG]),
 
     Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "3.2.6.x", isCurrent=False,
             packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),
@@ -913,7 +923,7 @@ ES_MUSTPASS_LISTS = [
             packages = [GLCTS_NOCTX_ES2_KHR_PKG, GLCTS_NOCTX_ES32_KHR_PKG]),
 
     Mustpass(project = CTS_KHR_MP_SINGLE_ES_PROJECT, version = "main", isCurrent=True,
-            packages = [GLCTS_SINGLE_ES32_KHR_PKG]),
+            packages = [GLCTS_SINGLE_ES31_KHR_PKG, GLCTS_SINGLE_ES32_KHR_PKG]),
 
     Mustpass(project = CTS_AOSP_MP_ES_PROJECT, version = "main", isCurrent=True,
             packages = [GLCTS_3_2_3_GLES2_PKG, GLCTS_3_2_3_GLES3_PKG, GLCTS_3_2_3_GLES31_PKG]),

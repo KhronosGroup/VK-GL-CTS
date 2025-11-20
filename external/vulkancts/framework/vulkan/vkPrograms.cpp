@@ -754,7 +754,8 @@ ProgramBinary *buildProgram(const GlslSource &program, glu::ShaderProgramInfo *b
                 TCU_THROW(InternalError, "Compiling GLSL to SPIR-V failed");
 
             TCU_CHECK_INTERNAL(!nonStrippedBinary.empty());
-            stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary);
+            stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary,
+                                program.buildOptions.getSpirvValidatorOptions());
             TCU_CHECK_INTERNAL(!binary.empty());
         }
 
@@ -844,7 +845,8 @@ ProgramBinary *buildProgram(const HlslSource &program, glu::ShaderProgramInfo *b
                 TCU_THROW(InternalError, "Compiling HLSL to SPIR-V failed");
 
             TCU_CHECK_INTERNAL(!nonStrippedBinary.empty());
-            stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary);
+            stripSpirVDebugInfo(nonStrippedBinary.size(), &nonStrippedBinary[0], &binary,
+                                program.buildOptions.getSpirvValidatorOptions());
             TCU_CHECK_INTERNAL(!binary.empty());
         }
 

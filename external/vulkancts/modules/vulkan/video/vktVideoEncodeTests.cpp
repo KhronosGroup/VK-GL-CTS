@@ -116,6 +116,17 @@ enum TestType
     TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED,
     TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED,
 
+    // Empty-region intra refresh test types for H264
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION,
+
+    // Mid-way intra refresh test types for H264
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY,
+    TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY,
+
     TEST_TYPE_H265_ENCODE_I,
     TEST_TYPE_H265_ENCODE_RC_VBR,
     TEST_TYPE_H265_ENCODE_RC_CBR,
@@ -141,6 +152,17 @@ enum TestType
     TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED,
     TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED,
     TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED,
+
+    // Empty-region intra refresh test types for H265
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION,
+
+    // Mid-way intra refresh test types for H265
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY,
+    TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY,
 
     TEST_TYPE_LAST
 };
@@ -226,6 +248,27 @@ const char *getTestName(const TestType testType)
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED:
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED:
         return "intra_refresh_column_based";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION:
+        return "intra_refresh_any_block_based_empty_region";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION:
+        return "intra_refresh_row_based_empty_region";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION:
+        return "intra_refresh_column_based_empty_region";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY:
+        return "intra_refresh_picture_partition_midway";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
+        return "intra_refresh_any_block_based_midway";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
+        return "intra_refresh_row_based_midway";
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
+        return "intra_refresh_column_based_midway";
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
@@ -258,6 +301,13 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED:
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
         return TEST_CODEC_H264;
     case TEST_TYPE_H265_ENCODE_I:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
@@ -282,6 +332,13 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED:
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
         return TEST_CODEC_H265;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
@@ -324,6 +381,8 @@ enum Option : uint32_t
     IntraRefreshBlockBased       = 1 << 13, // Block-based intra refresh mode
     IntraRefreshBlockRow         = 1 << 14, // Block row-based intra refresh mode
     IntraRefreshBlockColumn      = 1 << 15, // Block column-based intra refresh mode
+    IntraRefreshEmptyRegion      = 1 << 16, // Empty region intra refresh (uses maxIntraRefreshCycleDuration)
+    IntraRefreshMidway           = 1 << 17, // Start new intra refresh cycle mid-way through previous one
 };
 
 #define INTRA_REFRESH_ENCODE_TEST_PATTERN(testType, clipName, option)                                         \
@@ -345,6 +404,19 @@ enum Option : uint32_t
              refs<std::vector<uint8_t>>({11}, {}), refs<std::vector<uint8_t>>({12}, {}),                      \
              refs<std::vector<uint8_t>>({13}, {}), refs<std::vector<uint8_t>>({14}, {})},                     \
             static_cast<Option>(option)                                                                       \
+    }
+
+#define INTRA_REFRESH_MIDWAY_TEST_PATTERN(testType, clipName, option)                             \
+    {                                                                                             \
+        testType, clipName, 1, {IDR_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME, P_FRAME}, \
+            {0, 1, 2, 3, 4, 5, 6}, {0, 1, 2, 3, 4, 5, 6}, 2, {1, 0},                              \
+            {refs(0, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0), refs(1, 0)}, \
+            {{}, {0}, {1}, {0}, {1}, {0}, {1}}, {0, 1, 0, 1, 0, 1, 0},                            \
+            {refs<std::vector<uint8_t>>({}, {}),  refs<std::vector<uint8_t>>({0}, {}),            \
+             refs<std::vector<uint8_t>>({1}, {}), refs<std::vector<uint8_t>>({0}, {}),            \
+             refs<std::vector<uint8_t>>({1}, {}), refs<std::vector<uint8_t>>({0}, {}),            \
+             refs<std::vector<uint8_t>>({1}, {})},                                                \
+            static_cast<Option>(option | Option::IntraRefreshMidway)                              \
     }
 
 struct EncodeTestParam
@@ -643,6 +715,45 @@ struct EncodeTestParam
                                       Option::IntraRefreshBlockRow),
     INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H264_ENC_E,
                                       Option::IntraRefreshBlockColumn),
+    {TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION,
+     CLIP_H264_ENC_E,
+     1,
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {1, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockBased | Option::IntraRefreshEmptyRegion)},
+    {TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION,
+     CLIP_H264_ENC_E,
+     1,
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {1, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockRow | Option::IntraRefreshEmptyRegion)},
+    {TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION,
+     CLIP_H264_ENC_E,
+     1,
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {1, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockColumn | Option::IntraRefreshEmptyRegion)},
     {TEST_TYPE_H265_ENCODE_I,
      CLIP_H265_ENC_F,
      1,
@@ -921,6 +1032,65 @@ struct EncodeTestParam
     INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED, CLIP_H265_ENC_F,
                                       Option::IntraRefreshBlockRow),
     INTRA_REFRESH_ENCODE_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshBlockColumn),
+    {TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION,
+     CLIP_H265_ENC_F,
+     1,
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {1, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockBased | Option::IntraRefreshEmptyRegion)},
+    {TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION,
+     CLIP_H265_ENC_F,
+     1,
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {1, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockRow | Option::IntraRefreshEmptyRegion)},
+    {TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION,
+     CLIP_H265_ENC_F,
+     1,
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {1, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockColumn | Option::IntraRefreshEmptyRegion)},
+
+    // Mid-way intra refresh tests for H264
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockColumn),
+
+    // Mid-way intra refresh tests for H265
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H265_ENC_F,
+                                      Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H265_ENC_F,
                                       Option::IntraRefreshBlockColumn)};
 
 class TestDefinition
@@ -1719,6 +1889,8 @@ private:
     bool m_useIntraRefresh;
     VkVideoEncodeIntraRefreshModeFlagBitsKHR m_intraRefreshMode;
     uint32_t m_intraRefreshRegionCount;
+    bool m_intraRefreshEmptyRegion;
+    bool m_intraRefreshMidway;
     uint32_t m_intraRefreshCycleDuration;
     MovePtr<VkVideoEncodeIntraRefreshCapabilitiesKHR> m_videoEncodeIntraRefreshCapabilities;
     void queryIntraRefreshCapabilities(void);
@@ -1728,6 +1900,7 @@ private:
     void updateReferenceSlotsForIntraRefresh(uint32_t nalIdx, VkVideoReferenceSlotInfoKHR *referenceSlots,
                                              uint8_t refsCount);
     VkVideoEncodeFlagsKHR getEncodeFlags(uint32_t nalIdx);
+    uint32_t getIntraRefreshIndex(uint32_t nalIdx) const;
 
     uint32_t calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width, uint32_t height);
 };
@@ -1908,7 +2081,9 @@ void VideoEncodeTestInstance::initializeTestParameters()
     else
         m_intraRefreshMode = VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR;
 
-    m_useIntraRefresh           = (m_intraRefreshMode != VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR);
+    m_intraRefreshEmptyRegion   = m_testDefinition->hasOption(Option::IntraRefreshEmptyRegion);
+    m_intraRefreshMidway        = m_testDefinition->hasOption(Option::IntraRefreshMidway);
+    m_useIntraRefresh           = m_intraRefreshMode != VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR;
     m_intraRefreshRegionCount   = 0;
     m_intraRefreshCycleDuration = 0;
 }
@@ -3000,7 +3175,7 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
             m_intraRefreshMode == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR && nalIdx > 0 &&
             nalIdx <= m_intraRefreshRegionCount)
         {
-            uint32_t intraRefreshIndex = nalIdx - 1;
+            uint32_t intraRefreshIndex = getIntraRefreshIndex(nalIdx);
             if (sliceIdx == intraRefreshIndex)
                 currentSliceType = STD_VIDEO_H264_SLICE_TYPE_I;
         }
@@ -3053,7 +3228,7 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
             m_intraRefreshMode == VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_PER_PICTURE_PARTITION_BIT_KHR && nalIdx > 0 &&
             nalIdx <= m_intraRefreshRegionCount)
         {
-            uint32_t intraRefreshIndex = nalIdx - 1;
+            uint32_t intraRefreshIndex = getIntraRefreshIndex(nalIdx);
             if (sliceIdx == intraRefreshIndex)
                 currentSliceType = STD_VIDEO_H265_SLICE_TYPE_I;
         }
@@ -3523,22 +3698,50 @@ void VideoEncodeTestInstance::queryIntraRefreshCapabilities(void)
         }
     }
 
-    m_intraRefreshCycleDuration = m_intraRefreshRegionCount;
-
-    // For basic intra-refresh tests, the GOP frame count is clamped to the cycle duration plus one IDR frame.
-    m_gopFrameCount = std::min(m_gopFrameCount, m_intraRefreshCycleDuration + 1);
+    // For empty-region tests, use maxIntraRefreshCycleDuration to create empty region
+    if (m_intraRefreshEmptyRegion)
+    {
+        m_intraRefreshCycleDuration = m_videoEncodeIntraRefreshCapabilities->maxIntraRefreshCycleDuration;
+        m_intraRefreshRegionCount   = 1; // Only one frame with empty intra refresh
+    }
+    else if (m_intraRefreshMidway)
+    {
+        // For mid-way tests, set cycle duration to 4 and region count to 6 (to cover all 7 frames - 1 IDR)
+        m_intraRefreshCycleDuration = 4;
+        m_intraRefreshRegionCount   = 6; // Frames 1-6 (after IDR frame 0)
+        // Ensure the implementation supports at least cycle duration of 4
+        if (m_videoEncodeIntraRefreshCapabilities->maxIntraRefreshCycleDuration < 4)
+        {
+            TCU_THROW(NotSupportedError,
+                      "Implementation does not support intra refresh cycle duration of 4 or greater");
+        }
+    }
+    else
+    {
+        m_intraRefreshCycleDuration = m_intraRefreshRegionCount;
+        // For basic intra-refresh tests, the GOP frame count is clamped to the cycle duration plus one IDR frame.
+        m_gopFrameCount = std::min(m_gopFrameCount, m_intraRefreshCycleDuration + 1);
+    }
 }
 
 MovePtr<VkVideoEncodeIntraRefreshInfoKHR> VideoEncodeTestInstance::createIntraRefreshInfo(uint32_t nalIdx)
 {
-    if (!m_useIntraRefresh || nalIdx == 0 || nalIdx > m_intraRefreshRegionCount)
+    if (!m_useIntraRefresh || nalIdx == 0)
         return MovePtr<VkVideoEncodeIntraRefreshInfoKHR>(); // Return empty MovePtr instead of nullptr
+
+    // For normal intra refresh tests, check region count
+    if (!m_intraRefreshEmptyRegion && !m_intraRefreshMidway && nalIdx > m_intraRefreshRegionCount)
+        return MovePtr<VkVideoEncodeIntraRefreshInfoKHR>();
+
+    // For midway tests, check that we're within the 6 frames that have intra refresh
+    if (m_intraRefreshMidway && nalIdx > 6)
+        return MovePtr<VkVideoEncodeIntraRefreshInfoKHR>();
 
     MovePtr<VkVideoEncodeIntraRefreshInfoKHR> intraRefreshInfo(new VkVideoEncodeIntraRefreshInfoKHR());
     intraRefreshInfo->sType                     = VK_STRUCTURE_TYPE_VIDEO_ENCODE_INTRA_REFRESH_INFO_KHR;
     intraRefreshInfo->pNext                     = nullptr;
     intraRefreshInfo->intraRefreshCycleDuration = m_intraRefreshCycleDuration;
-    intraRefreshInfo->intraRefreshIndex         = nalIdx - 1; // Index 0 is the first intra refresh frame (after IDR)
+    intraRefreshInfo->intraRefreshIndex         = getIntraRefreshIndex(nalIdx);
 
     return intraRefreshInfo;
 }
@@ -3550,11 +3753,14 @@ void VideoEncodeTestInstance::updateReferenceSlotsForIntraRefresh(uint32_t nalId
     if (!m_useIntraRefresh || nalIdx <= 1 || nalIdx > m_intraRefreshRegionCount)
         return;
 
+    // dirtyIntraRefreshRegions = intraRefreshCycleDuration - intraRefreshIndex
+    uint32_t currentIntraRefreshIndex = getIntraRefreshIndex(nalIdx);
+
     // Only frames after the first intra refresh frame need reference intra refresh info
     MovePtr<VkVideoReferenceIntraRefreshInfoKHR> referenceIntraRefreshInfo(new VkVideoReferenceIntraRefreshInfoKHR());
     referenceIntraRefreshInfo->sType                    = VK_STRUCTURE_TYPE_VIDEO_REFERENCE_INTRA_REFRESH_INFO_KHR;
     referenceIntraRefreshInfo->pNext                    = nullptr;
-    referenceIntraRefreshInfo->dirtyIntraRefreshRegions = m_intraRefreshCycleDuration - (nalIdx - 1);
+    referenceIntraRefreshInfo->dirtyIntraRefreshRegions = m_intraRefreshCycleDuration - currentIntraRefreshIndex;
 
     // Add the reference intra refresh info to the immediately preceding reference frame
     if (refsCount > 0)
@@ -3589,6 +3795,28 @@ VkVideoEncodeFlagsKHR VideoEncodeTestInstance::getEncodeFlags(uint32_t nalIdx)
         encodeFlags |= VK_VIDEO_ENCODE_INTRA_REFRESH_BIT_KHR;
 
     return encodeFlags;
+}
+
+uint32_t VideoEncodeTestInstance::getIntraRefreshIndex(uint32_t nalIdx) const
+{
+    if (m_intraRefreshMidway)
+    {
+        // For mid-way tests:
+        // - Frames 1-2: first cycle (indices 0, 1)
+        // - Frame 3: start new cycle (index 0)
+        // - Frames 4-6: continue new cycle (indices 1, 2, 3)
+        if (nalIdx <= 2)
+            return nalIdx - 1; // Index 0, 1
+        else if (nalIdx == 3)
+            return 0; // Start new cycle
+        else
+            return nalIdx - 3; // Index 1, 2, 3 for frames 4, 5, 6
+    }
+    else
+    {
+        // For normal intra refresh tests
+        return nalIdx - 1; // Index 0 is the first intra refresh frame (after IDR)
+    }
 }
 
 uint32_t VideoEncodeTestInstance::calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width,
@@ -3688,6 +3916,13 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED:
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
+    case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
         context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
         context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
         break;
@@ -3722,6 +3957,13 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED:
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED:
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_EMPTY_REGION:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
         context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
         context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
         break;

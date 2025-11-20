@@ -148,6 +148,7 @@ public:
     uint32_t getUniversalQueueFamilyIndex(void) const;
     vk::VkQueue getUniversalQueue(void) const;
     uint32_t getUsedApiVersion(void) const;
+    uint32_t getEquivalentApiVersion(void) const;
     uint32_t getSparseQueueFamilyIndex(void) const;
     vk::VkQueue getSparseQueue(void) const;
     int getComputeQueueFamilyIndex(void) const;
@@ -238,6 +239,11 @@ public:
     TestCase(tcu::TestContext &testCtx, const std::string &name);
     virtual ~TestCase(void) = default;
 
+    virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
+    virtual void checkSupport(Context &context) const;
+    virtual void initPrograms(vk::SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const;
+
     // Override this function if the test requires a custom device. The framework
     // invokes this function to determine whether one of the recently created
     // devices can be reused or if a new custom device needs to be created with
@@ -264,11 +270,6 @@ public:
     // time when the logical device has not been created in methods that do not
     // have access to Context, such as checkSupport() or delayedInit().
     de::SharedPtr<const ContextManager> getContextManager() const;
-
-    virtual void delayedInit(void); // non-const init called after checkSupport but before initPrograms
-    virtual void initPrograms(vk::SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const;
-    virtual void checkSupport(Context &context) const;
 
     IterateResult iterate(void)
     {

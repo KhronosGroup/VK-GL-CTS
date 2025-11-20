@@ -487,6 +487,10 @@ bool TestInstance::testImage(const ImageWithMemory &image)
             bufferBarrier.offset                = 0;
             bufferBarrier.size                  = VK_WHOLE_SIZE;
 
+            // VUID-vkCmdPipelineBarrier-srcStageMask-09633
+            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   (VkDependencyFlags)0, 0, VK_NULL_HANDLE, 1, &bufferBarrier, 0, VK_NULL_HANDLE);
+
             // Image is unmodified since the most recent release
             VkExternalMemoryAcquireUnmodifiedEXT acquireUnmodified = initVulkanStructure();
             acquireUnmodified.acquireUnmodifiedMemory              = VK_TRUE;
@@ -503,8 +507,8 @@ bool TestInstance::testImage(const ImageWithMemory &image)
             imageBarrier.image                = image.get();
             imageBarrier.subresourceRange     = imageSubresourceRange;
 
-            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                   (VkDependencyFlags)0, 0, VK_NULL_HANDLE, 1, &bufferBarrier, 1, &imageBarrier);
+            vkd.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                   (VkDependencyFlags)0, 0, VK_NULL_HANDLE, 0, VK_NULL_HANDLE, 1, &imageBarrier);
         }
 
         {

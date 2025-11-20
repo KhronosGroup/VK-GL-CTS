@@ -914,7 +914,8 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t foreverNs = 1000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -1735,7 +1736,8 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t foreverNs = 1000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -2234,7 +2236,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     const std::vector<CommandBufferSp> commandBuffers(
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
-    const uint64_t foreverNs = 0xFFFFFFFFFFFFFFFFul;
+    // VUID-vkAcquireNextImageKHR-surface-7782
+    const uint64_t foreverNs = 1000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,

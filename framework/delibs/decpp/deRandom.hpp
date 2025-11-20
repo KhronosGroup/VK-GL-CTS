@@ -221,6 +221,11 @@ inline float randomScalar(de::Random &rnd, float minValue, float maxValue)
     return rnd.getFloat(minValue, maxValue);
 }
 template <>
+inline double randomScalar(de::Random &rnd, double minValue, double maxValue)
+{
+    return rnd.getDouble(minValue, maxValue);
+}
+template <>
 inline int32_t randomScalar(de::Random &rnd, int32_t minValue, int32_t maxValue)
 {
     return rnd.getInt(minValue, maxValue);

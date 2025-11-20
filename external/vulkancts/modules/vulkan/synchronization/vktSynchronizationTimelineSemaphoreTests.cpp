@@ -2224,7 +2224,8 @@ public:
 
         // Submit
         {
-            submit(vk, *writeCmdBuffer, *m_writeIteration, *semaphore, &m_hostTimelineValue, 1);
+            uint64_t hostWaitValues[] = {m_hostTimelineValue, 0u};
+            submit(vk, *writeCmdBuffer, *m_writeIteration, *semaphore, hostWaitValues, 1);
             for (uint32_t copyOpIdx = 0; copyOpIdx < m_copyIterations.size(); copyOpIdx++)
             {
                 uint64_t waitValues[2] = {

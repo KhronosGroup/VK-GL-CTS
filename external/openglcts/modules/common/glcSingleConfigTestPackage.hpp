@@ -93,7 +93,24 @@ private:
     SingleConfigGL46TestPackage &operator=(const SingleConfigGL46TestPackage &other);
 };
 
-class SingleConfigES32TestPackage : public deqp::TestPackage
+class SingleConfigES31TestPackage : public deqp::TestPackage
+{
+public:
+    SingleConfigES31TestPackage(tcu::TestContext &testCtx, const char *packageName,
+                                const char *description            = "CTS Single Config ES31 Package",
+                                glu::ContextType renderContextType = glu::ContextType(glu::ApiType::es(3, 1)));
+    ~SingleConfigES31TestPackage(void);
+
+    void init(void);
+
+    virtual tcu::TestCaseExecutor *createExecutor(void) const;
+
+private:
+    SingleConfigES31TestPackage(const SingleConfigES31TestPackage &other);
+    SingleConfigES31TestPackage &operator=(const SingleConfigES31TestPackage &other);
+};
+
+class SingleConfigES32TestPackage : public SingleConfigES31TestPackage
 {
 public:
     SingleConfigES32TestPackage(tcu::TestContext &testCtx, const char *packageName,

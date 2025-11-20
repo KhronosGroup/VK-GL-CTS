@@ -59,12 +59,6 @@ struct DeferredThreadParams
     VkResult result;
 };
 
-std::string getFormatSimpleName(vk::VkFormat format)
-{
-    constexpr size_t kPrefixLen = 10; // strlen("VK_FORMAT_")
-    return de::toLower(de::toString(format).substr(kPrefixLen));
-}
-
 bool pointInTriangle2D(const tcu::Vec3 &p, const tcu::Vec3 &p0, const tcu::Vec3 &p1, const tcu::Vec3 &p2)
 {
     float s = p0.y() * p2.x() - p0.x() * p2.y() + (p2.y() - p0.y()) * p.x() + (p0.x() - p2.x()) * p.y();
@@ -460,6 +454,29 @@ static inline VkAccelerationStructureGeometryDataKHR makeVkAccelerationStructure
     deMemset(&result, 0, sizeof(result));
 
     result.aabbs = aabbs;
+
+    return result;
+}
+
+static inline VkAccelerationStructureGeometrySpheresDataNV *makeVkAccelerationStructureGeometryDataKHR(
+    const VkAccelerationStructureGeometrySpheresDataNV &spheres)
+{
+    VkAccelerationStructureGeometrySpheresDataNV *result = new VkAccelerationStructureGeometrySpheresDataNV();
+
+    deMemset(result, 0, sizeof(result));
+    memcpy(result, &spheres, sizeof(VkAccelerationStructureGeometrySpheresDataNV));
+
+    return result;
+}
+
+static inline VkAccelerationStructureGeometryLinearSweptSpheresDataNV *makeVkAccelerationStructureGeometryDataKHR(
+    const VkAccelerationStructureGeometryLinearSweptSpheresDataNV &LSS)
+{
+    VkAccelerationStructureGeometryLinearSweptSpheresDataNV *result =
+        new VkAccelerationStructureGeometryLinearSweptSpheresDataNV();
+
+    deMemset(result, 0, sizeof(result));
+    memcpy(result, &LSS, sizeof(VkAccelerationStructureGeometryLinearSweptSpheresDataNV));
 
     return result;
 }
@@ -875,6 +892,42 @@ void BottomLevelAccelerationStructure::addGeometry(
     addGeometry(geometry);
 }
 
+void BottomLevelAccelerationStructure::addSphereGeometry(
+    const std::vector<tcu::Vec3> &geometryData, const std::vector<float> &radiusData,
+    const std::vector<uint32_t> &indexData, const bool linear, const VkIndexType indexType,
+    const VkRayTracingLssIndexingModeNV indexingMode, const bool useEndcaps, const bool doBLASCopy,
+    const VkFormat vertexFormat, const VkFormat radiusFormat, const VkGeometryFlagsKHR geometryFlags)
+{
+    DE_ASSERT(geometryData.size() > 0);
+
+    de::SharedPtr<RaytracedGeometryBase> geometry = makeRaytracedGeometry(
+        linear ? VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV : VK_GEOMETRY_TYPE_SPHERES_NV, vertexFormat, indexType);
+    for (auto it = begin(geometryData), eit = end(geometryData); it != eit; ++it)
+        geometry->addVertex(*it);
+    geometry->setRadiusFormat(radiusFormat);
+    if (radiusFormat == VK_FORMAT_R32_SFLOAT)
+    {
+        geometry->setRadiusSize(sizeof(float));
+    }
+    else if (radiusFormat == VK_FORMAT_R16_SFLOAT)
+    {
+        geometry->setRadiusSize(sizeof(deFloat16));
+    }
+    geometry->setGeometryFlags(geometryFlags);
+    geometry->setIndexingMode(indexingMode);
+    geometry->setEndcaps(useEndcaps);
+    geometry->setDoBLASCopy(doBLASCopy);
+    if (indexType != VK_INDEX_TYPE_NONE_KHR)
+    {
+        for (uint32_t index : indexData)
+            geometry->addIndex(index);
+    }
+
+    for (float radius : radiusData)
+        geometry->addRadius(radius);
+    addGeometry(geometry);
+}
+
 VkAccelerationStructureBuildSizesInfoKHR BottomLevelAccelerationStructure::getStructureBuildSizes() const
 {
     return {
@@ -928,7 +981,7 @@ void updateVertexBuffer(const DeviceInterface &vk, const VkDevice device,
 
         // Make sure we're starting off well-aligned so we can min-align by pure offsetting
         DE_ASSERT(geometryMinAlign <= geometryVertexAlign);
-        DE_ASSERT((bufferOffset & (geometryVertexAlign - 1)) == 0);
+        DE_ASSERT((bufferOffset & (geometryVertexAlign - 1)) == 0 || (geometryMinAlign == 0));
 
         bufferOffset += geometryMinAlign;
 
@@ -941,6 +994,69 @@ void updateVertexBuffer(const DeviceInterface &vk, const VkDevice device,
     // align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
     // for the vertex and index buffers, so flushing is actually not needed.
     flushAlloc(vk, device, geometryAlloc);
+}
+
+VkDeviceSize getRadiusBufferSize(const std::vector<de::SharedPtr<RaytracedGeometryBase>> &geometriesData)
+{
+    DE_ASSERT(!geometriesData.empty());
+
+    VkDeviceSize bufferSizeBytes = 0;
+    for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
+        bufferSizeBytes += deAlignSize(geometriesData[geometryNdx]->getRadiusByteSize(), 8);
+    return bufferSizeBytes;
+}
+
+BufferWithMemory *createRadiusBuffer(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                     const VkDeviceSize bufferSizeBytes)
+{
+    DE_ASSERT(bufferSizeBytes);
+    const VkBufferCreateInfo bufferCreateInfo =
+        makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
+                                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    return new BufferWithMemory(vk, device, allocator, bufferCreateInfo,
+                                MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
+                                    MemoryRequirement::DeviceAddress);
+}
+
+BufferWithMemory *createRadiusBuffer(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                                     const std::vector<de::SharedPtr<RaytracedGeometryBase>> &geometriesData)
+{
+    const VkDeviceSize bufferSizeBytes = getRadiusBufferSize(geometriesData);
+    return bufferSizeBytes ? createRadiusBuffer(vk, device, allocator, bufferSizeBytes) : nullptr;
+}
+
+void updateRadiusBuffer(const DeviceInterface &vk, const VkDevice device,
+                        const std::vector<de::SharedPtr<RaytracedGeometryBase>> &geometriesData,
+                        BufferWithMemory *radiusBuffer, VkDeviceSize geometriesOffset)
+{
+    const Allocation &radiusAlloc = radiusBuffer->getAllocation();
+    float *bufferStart            = static_cast<float *>(radiusAlloc.getHostPtr());
+    VkDeviceSize bufferOffset     = geometriesOffset;
+
+    for (size_t geometryNdx = 0; geometryNdx < geometriesData.size(); ++geometryNdx)
+    {
+        if (geometriesData[geometryNdx]->isSpheresType())
+        {
+            const size_t radiusPtrSize = geometriesData[geometryNdx]->getRadiusByteSize();
+            if (geometriesData[geometryNdx]->getRadiusFormat() == VK_FORMAT_R32_SFLOAT)
+            {
+                const void *radiusPtr = geometriesData[geometryNdx]->getRadiusPointer();
+                deMemcpy(&bufferStart[bufferOffset], radiusPtr, radiusPtrSize);
+            }
+            else if (geometriesData[geometryNdx]->getRadiusFormat() == VK_FORMAT_R16_SFLOAT)
+            {
+                geometriesData[geometryNdx]->addRadius16();
+                const void *radiusPtr16 = geometriesData[geometryNdx]->getRadiusPointer16();
+                deMemcpy(&bufferStart[bufferOffset], radiusPtr16, radiusPtrSize);
+            }
+
+            bufferOffset += deAlignSize(radiusPtrSize, 8);
+        }
+    }
+    // Flush the whole allocation. We could flush only the interesting range, but we'd need to be sure both the offset and size
+    // align to VkPhysicalDeviceLimits::nonCoherentAtomSize, which we are not considering. Also note most code uses Coherent memory
+    // for the vertex and index buffers, so flushing is actually not needed.
+    flushAlloc(vk, device, radiusAlloc);
 }
 
 VkDeviceSize getIndexBufferSize(const std::vector<de::SharedPtr<RaytracedGeometryBase>> &geometriesData)
@@ -1105,6 +1221,7 @@ public:
     void setVertexBufferAddressOffset(int32_t vertexBufferAddressOffset) override;
     void setIndexBufferAddressOffset(int32_t indexBufferAddressOffset) override;
     void setTransformBufferAddressOffset(int32_t transformBufferAddressOffset) override;
+    void setRadiusBufferAddressOffset(int32_t radiusBufferAddressOffset) override;
 
 protected:
     VkAccelerationStructureBuildTypeKHR m_buildType;
@@ -1119,16 +1236,21 @@ protected:
     bool m_useArrayOfPointers;
     bool m_useMaintenance5;
     Move<VkBuffer> m_accelerationStructureBuffer;
+    de::MovePtr<BufferWithMemory> m_accelerationStructureCopyBuffer;
+    de::MovePtr<BufferWithMemory> m_copyBuffer;
     de::MovePtr<Allocation> m_accelerationStructureAlloc;
     de::MovePtr<BufferWithMemory> m_vertexBuffer;
     de::MovePtr<BufferWithMemory> m_indexBuffer;
     de::MovePtr<BufferWithMemory> m_transformBuffer;
+    de::MovePtr<BufferWithMemory> m_radiusBuffer;
     de::MovePtr<BufferWithMemory> m_deviceScratchBuffer;
     de::UniquePtr<std::vector<uint8_t>> m_hostScratchBuffer;
     Move<VkAccelerationStructureKHR> m_accelerationStructureKHR;
+    Move<VkAccelerationStructureKHR> m_accelerationStructureCopyKHR;
     int32_t m_vertexBufferAddressOffset;
     int32_t m_indexBufferAddressOffset;
     int32_t m_transformBufferAddressOffset;
+    int32_t m_radiusBufferAddressOffset;
     VkBuffer m_indirectBuffer;
     VkDeviceSize m_indirectBufferOffset;
     uint32_t m_indirectBufferStride;
@@ -1140,7 +1262,8 @@ protected:
         std::vector<VkAccelerationStructureBuildRangeInfoKHR> &accelerationStructureBuildRangeInfoKHR,
         std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> &accelerationStructureGeometryMicromapsEXT,
         std::vector<uint32_t> &maxPrimitiveCounts, VkDeviceSize vertexBufferOffset = 0,
-        VkDeviceSize indexBufferOffset = 0, VkDeviceSize transformBufferOffset = 0) const;
+        VkDeviceSize indexBufferOffset = 0, VkDeviceSize transformBufferOffset = 0,
+        VkDeviceSize radiusBufferOffset = 0) const;
 
     virtual VkBuffer getAccelerationStructureBuffer() const override
     {
@@ -1171,6 +1294,11 @@ protected:
         return m_transformBuffer.get();
     }
 
+    virtual BufferWithMemory *getRadiusBuffer() const
+    {
+        return m_radiusBuffer.get();
+    }
+
     virtual VkDeviceSize getAccelerationStructureBufferOffset() const
     {
         return 0;
@@ -1188,6 +1316,10 @@ protected:
         return 0;
     }
     virtual VkDeviceSize getTransformBufferOffset() const
+    {
+        return 0;
+    }
+    virtual VkDeviceSize getRadiusBufferOffset() const
     {
         return 0;
     }
@@ -1224,12 +1356,14 @@ BottomLevelAccelerationStructureKHR::BottomLevelAccelerationStructureKHR()
     , m_vertexBuffer()
     , m_indexBuffer()
     , m_transformBuffer()
+    , m_radiusBuffer()
     , m_deviceScratchBuffer()
     , m_hostScratchBuffer(new std::vector<uint8_t>)
     , m_accelerationStructureKHR()
     , m_vertexBufferAddressOffset(0)
     , m_indexBufferAddressOffset(0)
     , m_transformBufferAddressOffset(0)
+    , m_radiusBufferAddressOffset(0)
     , m_indirectBuffer(VK_NULL_HANDLE)
     , m_indirectBufferOffset(0)
     , m_indirectBufferStride(0)
@@ -1324,6 +1458,11 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
         std::vector<VkAccelerationStructureBuildRangeInfoKHR> accelerationStructureBuildRangeInfoKHR;
         std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> accelerationStructureGeometryMicromapsEXT;
         std::vector<uint32_t> maxPrimitiveCounts;
+        if (m_geometriesData[0]->isSpheresType())
+        {
+
+            m_buildFlags = VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DATA_ACCESS_KHR;
+        }
         prepareGeometries(vk, device, accelerationStructureGeometriesKHR, accelerationStructureGeometriesKHRPointers,
                           accelerationStructureBuildRangeInfoKHR, accelerationStructureGeometryMicromapsEXT,
                           maxPrimitiveCounts);
@@ -1448,7 +1587,7 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
         const VkAccelerationStructureTypeKHR structureType =
             (m_createGeneric ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR :
                                VK_ACCELERATION_STRUCTURE_TYPE_BOTTOM_LEVEL_KHR);
-        const VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR{
+        VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR{
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR, //  VkStructureType sType;
             pNext,                                                    //  const void* pNext;
             m_createFlags,    //  VkAccelerationStructureCreateFlagsKHR createFlags;
@@ -1461,6 +1600,23 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
 
         m_accelerationStructureKHR =
             createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, nullptr);
+        if (m_geometriesData[0]->doBLASCopy())
+        {
+            const VkBufferCreateInfo bufferCreateInfo =
+                makeBufferCreateInfo(m_structureSize, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_STORAGE_BIT_KHR |
+                                                          VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+
+            m_copyBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
+                vk, device, allocator, bufferCreateInfo,
+                MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+
+            // Update acceleration structure create info to use the copy buffer
+            accelerationStructureCreateInfoKHR.buffer = m_copyBuffer.get()->get();
+
+            // Create acceleration structure with the copy buffer
+            m_accelerationStructureCopyKHR =
+                createAccelerationStructureKHR(vk, device, &accelerationStructureCreateInfoKHR, nullptr);
+        }
     }
 
     if ((!externalCreationBuffer) && (m_creationBufferUnbounded))
@@ -1524,6 +1680,20 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
                 new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
         else
             m_transformBuffer = de::MovePtr<BufferWithMemory>(nullptr);
+
+        if (m_geometriesData[0]->isSpheresType())
+        {
+            bufferCreateInfo.size = getRadiusBufferSize(m_geometriesData);
+            if (bufferCreateInfo.size)
+            {
+                m_radiusBuffer = de::MovePtr<BufferWithMemory>(
+                    new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+            }
+            else
+            {
+                m_radiusBuffer = de::MovePtr<BufferWithMemory>(nullptr);
+            }
+        }
     }
 }
 
@@ -1543,6 +1713,8 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
             updateIndexBuffer(vk, device, m_geometriesData, getIndexBuffer(), getIndexBufferOffset());
         if (getTransformBuffer() != VK_NULL_HANDLE)
             updateTransformBuffer(vk, device, m_geometriesData, getTransformBuffer(), getTransformBufferOffset());
+        if (m_geometriesData[0]->isSpheresType())
+            updateRadiusBuffer(vk, device, m_geometriesData, getRadiusBuffer(), getRadiusBufferOffset());
     }
 
     {
@@ -1643,6 +1815,18 @@ void BottomLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const
 
         cmdPipelineMemoryBarrier(vk, cmdBuffer, VK_PIPELINE_STAGE_ACCELERATION_STRUCTURE_BUILD_BIT_KHR,
                                  barrierDstStages, &memBarrier);
+        if (m_geometriesData[0]->doBLASCopy())
+        {
+            VkCopyAccelerationStructureInfoKHR copyAccelerationStructureInfo = {
+                VK_STRUCTURE_TYPE_COPY_ACCELERATION_STRUCTURE_INFO_KHR, // VkStructureType sType;
+                nullptr,                                                // const void* pNext;
+                m_accelerationStructureKHR.get(),                       // VkAccelerationStructureKHR src;
+                m_accelerationStructureCopyKHR.get(),                   // VkAccelerationStructureKHR dst;
+                VK_COPY_ACCELERATION_STRUCTURE_MODE_CLONE_KHR           // VkCopyAccelerationStructureModeKHR mode;
+            };
+
+            vk.cmdCopyAccelerationStructureKHR(cmdBuffer, &copyAccelerationStructureInfo);
+        }
     }
 }
 
@@ -1794,7 +1978,7 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
     std::vector<VkAccelerationStructureBuildRangeInfoKHR> &accelerationStructureBuildRangeInfoKHR,
     std::vector<VkAccelerationStructureTrianglesOpacityMicromapEXT> &accelerationStructureGeometryMicromapsEXT,
     std::vector<uint32_t> &maxPrimitiveCounts, VkDeviceSize vertexBufferOffset, VkDeviceSize indexBufferOffset,
-    VkDeviceSize transformBufferOffset) const
+    VkDeviceSize transformBufferOffset, VkDeviceSize radiusBufferOffset) const
 {
     accelerationStructureGeometriesKHR.resize(m_geometriesData.size());
     accelerationStructureGeometriesKHRPointers.resize(m_geometriesData.size());
@@ -1806,14 +1990,15 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
     {
         const de::SharedPtr<RaytracedGeometryBase> &geometryData = m_geometriesData[geometryNdx];
         const size_t geometryMinAlign                            = geometryData->getVertexMinAlign();
-        VkDeviceOrHostAddressConstKHR vertexData, indexData, transformData;
+
+        VkDeviceOrHostAddressConstKHR vertexData, indexData, transformData, radiusData;
         if (m_buildType == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_DEVICE_KHR)
         {
             if (getVertexBuffer() != nullptr)
             {
                 // Make sure we're starting off well-aligned so we can min-align by pure offsetting
                 DE_ASSERT(geometryMinAlign <= geometryVertexAlign);
-                DE_ASSERT((vertexBufferOffset & (geometryVertexAlign - 1)) == 0);
+                DE_ASSERT((vertexBufferOffset & (geometryVertexAlign - 1)) == 0 || (geometryMinAlign == 0));
                 DE_ASSERT(!m_indirectBuffer || (geometryMinAlign == 0));
 
                 vertexBufferOffset += geometryMinAlign;
@@ -1840,6 +2025,13 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
             }
             else
                 transformData = makeDeviceOrHostAddressConstKHR(nullptr);
+            if (getRadiusBuffer() != nullptr)
+            {
+                radiusData = makeDeviceOrHostAddressConstKHR(vk, device, getRadiusBuffer()->get(), radiusBufferOffset);
+                radiusBufferOffset += deAlignSize(geometryData->getRadiusByteSize(), 8);
+            }
+            else
+                radiusData = makeDeviceOrHostAddressConstKHR(nullptr);
         }
         else
         {
@@ -1854,6 +2046,10 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
                 transformData = makeDeviceOrHostAddressConstKHR(geometryData->getTransformPointer());
             else
                 transformData = makeDeviceOrHostAddressConstKHR(nullptr);
+            if (getRadiusBuffer() != nullptr)
+                radiusData = makeDeviceOrHostAddressConstKHR(geometryData->getRadiusPointer());
+            else
+                radiusData = makeDeviceOrHostAddressConstKHR(nullptr);
         }
 
         const uint32_t primitiveCount = (m_buildWithoutPrimitives ? 0u : geometryData->getPrimitiveCount());
@@ -1895,17 +2091,87 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
             vertexData,                                                       //  VkDeviceOrHostAddressConstKHR data;
             geometryData->getAABBStride()                                     //  VkDeviceSize stride;
         };
-        const VkAccelerationStructureGeometryDataKHR geometry =
-            (geometryData->isTrianglesType()) ?
-                makeVkAccelerationStructureGeometryDataKHR(accelerationStructureGeometryTrianglesDataKHR) :
-                makeVkAccelerationStructureGeometryDataKHR(accelerationStructureGeometryAabbsDataKHR);
-        const VkAccelerationStructureGeometryKHR accelerationStructureGeometryKHR = {
+
+        VkAccelerationStructureGeometrySpheresDataNV spheresGeometryData = {
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_SPHERES_DATA_NV, //  VkStructureType sType;
+            nullptr,                                                           //  const void* pNext;
+            geometryData->getVertexFormat(),                                   //  VkFormat vertexFormat;
+            vertexData,                      //  VkDeviceOrHostAddressConstKHR vertexData;
+            geometryData->getVertexStride(), //  VkDeviceSize vertexStride;
+            geometryData->getRadiusFormat(), //  VkFormat radiusFormat;
+            geometryData->getRadiusCount() > 0 ?
+                radiusData :
+                VkDeviceOrHostAddressConstKHR{}, //  VkDeviceOrHostAddressConstKHR radiusData;
+            geometryData->getRadiusStride(),     //  VkDeviceSize radiusStride;
+            geometryData->getIndexType(),        //  VkIndexType indexType;
+            geometryData->getIndexType() != VK_INDEX_TYPE_NONE_KHR ?
+                indexData :
+                VkDeviceOrHostAddressConstKHR{}, //  VkDeviceOrHostAddressConstKHR indexData;
+            sizeof(uint32_t)                     //  VkDeviceSize indexStride;
+        };
+
+        VkAccelerationStructureGeometryLinearSweptSpheresDataNV lssGeometryData = {
+            VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_LINEAR_SWEPT_SPHERES_DATA_NV, //  VkStructureType sType;
+            nullptr,                                                                        //  const void* pNext;
+            geometryData->getVertexFormat(),                                                //  VkFormat vertexFormat;
+            vertexData,                      //  VkDeviceOrHostAddressConstKHR vertexData;
+            geometryData->getVertexStride(), //  VkDeviceSize vertexStride;
+            geometryData->getRadiusFormat(), //  VkFormat radiusFormat;
+            geometryData->getRadiusCount() > 0 ?
+                radiusData :
+                VkDeviceOrHostAddressConstKHR{}, //  VkDeviceOrHostAddressConstKHR radiusData;
+            geometryData->getRadiusStride(),     //  VkDeviceSize radiusStride;
+            geometryData->getIndexType(),        //  VkIndexType indexType;
+            geometryData->getIndexType() != VK_INDEX_TYPE_NONE_KHR ?
+                indexData :
+                VkDeviceOrHostAddressConstKHR{}, //  VkDeviceOrHostAddressConstKHR indexData;
+            sizeof(uint32_t),                    //  VkDeviceSize indexStride;
+            geometryData->getIndexingMode(),     //  VkRayTracingLssIndexingModeNV indexingMode;
+            geometryData->useEndcaps() ?         //  VkRayTracingLssPrimitiveEndCapsModeNV endCapsMode;
+                VK_RAY_TRACING_LSS_PRIMITIVE_END_CAPS_MODE_CHAINED_NV :
+                VK_RAY_TRACING_LSS_PRIMITIVE_END_CAPS_MODE_NONE_NV};
+
+        VkAccelerationStructureGeometryDataKHR geometry                               = {};
+        VkAccelerationStructureGeometryLinearSweptSpheresDataNV *linearSphereGeometry = nullptr;
+        VkAccelerationStructureGeometrySpheresDataNV *sphereGeometry                  = nullptr;
+        if (VK_GEOMETRY_TYPE_TRIANGLES_KHR == geometryData->getGeometryType())
+        {
+            geometry = makeVkAccelerationStructureGeometryDataKHR(accelerationStructureGeometryTrianglesDataKHR);
+        }
+        else if (VK_GEOMETRY_TYPE_AABBS_KHR == geometryData->getGeometryType())
+        {
+            geometry = makeVkAccelerationStructureGeometryDataKHR(accelerationStructureGeometryAabbsDataKHR);
+        }
+        else if (VK_GEOMETRY_TYPE_SPHERES_NV == geometryData->getGeometryType())
+        {
+            sphereGeometry = makeVkAccelerationStructureGeometryDataKHR(spheresGeometryData);
+        }
+        else if (VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV == geometryData->getGeometryType())
+        {
+            linearSphereGeometry = makeVkAccelerationStructureGeometryDataKHR(lssGeometryData);
+        }
+
+        VkAccelerationStructureGeometryKHR accelerationStructureGeometryKHR = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_KHR, //  VkStructureType sType;
             nullptr,                                               //  const void* pNext;
             geometryData->getGeometryType(),                       //  VkGeometryTypeKHR geometryType;
             geometry,                                              //  VkAccelerationStructureGeometryDataKHR geometry;
-            geometryData->getGeometryFlags()                       //  VkGeometryFlagsKHR flags;
+            geometryData->getGeometryFlags(),                      //  VkGeometryFlagsKHR flags;
+
         };
+
+        if (VK_GEOMETRY_TYPE_SPHERES_NV == geometryData->getGeometryType())
+        {
+            accelerationStructureGeometryKHR.pNext = sphereGeometry;
+        }
+        else if (VK_GEOMETRY_TYPE_LINEAR_SWEPT_SPHERES_NV == geometryData->getGeometryType())
+        {
+            accelerationStructureGeometryKHR.pNext = linearSphereGeometry;
+        }
+        else
+        {
+            accelerationStructureGeometryKHR.geometry = geometry;
+        }
 
         accelerationStructureGeometriesKHR[geometryNdx]         = accelerationStructureGeometryKHR;
         accelerationStructureGeometriesKHRPointers[geometryNdx] = &accelerationStructureGeometriesKHR[geometryNdx];
@@ -1991,6 +2257,11 @@ void BottomLevelAccelerationStructureKHR::setTransformBufferAddressOffset(int32_
     m_transformBufferAddressOffset = transformBufferAddressOffset;
 }
 
+void BottomLevelAccelerationStructureKHR::setRadiusBufferAddressOffset(int32_t RadiusBufferAddressOffset)
+{
+    m_radiusBufferAddressOffset = RadiusBufferAddressOffset;
+}
+
 de::MovePtr<BottomLevelAccelerationStructure> makeBottomLevelAccelerationStructure()
 {
     return de::MovePtr<BottomLevelAccelerationStructure>(new BottomLevelAccelerationStructureKHR);
@@ -2016,8 +2287,8 @@ public:
         DE_ASSERT(0); // Silent this method
     }
     virtual auto computeBuildSize(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize strSize) const
-        //              accStrSize,updateScratch, buildScratch, vertexSize,   indexSize,    transformSize
-        -> std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize>;
+        //              accStrSize,updateScratch, buildScratch, vertexSize,   indexSize,    transformSize,   RadiusSIze
+        -> std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize>;
 
 protected:
     struct Info;
@@ -2032,6 +2303,7 @@ protected:
     virtual BufferWithMemory *getVertexBuffer() const override;
     virtual BufferWithMemory *getIndexBuffer() const override;
     virtual BufferWithMemory *getTransformBuffer() const override;
+    virtual BufferWithMemory *getRadiusBuffer() const override;
 
     virtual VkDeviceSize getAccelerationStructureBufferOffset() const override
     {
@@ -2053,6 +2325,10 @@ protected:
     {
         return m_info.transformBuffOffset;
     }
+    virtual VkDeviceSize getRadiusBufferOffset() const override
+    {
+        return m_info.radiusBuffOffset;
+    }
 
     BottomLevelAccelerationStructurePoolImpl &m_pool;
 
@@ -2068,6 +2344,8 @@ protected:
         VkDeviceSize transformBuffOffset;
         uint32_t buildScratchBuffIndex;
         VkDeviceSize buildScratchBuffOffset;
+        uint32_t radiusBuffIndex;
+        VkDeviceSize radiusBuffOffset;
     } m_info;
 };
 
@@ -2107,6 +2385,7 @@ struct BottomLevelAccelerationStructurePoolImpl
     std::vector<de::SharedPtr<BufferWithMemory>> m_vertexBuffers;
     std::vector<de::SharedPtr<BufferWithMemory>> m_indexBuffers;
     std::vector<de::SharedPtr<BufferWithMemory>> m_transformBuffers;
+    std::vector<de::SharedPtr<BufferWithMemory>> m_radiusBuffers;
 };
 BottomLevelAccelerationStructurePoolImpl::BottomLevelAccelerationStructurePoolImpl(
     BottomLevelAccelerationStructurePool &pool)
@@ -2117,6 +2396,7 @@ BottomLevelAccelerationStructurePoolImpl::BottomLevelAccelerationStructurePoolIm
     , m_vertexBuffers()
     , m_indexBuffers()
     , m_transformBuffers()
+    , m_radiusBuffers()
 {
 }
 VkBuffer BottomLevelAccelerationStructurePoolMember::getAccelerationStructureBuffer() const
@@ -2139,7 +2419,16 @@ std::vector<uint8_t> *BottomLevelAccelerationStructurePoolMember::getHostScratch
 {
     return this->m_buildScratchSize ? m_pool.m_hostScratchBuffer.get() : nullptr;
 }
-
+BufferWithMemory *BottomLevelAccelerationStructurePoolMember::getRadiusBuffer() const
+{
+    BufferWithMemory *result = nullptr;
+    if (m_pool.m_radiusBuffers.size())
+    {
+        DE_ASSERT(!isnegz(m_info.radiusBuffIndex));
+        result = m_pool.m_radiusBuffers[m_info.radiusBuffIndex].get();
+    }
+    return result;
+}
 BufferWithMemory *BottomLevelAccelerationStructurePoolMember::getVertexBuffer() const
 {
     BufferWithMemory *result = nullptr;
@@ -2194,6 +2483,7 @@ BottomLevelAccelerationStructurePool::BottomLevelAccelerationStructurePool()
     , m_verticesSize(0)
     , m_indicesSize(0)
     , m_transformsSize(0)
+    , m_radiusSize(0)
     , m_impl(new Impl(*this))
 {
 }
@@ -2225,9 +2515,9 @@ auto BottomLevelAccelerationStructurePool::add(VkDeviceSize structureSize, VkDev
 void adjustBatchCount(const DeviceInterface &vkd, const VkDevice device,
                       const std::vector<BottomLevelAccelerationStructurePool::BlasPtr> &structs,
                       const std::vector<BottomLevelAccelerationStructurePool::BlasInfo> &infos,
-                      const VkDeviceSize maxBufferSize, uint32_t (&result)[5])
+                      const VkDeviceSize maxBufferSize, uint32_t (&result)[6])
 {
-    constexpr auto kDataCount = 5;
+    constexpr auto kDataCount = 6;
     tcu::Vector<VkDeviceSize, kDataCount> sizes(0);
     tcu::Vector<VkDeviceSize, kDataCount> sums(0);
     tcu::Vector<uint32_t, kDataCount> tmps(0);
@@ -2256,7 +2546,7 @@ void adjustBatchCount(const DeviceInterface &vkd, const VkDevice device,
     for (uint32_t i = 0; i < maxIter; ++i)
     {
         auto &str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember *>(structs[i].get());
-        std::tie(sizes[0], updateScratchSize, sizes[1], sizes[2], sizes[3], sizes[4]) =
+        std::tie(sizes[0], updateScratchSize, sizes[1], sizes[2], sizes[3], sizes[4], sizes[5]) =
             str.computeBuildSize(vkd, device, infos[i].structureSize);
 
         for (uint32_t j = 0; j < kDataCount; ++j)
@@ -2274,7 +2564,8 @@ void adjustBatchCount(const DeviceInterface &vkd, const VkDevice device,
 size_t BottomLevelAccelerationStructurePool::getAllocationCount() const
 {
     return m_impl->m_accellerationStructureBuffers.size() + m_impl->m_vertexBuffers.size() +
-           m_impl->m_indexBuffers.size() + m_impl->m_transformBuffers.size() + 1 /* for scratch buffer */;
+           m_impl->m_indexBuffers.size() + m_impl->m_transformBuffers.size() + m_impl->m_radiusBuffers.size() +
+           1 /* for scratch buffer */;
 }
 
 size_t BottomLevelAccelerationStructurePool::getAllocationCount(const DeviceInterface &vk, const VkDevice device,
@@ -2287,6 +2578,7 @@ size_t BottomLevelAccelerationStructurePool::getAllocationCount(const DeviceInte
     std::map<uint32_t, VkDeviceSize> indexBuffSizes;
     std::map<uint32_t, VkDeviceSize> transformBuffSizes;
     std::map<uint32_t, VkDeviceSize> scratchBuffSizes;
+    std::map<uint32_t, VkDeviceSize> radiusBuffSizes;
 
     const uint32_t allStructsCount = structCount();
 
@@ -2295,16 +2587,18 @@ size_t BottomLevelAccelerationStructurePool::getAllocationCount(const DeviceInte
     uint32_t batchVertexCount    = m_batchGeomCount ? m_batchGeomCount : m_batchStructCount;
     uint32_t batchIndexCount     = batchVertexCount;
     uint32_t batchTransformCount = m_batchGeomCount;
+    uint32_t batchRadiusCount    = batchVertexCount;
 
     if (!isnegz(maxBufferSize))
     {
-        uint32_t batches[5];
+        uint32_t batches[6];
         adjustBatchCount(vk, device, m_structs, m_infos, maxBufferSize, batches);
         batchStructCount    = batches[0];
         batchScratchCount   = batches[1];
         batchVertexCount    = batches[2];
         batchIndexCount     = batches[3];
         batchTransformCount = batches[4];
+        batchRadiusCount    = batches[5];
     }
 
     uint32_t iStr       = 0;
@@ -2312,6 +2606,7 @@ size_t BottomLevelAccelerationStructurePool::getAllocationCount(const DeviceInte
     uint32_t iVertex    = 0;
     uint32_t iIndex     = 0;
     uint32_t iTransform = 0;
+    uint32_t iRadius    = 0;
 
     VkDeviceSize strSize           = 0;
     VkDeviceSize updateScratchSize = 0;
@@ -2319,11 +2614,12 @@ size_t BottomLevelAccelerationStructurePool::getAllocationCount(const DeviceInte
     VkDeviceSize vertexSize        = 0;
     VkDeviceSize indexSize         = 0;
     VkDeviceSize transformSize     = 0;
+    VkDeviceSize radiusSize        = 0;
 
     for (; iStr < allStructsCount; ++iStr)
     {
         auto &str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember *>(m_structs[iStr].get());
-        std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize, transformSize) =
+        std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize, transformSize, radiusSize) =
             str.computeBuildSize(vk, device, m_infos[iStr].structureSize);
 
         {
@@ -2363,18 +2659,26 @@ size_t BottomLevelAccelerationStructurePool::getAllocationCount(const DeviceInte
             transformBuffSizes[transformBuffTransform] += alignedTransformBuffSize;
             iTransform += 1;
         }
+
+        if (radiusSize != 0)
+        {
+            const VkDeviceSize alignedRadiusBuffSize = deAlign64(radiusSize, 8);
+            const uint32_t radiusBuffRadius          = (iRadius / batchRadiusCount);
+            radiusBuffSizes[radiusBuffRadius] += alignedRadiusBuffSize;
+            iRadius += 1;
+        }
     }
 
     return accStrSizes.size() + vertBuffSizes.size() + indexBuffSizes.size() + transformBuffSizes.size() +
            scratchBuffSizes.size();
 }
 
-tcu::Vector<VkDeviceSize, 5> BottomLevelAccelerationStructurePool::getAllocationSizes(const DeviceInterface &vk,
+tcu::Vector<VkDeviceSize, 6> BottomLevelAccelerationStructurePool::getAllocationSizes(const DeviceInterface &vk,
                                                                                       const VkDevice device) const
 {
     if (m_structsBuffSize)
     {
-        return tcu::Vector<VkDeviceSize, 5>(
+        return tcu::Vector<VkDeviceSize, 6>(
             {m_structsBuffSize, m_buildsScratchSize, m_verticesSize, m_indicesSize, m_transformsSize});
     }
 
@@ -2385,6 +2689,7 @@ tcu::Vector<VkDeviceSize, 5> BottomLevelAccelerationStructurePool::getAllocation
     VkDeviceSize vertexSize           = 0;
     VkDeviceSize indexSize            = 0;
     VkDeviceSize transformSize        = 0;
+    VkDeviceSize radiusSize           = 0;
     VkDeviceSize sumStrSize           = 0;
     VkDeviceSize sumUpdateScratchSize = 0;
     static_cast<void>(sumUpdateScratchSize); // not used yet, disabled for future implementation
@@ -2392,10 +2697,11 @@ tcu::Vector<VkDeviceSize, 5> BottomLevelAccelerationStructurePool::getAllocation
     VkDeviceSize sumVertexSize       = 0;
     VkDeviceSize sumIndexSize        = 0;
     VkDeviceSize sumTransformSize    = 0;
+    VkDeviceSize sumRadiusSize       = 0;
     for (size_t i = 0; i < structCount(); ++i)
     {
         auto &str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember *>(m_structs[i].get());
-        std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize, transformSize) =
+        std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize, transformSize, radiusSize) =
             str.computeBuildSize(vk, device, m_infos[i].structureSize);
         sumStrSize += deAlign64(strSize, 256);
         //sumUpdateScratchSize    += deAlign64(updateScratchSize, 256);    not used yet, disabled for future implementation
@@ -2403,9 +2709,10 @@ tcu::Vector<VkDeviceSize, 5> BottomLevelAccelerationStructurePool::getAllocation
         sumVertexSize += deAlign64(vertexSize, geometryVertexAlign);
         sumIndexSize += deAlign64(indexSize, 8);
         sumTransformSize += deAlign64(transformSize, 16);
+        sumRadiusSize += deAlign64(radiusSize, 8);
     }
-    return tcu::Vector<VkDeviceSize, 5>(
-        {sumStrSize, sumBuildScratchSize, sumVertexSize, sumIndexSize, sumTransformSize});
+    return tcu::Vector<VkDeviceSize, 6>(
+        {sumStrSize, sumBuildScratchSize, sumVertexSize, sumIndexSize, sumTransformSize, sumRadiusSize});
 }
 
 void BottomLevelAccelerationStructurePool::batchCreate(const DeviceInterface &vkd, const VkDevice device,
@@ -2468,6 +2775,7 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
     std::map<uint32_t, VkDeviceSize> vertBuffSizes;
     std::map<uint32_t, VkDeviceSize> indexBuffSizes;
     std::map<uint32_t, VkDeviceSize> transformBuffSizes;
+    std::map<uint32_t, VkDeviceSize> radiusBuffSizes;
 
     const uint32_t allStructsCount = structCount();
     uint32_t iterKey               = 0;
@@ -2476,22 +2784,25 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
     uint32_t batchVertexCount    = m_batchGeomCount ? m_batchGeomCount : m_batchStructCount;
     uint32_t batchIndexCount     = batchVertexCount;
     uint32_t batchTransformCount = m_batchGeomCount;
+    uint32_t batchRadiusCount    = batchVertexCount;
 
     if (!isnegz(maxBufferSize))
     {
-        uint32_t batches[5];
+        uint32_t batches[6];
         adjustBatchCount(vkd, device, m_structs, m_infos, maxBufferSize, batches);
         batchStructCount = batches[0];
         // batches[1]: batchScratchCount
         batchVertexCount    = batches[2];
         batchIndexCount     = batches[3];
         batchTransformCount = batches[4];
+        batchRadiusCount    = batches[5];
     }
 
     uint32_t iStr       = 0;
     uint32_t iVertex    = 0;
     uint32_t iIndex     = 0;
     uint32_t iTransform = 0;
+    uint32_t iRadius    = 0;
 
     VkDeviceSize strSize             = 0;
     VkDeviceSize updateScratchSize   = 0;
@@ -2500,11 +2811,13 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
     VkDeviceSize vertexSize          = 0;
     VkDeviceSize indexSize           = 0;
     VkDeviceSize transformSize       = 0;
+    VkDeviceSize radiusSize          = 0;
 
     VkDeviceSize strOffset       = 0;
     VkDeviceSize vertexOffset    = 0;
     VkDeviceSize indexOffset     = 0;
     VkDeviceSize transformOffset = 0;
+    VkDeviceSize radiusOffset    = 0;
 
     uint32_t hostStructCount   = 0;
     uint32_t deviceStructCount = 0;
@@ -2513,7 +2826,7 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
     {
         BottomLevelAccelerationStructurePoolMember::Info info{};
         auto &str = *dynamic_cast<BottomLevelAccelerationStructurePoolMember *>(m_structs[iStr].get());
-        std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize, transformSize) =
+        std::tie(strSize, updateScratchSize, buildScratchSize, vertexSize, indexSize, transformSize, radiusSize) =
             str.computeBuildSize(vkd, device, m_infos[iStr].structureSize);
 
         ++(str.getBuildType() == VK_ACCELERATION_STRUCTURE_BUILD_TYPE_HOST_KHR ? hostStructCount : deviceStructCount);
@@ -2591,6 +2904,22 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
             m_transformsSize += alignedTransformBuffSize;
             iTransform += 1;
         }
+
+        if (radiusSize != 0)
+        {
+            const VkDeviceSize alignedRadiusBuffSize = deAlign64(radiusSize, 8);
+            const uint32_t radiusBuffIndex           = (iRadius / batchRadiusCount);
+            if (iRadius != 0 && (iRadius % batchRadiusCount) == 0)
+            {
+                radiusOffset = 0;
+            }
+            info.radiusBuffIndex  = radiusBuffIndex;
+            info.radiusBuffOffset = radiusOffset;
+            radiusBuffSizes[radiusBuffIndex] += alignedRadiusBuffSize;
+            radiusOffset += alignedRadiusBuffSize;
+            m_radiusSize += alignedRadiusBuffSize;
+            iRadius += 1;
+        }
         str.preCreateSetSizesAndOffsets(info, strSize, updateScratchSize, buildScratchSize);
     }
 
@@ -2611,6 +2940,10 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
     {
         m_impl->m_transformBuffers.emplace_back(
             createTransformBuffer(vkd, device, allocator, transformBuffSizes.at(iterKey)));
+    }
+    for (iterKey = 0; iterKey < static_cast<uint32_t>(radiusBuffSizes.size()); ++iterKey)
+    {
+        m_impl->m_radiusBuffers.emplace_back(createRadiusBuffer(vkd, device, allocator, radiusBuffSizes.at(iterKey)));
     }
 
     if (maxBuildScratchSize)
@@ -2685,13 +3018,13 @@ void BottomLevelAccelerationStructurePool::batchBuild(const DeviceInterface &vk,
 
 auto BottomLevelAccelerationStructurePoolMember::computeBuildSize(const DeviceInterface &vk, const VkDevice device,
                                                                   const VkDeviceSize strSize) const
-    //            accStrSize,  updateScratch, buildScratch, vertexSize,   indexSize,    transformSize
-    -> std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize>
+    //            accStrSize,  updateScratch, buildScratch, vertexSize,   indexSize,    transformSize,   radiusSIze
+    -> std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize>
 {
     DE_ASSERT(!m_geometriesData.empty() != !(strSize == 0)); // logical xor
 
-    std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize> result(
-        deAlign64(strSize, 256), 0, 0, 0, 0, 0);
+    std::tuple<VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize, VkDeviceSize> result(
+        deAlign64(strSize, 256), 0, 0, 0, 0, 0, 0);
 
     if (!m_geometriesData.empty())
     {
@@ -2743,6 +3076,7 @@ auto BottomLevelAccelerationStructurePoolMember::computeBuildSize(const DeviceIn
         std::get<3>(result) = getVertexBufferSize(m_geometriesData);
         std::get<4>(result) = getIndexBufferSize(m_geometriesData);
         std::get<5>(result) = getTransformBufferSize(m_geometriesData);
+        std::get<6>(result) = getRadiusBufferSize(m_geometriesData);
     }
 
     return result;
@@ -3046,12 +3380,15 @@ protected:
     uint32_t m_workerThreadCount;
     bool m_useArrayOfPointers;
     Move<VkBuffer> m_accelerationStructureBuffer;
+    de::MovePtr<BufferWithMemory> m_accelerationStructureCopyBuffer;
     de::MovePtr<Allocation> m_accelerationStructureAlloc;
     de::MovePtr<BufferWithMemory> m_instanceBuffer;
     de::MovePtr<BufferWithMemory> m_instanceAddressBuffer;
     de::MovePtr<BufferWithMemory> m_deviceScratchBuffer;
     std::vector<uint8_t> m_hostScratchBuffer;
     Move<VkAccelerationStructureKHR> m_accelerationStructureKHR;
+    Move<VkAccelerationStructureKHR> m_accelerationStructureCopyKHR;
+    de::MovePtr<BufferWithMemory> m_copyBuffer;
     VkBuffer m_indirectBuffer;
     VkDeviceSize m_indirectBufferOffset;
     uint32_t m_indirectBufferStride;
@@ -3095,10 +3432,12 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR()
     , m_workerThreadCount(0)
     , m_useArrayOfPointers(false)
     , m_accelerationStructureBuffer()
+    , m_accelerationStructureCopyBuffer()
     , m_instanceBuffer(nullptr)
     , m_instanceAddressBuffer(nullptr)
     , m_deviceScratchBuffer(nullptr)
     , m_accelerationStructureKHR()
+    , m_accelerationStructureCopyKHR()
     , m_indirectBuffer(VK_NULL_HANDLE)
     , m_indirectBufferOffset(0)
     , m_indirectBufferStride(0)

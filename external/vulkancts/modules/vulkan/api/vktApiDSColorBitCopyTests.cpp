@@ -378,11 +378,125 @@ void DSColorCopyCase::checkSupport(Context &context) const
         }
     }
 
-    // The get*Queue() methods will throw NotSupportedError if the queue is not available.
-    if (m_params.queueType == QueueType::COMPUTE_ONLY)
-        context.getComputeQueue();
-    else if (m_params.queueType == QueueType::TRANSFER_ONLY)
-        context.getTransferQueue();
+#ifndef CTS_USES_VULKANSC
+    if (m_params.queueType != QueueType::UNIVERSAL)
+    {
+        context.requireDeviceFunctionality("VK_KHR_maintenance10");
+        context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
+
+        vk::VkFormatProperties3 srcFormatProperties3{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3};
+        vk::VkFormatProperties2 srcFormatProperties{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2, &srcFormatProperties3};
+        ctx.vki.getPhysicalDeviceFormatProperties2(ctx.physicalDevice, m_params.formatPair.srcFormat,
+                                                   &srcFormatProperties);
+
+        vk::VkFormatProperties3 dstFormatProperties3{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3};
+        vk::VkFormatProperties2 dstFormatProperties{VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2, &dstFormatProperties3};
+        ctx.vki.getPhysicalDeviceFormatProperties2(ctx.physicalDevice, m_params.formatPair.dstFormat,
+                                                   &dstFormatProperties);
+
+        // The get*Queue() methods will throw NotSupportedError if the queue is not available.
+        if (m_params.queueType == QueueType::COMPUTE_ONLY)
+        {
+            context.getComputeQueue();
+
+            if (isDepthStencilFormat(m_params.formatPair.srcFormat))
+            {
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0U &&
+                    (srcFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Source format " << getFormatName(m_params.formatPair.srcFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0U &&
+                    (srcFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Source format " << getFormatName(m_params.formatPair.srcFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+            }
+
+            if (isDepthStencilFormat(m_params.formatPair.dstFormat))
+            {
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0U &&
+                    (dstFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Destination format " << getFormatName(m_params.formatPair.dstFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0U &&
+                    (dstFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Destination format " << getFormatName(m_params.formatPair.dstFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_COMPUTE_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+            }
+        }
+        else if (m_params.queueType == QueueType::TRANSFER_ONLY)
+        {
+            context.getTransferQueue();
+
+            if (isDepthStencilFormat(m_params.formatPair.srcFormat))
+            {
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0U &&
+                    (srcFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Source format " << getFormatName(m_params.formatPair.srcFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0U &&
+                    (srcFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Source format " << getFormatName(m_params.formatPair.srcFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+            }
+
+            if (isDepthStencilFormat(m_params.formatPair.dstFormat))
+            {
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_DEPTH_BIT) != 0U &&
+                    (dstFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Destination format " << getFormatName(m_params.formatPair.dstFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_DEPTH_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+
+                if ((m_params.formatPair.aspect & VK_IMAGE_ASPECT_STENCIL_BIT) != 0U &&
+                    (dstFormatProperties3.optimalTilingFeatures &
+                     VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR) == 0ULL)
+                {
+                    std::ostringstream msg;
+                    msg << "Destination format " << getFormatName(m_params.formatPair.dstFormat)
+                        << " does not support VK_FORMAT_FEATURE_2_STENCIL_COPY_ON_TRANSFER_QUEUE_BIT_KHR";
+                    TCU_THROW(NotSupportedError, msg.str());
+                }
+            }
+        }
+    }
+#endif // CTS_USES_VULKANSC
 
     context.requireDeviceFunctionality("VK_KHR_maintenance8");
 
@@ -551,6 +665,8 @@ tcu::TestStatus DSColorCopyInstance::iterate(void)
     // Copy source values to the source buffer.
     const auto srcValues = getRandomSrcValues(rnd, m_params.formatPair, pixelCount, m_params.unrestricted);
     deMemcpy(srcBuffer.getAllocation().getHostPtr(), de::dataOrNull(srcValues), de::dataSize(srcValues));
+
+    flushAlloc(ctx.vkd, ctx.device, srcBuffer.getAllocation());
 
     // Create source and destination images.
     const VkImageCreateInfo srcImgCreateInfo = {
@@ -754,12 +870,6 @@ tcu::TestStatus DSColorCopyInstance::iterate(void)
 
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-std::string getFormatNameBrief(VkFormat format)
-{
-    static const size_t prefixLen = strlen("VK_FORMAT_");
-    return de::toLower(std::string(getFormatName(format)).substr(prefixLen));
-}
-
 } // namespace
 
 tcu::TestCaseGroup *createDSColorBitCopyTests(tcu::TestContext &testCtx)
@@ -790,9 +900,11 @@ tcu::TestCaseGroup *createDSColorBitCopyTests(tcu::TestContext &testCtx)
                                 for (const auto queueType :
                                      {QueueType::UNIVERSAL, QueueType::COMPUTE_ONLY, QueueType::TRANSFER_ONLY})
                                 {
+#ifdef CTS_USES_VULKANSC
                                     // These tests need to be skipped for now due to VUs *-10217 and *-10218.
                                     if (queueType != QueueType::UNIVERSAL)
                                         continue;
+#endif // CTS_USES_VULKANSC
 
                                     const FormatPair formatPair{
                                         srcFormat,
@@ -825,7 +937,7 @@ tcu::TestCaseGroup *createDSColorBitCopyTests(tcu::TestContext &testCtx)
                                         const std::string usageSuffix        = (attUsage ? "_att_usage" : "");
 
                                         const auto testName =
-                                            getFormatNameBrief(srcFormat) + "_" + getFormatNameBrief(dstFormat) +
+                                            getFormatSimpleName(srcFormat) + "_" + getFormatSimpleName(dstFormat) +
                                             (formatGroup.aspect == VK_IMAGE_ASPECT_DEPTH_BIT ? "_depth" : "_stencil") +
                                             "_level" + std::to_string(srcMipLevel) + "_to_level" +
                                             std::to_string(dstMipLevel) + unrestrictedSuffix + usageSuffix +

@@ -38,7 +38,7 @@ if (EXISTS ${GLSLANG_ABS_PATH}/glslang/GenericCodeGen/CodeGen.cpp)
 	add_definitions(-DENABLE_HLSL)
 
 	set(GLSLANG_INCLUDE_PATH	${GLSLANG_ABS_PATH}			PARENT_SCOPE)
-	set(GLSLANG_LIBRARIES		glslang SPIRV SPVRemapper	PARENT_SCOPE)
+	set(GLSLANG_LIBRARIES		glslang SPIRV				PARENT_SCOPE)
 else ()
 	message(FATAL_ERROR "glslang not found")
 endif ()

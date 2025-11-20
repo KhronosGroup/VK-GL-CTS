@@ -57,6 +57,7 @@ void createTests(tcu::TestCaseGroup *tests, const char *data_dir)
         cts_amber::AmberTestCase *testCase =
             cts_amber::createAmberTestCase(testCtx, c.basename, c.description, data_dir, file);
         testCase->addRequirement("VariablePointerFeatures.variablePointers");
+        testCase->addRequirement("VK_KHR_workgroup_memory_explicit_layout");
         testCase->setSpirVAsmBuildOptions(asmOptions);
 
         tests->addChild(testCase);
