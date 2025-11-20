@@ -100,6 +100,7 @@ struct CaseDef
     bool useDynamicState;
     bool useApiSampleMask;
     bool useSampleMaskIn;
+    bool useSampleMaskOut;
     bool conservativeEnable;
     VkConservativeRasterizationModeEXT conservativeMode;
     bool useDepthStencil; // == fragDepth || fragStencil
@@ -279,7 +280,8 @@ bool FSRTestInstance::Force1x1() const
     if (m_data.useApiSampleMask && !m_context.getFragmentShadingRateProperties().fragmentShadingRateWithSampleMask)
         return true;
 
-    if (m_data.useSampleMaskIn && !m_context.getFragmentShadingRateProperties().fragmentShadingRateWithShaderSampleMask)
+    if ((m_data.useSampleMaskIn || m_data.useSampleMaskOut) &&
+        !m_context.getFragmentShadingRateProperties().fragmentShadingRateWithShaderSampleMask)
         return true;
 
     if (m_data.conservativeEnable &&
@@ -700,8 +702,11 @@ void FSRTestCase::initPrograms(SourceCollections &programCollection) const
             << ERROR_FRAGCOORD_IMPLICIT_DERIV << ";\n";
     }
     // Y component gets sample mask value
-    if (m_data.useSampleMaskIn)
-        fss << "  col0.y = gl_SampleMaskIn[0];\n";
+    if (m_data.useSampleMaskOut)
+        fss << "  gl_SampleMask[0] = 0x55555555;\n";
+
+    if (m_data.useSampleMaskIn || m_data.useSampleMaskOut)
+        fss << "  col0.y = (gl_SampleMaskIn[0]" << (m_data.useSampleMaskOut ? " & 0x55555555" : "") << ");\n";
 
     if (m_data.fragDepth)
         fss << "  gl_FragDepth = float(instanceIndex) / float(" << NUM_TRIANGLES << ");\n";
@@ -3651,6 +3656,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
 #ifndef CTS_USES_VULKANSC
         {26, "maintenance6"},
 #endif
+        {27, "samplemaskout"},
     };
 
     TestGroupCase dynCases[] = {
@@ -3781,6 +3787,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
 
                                         bool useApiSampleMask = groupNdx == 1;
                                         bool useSampleMaskIn  = groupNdx == 2;
+                                        bool useSampleMaskOut = groupNdx == 27;
                                         bool consRast         = groupNdx == 3 || groupNdx == 4;
                                         bool fragDepth        = groupNdx == 5 || groupNdx == 17 || groupNdx == 19 ||
                                                          groupNdx == 21 || groupNdx == 24;
@@ -3826,8 +3833,9 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                             continue;
 
                                         // Don't bother with geometry shader if we're testing conservative raster, sample mask, depth/stencil
-                                        if (useGeometryShader && (useApiSampleMask || useSampleMaskIn || consRast ||
-                                                                  fragDepth || fragStencil || maintenance6))
+                                        if (useGeometryShader &&
+                                            (useApiSampleMask || useSampleMaskIn || consRast || fragDepth ||
+                                             fragStencil || maintenance6 || useSampleMaskOut))
                                             continue;
 
                                         // Don't bother with geometry shader if we're testing non-dynamic state
@@ -3880,6 +3888,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                                             (bool)dynCases[dynNdx].count, // bool useDynamicState;
                                             useApiSampleMask,             // bool useApiSampleMask;
                                             useSampleMaskIn,              // bool useSampleMaskIn;
+                                            useSampleMaskOut,             // bool useSampleMaskOut;
                                             consRast,                     // bool conservativeEnable;
                                             conservativeMode, // VkConservativeRasterizationModeEXT conservativeMode;
                                             fragDepth || fragStencil, // bool useDepthStencil;
@@ -3946,6 +3955,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     false,                                           // bool useDynamicState;
                     true,                                            // bool useApiSampleMask;
                     false,                                           // bool useSampleMaskIn;
+                    false,                                           // bool useSampleMaskOut;
                     false,                                           // bool conservativeEnable;
                     VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT, // VkConservativeRasterizationModeEXT conservativeMode;
                     false,                                                // bool useDepthStencil;
@@ -3990,6 +4000,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     false,                                           // bool useDynamicState;
                     true,                                            // bool useApiSampleMask;
                     false,                                           // bool useSampleMaskIn;
+                    false,                                           // bool useSampleMaskOut;
                     false,                                           // bool conservativeEnable;
                     VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT, // VkConservativeRasterizationModeEXT conservativeMode;
                     false,                                                // bool useDepthStencil;
@@ -4036,6 +4047,7 @@ void createBasicTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *parentGroup
                     false,                                           // bool useDynamicState;
                     false,                                           // bool useApiSampleMask;
                     false,                                           // bool useSampleMaskIn;
+                    false,                                           // bool useSampleMaskOut;
                     false,                                           // bool conservativeEnable;
                     VK_CONSERVATIVE_RASTERIZATION_MODE_UNDERESTIMATE_EXT, // VkConservativeRasterizationModeEXT conservativeMode;
                     false,                                                // bool useDepthStencil;
