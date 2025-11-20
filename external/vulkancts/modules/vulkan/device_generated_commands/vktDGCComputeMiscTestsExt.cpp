@@ -2082,49 +2082,59 @@ tcu::TestStatus DBPDInstance::iterate(void)
                                              *compModule, 0u, &specInfo);
     }
 
-    // Create descriptor buffer.
+    // Create descriptor buffer and bind it.
     const auto &dbProperties = m_context.getDescriptorBufferPropertiesEXT();
     const auto &bufferlessPD = dbProperties.bufferlessPushDescriptors;
-
-    VkDeviceSize setLayoutSize;
-    ctx.vkd.getDescriptorSetLayoutSizeEXT(ctx.device, *setLayout, &setLayoutSize);
-
-    // This helps set a minimum in case the implementation returns 0.
-    setLayoutSize = std::max(setLayoutSize, dbProperties.descriptorBufferOffsetAlignment);
-
-    const VkBufferUsageFlags descriptorBufferUsage =
-        (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
-         (bufferlessPD ? 0 : VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT));
-
-    const auto descriptorBufferCreateInfo = makeBufferCreateInfo(setLayoutSize, descriptorBufferUsage);
-    BufferWithMemory descriptorBuffer(ctx.vkd, ctx.device, ctx.allocator, descriptorBufferCreateInfo,
-                                      (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress));
-    const auto descriptorBufferAddress = getBufferDeviceAddress(ctx.vkd, ctx.device, *descriptorBuffer);
 
     CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
     const auto cmdBuffer = *cmd.cmdBuffer;
 
     beginCommandBuffer(ctx.vkd, cmdBuffer);
 
-    VkDescriptorBufferBindingPushDescriptorBufferHandleEXT descriptorBufferPDHandle = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT,
-        NULL,
-        descriptorBuffer.get(),
-    };
+    std::unique_ptr<BufferWithMemory> descriptorBuffer;
 
-    const VkDescriptorBufferBindingInfoEXT bindingInfos = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT,
-        (bufferlessPD ? nullptr : &descriptorBufferPDHandle),
-        descriptorBufferAddress,
-        descriptorBufferUsage,
-    };
-    ctx.vkd.cmdBindDescriptorBuffersEXT(cmdBuffer, 1u, &bindingInfos);
+    if (bufferlessPD)
+    {
+        // In this case, no buffer needs to be bound with vkCmdBindDescriptorBuffersEXT and we do not need to set
+        // offsets with vkCmdSetDescriptorBufferOffsetsEXT for the set with push descriptors.
+    }
+    else
+    {
+        // It is illegal to call vkGetDescriptorSetLayoutSizeEXT for the set with push descriptors, so we use a minimum
+        // size and depend on the implementation returning the proper amount in the buffer memory requirements.
+        const auto &pdBufferSize = dbProperties.descriptorBufferOffsetAlignment;
 
-    // Start of the buffer.
-    const uint32_t setBufferIndices     = 0u;
-    const VkDeviceSize setBufferOffsets = 0ull;
-    ctx.vkd.cmdSetDescriptorBufferOffsetsEXT(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &setBufferIndices,
-                                             &setBufferOffsets);
+        const VkBufferUsageFlags descriptorBufferUsage =
+            (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
+             VK_BUFFER_USAGE_PUSH_DESCRIPTORS_DESCRIPTOR_BUFFER_BIT_EXT);
+
+        const auto descriptorBufferCreateInfo = makeBufferCreateInfo(pdBufferSize, descriptorBufferUsage);
+        descriptorBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, descriptorBufferCreateInfo,
+                                                    MemoryRequirement::DeviceAddress));
+
+        const VkDescriptorBufferBindingPushDescriptorBufferHandleEXT descriptorBufferPDHandle = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_PUSH_DESCRIPTOR_BUFFER_HANDLE_EXT,
+            NULL,
+            descriptorBuffer->get(),
+        };
+
+        const auto descriptorBufferAddress = getBufferDeviceAddress(ctx.vkd, ctx.device, descriptorBuffer->get());
+        const VkDescriptorBufferBindingInfoEXT bindingInfos = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_BUFFER_BINDING_INFO_EXT,
+            &descriptorBufferPDHandle,
+            descriptorBufferAddress,
+            descriptorBufferUsage,
+        };
+
+        // We finally set the descriptor buffer and the offsets.
+        ctx.vkd.cmdBindDescriptorBuffersEXT(cmdBuffer, 1u, &bindingInfos);
+
+        // Start of the buffer.
+        const uint32_t setBufferIndices     = 0u;
+        const VkDeviceSize setBufferOffsets = 0ull;
+        ctx.vkd.cmdSetDescriptorBufferOffsetsEXT(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &setBufferIndices,
+                                                 &setBufferOffsets);
+    }
 
     // For non-push descriptors, we would get the descriptor info for each buffer and store those into the descriptor
     // buffer at specific binding offsets obtained with vkGetDescriptorSetLayoutBindingOffsetEXT. However, for push
