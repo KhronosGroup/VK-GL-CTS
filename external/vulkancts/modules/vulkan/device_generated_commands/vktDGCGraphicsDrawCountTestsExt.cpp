@@ -1015,21 +1015,6 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
     }
     else
     {
-        std::vector<VkDescriptorSetLayout> vertSetLayouts;
-        std::vector<VkDescriptorSetLayout> fragSetLayouts;
-
-        if (*vertSetLayout != VK_NULL_HANDLE)
-        {
-            vertSetLayouts.push_back(*vertSetLayout);
-            fragSetLayouts.push_back(*vertSetLayout);
-        }
-
-        if (*fragSetLayout != VK_NULL_HANDLE)
-            fragSetLayouts.push_back(*fragSetLayout);
-
-        const std::vector<VkPushConstantRange> vertPCRanges;
-        const std::vector<VkPushConstantRange> &fragPCRanges = pcRanges;
-
         // Otherwise we need to modify the vectors above.
         DE_ASSERT(pcStages == static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT));
 
@@ -1053,18 +1038,18 @@ tcu::TestStatus testDrawCountRun(Context &context, TestParams params)
             if (params.useExecutionSet)
             {
                 vertShadersDGC.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_VERTEX_BIT, 0u,
-                                                             binaries.get(vertName), vertSetLayouts, vertPCRanges,
-                                                             tessFeature, geomFeature));
+                                                             binaries.get(vertName), setLayouts, pcRanges, tessFeature,
+                                                             geomFeature));
                 fragShadersDGC.emplace_back(new DGCShaderExt(ctx.vkd, ctx.device, VK_SHADER_STAGE_FRAGMENT_BIT, 0u,
-                                                             binaries.get(fragName), fragSetLayouts, fragPCRanges,
-                                                             tessFeature, geomFeature));
+                                                             binaries.get(fragName), setLayouts, pcRanges, tessFeature,
+                                                             geomFeature));
             }
             else
             {
                 vertShaders.push_back(makeSingleShader(ctx.vkd, ctx.device, VK_SHADER_STAGE_VERTEX_BIT,
-                                                       binaries.get(vertName), vertSetLayouts, vertPCRanges));
+                                                       binaries.get(vertName), setLayouts, pcRanges));
                 fragShaders.push_back(makeSingleShader(ctx.vkd, ctx.device, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                                       binaries.get(fragName), fragSetLayouts, fragPCRanges));
+                                                       binaries.get(fragName), setLayouts, pcRanges));
             }
         }
     }

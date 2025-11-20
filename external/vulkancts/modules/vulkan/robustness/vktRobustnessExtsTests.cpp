@@ -94,6 +94,7 @@ class SingletonDevice
         VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features                       = initVulkanStructure();
         VkPhysicalDeviceImageRobustnessFeaturesEXT imageRobustnessFeatures               = initVulkanStructure();
 #ifndef CTS_USES_VULKANSC
+        VkPhysicalDeviceVulkan14Features vulkan14Features                              = initVulkanStructure();
         VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures       = initVulkanStructure();
         VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures = initVulkanStructure();
         VkPhysicalDevicePipelineRobustnessFeaturesEXT pipelineRobustnessFeatures       = initVulkanStructure();
@@ -147,6 +148,9 @@ class SingletonDevice
 #ifndef CTS_USES_VULKANSC
         if (FEATURES & RF_PIPELINE_ROBUSTNESS)
             addFeatures(&pipelineRobustnessFeatures);
+
+        if (context.getUsedApiVersion() >= VK_API_VERSION_1_4)
+            addFeatures(&vulkan14Features);
 #endif
 
         const auto &vki           = m_context.getInstanceInterface();
