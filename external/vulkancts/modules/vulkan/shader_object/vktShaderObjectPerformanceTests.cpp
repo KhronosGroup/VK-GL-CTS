@@ -33,6 +33,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include <chrono>
 
 namespace vkt
@@ -696,6 +697,12 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     // Do a dummy run, to ensure memory allocations are done with before performance testing
     {
         vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
+        vk::VkImageMemoryBarrier imageMemoryBarrier = vk::makeImageMemoryBarrier(
+            vk::VK_ACCESS_NONE_KHR, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+            vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                              &imageMemoryBarrier);
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *dummyPipeline);
         vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
                            vk::VK_ATTACHMENT_LOAD_OP_CLEAR);

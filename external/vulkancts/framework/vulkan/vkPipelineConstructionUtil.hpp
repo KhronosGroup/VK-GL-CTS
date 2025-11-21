@@ -331,7 +331,9 @@ private:
     std::vector<uint32_t> m_viewMasks;
     mutable bool m_secondaryCommandBuffers;
 
-    void clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const;
+    // Returns true if any attachment was cleared.
+    bool clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const;
+
     void updateLayout(VkImage updatedImage, VkImageLayout newLayout) const;
     void transitionLayouts(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const Subpass &subpass,
                            bool renderPassBegin) const;
