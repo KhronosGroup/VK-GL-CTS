@@ -1159,7 +1159,7 @@ struct Programs
         // geometry shader is only needed in multi-layer framebuffer resolve tests
         if (config.imageLayers > 1)
         {
-            const uint32_t layerCount = 3;
+            const uint32_t layerCount = config.viewLayers;
 
             std::ostringstream src;
             src << "#version 450\n"
