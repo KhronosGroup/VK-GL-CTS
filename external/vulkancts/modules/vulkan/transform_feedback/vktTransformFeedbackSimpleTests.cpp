@@ -4251,7 +4251,9 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
     if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT ||
         m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW ||
         m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW)
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET_MULTIVIEW)
     {
         const auto &limits                         = context.getDeviceProperties().limits;
         const uint32_t tfBufferDataSizeSupported   = xfbProperties.maxTransformFeedbackBufferDataSize;
