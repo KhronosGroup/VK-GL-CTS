@@ -4117,7 +4117,7 @@ tcu::TestStatus testPhysicalDeviceFeatureRayTracingInvocationReorderFeaturesEXT 
     vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
 
     VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT deviceRayTracingInvocationReorderFeaturesEXT[count];
-    const bool                                             isRayTracingInvocationReorderFeaturesEXT = checkExtension(properties, "VK_NV_ray_tracing_invocation_reorder") || checkExtension(properties, "VK_EXT_ray_tracing_invocation_reorder");
+    const bool                                             isRayTracingInvocationReorderFeaturesEXT = checkExtension(properties, "VK_EXT_ray_tracing_invocation_reorder");
 
     if (!isRayTracingInvocationReorderFeaturesEXT)
         return tcu::TestStatus::pass("Querying not supported");

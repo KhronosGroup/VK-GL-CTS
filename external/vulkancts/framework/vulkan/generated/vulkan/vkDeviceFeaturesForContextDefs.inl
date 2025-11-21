@@ -155,6 +155,7 @@ const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	Context
 const vk::VkPhysicalDeviceRawAccessChainsFeaturesNV&						Context::getRawAccessChainsFeaturesNV						(void) const { return m_device->getRawAccessChainsFeaturesNV();						}
 const vk::VkPhysicalDeviceRayQueryFeaturesKHR&								Context::getRayQueryFeatures								(void) const { return m_device->getRayQueryFeatures();								}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&			Context::getRayTracingInvocationReorderFeaturesEXT			(void) const { return m_device->getRayTracingInvocationReorderFeaturesEXT();		}
+const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV&			Context::getRayTracingInvocationReorderFeatures				(void) const { return m_device->getRayTracingInvocationReorderFeatures();			}
 const vk::VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&			Context::getRayTracingLinearSweptSpheresFeaturesNV			(void) const { return m_device->getRayTracingLinearSweptSpheresFeaturesNV();		}
 const vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				Context::getRayTracingMaintenance1Features					(void) const { return m_device->getRayTracingMaintenance1Features();				}
 const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&					Context::getRayTracingMotionBlurFeatures					(void) const { return m_device->getRayTracingMotionBlurFeatures();					}

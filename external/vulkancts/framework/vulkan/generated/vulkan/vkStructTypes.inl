@@ -7959,6 +7959,13 @@ struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT
 	VkBool32		rayTracingInvocationReorder;
 };
 
+struct VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingInvocationReorder;
+};
+
 struct VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT
 {
 	VkStructureType							sType;
@@ -13728,9 +13735,6 @@ typedef VkPhysicalDevicePushDescriptorProperties VkPhysicalDevicePushDescriptorP
 
 
 typedef VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesARM;
-
-
-typedef VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV;
 
 
 typedef VkPhysicalDeviceRobustness2FeaturesKHR VkPhysicalDeviceRobustness2FeaturesEXT;

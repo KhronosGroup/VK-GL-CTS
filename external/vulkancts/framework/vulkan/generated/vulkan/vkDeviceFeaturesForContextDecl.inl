@@ -155,6 +155,7 @@ const vk::VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRast
 const vk::VkPhysicalDeviceRawAccessChainsFeaturesNV&						getRawAccessChainsFeaturesNV						(void) const;
 const vk::VkPhysicalDeviceRayQueryFeaturesKHR&								getRayQueryFeatures									(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&			getRayTracingInvocationReorderFeaturesEXT			(void) const;
+const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV&			getRayTracingInvocationReorderFeatures				(void) const;
 const vk::VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&			getRayTracingLinearSweptSpheresFeaturesNV			(void) const;
 const vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				getRayTracingMaintenance1Features					(void) const;
 const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&					getRayTracingMotionBlurFeatures						(void) const;

@@ -3348,6 +3348,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocation
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT;

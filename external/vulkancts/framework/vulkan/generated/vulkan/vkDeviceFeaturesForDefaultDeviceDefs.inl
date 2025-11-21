@@ -155,6 +155,7 @@ const VkPhysicalDeviceRasterizationOrderAttachmentAccessFeaturesEXT&	getRasteriz
 const VkPhysicalDeviceRawAccessChainsFeaturesNV&						getRawAccessChainsFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRawAccessChainsFeaturesNV>();						}
 const VkPhysicalDeviceRayQueryFeaturesKHR&								getRayQueryFeatures									(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRayQueryFeaturesKHR>();							}
 const VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&			getRayTracingInvocationReorderFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT>();		}
+const VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV&			getRayTracingInvocationReorderFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV>();			}
 const VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&			getRayTracingLinearSweptSpheresFeaturesNV			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>();		}
 const VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				getRayTracingMaintenance1Features					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>();				}
 const VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&					getRayTracingMotionBlurFeatures						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>();				}
