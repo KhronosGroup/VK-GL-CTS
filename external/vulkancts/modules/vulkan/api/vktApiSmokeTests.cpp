@@ -337,7 +337,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
     const tcu::Vec4 vertices[] = {tcu::Vec4(-0.5f, -0.5f, 0.0f, 1.0f), tcu::Vec4(+0.5f, -0.5f, 0.0f, 1.0f),
                                   tcu::Vec4(0.0f, +0.5f, 0.0f, 1.0f)};
 
-    const VkBufferCreateInfo vertexBufferParams = {
+    const VkBufferCreateInfo vertexBufferParams{
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // sType
         nullptr,                              // pNext
         0u,                                   // flags
@@ -348,11 +348,13 @@ tcu::TestStatus renderTriangleTest(Context &context)
         &queueFamilyIndex,                    // pQueueFamilyIndices
     };
     const Unique<VkBuffer> vertexBuffer(createBuffer(vk, vkDevice, &vertexBufferParams));
-    const UniquePtr<Allocation> vertexBufferMemory(
-        memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer), MemoryRequirement::HostVisible));
+    auto memoryReq                        = getBufferMemoryRequirements(vk, vkDevice, *vertexBuffer);
+    VkDeviceSize vertexBufferMemoryOffset = memoryReq.alignment;
+    memoryReq.size += vertexBufferMemoryOffset; // alocate size + req.align to exercise non-zero offsets
+    const UniquePtr<Allocation> vertexBufferMemory(memAlloc.allocate(memoryReq, MemoryRequirement::HostVisible));
 
-    VK_CHECK(
-        vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(), vertexBufferMemory->getOffset()));
+    VK_CHECK(vk.bindBufferMemory(vkDevice, *vertexBuffer, vertexBufferMemory->getMemory(),
+                                 vertexBufferMemory->getOffset() + vertexBufferMemoryOffset));
 
     const VkDeviceSize imageSizeBytes              = (VkDeviceSize)(sizeof(uint32_t) * renderSize.x() * renderSize.y());
     const VkBufferCreateInfo readImageBufferParams = {
@@ -366,11 +368,13 @@ tcu::TestStatus renderTriangleTest(Context &context)
         &queueFamilyIndex,                    // pQueueFamilyIndices
     };
     const Unique<VkBuffer> readImageBuffer(createBuffer(vk, vkDevice, &readImageBufferParams));
-    const UniquePtr<Allocation> readImageBufferMemory(
-        memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer), MemoryRequirement::HostVisible));
+    memoryReq                                = getBufferMemoryRequirements(vk, vkDevice, *readImageBuffer);
+    VkDeviceSize readImageBufferMemoryOffset = memoryReq.alignment;
+    memoryReq.size += readImageBufferMemoryOffset; // alocate size + req.align to exercise non-zero offsets
+    const UniquePtr<Allocation> readImageBufferMemory(memAlloc.allocate(memoryReq, MemoryRequirement::HostVisible));
 
     VK_CHECK(vk.bindBufferMemory(vkDevice, *readImageBuffer, readImageBufferMemory->getMemory(),
-                                 readImageBufferMemory->getOffset()));
+                                 readImageBufferMemory->getOffset() + readImageBufferMemoryOffset));
 
     const VkImageCreateInfo imageParams = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // sType
@@ -391,10 +395,13 @@ tcu::TestStatus renderTriangleTest(Context &context)
     };
 
     const Unique<VkImage> image(createImage(vk, vkDevice, &imageParams));
-    const UniquePtr<Allocation> imageMemory(
-        memAlloc.allocate(getImageMemoryRequirements(vk, vkDevice, *image), MemoryRequirement::Any));
+    memoryReq                      = getImageMemoryRequirements(vk, vkDevice, *image);
+    VkDeviceSize imageMemoryOffset = memoryReq.alignment;
+    memoryReq.size += imageMemoryOffset; // alocate size + req.align to exercise non-zero offsets
+    const UniquePtr<Allocation> imageMemory(memAlloc.allocate(memoryReq, MemoryRequirement::Any));
 
-    VK_CHECK(vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset()));
+    VK_CHECK(
+        vk.bindImageMemory(vkDevice, *image, imageMemory->getMemory(), imageMemory->getOffset() + imageMemoryOffset));
 
     const Unique<VkRenderPass> renderPass(makeRenderPass(vk, vkDevice, VK_FORMAT_R8G8B8A8_UNORM));
 
@@ -529,7 +536,7 @@ tcu::TestStatus renderTriangleTest(Context &context)
     endCommandBuffer(vk, *cmdBuf);
 
     // Upload vertex data
-    deMemcpy(vertexBufferMemory->getHostPtr(), &vertices[0], sizeof(vertices));
+    deMemcpy((int8_t *)vertexBufferMemory->getHostPtr() + vertexBufferMemoryOffset, &vertices[0], sizeof(vertices));
     flushAlloc(vk, vkDevice, *vertexBufferMemory);
 
     // Submit & wait for completion
@@ -539,7 +546,8 @@ tcu::TestStatus renderTriangleTest(Context &context)
     {
         const tcu::TextureFormat tcuFormat = vk::mapVkFormat(colorFormat);
         const tcu::ConstPixelBufferAccess resultAccess(tcuFormat, renderSize.x(), renderSize.y(), 1,
-                                                       readImageBufferMemory->getHostPtr());
+                                                       (int8_t *)readImageBufferMemory->getHostPtr() +
+                                                           readImageBufferMemoryOffset);
 
         invalidateAlloc(vk, vkDevice, *readImageBufferMemory);
 

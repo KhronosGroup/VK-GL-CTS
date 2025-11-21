@@ -198,6 +198,11 @@ template<> VkStructureType getStructureType<VkAttachmentSampleCountInfoAMD> (voi
 	return VK_STRUCTURE_TYPE_ATTACHMENT_SAMPLE_COUNT_INFO_AMD;
 }
 
+template<> VkStructureType getStructureType<VkBeginCustomResolveInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_BEGIN_CUSTOM_RESOLVE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkBindAccelerationStructureMemoryInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_BIND_ACCELERATION_STRUCTURE_MEMORY_INFO_NV;
@@ -653,9 +658,19 @@ template<> VkStructureType getStructureType<VkCudaModuleCreateInfoNV> (void)
 	return VK_STRUCTURE_TYPE_CUDA_MODULE_CREATE_INFO_NV;
 }
 
+template<> VkStructureType getStructureType<VkCustomResolveCreateInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_CUSTOM_RESOLVE_CREATE_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkD3D12FenceSubmitInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_D3D12_FENCE_SUBMIT_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkDataGraphPipelineBuiltinModelCreateInfoQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_BUILTIN_MODEL_CREATE_INFO_QCOM;
 }
 
 template<> VkStructureType getStructureType<VkDataGraphPipelineCompilerControlCreateInfoARM> (void)
@@ -2403,9 +2418,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceCustomBorderColorPro
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_PROPERTIES_EXT;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceCustomResolveFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_RESOLVE_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphFeaturesARM> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_FEATURES_ARM;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceDataGraphModelFeaturesQCOM> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DATA_GRAPH_MODEL_FEATURES_QCOM;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV> (void)
@@ -3398,9 +3423,19 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayQueryFeaturesKHR>
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_QUERY_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_NV;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV> (void)

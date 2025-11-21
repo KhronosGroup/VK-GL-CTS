@@ -97,6 +97,34 @@ void ImageBlockShapesCase::checkSupport(Context &context) const
     if (!checkSparseSupportForImageType(instance, physicalDevice, m_imageType))
         TCU_THROW(NotSupportedError, "Sparse residency for image type is not supported");
 
+    {
+        const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
+        bool sparseSamplesSupported             = false;
+        switch (m_numSamples)
+        {
+        case VK_SAMPLE_COUNT_1_BIT:
+            sparseSamplesSupported = features.sparseResidencyImage2D;
+            break;
+        case VK_SAMPLE_COUNT_2_BIT:
+            sparseSamplesSupported = features.sparseResidency2Samples;
+            break;
+        case VK_SAMPLE_COUNT_4_BIT:
+            sparseSamplesSupported = features.sparseResidency4Samples;
+            break;
+        case VK_SAMPLE_COUNT_8_BIT:
+            sparseSamplesSupported = features.sparseResidency8Samples;
+            break;
+        case VK_SAMPLE_COUNT_16_BIT:
+            sparseSamplesSupported = features.sparseResidency16Samples;
+            break;
+        default:
+            break;
+        }
+
+        if (!sparseSamplesSupported)
+            throw tcu::NotSupportedError("Unsupported number of samples for sparse residency");
+    }
+
     if (formatIsR64(m_format))
     {
         context.requireDeviceFunctionality("VK_EXT_shader_image_atomic_int64");
@@ -142,7 +170,8 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
     VkImageCreateInfo imageCreateInfo;
     std::vector<VkSparseImageMemoryRequirements> sparseMemoryRequirements;
     const VkPhysicalDeviceSparseProperties sparseProperties = physicalDeviceProperties.sparseProperties;
-    const PlanarFormatDescription formatDescription         = getPlanarFormatDescription(m_format);
+    const bool isCompressedFmt                              = isCompressedFormat(m_format);
+    const uint32_t bitsPerPixel                             = 8u;
 
     imageCreateInfo.sType                 = VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
     imageCreateInfo.pNext                 = nullptr;
@@ -201,19 +230,31 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
         DE_ASSERT(sparseMemoryRequirements.size() != 0);
     }
 
-    for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+    const uint32_t numPlanes = isCompressedFmt ? 1u : getPlanarFormatDescription(m_format).numPlanes;
+
+    for (uint32_t planeNdx = 0; planeNdx < numPlanes; ++planeNdx)
     {
-        const VkImageAspectFlags aspect =
-            (formatDescription.numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
-        const uint32_t aspectIndex = getSparseAspectRequirementsIndex(sparseMemoryRequirements, aspect);
+        const VkImageAspectFlags aspect = (numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
+        const uint32_t aspectIndex      = getSparseAspectRequirementsIndex(sparseMemoryRequirements, aspect);
 
         if (aspectIndex == NO_MATCH_FOUND)
             TCU_THROW(NotSupportedError, "Not supported image aspect");
 
         VkSparseImageMemoryRequirements aspectRequirements = sparseMemoryRequirements[aspectIndex];
         VkExtent3D imageGranularity                        = aspectRequirements.formatProperties.imageGranularity;
-        uint32_t pixelSize = static_cast<uint32_t>(formatDescription.planes[planeNdx].elementSizeBytes) * 8u;
+
+        uint32_t pixelSize = 0u;
         VkExtent3D expectedGranularity;
+
+        if (isCompressedFmt)
+        {
+            pixelSize = getBlockSizeInBytes(m_format) * bitsPerPixel;
+        }
+        else
+        {
+            pixelSize = static_cast<uint32_t>(getPlanarFormatDescription(m_format).planes[planeNdx].elementSizeBytes) *
+                        bitsPerPixel;
+        }
 
         if (m_imageType == IMAGE_TYPE_3D)
         {
@@ -413,6 +454,19 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
             }
         }
 
+        if (isCompressedFmt)
+        {
+            expectedGranularity.width *= getBlockWidth(m_format);
+            expectedGranularity.height *= getBlockHeight(m_format);
+        }
+
+        if (isYCbCr422Format(m_format))
+        {
+            const tcu::UVec2 blkExt = getBlockExtent(m_format);
+            expectedGranularity.width *= blkExt.x();
+            expectedGranularity.height *= blkExt.y();
+        }
+
         if (imageGranularity.width != expectedGranularity.width ||
             imageGranularity.height != expectedGranularity.height ||
             imageGranularity.depth != expectedGranularity.depth)
@@ -420,6 +474,7 @@ tcu::TestStatus ImageBlockShapesInstance::iterate(void)
             return tcu::TestStatus::fail("Non-standard block shape used");
         }
     }
+
     return tcu::TestStatus::pass("Passed");
 }
 
@@ -430,16 +485,56 @@ TestInstance *ImageBlockShapesCase::createInstance(Context &context) const
 
 } // namespace
 
+std::vector<TestFormat> getImageTestFormats(const ImageType &imageType)
+{
+    std::vector<TestFormat> results = getTestFormats(imageType);
+
+    {
+        std::vector<TestFormat> blockCompressedFormats = {
+            {VK_FORMAT_BC1_RGB_UNORM_BLOCK},       {VK_FORMAT_BC1_RGB_SRGB_BLOCK},
+            {VK_FORMAT_BC1_RGBA_UNORM_BLOCK},      {VK_FORMAT_BC1_RGBA_SRGB_BLOCK},
+            {VK_FORMAT_BC2_UNORM_BLOCK},           {VK_FORMAT_BC2_SRGB_BLOCK},
+            {VK_FORMAT_BC3_UNORM_BLOCK},           {VK_FORMAT_BC3_SRGB_BLOCK},
+            {VK_FORMAT_BC4_UNORM_BLOCK},           {VK_FORMAT_BC4_SNORM_BLOCK},
+            {VK_FORMAT_BC5_UNORM_BLOCK},           {VK_FORMAT_BC5_SNORM_BLOCK},
+            {VK_FORMAT_BC6H_UFLOAT_BLOCK},         {VK_FORMAT_BC6H_SFLOAT_BLOCK},
+            {VK_FORMAT_BC7_UNORM_BLOCK},           {VK_FORMAT_BC7_SRGB_BLOCK},
+            {VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK},   {VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK},
+            {VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK}, {VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK},
+            {VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK}, {VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK},
+            {VK_FORMAT_EAC_R11_UNORM_BLOCK},       {VK_FORMAT_EAC_R11_SNORM_BLOCK},
+            {VK_FORMAT_EAC_R11G11_UNORM_BLOCK},    {VK_FORMAT_EAC_R11G11_SNORM_BLOCK},
+            {VK_FORMAT_ASTC_4x4_UNORM_BLOCK},      {VK_FORMAT_ASTC_4x4_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_5x4_UNORM_BLOCK},      {VK_FORMAT_ASTC_5x4_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_5x5_UNORM_BLOCK},      {VK_FORMAT_ASTC_5x5_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_6x5_UNORM_BLOCK},      {VK_FORMAT_ASTC_6x5_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_6x6_UNORM_BLOCK},      {VK_FORMAT_ASTC_6x6_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_8x5_UNORM_BLOCK},      {VK_FORMAT_ASTC_8x5_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_8x6_UNORM_BLOCK},      {VK_FORMAT_ASTC_8x6_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_8x8_UNORM_BLOCK},      {VK_FORMAT_ASTC_8x8_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_10x5_UNORM_BLOCK},     {VK_FORMAT_ASTC_10x5_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_10x6_UNORM_BLOCK},     {VK_FORMAT_ASTC_10x6_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_10x8_UNORM_BLOCK},     {VK_FORMAT_ASTC_10x8_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_10x10_UNORM_BLOCK},    {VK_FORMAT_ASTC_10x10_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_12x10_UNORM_BLOCK},    {VK_FORMAT_ASTC_12x10_SRGB_BLOCK},
+            {VK_FORMAT_ASTC_12x12_UNORM_BLOCK},    {VK_FORMAT_ASTC_12x12_SRGB_BLOCK},
+        };
+        std::copy(begin(blockCompressedFormats), end(blockCompressedFormats), std::back_inserter(results));
+    }
+
+    return results;
+}
+
 tcu::TestCaseGroup *createImageBlockShapesTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "image_block_shapes"));
 
     const std::vector<TestImageParameters> imageParameters{
-        {IMAGE_TYPE_2D, {tcu::UVec3(512u, 256u, 1u)}, getTestFormats(IMAGE_TYPE_2D)},
-        {IMAGE_TYPE_2D_ARRAY, {tcu::UVec3(512u, 256u, 6u)}, getTestFormats(IMAGE_TYPE_2D_ARRAY)},
-        {IMAGE_TYPE_CUBE, {tcu::UVec3(256u, 256u, 1u)}, getTestFormats(IMAGE_TYPE_CUBE)},
-        {IMAGE_TYPE_CUBE_ARRAY, {tcu::UVec3(256u, 256u, 6u)}, getTestFormats(IMAGE_TYPE_CUBE_ARRAY)},
-        {IMAGE_TYPE_3D, {tcu::UVec3(512u, 256u, 16u)}, getTestFormats(IMAGE_TYPE_3D)}};
+        {IMAGE_TYPE_2D, {tcu::UVec3(512u, 256u, 1u)}, getImageTestFormats(IMAGE_TYPE_2D)},
+        {IMAGE_TYPE_2D_ARRAY, {tcu::UVec3(512u, 256u, 6u)}, getImageTestFormats(IMAGE_TYPE_2D_ARRAY)},
+        {IMAGE_TYPE_CUBE, {tcu::UVec3(256u, 256u, 1u)}, getImageTestFormats(IMAGE_TYPE_CUBE)},
+        {IMAGE_TYPE_CUBE_ARRAY, {tcu::UVec3(256u, 256u, 6u)}, getImageTestFormats(IMAGE_TYPE_CUBE_ARRAY)},
+        {IMAGE_TYPE_3D, {tcu::UVec3(512u, 256u, 16u)}, getImageTestFormats(IMAGE_TYPE_3D)}};
 
     static const uint32_t sampleCounts[] = {1u, 2u, 4u, 8u, 16u};
 
@@ -451,8 +546,8 @@ tcu::TestCaseGroup *createImageBlockShapesTests(tcu::TestContext &testCtx)
 
         for (size_t formatNdx = 0; formatNdx < imageParameters[imageTypeNdx].formats.size(); ++formatNdx)
         {
-            VkFormat format               = imageParameters[imageTypeNdx].formats[formatNdx].format;
-            tcu::UVec3 imageSizeAlignment = getImageSizeAlignment(format);
+            VkFormat format = imageParameters[imageTypeNdx].formats[formatNdx].format;
+
             de::MovePtr<tcu::TestCaseGroup> formatGroup(
                 new tcu::TestCaseGroup(testCtx, getImageFormatID(format).c_str()));
 
@@ -464,13 +559,21 @@ tcu::TestCaseGroup *createImageBlockShapesTests(tcu::TestContext &testCtx)
                     const tcu::UVec3 imageSize = imageParameters[imageTypeNdx].imageSizes[imageSizeNdx];
 
                     // skip test for images with odd sizes for some YCbCr formats
-                    if ((imageSize.x() % imageSizeAlignment.x()) != 0)
-                        continue;
-                    if ((imageSize.y() % imageSizeAlignment.y()) != 0)
-                        continue;
+                    if (isYCbCrFormat(format))
+                    {
+                        tcu::UVec3 imageSizeAlignment = getImageSizeAlignment(format);
+                        if ((imageSize.x() % imageSizeAlignment.x()) != 0)
+                            continue;
+                        if ((imageSize.y() % imageSizeAlignment.y()) != 0)
+                            continue;
+                    }
 
                     const uint32_t sampleCount = sampleCounts[sampleCountNdx];
-                    const std::string name     = std::string("samples_") + de::toString(sampleCount);
+
+                    if ((imageType != IMAGE_TYPE_2D && imageType != IMAGE_TYPE_2D_ARRAY) && (sampleCount > 1u))
+                        continue;
+
+                    const std::string name = std::string("samples_") + de::toString(sampleCount);
 
                     formatGroup->addChild(
                         new ImageBlockShapesCase(testCtx, name.c_str(), imageType, imageSize, format, sampleCount));

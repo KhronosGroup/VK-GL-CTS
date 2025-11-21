@@ -33,6 +33,7 @@ m_vk.buildAccelerationStructuresKHR = (BuildAccelerationStructuresKHRFunc) GET_P
 m_vk.buildMicromapsEXT = (BuildMicromapsEXTFunc) GET_PROC_ADDR("vkBuildMicromapsEXT");
 m_vk.cmdBeginConditionalRendering2EXT = (CmdBeginConditionalRendering2EXTFunc) GET_PROC_ADDR("vkCmdBeginConditionalRendering2EXT");
 m_vk.cmdBeginConditionalRenderingEXT = (CmdBeginConditionalRenderingEXTFunc) GET_PROC_ADDR("vkCmdBeginConditionalRenderingEXT");
+m_vk.cmdBeginCustomResolveEXT = (CmdBeginCustomResolveEXTFunc) GET_PROC_ADDR("vkCmdBeginCustomResolveEXT");
 m_vk.cmdBeginDebugUtilsLabelEXT = (CmdBeginDebugUtilsLabelEXTFunc) GET_PROC_ADDR("vkCmdBeginDebugUtilsLabelEXT");
 m_vk.cmdBeginPerTileExecutionQCOM = (CmdBeginPerTileExecutionQCOMFunc) GET_PROC_ADDR("vkCmdBeginPerTileExecutionQCOM");
 m_vk.cmdBeginQuery = (CmdBeginQueryFunc) GET_PROC_ADDR("vkCmdBeginQuery");

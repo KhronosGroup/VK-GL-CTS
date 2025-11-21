@@ -66,6 +66,7 @@
 
 #include "vktCustomInstancesDevices.hpp"
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkFormatLists.hpp"
 
 #include "ycbcr/vktYCbCrUtil.hpp"
 #include "pipeline/vktPipelineImageUtil.hpp" // required for compressed image blit
@@ -11264,7 +11265,7 @@ void addImageToImageSimpleTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
 struct CopyColorTestParams
 {
     TestParams params;
-    const VkFormat *compatibleFormats;
+    const std::vector<VkFormat> *compatibleFormats;
 };
 
 void addImageToImageAllFormatsColorSrcFormatDstFormatTests(tcu::TestCaseGroup *group, TestParams params)
@@ -11307,12 +11308,13 @@ bool isAllowedImageToImageAllFormatsColorSrcFormatTests(const CopyColorTestParam
 void addImageToImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, CopyColorTestParams testParams)
 {
     // If testParams.compatibleFormats is nullptr, the destination format will be copied from the source format.
-    const VkFormat srcFormatOnly[2] = {testParams.params.src.image.format, VK_FORMAT_UNDEFINED};
-    const VkFormat *formatList      = (testParams.compatibleFormats ? testParams.compatibleFormats : srcFormatOnly);
+    const std::vector<VkFormat> srcFormatOnly{testParams.params.src.image.format};
+    const std::vector<VkFormat> &formatList =
+        (testParams.compatibleFormats ? *testParams.compatibleFormats : srcFormatOnly);
 
-    for (int dstFormatIndex = 0; formatList[dstFormatIndex] != VK_FORMAT_UNDEFINED; ++dstFormatIndex)
+    for (auto format : formatList)
     {
-        testParams.params.dst.image.format = formatList[dstFormatIndex];
+        testParams.params.dst.image.format = format;
 
         const VkFormat srcFormat = testParams.params.src.image.format;
         const VkFormat dstFormat = testParams.params.dst.image.format;
@@ -11334,404 +11336,19 @@ void addImageToImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, Cop
     }
 }
 
-const VkFormat compatibleFormats8Bit[] = {VK_FORMAT_R4G4_UNORM_PACK8, VK_FORMAT_R8_UNORM,   VK_FORMAT_R8_SNORM,
-                                          VK_FORMAT_R8_USCALED,       VK_FORMAT_R8_SSCALED, VK_FORMAT_R8_UINT,
-                                          VK_FORMAT_R8_SINT,          VK_FORMAT_R8_SRGB,
-
-                                          VK_FORMAT_UNDEFINED};
-
-const VkFormat compatibleFormats8BitA[] = {
 #ifndef CTS_USES_VULKANSC
-    VK_FORMAT_A8_UNORM_KHR,
+const std::vector<VkFormat> compatibleFormats8BitA{VK_FORMAT_A8_UNORM_KHR};
 #endif // CTS_USES_VULKANSC
-    VK_FORMAT_UNDEFINED};
 
-const VkFormat compatibleFormats16Bit[] = {VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-                                           VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-                                           VK_FORMAT_R5G6B5_UNORM_PACK16,
-                                           VK_FORMAT_B5G6R5_UNORM_PACK16,
-                                           VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-                                           VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-                                           VK_FORMAT_A1R5G5B5_UNORM_PACK16,
+const std::vector<std::vector<VkFormat>> colorImageFormatsToTest{
 #ifndef CTS_USES_VULKANSC
-                                           VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
+    compatibleFormats8BitA,
 #endif // CTS_USES_VULKANSC
-                                           VK_FORMAT_R8G8_UNORM,
-                                           VK_FORMAT_R8G8_SNORM,
-                                           VK_FORMAT_R8G8_USCALED,
-                                           VK_FORMAT_R8G8_SSCALED,
-                                           VK_FORMAT_R8G8_UINT,
-                                           VK_FORMAT_R8G8_SINT,
-                                           VK_FORMAT_R8G8_SRGB,
-                                           VK_FORMAT_R16_UNORM,
-                                           VK_FORMAT_R16_SNORM,
-                                           VK_FORMAT_R16_USCALED,
-                                           VK_FORMAT_R16_SSCALED,
-                                           VK_FORMAT_R16_UINT,
-                                           VK_FORMAT_R16_SINT,
-                                           VK_FORMAT_R16_SFLOAT,
-                                           VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
-                                           VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
-
-                                           VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats24Bit[] = {VK_FORMAT_R8G8B8_UNORM,   VK_FORMAT_R8G8B8_SNORM,   VK_FORMAT_R8G8B8_USCALED,
-                                           VK_FORMAT_R8G8B8_SSCALED, VK_FORMAT_R8G8B8_UINT,    VK_FORMAT_R8G8B8_SINT,
-                                           VK_FORMAT_R8G8B8_SRGB,    VK_FORMAT_B8G8R8_UNORM,   VK_FORMAT_B8G8R8_SNORM,
-                                           VK_FORMAT_B8G8R8_USCALED, VK_FORMAT_B8G8R8_SSCALED, VK_FORMAT_B8G8R8_UINT,
-                                           VK_FORMAT_B8G8R8_SINT,    VK_FORMAT_B8G8R8_SRGB,
-
-                                           VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats32Bit[] = {VK_FORMAT_R8G8B8A8_UNORM,
-                                           VK_FORMAT_R8G8B8A8_SNORM,
-                                           VK_FORMAT_R8G8B8A8_USCALED,
-                                           VK_FORMAT_R8G8B8A8_SSCALED,
-                                           VK_FORMAT_R8G8B8A8_UINT,
-                                           VK_FORMAT_R8G8B8A8_SINT,
-                                           VK_FORMAT_R8G8B8A8_SRGB,
-                                           VK_FORMAT_B8G8R8A8_UNORM,
-                                           VK_FORMAT_B8G8R8A8_SNORM,
-                                           VK_FORMAT_B8G8R8A8_USCALED,
-                                           VK_FORMAT_B8G8R8A8_SSCALED,
-                                           VK_FORMAT_B8G8R8A8_UINT,
-                                           VK_FORMAT_B8G8R8A8_SINT,
-                                           VK_FORMAT_B8G8R8A8_SRGB,
-                                           VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-                                           VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-                                           VK_FORMAT_A8B8G8R8_USCALED_PACK32,
-                                           VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
-                                           VK_FORMAT_A8B8G8R8_UINT_PACK32,
-                                           VK_FORMAT_A8B8G8R8_SINT_PACK32,
-                                           VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-                                           VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-                                           VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-                                           VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-                                           VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-                                           VK_FORMAT_A2R10G10B10_UINT_PACK32,
-                                           VK_FORMAT_A2R10G10B10_SINT_PACK32,
-                                           VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-                                           VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-                                           VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-                                           VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-                                           VK_FORMAT_A2B10G10R10_UINT_PACK32,
-                                           VK_FORMAT_A2B10G10R10_SINT_PACK32,
-                                           VK_FORMAT_R16G16_UNORM,
-                                           VK_FORMAT_R16G16_SNORM,
-                                           VK_FORMAT_R16G16_USCALED,
-                                           VK_FORMAT_R16G16_SSCALED,
-                                           VK_FORMAT_R16G16_UINT,
-                                           VK_FORMAT_R16G16_SINT,
-                                           VK_FORMAT_R16G16_SFLOAT,
-                                           VK_FORMAT_R32_UINT,
-                                           VK_FORMAT_R32_SINT,
-                                           VK_FORMAT_R32_SFLOAT,
-
-                                           VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats48Bit[] = {
-    VK_FORMAT_R16G16B16_UNORM, VK_FORMAT_R16G16B16_SNORM, VK_FORMAT_R16G16B16_USCALED, VK_FORMAT_R16G16B16_SSCALED,
-    VK_FORMAT_R16G16B16_UINT,  VK_FORMAT_R16G16B16_SINT,  VK_FORMAT_R16G16B16_SFLOAT,
-
-    VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats64Bit[]  = {VK_FORMAT_R16G16B16A16_UNORM,
-                                            VK_FORMAT_R16G16B16A16_SNORM,
-                                            VK_FORMAT_R16G16B16A16_USCALED,
-                                            VK_FORMAT_R16G16B16A16_SSCALED,
-                                            VK_FORMAT_R16G16B16A16_UINT,
-                                            VK_FORMAT_R16G16B16A16_SINT,
-                                            VK_FORMAT_R16G16B16A16_SFLOAT,
-                                            VK_FORMAT_R32G32_UINT,
-                                            VK_FORMAT_R32G32_SINT,
-                                            VK_FORMAT_R32G32_SFLOAT,
-                                            VK_FORMAT_R64_UINT,
-                                            VK_FORMAT_R64_SINT,
-                                            VK_FORMAT_R64_SFLOAT,
-
-                                            VK_FORMAT_BC1_RGB_UNORM_BLOCK,
-                                            VK_FORMAT_BC1_RGB_SRGB_BLOCK,
-                                            VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
-                                            VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
-                                            VK_FORMAT_BC4_UNORM_BLOCK,
-                                            VK_FORMAT_BC4_SNORM_BLOCK,
-
-                                            VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
-                                            VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
-                                            VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
-                                            VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
-
-                                            VK_FORMAT_EAC_R11_UNORM_BLOCK,
-                                            VK_FORMAT_EAC_R11_SNORM_BLOCK,
-
-                                            VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats96Bit[]  = {VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SINT,
-                                            VK_FORMAT_R32G32B32_SFLOAT,
-
-                                            VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats128Bit[] = {VK_FORMAT_R32G32B32A32_UINT,
-                                            VK_FORMAT_R32G32B32A32_SINT,
-                                            VK_FORMAT_R32G32B32A32_SFLOAT,
-                                            VK_FORMAT_R64G64_UINT,
-                                            VK_FORMAT_R64G64_SINT,
-                                            VK_FORMAT_R64G64_SFLOAT,
-
-                                            VK_FORMAT_BC2_UNORM_BLOCK,
-                                            VK_FORMAT_BC2_SRGB_BLOCK,
-                                            VK_FORMAT_BC3_UNORM_BLOCK,
-                                            VK_FORMAT_BC3_SRGB_BLOCK,
-                                            VK_FORMAT_BC5_UNORM_BLOCK,
-                                            VK_FORMAT_BC5_SNORM_BLOCK,
-                                            VK_FORMAT_BC6H_UFLOAT_BLOCK,
-                                            VK_FORMAT_BC6H_SFLOAT_BLOCK,
-                                            VK_FORMAT_BC7_UNORM_BLOCK,
-                                            VK_FORMAT_BC7_SRGB_BLOCK,
-
-                                            VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
-                                            VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
-
-                                            VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
-                                            VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
-
-                                            VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
-                                            VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
-
-                                            VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats192Bit[] = {VK_FORMAT_R64G64B64_UINT, VK_FORMAT_R64G64B64_SINT,
-                                            VK_FORMAT_R64G64B64_SFLOAT,
-
-                                            VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormats256Bit[] = {VK_FORMAT_R64G64B64A64_UINT, VK_FORMAT_R64G64B64A64_SINT,
-                                            VK_FORMAT_R64G64B64A64_SFLOAT,
-
-                                            VK_FORMAT_UNDEFINED};
-
-const VkFormat *colorImageFormatsToTest[] = {compatibleFormats8Bit,   compatibleFormats8BitA, compatibleFormats16Bit,
-                                             compatibleFormats24Bit,  compatibleFormats32Bit, compatibleFormats48Bit,
-                                             compatibleFormats64Bit,  compatibleFormats96Bit, compatibleFormats128Bit,
-                                             compatibleFormats192Bit, compatibleFormats256Bit};
-
-const VkFormat compatibleFormatsUInts[]  = {VK_FORMAT_R8_UINT,
-                                            VK_FORMAT_R8G8_UINT,
-                                            VK_FORMAT_R8G8B8_UINT,
-                                            VK_FORMAT_B8G8R8_UINT,
-                                            VK_FORMAT_R8G8B8A8_UINT,
-                                            VK_FORMAT_B8G8R8A8_UINT,
-                                            VK_FORMAT_A8B8G8R8_UINT_PACK32,
-                                            VK_FORMAT_A2R10G10B10_UINT_PACK32,
-                                            VK_FORMAT_A2B10G10R10_UINT_PACK32,
-                                            VK_FORMAT_R16_UINT,
-                                            VK_FORMAT_R16G16_UINT,
-                                            VK_FORMAT_R16G16B16_UINT,
-                                            VK_FORMAT_R16G16B16A16_UINT,
-                                            VK_FORMAT_R32_UINT,
-                                            VK_FORMAT_R32G32_UINT,
-                                            VK_FORMAT_R32G32B32_UINT,
-                                            VK_FORMAT_R32G32B32A32_UINT,
-                                            VK_FORMAT_R64_UINT,
-                                            VK_FORMAT_R64G64_UINT,
-                                            VK_FORMAT_R64G64B64_UINT,
-                                            VK_FORMAT_R64G64B64A64_UINT,
-
-                                            VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormatsSInts[]  = {VK_FORMAT_R8_SINT,
-                                            VK_FORMAT_R8G8_SINT,
-                                            VK_FORMAT_R8G8B8_SINT,
-                                            VK_FORMAT_B8G8R8_SINT,
-                                            VK_FORMAT_R8G8B8A8_SINT,
-                                            VK_FORMAT_B8G8R8A8_SINT,
-                                            VK_FORMAT_A8B8G8R8_SINT_PACK32,
-                                            VK_FORMAT_A2R10G10B10_SINT_PACK32,
-                                            VK_FORMAT_A2B10G10R10_SINT_PACK32,
-                                            VK_FORMAT_R16_SINT,
-                                            VK_FORMAT_R16G16_SINT,
-                                            VK_FORMAT_R16G16B16_SINT,
-                                            VK_FORMAT_R16G16B16A16_SINT,
-                                            VK_FORMAT_R32_SINT,
-                                            VK_FORMAT_R32G32_SINT,
-                                            VK_FORMAT_R32G32B32_SINT,
-                                            VK_FORMAT_R32G32B32A32_SINT,
-                                            VK_FORMAT_R64_SINT,
-                                            VK_FORMAT_R64G64_SINT,
-                                            VK_FORMAT_R64G64B64_SINT,
-                                            VK_FORMAT_R64G64B64A64_SINT,
-
-                                            VK_FORMAT_UNDEFINED};
-const VkFormat compatibleFormatsFloats[] = {VK_FORMAT_R4G4_UNORM_PACK8,
-                                            VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-                                            VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-                                            VK_FORMAT_R5G6B5_UNORM_PACK16,
-                                            VK_FORMAT_B5G6R5_UNORM_PACK16,
-                                            VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-                                            VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-                                            VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-#ifndef CTS_USES_VULKANSC
-                                            VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR,
-#endif // CTS_USES_VULKANSC
-                                            VK_FORMAT_R8_UNORM,
-                                            VK_FORMAT_R8_SNORM,
-                                            VK_FORMAT_R8_USCALED,
-                                            VK_FORMAT_R8_SSCALED,
-#ifndef CTS_USES_VULKANSC
-                                            VK_FORMAT_A8_UNORM_KHR,
-#endif // CTS_USES_VULKANSC
-                                            VK_FORMAT_R8G8_UNORM,
-                                            VK_FORMAT_R8G8_SNORM,
-                                            VK_FORMAT_R8G8_USCALED,
-                                            VK_FORMAT_R8G8_SSCALED,
-                                            VK_FORMAT_R8G8B8_UNORM,
-                                            VK_FORMAT_R8G8B8_SNORM,
-                                            VK_FORMAT_R8G8B8_USCALED,
-                                            VK_FORMAT_R8G8B8_SSCALED,
-                                            VK_FORMAT_B8G8R8_UNORM,
-                                            VK_FORMAT_B8G8R8_SNORM,
-                                            VK_FORMAT_B8G8R8_USCALED,
-                                            VK_FORMAT_B8G8R8_SSCALED,
-                                            VK_FORMAT_R8G8B8A8_UNORM,
-                                            VK_FORMAT_R8G8B8A8_SNORM,
-                                            VK_FORMAT_R8G8B8A8_USCALED,
-                                            VK_FORMAT_R8G8B8A8_SSCALED,
-                                            VK_FORMAT_B8G8R8A8_UNORM,
-                                            VK_FORMAT_B8G8R8A8_SNORM,
-                                            VK_FORMAT_B8G8R8A8_USCALED,
-                                            VK_FORMAT_B8G8R8A8_SSCALED,
-                                            VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-                                            VK_FORMAT_A8B8G8R8_SNORM_PACK32,
-                                            VK_FORMAT_A8B8G8R8_USCALED_PACK32,
-                                            VK_FORMAT_A8B8G8R8_SSCALED_PACK32,
-                                            VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-                                            VK_FORMAT_A2R10G10B10_SNORM_PACK32,
-                                            VK_FORMAT_A2R10G10B10_USCALED_PACK32,
-                                            VK_FORMAT_A2R10G10B10_SSCALED_PACK32,
-                                            VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-                                            VK_FORMAT_A2B10G10R10_SNORM_PACK32,
-                                            VK_FORMAT_A2B10G10R10_USCALED_PACK32,
-                                            VK_FORMAT_A2B10G10R10_SSCALED_PACK32,
-                                            VK_FORMAT_R16_UNORM,
-                                            VK_FORMAT_R16_SNORM,
-                                            VK_FORMAT_R16_USCALED,
-                                            VK_FORMAT_R16_SSCALED,
-                                            VK_FORMAT_R16_SFLOAT,
-                                            VK_FORMAT_R16G16_UNORM,
-                                            VK_FORMAT_R16G16_SNORM,
-                                            VK_FORMAT_R16G16_USCALED,
-                                            VK_FORMAT_R16G16_SSCALED,
-                                            VK_FORMAT_R16G16_SFLOAT,
-                                            VK_FORMAT_R16G16B16_UNORM,
-                                            VK_FORMAT_R16G16B16_SNORM,
-                                            VK_FORMAT_R16G16B16_USCALED,
-                                            VK_FORMAT_R16G16B16_SSCALED,
-                                            VK_FORMAT_R16G16B16_SFLOAT,
-                                            VK_FORMAT_R16G16B16A16_UNORM,
-                                            VK_FORMAT_R16G16B16A16_SNORM,
-                                            VK_FORMAT_R16G16B16A16_USCALED,
-                                            VK_FORMAT_R16G16B16A16_SSCALED,
-                                            VK_FORMAT_R16G16B16A16_SFLOAT,
-                                            VK_FORMAT_R32_SFLOAT,
-                                            VK_FORMAT_R32G32_SFLOAT,
-                                            VK_FORMAT_R32G32B32_SFLOAT,
-                                            VK_FORMAT_R32G32B32A32_SFLOAT,
-                                            VK_FORMAT_R64_SFLOAT,
-                                            VK_FORMAT_R64G64_SFLOAT,
-                                            VK_FORMAT_R64G64B64_SFLOAT,
-                                            VK_FORMAT_R64G64B64A64_SFLOAT,
-                                            VK_FORMAT_B10G11R11_UFLOAT_PACK32,
-                                            VK_FORMAT_E5B9G9R9_UFLOAT_PACK32,
-
-                                            VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT,
-                                            VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT,
-
-                                            VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-
-                                            VK_FORMAT_UNDEFINED};
-
-const VkFormat compressedFormatsFloats[] = {VK_FORMAT_BC1_RGB_UNORM_BLOCK,
-                                            VK_FORMAT_BC1_RGBA_UNORM_BLOCK,
-                                            VK_FORMAT_BC2_UNORM_BLOCK,
-                                            VK_FORMAT_BC3_UNORM_BLOCK,
-                                            VK_FORMAT_BC4_UNORM_BLOCK,
-                                            VK_FORMAT_BC4_SNORM_BLOCK,
-                                            VK_FORMAT_BC5_UNORM_BLOCK,
-                                            VK_FORMAT_BC5_SNORM_BLOCK,
-                                            VK_FORMAT_BC6H_UFLOAT_BLOCK,
-                                            VK_FORMAT_BC6H_SFLOAT_BLOCK,
-                                            VK_FORMAT_BC7_UNORM_BLOCK,
-                                            VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK,
-                                            VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK,
-                                            VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK,
-                                            VK_FORMAT_EAC_R11_UNORM_BLOCK,
-                                            VK_FORMAT_EAC_R11_SNORM_BLOCK,
-                                            VK_FORMAT_EAC_R11G11_UNORM_BLOCK,
-                                            VK_FORMAT_EAC_R11G11_SNORM_BLOCK,
-                                            VK_FORMAT_ASTC_4x4_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_5x4_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_5x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_6x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_6x6_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_8x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_8x6_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_8x8_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x5_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x6_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x8_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_10x10_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
-                                            VK_FORMAT_ASTC_12x12_UNORM_BLOCK,
-
-                                            VK_FORMAT_UNDEFINED};
-
-const VkFormat compatibleFormatsSrgb[] = {
-    VK_FORMAT_R8_SRGB,       VK_FORMAT_R8G8_SRGB,     VK_FORMAT_R8G8B8_SRGB,          VK_FORMAT_B8G8R8_SRGB,
-    VK_FORMAT_R8G8B8A8_SRGB, VK_FORMAT_B8G8R8A8_SRGB, VK_FORMAT_A8B8G8R8_SRGB_PACK32,
-
-    VK_FORMAT_UNDEFINED};
-
-const VkFormat compressedFormatsSrgb[] = {VK_FORMAT_BC1_RGB_SRGB_BLOCK,
-                                          VK_FORMAT_BC1_RGBA_SRGB_BLOCK,
-                                          VK_FORMAT_BC2_SRGB_BLOCK,
-                                          VK_FORMAT_BC3_SRGB_BLOCK,
-                                          VK_FORMAT_BC7_SRGB_BLOCK,
-                                          VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK,
-                                          VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK,
-                                          VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_4x4_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_5x4_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_5x5_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_6x5_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_6x6_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_8x5_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_8x6_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_8x8_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_10x5_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_10x6_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_10x10_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_12x10_SRGB_BLOCK,
-                                          VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
-
-                                          VK_FORMAT_UNDEFINED};
+    formats::compatibleFormats8Bit,   formats::compatibleFormats16Bit,  formats::compatibleFormats24Bit,
+    formats::compatibleFormats32Bit,  formats::compatibleFormats48Bit,  formats::compatibleFormats64Bit,
+    formats::compatibleFormats96Bit,  formats::compatibleFormats128Bit, formats::compatibleFormats192Bit,
+    formats::compatibleFormats256Bit,
+};
 
 const VkFormat dedicatedAllocationImageToImageFormatsToTest[] = {
     // From compatibleFormats8Bit
@@ -11820,14 +11437,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             params.regions.push_back(imageCopy);
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
@@ -11877,14 +11491,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             params.regions.push_back(imageCopy);
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
@@ -11937,14 +11548,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             }
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
@@ -11994,21 +11602,15 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             params.regions.push_back(imageCopy);
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
-                CopyColorTestParams testParams;
-                testParams.params            = params;
-                testParams.compatibleFormats = compatibleFormats;
-
+                CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
             }
@@ -12050,21 +11652,15 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             params.regions.push_back(imageCopy);
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
-                CopyColorTestParams testParams;
-                testParams.params            = params;
-                testParams.compatibleFormats = compatibleFormats;
-
+                CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
             }
@@ -12107,21 +11703,15 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             params.regions.push_back(imageCopy);
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
-                CopyColorTestParams testParams;
-                testParams.params            = params;
-                testParams.compatibleFormats = compatibleFormats;
-
+                CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
             }
@@ -12167,21 +11757,15 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             }
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
-                CopyColorTestParams testParams;
-                testParams.params            = params;
-                testParams.compatibleFormats = nullptr;
-
+                CopyColorTestParams testParams{params, nullptr};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
             }
@@ -12227,21 +11811,15 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             }
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
-                CopyColorTestParams testParams;
-                testParams.params            = params;
-                testParams.compatibleFormats = nullptr;
-
+                CopyColorTestParams testParams{params, nullptr};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
             }
@@ -12283,21 +11861,15 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
             params.regions.push_back(imageCopy);
         }
 
-        const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTest);
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatArray : colorImageFormatsToTest)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTest[compatibleFormatsIndex];
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto format : formatArray)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
-                CopyColorTestParams testParams;
-                testParams.params            = params;
-                testParams.compatibleFormats = nullptr;
-
+                CopyColorTestParams testParams{params, nullptr};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
             }
@@ -12311,32 +11883,32 @@ void addImageToImageDimensionsTests(tcu::TestCaseGroup *group, TestGroupParamsPt
 {
     tcu::TestContext &testCtx = group->getTestContext();
 
-    const VkFormat testFormats[][2] = {// From compatibleFormats8Bit
-                                       {VK_FORMAT_R4G4_UNORM_PACK8, VK_FORMAT_R8_SRGB},
-                                       // From compatibleFormats16Bit
-                                       {
-                                           VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-                                           VK_FORMAT_R16_SFLOAT,
-                                       },
-                                       // From compatibleFormats24Bit
-                                       {VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_B8G8R8_SRGB},
-                                       // From compatibleFormats32Bit
-                                       {VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R32_SFLOAT},
-                                       // From compatibleFormats48Bit
-                                       {VK_FORMAT_R16G16B16_UNORM, VK_FORMAT_R16G16B16_SFLOAT},
-                                       // From compatibleFormats64Bit
-                                       {VK_FORMAT_R16G16B16A16_UNORM, VK_FORMAT_R64_SFLOAT},
-                                       // From compatibleFormats96Bit
-                                       {VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SFLOAT},
-                                       // From compatibleFormats128Bit
-                                       {VK_FORMAT_R32G32B32A32_UINT, VK_FORMAT_R64G64_SFLOAT},
-                                       // From compatibleFormats192Bit
-                                       {
-                                           VK_FORMAT_R64G64B64_UINT,
-                                           VK_FORMAT_R64G64B64_SFLOAT,
-                                       },
-                                       // From compatibleFormats256Bit
-                                       {VK_FORMAT_R64G64B64A64_UINT, VK_FORMAT_R64G64B64A64_SFLOAT}};
+    const std::vector<std::vector<VkFormat>> testFormats{// From compatibleFormats8Bit
+                                                         {VK_FORMAT_R4G4_UNORM_PACK8, VK_FORMAT_R8_SRGB},
+                                                         // From compatibleFormats16Bit
+                                                         {
+                                                             VK_FORMAT_R4G4B4A4_UNORM_PACK16,
+                                                             VK_FORMAT_R16_SFLOAT,
+                                                         },
+                                                         // From compatibleFormats24Bit
+                                                         {VK_FORMAT_R8G8B8_UNORM, VK_FORMAT_B8G8R8_SRGB},
+                                                         // From compatibleFormats32Bit
+                                                         {VK_FORMAT_R8G8B8A8_UNORM, VK_FORMAT_R32_SFLOAT},
+                                                         // From compatibleFormats48Bit
+                                                         {VK_FORMAT_R16G16B16_UNORM, VK_FORMAT_R16G16B16_SFLOAT},
+                                                         // From compatibleFormats64Bit
+                                                         {VK_FORMAT_R16G16B16A16_UNORM, VK_FORMAT_R64_SFLOAT},
+                                                         // From compatibleFormats96Bit
+                                                         {VK_FORMAT_R32G32B32_UINT, VK_FORMAT_R32G32B32_SFLOAT},
+                                                         // From compatibleFormats128Bit
+                                                         {VK_FORMAT_R32G32B32A32_UINT, VK_FORMAT_R64G64_SFLOAT},
+                                                         // From compatibleFormats192Bit
+                                                         {
+                                                             VK_FORMAT_R64G64B64_UINT,
+                                                             VK_FORMAT_R64G64B64_SFLOAT,
+                                                         },
+                                                         // From compatibleFormats256Bit
+                                                         {VK_FORMAT_R64G64B64A64_UINT, VK_FORMAT_R64G64B64A64_SFLOAT}};
 
     const tcu::UVec2 imageDimensions[] = {
         // large pot x small pot
@@ -12405,51 +11977,37 @@ void addImageToImageDimensionsTests(tcu::TestCaseGroup *group, TestGroupParamsPt
         tcu::TestCaseGroup *imageSizeGroup = new tcu::TestCaseGroup(testCtx, dimensionStr.c_str());
 
         // Compatible formats for copying
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(testFormats);
-             compatibleFormatsIndex++)
+        for (auto &compatibleFormats : testFormats)
         {
-            const VkFormat *compatibleFormats = testFormats[compatibleFormatsIndex];
-
-            testParams.compatibleFormats = compatibleFormats;
+            testParams.compatibleFormats = &compatibleFormats;
 
             // Source image format
-            for (int srcFormatIndex = 0; srcFormatIndex < DE_LENGTH_OF_ARRAY(testFormats[compatibleFormatsIndex]);
-                 srcFormatIndex++)
+            for (auto srcFormat : compatibleFormats)
             {
-                testParams.params.src.image.format = testParams.compatibleFormats[srcFormatIndex];
-
-                if (!isSupportedByFramework(testParams.params.src.image.format) &&
-                    !isCompressedFormat(testParams.params.src.image.format))
+                if (!isSupportedByFramework(srcFormat) && !isCompressedFormat(srcFormat))
                     continue;
 
-                tcu::TestCaseGroup *srcFormatGroup =
-                    new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.src.image.format).c_str());
+                testParams.params.src.image.format = srcFormat;
+                auto *srcFormatGroup = new tcu::TestCaseGroup(testCtx, getFormatCaseName(srcFormat).c_str());
 
                 // Destination image format
-                for (int dstFormatIndex = 0; dstFormatIndex < DE_LENGTH_OF_ARRAY(testFormats[compatibleFormatsIndex]);
-                     dstFormatIndex++)
+                for (auto dstFormat : compatibleFormats)
                 {
-                    testParams.params.dst.image.format = testParams.compatibleFormats[dstFormatIndex];
-
-                    if (!isSupportedByFramework(testParams.params.dst.image.format) &&
-                        !isCompressedFormat(testParams.params.dst.image.format))
+                    if (!isSupportedByFramework(dstFormat) && !isCompressedFormat(dstFormat))
                         continue;
 
                     if (!isAllowedImageToImageAllFormatsColorSrcFormatTests(testParams))
                         continue;
 
-                    if (isCompressedFormat(testParams.params.src.image.format) &&
-                        isCompressedFormat(testParams.params.dst.image.format))
+                    if (isCompressedFormat(srcFormat) && isCompressedFormat(dstFormat))
                     {
-                        if ((getBlockWidth(testParams.params.src.image.format) !=
-                             getBlockWidth(testParams.params.dst.image.format)) ||
-                            (getBlockHeight(testParams.params.src.image.format) !=
-                             getBlockHeight(testParams.params.dst.image.format)))
+                        if ((getBlockWidth(srcFormat) != getBlockWidth(dstFormat)) ||
+                            (getBlockHeight(srcFormat) != getBlockHeight(dstFormat)))
                             continue;
                     }
 
-                    tcu::TestCaseGroup *dstFormatGroup =
-                        new tcu::TestCaseGroup(testCtx, getFormatCaseName(testParams.params.dst.image.format).c_str());
+                    testParams.params.dst.image.format = dstFormat;
+                    auto *dstFormatGroup = new tcu::TestCaseGroup(testCtx, getFormatCaseName(dstFormat).c_str());
 
                     // Source/destionation image layouts
                     for (int srcLayoutNdx = 0u; srcLayoutNdx < DE_LENGTH_OF_ARRAY(copySrcLayouts); srcLayoutNdx++)
@@ -12501,24 +12059,18 @@ void addImageToImageAllFormatsDepthStencilFormatsTests(tcu::TestCaseGroup *group
 
 void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
 {
-    const VkFormat depthAndStencilFormats[] = {
-        VK_FORMAT_D16_UNORM,         VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,         VK_FORMAT_S8_UINT,
-        VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,   VK_FORMAT_D32_SFLOAT_S8_UINT,
-    };
-
     // 1D to 1D tests.
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_1d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_1D;
             params.dst.image.imageType = VK_IMAGE_TYPE_1D;
             params.src.image.extent    = default1dExtent;
             params.dst.image.extent    = default1dExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -12590,15 +12142,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_2d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_1D;
             params.dst.image.imageType = VK_IMAGE_TYPE_2D;
             params.src.image.extent    = default1dExtent;
             params.dst.image.extent    = defaultRootExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -12670,15 +12221,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d_to_3d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_1D;
             params.dst.image.imageType = VK_IMAGE_TYPE_3D;
             params.src.image.extent    = default1dExtent;
             params.dst.image.extent    = default3dSmallExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -12753,15 +12303,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_1d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_2D;
             params.dst.image.imageType = VK_IMAGE_TYPE_1D;
             params.src.image.extent    = defaultQuarterExtent;
             params.dst.image.extent    = default1dQuarterSquaredExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -12865,15 +12414,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_2d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_2D;
             params.dst.image.imageType = VK_IMAGE_TYPE_2D;
             params.src.image.extent    = defaultExtent;
             params.dst.image.extent    = defaultExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -12976,15 +12524,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d_to_3d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_2D;
             params.dst.image.imageType = VK_IMAGE_TYPE_3D;
             params.src.image.extent    = defaultExtent;
             params.dst.image.extent    = default3dSmallExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -13088,15 +12635,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_1d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_3D;
             params.dst.image.imageType = VK_IMAGE_TYPE_1D;
             params.src.image.extent    = default3dSmallExtent;
             params.dst.image.extent    = default1dExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -13171,15 +12717,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_2d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_3D;
             params.dst.image.imageType = VK_IMAGE_TYPE_2D;
             params.src.image.extent    = default3dExtent;
             params.dst.image.extent    = defaultExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -13254,15 +12799,14 @@ void addImageToImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, TestG
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d_to_3d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_3D;
             params.dst.image.imageType = VK_IMAGE_TYPE_3D;
             params.src.image.extent    = default3dExtent;
             params.dst.image.extent    = default3dExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -14575,12 +14119,12 @@ void add1dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             params.arrayLayers               = numLayers;
             params.extensionFlags            = INDIRECT_COPY;
 
-            for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
+            for (const VkFormat format : formats::compressedFormatsFloats)
             {
-                params.src.image.format = *format;
+                params.src.image.format = format;
                 {
                     group->addChild(new CopyCompressedImageToBufferTestCase(
-                        testCtx, getCaseName(*format, params.src.image.extent, numLayers), params));
+                        testCtx, getCaseName(format, params.src.image.extent, numLayers), params));
                 }
             }
         }
@@ -15081,6 +14625,52 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                 group->addChild(
                     new CopyImageToBufferTestCase(testCtx, "array_not_all_remaining_layers" + testNameSuffix, params));
             }
+
+            // this test applies only to linear images we limit also repeating it to non-sparse images with standard layouts
+            if ((tiling == VK_IMAGE_TILING_LINEAR) && !testGroupParams->useSparseBinding &&
+                !testGroupParams->useGeneralLayout)
+            {
+                // check if padding bytes are not overwritten between rows or images
+                // when the rowPitch is larger than a row size of the copy, or the same for imageHeight
+
+                TestParams params;
+                params.src.image.imageType       = VK_IMAGE_TYPE_2D;
+                params.src.image.format          = format;
+                params.src.image.extent          = {2u, 2u, 1u}; // small extent to trigger padding bytes
+                params.src.image.extent.depth    = 1u;
+                params.src.image.tiling          = tiling;
+                params.src.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+                params.src.image.fillMode        = FILL_MODE_RED;
+                params.dst.buffer.size           = defaultSize * defaultSize;
+                params.dst.buffer.fillMode       = FILL_MODE_RANDOM_GRAY;
+                params.allocationKind            = testGroupParams->allocationKind;
+                params.extensionFlags            = testGroupParams->extensionFlags;
+                params.queueSelection            = testGroupParams->queueSelection;
+                params.useSparseBinding          = testGroupParams->useSparseBinding;
+                params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                const VkImageSubresourceLayers defaultLayer{
+                    VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                    0u,                        // uint32_t mipLevel;
+                    0u,                        // uint32_t baseArrayLayer;
+                    1u                         // uint32_t layerCount;
+                };
+
+                const VkBufferImageCopy bufferImageCopy{
+                    0,                      // VkDeviceSize bufferOffset;
+                    8,                      // uint32_t bufferRowLength;
+                    8,                      // uint32_t bufferImageHeight;
+                    defaultLayer,           // VkImageSubresourceLayers imageSubresource;
+                    {0, 0, 0},              // VkOffset3D imageOffset;
+                    params.src.image.extent // VkExtent3D imageExtent;
+                };
+
+                CopyRegion copyRegion;
+                copyRegion.bufferImageCopy = bufferImageCopy;
+                params.regions.push_back(copyRegion);
+
+                group->addChild(new CopyImageToBufferTestCase(testCtx, "padding_bytes" + testNameSuffix, params));
+            }
         }
 
     VkExtent3D extents[] = {
@@ -15116,19 +14706,17 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             params.useGeneralLayout          = testGroupParams->useGeneralLayout;
             params.arrayLayers               = numLayers;
 
-            for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
+            for (const VkFormat format : formats::compressedFormatsFloats)
             {
-                params.src.image.format = *format;
-                {
-                    group->addChild(new CopyCompressedImageToBufferTestCase(
-                        testCtx, getCaseName(*format, params.src.image.extent, numLayers, ""), params));
+                params.src.image.format = format;
+                group->addChild(new CopyCompressedImageToBufferTestCase(
+                    testCtx, getCaseName(format, params.src.image.extent, numLayers, ""), params));
 #ifndef CTS_USES_VULKANSC
-                    params.extensionFlags = INDIRECT_COPY;
-                    group->addChild(new CopyCompressedImageToBufferTestCase(
-                        testCtx, getCaseName(*format, params.src.image.extent, numLayers, "indirect"), params));
-                    params.extensionFlags = NONE;
+                params.extensionFlags = INDIRECT_COPY;
+                group->addChild(new CopyCompressedImageToBufferTestCase(
+                    testCtx, getCaseName(format, params.src.image.extent, numLayers, "indirect"), params));
+                params.extensionFlags = NONE;
 #endif
-                }
             }
         }
 }
@@ -15164,13 +14752,11 @@ void add3dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         params.useGeneralLayout          = testGroupParams->useGeneralLayout;
         params.arrayLayers               = 1u;
 
-        for (const VkFormat *format = compressedFormatsFloats; *format != VK_FORMAT_UNDEFINED; format++)
+        for (const VkFormat format : formats::compressedFormatsFloats)
         {
-            params.src.image.format = *format;
-            {
-                group->addChild(new CopyCompressedImageToBufferTestCase(
-                    testCtx, getCaseName(*format, params.src.image.extent), params));
-            }
+            params.src.image.format = format;
+            group->addChild(
+                new CopyCompressedImageToBufferTestCase(testCtx, getCaseName(format, params.src.image.extent), params));
         }
     }
 }
@@ -15178,17 +14764,6 @@ void add3dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
 void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
 {
     tcu::TestContext &testCtx = group->getTestContext();
-
-    const struct
-    {
-        const char *name;
-        const VkFormat format;
-    } depthAndStencilFormats[] = {{"d16_unorm", VK_FORMAT_D16_UNORM},
-                                  {"x8_d24_unorm_pack32", VK_FORMAT_X8_D24_UNORM_PACK32},
-                                  {"d32_sfloat", VK_FORMAT_D32_SFLOAT},
-                                  {"d16_unorm_s8_uint", VK_FORMAT_D16_UNORM_S8_UINT},
-                                  {"d24_unorm_s8_uint", VK_FORMAT_D24_UNORM_S8_UINT},
-                                  {"d32_sfloat_s8_uint", VK_FORMAT_D32_SFLOAT_S8_UINT}};
 
     const VkImageSubresourceLayers depthSourceLayer = {
         VK_IMAGE_ASPECT_DEPTH_BIT, // VkImageAspectFlags aspectMask;
@@ -15249,7 +14824,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr 
     // Swap order of writes of Depth & Stencil
     // whole surface, subimages?
     // Similar tests as BufferToImage?
-    for (const auto config : depthAndStencilFormats)
+    for (const VkFormat format : formats::depthAndStencilFormats)
         for (const auto offset : useOffset)
         {
             // TODO: Check that this format is supported before creating tests?
@@ -15258,10 +14833,10 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr 
             CopyRegion copyDepthRegion;
             CopyRegion copyStencilRegion;
             TestParams params;
-            const tcu::TextureFormat format = mapVkFormat(config.format);
-            const bool hasDepth             = tcu::hasDepthComponent(format.order);
-            const bool hasStencil           = tcu::hasStencilComponent(format.order);
-            std::string testName            = config.name;
+            const tcu::TextureFormat texFormat = mapVkFormat(format);
+            const bool hasDepth                = tcu::hasDepthComponent(texFormat.order);
+            const bool hasStencil              = tcu::hasStencilComponent(texFormat.order);
+            std::string testName               = getFormatCaseName(format);
 
             if (offset)
             {
@@ -15278,7 +14853,7 @@ void addBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParamsPtr 
             }
 
             params.dst.image.imageType       = VK_IMAGE_TYPE_2D;
-            params.dst.image.format          = config.format;
+            params.dst.image.format          = format;
             params.dst.image.extent          = defaultExtent;
             params.dst.image.tiling          = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.operationLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
@@ -17059,7 +16634,7 @@ FilterMask makeFilterMask(bool onlyNearest, bool discardCubicFilter)
 struct BlitColorTestParams
 {
     TestParams params;
-    const VkFormat *compatibleFormats;
+    const std::vector<VkFormat> *compatibleFormats;
     FilterMask testFilters;
 };
 
@@ -17249,18 +16824,17 @@ void addBlittingImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, Bl
 
     if (testParams.compatibleFormats)
     {
-        for (int dstFormatIndex = 0; testParams.compatibleFormats[dstFormatIndex] != VK_FORMAT_UNDEFINED;
-             ++dstFormatIndex)
+        for (auto format : *testParams.compatibleFormats)
         {
-            testParams.params.dst.image.format = testParams.compatibleFormats[dstFormatIndex];
-            if (!isSupportedByFramework(testParams.params.dst.image.format))
+            testParams.params.dst.image.format = format;
+            if (!isSupportedByFramework(format))
                 continue;
 
             if (!isAllowedBlittingAllFormatsColorSrcFormatTests(testParams))
                 continue;
 
-            addTestGroup(group, getFormatCaseName(testParams.params.dst.image.format),
-                         addBlittingImageAllFormatsColorSrcFormatDstFormatTests, testParams);
+            addTestGroup(group, getFormatCaseName(format), addBlittingImageAllFormatsColorSrcFormatDstFormatTests,
+                         testParams);
         }
     }
 
@@ -18922,19 +18496,17 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
 {
     const struct
     {
-        const VkFormat *sourceFormats;
-        const VkFormat *destinationFormats;
+        const std::vector<VkFormat> *sourceFormats;
+        const std::vector<VkFormat> *destinationFormats;
         const bool onlyNearest;
-    } colorImageFormatsToTestBlit[] = {
-        {compatibleFormatsUInts, compatibleFormatsUInts, true},
-        {compatibleFormatsSInts, compatibleFormatsSInts, true},
-        {compatibleFormatsFloats, compatibleFormatsFloats, false},
-        {compressedFormatsFloats, compatibleFormatsFloats, false},
-        {compatibleFormatsSrgb, compatibleFormatsSrgb, false},
-        {compressedFormatsSrgb, compatibleFormatsSrgb, false},
+    } colorImageFormatsToTestBlit[]{
+        {&formats::compatibleFormatsUInts, &formats::compatibleFormatsUInts, true},
+        {&formats::compatibleFormatsSInts, &formats::compatibleFormatsSInts, true},
+        {&formats::compatibleFormatsFloats, &formats::compatibleFormatsFloats, false},
+        {&formats::compressedFormatsFloats, &formats::compatibleFormatsFloats, false},
+        {&formats::compatibleFormatsSrgb, &formats::compatibleFormatsSrgb, false},
+        {&formats::compressedFormatsSrgb, &formats::compatibleFormatsSrgb, false},
     };
-
-    const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
 
     if (allocationKind == ALLOCATION_KIND_DEDICATED)
     {
@@ -18967,19 +18539,13 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
             {AstcImageSizeType::SIZE_60_60, create2DCopyRegions(60, 60, 60, 60)},
         };
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &compatibleFormats : colorImageFormatsToTestBlit)
         {
-            const VkFormat *sourceFormats      = colorImageFormatsToTestBlit[compatibleFormatsIndex].sourceFormats;
-            const VkFormat *destinationFormats = colorImageFormatsToTestBlit[compatibleFormatsIndex].destinationFormats;
-            const bool onlyNearest             = colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
-            for (int srcFormatIndex = 0; sourceFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (const auto srcFormat : *compatibleFormats.sourceFormats)
             {
-                VkFormat srcFormat      = sourceFormats[srcFormatIndex];
                 params.src.image.format = srcFormat;
 
-                const bool onlyNearestAndLinear =
-                    de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
+                const bool onlyNearestAndLinear = de::contains(onlyNearestAndLinearFormatsToTest, srcFormat);
 
                 // most of tests are using regions caluculated for 64x64 size but astc formats require custom regions
                 params.regions = imageRegions.at(AstcImageSizeType::SIZE_64_64);
@@ -18996,10 +18562,10 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
                 dstImageExtent.width           = srcImageSize.x;
                 dstImageExtent.height          = srcImageSize.y;
 
-                BlitColorTestParams testParams{params, destinationFormats,
-                                               makeFilterMask(onlyNearest, onlyNearestAndLinear)};
+                BlitColorTestParams testParams{params, compatibleFormats.destinationFormats,
+                                               makeFilterMask(compatibleFormats.onlyNearest, onlyNearestAndLinear)};
 
-                addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format),
+                addTestGroup(subGroup.get(), getFormatCaseName(srcFormat),
                              addBlittingImageAllFormatsColorSrcFormatTests, testParams);
             }
         }
@@ -19047,15 +18613,14 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
             params.regions.push_back(region);
         }
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &compatibleFormats : colorImageFormatsToTestBlit)
         {
-            const VkFormat *sourceFormats = colorImageFormatsToTestBlit[compatibleFormatsIndex].sourceFormats;
-            const bool onlyNearest        = colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
-            for (int srcFormatIndex = 0; sourceFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            const auto *sourceFormats = compatibleFormats.sourceFormats;
+            const bool onlyNearest    = compatibleFormats.onlyNearest;
+            for (auto srcFormat : *sourceFormats)
             {
-                params.src.image.format = sourceFormats[srcFormatIndex];
-                if (!isSupportedByFramework(params.src.image.format))
+                params.src.image.format = srcFormat;
+                if (!isSupportedByFramework(srcFormat))
                     continue;
 
                 // Cubic filtering can only be used with 2D images.
@@ -19063,7 +18628,7 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
 
                 BlitColorTestParams testParams{params, nullptr, makeFilterMask(onlyNearest, onlyNearestAndLinear)};
 
-                addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format),
+                addTestGroup(subGroup.get(), getFormatCaseName(srcFormat),
                              addBlittingImageAllFormatsColorSrcFormatTests, testParams);
             }
         }
@@ -19118,15 +18683,14 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
             params.regions.push_back(region);
         }
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &compatibleFormats : colorImageFormatsToTestBlit)
         {
-            const VkFormat *sourceFormats = colorImageFormatsToTestBlit[compatibleFormatsIndex].sourceFormats;
-            const bool onlyNearest        = colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
-            for (int srcFormatIndex = 0; sourceFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            const auto *sourceFormats = compatibleFormats.sourceFormats;
+            const bool onlyNearest    = compatibleFormats.onlyNearest;
+            for (auto srcFormat : *sourceFormats)
             {
-                params.src.image.format = sourceFormats[srcFormatIndex];
-                if (!isSupportedByFramework(params.src.image.format))
+                params.src.image.format = srcFormat;
+                if (!isSupportedByFramework(srcFormat))
                     continue;
 
                 // Cubic filtering can only be used with 2D images.
@@ -19134,7 +18698,7 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
 
                 BlitColorTestParams testParams{params, nullptr, makeFilterMask(onlyNearest, onlyNearestAndLinear)};
 
-                addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format),
+                addTestGroup(subGroup.get(), getFormatCaseName(srcFormat),
                              addBlittingImageAllFormatsColorSrcFormatTests, testParams);
             }
         }
@@ -19168,11 +18732,6 @@ void addBlittingImageAllFormatsDepthStencilFormatsTests(tcu::TestCaseGroup *grou
 void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, AllocationKind allocationKind,
                                                  uint32_t extensionFlags)
 {
-    const VkFormat depthAndStencilFormats[] = {
-        VK_FORMAT_D16_UNORM,         VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,         VK_FORMAT_S8_UINT,
-        VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,   VK_FORMAT_D32_SFLOAT_S8_UINT,
-    };
-
     const VkImageSubresourceLayers defaultDepthSourceLayer   = {VK_IMAGE_ASPECT_DEPTH_BIT, 0u, 0u, 1u};
     const VkImageSubresourceLayers defaultStencilSourceLayer = {VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 0u, 1u};
     const VkImageSubresourceLayers defaultDSSourceLayer = {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u,
@@ -19182,14 +18741,13 @@ void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, Allo
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "2d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_2D;
             params.src.image.extent    = defaultExtent;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.extent    = defaultExtent;
             params.dst.image.imageType = VK_IMAGE_TYPE_2D;
             params.dst.image.format    = params.src.image.format;
@@ -19296,15 +18854,14 @@ void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, Allo
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "1d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_1D;
             params.dst.image.imageType = VK_IMAGE_TYPE_1D;
             params.src.image.extent    = default1dExtent;
             params.dst.image.extent    = default1dExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -19409,15 +18966,14 @@ void addBlittingImageAllFormatsDepthStencilTests(tcu::TestCaseGroup *group, Allo
     {
         de::MovePtr<tcu::TestCaseGroup> subGroup(new tcu::TestCaseGroup(group->getTestContext(), "3d"));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < DE_LENGTH_OF_ARRAY(depthAndStencilFormats);
-             ++compatibleFormatsIndex)
+        for (const VkFormat format : formats::depthAndStencilFormats)
         {
             TestParams params;
             params.src.image.imageType = VK_IMAGE_TYPE_3D;
             params.dst.image.imageType = VK_IMAGE_TYPE_3D;
             params.src.image.extent    = default3dExtent;
             params.dst.image.extent    = default3dExtent;
-            params.src.image.format    = depthAndStencilFormats[compatibleFormatsIndex];
+            params.src.image.format    = format;
             params.dst.image.format    = params.src.image.format;
             params.src.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
             params.dst.image.tiling    = VK_IMAGE_TILING_OPTIMAL;
@@ -19563,16 +19119,14 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests(tcu::TestCaseGroup *group, A
 {
     const struct
     {
-        const VkFormat *const compatibleFormats;
+        const std::vector<VkFormat> &compatibleFormats;
         const bool onlyNearest;
     } colorImageFormatsToTestBlit[] = {
-        {compatibleFormatsUInts, true},
-        {compatibleFormatsSInts, true},
-        {compatibleFormatsFloats, false},
-        {compatibleFormatsSrgb, false},
+        {formats::compatibleFormatsUInts, true},
+        {formats::compatibleFormatsSInts, true},
+        {formats::compatibleFormatsFloats, false},
+        {formats::compatibleFormatsSrgb, false},
     };
-
-    const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
 
     const int layerCountsToTest[] = {1, 6};
 
@@ -19622,16 +19176,15 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests(tcu::TestCaseGroup *group, A
         de::MovePtr<tcu::TestCaseGroup> layerCountGroup(
             new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str()));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatsData : colorImageFormatsToTestBlit)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTestBlit[compatibleFormatsIndex].compatibleFormats;
-            const bool onlyNearest            = colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
+            const auto &compatibleFormats = formatsData.compatibleFormats;
+            const bool onlyNearest        = formatsData.onlyNearest;
 
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto srcFormat : compatibleFormats)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
-                params.dst.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = srcFormat;
+                params.dst.image.format = srcFormat;
 
                 if (!isSupportedByFramework(params.src.image.format))
                     continue;
@@ -19641,7 +19194,7 @@ void addBlittingImageAllFormatsBaseLevelMipmapTests(tcu::TestCaseGroup *group, A
 
                 BlitColorTestParams testParams;
                 testParams.params            = params;
-                testParams.compatibleFormats = compatibleFormats;
+                testParams.compatibleFormats = &compatibleFormats;
                 testParams.testFilters       = makeFilterMask(onlyNearest, onlyNearestAndLinear);
 
                 testParams.params.src.image.extent.depth = layerCount;
@@ -19666,16 +19219,14 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests(tcu::TestCaseGroup *grou
 {
     const struct
     {
-        const VkFormat *const compatibleFormats;
+        const std::vector<VkFormat> &compatibleFormats;
         const bool onlyNearest;
     } colorImageFormatsToTestBlit[] = {
-        {compatibleFormatsUInts, true},
-        {compatibleFormatsSInts, true},
-        {compatibleFormatsFloats, false},
-        {compatibleFormatsSrgb, false},
+        {formats::compatibleFormatsUInts, true},
+        {formats::compatibleFormatsSInts, true},
+        {formats::compatibleFormatsFloats, false},
+        {formats::compatibleFormatsSrgb, false},
     };
-
-    const int numOfColorImageFormatsToTest = DE_LENGTH_OF_ARRAY(colorImageFormatsToTestBlit);
 
     const int layerCountsToTest[] = {1, 6};
 
@@ -19729,26 +19280,24 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests(tcu::TestCaseGroup *grou
         de::MovePtr<tcu::TestCaseGroup> layerCountGroup(
             new tcu::TestCaseGroup(group->getTestContext(), layerGroupName.c_str()));
 
-        for (int compatibleFormatsIndex = 0; compatibleFormatsIndex < numOfColorImageFormatsToTest;
-             ++compatibleFormatsIndex)
+        for (const auto &formatsData : colorImageFormatsToTestBlit)
         {
-            const VkFormat *compatibleFormats = colorImageFormatsToTestBlit[compatibleFormatsIndex].compatibleFormats;
-            const bool onlyNearest            = colorImageFormatsToTestBlit[compatibleFormatsIndex].onlyNearest;
+            const auto &compatibleFormats = formatsData.compatibleFormats;
+            const bool onlyNearest        = formatsData.onlyNearest;
 
-            for (int srcFormatIndex = 0; compatibleFormats[srcFormatIndex] != VK_FORMAT_UNDEFINED; ++srcFormatIndex)
+            for (auto srcFormat : compatibleFormats)
             {
-                params.src.image.format = compatibleFormats[srcFormatIndex];
-                params.dst.image.format = compatibleFormats[srcFormatIndex];
+                params.src.image.format = srcFormat;
+                params.dst.image.format = srcFormat;
 
-                if (!isSupportedByFramework(params.src.image.format))
+                if (!isSupportedByFramework(srcFormat))
                     continue;
 
-                const bool onlyNearestAndLinear =
-                    de::contains(onlyNearestAndLinearFormatsToTest, params.src.image.format);
+                const bool onlyNearestAndLinear = de::contains(onlyNearestAndLinearFormatsToTest, srcFormat);
 
                 BlitColorTestParams testParams;
                 testParams.params            = params;
-                testParams.compatibleFormats = compatibleFormats;
+                testParams.compatibleFormats = &compatibleFormats;
                 testParams.testFilters       = makeFilterMask(onlyNearest, onlyNearestAndLinear);
 
                 testParams.params.src.image.extent.depth = layerCount;
@@ -19786,15 +19335,15 @@ void addBlittingImageAllFormatsPreviousLevelMipmapTests(tcu::TestCaseGroup *grou
                 // Only go through a few common formats
                 for (int srcFormatIndex = 2; srcFormatIndex < 6; ++srcFormatIndex)
                 {
-                    params.src.image.format = compatibleFormatsUInts[srcFormatIndex];
-                    params.dst.image.format = compatibleFormatsUInts[srcFormatIndex];
+                    params.src.image.format = formats::compatibleFormatsUInts[srcFormatIndex];
+                    params.dst.image.format = formats::compatibleFormatsUInts[srcFormatIndex];
 
                     if (!isSupportedByFramework(params.src.image.format))
                         continue;
 
                     BlitColorTestParams testParams;
                     testParams.params            = params;
-                    testParams.compatibleFormats = compatibleFormatsUInts;
+                    testParams.compatibleFormats = &formats::compatibleFormatsUInts;
                     testParams.testFilters       = FILTER_MASK_NEAREST;
 
                     testParams.params.src.image.extent.depth = layerCount;
@@ -20674,7 +20223,7 @@ void addDepthStencilCopyMSAATest(tcu::TestCaseGroup *group, DepthStencilMSAA::Te
     {
         const std::string name;
         const VkFormat vkFormat;
-    } depthAndStencilFormats[] = {
+    } dsFormats[] = {
         {"d32_sfloat", VK_FORMAT_D32_SFLOAT},
         {"s8_uint", VK_FORMAT_S8_UINT},
         {"d16_unorm_s8_uint", VK_FORMAT_D16_UNORM_S8_UINT},
@@ -20691,7 +20240,7 @@ void addDepthStencilCopyMSAATest(tcu::TestCaseGroup *group, DepthStencilMSAA::Te
         {
             testCreateParams.srcImageLayout = srcLayout;
             testCreateParams.dstImageLayout = dstLayout;
-            for (const auto &format : depthAndStencilFormats)
+            for (const auto &format : dsFormats)
             {
                 testCreateParams.imageFormat = format.vkFormat;
                 const auto textureFormat     = mapVkFormat(format.vkFormat);
@@ -21141,44 +20690,44 @@ bool isCompatible(vk::VkFormat srcFormat, vk::VkFormat dstFormat)
     {
         DE_ASSERT(srcFormat != VK_FORMAT_UNDEFINED && dstFormat != VK_FORMAT_UNDEFINED);
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats8Bit), DE_ARRAY_END(compatibleFormats8Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats8Bit), DE_ARRAY_END(compatibleFormats8Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats8Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats8Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats16Bit), DE_ARRAY_END(compatibleFormats16Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats16Bit), DE_ARRAY_END(compatibleFormats16Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats16Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats16Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats24Bit), DE_ARRAY_END(compatibleFormats24Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats24Bit), DE_ARRAY_END(compatibleFormats24Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats24Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats24Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats32Bit), DE_ARRAY_END(compatibleFormats32Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats32Bit), DE_ARRAY_END(compatibleFormats32Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats32Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats32Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats48Bit), DE_ARRAY_END(compatibleFormats48Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats48Bit), DE_ARRAY_END(compatibleFormats48Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats48Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats48Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats64Bit), DE_ARRAY_END(compatibleFormats64Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats64Bit), DE_ARRAY_END(compatibleFormats64Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats64Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats64Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats96Bit), DE_ARRAY_END(compatibleFormats96Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats96Bit), DE_ARRAY_END(compatibleFormats96Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats96Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats96Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats128Bit), DE_ARRAY_END(compatibleFormats128Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats128Bit), DE_ARRAY_END(compatibleFormats128Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats128Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats128Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats192Bit), DE_ARRAY_END(compatibleFormats192Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats192Bit), DE_ARRAY_END(compatibleFormats192Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats192Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats192Bit, dstFormat))
             return true;
 
-        if (de::contains(DE_ARRAY_BEGIN(compatibleFormats256Bit), DE_ARRAY_END(compatibleFormats256Bit), srcFormat) &&
-            de::contains(DE_ARRAY_BEGIN(compatibleFormats256Bit), DE_ARRAY_END(compatibleFormats256Bit), dstFormat))
+        if (de::contains(formats::compatibleFormats256Bit, srcFormat) &&
+            de::contains(formats::compatibleFormats256Bit, dstFormat))
             return true;
 
         return false;

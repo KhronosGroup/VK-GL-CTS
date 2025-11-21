@@ -1567,6 +1567,8 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
             nullptr,                          // const VkRenderingAttachmentInfo* pStencilAttachment;
         };
         vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+
+        vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &inputAttachmentIndexInfo);
 #endif
     }
     else
@@ -1646,6 +1648,8 @@ tcu::TestStatus InputAttachmentTestInstance::iterate(void)
                               (m_parameters.barrierTest == BARRIER_TEST_IMAGE) ? 1u : 0u, &imageMemoryBarrier);
 
         vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
+
+        vk.cmdSetRenderingInputAttachmentIndices(*cmdBuffer, &inputAttachmentIndexInfo);
 #endif
     }
     else

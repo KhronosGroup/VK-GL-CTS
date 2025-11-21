@@ -2128,14 +2128,14 @@ bool compareNMin(const std::vector<Resource> &, const vector<AllocationSp> &outp
     if (outputAllocs.size() != 1)
         return false;
 
-    const BufferSp &expectedOutput(expectedOutputs[0].getBuffer());
+    const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput->getBytes(data);
+    expectedOutput.getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float); ++idx)
+    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float); ++idx)
     {
         const float f0 = expectedOutputAsFloat[idx];
         const float f1 = outputAsFloat[idx];
@@ -2252,14 +2252,14 @@ bool compareNMax(const std::vector<Resource> &, const vector<AllocationSp> &outp
     if (outputAllocs.size() != 1)
         return false;
 
-    const BufferSp &expectedOutput = expectedOutputs[0].getBuffer();
+    const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput->getBytes(data);
+    expectedOutput.getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float); ++idx)
+    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float); ++idx)
     {
         const float f0 = expectedOutputAsFloat[idx];
         const float f1 = outputAsFloat[idx];
@@ -2375,14 +2375,14 @@ bool compareNClamp(const std::vector<Resource> &, const vector<AllocationSp> &ou
     if (outputAllocs.size() != 1)
         return false;
 
-    const BufferSp &expectedOutput = expectedOutputs[0].getBuffer();
+    const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput->getBytes(data);
+    expectedOutput.getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float) / 2; ++idx)
+    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float) / 2; ++idx)
     {
         const float e0  = expectedOutputAsFloat[idx * 2];
         const float e1  = expectedOutputAsFloat[idx * 2 + 1];

@@ -64,6 +64,7 @@
 #include "vktApiFrameBoundaryTests.hpp"
 #include "vktApiPhysicalDeviceFormatPropertiesMaint5Tests.hpp"
 #include "vktApiFragmentShaderOutputTests.hpp"
+#include "vktApiPerformanceCountersByRegionTests.hpp"
 #endif // CTS_USES_VULKANSC
 
 namespace vkt
@@ -135,6 +136,9 @@ void createApiTests(tcu::TestCaseGroup *apiTests)
     apiTests->addChild(createDeviceAddressCommandsTests(testCtx));
 #endif
     apiTests->addChild(createExtensionDuplicatesTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+    apiTests->addChild(createRenderPassPerformanceCountersByRegionApiTests(testCtx));
+#endif
 }
 
 } // namespace

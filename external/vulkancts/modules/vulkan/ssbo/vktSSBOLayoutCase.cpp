@@ -62,6 +62,17 @@ using std::string;
 using std::vector;
 using tcu::TestLog;
 
+static uint64_t firstElemToCompare(uint64_t arraySize)
+{
+    return (arraySize > 20 ? arraySize - 20 : 0);
+}
+
+static inline uint64_t deRoundUp64(uint64_t a, uint64_t b)
+{
+    uint64_t d = a / b;
+    return d * b == a ? a : (d + 1) * b;
+}
+
 struct LayoutFlagsFmt
 {
     uint32_t flags;
@@ -482,13 +493,10 @@ int computeReferenceLayout(BufferLayout &layout, int curBlockNdx, int baseOffset
 {
     // Reference layout uses std430 rules by default. std140 rules are
     // choosen only for blocks that have std140 layout.
-    const int baseAlignment     = (layoutFlags & LAYOUT_SCALAR) != 0 ? computeScalarBlockAlignment(type, layoutFlags) :
-                                  (layoutFlags & LAYOUT_STD140) != 0 ? computeStd140BaseAlignment(type, layoutFlags) :
-                                  (layoutFlags & LAYOUT_RELAXED) != 0 ?
-                                                                       computeRelaxedBlockBaseAlignment(type, layoutFlags) :
-                                                                       computeStd430BaseAlignment(type, layoutFlags);
-    int curOffset               = deAlign32(baseOffset, baseAlignment);
-    const int topLevelArraySize = 1; // Default values
+    const int baseAlignment = computeBaseAlignment(type, layoutFlags);
+
+    int curOffset                 = deAlign32(baseOffset, baseAlignment);
+    const int topLevelArraySize   = 1; // Default values
     const int topLevelArrayStride = 0;
 
     if (type.isBasicType())
@@ -783,13 +791,13 @@ void computeReferenceLayout(BufferLayout &layout, ShaderInterface &interface)
 
 // Value generator.
 
-void generateValue(const BufferVarLayoutEntry &entry, int unsizedArraySize, void *basePtr, de::Random &rnd)
+void generateValue(const BufferVarLayoutEntry &entry, uint64_t unsizedArraySize, void *basePtr, de::Random &rnd)
 {
     const glu::DataType scalarType = glu::getDataTypeScalarType(entry.type);
     const int scalarSize           = glu::getDataTypeScalarSize(entry.type);
-    const int arraySize            = entry.arraySize == 0 ? unsizedArraySize : entry.arraySize;
+    const uint64_t arraySize       = entry.arraySize == 0 ? unsizedArraySize : entry.arraySize;
     const int arrayStride          = entry.arrayStride;
-    const int topLevelSize         = entry.topLevelArraySize == 0 ? unsizedArraySize : entry.topLevelArraySize;
+    const uint64_t topLevelSize    = entry.topLevelArraySize == 0 ? unsizedArraySize : entry.topLevelArraySize;
     const int topLevelStride       = entry.topLevelArrayStride;
     const bool isMatrix            = glu::isDataTypeMatrix(entry.type);
     const int numVecs              = isMatrix ? (entry.isRowMajor ? glu::getDataTypeMatrixNumRows(entry.type) :
@@ -799,14 +807,12 @@ void generateValue(const BufferVarLayoutEntry &entry, int unsizedArraySize, void
     const size_t compSize          = getDataTypeByteSize(scalarType);
 
     DE_ASSERT(scalarSize % numVecs == 0);
-    DE_ASSERT(topLevelSize >= 0);
-    DE_ASSERT(arraySize >= 0);
 
-    for (int topElemNdx = 0; topElemNdx < topLevelSize; topElemNdx++)
+    for (uint64_t topElemNdx = 0; topElemNdx < topLevelSize; topElemNdx++)
     {
         uint8_t *const topElemPtr = (uint8_t *)basePtr + entry.offset + topElemNdx * topLevelStride;
 
-        for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
+        for (uint64_t elemNdx = firstElemToCompare(arraySize); elemNdx < arraySize; elemNdx++)
         {
             uint8_t *const elemPtr = topElemPtr + elemNdx * arrayStride;
 
@@ -1253,7 +1259,20 @@ string getShaderName(const BufferBlock &block, int instanceNdx, const BufferVar 
             name << "." << structPtr->getMember(pathComp->index).getName();
         }
         else if (pathComp->type == glu::VarTypeComponent::ARRAY_ELEMENT)
-            name << "[" << pathComp->index << "]";
+        {
+            if (pathComp->index >= int64_t{1} << 32)
+            {
+                name << "[" << pathComp->index << "ul]";
+            }
+            else if (pathComp->index >= int32_t{1} << 31)
+            {
+                name << "[" << pathComp->index << "u]";
+            }
+            else
+            {
+                name << "[" << pathComp->index << "]";
+            }
+        }
         else
             DE_ASSERT(false);
     }
@@ -1261,14 +1280,16 @@ string getShaderName(const BufferBlock &block, int instanceNdx, const BufferVar 
     return name.str();
 }
 
-int computeOffset(const BufferVarLayoutEntry &varLayout, const glu::TypeComponentVector &accessPath)
+uint64_t computeOffset(const BufferVarLayoutEntry &varLayout, const glu::TypeComponentVector &accessPath)
 {
-    const int topLevelNdx = (accessPath.size() > 1 && accessPath.front().type == glu::VarTypeComponent::ARRAY_ELEMENT) ?
-                                accessPath.front().index :
-                                0;
-    const int bottomLevelNdx = (!accessPath.empty() && accessPath.back().type == glu::VarTypeComponent::ARRAY_ELEMENT) ?
-                                   accessPath.back().index :
-                                   0;
+    const uint64_t topLevelNdx =
+        (accessPath.size() > 1 && accessPath.front().type == glu::VarTypeComponent::ARRAY_ELEMENT) ?
+            accessPath.front().index :
+            0;
+    const uint64_t bottomLevelNdx =
+        (!accessPath.empty() && accessPath.back().type == glu::VarTypeComponent::ARRAY_ELEMENT) ?
+            accessPath.back().index :
+            0;
 
     return varLayout.offset + varLayout.topLevelArrayStride * topLevelNdx + varLayout.arrayStride * bottomLevelNdx;
 }
@@ -1286,11 +1307,11 @@ void generateCompareSrc(std::ostream &src, const char *resultVar, const BufferLa
 
     if (curType.isArrayType())
     {
-        const int arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ?
-                                  block.getLastUnsizedArraySize(instanceNdx) :
-                                  curType.getArraySize();
+        const uint64_t arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ?
+                                       block.getLastUnsizedArraySize(instanceNdx) :
+                                       curType.getArraySize();
 
-        for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
+        for (uint64_t elemNdx = firstElemToCompare(arraySize); elemNdx < arraySize; elemNdx++)
             generateCompareSrc(src, resultVar, bufferLayout, block, instanceNdx, blockPtr, bufVar,
                                accessPath.element(elemNdx), LOAD_FULL_MATRIX, compareLimit);
     }
@@ -1395,11 +1416,11 @@ void generateWriteSrc(std::ostream &src, const BufferLayout &bufferLayout, const
 
     if (curType.isArrayType())
     {
-        const int arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ?
-                                  block.getLastUnsizedArraySize(instanceNdx) :
-                                  curType.getArraySize();
+        const uint64_t arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ?
+                                       block.getLastUnsizedArraySize(instanceNdx) :
+                                       curType.getArraySize();
 
-        for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
+        for (uint64_t elemNdx = firstElemToCompare(arraySize); elemNdx < arraySize; elemNdx++)
             generateWriteSrc(src, bufferLayout, block, instanceNdx, blockPtr, bufVar, accessPath.element(elemNdx),
                              matrixStoreFlag);
     }
@@ -1508,12 +1529,12 @@ void generateWriteSrc(std::ostream &src, const ShaderInterface &interface, const
 string generateComputeShader(const ShaderInterface &interface, const BufferLayout &layout,
                              const vector<BlockDataPtr> &comparePtrs, const vector<BlockDataPtr> &writePtrs,
                              MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag,
-                             bool usePhysStorageBuffer)
+                             bool usePhysStorageBuffer, bool use64BitIndexing)
 {
     std::ostringstream src;
 
     if (uses16BitStorage(interface) || uses8BitStorage(interface) || usesRelaxedLayout(interface) ||
-        usesScalarLayout(interface) || usesDescriptorIndexing(interface))
+        usesScalarLayout(interface) || usesDescriptorIndexing(interface) || true)
     {
         src << "#version 450\n";
     }
@@ -1525,6 +1546,43 @@ string generateComputeShader(const ShaderInterface &interface, const BufferLayou
     src << "#extension GL_EXT_scalar_block_layout : enable\n";
     src << "#extension GL_EXT_buffer_reference : enable\n";
     src << "#extension GL_EXT_nonuniform_qualifier : enable\n";
+    src << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n";
+    src << "#extension GL_EXT_shader_64bit_indexing : enable\n";
+    if (use64BitIndexing)
+    {
+        // Set promote_uint32_indices only for 8-bit types. It's only really needed for
+        // 8b with scalar packing.
+        bool promoteU32 = false;
+        std::vector<const StructType *> namedStructs;
+        interface.getNamedStructs(namedStructs);
+        for (std::vector<const StructType *>::const_iterator structIter = namedStructs.begin();
+             structIter != namedStructs.end(); structIter++)
+            src << glu::declare(*structIter) << ";\n";
+
+        {
+            for (int blockNdx = 0; blockNdx < interface.getNumBlocks(); blockNdx++)
+            {
+                const BufferBlock &block = interface.getBlock(blockNdx);
+                for (BufferBlock::const_iterator varIter = block.begin(); varIter != block.end(); varIter++)
+                {
+                    const BufferVar &bufferVar = *varIter;
+                    const VarType *curType     = &bufferVar.getType();
+                    while (curType->isArrayType())
+                    {
+                        curType = &curType->getElementType();
+                    }
+                    if (curType->getBasicType() == glu::TYPE_UINT8 || curType->getBasicType() == glu::TYPE_INT8)
+                    {
+                        promoteU32 = true;
+                    }
+                }
+            }
+        }
+        if (promoteU32)
+        {
+            src << "#pragma promote_uint32_indices\n";
+        }
+    }
     src << "layout(local_size_x = 1) in;\n";
     src << "\n";
 
@@ -1600,26 +1658,26 @@ void copyBufferVarData(const BufferVarLayoutEntry &dstEntry, const BlockDataPtr 
     const bool isMatrix             = glu::isDataTypeMatrix(dstEntry.type);
     glu::DataType scalarType        = glu::getDataTypeScalarType(dstEntry.type);
     const size_t compSize           = getDataTypeByteSize(scalarType);
-    const int dstArraySize          = dstEntry.arraySize == 0 ? dstBlockPtr.lastUnsizedArraySize : dstEntry.arraySize;
+    const uint64_t dstArraySize     = dstEntry.arraySize == 0 ? dstBlockPtr.lastUnsizedArraySize : dstEntry.arraySize;
     const int dstArrayStride        = dstEntry.arrayStride;
-    const int dstTopLevelSize =
+    const uint64_t dstTopLevelSize =
         dstEntry.topLevelArraySize == 0 ? dstBlockPtr.lastUnsizedArraySize : dstEntry.topLevelArraySize;
     const int dstTopLevelStride = dstEntry.topLevelArrayStride;
-    const int srcArraySize      = srcEntry.arraySize == 0 ? srcBlockPtr.lastUnsizedArraySize : srcEntry.arraySize;
+    const uint64_t srcArraySize = srcEntry.arraySize == 0 ? srcBlockPtr.lastUnsizedArraySize : srcEntry.arraySize;
     const int srcArrayStride    = srcEntry.arrayStride;
-    const int srcTopLevelSize =
+    const uint64_t srcTopLevelSize =
         srcEntry.topLevelArraySize == 0 ? srcBlockPtr.lastUnsizedArraySize : srcEntry.topLevelArraySize;
     const int srcTopLevelStride = srcEntry.topLevelArrayStride;
 
     DE_ASSERT(dstArraySize <= srcArraySize && dstTopLevelSize <= srcTopLevelSize);
     DE_UNREF(srcArraySize && srcTopLevelSize);
 
-    for (int topElemNdx = 0; topElemNdx < dstTopLevelSize; topElemNdx++)
+    for (uint64_t topElemNdx = 0; topElemNdx < dstTopLevelSize; topElemNdx++)
     {
         uint8_t *const dstTopPtr       = dstBasePtr + topElemNdx * dstTopLevelStride;
         const uint8_t *const srcTopPtr = srcBasePtr + topElemNdx * srcTopLevelStride;
 
-        for (int elementNdx = 0; elementNdx < dstArraySize; elementNdx++)
+        for (uint64_t elementNdx = firstElemToCompare(dstArraySize); elementNdx < dstArraySize; elementNdx++)
         {
             uint8_t *const dstElemPtr       = dstTopPtr + elementNdx * dstArrayStride;
             const uint8_t *const srcElemPtr = srcTopPtr + elementNdx * srcArrayStride;
@@ -1699,11 +1757,11 @@ void copyNonWrittenData(const BufferLayout &layout, const BufferBlock &block, in
 
     if (curType.isArrayType())
     {
-        const int arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ?
-                                  block.getLastUnsizedArraySize(instanceNdx) :
-                                  curType.getArraySize();
+        const uint64_t arraySize = curType.getArraySize() == VarType::UNSIZED_ARRAY ?
+                                       block.getLastUnsizedArraySize(instanceNdx) :
+                                       curType.getArraySize();
 
-        for (int elemNdx = 0; elemNdx < arraySize; elemNdx++)
+        for (uint64_t elemNdx = firstElemToCompare(arraySize); elemNdx < arraySize; elemNdx++)
             copyNonWrittenData(layout, block, instanceNdx, srcBlockPtr, dstBlockPtr, bufVar,
                                accessPath.element(elemNdx));
     }
@@ -1824,26 +1882,26 @@ bool compareBufferVarData(tcu::TestLog &log, const BufferVarLayoutEntry &refEntr
     const int maxPrints             = 3;
     int numFailed                   = 0;
 
-    const int resArraySize   = resEntry.arraySize == 0 ? resBlockPtr.lastUnsizedArraySize : resEntry.arraySize;
-    const int resArrayStride = resEntry.arrayStride;
-    const int resTopLevelSize =
+    const uint64_t resArraySize = resEntry.arraySize == 0 ? resBlockPtr.lastUnsizedArraySize : resEntry.arraySize;
+    const int resArrayStride    = resEntry.arrayStride;
+    const uint64_t resTopLevelSize =
         resEntry.topLevelArraySize == 0 ? resBlockPtr.lastUnsizedArraySize : resEntry.topLevelArraySize;
     const int resTopLevelStride = resEntry.topLevelArrayStride;
-    const int refArraySize      = refEntry.arraySize == 0 ? refBlockPtr.lastUnsizedArraySize : refEntry.arraySize;
+    const uint64_t refArraySize = refEntry.arraySize == 0 ? refBlockPtr.lastUnsizedArraySize : refEntry.arraySize;
     const int refArrayStride    = refEntry.arrayStride;
-    const int refTopLevelSize =
+    const uint64_t refTopLevelSize =
         refEntry.topLevelArraySize == 0 ? refBlockPtr.lastUnsizedArraySize : refEntry.topLevelArraySize;
     const int refTopLevelStride = refEntry.topLevelArrayStride;
 
     DE_ASSERT(resArraySize <= refArraySize && resTopLevelSize <= refTopLevelSize);
     DE_UNREF(refArraySize && refTopLevelSize);
 
-    for (int topElemNdx = 0; topElemNdx < resTopLevelSize; topElemNdx++)
+    for (uint64_t topElemNdx = 0; topElemNdx < resTopLevelSize; topElemNdx++)
     {
         uint8_t *const resTopPtr       = resBasePtr + topElemNdx * resTopLevelStride;
         const uint8_t *const refTopPtr = refBasePtr + topElemNdx * refTopLevelStride;
 
-        for (int elementNdx = 0; elementNdx < resArraySize; elementNdx++)
+        for (uint64_t elementNdx = firstElemToCompare(resArraySize); elementNdx < resArraySize; elementNdx++)
         {
             uint8_t *const resElemPtr       = resTopPtr + elementNdx * resArrayStride;
             const uint8_t *const refElemPtr = refTopPtr + elementNdx * refArrayStride;
@@ -2000,9 +2058,9 @@ static int getUnsizedArrayStride(const BufferLayout &layout, const BlockLayoutEn
     return 0;
 }
 
-vector<int> computeBufferSizes(const ShaderInterface &interface, const BufferLayout &layout)
+vector<uint64_t> computeBufferSizes(const ShaderInterface &interface, const BufferLayout &layout)
 {
-    vector<int> sizes(layout.blocks.size());
+    vector<uint64_t> sizes(layout.blocks.size());
 
     for (int declNdx = 0; declNdx < interface.getNumBlocks(); declNdx++)
     {
@@ -2020,7 +2078,7 @@ vector<int> computeBufferSizes(const ShaderInterface &interface, const BufferLay
                 const BlockLayoutEntry &blockLayout = layout.blocks[blockNdx];
                 const int baseSize                  = blockLayout.size;
                 const bool isLastUnsized            = hasUnsizedArray(layout, blockLayout);
-                const int lastArraySize             = isLastUnsized ? block.getLastUnsizedArraySize(instanceNdx) : 0;
+                const uint64_t lastArraySize        = isLastUnsized ? block.getLastUnsizedArraySize(instanceNdx) : 0;
                 const int stride                    = isLastUnsized ? getUnsizedArrayStride(layout, blockLayout) : 0;
 
                 sizes[blockNdx] = baseSize + lastArraySize * stride;
@@ -2031,15 +2089,16 @@ vector<int> computeBufferSizes(const ShaderInterface &interface, const BufferLay
     return sizes;
 }
 
-BlockDataPtr getBlockDataPtr(const BufferLayout &layout, const BlockLayoutEntry &blockLayout, void *ptr, int bufferSize)
+BlockDataPtr getBlockDataPtr(const BufferLayout &layout, const BlockLayoutEntry &blockLayout, void *ptr,
+                             uint64_t bufferSize)
 {
     const bool isLastUnsized = hasUnsizedArray(layout, blockLayout);
-    const int baseSize       = blockLayout.size;
+    const uint64_t baseSize  = blockLayout.size;
 
     if (isLastUnsized)
     {
-        const int lastArrayStride = getUnsizedArrayStride(layout, blockLayout);
-        const int lastArraySize   = (bufferSize - baseSize) / (lastArrayStride ? lastArrayStride : 1);
+        const uint64_t lastArrayStride = getUnsizedArrayStride(layout, blockLayout);
+        const uint64_t lastArraySize   = (bufferSize - baseSize) / (lastArrayStride ? lastArrayStride : 1);
 
         DE_ASSERT(baseSize + lastArraySize * lastArrayStride == bufferSize);
 
@@ -2065,10 +2124,10 @@ struct Buffer
 struct BlockLocation
 {
     int index;
-    int offset;
-    int size;
+    uint64_t offset;
+    uint64_t size;
 
-    BlockLocation(int index_, int offset_, int size_) : index(index_), offset(offset_), size(size_)
+    BlockLocation(int index_, uint64_t offset_, uint64_t size_) : index(index_), offset(offset_), size(size_)
     {
     }
     BlockLocation(void) : index(0), offset(0), size(0)
@@ -2078,24 +2137,25 @@ struct BlockLocation
 
 void initRefDataStorage(const ShaderInterface &interface, const BufferLayout &layout, RefDataStorage &storage)
 {
-    DE_ASSERT(storage.data.empty() && storage.pointers.empty());
+    DE_ASSERT(storage.data.get() == nullptr && storage.pointers.empty());
 
-    const vector<int> bufferSizes = computeBufferSizes(interface, layout);
-    int totalSize                 = 0;
-    const int vec4Alignment       = (int)sizeof(uint32_t) * 4;
+    const vector<uint64_t> bufferSizes = computeBufferSizes(interface, layout);
+    uint64_t totalSize                 = 0;
+    const uint64_t vec4Alignment       = (int)sizeof(uint32_t) * 4;
 
-    for (vector<int>::const_iterator sizeIter = bufferSizes.begin(); sizeIter != bufferSizes.end(); ++sizeIter)
+    for (vector<uint64_t>::const_iterator sizeIter = bufferSizes.begin(); sizeIter != bufferSizes.end(); ++sizeIter)
     {
         // Include enough space for alignment of individual blocks
-        totalSize += deRoundUp32(*sizeIter, vec4Alignment);
+        totalSize += deRoundUp64(*sizeIter, vec4Alignment);
     }
 
-    storage.data.resize(totalSize);
+    storage.data = de::SharedPtr(new std::vector<uint8_t>);
+    storage.data->resize((size_t)totalSize);
 
     // Pointers for each block.
     {
-        uint8_t *basePtr = storage.data.empty() ? nullptr : &storage.data[0];
-        int curOffset    = 0;
+        uint8_t *basePtr   = storage.data->empty() ? nullptr : &(*storage.data)[0];
+        uint64_t curOffset = 0;
 
         DE_ASSERT(bufferSizes.size() == layout.blocks.size());
         DE_ASSERT(totalSize == 0 || basePtr);
@@ -2105,12 +2165,12 @@ void initRefDataStorage(const ShaderInterface &interface, const BufferLayout &la
         for (int blockNdx = 0; blockNdx < (int)layout.blocks.size(); blockNdx++)
         {
             const BlockLayoutEntry &blockLayout = layout.blocks[blockNdx];
-            const int bufferSize                = bufferSizes[blockNdx];
+            const uint64_t bufferSize           = bufferSizes[blockNdx];
 
             storage.pointers[blockNdx] = getBlockDataPtr(layout, blockLayout, basePtr + curOffset, bufferSize);
 
             // Ensure each new block starts fully aligned to avoid unaligned host accesses
-            curOffset += deRoundUp32(bufferSize, vec4Alignment);
+            curOffset += deRoundUp64(bufferSize, vec4Alignment);
         }
     }
 }
@@ -2135,6 +2195,14 @@ vector<BlockDataPtr> blockLocationsToPtrs(const BufferLayout &layout, const vect
 }
 
 } // namespace
+
+int computeBaseAlignment(const VarType &type, uint32_t layoutFlags)
+{
+    return (layoutFlags & LAYOUT_SCALAR) != 0  ? computeScalarBlockAlignment(type, layoutFlags) :
+           (layoutFlags & LAYOUT_STD140) != 0  ? computeStd140BaseAlignment(type, layoutFlags) :
+           (layoutFlags & LAYOUT_RELAXED) != 0 ? computeRelaxedBlockBaseAlignment(type, layoutFlags) :
+                                                 computeStd430BaseAlignment(type, layoutFlags);
+}
 
 de::MovePtr<vk::Allocation> allocateAndBindMemory(Context &context, vk::VkBuffer buffer, vk::MemoryRequirement memReqs)
 {
@@ -2174,7 +2242,7 @@ class SSBOLayoutCaseInstance : public TestInstance
 public:
     SSBOLayoutCaseInstance(Context &context, SSBOLayoutCase::BufferMode bufferMode, const ShaderInterface &interface,
                            const BufferLayout &refLayout, const RefDataStorage &initialData,
-                           const RefDataStorage &writeData, bool usePhysStorageBuffer);
+                           const RefDataStorage &writeData, bool usePhysStorageBuffer, bool use64BitIndexing);
     virtual ~SSBOLayoutCaseInstance(void);
     virtual tcu::TestStatus iterate(void);
 
@@ -2185,6 +2253,9 @@ private:
     const RefDataStorage &m_initialData; // Initial data stored in buffer.
     const RefDataStorage &m_writeData;   // Data written by compute shader.
     const bool m_usePhysStorageBuffer;
+#ifndef CTS_USES_VULKANSC
+    const bool m_use64BitIndexing;
+#endif
 
     typedef de::SharedPtr<vk::Unique<vk::VkBuffer>> VkBufferSp;
     typedef de::SharedPtr<vk::Allocation> AllocationSp;
@@ -2196,7 +2267,7 @@ private:
 SSBOLayoutCaseInstance::SSBOLayoutCaseInstance(Context &context, SSBOLayoutCase::BufferMode bufferMode,
                                                const ShaderInterface &interface, const BufferLayout &refLayout,
                                                const RefDataStorage &initialData, const RefDataStorage &writeData,
-                                               bool usePhysStorageBuffer)
+                                               bool usePhysStorageBuffer, bool use64BitIndexing)
     : TestInstance(context)
     , m_bufferMode(bufferMode)
     , m_interface(interface)
@@ -2204,11 +2275,17 @@ SSBOLayoutCaseInstance::SSBOLayoutCaseInstance(Context &context, SSBOLayoutCase:
     , m_initialData(initialData)
     , m_writeData(writeData)
     , m_usePhysStorageBuffer(usePhysStorageBuffer)
+#ifndef CTS_USES_VULKANSC
+    , m_use64BitIndexing(use64BitIndexing)
+#endif
 {
+    DE_UNREF(use64BitIndexing);
 }
 
 SSBOLayoutCaseInstance::~SSBOLayoutCaseInstance(void)
 {
+    m_initialData.data.clear();
+    m_writeData.data.clear();
 }
 
 tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
@@ -2282,7 +2359,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
     }
 
     // Upload base buffers
-    const std::vector<int> bufferSizes = computeBufferSizes(m_interface, m_refLayout);
+    const std::vector<uint64_t> bufferSizes = computeBufferSizes(m_interface, m_refLayout);
     {
         std::vector<void *> mapPtrs;
         std::vector<BlockLocation> blockLocations(numBlocks);
@@ -2294,7 +2371,7 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
             mapPtrs.resize(numBlocks);
             for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
             {
-                const uint32_t bufferSize = bufferSizes[blockNdx];
+                const uint64_t bufferSize = bufferSizes[blockNdx];
                 DE_ASSERT(bufferSize > 0);
 
                 blockLocations[blockNdx] = BlockLocation(blockNdx, 0, bufferSize);
@@ -2319,21 +2396,21 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
 
             vk::VkPhysicalDeviceProperties properties;
             m_context.getInstanceInterface().getPhysicalDeviceProperties(m_context.getPhysicalDevice(), &properties);
-            const int bindingAlignment = (int)properties.limits.minStorageBufferOffsetAlignment;
-            int curOffset              = 0;
+            const uint64_t bindingAlignment = (int)properties.limits.minStorageBufferOffsetAlignment;
+            uint64_t curOffset              = 0;
             for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
             {
-                const int bufferSize = bufferSizes[blockNdx];
+                const uint64_t bufferSize = bufferSizes[blockNdx];
                 DE_ASSERT(bufferSize > 0);
 
                 if (bindingAlignment > 0)
-                    curOffset = deRoundUp32(curOffset, bindingAlignment);
+                    curOffset = deRoundUp64(curOffset, bindingAlignment);
 
                 blockLocations[blockNdx] = BlockLocation(0, curOffset, bufferSize);
                 curOffset += bufferSize;
             }
 
-            const int totalBufferSize         = curOffset;
+            const uint64_t totalBufferSize    = curOffset;
             vk::Move<vk::VkBuffer> buffer     = createBuffer(m_context, totalBufferSize, usageFlags);
             de::MovePtr<vk::Allocation> alloc = allocateAndBindMemory(
                 m_context, *buffer,
@@ -2344,8 +2421,8 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
 
             for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
             {
-                const uint32_t bufferSize = bufferSizes[blockNdx];
-                const uint32_t offset     = blockLocations[blockNdx].offset;
+                const uint64_t bufferSize = bufferSizes[blockNdx];
+                const uint64_t offset     = blockLocations[blockNdx].offset;
 
                 descriptors[blockNdx] = makeDescriptorBufferInfo(*buffer, offset, bufferSize);
             }
@@ -2443,9 +2520,20 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
         "main",                          //
         nullptr,                         // const VkSpecializationInfo* pSpecializationInfo;
     };
+
+    const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+    vk::VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = vk::initVulkanStructure();
+    if (m_use64BitIndexing)
+    {
+        pipelineFlags2CreateInfo.flags = vk::VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+        pNext                          = &pipelineFlags2CreateInfo;
+    }
+#endif
+
     const vk::VkComputePipelineCreateInfo pipelineCreateInfo = {
         vk::VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                            // const void* pNext;
+        pNext,                                              // const void* pNext;
         0,                                                  // VkPipelineCreateFlags flags;
         pipelineShaderStageParams,                          // VkPipelineShaderStageCreateInfo stage;
         *pipelineLayout,                                    // VkPipelineLayout layout;
@@ -2564,12 +2652,13 @@ tcu::TestStatus SSBOLayoutCaseInstance::iterate(void)
 
 SSBOLayoutCase::SSBOLayoutCase(tcu::TestContext &testCtx, const char *name, BufferMode bufferMode,
                                MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag,
-                               bool usePhysStorageBuffer)
+                               bool usePhysStorageBuffer, bool use64BitIndexing)
     : TestCase(testCtx, name)
     , m_bufferMode(bufferMode)
     , m_matrixLoadFlag(matrixLoadFlag)
     , m_matrixStoreFlag(matrixStoreFlag)
     , m_usePhysStorageBuffer(usePhysStorageBuffer)
+    , m_use64BitIndexing(use64BitIndexing)
 {
 }
 
@@ -2577,33 +2666,53 @@ SSBOLayoutCase::~SSBOLayoutCase(void)
 {
 }
 
+void SSBOLayoutCase::deinit(void)
+{
+    m_initialData.data.clear();
+    m_writeData.data.clear();
+}
+
 void SSBOLayoutCase::initPrograms(vk::SourceCollections &programCollection) const
 {
     DE_ASSERT(!m_computeShaderSrc.empty());
+
+    auto spirvVersion = vk::SPIRV_VERSION_1_0;
 
     // Valid scalar layouts are a superset of valid relaxed layouts.  So check scalar layout first.
     if (usesScalarLayout(m_interface))
     {
         programCollection.glslSources.add("compute")
             << glu::ComputeSource(m_computeShaderSrc)
-            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0,
+            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion,
                                       vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS);
     }
     else if (usesRelaxedLayout(m_interface))
     {
         programCollection.glslSources.add("compute")
             << glu::ComputeSource(m_computeShaderSrc)
-            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_0,
+            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion,
                                       vk::ShaderBuildOptions::FLAG_ALLOW_RELAXED_OFFSETS);
     }
     else
-        programCollection.glslSources.add("compute") << glu::ComputeSource(m_computeShaderSrc);
+        programCollection.glslSources.add("compute")
+            << glu::ComputeSource(m_computeShaderSrc)
+            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, spirvVersion, 0);
 }
 
 TestInstance *SSBOLayoutCase::createInstance(Context &context) const
 {
+    m_initialData.data.clear();
+    m_writeData.data.clear();
+    m_initialData.pointers.clear();
+    m_writeData.pointers.clear();
+    initRefDataStorage(m_interface, m_refLayout, m_initialData);
+    initRefDataStorage(m_interface, m_refLayout, m_writeData);
+    generateValues(m_refLayout, m_initialData.pointers, deStringHash(getName()) ^ 0xad2f7214);
+    generateValues(m_refLayout, m_writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
+    copyNonWrittenData(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
+
     return new SSBOLayoutCaseInstance(context, m_bufferMode, m_interface, m_refLayout, m_initialData, m_writeData,
-                                      m_usePhysStorageBuffer);
+                                      m_usePhysStorageBuffer, m_use64BitIndexing);
 }
 
 void SSBOLayoutCase::checkSupport(Context &context) const
@@ -2623,6 +2732,10 @@ void SSBOLayoutCase::checkSupport(Context &context) const
          !context.getDescriptorIndexingFeatures().runtimeDescriptorArray))
         TCU_THROW(NotSupportedError, "Descriptor indexing over storage buffer not supported");
 
+#ifndef CTS_USES_VULKANSC
+    if (m_use64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+#endif
     const vk::VkPhysicalDeviceProperties &properties = context.getDeviceProperties();
     // Shader defines N+1 storage buffers: N to operate and one more to store the number of cases passed.
     uint32_t blockCount = 1u;
@@ -2639,6 +2752,15 @@ void SSBOLayoutCase::checkSupport(Context &context) const
 
 void SSBOLayoutCase::delayedInit(void)
 {
+#ifndef CTS_USES_VULKANSC
+    if (auto contextManager = getContextManager())
+    {
+        auto &deviceExtensions = contextManager->getDeviceExtensions();
+        if (m_use64BitIndexing && std::find(deviceExtensions.begin(), deviceExtensions.end(),
+                                            "VK_EXT_shader_64bit_indexing") == deviceExtensions.end())
+            return;
+    }
+#endif
     computeReferenceLayout(m_refLayout, m_interface);
     initRefDataStorage(m_interface, m_refLayout, m_initialData);
     initRefDataStorage(m_interface, m_refLayout, m_writeData);
@@ -2646,8 +2768,9 @@ void SSBOLayoutCase::delayedInit(void)
     generateValues(m_refLayout, m_writeData.pointers, deStringHash(getName()) ^ 0x25ca4e7);
     copyNonWrittenData(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers);
 
-    m_computeShaderSrc = generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers,
-                                               m_matrixLoadFlag, m_matrixStoreFlag, m_usePhysStorageBuffer);
+    m_computeShaderSrc =
+        generateComputeShader(m_interface, m_refLayout, m_initialData.pointers, m_writeData.pointers, m_matrixLoadFlag,
+                              m_matrixStoreFlag, m_usePhysStorageBuffer, m_use64BitIndexing);
 }
 
 } // namespace ssbo

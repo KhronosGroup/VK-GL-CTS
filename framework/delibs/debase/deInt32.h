@@ -551,6 +551,12 @@ static inline int32_t deRoundUp32(int32_t a, int32_t b)
     return d * b == a ? a : (d + 1) * b;
 }
 
+static inline uint32_t deRoundUp32u(uint32_t a, uint32_t b)
+{
+    uint32_t d = a / b;
+    return (d * b == a) ? a : (d + 1) * b;
+}
+
 /* \todo [petri] Move to int64_t.h? */
 
 static inline int32_t deMulAsr32(int32_t a, int32_t b, int shift)

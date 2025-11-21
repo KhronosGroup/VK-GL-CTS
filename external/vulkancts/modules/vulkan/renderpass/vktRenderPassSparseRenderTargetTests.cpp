@@ -583,6 +583,9 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(
 
 tcu::TestStatus SparseRenderTargetTestInstance::verify(void)
 {
+    const DeviceInterface &vkd(m_context.getDeviceInterface());
+    invalidateAlloc(vkd, m_context.getDevice(), *m_dstBufferMemory);
+
     const tcu::TextureFormat format(mapVkFormat(m_format));
     const void *const ptr(m_dstBufferMemory->getHostPtr());
     const tcu::ConstPixelBufferAccess access(format, m_width, m_height, 1, ptr);

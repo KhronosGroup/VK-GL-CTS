@@ -59,7 +59,7 @@ bool checkResultsFloat16(const vector<Resource> &inputs, const vector<Allocation
     DE_UNREF(log);
 
     std::vector<uint8_t> expectedBytes;
-    expectedOutputs.front().getBuffer()->getPackedBytes(expectedBytes);
+    expectedOutputs.front().getPackedBytes(expectedBytes);
 
     const uint16_t *results  = reinterpret_cast<const uint16_t *>(outputAllocs.front()->getHostPtr());
     const uint16_t *expected = reinterpret_cast<const uint16_t *>(&expectedBytes[0]);
@@ -85,7 +85,7 @@ bool checkResultsFloat32(const vector<Resource> &inputs, const vector<Allocation
     DE_UNREF(log);
 
     std::vector<uint8_t> expectedBytes;
-    expectedOutputs.front().getBuffer()->getPackedBytes(expectedBytes);
+    expectedOutputs.front().getPackedBytes(expectedBytes);
 
     const uint32_t *results  = reinterpret_cast<const uint32_t *>(outputAllocs.front()->getHostPtr());
     const uint32_t *expected = reinterpret_cast<const uint32_t *>(&expectedBytes[0]);
@@ -119,7 +119,7 @@ bool checkResultsFloat64(const vector<Resource> &inputs, const vector<Allocation
     DE_UNREF(log);
 
     std::vector<uint8_t> expectedBytes;
-    expectedOutputs.front().getBuffer()->getPackedBytes(expectedBytes);
+    expectedOutputs.front().getPackedBytes(expectedBytes);
 
     const uint64_t *results  = reinterpret_cast<const uint64_t *>(outputAllocs.front()->getHostPtr());
     const uint64_t *expected = reinterpret_cast<const uint64_t *>(&expectedBytes[0]);

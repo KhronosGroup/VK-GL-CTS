@@ -29,6 +29,7 @@ vk-main-2024-03-01/image/non-uniform-offset-sample.txt
 vk-main-2024-03-01/image/queue-transfer.txt
 vk-main-2024-03-01/image/store.txt
 vk-main-2024-03-01/image/subresource-layout.txt
+vk-main-2024-03-01/image/swapchain-mutable.txt
 vk-main-2024-03-01/image/texel-view-compatible.txt
 vk-main-2024-03-01/image-processing.txt
 vk-main-2024-03-01/memory.txt
@@ -62,6 +63,7 @@ vk-main-2024-03-01/shader-object/rendering.txt
 vk-main-2024-03-01/shader-object/tessellation.txt
 vk-main-2024-03-01/sparse-resources.txt
 vk-main-2024-03-01/spirv-assembly.txt
+vk-main-2024-03-01/ssbo.txt
 vk-main-2024-03-01/subgroups.txt
 vk-main-2024-03-01/synchronization.txt
 vk-main-2024-03-01/synchronization2.txt

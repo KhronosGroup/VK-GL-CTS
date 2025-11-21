@@ -1158,17 +1158,20 @@ uint32_t getYCbCrFormatChannelCount(vk::VkFormat format)
     switch (format)
     {
     case vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16:
+    case vk::VK_FORMAT_A1B5G5R5_UNORM_PACK16:
     case vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32:
     case vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32:
     case vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32:
     case vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16:
+    case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
     case vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16:
     case vk::VK_FORMAT_B8G8R8A8_UNORM:
     case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
     case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
     case vk::VK_FORMAT_R16G16B16A16_UNORM:
     case vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16:
-    case vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16:
+    case vk::VK_FORMAT_A4R4G4B4_UNORM_PACK16:
+    case vk::VK_FORMAT_A4B4G4R4_UNORM_PACK16:
     case vk::VK_FORMAT_R8G8B8A8_UNORM:
         return 4;
 
@@ -1209,14 +1212,21 @@ uint32_t getYCbCrFormatChannelCount(vk::VkFormat format)
     case vk::VK_FORMAT_R16G16B16_UNORM:
     case vk::VK_FORMAT_R5G6B5_UNORM_PACK16:
     case vk::VK_FORMAT_R8G8B8_UNORM:
+    case vk::VK_FORMAT_B10G11R11_UFLOAT_PACK32:
         return 3;
 
     case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
     case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+    case vk::VK_FORMAT_R16G16_UNORM:
+    case vk::VK_FORMAT_R4G4_UNORM_PACK8:
+    case vk::VK_FORMAT_R8G8_UNORM:
         return 2;
 
     case vk::VK_FORMAT_R10X6_UNORM_PACK16:
     case vk::VK_FORMAT_R12X4_UNORM_PACK16:
+    case vk::VK_FORMAT_R16_UNORM:
+    case vk::VK_FORMAT_A8_UNORM:
+    case vk::VK_FORMAT_R8_UNORM:
         return 1;
 
     default:

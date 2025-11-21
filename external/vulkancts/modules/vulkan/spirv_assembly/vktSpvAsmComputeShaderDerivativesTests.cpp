@@ -2895,6 +2895,15 @@ void ComputeShaderDerivativeCase::checkSupport(Context &context) const
         if (!(subgroupProps.supportedStages & getShaderStageFlagBits(m_params.shaderType)))
             TCU_THROW(NotSupportedError, "requested subgroup operations are not supported in " +
                                              std::string(toString(m_params.shaderType)) + " stage");
+
+        // VUID-VkPipelineShaderStageCreateInfo-flags-02759
+        if (m_params.testType == TestType::VERIFY_NDX)
+        {
+            if (m_params.numWorkgroup.x() % subgroupProps.subgroupSize != 0)
+                TCU_THROW(NotSupportedError, "workgroup X dimension (" + std::to_string(m_params.numWorkgroup.x()) +
+                                                 ") is not a multiple of subgroupSize (" +
+                                                 std::to_string(subgroupProps.subgroupSize) + ")");
+        }
     }
 }
 

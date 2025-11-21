@@ -27,6 +27,7 @@ BuildAccelerationStructuresKHRFunc							buildAccelerationStructuresKHR;
 BuildMicromapsEXTFunc										buildMicromapsEXT;
 CmdBeginConditionalRendering2EXTFunc						cmdBeginConditionalRendering2EXT;
 CmdBeginConditionalRenderingEXTFunc							cmdBeginConditionalRenderingEXT;
+CmdBeginCustomResolveEXTFunc								cmdBeginCustomResolveEXT;
 CmdBeginDebugUtilsLabelEXTFunc								cmdBeginDebugUtilsLabelEXT;
 CmdBeginPerTileExecutionQCOMFunc							cmdBeginPerTileExecutionQCOM;
 CmdBeginQueryFunc											cmdBeginQuery;

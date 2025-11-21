@@ -82,6 +82,7 @@ public:
     void setDescriptorSetLayouts(uint32_t setLayoutCount, const VkDescriptorSetLayout *descriptorSetLayouts);
     void setSpecializationInfo(VkSpecializationInfo specializationInfo);
     void setPipelineCreateFlags(VkPipelineCreateFlags pipelineCreateFlags);
+    void setPipelineCreateFlags2(VkPipelineCreateFlags2 pipelineCreateFlags2);
     void setPipelineCreatePNext(void *pipelineCreatePNext);
     void setSubgroupSize(uint32_t subgroupSize);
     void addPushConstantRange(const VkPushConstantRange &range);
@@ -102,6 +103,7 @@ private:
     std::vector<VkDescriptorSetLayout> m_descriptorSetLayouts;
     VkSpecializationInfo m_specializationInfo;
     VkPipelineCreateFlags m_pipelineCreateFlags;
+    VkPipelineCreateFlags2 m_pipelineCreateFlags2;
     void *m_pipelineCreatePNext;
     uint32_t m_subgroupSize;
 

@@ -2684,11 +2684,6 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
     vk.acquireNextImageKHR(device, swapchain, std::numeric_limits<uint64_t>::max(), *acquireSemaphore, VK_NULL_HANDLE,
                            &imageIndex);
 
-    // Create a new swapchain replacing the old one.
-    swapchainInfo.oldSwapchain        = swapchain;
-    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
-    VK_CHECK(vk.createSwapchainKHR(device, &swapchainInfo, nullptr, &recreatedSwapchain));
-
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
     const Move<vk::VkCommandBuffer> cmdBuffer(
@@ -2721,11 +2716,22 @@ tcu::TestStatus presentImageFromRetiredSwapchain(Context &context, Type wsiType)
                                                    1u,
                                                    &*submitSemaphore};
     vk.queueSubmit(devHelper.queue, 1u, &submitInfo, VK_NULL_HANDLE);
+
+    // Create a new swapchain replacing the old one.
+    swapchainInfo.oldSwapchain        = swapchain;
+    VkSwapchainKHR recreatedSwapchain = VK_NULL_HANDLE;
+    VK_CHECK(vk.createSwapchainKHR(device, &swapchainInfo, nullptr, &recreatedSwapchain));
+
     const VkPresentInfoKHR presentInfo = {
         VK_STRUCTURE_TYPE_PRESENT_INFO_KHR, nullptr, 1u, &*submitSemaphore, 1u, &swapchain, &imageIndex, nullptr};
     VkResult res = vk.queuePresentKHR(devHelper.queue, &presentInfo);
     if (res != VK_SUBOPTIMAL_KHR && res != VK_ERROR_OUT_OF_DATE_KHR && res != VK_SUCCESS)
         return tcu::TestStatus::fail("vkQueuePresentKHR with image from retired swapchain failed");
+
+    Move<VkSemaphore> acquireSemaphore2 = createSemaphore(vk, device);
+
+    vk.acquireNextImageKHR(device, recreatedSwapchain, std::numeric_limits<uint64_t>::max(), *acquireSemaphore2,
+                           VK_NULL_HANDLE, &imageIndex);
 
     vk.queueWaitIdle(devHelper.queue);
     vk.destroySwapchainKHR(device, recreatedSwapchain, nullptr);

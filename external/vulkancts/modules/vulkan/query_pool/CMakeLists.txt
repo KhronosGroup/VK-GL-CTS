@@ -15,6 +15,8 @@ set(DEQP_VK_VKSC_QUERY_POOL_SRCS
 	vktQueryPoolConcurrentTests.cpp
 	vktQueryPoolFragInvocationTests.hpp
 	vktQueryPoolFragInvocationTests.cpp
+	vktQueryPoolDiscardTests.hpp
+	vktQueryPoolDiscardTests.cpp
 )
 
 set(DEQP_VK_QUERY_POOL_SRCS

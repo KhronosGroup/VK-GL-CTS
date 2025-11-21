@@ -12,12 +12,14 @@ dEQP-VK.image.store.without_format.2d.a8_unorm
 dEQP-VK.image.store.without_format.2d.a8_unorm_linear
 dEQP-VK.image.store.without_format.2d.d16_unorm
 dEQP-VK.image.store.without_format.2d.d32_sfloat
+dEQP-VK.image.store.without_format.2d.x8_d24_unorm_pack32
 dEQP-VK.image.store.without_format.2d_array.a1b5g5r5_unorm_pack16
 dEQP-VK.image.store.without_format.2d_array.a1b5g5r5_unorm_pack16_linear
 dEQP-VK.image.store.without_format.2d_array.a8_unorm
 dEQP-VK.image.store.without_format.2d_array.a8_unorm_linear
 dEQP-VK.image.store.without_format.2d_array.d16_unorm
 dEQP-VK.image.store.without_format.2d_array.d32_sfloat
+dEQP-VK.image.store.without_format.2d_array.x8_d24_unorm_pack32
 dEQP-VK.image.store.without_format.3d.a1b5g5r5_unorm_pack16
 dEQP-VK.image.store.without_format.3d.a1b5g5r5_unorm_pack16_linear
 dEQP-VK.image.store.without_format.3d.a8_unorm

@@ -6916,6 +6916,9 @@ public:
                 }
                 nLevelToResultItemPtrVecMap.clear();
 
+                // Touch watch dog before clearing results to avoid timeout issue
+                if (m_depthToUse >= 15)
+                    context.getTestContext().touchWatchdog();
                 resultItemPtrVec.clear();
             }
 

@@ -207,9 +207,9 @@ public:
     {
         return (int)m_members.size();
     }
-    const StructMember &getMember(int ndx) const
+    const StructMember &getMember(int64_t ndx) const
     {
-        return m_members[ndx];
+        return m_members[(size_t)ndx];
     }
 
     inline Iterator begin(void)

@@ -13,6 +13,7 @@
 #define VK_ATTACHMENT_UNUSED											(static_cast<uint32_t>	((~0U)))
 #define VK_COMPRESSED_TRIANGLE_FORMAT_DGF1_BYTE_ALIGNMENT_AMDX			(static_cast<uint32_t>	(128))
 #define VK_COMPRESSED_TRIANGLE_FORMAT_DGF1_BYTE_STRIDE_AMDX				(static_cast<uint32_t>	(128))
+#define VK_DATA_GRAPH_MODEL_TOOLCHAIN_VERSION_LENGTH_QCOM				(static_cast<uint32_t>	(3))
 #define VK_FALSE														(static_cast<uint32_t>	(0))
 #define VK_LOD_CLAMP_NONE												(static_cast<float>		(1000.0F))
 #define VK_LUID_SIZE													(static_cast<uint32_t>	(8))

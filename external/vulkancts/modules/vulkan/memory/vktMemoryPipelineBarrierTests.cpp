@@ -9502,6 +9502,18 @@ bool MemoryTestInstance::createCommandsAndAllocateMemory(void)
 
         return nextMemoryType();
     }
+#ifndef CTS_USES_VULKANSC
+    // VUID-vkAllocateMemory-deviceCoherentMemory-02790
+    else if ((memoryProperties.memoryTypes[m_memoryTypeNdx].propertyFlags &
+              vk::VK_MEMORY_PROPERTY_DEVICE_COHERENT_BIT_AMD) &&
+             !m_context.getCoherentMemoryFeaturesAMD().deviceCoherentMemory)
+    {
+        log << TestLog::Message << "Memory type not supported (AMD device coherent feature not enabled)"
+            << TestLog::EndMessage;
+
+        return nextMemoryType();
+    }
+#endif // CTS_USES_VULKANSC
     else
     {
         try

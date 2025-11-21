@@ -39,6 +39,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkFormatLists.hpp"
 #include "vkBarrierUtil.hpp"
 #include "tcuImageCompare.hpp"
 #include "deMemory.h"
@@ -1467,9 +1468,6 @@ std::string getFormatCaseName(VkFormat format)
 
 tcu::TestCaseGroup *createStencilTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
 {
-    const VkFormat stencilFormats[] = {VK_FORMAT_S8_UINT, VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,
-                                       VK_FORMAT_D32_SFLOAT_S8_UINT};
-
     DE_STATIC_ASSERT(DE_LENGTH_OF_ARRAY(compareOps) == 8);
     DE_STATIC_ASSERT(vk::VK_COMPARE_OP_LAST == 8);
 
@@ -1495,11 +1493,10 @@ tcu::TestCaseGroup *createStencilTests(tcu::TestContext &testCtx, PipelineConstr
         de::MovePtr<tcu::TestCaseGroup> formatTests(new tcu::TestCaseGroup(testCtx, "format"));
         StencilOpStateUniqueRandomIterator stencilOpItr(123);
 
-        for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(stencilFormats); formatNdx++)
+        for (auto format : formats::stencilFormats)
         {
-            const VkFormat stencilFormat       = stencilFormats[formatNdx];
-            const bool hasDepth                = tcu::hasDepthComponent(mapVkFormat(stencilFormat).order);
-            const bool hasStencil              = tcu::hasStencilComponent(mapVkFormat(stencilFormat).order);
+            const bool hasDepth                = tcu::hasDepthComponent(mapVkFormat(format).order);
+            const bool hasStencil              = tcu::hasStencilComponent(mapVkFormat(format).order);
             const int separateLayoutsLoopCount = (hasDepth && hasStencil) ? 2 : 1;
 
             for (int separateDepthStencilLayouts = 0; separateDepthStencilLayouts < separateLayoutsLoopCount;
@@ -1508,9 +1505,8 @@ tcu::TestCaseGroup *createStencilTests(tcu::TestContext &testCtx, PipelineConstr
                 const bool useSeparateDepthStencilLayouts = bool(separateDepthStencilLayouts);
 
                 de::MovePtr<tcu::TestCaseGroup> formatTest(new tcu::TestCaseGroup(
-                    testCtx,
-                    (getFormatCaseName(stencilFormat) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : ""))
-                        .c_str()));
+                    testCtx, (getFormatCaseName(format) + ((useSeparateDepthStencilLayouts) ? "_separate_layouts" : ""))
+                                 .c_str()));
 
                 de::MovePtr<tcu::TestCaseGroup> stencilStateTests;
                 {
@@ -1586,10 +1582,10 @@ tcu::TestCaseGroup *createStencilTests(tcu::TestContext &testCtx, PipelineConstr
                                         }
                                     }
                                     const char *layoutName = useGeneralLayout ? "general" : "any";
-                                    layoutTest->addChild(
-                                        new StencilTest(testCtx, layoutName, pipelineConstructionType, stencilFormat,
-                                                        stencilStateFront, stencilStateBack, colorEnabled,
-                                                        useSeparateDepthStencilLayouts, useGeneralLayout));
+                                    layoutTest->addChild(new StencilTest(testCtx, layoutName, pipelineConstructionType,
+                                                                         format, stencilStateFront, stencilStateBack,
+                                                                         colorEnabled, useSeparateDepthStencilLayouts,
+                                                                         useGeneralLayout));
                                 }
                                 dFailOpTest->addChild(layoutTest.release());
                             }
@@ -1622,11 +1618,6 @@ tcu::TestCaseGroup *createStencilTests(tcu::TestContext &testCtx, PipelineConstr
     {
         de::MovePtr<tcu::TestCaseGroup> noStencilAttGroup(new tcu::TestCaseGroup(testCtx, "no_stencil_att"));
 
-        const VkFormat depthComponentFormats[] = {
-            VK_FORMAT_D16_UNORM,         VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,
-            VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,   VK_FORMAT_D32_SFLOAT_S8_UINT,
-        };
-
         for (const auto dynamicRendering : {false, true})
         {
             if (!dynamicRendering && isConstructionTypeShaderObject(pipelineConstructionType))
@@ -1645,7 +1636,7 @@ tcu::TestCaseGroup *createStencilTests(tcu::TestContext &testCtx, PipelineConstr
                 const char *enableGroupName = (dynamicEnable ? "dynamic_enable" : "static_enable");
                 de::MovePtr<tcu::TestCaseGroup> dynEnableGroup(new tcu::TestCaseGroup(testCtx, enableGroupName));
 
-                for (const auto &depthComponentFormat : depthComponentFormats)
+                for (const auto depthComponentFormat : formats::depthFormats)
                 {
                     // When using classic render passes, we cannot indicate a separate stencil format and image.
                     const auto tcuFormat = mapVkFormat(depthComponentFormat);

@@ -33,6 +33,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
@@ -40,7 +41,7 @@
 #include "deDefs.h"
 #include "tcuFloat.hpp"
 #include "deMath.h"
-#include "deRandom.h"
+#include "deRandom.hpp"
 #include "deSharedPtr.hpp"
 #include "deString.h"
 
@@ -6117,6 +6118,281 @@ tcu::TestCaseGroup *createCooperativeMatrixTestsInternal(
 
     return group.release();
 }
+
+#ifndef CTS_USES_VULKANSC
+
+class CoopMat64bTest : public vkt::TestCase
+{
+public:
+    CoopMat64bTest(tcu::TestContext &testCtx, const std::string &name, const uint32_t numValues, const uint32_t offset,
+                   const bool tensorLayout, const vk::ComputePipelineConstructionType computePipelineConstructionType);
+
+    virtual void checkSupport(Context &context) const;
+    void initPrograms(SourceCollections &sourceCollections) const;
+    TestInstance *createInstance(Context &context) const;
+
+private:
+    const uint32_t m_numValues;
+    const uint32_t m_offset;
+    const bool m_tensorLayout;
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+class CoopMat64bTestInstance : public vkt::TestInstance
+{
+public:
+    CoopMat64bTestInstance(Context &context, const uint32_t numValues, const uint32_t offset, const bool tensorLayout,
+                           const vk::ComputePipelineConstructionType computePipelineConstructionType);
+
+    tcu::TestStatus iterate(void);
+
+private:
+    const uint32_t m_numValues;
+    const uint32_t m_offset;
+    const bool m_tensorLayout;
+    vk::ComputePipelineConstructionType m_computePipelineConstructionType;
+};
+
+CoopMat64bTest::CoopMat64bTest(tcu::TestContext &testCtx, const std::string &name, const uint32_t numValues,
+                               const uint32_t offset, const bool tensorLayout,
+                               const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestCase(testCtx, name)
+    , m_numValues(numValues)
+    , m_offset(offset)
+    , m_tensorLayout(tensorLayout)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+{
+}
+
+void CoopMat64bTest::checkSupport(Context &context) const
+{
+    checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                  m_computePipelineConstructionType);
+    if (!context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+}
+
+void CoopMat64bTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    std::ostringstream src;
+    src << "#version 450 core\n"
+        << "#extension GL_KHR_cooperative_matrix : enable\n"
+        << "#extension GL_NV_cooperative_matrix2 : enable\n"
+        << "#extension GL_EXT_shader_explicit_arithmetic_types : enable\n"
+        << "#extension GL_KHR_memory_scope_semantics : enable\n"
+        << "#extension GL_EXT_shader_64bit_indexing : enable\n"
+
+        << "layout (local_size_x_id = 0, local_size_y = 1, local_size_z = 1) in;\n"
+
+        << "layout (constant_id = 1) const uint M = 1;\n"
+        << "layout (constant_id = 2) const uint N = 1;\n"
+
+        << "layout(binding = 0) buffer InOut {\n"
+        << "    uint8_t values[];\n"
+        << "} sb_inout;\n"
+
+        << "layout (push_constant, std430) uniform PushConstantBlock { uint64_t offset; uint stride; uint height; } "
+           "pc;\n"
+        << "void main (void) {\n"
+        << "    coopmat<int32_t, gl_ScopeSubgroup, M, N, gl_MatrixUseAccumulator> mat;\n";
+
+    if (m_tensorLayout)
+    {
+        src << "    tensorLayoutNV<2> tl = createTensorLayoutNV(2);\n"
+            << "    tl = setTensorLayoutDimensionNV(tl, pc.height, pc.stride);\n"
+            << "    coopMatLoadTensorNV(mat, sb_inout.values, pc.offset, sliceTensorLayoutNV(tl, 0, M, 0, N));\n"
+            << "    for (uint i = 0; i < mat.length(); ++i) mat[i] = ~mat[i];\n"
+            << "    coopMatStoreTensorNV(mat, sb_inout.values, pc.offset, sliceTensorLayoutNV(tl, 0, M, 0, N));\n";
+    }
+    else
+    {
+        src << "    coopMatLoad(mat, sb_inout.values, pc.offset, pc.stride, gl_CooperativeMatrixLayoutRowMajor);\n"
+            << "    for (uint i = 0; i < mat.length(); ++i) mat[i] = ~mat[i];\n"
+            << "    coopMatStore(mat, sb_inout.values, pc.offset, pc.stride, gl_CooperativeMatrixLayoutRowMajor);\n";
+    }
+    src << "}\n";
+
+    const vk::ShaderBuildOptions buildOptions(sourceCollections.usedVulkanVersion, vk::SPIRV_VERSION_1_6, 0u);
+
+    sourceCollections.glslSources.add("comp") << glu::ComputeSource(src.str()) << buildOptions;
+}
+
+TestInstance *CoopMat64bTest::createInstance(Context &context) const
+{
+    return new CoopMat64bTestInstance(context, m_numValues, m_offset, m_tensorLayout,
+                                      m_computePipelineConstructionType);
+}
+
+CoopMat64bTestInstance::CoopMat64bTestInstance(
+    Context &context, const uint32_t numValues, const uint32_t offset, const bool tensorLayout,
+    const vk::ComputePipelineConstructionType computePipelineConstructionType)
+    : TestInstance(context)
+    , m_numValues(numValues)
+    , m_offset(offset)
+    , m_tensorLayout(tensorLayout)
+    , m_computePipelineConstructionType(computePipelineConstructionType)
+{
+}
+
+tcu::TestStatus CoopMat64bTestInstance::iterate(void)
+{
+    const DeviceInterface &vk       = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    Allocator &allocator            = m_context.getDefaultAllocator();
+
+    // Create an input/output buffer
+
+    const VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * m_numValues;
+    const BufferWithMemory buffer(vk, device, allocator,
+                                  makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                  MemoryRequirement::HostVisible | MemoryRequirement::Cached);
+
+    auto const InputValue = [](uint32_t x) { return x ^ 0x82ce7f; };
+
+    // Fill the buffer with data
+
+    {
+        const Allocation &bufferAllocation = buffer.getAllocation();
+        uint32_t *bufferPtr                = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
+        for (uint32_t i = 0; i < m_numValues; ++i)
+            *bufferPtr++ = InputValue(i);
+
+        flushAlloc(vk, device, bufferAllocation);
+    }
+
+    // Create descriptor set
+
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+            .build(vk, device));
+
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+    const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
+    DescriptorSetUpdateBuilder()
+        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
+        .update(vk, device);
+
+    // m_offset is in bytes, but indexing the pointer is in uints.
+    uint32_t offsetDiv4 = (uint32_t)(m_offset / sizeof(uint32_t));
+
+    // Perform the computation
+    const uint32_t M      = 16;
+    const uint32_t N      = 16;
+    const uint32_t stride = ((m_numValues - offsetDiv4) / M) & ~15;
+    const uint32_t height = m_numValues / stride;
+    DE_ASSERT(offsetDiv4 + stride * (M - 1) + N < m_numValues);
+
+    const uint32_t specializationData[] = {
+        m_context.getSubgroupProperties().subgroupSize,
+        M,
+        N,
+    };
+    const vk::VkSpecializationMapEntry specializationMaps[] = {
+        {0, (uint32_t)(sizeof(uint32_t) * 0), sizeof(uint32_t)},
+        {1, (uint32_t)(sizeof(uint32_t) * 1), sizeof(uint32_t)},
+        {2, (uint32_t)(sizeof(uint32_t) * 2), sizeof(uint32_t)},
+    };
+    const VkSpecializationInfo specializationInfo = {
+        3u,                                                 // uint32_t mapEntryCount;
+        specializationMaps,                                 // const VkSpecializationMapEntry* pMapEntries;
+        static_cast<uintptr_t>(sizeof(specializationData)), // uintptr_t dataSize;
+        specializationData,                                 // const void* pData;
+    };
+
+    struct PushConst
+    {
+        uint64_t offset;
+        uint32_t stride;
+        uint32_t height;
+    };
+
+    // For tensor layout, the stride is in units of matrix elements. For rowmajor, it's in buffer elements
+    uint32_t pcstride = m_tensorLayout ? stride : (uint32_t)(stride * sizeof(uint32_t));
+    PushConst pushconsts{m_offset, pcstride, height};
+
+    const auto pcStages = VK_SHADER_STAGE_COMPUTE_BIT;
+    const auto pcRange  = makePushConstantRange(pcStages, 0u, sizeof(pushconsts));
+
+    ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
+                                    m_context.getBinaryCollection().get("comp"));
+    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+    pipeline.setSpecializationInfo(specializationInfo);
+    pipeline.addPushConstantRange(pcRange);
+    pipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT);
+    pipeline.buildPipeline();
+
+    const VkBufferMemoryBarrier hostWriteBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
+
+    const VkBufferMemoryBarrier shaderWriteBarrier =
+        makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
+
+    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    // Start recording commands
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    pipeline.bind(*cmdBuffer);
+
+    vk.cmdPushConstants(*cmdBuffer, pipeline.getPipelineLayout(), pcStages, 0u, sizeof(pushconsts), &pushconsts);
+
+    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
+                             &descriptorSet.get(), 0u, nullptr);
+
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
+    vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    // Wait for completion
+
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    // Validate the results
+
+    const Allocation &bufferAllocation = buffer.getAllocation();
+    invalidateAlloc(vk, device, bufferAllocation);
+
+    const uint32_t *bufferPtr = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
+
+    for (uint32_t ndx = 0; ndx < m_numValues; ++ndx)
+    {
+        uint32_t coordx = (ndx - offsetDiv4) % stride;
+        uint32_t coordy = (ndx - offsetDiv4) / stride;
+        bool inmatrix   = coordy < M && coordx < N;
+
+        const uint32_t res   = bufferPtr[ndx];
+        const uint32_t input = InputValue(ndx);
+        const uint32_t ref   = inmatrix ? ~input : input;
+
+        if (res != ref)
+        {
+            std::ostringstream msg;
+            msg << "Comparison failed for InOut.values[" << ndx << "]";
+            return tcu::TestStatus::fail(msg.str());
+        }
+    }
+    return tcu::TestStatus::pass("Compute succeeded");
+}
+
+#endif
+
 } // namespace
 
 extern void createCooperativeMatrixOpConstantNullTests(
@@ -6135,6 +6411,26 @@ tcu::TestCaseGroup *createCooperativeMatrixTests(tcu::TestContext &testCtx,
     group->addChild(createCooperativeMatrixTestsInternal(testCtx, computePipelineConstructionType, UT_KHR_Result));
     createCooperativeMatrixOpConstantNullTests(testCtx, group.operator->(), computePipelineConstructionType);
 
+#ifndef CTS_USES_VULKANSC
+    de::MovePtr<tcu::TestCaseGroup> group64(new tcu::TestCaseGroup(testCtx, "64b_indexing"));
+
+    group64->setUseFraction0(true);
+
+    group64->addChild(new CoopMat64bTest(testCtx, "coopmat_64b_rowmajor", 2u * 1024 * 1024 * 1024, 1536, false,
+                                         computePipelineConstructionType));
+    group64->addChild(new CoopMat64bTest(testCtx, "coopmat_64b_rowmajor_mediumoffset", 2u * 1024 * 1024 * 1024,
+                                         1u * 1024 * 1024 * 1024, false, computePipelineConstructionType));
+    group64->addChild(new CoopMat64bTest(testCtx, "coopmat_64b_rowmajor_largeoffset", 2u * 1024 * 1024 * 1024,
+                                         5u * 1024 * 1024 * 1024, false, computePipelineConstructionType));
+
+    group64->addChild(new CoopMat64bTest(testCtx, "coopmat_64b_tensorlayout", 2u * 1024 * 1024 * 1024, 1536, true,
+                                         computePipelineConstructionType));
+    group64->addChild(new CoopMat64bTest(testCtx, "coopmat_64b_tensorlayout_mediumoffset", 2u * 1024 * 1024 * 1024,
+                                         1u * 1024 * 1024 * 1024, true, computePipelineConstructionType));
+    group64->addChild(new CoopMat64bTest(testCtx, "coopmat_64b_tensorlayout_largeoffset", 2u * 1024 * 1024 * 1024,
+                                         5u * 1024 * 1024 * 1024, true, computePipelineConstructionType));
+    group->addChild(group64.release());
+#endif
     return group.release();
 }
 

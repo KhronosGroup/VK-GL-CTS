@@ -2548,6 +2548,9 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                         invalidateAlloc(vk, device, secColorOutputBuffer->getAllocation());
                     }
 
+                    const bool fragmentShadingRateWithCustomSampleLocations =
+                        m_context.getFragmentShadingRateProperties().fragmentShadingRateWithCustomSampleLocations;
+
                     // Loop over all samples and validate the output
                     for (uint32_t layer = 0; layer < m_data.numColorLayers && res == QP_TEST_RESULT_PASS; ++layer)
                     {
@@ -2868,8 +2871,7 @@ tcu::TestStatus FSRTestInstance::iterate(void)
                                                 // samples in the same pixel must be covered.
                                                 if (m_data.conservativeEnable ||
                                                     (m_data.sampleLocations &&
-                                                     m_context.getFragmentShadingRateProperties()
-                                                         .fragmentShadingRateWithCustomSampleLocations))
+                                                     fragmentShadingRateWithCustomSampleLocations))
                                                 {
                                                     // If it's in the same pixel, expect it to be fully covered.
                                                     if (fx == x && fy == y && fsample[2] == 0)

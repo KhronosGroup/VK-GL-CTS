@@ -254,7 +254,8 @@ public:
 
 #endif // DEQP_SUPPORT_HEADLESS
 
-#if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
+#if !defined(CTS_USES_VULKANSC)
+#if DEQP_SUPPORT_DRM
 
 struct VulkanWindowDirectDrm : public vk::wsi::Window
 {
@@ -355,8 +356,59 @@ public:
     MovePtr<LibDrm::FdPtr::element_type, LibDrm::FdPtr::deleter_type> m_fdPtr;
     bool m_initialized = false;
 };
+#else
+struct VulkanWindowDirect : public vk::wsi::Window
+{
+public:
+    void setVisible(bool visible) override
+    {
+        DE_UNREF(visible);
+    }
+    void resize(const UVec2 &) override
+    {
+    }
+};
 
-#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+class VulkanDisplayDirect : public vk::wsi::DirectDisplayInterface
+{
+public:
+    VulkanDisplayDirect()
+    {
+    }
+
+    vk::wsi::Window *createWindow(const Maybe<UVec2> &) const override
+    {
+        return new VulkanWindowDirect();
+    }
+
+    void initializeDisplay(const vk::InstanceInterface &vki, vk::VkInstance instance,
+                           const tcu::CommandLine &cmdLine) override
+    {
+        if (m_initialized)
+            return;
+
+        vk::VkPhysicalDevice physDevice = vk::chooseDevice(vki, instance, cmdLine);
+
+        uint32_t count = 0;
+        VK_CHECK(vki.getPhysicalDeviceDisplayPropertiesKHR(physDevice, &count, nullptr));
+        if (count == 0)
+            TCU_THROW(NotSupportedError, "No displays available");
+
+        std::vector<vk::VkDisplayPropertiesKHR> props(count);
+        VK_CHECK(vki.getPhysicalDeviceDisplayPropertiesKHR(physDevice, &count, props.data()));
+        vk::VkDisplayKHR *display = const_cast<vk::VkDisplayKHR *>(&m_native);
+        *display                  = props[0].display;
+
+        if (m_native == VK_NULL_HANDLE)
+            TCU_THROW(NotSupportedError, "vkGetPhysicalDeviceDisplayPropertiesKHR did not return display.");
+
+        m_initialized = true;
+    }
+
+    bool m_initialized = false;
+};
+#endif // DEQP_SUPPORT_DRM
+#endif // !defined (CTS_USES_VULKANSC)
 
 class VulkanLibrary : public vk::Library
 {
@@ -411,10 +463,15 @@ vk::wsi::Display *VulkanPlatform::createWsiDisplay(vk::wsi::Type wsiType) const
     case vk::wsi::TYPE_HEADLESS:
         return new VulkanDisplayHeadless();
 #endif // DEQP_SUPPORT_HEADLESS
-#if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
+#if !defined(CTS_USES_VULKANSC)
+#if DEQP_SUPPORT_DRM
     case vk::wsi::TYPE_DIRECT_DRM:
         return new VulkanDisplayDirectDrm();
-#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+#else
+    case vk::wsi::TYPE_DIRECT:
+        return new VulkanDisplayDirect();
+#endif // DEQP_SUPPORT_DRM
+#endif //!defined (CTS_USES_VULKANSC)
 
     default:
         TCU_THROW(NotSupportedError, "WSI type not supported");
@@ -440,10 +497,15 @@ bool VulkanPlatform::hasDisplay(vk::wsi::Type wsiType) const
     case vk::wsi::TYPE_HEADLESS:
         return true;
 #endif // DEQP_SUPPORT_HEADLESS
-#if DEQP_SUPPORT_DRM && !defined(CTS_USES_VULKANSC)
+#if !defined(CTS_USES_VULKANSC)
+#if DEQP_SUPPORT_DRM
     case vk::wsi::TYPE_DIRECT_DRM:
         return true;
-#endif // DEQP_SUPPORT_DRM && !defined (CTS_USES_VULKANSC)
+#else
+    case vk::wsi::TYPE_DIRECT:
+        return true;
+#endif // DEQP_SUPPORT_DRM
+#endif // !defined (CTS_USES_VULKANSC)
     default:
         return false;
     }

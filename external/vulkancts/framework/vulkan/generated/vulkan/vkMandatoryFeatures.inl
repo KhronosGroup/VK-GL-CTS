@@ -181,10 +181,20 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_custom_border_color"))
 		addFeatures(&physicalDeviceCustomBorderColorFeaturesEXT);
 
+	// VkPhysicalDeviceCustomResolveFeaturesEXT for ext [VK_EXT_custom_resolve]
+	vk::VkPhysicalDeviceCustomResolveFeaturesEXT physicalDeviceCustomResolveFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_custom_resolve"))
+		addFeatures(&physicalDeviceCustomResolveFeaturesEXT);
+
 	// VkPhysicalDeviceDataGraphFeaturesARM for ext [VK_ARM_data_graph]
 	vk::VkPhysicalDeviceDataGraphFeaturesARM physicalDeviceDataGraphFeaturesARM = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_ARM_data_graph"))
 		addFeatures(&physicalDeviceDataGraphFeaturesARM);
+
+	// VkPhysicalDeviceDataGraphModelFeaturesQCOM for ext [VK_QCOM_data_graph_model]
+	vk::VkPhysicalDeviceDataGraphModelFeaturesQCOM physicalDeviceDataGraphModelFeaturesQCOM = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_QCOM_data_graph_model"))
+		addFeatures(&physicalDeviceDataGraphModelFeaturesQCOM);
 
 	// VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV for ext [VK_NV_dedicated_allocation_image_aliasing]
 	vk::VkPhysicalDeviceDedicatedAllocationImageAliasingFeaturesNV physicalDeviceDedicatedAllocationImageAliasingFeaturesNV = initVulkanStructure();
@@ -755,6 +765,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceRayQueryFeaturesKHR physicalDeviceRayQueryFeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_query"))
 		addFeatures(&physicalDeviceRayQueryFeaturesKHR);
+
+	// VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT for ext [VK_EXT_ray_tracing_invocation_reorder]
+	vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT physicalDeviceRayTracingInvocationReorderFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_ray_tracing_invocation_reorder"))
+		addFeatures(&physicalDeviceRayTracingInvocationReorderFeaturesEXT);
 
 	// VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV for ext [VK_NV_ray_tracing_invocation_reorder]
 	vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesNV physicalDeviceRayTracingInvocationReorderFeaturesNV = initVulkanStructure();
@@ -3058,6 +3073,20 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceZeroInitializeDeviceMemoryFeaturesEXT.zeroInitializeDeviceMemory == VK_FALSE )
 			failMesages.push_back("zeroInitializeDeviceMemory");
+	}
+
+	// VkPhysicalDeviceShader64BitIndexingFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_64bit_indexing")) )
+	{
+		if ( physicalDeviceShader64BitIndexingFeaturesEXT.shader64BitIndexing == VK_FALSE )
+			failMesages.push_back("shader64BitIndexing");
+	}
+
+	// VkPhysicalDeviceDataGraphModelFeaturesQCOM
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_QCOM_data_graph_model")) )
+	{
+		if ( physicalDeviceDataGraphModelFeaturesQCOM.dataGraphModel == VK_FALSE )
+			failMesages.push_back("dataGraphModel");
 	}
 
 	// VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
