@@ -52,6 +52,9 @@
 #include "vktDynamicRenderingUnusedAttachmentsTests.hpp"
 #include "vktRenderPassRemainingArrayLayersTests.hpp"
 #include "vktRenderPassPerformanceCountersByRegionTests.hpp"
+#ifndef CTS_USES_VULKANSC
+#include "vktRenderPassCustomResolveTests.hpp"
+#endif // CTS_USES_VULKANSC
 
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
@@ -8461,6 +8464,10 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
         renderingTests->addChild(createDepthStencilWriteConditionsTests(testCtx));
 #endif // CTS_USES_VULKANSC
         renderingTests->addChild(createRenderPassMultipleSubpassesMultipleCommandBuffersTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+        if (!groupParams->useSecondaryCmdBuffer)
+            renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
+#endif // CTS_USES_VULKANSC
         break;
 
     case RENDERING_TYPE_RENDERPASS2:
@@ -8487,10 +8494,12 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, false));
             renderingTests->addChild(createDynamicRenderingLocalReadTests(testCtx));
             renderingTests->addChild(createDynamicRenderingLocalReadMaint10Tests(testCtx));
+            renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
         }
         else if (!groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
         {
             renderingTests->addChild(createDynamicRenderingUnusedAttachmentsTests(testCtx, true));
+            renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
         }
         break;
 #endif // CTS_USES_VULKANSC

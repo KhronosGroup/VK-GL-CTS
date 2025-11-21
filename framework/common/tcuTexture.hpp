@@ -147,6 +147,14 @@ public:
     {
         return (order != other.order || type != other.type);
     }
+    bool operator<(const TextureFormat &other) const
+    {
+        if (order < other.order)
+            return true;
+        if (order > other.order)
+            return false;
+        return (type < other.type);
+    }
 } DE_WARN_UNUSED_TYPE;
 
 tcu::Vec4 unpackRGB999E5(uint32_t color);
