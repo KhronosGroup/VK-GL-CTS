@@ -1480,7 +1480,7 @@ private:
 
     const ConcurrentTestParameters m_parameters;
     const uint32_t m_imageWidth  = 16;
-    const uint32_t m_imageHeight = 16;
+    const uint32_t m_imageHeight = 17;
     const uint32_t instanceCount = 1u;
     const uint32_t firstVertex   = 0u;
     const uint32_t firstInstance = 0u;
@@ -1539,9 +1539,19 @@ Move<VkRenderPass> makeConstantLayoutRenderPass(const DeviceInterface &vk, const
 void prepareColorAttachment(const DeviceInterface &vkd, const VkCommandBuffer cmdBuffer, const VkImage image,
                             const VkImageSubresourceRange imageSRR)
 {
-    const auto barrier = makeImageMemoryBarrier(0u, 0u, VK_IMAGE_LAYOUT_UNDEFINED,
-                                                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, image, imageSRR);
-    cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, 0u, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, &barrier);
+    const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+    const auto dstStages = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    const auto barrier   = makeImageMemoryBarrier(0u, dstAccess, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                  VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, image, imageSRR);
+    cmdPipelineImageMemoryBarrier(vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, dstStages, &barrier);
+}
+
+void syncColorRenderPasses(const DeviceInterface &vkd, const VkCommandBuffer cmdBuffer)
+{
+    const auto colorAccess   = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+    const auto colorStages   = VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT;
+    const auto memoryBarrier = makeMemoryBarrier(colorAccess, colorAccess);
+    cmdPipelineMemoryBarrier(vkd, cmdBuffer, colorStages, colorStages, &memoryBarrier);
 }
 
 tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
@@ -1891,6 +1901,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
 
                 vk.cmdEndQueryIndexedEXT(cmdBuffer, *pgqPool, 0, m_parameters.pgqStreamIndex());
 
+                syncColorRenderPasses(vk, cmdBuffer);
                 beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer,
                                 makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)), clearColor);
                 draw(vk, cmdBuffer, vertexCount, indirectBuffer->get());
@@ -1909,6 +1920,8 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
                 vk.cmdEndQuery(cmdBuffer, *psqPool, 0);
                 endRenderPass(vk, cmdBuffer);
 
+                syncColorRenderPasses(vk, cmdBuffer);
+
                 beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer,
                                 makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)), clearColor);
                 draw(vk, cmdBuffer, vertexCount, indirectBuffer->get());
@@ -1925,6 +1938,8 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
                                 vk::VK_SUBPASS_CONTENTS_SECONDARY_COMMAND_BUFFERS);
                 vk.cmdExecuteCommands(cmdBuffer, 1u, &*secondaryCmdBuffer);
                 endRenderPass(vk, cmdBuffer);
+
+                syncColorRenderPasses(vk, cmdBuffer);
 
                 beginRenderPass(vk, cmdBuffer, *renderPass, *framebuffer,
                                 makeRect2D(makeExtent2D(m_imageWidth, m_imageHeight)), clearColor);
@@ -2078,7 +2093,7 @@ tcu::TestStatus ConcurrentPrimitivesGeneratedQueryTestInstance::iterate(void)
     const tcu::Vec4 bgColor(0.0f, 0.0f, 0.0f, 0.0f);
     const tcu::Vec4 geomColor(0.0f, 1.0f, 0.0f, 1.0f);
     const tcu::Vec4 threshold(0.0f, 0.0f, 0.0f, 0.0f);
-    const int colorRow = 7;
+    const int colorRow = 8; // The middle row.
 
     tcu::clear(referenceAccess, bgColor);
     const auto subregion = tcu::getSubregion(referenceAccess, 0, colorRow, iWidth, 1);
@@ -2205,7 +2220,8 @@ Move<VkPipeline> ConcurrentPrimitivesGeneratedQueryTestInstance::makeGraphicsPip
 void ConcurrentPrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2 *vertices,
                                                                       const uint64_t primitivesGenerated)
 {
-    const float step = 1.0f / static_cast<float>(primitivesGenerated - 1);
+    const auto quarterRow = 2.0f / (static_cast<float>(m_imageHeight) * 4.0f); // In height.
+    const float step      = 1.0f / static_cast<float>(primitivesGenerated - 1);
 
     switch (m_parameters.primitiveTopology)
     {
@@ -2237,23 +2253,23 @@ void ConcurrentPrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2 
     }
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP:
     {
-        vertices[0] = tcu::Vec2(-1.0f, -0.001f);
-        vertices[1] = tcu::Vec2(-1.0f, -0.002f);
-        vertices[2] = tcu::Vec2(-1.0f + 2.0f * step, -0.002f);
+        vertices[0] = tcu::Vec2(-1.0f, quarterRow);
+        vertices[1] = tcu::Vec2(-1.0f, -quarterRow);
+        vertices[2] = tcu::Vec2(-1.0f + 2.0f * step, -quarterRow);
 
         for (uint32_t prim = 1; prim < primitivesGenerated; ++prim)
         {
             vertices[2 + prim] =
-                tcu::Vec2(-1.0f + 2.0f * (float)(prim + 1) * step, (prim % 2 == 0) ? -0.002f : -0.001f);
+                tcu::Vec2(-1.0f + 2.0f * (float)(prim + 1) * step, (prim % 2 == 0) ? -quarterRow : quarterRow);
         }
         break;
     }
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_FAN:
     {
-        vertices[0] = tcu::Vec2(0.0f, -0.1f);
+        vertices[0] = tcu::Vec2(0.0f, -quarterRow);
         for (uint32_t prim = 0; prim < primitivesGenerated + 1; ++prim)
         {
-            vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, 0.0f);
+            vertices[1 + prim] = tcu::Vec2(-1.0f + 2.0f * (float)prim * step, quarterRow);
         }
         break;
     }
@@ -2287,8 +2303,8 @@ void ConcurrentPrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2 
     {
         for (uint32_t prim = 0; prim < primitivesGenerated; ++prim)
         {
-            vertices[3 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -0.01f);
-            vertices[3 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, 0.01f);
+            vertices[3 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -quarterRow);
+            vertices[3 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, quarterRow);
             vertices[3 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, 0.0f);
         }
         break;
@@ -2297,22 +2313,20 @@ void ConcurrentPrimitivesGeneratedQueryTestInstance::fillVertexBuffer(tcu::Vec2 
     {
         for (uint32_t prim = 0; prim < primitivesGenerated; ++prim)
         {
-            vertices[6 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -0.01f);
-            vertices[6 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -0.01f);
-            vertices[6 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -0.02f);
-            vertices[6 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -0.02f);
-            vertices[6 * prim + 4] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -0.02f);
-            vertices[6 * prim + 5] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -0.02f);
+            vertices[6 * prim + 0] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, quarterRow);
+            vertices[6 * prim + 1] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, quarterRow);
+            vertices[6 * prim + 2] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -quarterRow);
+            vertices[6 * prim + 3] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 0) * step, -quarterRow);
+            vertices[6 * prim + 4] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -quarterRow);
+            vertices[6 * prim + 5] = tcu::Vec2(-1.0f + 2.0f * ((float)prim + 1) * step, -quarterRow);
         }
         break;
     }
     case VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP_WITH_ADJACENCY:
     {
         // A strip of triangles, each pair of them forming a quad, crossing the image from left to right.
-        const auto quarterRow  = 2.0f / (static_cast<float>(m_imageHeight) * 4.0f);       // In height.
-        const auto threeQRow   = 3.0f * quarterRow;                                       // In height.
         const auto quadStep    = 2.0f / (static_cast<float>(primitivesGenerated) / 2.0f); // In width.
-        const float yCoords[2] = {-threeQRow, -quarterRow};
+        const float yCoords[2] = {-quarterRow, quarterRow};
 
         // The first two points on the left edge of the image.
         vertices[0] = tcu::Vec2(-1.0f, yCoords[0]);
@@ -2354,6 +2368,9 @@ void ConcurrentPrimitivesGeneratedQueryTestInstance::copyColorImageToBuffer(cons
     const auto colorSubresourceLayers = vk::makeImageSubresourceLayers(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
     const vk::VkBufferImageCopy colorCopyRegion = vk::makeBufferImageCopy(extent, colorSubresourceLayers);
     vk.cmdCopyImageToBuffer(cmdBuffer, image, vk::VK_IMAGE_LAYOUT_GENERAL, buffer, 1u, &colorCopyRegion);
+
+    const auto hostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+    cmdPipelineMemoryBarrier(vk, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT, &hostBarrier);
 }
 
 class ConcurrentPrimitivesGeneratedQueryTestCase : public vkt::TestCase
