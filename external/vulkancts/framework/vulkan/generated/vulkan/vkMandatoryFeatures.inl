@@ -3077,6 +3077,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("shader64BitIndexing");
 	}
 
+	// VkPhysicalDeviceCustomResolveFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_custom_resolve")) )
+	{
+		if ( physicalDeviceCustomResolveFeaturesEXT.customResolve == VK_FALSE )
+			failMesages.push_back("customResolve");
+	}
+
 	// VkPhysicalDeviceDataGraphModelFeaturesQCOM
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_QCOM_data_graph_model")) )
 	{
