@@ -2204,6 +2204,93 @@ private:
     CopyParams m_copyParams;
 };
 
+namespace MandatoryFormats
+{
+
+void checkIndirectCopyMandatoryFormatSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_copy_memory_indirect");
+    context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
+
+    if (context.getCopyMemoryIndirectFeatures().indirectMemoryToImageCopy == VK_FALSE)
+        TCU_THROW(NotSupportedError, "indirectMemoryToImageCopy feature not supported");
+}
+
+tcu::TestStatus addIndirectCopyMandatoryFormatSupportTests(Context &context)
+{
+    tcu::TestLog &log = context.getTestContext().getLog();
+
+    const VkFormat mandatoryFormats[] = {
+        VK_FORMAT_R8_UNORM,
+        VK_FORMAT_R8_SNORM,
+        VK_FORMAT_R8_UINT,
+        VK_FORMAT_R8_SINT,
+        VK_FORMAT_R8G8_UNORM,
+        VK_FORMAT_R8G8_SNORM,
+        VK_FORMAT_R8G8_UINT,
+        VK_FORMAT_R8G8_SINT,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_R8G8B8A8_SNORM,
+        VK_FORMAT_R8G8B8A8_UINT,
+        VK_FORMAT_R8G8B8A8_SINT,
+        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+        VK_FORMAT_A2B10G10R10_UINT_PACK32,
+        VK_FORMAT_R16_UNORM,
+        VK_FORMAT_R16_SNORM,
+        VK_FORMAT_R16_UINT,
+        VK_FORMAT_R16_SINT,
+        VK_FORMAT_R16_SFLOAT,
+        VK_FORMAT_R16G16_UNORM,
+        VK_FORMAT_R16G16_SNORM,
+        VK_FORMAT_R16G16_UINT,
+        VK_FORMAT_R16G16_SINT,
+        VK_FORMAT_R16G16_SFLOAT,
+        VK_FORMAT_R16G16B16A16_UNORM,
+        VK_FORMAT_R16G16B16A16_SNORM,
+        VK_FORMAT_R16G16B16A16_UINT,
+        VK_FORMAT_R16G16B16A16_SINT,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_FORMAT_R32_UINT,
+        VK_FORMAT_R32_SINT,
+        VK_FORMAT_R32_SFLOAT,
+        VK_FORMAT_R32G32_UINT,
+        VK_FORMAT_R32G32_SINT,
+        VK_FORMAT_R32G32_SFLOAT,
+        VK_FORMAT_R32G32B32A32_UINT,
+        VK_FORMAT_R32G32B32A32_SINT,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+    };
+
+    bool passed = true;
+    for (const auto &format : mandatoryFormats)
+    {
+        VkFormatProperties3 formatProps3;
+        formatProps3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+        formatProps3.pNext = nullptr;
+
+        VkFormatProperties2 formatProps2;
+        formatProps2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+        formatProps2.pNext = &formatProps3;
+
+        context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), format,
+                                                                          &formatProps2);
+
+        if ((formatProps3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR) == 0)
+        {
+            log << tcu::TestLog::Message << "Format " << format
+                << " missing VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR in optimalTilingFeatures"
+                << tcu::TestLog::EndMessage;
+            passed = false;
+        }
+    }
+
+    return passed ? tcu::TestStatus::pass("All mandatory formats support indirect copy DST bit") :
+                    tcu::TestStatus::fail("One or more formats missing mandatory indirect copy feature bit");
+}
+
+} // namespace MandatoryFormats
+
 #endif
 
 } // namespace
@@ -2324,6 +2411,13 @@ tcu::TestCaseGroup *createCopyMemoryIndirectTests(tcu::TestContext &testCtx)
 
     protectedGroup->addChild(new CopyMemoryIndirectTestCase(testCtx, "graphics", protectedParams));
     group->addChild(protectedGroup.release());
+
+    // Create test that checks if all mandatory formats support indirect copy
+    de::MovePtr<tcu::TestCaseGroup> mandatoryFormats(new tcu::TestCaseGroup(testCtx, "mandatory_formats"));
+    addFunctionCase(mandatoryFormats.get(), "memory_to_image",
+                    MandatoryFormats::checkIndirectCopyMandatoryFormatSupport,
+                    MandatoryFormats::addIndirectCopyMandatoryFormatSupportTests);
+    group->addChild(mandatoryFormats.release());
 
     return group.release();
 }
