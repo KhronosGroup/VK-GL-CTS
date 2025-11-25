@@ -425,7 +425,6 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
 
     VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
     sblFeatures.scalarBlockLayout                         = true;
-    addToChainVulkanStructure(&nextPtr, sblFeatures);
 
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeatures = initVulkanStructure();
@@ -448,7 +447,12 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
     if ((m_testMode == TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT) && (apiVersion > VK_MAKE_API_VERSION(0, 1, 1, 0)))
     {
         vulkan12Features.drawIndirectCount = true;
+        vulkan12Features.scalarBlockLayout = true;
         addToChainVulkanStructure(&nextPtr, vulkan12Features);
+    }
+    else
+    {
+        addToChainVulkanStructure(&nextPtr, sblFeatures);
     }
 
 #ifndef CTS_USES_VULKANSC
