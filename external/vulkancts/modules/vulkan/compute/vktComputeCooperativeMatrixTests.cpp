@@ -2063,9 +2063,12 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
 
             if (isTensorLayoutClipTest(m_data.testType))
             {
-                // clip the double-size matrix to the requested size
-                css << "   v = setTensorViewClipNV(v, 1, " << GetTensorLayoutMatrixSizes(dim, i)[0] << ", 1, "
-                    << GetTensorLayoutMatrixSizes(dim, i)[1] << ");\n";
+                int32_t dim0 = GetTensorLayoutMatrixSizes(dim, i)[0];
+                int32_t dim1 = GetTensorLayoutMatrixSizes(dim, i)[1];
+                // clip the double-size matrix to the requested size. The clip region runs
+                // one past the end.
+                css << "   v = setTensorViewClipNV(v, " << dim0 << " + 1, " << dim0 << ", " << dim1 << " + 1, " << dim1
+                    << ");\n";
             }
 
             css << "   t = setTensorLayoutDimensionNV(t";
@@ -4171,6 +4174,24 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                                 inStoreRect = false;
                                             }
                                         }
+                                        if (inStoreRect && isTensorLayoutClipTest(m_data.testType))
+                                        {
+                                            // Convert to linear span index and back to matrix coord.
+                                            // Verify that the view clips the outermost edges.
+                                            int spanindex = 0;
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                spanindex = spanindex * GetTensorLayoutSpan(dim, r)[k] +
+                                                            (tensorCoord[k] - GetTensorLayoutStoreOffsets(dim, r)[k]);
+                                            }
+                                            int matrixcoord[2] = {spanindex / GetTensorLayoutMatrixSizes(dim, r)[1],
+                                                                  spanindex % GetTensorLayoutMatrixSizes(dim, r)[1]};
+                                            if (matrixcoord[0] == GetTensorLayoutMatrixSizes(dim, r)[0] - 1 ||
+                                                matrixcoord[1] == GetTensorLayoutMatrixSizes(dim, r)[1] - 1)
+                                            {
+                                                inStoreRect = false;
+                                            }
+                                        }
 
                                         if (inStoreRect)
                                         {
@@ -4953,6 +4974,24 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                             if ((int32_t)tensorCoord[k] < GetTensorLayoutStoreOffsets(dim, r)[k] ||
                                                 (int32_t)tensorCoord[k] >= GetTensorLayoutStoreOffsets(dim, r)[k] +
                                                                                GetTensorLayoutSpan(dim, r)[k])
+                                            {
+                                                inStoreRect = false;
+                                            }
+                                        }
+                                        if (inStoreRect && isTensorLayoutClipTest(m_data.testType))
+                                        {
+                                            // Convert to linear span index and back to matrix coord.
+                                            // Verify that the view clips the outermost edges.
+                                            int spanindex = 0;
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                spanindex = spanindex * GetTensorLayoutSpan(dim, r)[k] +
+                                                            (tensorCoord[k] - GetTensorLayoutStoreOffsets(dim, r)[k]);
+                                            }
+                                            int matrixcoord[2] = {spanindex / GetTensorLayoutMatrixSizes(dim, r)[1],
+                                                                  spanindex % GetTensorLayoutMatrixSizes(dim, r)[1]};
+                                            if (matrixcoord[0] == GetTensorLayoutMatrixSizes(dim, r)[0] - 1 ||
+                                                matrixcoord[1] == GetTensorLayoutMatrixSizes(dim, r)[1] - 1)
                                             {
                                                 inStoreRect = false;
                                             }
