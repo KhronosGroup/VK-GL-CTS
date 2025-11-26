@@ -697,7 +697,7 @@ struct EncodeTestParam
       {1, 2, 3, 4},
       {1, 2, 3, 4},
       {1, 2, 3, 4}},
-     /* curSlot */ {0, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1, 5},
+     /* curSlot */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
      /* frameReferences */
      {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {}),
       refs<std::vector<uint8_t>>({0, 1}, {1, 0}), refs<std::vector<uint8_t>>({0, 1}, {1, 0}),
@@ -1015,7 +1015,7 @@ struct EncodeTestParam
       {1, 2, 3, 4},
       {1, 2, 3, 4},
       {1, 2, 3, 4}},
-     /* curSlot */ {0, 1, -1, -1, 2, -1, -1, 3, -1, -1, 4, -1, -1, 5},
+     /* curSlot */ {0, 1, 2, 2, 2, 3, 3, 3, 4, 4, 4, 5, 5, 5},
      /* frameReferences */
      {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {}),
       refs<std::vector<uint8_t>>({0, 1}, {1, 0}), refs<std::vector<uint8_t>>({0, 1}, {1, 0}),
@@ -3264,12 +3264,9 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
 
     VkVideoReferenceSlotInfoKHR *setupReferenceSlotPtr = nullptr;
 
-    int8_t curSlotIdx = m_testDefinition->curSlot(nalIdx);
-    if (!bType)
-    {
-        setupReferenceSlotPtr            = &m_dpbImageVideoReferenceSlots[curSlotIdx];
-        setupReferenceSlotPtr->slotIndex = curSlotIdx;
-    }
+    int8_t curSlotIdx                = m_testDefinition->curSlot(nalIdx);
+    setupReferenceSlotPtr            = &m_dpbImageVideoReferenceSlots[curSlotIdx];
+    setupReferenceSlotPtr->slotIndex = curSlotIdx;
 
     uint32_t srcPictureResourceIdx = (gopIdx * m_gopFrameCount) + m_testDefinition->frameIdx(nalIdx);
 
