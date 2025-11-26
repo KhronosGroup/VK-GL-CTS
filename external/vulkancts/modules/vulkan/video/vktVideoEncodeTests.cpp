@@ -3448,6 +3448,7 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
                                                             VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR;
 
         auto resultImage = getDecodedImageFromContext(deviceContext, layout, &frame);
+        processor.releaseFrame(&frame);
         de::MovePtr<std::vector<uint8_t>> out =
             vkt::ycbcr::YCbCrConvUtil<uint8_t>::MultiPlanarNV12toI420(resultImage.get());
 

@@ -1433,7 +1433,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
                                         VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
 
         DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext, downloadedFrameLayout, frame);
-
+        processor->releaseFrame(&frame);
         DownloadedFrame downloadedFrameWithoutFilmGrain;
         if (processorWithoutFilmGrain)
         {
