@@ -45,7 +45,7 @@ if (DE_OS_IS_WIN32)
 	set(DEUTIL_LIBS ${DEUTIL_LIBS} ws2_32)
 endif ()
 
-if (DE_OS_IS_UNIX OR DE_OS_IS_QNX)
+if (DE_OS_IS_UNIX OR DE_OS_IS_QNX OR DE_OS_IS_OHOS)
 	add_definitions(-D_XOPEN_SOURCE=600)
 endif ()
 
