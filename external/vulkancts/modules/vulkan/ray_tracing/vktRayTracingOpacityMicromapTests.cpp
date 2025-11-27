@@ -57,12 +57,17 @@ enum TestFlagBits
     TEST_FLAG_BIT_DISABLE_OPACITY_MICROMAP_INSTANCE = 1U << 2,
     TEST_FLAG_BIT_FORCE_2_STATE_INSTANCE            = 1U << 3,
     TEST_FLAG_BIT_FORCE_2_STATE_RAY_FLAG            = 1U << 4,
-    TEST_FLAG_BIT_LAST                              = 1U << 5,
+    TEST_FLAG_BIT_FORCE_NO_OPAQUE_INSTANCE          = 1U << 5,
+    TEST_FLAG_BIT_NO_OPAQUE_RAY_FLAG                = 1U << 6,
+    TEST_FLAG_BIT_CULL_OPAQUE_RAY_FLAG              = 1U << 7,
+    TEST_FLAG_BIT_CULL_NO_OPAQUE_RAY_FLAG           = 1U << 8,
+    TEST_FLAG_BIT_LAST                              = 1U << 9,
 };
 
 std::vector<std::string> testFlagBitNames = {
     "force_opaque_instance",  "force_opaque_ray_flag",  "disable_opacity_micromap_instance",
-    "force_2_state_instance", "force_2_state_ray_flag",
+    "force_2_state_instance", "force_2_state_ray_flag", "force_no_opaque_instance",
+    "no_opaque_ray_flag",     "cull_opaque_ray_flag",   "cull_no_opaque_ray_flag",
 };
 
 struct TestParams
@@ -171,11 +176,22 @@ void OpacityMicromapCase::initPrograms(vk::SourceCollections &programCollection)
                 << "} modes;\n";
     const auto layoutDeclsStr = layoutDecls.str();
 
-    std::string flagsString =
-        (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_OPAQUE_RAY_FLAG) ? "gl_RayFlagsOpaqueEXT" : "gl_RayFlagsNoneEXT";
+    std::string flagsString = "gl_RayFlagsNoneEXT";
+
+    if (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_OPAQUE_RAY_FLAG)
+        flagsString += " | gl_RayFlagsOpaqueEXT";
+
+    if (m_params.testFlagMask & TEST_FLAG_BIT_NO_OPAQUE_RAY_FLAG)
+        flagsString += " | gl_RayFlagsNoOpaqueEXT";
 
     if (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_2_STATE_RAY_FLAG)
         flagsString += " | gl_RayFlagsForceOpacityMicromap2StateEXT";
+
+    if (m_params.testFlagMask & TEST_FLAG_BIT_CULL_OPAQUE_RAY_FLAG)
+        flagsString += " | gl_RayFlagsCullOpaqueEXT";
+
+    if (m_params.testFlagMask & TEST_FLAG_BIT_CULL_NO_OPAQUE_RAY_FLAG)
+        flagsString += " | gl_RayFlagsCullNoOpaqueEXT";
 
     std::ostringstream rgen;
     rgen << "#version 460 core\n"
@@ -503,7 +519,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     AccelerationStructBufferProperties bufferProps;
     bufferProps.props.residency = ResourceResidency::TRADITIONAL;
 
-    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0, &opacityGeometryMicromap);
+    bottomLevelAS->addGeometry(triangle, true /*is triangles*/, 0 /*flags*/, &opacityGeometryMicromap);
     if (m_params.testFlagMask & TEST_FLAG_BIT_DISABLE_OPACITY_MICROMAP_INSTANCE)
         bottomLevelAS->setBuildFlags(VK_BUILD_ACCELERATION_STRUCTURE_ALLOW_DISABLE_OPACITY_MICROMAPS_EXT);
     bottomLevelAS->createAndBuild(vkd, device, cmdBuffer, alloc, bufferProps);
@@ -515,6 +531,8 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
         instanceFlags |= VK_GEOMETRY_INSTANCE_FORCE_OPACITY_MICROMAP_2_STATE_EXT;
     if (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_OPAQUE_INSTANCE)
         instanceFlags |= VK_GEOMETRY_INSTANCE_FORCE_OPAQUE_BIT_KHR;
+    if (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_NO_OPAQUE_INSTANCE)
+        instanceFlags |= VK_GEOMETRY_INSTANCE_FORCE_NO_OPAQUE_BIT_KHR;
     if (m_params.testFlagMask & TEST_FLAG_BIT_DISABLE_OPACITY_MICROMAP_INSTANCE)
         instanceFlags |= VK_GEOMETRY_INSTANCE_DISABLE_OPACITY_MICROMAPS_EXT;
 
@@ -542,10 +560,7 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
     // Fill in vector of expected outputs
     for (uint32_t index = 0; index < numRays; index++)
     {
-        uint32_t state =
-            m_params.testFlagMask & (TEST_FLAG_BIT_FORCE_OPAQUE_INSTANCE | TEST_FLAG_BIT_FORCE_OPAQUE_RAY_FLAG) ?
-                VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT :
-                VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_OPAQUE_EXT;
+        uint32_t state = uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_OPAQUE_EXT);
 
         if (!(m_params.testFlagMask & TEST_FLAG_BIT_DISABLE_OPACITY_MICROMAP_INSTANCE))
         {
@@ -579,19 +594,45 @@ tcu::TestStatus OpacityMicromapInstance::iterate(void)
             }
         }
 
+        const bool forceOpaqueRay        = (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_OPAQUE_RAY_FLAG) != 0;
+        const bool noOpaqueRay           = (m_params.testFlagMask & TEST_FLAG_BIT_NO_OPAQUE_RAY_FLAG) != 0;
+        const bool forceOpaqueInstance   = (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_OPAQUE_INSTANCE) != 0;
+        const bool forceNoOpaqueInstance = (m_params.testFlagMask & TEST_FLAG_BIT_FORCE_NO_OPAQUE_INSTANCE) != 0;
+
+        bool effectiveOpaque   = false;
+        bool effectiveNoOpaque = false;
+
+        if (forceOpaqueRay)
+            effectiveOpaque = true;
+        else if (noOpaqueRay)
+            effectiveNoOpaque = true;
+        else if (forceOpaqueInstance)
+            effectiveOpaque = true;
+        else if (forceNoOpaqueInstance)
+            effectiveNoOpaque = true;
+
+        const bool cullOpaque   = (m_params.testFlagMask & TEST_FLAG_BIT_CULL_OPAQUE_RAY_FLAG) != 0;
+        const bool cullNoOpaque = (m_params.testFlagMask & TEST_FLAG_BIT_CULL_NO_OPAQUE_RAY_FLAG) != 0;
+        const bool culled =
+            (cullOpaque && !forceNoOpaqueInstance &&
+             (forceOpaqueInstance || state == uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT))) ||
+            (cullNoOpaque &&
+             (forceNoOpaqueInstance ||
+              (!forceOpaqueInstance && state != uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT))));
+
         if (state != uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_TRANSPARENT_EXT))
         {
-            if (m_params.testFlagMask & (TEST_FLAG_BIT_FORCE_OPAQUE_INSTANCE | TEST_FLAG_BIT_FORCE_OPAQUE_RAY_FLAG))
+            if (effectiveOpaque)
             {
                 state = uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT);
             }
-            else if (state != uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT))
+            else if (effectiveNoOpaque || state != uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_OPAQUE_EXT))
             {
                 state = uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_UNKNOWN_OPAQUE_EXT);
             }
         }
 
-        if (state == uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_TRANSPARENT_EXT))
+        if (culled || state == uint32_t(VK_OPACITY_MICROMAP_SPECIAL_INDEX_FULLY_TRANSPARENT_EXT))
         {
             expectedOutputModes.push_back(0);
         }
@@ -792,6 +833,22 @@ tcu::TestCaseGroup *createOpacityMicromapTests(tcu::TestContext &testCtx)
 
     for (uint32_t testFlagMask = 0; testFlagMask < TEST_FLAG_BIT_LAST; testFlagMask++)
     {
+        // Skip mutually exclusive flag combinations
+        const bool hasConflictingInstanceFlags = (testFlagMask & TEST_FLAG_BIT_FORCE_OPAQUE_INSTANCE) &&
+                                                 (testFlagMask & TEST_FLAG_BIT_FORCE_NO_OPAQUE_INSTANCE);
+
+        const uint32_t opacityRayFlagCount = ((testFlagMask & TEST_FLAG_BIT_FORCE_OPAQUE_RAY_FLAG) ? 1 : 0) +
+                                             ((testFlagMask & TEST_FLAG_BIT_NO_OPAQUE_RAY_FLAG) ? 1 : 0) +
+                                             ((testFlagMask & TEST_FLAG_BIT_CULL_OPAQUE_RAY_FLAG) ? 1 : 0) +
+                                             ((testFlagMask & TEST_FLAG_BIT_CULL_NO_OPAQUE_RAY_FLAG) ? 1 : 0);
+
+        // At most one of gl_RayFlagsOpaqueEXT, gl_RayFlagsNoOpaqueEXT,
+        // gl_RayFlagsCullOpaqueEXT, or gl_RayFlagsCullNoOpaqueEXT can be set
+        const bool hasConflictingOpacityRayFlags = opacityRayFlagCount > 1;
+
+        if (hasConflictingInstanceFlags || hasConflictingOpacityRayFlags)
+            continue;
+
         std::string maskName = "";
 
         for (uint32_t bit = 0; bit < testFlagBitNames.size(); bit++)
