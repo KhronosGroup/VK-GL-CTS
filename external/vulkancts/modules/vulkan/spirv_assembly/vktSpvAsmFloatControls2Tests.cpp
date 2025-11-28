@@ -2921,8 +2921,8 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup *parentGroup, 
 
             InstanceContext ctxVertex = createInstanceContext(testCaseInfo);
             string testName           = replace(testCase.baseName, "op", testCaseInfo.operation.name);
-            addFunctionCaseWithPrograms<InstanceContext>(group, testName + stageNames[i], getGraphicsShaderCode,
-                                                         runAndVerifyDefaultPipeline, ctxVertex);
+            addFunctionCaseWithPrograms<InstanceContext>(group, testName + stageNames[i], defaultCheckSupport,
+                                                         getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
         }
     }
 }

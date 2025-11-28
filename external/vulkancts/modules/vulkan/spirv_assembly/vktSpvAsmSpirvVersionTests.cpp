@@ -256,6 +256,7 @@ class SpvAsmSpirvVersionsCase : public TestCase
 {
 public:
     SpvAsmSpirvVersionsCase(tcu::TestContext &testCtx, const char *name, const TestParameters &testParameters);
+    void checkSupport(Context &context) const;
     void initPrograms(vk::SourceCollections &programCollection) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -270,19 +271,25 @@ SpvAsmSpirvVersionsCase::SpvAsmSpirvVersionsCase(tcu::TestContext &testCtx, cons
 {
 }
 
-void validateVulkanVersion(const uint32_t usedVulkanVersion, const SpirvVersion testedSpirvVersion)
+void SpvAsmSpirvVersionsCase::checkSupport(Context &context) const
 {
-    const SpirvVersion usedSpirvVersionForAsm = getMaxSpirvVersionForAsm(usedVulkanVersion);
-
-    if (testedSpirvVersion > usedSpirvVersionForAsm)
+    const SpirvVersion usedSpirvVersionForAsm = getMaxSpirvVersionForAsm(context.getUsedApiVersion());
+    if (m_testParameters.spirvVersion > usedSpirvVersionForAsm)
         TCU_THROW(NotSupportedError, "Specified SPIR-V version is not supported by the device/instance");
+
+    if ((m_testParameters.operation == OPERATION_GRAPHICS_TESSELATION_EVALUATION) ||
+        (m_testParameters.operation == OPERATION_GRAPHICS_TESSELATION_CONTROL))
+    {
+        if (!context.getDeviceFeatures().tessellationShader)
+            TCU_THROW(NotSupportedError, "Tessellation shaders not supported");
+    }
+    if ((m_testParameters.operation == OPERATION_GRAPHICS_GEOMETRY) && !context.getDeviceFeatures().geometryShader)
+        TCU_THROW(NotSupportedError, "Geometry shaders not supported");
 }
 
 void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection) const
 {
     const SpirVAsmBuildOptions spirVAsmBuildOptions(programCollection.usedVulkanVersion, m_testParameters.spirvVersion);
-
-    validateVulkanVersion(programCollection.usedVulkanVersion, m_testParameters.spirvVersion);
 
     switch (m_testParameters.operation)
     {
@@ -349,8 +356,6 @@ void SpvAsmSpirvVersionsCase::initPrograms(SourceCollections &programCollection)
 
 TestInstance *SpvAsmSpirvVersionsCase::createInstance(Context &context) const
 {
-    validateVulkanVersion(context.getUsedApiVersion(), m_testParameters.spirvVersion);
-
     switch (m_testParameters.operation)
     {
     case OPERATION_COMPUTE:
