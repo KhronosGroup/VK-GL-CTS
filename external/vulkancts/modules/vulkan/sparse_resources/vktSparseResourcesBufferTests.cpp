@@ -2043,13 +2043,48 @@ void checkSupport(Context &context, const TestParams testParams)
 
 #ifndef CTS_USES_VULKANSC
 
-class NullAddressReadInstance : public vkt::TestInstance
+// SUMMARY OF TEST MECHANISM
+//
+// create buffer
+//
+// if we map first:
+//     map
+//     if reading:
+//         initialize mapped memory to non-zero.
+//         read: this should read the values above.
+//     else:
+//         initialize memory to zeros.
+//         write: write non-zero values, which should overwrite the zeros.
+//     unmap
+//
+// if reading:
+//     read: this should read zeros.
+// else:
+//     write: write alternative non-zero values, and this should do nothing.
+//     after writing, copying the contents of the written-to buffer should give us zeros.
+//
+// if we mapped first:
+//     if reading:
+//         verify first read resulted in non-zero values from above.
+//     else:
+//         verify first write wrote the initial non-zero values.
+//
+// if reading:
+//     verify second reads returned zero.
+// else:
+//     verify mapped memory also still contains those non-zero values.
+//     verify copied values were zeros in the non-mapped write.
+//
+class NullAddressInstance : public vkt::TestInstance
 {
 public:
     struct Params
     {
+
         bool useLocalInvocationIndex; // This may affect the implementation/compiler.
         bool useDescriptor;           // Instead of a buffer address for the read buffer.
+        bool mapFirst;                // Do an initial map, and unmap later.
+        bool write;                   // Check writes. If false, check reads.
 
         uint32_t getValueCount() const
         {
@@ -2069,10 +2104,10 @@ public:
         }
     };
 
-    NullAddressReadInstance(Context &context, const Params &params) : vkt::TestInstance(context), m_params(params)
+    NullAddressInstance(Context &context, const Params &params) : vkt::TestInstance(context), m_params(params)
     {
     }
-    virtual ~NullAddressReadInstance(void) = default;
+    virtual ~NullAddressInstance(void) = default;
 
     tcu::TestStatus iterate(void) override;
 
@@ -2080,30 +2115,29 @@ protected:
     const Params m_params;
 };
 
-class NullAddressReadCase : public vkt::TestCase
+class NullAddressCase : public vkt::TestCase
 {
 public:
-    NullAddressReadCase(tcu::TestContext &testCtx, const std::string &name,
-                        const NullAddressReadInstance::Params &params)
+    NullAddressCase(tcu::TestContext &testCtx, const std::string &name, const NullAddressInstance::Params &params)
         : vkt::TestCase(testCtx, name)
         , m_params(params)
     {
     }
-    virtual ~NullAddressReadCase(void) = default;
+    virtual ~NullAddressCase(void) = default;
 
     TestInstance *createInstance(Context &context) const override
     {
-        return new NullAddressReadInstance(context, m_params);
+        return new NullAddressInstance(context, m_params);
     }
 
     void checkSupport(Context &context) const override;
     void initPrograms(vk::SourceCollections &programCollection) const override;
 
 protected:
-    const NullAddressReadInstance::Params m_params;
+    const NullAddressInstance::Params m_params;
 };
 
-void NullAddressReadCase::checkSupport(Context &context) const
+void NullAddressCase::checkSupport(Context &context) const
 {
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_RESIDENCY_BUFFER);
@@ -2114,9 +2148,12 @@ void NullAddressReadCase::checkSupport(Context &context) const
     const auto &sparseProperties = context.getDeviceProperties().sparseProperties;
     if (!sparseProperties.residencyNonResidentStrict)
         TCU_THROW(NotSupportedError, "residencyNonResidentStrict not supported");
+
+    if (m_params.mapFirst)
+        context.getSparseQueue(); // Throws if not supported.
 }
 
-void NullAddressReadCase::initPrograms(vk::SourceCollections &dst) const
+void NullAddressCase::initPrograms(vk::SourceCollections &dst) const
 {
     const auto wgSize     = m_params.getWorkGroupSize();
     const auto arrayIndex = (m_params.useLocalInvocationIndex ? "gl_LocalInvocationIndex" : "gl_WorkGroupID.x");
@@ -2176,65 +2213,116 @@ void NullAddressReadCase::initPrograms(vk::SourceCollections &dst) const
     dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
 }
 
-tcu::TestStatus NullAddressReadInstance::iterate()
+VkDeviceAddress getBDA(const DeviceInterface &vkd, VkDevice device, VkBuffer buffer)
+{
+    VkBufferDeviceAddressInfo addressInfo = initVulkanStructure();
+    addressInfo.buffer                    = buffer;
+    const auto bda                        = vkd.getBufferDeviceAddress(device, &addressInfo);
+    return bda;
+}
+
+void setupBuffer(const DeviceInterface &vkd, VkDevice device, const BufferWithMemory &buffer,
+                 const std::vector<uint32_t> &values)
+{
+    auto &alloc = buffer.getAllocation();
+    memcpy(alloc.getHostPtr(), de::dataOrNull(values), de::dataSize(values));
+    flushAlloc(vkd, device, alloc);
+}
+
+bool checkValuesMatch(tcu::TestLog &log, const std::string &errorPrefix, const std::vector<uint32_t> &result,
+                      const std::vector<uint32_t> &reference)
+{
+    bool match = true;
+    DE_ASSERT(result.size() == reference.size());
+
+    for (size_t i = 0; i < result.size(); ++i)
+    {
+        const auto res = result.at(i);
+        const auto ref = reference.at(i);
+
+        if (res != ref)
+        {
+            std::ostringstream msg;
+            msg << errorPrefix << " Value mismatch at position " << i << ": expected " << ref << " but found " << res;
+            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+            match = false;
+        }
+    }
+
+    return match;
+}
+
+void copyMemoryToVector(const DeviceInterface &vkd, VkDevice device, std::vector<uint32_t> &out,
+                        const Allocation &alloc)
+{
+    invalidateAlloc(vkd, device, alloc);
+    memcpy(de::dataOrNull(out), alloc.getHostPtr(), de::dataSize(out));
+}
+
+tcu::TestStatus NullAddressInstance::iterate()
 {
     const auto ctx        = m_context.getContextCommonData();
     const auto valueCount = m_params.getValueCount();
-    const std::vector<uint32_t> emptyQueueFamilyIndexList;
 
-    // Destination buffer, filled with non-zero values.
-    std::vector<uint32_t> stagingValues(valueCount, std::numeric_limits<uint32_t>::max());
-    const auto bufferSize = static_cast<VkDeviceSize>(de::dataSize(stagingValues));
+    // Staging contents.
+    std::vector<uint32_t> zeroValues(valueCount, 0u);
+    std::vector<uint32_t> nonZeroValues(valueCount, 0xF0F0F0F0u);
+    std::vector<uint32_t> altNonZeroValues(valueCount, 0xFFFFFFFFu);
+    const auto bufferSize = static_cast<VkDeviceSize>(de::dataSize(zeroValues));
 
-    const auto dstBufferUsage = (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
-                                 VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    const auto dstBufferInfo  = vk::makeBufferCreateInfo(bufferSize, dstBufferUsage);
-    BufferWithMemory dstBuffer(ctx.vkd, ctx.device, ctx.allocator, dstBufferInfo, MemoryRequirement::DeviceAddress);
+    // Regular buffer data will be copied to or from.
+    VkShaderStageFlags extraFlag = 0u;
+    if (!m_params.useDescriptor)
+        extraFlag |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT_KHR;
 
-    // Staging host-visible write buffer.
-    const auto stagingDstBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
-    const auto stagingDstBufferInfo  = vk::makeBufferCreateInfo(bufferSize, stagingDstBufferUsage);
-    BufferWithMemory stagingDstBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingDstBufferInfo,
-                                      MemoryRequirement::HostVisible);
-    {
-        auto &alloc = stagingDstBuffer.getAllocation();
-        memcpy(alloc.getHostPtr(), de::dataOrNull(stagingValues), de::dataSize(stagingValues));
-    }
+    const auto regularBufferUsage = (extraFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                     VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto regularBufferInfo  = vk::makeBufferCreateInfo(bufferSize, regularBufferUsage);
+    BufferWithMemory regularBuffer(ctx.vkd, ctx.device, ctx.allocator, regularBufferInfo,
+                                   MemoryRequirement::DeviceAddress);
 
-    // Source buffer, sparse and bound to the null address, which should result in reads returning zeros.
-    const auto srcBufferUsage = (VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-    const auto srcBufferFlags = (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
-    const VkBufferCreateInfo srcBufferInfo = {
+    // Staging host-visible buffer to be used with the regular one.
+    const auto stagingBufferUsage = (VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+    const auto stagingBufferInfo  = vk::makeBufferCreateInfo(bufferSize, stagingBufferUsage);
+    BufferWithMemory stagingBuffer(ctx.vkd, ctx.device, ctx.allocator, stagingBufferInfo, HostIntent::RW);
+
+    // Sparse buffer.
+    const auto sparseBufferUsage = (extraFlag | VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    const auto sparseBufferFlags = (VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT);
+    const VkBufferCreateInfo sparseBufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
         nullptr,
-        srcBufferFlags,
+        sparseBufferFlags,
         bufferSize, // Same size.
-        srcBufferUsage,
+        sparseBufferUsage,
         VK_SHARING_MODE_EXCLUSIVE,
         0u,
         nullptr,
     };
-    const auto srcBuffer = createBuffer(ctx.vkd, ctx.device, &srcBufferInfo);
-    // IMPORTANT: note we do not bind any memory to this buffer.
+    const auto sparseBuffer = createBuffer(ctx.vkd, ctx.device, &sparseBufferInfo);
 
-    // Pipeline, passing buffer addresses as push constants.
+    // Decide which buffer will be the source and the destination in the shader, depending on test parameters.
+    const auto srcBuffer = (m_params.write ? *regularBuffer : *sparseBuffer);
+    const auto dstBuffer = (m_params.write ? *sparseBuffer : *regularBuffer);
+
+    const auto shaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
+    const auto descType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER; // If not using push constants.
+
+    // Pipeline, passing buffer addresses as push constants, or using descriptors.
+    VkDeviceAddress srcBufferAddress = 0ull;
+    VkDeviceAddress dstBufferAddress = 0ull;
+
+    if (!m_params.useDescriptor)
+    {
+        srcBufferAddress = getBDA(ctx.vkd, ctx.device, srcBuffer);
+        dstBufferAddress = getBDA(ctx.vkd, ctx.device, dstBuffer);
+    }
+
     struct PushConstants
     {
         tcu::UVec2 srcAddress;
         tcu::UVec2 dstAddress;
     };
-
-    VkBufferDeviceAddressInfo srcAddressInfo = initVulkanStructure();
-    VkBufferDeviceAddressInfo dstAddressInfo = initVulkanStructure();
-
-    srcAddressInfo.buffer = *srcBuffer;
-    dstAddressInfo.buffer = *dstBuffer;
-
-    const auto srcBufferAddress = ctx.vkd.getBufferDeviceAddress(ctx.device, &srcAddressInfo);
-    const auto dstBufferAddress = ctx.vkd.getBufferDeviceAddress(ctx.device, &dstAddressInfo);
-
-    const auto shaderStages = VK_SHADER_STAGE_COMPUTE_BIT;
-    const auto descType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
 
     const PushConstants pcValue = {
         tcu::UVec2(static_cast<uint32_t>(srcBufferAddress & 0xFFFFFFFFull),
@@ -2270,79 +2358,145 @@ tcu::TestStatus NullAddressReadInstance::iterate()
         descriptorPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
         descriptorSet  = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
 
-        const auto srcBufferDescInfo = makeDescriptorBufferInfo(*srcBuffer, 0ull, VK_WHOLE_SIZE);
-        const auto dstBufferDescInfo = makeDescriptorBufferInfo(*dstBuffer, 0ull, VK_WHOLE_SIZE);
+        const auto srcBufferDescInfo = makeDescriptorBufferInfo(srcBuffer, 0ull, VK_WHOLE_SIZE);
+        const auto dstBufferDescInfo = makeDescriptorBufferInfo(dstBuffer, 0ull, VK_WHOLE_SIZE);
 
         DescriptorSetUpdateBuilder updateBuilder;
-        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descType,
-                                  &srcBufferDescInfo);
-        updateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u), descType,
-                                  &dstBufferDescInfo);
+        const auto binding = DescriptorSetUpdateBuilder::Location::binding;
+        updateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &srcBufferDescInfo);
+        updateBuilder.writeSingle(*descriptorSet, binding(1u), descType, &dstBufferDescInfo);
         updateBuilder.update(ctx.vkd, ctx.device);
     }
 
     const auto bufferCopy = makeBufferCopy(0ull, 0ull, bufferSize);
     const auto bindPoint  = VK_PIPELINE_BIND_POINT_COMPUTE;
+    const auto cmdPool    = makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
 
-    const CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
-    const auto cmdBuffer = *cmd.cmdBuffer;
-
-    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    // Lambda to run the expected pipeline work.
+    const auto executeWork = [&](std::vector<uint32_t> &result, const std::vector<uint32_t> &regularBufferInit)
     {
-        // Prepare destination buffer with non-zero contents.
-        ctx.vkd.cmdCopyBuffer(cmdBuffer, *stagingDstBuffer, *dstBuffer, 1u, &bufferCopy);
+        const auto cmdBufferPtr = allocateCommandBuffer(ctx.vkd, ctx.device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto cmdBuffer    = *cmdBufferPtr;
 
-        // Transfer before other writes in the shader.
-        const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT);
-        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                 VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &barrier);
-    }
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+        {
+            // Prepare source or destination buffer with non-zero contents.
+            setupBuffer(ctx.vkd, ctx.device, stagingBuffer, regularBufferInit);
+            ctx.vkd.cmdCopyBuffer(cmdBuffer, *stagingBuffer, *regularBuffer, 1u, &bufferCopy);
+
+            // Transfer before other writes in the shader.
+            const auto barrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_WRITE_BIT);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                     VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &barrier);
+        }
+        {
+            const auto wgCount = m_params.getWorkGroupCount();
+            ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+            if (m_params.useDescriptor)
+                ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
+                                              nullptr);
+            else
+                ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, shaderStages, 0u, pcSize, &pcValue);
+            ctx.vkd.cmdDispatch(cmdBuffer, wgCount, 1u, 1u);
+        }
+        {
+            // Copy values back to staging buffer.
+            const auto preCopy = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                     VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopy);
+
+            ctx.vkd.cmdCopyBuffer(cmdBuffer, dstBuffer, *stagingBuffer, 1u, &bufferCopy);
+
+            const auto postCopy = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                     &postCopy);
+        }
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        vk::submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+        copyMemoryToVector(ctx.vkd, ctx.device, result, stagingBuffer.getAllocation());
+    };
+
+    std::vector<uint32_t> mappedValues(valueCount);
+    std::vector<uint32_t> unmappedValues(valueCount);
+
+    de::MovePtr<Allocation> sparseMemory;
+    if (m_params.mapFirst)
     {
-        const auto wgCount = m_params.getWorkGroupCount();
-        ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
-        if (m_params.useDescriptor)
-            ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u,
-                                          nullptr);
-        else
-            ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, shaderStages, 0u, pcSize, &pcValue);
-        ctx.vkd.cmdDispatch(cmdBuffer, wgCount, 1u, 1u);
-    }
-    {
-        // Copy values back to staging buffer.
-        const auto preCopy = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT);
-        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                                 VK_PIPELINE_STAGE_TRANSFER_BIT, &preCopy);
+        const auto memReqs = getBufferMemoryRequirements(ctx.vkd, ctx.device, *sparseBuffer);
+        sparseMemory       = ctx.allocator.allocate(memReqs, HostIntent::RW);
 
-        ctx.vkd.cmdCopyBuffer(cmdBuffer, *dstBuffer, *stagingDstBuffer, 1u, &bufferCopy);
+        VkSparseMemoryBind memoryBind = {
+            0ull, memReqs.size, VK_NULL_HANDLE, 0ull, 0u,
+        };
 
-        const auto postCopy = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
-        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                                 &postCopy);
-    }
-    endCommandBuffer(ctx.vkd, cmdBuffer);
-    vk::submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+        const VkSparseBufferMemoryBindInfo bufferBind = {
+            *sparseBuffer,
+            1u,
+            &memoryBind,
+        };
 
-    {
-        auto &alloc = stagingDstBuffer.getAllocation();
-        invalidateAlloc(ctx.vkd, ctx.device, alloc);
-        memcpy(de::dataOrNull(stagingValues), alloc.getHostPtr(), de::dataSize(stagingValues));
+        const VkBindSparseInfo bindInfo = {
+            VK_STRUCTURE_TYPE_BIND_SPARSE_INFO,
+            nullptr,
+            0u,
+            nullptr,
+            1u,
+            &bufferBind,
+            0u,
+            nullptr,
+            0u,
+            nullptr,
+            0u,
+            nullptr,
+        };
+
+        const auto bindSparseAndWait = [&](VkDeviceMemory memory)
+        {
+            memoryBind.memory = memory;
+            const auto fence  = createFence(ctx.vkd, ctx.device);
+            ctx.vkd.queueBindSparse(m_context.getSparseQueue(), 1u, &bindInfo, *fence);
+            waitForFence(ctx.vkd, ctx.device, *fence);
+        };
+
+        // Bind memory.
+        bindSparseAndWait(sparseMemory->getMemory());
+
+        const auto &values = (m_params.write ? zeroValues : altNonZeroValues);
+        memcpy(sparseMemory->getHostPtr(), de::dataOrNull(values), de::dataSize(values));
+        flushAlloc(ctx.vkd, ctx.device, *sparseMemory);
+
+        executeWork(mappedValues, nonZeroValues);
+
+        // Unbind memory and wait.
+        bindSparseAndWait(VK_NULL_HANDLE);
     }
+
+    executeWork(unmappedValues, (m_params.write ? altNonZeroValues : nonZeroValues));
 
     bool fail = false;
     auto &log = m_context.getTestContext().getLog();
 
-    for (uint32_t i = 0u; i < valueCount; ++i)
+    if (m_params.mapFirst)
     {
-        const auto &result = stagingValues.at(i);
-
-        if (result != 0u)
-        {
-            std::ostringstream msg;
-            msg << "Unexpected non-zero value found in output buffer at position " << i << ": " << result;
-            log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
+        const auto &expected = (m_params.write ? nonZeroValues : altNonZeroValues);
+        if (!checkValuesMatch(log, "[MAPPED]", mappedValues, expected))
             fail = true;
+
+        if (m_params.write)
+        {
+            // Verify initially written values are still in the now unmapped memory. We verified mappedValues above, but
+            // mappedValues was copied while the memory was still mapped. The second executeWork should not have
+            // overwritten those values by mistake.
+            std::vector<uint32_t> memoryValues(valueCount);
+            copyMemoryToVector(ctx.vkd, ctx.device, memoryValues, *sparseMemory);
+            if (!checkValuesMatch(log, "[WAS-MAPPED]", memoryValues, nonZeroValues))
+                fail = true;
         }
     }
+
+    // Unmapped values should always been zero.
+    if (!checkValuesMatch(log, "[UNMAPPED]", unmappedValues, zeroValues))
+        fail = true;
 
     if (fail)
         TCU_FAIL("Invalid values found in output buffer; check log for details --");
@@ -2604,17 +2758,21 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
 
         for (const auto useLocalInvocationIndex : {false, true})
             for (const auto useDescriptors : {false, true})
-            {
-                const NullAddressReadInstance::Params params{
-                    useLocalInvocationIndex,
-                    useDescriptors,
-                };
-                const auto testName = std::string("null_address_read") +
-                                      (useLocalInvocationIndex ? "_local_inv_idx" : "") +
-                                      (useDescriptors ? "_descriptors" : "");
+                for (const auto mapFirst : {false, true})
+                    for (const auto write : {false, true})
+                    {
+                        const NullAddressInstance::Params params{
+                            useLocalInvocationIndex,
+                            useDescriptors,
+                            mapFirst,
+                            write,
+                        };
+                        const auto testName = std::string("null_address_") + (write ? "write" : "read") +
+                                              (useLocalInvocationIndex ? "_local_inv_idx" : "") +
+                                              (useDescriptors ? "_descriptors" : "") + (mapFirst ? "_map_first" : "");
 
-                miscGroup->addChild(new NullAddressReadCase(testCtx, testName, params));
-            }
+                        miscGroup->addChild(new NullAddressCase(testCtx, testName, params));
+                    }
 
         parentGroup->addChild(miscGroup.release());
     }
