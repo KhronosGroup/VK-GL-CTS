@@ -553,7 +553,8 @@ void DepthStencilResolveTest::submit(void)
         imageRange,                             // VkImageSubresourceRange    subresourceRange
     };
 
-    const VkImageMemoryBarrier preRenderBarrier = {
+    //  VUID-vkCmdBeginRendering-pRenderingInfo-09588
+    const VkImageMemoryBarrier preRenderBarrierSinglesample = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
         nullptr,                                          // const void*                pNext
         VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags              srcAccessMask
@@ -565,6 +566,21 @@ void DepthStencilResolveTest::submit(void)
         **m_singlesampleImage,                            // VkImage                    image
         imageRange,                                       // VkImageSubresourceRange    subresourceRange
     };
+
+    const VkImageMemoryBarrier preRenderBarrierMultisample = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
+        nullptr,                                          // const void*                pNext
+        VK_ACCESS_NONE_KHR,                               // VkAccessFlags              srcAccessMask
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+        VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout              oldLayout
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   dstQueueFamilyIndex
+        **m_multisampleImage,                             // VkImage                    image
+        imageRange,                                       // VkImageSubresourceRange    subresourceRange
+    };
+
+    const VkImageMemoryBarrier preRenderBarriers[] = {preRenderBarrierSinglesample, preRenderBarrierMultisample};
 
     // Clearing resolve image
     {
@@ -646,7 +662,7 @@ void DepthStencilResolveTest::submit(void)
             vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                        vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
+                                   0u, 0u, nullptr, 0u, nullptr, 2u, preRenderBarriers);
 
             if (!m_config.groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
             {
@@ -665,7 +681,7 @@ void DepthStencilResolveTest::submit(void)
             vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                        vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
+                                   0u, 0u, nullptr, 0u, nullptr, 2u, preRenderBarriers);
             vkd.cmdBeginRendering(*cmdBuffer, &renderingInfo);
             vkd.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_renderPipeline);
             vkd.cmdDraw(*cmdBuffer, 6u, 1u, 0u, 0u);
@@ -678,7 +694,7 @@ void DepthStencilResolveTest::submit(void)
         vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                    vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                               0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
+                               0u, 0u, nullptr, 0u, nullptr, 2u, preRenderBarriers);
         if (m_config.groupParams->useSecondaryCmdBuffer)
         {
             secCmdBuffer = allocateCommandBuffer(vkd, device, *m_commandPool, VK_COMMAND_BUFFER_LEVEL_SECONDARY);
@@ -1429,7 +1445,8 @@ void DepthStencilPushConstResolveTest::submit(void)
         imageRange,                             // VkImageSubresourceRange    subresourceRange
     };
 
-    const VkImageMemoryBarrier preRenderBarrier = {
+    //  VUID-vkCmdBeginRendering-pRenderingInfo-09588
+    const VkImageMemoryBarrier preRenderBarrierSinglesample = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
         nullptr,                                          // const void*                pNext
         VK_ACCESS_TRANSFER_WRITE_BIT,                     // VkAccessFlags              srcAccessMask
@@ -1441,6 +1458,21 @@ void DepthStencilPushConstResolveTest::submit(void)
         **m_singlesampleImage,                            // VkImage                    image
         imageRange,                                       // VkImageSubresourceRange    subresourceRange
     };
+
+    const VkImageMemoryBarrier preRenderBarrierMultisample = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,           // VkStructureType            sType
+        nullptr,                                          // const void*                pNext
+        VK_ACCESS_NONE_KHR,                               // VkAccessFlags              srcAccessMask
+        VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,     // VkAccessFlags              dstAccessMask
+        VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout              oldLayout
+        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   dstQueueFamilyIndex
+        **m_multisampleImage,                             // VkImage                    image
+        imageRange,                                       // VkImageSubresourceRange    subresourceRange
+    };
+
+    const VkImageMemoryBarrier preRenderBarriers[] = {preRenderBarrierSinglesample, preRenderBarrierMultisample};
 
     // Clearing resolve image
     {
@@ -1527,7 +1559,7 @@ void DepthStencilPushConstResolveTest::submit(void)
             vkd.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
                                    vk::VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                                        vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
-                                   0u, 0u, nullptr, 0u, nullptr, 1u, &preRenderBarrier);
+                                   0u, 0u, nullptr, 0u, nullptr, 2u, preRenderBarriers);
             {
                 const TestPushConstants pushConstants = {tcu::RGBA::green().toVec()};
                 vkd.cmdPushConstants(*cmdBuffer, *m_pcPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0u,

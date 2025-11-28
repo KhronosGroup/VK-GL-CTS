@@ -821,14 +821,17 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
         renderingAttachmentLocationInfo.colorAttachmentCount                 = colorAttachmentsCount;
         renderingAttachmentLocationInfo.pColorAttachmentLocations            = colorAttachmentLocationsSubpass0;
 
-        uint32_t colorAttachmentInputIndices[]{VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0};
+        // VUID-vkCmdDraw-None-09549
+        uint32_t colorAttachmentInputIndicesSubpass0[]{VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED,
+                                                       VK_ATTACHMENT_UNUSED};
+        uint32_t colorAttachmentInputIndicesSubpass1[]{VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED, 0};
         VkRenderingInputAttachmentIndexInfoKHR renderingInputAttachmentIndexInfo{
             VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
             nullptr,
-            colorAttachmentsCount,       // uint32_t                    colorAttachmentCount
-            colorAttachmentInputIndices, // const uint32_t*            pColorAttachmentInputIndices
-            nullptr,                     // uint32_t                    depthInputAttachmentIndex
-            nullptr,                     // uint32_t                    stencilInputAttachmentIndex
+            colorAttachmentsCount,               // uint32_t                    colorAttachmentCount
+            colorAttachmentInputIndicesSubpass0, // const uint32_t*            pColorAttachmentInputIndices
+            nullptr,                             // uint32_t                    depthInputAttachmentIndex
+            nullptr,                             // uint32_t                    stencilInputAttachmentIndex
         };
 
         const std::vector<VkFormat> colorAttachmentFormats(colorAttachmentsCount, VK_FORMAT_R8G8B8A8_UNORM);
@@ -855,14 +858,16 @@ UnusedAttachmentTestInstance::UnusedAttachmentTestInstance(Context &context, con
             .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayoutSubpass0, *m_renderPass, 0u,
                                               m_vertexShaderModule, 0u, ShaderWrapper(), ShaderWrapper(),
                                               ShaderWrapper(), nullptr, nullptr, renderingCreateInfoWrapper)
-            .setupFragmentShaderState(m_pipelineLayoutSubpass0, *m_renderPass, 0u, m_fragmentShaderModuleSubpass0)
+            .setupFragmentShaderState(m_pipelineLayoutSubpass0, *m_renderPass, 0u, m_fragmentShaderModuleSubpass0, 0, 0,
+                                      0, VK_NULL_HANDLE, {}, renderingInputAttachmentIndexInfoWrapper)
             .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateCreateInfo, 0, VK_NULL_HANDLE, {},
                                       renderingAttachmentLocationInfoWrapper)
             .setMonolithicPipelineLayout(m_pipelineLayoutSubpass0)
             .buildPipeline();
 
 #ifndef CTS_USES_VULKANSC
-        renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass1;
+        renderingAttachmentLocationInfo.pColorAttachmentLocations      = colorAttachmentLocationsSubpass1;
+        renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass1;
 #endif // CTS_USES_VULKANSC
 
         m_graphicsPipelineSubpass1.setDefaultMultisampleState()
@@ -967,7 +972,7 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
         VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO_KHR,
         nullptr,
         3u,                                  // uint32_t                   colorAttachmentCount
-        colorAttachmentInputIndicesSubpass1, // const uint32_t*            pColorAttachmentInputIndices
+        colorAttachmentInputIndicesSubpass0, // const uint32_t*            pColorAttachmentInputIndices
         nullptr,                             // uint32_t                   depthInputAttachmentIndex
         nullptr,                             // uint32_t                   stencilInputAttachmentIndex
     };
@@ -1049,10 +1054,12 @@ void UnusedAttachmentTestInstance::createCommandBufferDynamicRendering(const Dev
         vk.cmdBeginRendering(*m_cmdBuffer, &renderingInfo);
 
         vk.cmdSetRenderingAttachmentLocations(*m_cmdBuffer, &renderingAttachmentLocationInfo);
+        vk.cmdSetRenderingInputAttachmentIndices(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
         drawFirstSubpass(vk, *m_cmdBuffer);
         inbetweenRenderCommands(vk, *m_cmdBuffer);
 
-        renderingAttachmentLocationInfo.pColorAttachmentLocations = colorAttachmentLocationsSubpass1;
+        renderingAttachmentLocationInfo.pColorAttachmentLocations      = colorAttachmentLocationsSubpass1;
+        renderingInputAttachmentIndexInfo.pColorAttachmentInputIndices = colorAttachmentInputIndicesSubpass1;
         vk.cmdSetRenderingAttachmentLocations(*m_cmdBuffer, &renderingAttachmentLocationInfo);
         vk.cmdSetRenderingInputAttachmentIndices(*m_cmdBuffer, &renderingInputAttachmentIndexInfo);
         drawSecondSubpass(vk, *m_cmdBuffer);

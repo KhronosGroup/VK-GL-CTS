@@ -213,6 +213,8 @@ void addDotProductExtensionAndFeatures(ComputeShaderSpec &spec, const struct Dot
     {
         spec.requestedVulkanFeatures.coreFeatures.shaderInt16                 = true;
         spec.requestedVulkanFeatures.ext16BitStorage.storageBuffer16BitAccess = true;
+        // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+        spec.requestedVulkanFeatures.ext16BitStorage.uniformAndStorageBuffer16BitAccess = true;
         spec.extensions.push_back("VK_KHR_16bit_storage");
     }
 }

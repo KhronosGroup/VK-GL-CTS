@@ -2355,7 +2355,11 @@ void SeparateChannelsTestInstance::setup(void)
     };
 
     // When testing color formats the same attachment is used as input and output.
-    VkImageLayout colorImageLayout = isDSFormat ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_GENERAL;
+    // VUID-vkCmdBeginRendering-pRenderingInfo-09592
+    VkImageLayout colorImageLayout = isDSFormat ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL :
+                                                  (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING ?
+                                                       VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
+                                                       VK_IMAGE_LAYOUT_GENERAL);
 
     // Create image used for both input and output in case of color test, and as a color output in depth/stencil test.
     {
@@ -2490,8 +2494,12 @@ void SeparateChannelsTestInstance::setup(void)
     // Update descriptor set information.
     if (!isDSFormat)
     {
+        // VUID-vkCmdDraw-imageLayout-00344
+        const VkImageLayout inputAttachmentLayout = (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ?
+                                                        VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
+                                                        VK_IMAGE_LAYOUT_GENERAL;
         VkDescriptorImageInfo descInputAttachment =
-            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, VK_IMAGE_LAYOUT_GENERAL);
+            makeDescriptorImageInfo(VK_NULL_HANDLE, *m_imageView, inputAttachmentLayout);
 
         DescriptorSetUpdateBuilder()
             .writeSingle(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
@@ -2777,8 +2785,14 @@ void SeparateChannelsTestInstance::postRenderCommands(VkCommandBuffer cmdBuffer)
                                        tcu::IVec2(m_width, m_height), VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
                                        VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL);
     else
+    {
+        // VUID-vkCmdCopyImageToBuffer-srcImageLayout-00189
+        const VkImageLayout colorImageLayout = (m_groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ?
+                                                   VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ :
+                                                   VK_IMAGE_LAYOUT_GENERAL;
         copyImageToBuffer(vkd, cmdBuffer, *m_colorImage, *m_resultBuffer0, tcu::IVec2(m_width, m_height),
-                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL);
+                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, colorImageLayout);
+    }
 }
 
 tcu::TestStatus SeparateChannelsTestInstance::verifyResults(void)

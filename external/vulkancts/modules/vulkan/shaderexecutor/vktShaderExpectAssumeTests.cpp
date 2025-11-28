@@ -760,13 +760,14 @@ private:
             VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
             nullptr,                                         // const void* pNext;
             *m_imageColorView,                               // VkImageView imageView;
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
-            VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
-            VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
-            VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
-            VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
-            VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
-            clearValue,                                      // VkClearValue clearValue;
+            // VUID-vkCmdBeginRendering-pRenderingInfo-09592
+            VK_IMAGE_LAYOUT_GENERAL,      // VkImageLayout imageLayout;
+            VK_RESOLVE_MODE_NONE,         // VkResolveModeFlagBits resolveMode;
+            VK_NULL_HANDLE,               // VkImageView resolveImageView;
+            VK_IMAGE_LAYOUT_UNDEFINED,    // VkImageLayout resolveImageLayout;
+            VK_ATTACHMENT_LOAD_OP_CLEAR,  // VkAttachmentLoadOp loadOp;
+            VK_ATTACHMENT_STORE_OP_STORE, // VkAttachmentStoreOp storeOp;
+            clearValue,                   // VkClearValue clearValue;
         };
 
         const VkRenderingInfoKHR renderingInfo = {
@@ -1123,6 +1124,10 @@ public:
 
             if (!featuresStorage16.storageBuffer16BitAccess)
                 TCU_THROW(NotSupportedError, "16-bit storage buffer access not supported");
+
+            // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+            if (!featuresStorage16.uniformAndStorageBuffer16BitAccess)
+                TCU_THROW(NotSupportedError, "16-bit uniform and storage buffer access not supported");
         }
         else if (m_testParam.dataType == DataType::Int8)
         {

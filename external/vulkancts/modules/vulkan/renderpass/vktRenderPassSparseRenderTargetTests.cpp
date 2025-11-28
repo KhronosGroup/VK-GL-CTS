@@ -771,6 +771,10 @@ void checkSupport(Context &context, TestConfigType config)
     if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+    // VUID-VkImageCreateInfo-imageType-00971
+    if (!context.getDeviceFeatures().sparseResidencyImage2D)
+        TCU_THROW(NotSupportedError, "sparseResidencyImage2D feature not supported");
+
     const auto &vki            = context.getInstanceInterface();
     const auto &physicalDevice = context.getPhysicalDevice();
     const auto usage           = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;

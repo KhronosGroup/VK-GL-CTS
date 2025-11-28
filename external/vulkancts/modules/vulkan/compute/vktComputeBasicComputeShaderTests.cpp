@@ -6078,6 +6078,8 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
                 "pkadd-immediate.amber");
             testCase->addRequirement("Features.shaderInt16");
             testCase->addRequirement("Storage16BitFeatures.storageBuffer16BitAccess");
+            // UID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-0633
+            testCase->addRequirement("Storage16BitFeatures.uniformAndStorageBuffer16BitAccess");
             basicComputeTests->addChild(testCase);
         }
     }

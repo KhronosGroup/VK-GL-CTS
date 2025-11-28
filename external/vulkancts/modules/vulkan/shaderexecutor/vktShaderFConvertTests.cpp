@@ -990,6 +990,9 @@ void FConvertTestCase::checkSupport(Context &context) const
         auto &storage16 = context.get16BitStorageFeatures();
         if (!storage16.storageBuffer16BitAccess)
             TCU_THROW(NotSupportedError, "16-bit floats not supported for storage buffers");
+        // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+        if (!storage16.uniformAndStorageBuffer16BitAccess)
+            TCU_THROW(NotSupportedError, "16-bit uniform and storage buffer access not supported");
     }
 
     if (m_params.usesBFloat16())

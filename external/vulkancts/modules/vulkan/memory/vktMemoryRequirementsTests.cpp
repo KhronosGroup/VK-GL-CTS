@@ -1628,6 +1628,12 @@ bool isMultiplaneImageSupported(const InstanceInterface &vki, const VkPhysicalDe
                        VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0u)
         return false;
 
+#ifndef CTS_USES_VULKANSC
+    // VUID-VkImageCreateInfo-flags-02565
+    if ((info.flags & VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT) && info.tiling == VK_IMAGE_TILING_LINEAR)
+        return false;
+#endif
+
     const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physicalDevice);
 
     if (info.flags & VK_IMAGE_CREATE_SPARSE_RESIDENCY_BIT)
