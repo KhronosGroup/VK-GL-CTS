@@ -2053,6 +2053,21 @@ template<> VkStructureType getStructureType<VkPartitionedAccelerationStructureIn
 	return VK_STRUCTURE_TYPE_PARTITIONED_ACCELERATION_STRUCTURE_INSTANCES_INPUT_NV;
 }
 
+template<> VkStructureType getStructureType<VkPastPresentationTimingEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPastPresentationTimingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPastPresentationTimingPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_PROPERTIES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPerTileBeginInfoQCOM> (void)
 {
 	return VK_STRUCTURE_TYPE_PER_TILE_BEGIN_INFO_QCOM;
@@ -3258,6 +3273,11 @@ template<> VkStructureType getStructureType<VkPhysicalDevicePresentModeFifoLates
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDevicePresentTimingFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDevicePresentWait2FeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR;
@@ -4318,6 +4338,21 @@ template<> VkStructureType getStructureType<VkPresentTimesInfoGOOGLE> (void)
 	return VK_STRUCTURE_TYPE_PRESENT_TIMES_INFO_GOOGLE;
 }
 
+template<> VkStructureType getStructureType<VkPresentTimingInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMING_INFO_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPresentTimingSurfaceCapabilitiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMING_SURFACE_CAPABILITIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkPresentTimingsInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PRESENT_TIMINGS_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPresentWait2InfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PRESENT_WAIT_2_INFO_KHR;
@@ -4898,6 +4933,11 @@ template<> VkStructureType getStructureType<VkSurfaceProtectedCapabilitiesKHR> (
 	return VK_STRUCTURE_TYPE_SURFACE_PROTECTED_CAPABILITIES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkSwapchainCalibratedTimestampInfoEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_CALIBRATED_TIMESTAMP_INFO_EXT;
+}
+
 template<> VkStructureType getStructureType<VkSwapchainCounterCreateInfoEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_SWAPCHAIN_COUNTER_CREATE_INFO_EXT;
@@ -4946,6 +4986,16 @@ template<> VkStructureType getStructureType<VkSwapchainPresentModesCreateInfoKHR
 template<> VkStructureType getStructureType<VkSwapchainPresentScalingCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_SWAPCHAIN_PRESENT_SCALING_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainTimeDomainPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_TIME_DOMAIN_PROPERTIES_EXT;
+}
+
+template<> VkStructureType getStructureType<VkSwapchainTimingPropertiesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_SWAPCHAIN_TIMING_PROPERTIES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkSysmemColorSpaceFUCHSIA> (void)

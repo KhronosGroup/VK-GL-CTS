@@ -687,6 +687,7 @@ m_vk.getMemoryZirconHandlePropertiesFUCHSIA = (GetMemoryZirconHandlePropertiesFU
 m_vk.getMicromapBuildSizesEXT = (GetMicromapBuildSizesEXTFunc) GET_PROC_ADDR("vkGetMicromapBuildSizesEXT");
 m_vk.getNativeBufferPropertiesOHOS = (GetNativeBufferPropertiesOHOSFunc) GET_PROC_ADDR("vkGetNativeBufferPropertiesOHOS");
 m_vk.getPartitionedAccelerationStructuresBuildSizesNV = (GetPartitionedAccelerationStructuresBuildSizesNVFunc) GET_PROC_ADDR("vkGetPartitionedAccelerationStructuresBuildSizesNV");
+m_vk.getPastPresentationTimingEXT = (GetPastPresentationTimingEXTFunc) GET_PROC_ADDR("vkGetPastPresentationTimingEXT");
 m_vk.getPastPresentationTimingGOOGLE = (GetPastPresentationTimingGOOGLEFunc) GET_PROC_ADDR("vkGetPastPresentationTimingGOOGLE");
 m_vk.getPerformanceParameterINTEL = (GetPerformanceParameterINTELFunc) GET_PROC_ADDR("vkGetPerformanceParameterINTEL");
 m_vk.getPipelineBinaryDataKHR = (GetPipelineBinaryDataKHRFunc) GET_PROC_ADDR("vkGetPipelineBinaryDataKHR");
@@ -733,6 +734,8 @@ m_vk.getSwapchainCounterEXT = (GetSwapchainCounterEXTFunc) GET_PROC_ADDR("vkGetS
 m_vk.getSwapchainGrallocUsageOHOS = (GetSwapchainGrallocUsageOHOSFunc) GET_PROC_ADDR("vkGetSwapchainGrallocUsageOHOS");
 m_vk.getSwapchainImagesKHR = (GetSwapchainImagesKHRFunc) GET_PROC_ADDR("vkGetSwapchainImagesKHR");
 m_vk.getSwapchainStatusKHR = (GetSwapchainStatusKHRFunc) GET_PROC_ADDR("vkGetSwapchainStatusKHR");
+m_vk.getSwapchainTimeDomainPropertiesEXT = (GetSwapchainTimeDomainPropertiesEXTFunc) GET_PROC_ADDR("vkGetSwapchainTimeDomainPropertiesEXT");
+m_vk.getSwapchainTimingPropertiesEXT = (GetSwapchainTimingPropertiesEXTFunc) GET_PROC_ADDR("vkGetSwapchainTimingPropertiesEXT");
 m_vk.getTensorMemoryRequirementsARM = (GetTensorMemoryRequirementsARMFunc) GET_PROC_ADDR("vkGetTensorMemoryRequirementsARM");
 m_vk.getTensorOpaqueCaptureDescriptorDataARM = (GetTensorOpaqueCaptureDescriptorDataARMFunc) GET_PROC_ADDR("vkGetTensorOpaqueCaptureDescriptorDataARM");
 m_vk.getTensorViewOpaqueCaptureDescriptorDataARM = (GetTensorViewOpaqueCaptureDescriptorDataARMFunc) GET_PROC_ADDR("vkGetTensorViewOpaqueCaptureDescriptorDataARM");
@@ -799,6 +802,7 @@ if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 3, 0))
     m_vk.setPrivateData = (SetPrivateDataFunc) GET_PROC_ADDR("vkSetPrivateData");
 if (!m_vk.setPrivateData)
     m_vk.setPrivateData = (SetPrivateDataFunc) GET_PROC_ADDR("vkSetPrivateDataEXT");
+m_vk.setSwapchainPresentTimingQueueSizeEXT = (SetSwapchainPresentTimingQueueSizeEXTFunc) GET_PROC_ADDR("vkSetSwapchainPresentTimingQueueSizeEXT");
 if (usedApiVersion >= VK_MAKE_API_VERSION(0, 1, 2, 0))
     m_vk.signalSemaphore = (SignalSemaphoreFunc) GET_PROC_ADDR("vkSignalSemaphore");
 if (!m_vk.signalSemaphore)

@@ -462,6 +462,7 @@ virtual VkResult			getMemoryZirconHandlePropertiesFUCHSIA					(VkDevice device, 
 virtual void				getMicromapBuildSizesEXT								(VkDevice device, VkAccelerationStructureBuildTypeKHR buildType, const VkMicromapBuildInfoEXT* pBuildInfo, VkMicromapBuildSizesInfoEXT* pSizeInfo) const = 0;
 virtual VkResult			getNativeBufferPropertiesOHOS							(VkDevice device, const struct OH_NativeBuffer* buffer, VkNativeBufferPropertiesOHOS* pProperties) const = 0;
 virtual void				getPartitionedAccelerationStructuresBuildSizesNV		(VkDevice device, const VkPartitionedAccelerationStructureInstancesInputNV* pInfo, VkAccelerationStructureBuildSizesInfoKHR* pSizeInfo) const = 0;
+virtual VkResult			getPastPresentationTimingEXT							(VkDevice device, const VkPastPresentationTimingInfoEXT* pPastPresentationTimingInfo, VkPastPresentationTimingPropertiesEXT* pPastPresentationTimingProperties) const = 0;
 virtual VkResult			getPastPresentationTimingGOOGLE							(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const = 0;
 virtual VkResult			getPerformanceParameterINTEL							(VkDevice device, VkPerformanceParameterTypeINTEL parameter, VkPerformanceValueINTEL* pValue) const = 0;
 virtual VkResult			getPipelineBinaryDataKHR								(VkDevice device, const VkPipelineBinaryDataInfoKHR* pInfo, VkPipelineBinaryKeyKHR* pPipelineBinaryKey, size_t* pPipelineBinaryDataSize, void* pPipelineBinaryData) const = 0;
@@ -497,6 +498,8 @@ virtual VkResult			getSwapchainCounterEXT									(VkDevice device, VkSwapchainK
 virtual VkResult			getSwapchainGrallocUsageOHOS							(VkDevice device, VkFormat format, VkImageUsageFlags imageUsage, uint64_t* grallocUsage) const = 0;
 virtual VkResult			getSwapchainImagesKHR									(VkDevice device, VkSwapchainKHR swapchain, uint32_t* pSwapchainImageCount, VkImage* pSwapchainImages) const = 0;
 virtual VkResult			getSwapchainStatusKHR									(VkDevice device, VkSwapchainKHR swapchain) const = 0;
+virtual VkResult			getSwapchainTimeDomainPropertiesEXT						(VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimeDomainPropertiesEXT* pSwapchainTimeDomainProperties, uint64_t* pTimeDomainsCounter) const = 0;
+virtual VkResult			getSwapchainTimingPropertiesEXT							(VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimingPropertiesEXT* pSwapchainTimingProperties, uint64_t* pSwapchainTimingPropertiesCounter) const = 0;
 virtual void				getTensorMemoryRequirementsARM							(VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const = 0;
 virtual VkResult			getTensorOpaqueCaptureDescriptorDataARM					(VkDevice device, const VkTensorCaptureDescriptorDataInfoARM* pInfo, void* pData) const = 0;
 virtual VkResult			getTensorViewOpaqueCaptureDescriptorDataARM				(VkDevice device, const VkTensorViewCaptureDescriptorDataInfoARM* pInfo, void* pData) const = 0;
@@ -549,6 +552,7 @@ virtual void				setLatencyMarkerNV										(VkDevice device, VkSwapchainKHR swa
 virtual VkResult			setLatencySleepModeNV									(VkDevice device, VkSwapchainKHR swapchain, const VkLatencySleepModeInfoNV* pSleepModeInfo) const = 0;
 virtual void				setLocalDimmingAMD										(VkDevice device, VkSwapchainKHR swapChain, VkBool32 localDimmingEnable) const = 0;
 virtual VkResult			setPrivateData											(VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data) const = 0;
+virtual VkResult			setSwapchainPresentTimingQueueSizeEXT					(VkDevice device, VkSwapchainKHR swapchain, uint32_t size) const = 0;
 virtual VkResult			signalSemaphore											(VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) const = 0;
 virtual VkResult			transitionImageLayout									(VkDevice device, uint32_t transitionCount, const VkHostImageLayoutTransitionInfo* pTransitions) const = 0;
 virtual void				trimCommandPool											(VkDevice device, VkCommandPool commandPool, VkCommandPoolTrimFlags flags) const = 0;

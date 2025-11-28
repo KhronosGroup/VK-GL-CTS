@@ -711,6 +711,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready"))
 		addFeatures(&physicalDevicePresentModeFifoLatestReadyFeaturesKHR);
 
+	// VkPhysicalDevicePresentTimingFeaturesEXT for ext [VK_EXT_present_timing]
+	vk::VkPhysicalDevicePresentTimingFeaturesEXT physicalDevicePresentTimingFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_present_timing"))
+		addFeatures(&physicalDevicePresentTimingFeaturesEXT);
+
 	// VkPhysicalDevicePresentWait2FeaturesKHR for ext [VK_KHR_present_wait2]
 	vk::VkPhysicalDevicePresentWait2FeaturesKHR physicalDevicePresentWait2FeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_wait2"))

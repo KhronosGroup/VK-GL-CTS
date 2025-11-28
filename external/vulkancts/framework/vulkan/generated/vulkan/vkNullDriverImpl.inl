@@ -4050,6 +4050,14 @@ VKAPI_ATTR void VKAPI_CALL getPartitionedAccelerationStructuresBuildSizesNV (VkD
 	DE_UNREF(pSizeInfo);
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingEXT (VkDevice device, const VkPastPresentationTimingInfoEXT* pPastPresentationTimingInfo, VkPastPresentationTimingPropertiesEXT* pPastPresentationTimingProperties)
+{
+	DE_UNREF(device);
+	DE_UNREF(pPastPresentationTimingInfo);
+	DE_UNREF(pPastPresentationTimingProperties);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR VkResult VKAPI_CALL getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings)
 {
 	DE_UNREF(device);
@@ -4838,6 +4846,24 @@ VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapcha
 	return VK_SUCCESS;
 }
 
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainTimeDomainPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimeDomainPropertiesEXT* pSwapchainTimeDomainProperties, uint64_t* pTimeDomainsCounter)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSwapchainTimeDomainProperties);
+	DE_UNREF(pTimeDomainsCounter);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL getSwapchainTimingPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimingPropertiesEXT* pSwapchainTimingProperties, uint64_t* pSwapchainTimingPropertiesCounter)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(pSwapchainTimingProperties);
+	DE_UNREF(pSwapchainTimingPropertiesCounter);
+	return VK_SUCCESS;
+}
+
 VKAPI_ATTR void VKAPI_CALL getTensorMemoryRequirementsARM (VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements)
 {
 	DE_UNREF(device);
@@ -5272,6 +5298,14 @@ VKAPI_ATTR VkResult VKAPI_CALL setPrivateDataEXT (VkDevice device, VkObjectType 
 	DE_UNREF(objectHandle);
 	DE_UNREF(privateDataSlot);
 	DE_UNREF(data);
+	return VK_SUCCESS;
+}
+
+VKAPI_ATTR VkResult VKAPI_CALL setSwapchainPresentTimingQueueSizeEXT (VkDevice device, VkSwapchainKHR swapchain, uint32_t size)
+{
+	DE_UNREF(device);
+	DE_UNREF(swapchain);
+	DE_UNREF(size);
 	return VK_SUCCESS;
 }
 
@@ -6034,6 +6068,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetMicromapBuildSizesEXT,									getMicromapBuildSizesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetNativeBufferPropertiesOHOS,								getNativeBufferPropertiesOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetPartitionedAccelerationStructuresBuildSizesNV,			getPartitionedAccelerationStructuresBuildSizesNV),
+	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingEXT,								getPastPresentationTimingEXT),
 	VK_NULL_FUNC_ENTRY(vkGetPastPresentationTimingGOOGLE,							getPastPresentationTimingGOOGLE),
 	VK_NULL_FUNC_ENTRY(vkGetPerformanceParameterINTEL,								getPerformanceParameterINTEL),
 	VK_NULL_FUNC_ENTRY(vkGetPipelineBinaryDataKHR,									getPipelineBinaryDataKHR),
@@ -6069,6 +6104,8 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainGrallocUsageOHOS,								getSwapchainGrallocUsageOHOS),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainImagesKHR,										getSwapchainImagesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetSwapchainStatusKHR,										getSwapchainStatusKHR),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainTimeDomainPropertiesEXT,						getSwapchainTimeDomainPropertiesEXT),
+	VK_NULL_FUNC_ENTRY(vkGetSwapchainTimingPropertiesEXT,							getSwapchainTimingPropertiesEXT),
 	VK_NULL_FUNC_ENTRY(vkGetTensorMemoryRequirementsARM,							getTensorMemoryRequirementsARM),
 	VK_NULL_FUNC_ENTRY(vkGetTensorOpaqueCaptureDescriptorDataARM,					getTensorOpaqueCaptureDescriptorDataARM),
 	VK_NULL_FUNC_ENTRY(vkGetTensorViewOpaqueCaptureDescriptorDataARM,				getTensorViewOpaqueCaptureDescriptorDataARM),
@@ -6121,6 +6158,7 @@ static const tcu::StaticFunctionLibrary::Entry s_deviceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkSetLatencySleepModeNV,										setLatencySleepModeNV),
 	VK_NULL_FUNC_ENTRY(vkSetLocalDimmingAMD,										setLocalDimmingAMD),
 	VK_NULL_FUNC_ENTRY(vkSetPrivateData,											setPrivateData),
+	VK_NULL_FUNC_ENTRY(vkSetSwapchainPresentTimingQueueSizeEXT,						setSwapchainPresentTimingQueueSizeEXT),
 	VK_NULL_FUNC_ENTRY(vkSignalSemaphore,											signalSemaphore),
 	VK_NULL_FUNC_ENTRY(vkTransitionImageLayout,										transitionImageLayout),
 	VK_NULL_FUNC_ENTRY(vkTrimCommandPool,											trimCommandPool),

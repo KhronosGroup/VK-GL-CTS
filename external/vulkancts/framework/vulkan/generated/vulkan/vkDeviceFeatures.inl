@@ -360,6 +360,7 @@ template<> void initFeatureFromBlob<VkPhysicalDevicePresentId2FeaturesKHR>(VkPhy
 template<> void initFeatureFromBlob<VkPhysicalDevicePresentIdFeaturesKHR>(VkPhysicalDevicePresentIdFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePresentMeteringFeaturesNV>(VkPhysicalDevicePresentMeteringFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>(VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDevicePresentTimingFeaturesEXT>(VkPhysicalDevicePresentTimingFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePresentWait2FeaturesKHR>(VkPhysicalDevicePresentWait2FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePresentWaitFeaturesKHR>(VkPhysicalDevicePresentWaitFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>(VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -574,6 +575,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentId2FeaturesKHR>(vo
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentIdFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_ID_FEATURES_KHR, VK_KHR_PRESENT_ID_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentMeteringFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_METERING_FEATURES_NV, VK_NV_PRESENT_METERING_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR, VK_KHR_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentTimingFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT, VK_EXT_PRESENT_TIMING_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentWait2FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_2_FEATURES_KHR, VK_KHR_PRESENT_WAIT_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePresentWaitFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_WAIT_FEATURES_KHR, VK_KHR_PRESENT_WAIT_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRIMITIVE_TOPOLOGY_LIST_RESTART_FEATURES_EXT, VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME}; }
@@ -814,6 +816,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentIdFeaturesKHR>, VK_KHR_PRESENT_ID_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentMeteringFeaturesNV>, VK_NV_PRESENT_METERING_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>, VK_KHR_PRESENT_MODE_FIFO_LATEST_READY_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDevicePresentTimingFeaturesEXT>, VK_EXT_PRESENT_TIMING_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentWait2FeaturesKHR>, VK_KHR_PRESENT_WAIT_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePresentWaitFeaturesKHR>, VK_KHR_PRESENT_WAIT_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>, VK_EXT_PRIMITIVE_TOPOLOGY_LIST_RESTART_EXTENSION_NAME },

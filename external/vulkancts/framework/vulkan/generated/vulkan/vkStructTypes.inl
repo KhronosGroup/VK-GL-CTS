@@ -5486,6 +5486,14 @@ struct VkPastPresentationTimingGOOGLE
 	uint64_t	presentMargin;
 };
 
+struct VkPastPresentationTimingInfoEXT
+{
+	VkStructureType						sType;
+	const void*							pNext;
+	VkPastPresentationTimingFlagsEXT	flags;
+	VkSwapchainKHR						swapchain;
+};
+
 struct VkPerTileBeginInfoQCOM
 {
 	VkStructureType	sType;
@@ -7832,6 +7840,15 @@ struct VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR
 	VkBool32		presentModeFifoLatestReady;
 };
 
+struct VkPhysicalDevicePresentTimingFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		presentTiming;
+	VkBool32		presentAtAbsoluteTime;
+	VkBool32		presentAtRelativeTime;
+};
+
 struct VkPhysicalDevicePresentWait2FeaturesKHR
 {
 	VkStructureType	sType;
@@ -9812,10 +9829,39 @@ struct VkPresentInfoKHR
 	VkResult*				pResults;
 };
 
+struct VkPresentStageTimeEXT
+{
+	VkPresentStageFlagsEXT	stage;
+	uint64_t				time;
+};
+
+struct VkPastPresentationTimingEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	uint64_t				presentId;
+	uint64_t				targetTime;
+	uint32_t				presentStageCount;
+	VkPresentStageTimeEXT*	pPresentStages;
+	VkTimeDomainKHR			timeDomain;
+	uint64_t				timeDomainId;
+	VkBool32				reportComplete;
+};
+
 struct VkPresentTimeGOOGLE
 {
 	uint32_t	presentID;
 	uint64_t	desiredPresentTime;
+};
+
+struct VkPastPresentationTimingPropertiesEXT
+{
+	VkStructureType					sType;
+	void*							pNext;
+	uint64_t						timingPropertiesCounter;
+	uint64_t						timeDomainsCounter;
+	uint32_t						presentationTimingCount;
+	VkPastPresentationTimingEXT*	pPresentationTimings;
 };
 
 struct VkPresentTimesInfoGOOGLE
@@ -9824,6 +9870,35 @@ struct VkPresentTimesInfoGOOGLE
 	const void*					pNext;
 	uint32_t					swapchainCount;
 	const VkPresentTimeGOOGLE*	pTimes;
+};
+
+struct VkPresentTimingInfoEXT
+{
+	VkStructureType				sType;
+	const void*					pNext;
+	VkPresentTimingInfoFlagsEXT	flags;
+	uint64_t					targetTime;
+	uint64_t					timeDomainId;
+	VkPresentStageFlagsEXT		presentStageQueries;
+	VkPresentStageFlagsEXT		targetTimeDomainPresentStage;
+};
+
+struct VkPresentTimingSurfaceCapabilitiesEXT
+{
+	VkStructureType			sType;
+	void*					pNext;
+	VkBool32				presentTimingSupported;
+	VkBool32				presentAtAbsoluteTimeSupported;
+	VkBool32				presentAtRelativeTimeSupported;
+	VkPresentStageFlagsEXT	presentStageQueries;
+};
+
+struct VkPresentTimingsInfoEXT
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	uint32_t						swapchainCount;
+	const VkPresentTimingInfoEXT*	pTimingInfos;
 };
 
 struct VkPresentWait2InfoKHR
@@ -11465,6 +11540,15 @@ struct VkSurfaceProtectedCapabilitiesKHR
 	VkBool32		supportsProtected;
 };
 
+struct VkSwapchainCalibratedTimestampInfoEXT
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkSwapchainKHR			swapchain;
+	VkPresentStageFlagsEXT	presentStage;
+	uint64_t				timeDomainId;
+};
+
 struct VkSwapchainCounterCreateInfoEXT
 {
 	VkStructureType				sType;
@@ -11553,6 +11637,23 @@ struct VkSwapchainPresentScalingCreateInfoKHR
 	VkPresentScalingFlagsKHR	scalingBehavior;
 	VkPresentGravityFlagsKHR	presentGravityX;
 	VkPresentGravityFlagsKHR	presentGravityY;
+};
+
+struct VkSwapchainTimeDomainPropertiesEXT
+{
+	VkStructureType		sType;
+	void*				pNext;
+	uint32_t			timeDomainCount;
+	VkTimeDomainKHR*	pTimeDomains;
+	uint64_t*			pTimeDomainIds;
+};
+
+struct VkSwapchainTimingPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint64_t		refreshDuration;
+	uint64_t		refreshInterval;
 };
 
 struct VkSysmemColorSpaceFUCHSIA

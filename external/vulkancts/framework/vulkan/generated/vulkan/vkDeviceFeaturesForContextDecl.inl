@@ -143,6 +143,7 @@ const vk::VkPhysicalDevicePresentId2FeaturesKHR&							getPresentId2Features				
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&								getPresentIdFeatures								(void) const;
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeaturesNV						(void) const;
 const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR&			getPresentModeFifoLatestReadyFeatures				(void) const;
+const vk::VkPhysicalDevicePresentTimingFeaturesEXT&							getPresentTimingFeaturesEXT							(void) const;
 const vk::VkPhysicalDevicePresentWait2FeaturesKHR&							getPresentWait2Features								(void) const;
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&							getPresentWaitFeatures								(void) const;
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const;

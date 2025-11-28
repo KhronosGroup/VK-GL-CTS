@@ -2428,6 +2428,11 @@ void DeviceDriver::getPartitionedAccelerationStructuresBuildSizesNV (VkDevice de
     m_vk.getPartitionedAccelerationStructuresBuildSizesNV(device, pInfo, pSizeInfo);
 }
 
+VkResult DeviceDriver::getPastPresentationTimingEXT (VkDevice device, const VkPastPresentationTimingInfoEXT* pPastPresentationTimingInfo, VkPastPresentationTimingPropertiesEXT* pPastPresentationTimingProperties) const
+{
+    return m_vk.getPastPresentationTimingEXT(device, pPastPresentationTimingInfo, pPastPresentationTimingProperties);
+}
+
 VkResult DeviceDriver::getPastPresentationTimingGOOGLE (VkDevice device, VkSwapchainKHR swapchain, uint32_t* pPresentationTimingCount, VkPastPresentationTimingGOOGLE* pPresentationTimings) const
 {
     return m_vk.getPastPresentationTimingGOOGLE(device, swapchain, pPresentationTimingCount, pPresentationTimings);
@@ -2601,6 +2606,16 @@ VkResult DeviceDriver::getSwapchainImagesKHR (VkDevice device, VkSwapchainKHR sw
 VkResult DeviceDriver::getSwapchainStatusKHR (VkDevice device, VkSwapchainKHR swapchain) const
 {
     return m_vk.getSwapchainStatusKHR(device, swapchain);
+}
+
+VkResult DeviceDriver::getSwapchainTimeDomainPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimeDomainPropertiesEXT* pSwapchainTimeDomainProperties, uint64_t* pTimeDomainsCounter) const
+{
+    return m_vk.getSwapchainTimeDomainPropertiesEXT(device, swapchain, pSwapchainTimeDomainProperties, pTimeDomainsCounter);
+}
+
+VkResult DeviceDriver::getSwapchainTimingPropertiesEXT (VkDevice device, VkSwapchainKHR swapchain, VkSwapchainTimingPropertiesEXT* pSwapchainTimingProperties, uint64_t* pSwapchainTimingPropertiesCounter) const
+{
+    return m_vk.getSwapchainTimingPropertiesEXT(device, swapchain, pSwapchainTimingProperties, pSwapchainTimingPropertiesCounter);
 }
 
 void DeviceDriver::getTensorMemoryRequirementsARM (VkDevice device, const VkTensorMemoryRequirementsInfoARM* pInfo, VkMemoryRequirements2* pMemoryRequirements) const
@@ -2861,6 +2876,11 @@ void DeviceDriver::setLocalDimmingAMD (VkDevice device, VkSwapchainKHR swapChain
 VkResult DeviceDriver::setPrivateData (VkDevice device, VkObjectType objectType, uint64_t objectHandle, VkPrivateDataSlot privateDataSlot, uint64_t data) const
 {
     return m_vk.setPrivateData(device, objectType, objectHandle, privateDataSlot, data);
+}
+
+VkResult DeviceDriver::setSwapchainPresentTimingQueueSizeEXT (VkDevice device, VkSwapchainKHR swapchain, uint32_t size) const
+{
+    return m_vk.setSwapchainPresentTimingQueueSizeEXT(device, swapchain, size);
 }
 
 VkResult DeviceDriver::signalSemaphore (VkDevice device, const VkSemaphoreSignalInfo* pSignalInfo) const

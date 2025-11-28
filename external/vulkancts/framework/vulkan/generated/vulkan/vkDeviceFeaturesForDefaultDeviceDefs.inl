@@ -143,6 +143,7 @@ const VkPhysicalDevicePresentId2FeaturesKHR&							getPresentId2Features								
 const VkPhysicalDevicePresentIdFeaturesKHR&								getPresentIdFeatures								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentIdFeaturesKHR>();							}
 const VkPhysicalDevicePresentMeteringFeaturesNV&						getPresentMeteringFeaturesNV						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentMeteringFeaturesNV>();						}
 const VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR&			getPresentModeFifoLatestReadyFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR>();			}
+const VkPhysicalDevicePresentTimingFeaturesEXT&							getPresentTimingFeaturesEXT							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentTimingFeaturesEXT>();						}
 const VkPhysicalDevicePresentWait2FeaturesKHR&							getPresentWait2Features								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentWait2FeaturesKHR>();						}
 const VkPhysicalDevicePresentWaitFeaturesKHR&							getPresentWaitFeatures								(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePresentWaitFeaturesKHR>();						}
 const VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			getPrimitiveTopologyListRestartFeaturesEXT			(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT>();		}

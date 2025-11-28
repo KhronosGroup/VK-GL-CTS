@@ -143,6 +143,7 @@ const vk::VkPhysicalDevicePresentId2FeaturesKHR&							Context::getPresentId2Fea
 const vk::VkPhysicalDevicePresentIdFeaturesKHR&								Context::getPresentIdFeatures								(void) const { return m_device->getPresentIdFeatures();								}
 const vk::VkPhysicalDevicePresentMeteringFeaturesNV&						Context::getPresentMeteringFeaturesNV						(void) const { return m_device->getPresentMeteringFeaturesNV();						}
 const vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR&			Context::getPresentModeFifoLatestReadyFeatures				(void) const { return m_device->getPresentModeFifoLatestReadyFeatures();			}
+const vk::VkPhysicalDevicePresentTimingFeaturesEXT&							Context::getPresentTimingFeaturesEXT						(void) const { return m_device->getPresentTimingFeaturesEXT();						}
 const vk::VkPhysicalDevicePresentWait2FeaturesKHR&							Context::getPresentWait2Features							(void) const { return m_device->getPresentWait2Features();							}
 const vk::VkPhysicalDevicePresentWaitFeaturesKHR&							Context::getPresentWaitFeatures								(void) const { return m_device->getPresentWaitFeatures();							}
 const vk::VkPhysicalDevicePrimitiveTopologyListRestartFeaturesEXT&			Context::getPrimitiveTopologyListRestartFeaturesEXT			(void) const { return m_device->getPrimitiveTopologyListRestartFeaturesEXT();		}

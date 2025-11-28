@@ -3710,6 +3710,47 @@ tcu::TestStatus testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR (
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeaturePresentTimingFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDevicePresentTimingFeaturesEXT devicePresentTimingFeaturesEXT[count];
+    const bool                               isPresentTimingFeaturesEXT = checkExtension(properties, "VK_EXT_present_timing");
+
+    if (!isPresentTimingFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&devicePresentTimingFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDevicePresentTimingFeaturesEXT));
+        devicePresentTimingFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_TIMING_FEATURES_EXT;
+        devicePresentTimingFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &devicePresentTimingFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << devicePresentTimingFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        devicePresentTimingFeaturesEXT[0].presentTiming != devicePresentTimingFeaturesEXT[1].presentTiming ||
+        devicePresentTimingFeaturesEXT[0].presentAtAbsoluteTime != devicePresentTimingFeaturesEXT[1].presentAtAbsoluteTime ||
+        devicePresentTimingFeaturesEXT[0].presentAtRelativeTime != devicePresentTimingFeaturesEXT[1].presentAtRelativeTime)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDevicePresentTimingFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeaturePresentWait2FeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7173,6 +7214,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "present_id2_features_khr", testPhysicalDeviceFeaturePresentId2FeaturesKHR);
 	addFunctionCase(testGroup, "present_id_features_khr", testPhysicalDeviceFeaturePresentIdFeaturesKHR);
 	addFunctionCase(testGroup, "present_mode_fifo_latest_ready_features_khr", testPhysicalDeviceFeaturePresentModeFifoLatestReadyFeaturesKHR);
+	addFunctionCase(testGroup, "present_timing_features_ext", testPhysicalDeviceFeaturePresentTimingFeaturesEXT);
 	addFunctionCase(testGroup, "present_wait2_features_khr", testPhysicalDeviceFeaturePresentWait2FeaturesKHR);
 	addFunctionCase(testGroup, "present_wait_features_khr", testPhysicalDeviceFeaturePresentWaitFeaturesKHR);
 	addFunctionCase(testGroup, "primitive_topology_list_restart_features_ext", testPhysicalDeviceFeaturePrimitiveTopologyListRestartFeaturesEXT);

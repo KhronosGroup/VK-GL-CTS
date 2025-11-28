@@ -1645,6 +1645,18 @@ bool check_VK_EXT_present_mode_fifo_latest_ready(const tcu::UVec2& v, const ExtP
 	return isSupported(vDEP, "VK_KHR_swapchain");
 }
 
+bool check_VK_EXT_present_timing(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_present_timing"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_swapchain+VK_KHR_present_id2+VK_KHR_get_surface_capabilities2+VK_KHR_calibrated_timestamps
+	return (isSupported(vDEP, "VK_KHR_swapchain") && isSupported(vDEP, "VK_KHR_present_id2") && isSupported(vIEP, "VK_KHR_get_surface_capabilities2") && isSupported(vDEP, "VK_KHR_calibrated_timestamps"));
+}
+
 bool check_VK_EXT_primitive_topology_list_restart(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4550,6 +4562,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_pipeline_protected_access",						&check_VK_EXT_pipeline_protected_access),
 	std::make_pair("VK_EXT_pipeline_robustness",							&check_VK_EXT_pipeline_robustness),
 	std::make_pair("VK_EXT_present_mode_fifo_latest_ready",					&check_VK_EXT_present_mode_fifo_latest_ready),
+	std::make_pair("VK_EXT_present_timing",									&check_VK_EXT_present_timing),
 	std::make_pair("VK_EXT_primitive_topology_list_restart",				&check_VK_EXT_primitive_topology_list_restart),
 	std::make_pair("VK_EXT_primitives_generated_query",						&check_VK_EXT_primitives_generated_query),
 	std::make_pair("VK_EXT_private_data",									&check_VK_EXT_private_data),
@@ -4919,6 +4932,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_pipeline_robustness"),
 	std::make_tuple(1, 0, "VK_EXT_post_depth_coverage"),
 	std::make_tuple(1, 0, "VK_EXT_present_mode_fifo_latest_ready"),
+	std::make_tuple(1, 0, "VK_EXT_present_timing"),
 	std::make_tuple(1, 0, "VK_EXT_primitive_topology_list_restart"),
 	std::make_tuple(1, 0, "VK_EXT_primitives_generated_query"),
 	std::make_tuple(1, 0, "VK_EXT_private_data"),

@@ -740,6 +740,14 @@ inline VkPresentRegionKHR makePresentRegionKHR (uint32_t rectangleCount, const V
 	return res;
 }
 
+inline VkPresentStageTimeEXT makePresentStageTimeEXT (VkPresentStageFlagsEXT stage, uint64_t time)
+{
+	VkPresentStageTimeEXT res;
+	res.stage	= stage;
+	res.time	= time;
+	return res;
+}
+
 inline VkPresentTimeGOOGLE makePresentTimeGOOGLE (uint32_t presentID, uint64_t desiredPresentTime)
 {
 	VkPresentTimeGOOGLE res;
