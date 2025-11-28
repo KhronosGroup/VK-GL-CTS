@@ -34,6 +34,8 @@ set(DEQP_VK_WSI_SRCS
 	vktWsiPresentIdWaitTests.hpp
 	vktWsiMaintenance1Tests.cpp
 	vktWsiMaintenance1Tests.hpp
+	vktWsiPresentTimingTests.cpp
+	vktWsiPresentTimingTests.hpp
 	)
 
 set(DEQP_VK_WSI_LIBS

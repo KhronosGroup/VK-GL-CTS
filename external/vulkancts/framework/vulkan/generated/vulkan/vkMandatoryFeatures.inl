@@ -1941,6 +1941,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("exclusiveScissor");
 	}
 
+	// VkPhysicalDevicePresentTimingFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_present_timing")) )
+	{
+		if ( physicalDevicePresentTimingFeaturesEXT.presentTiming == VK_FALSE )
+			failMesages.push_back("presentTiming");
+	}
+
 	// VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_INTEL_shader_integer_functions2")) )
 	{
