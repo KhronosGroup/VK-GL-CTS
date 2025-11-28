@@ -2047,7 +2047,8 @@ void BufferIoExecutor::initBuffers(int numValues)
 class ComputeShaderExecutor : public BufferIoExecutor
 {
 public:
-    ComputeShaderExecutor(Context &context, const ShaderSpec &shaderSpec, VkDescriptorSetLayout extraResourcesLayout);
+    ComputeShaderExecutor(Context &context, const ShaderSpec &shaderSpec, VkDescriptorSetLayout extraResourcesLayout,
+                          const UserQueue &userQueue);
     virtual ~ComputeShaderExecutor(void);
 
     static void generateSources(const ShaderSpec &shaderSpec, SourceCollections &programCollection);
@@ -2060,12 +2061,14 @@ protected:
 
 private:
     const VkDescriptorSetLayout m_extraResourcesLayout;
+    const UserQueue m_userQueue;
 };
 
 ComputeShaderExecutor::ComputeShaderExecutor(Context &context, const ShaderSpec &shaderSpec,
-                                             VkDescriptorSetLayout extraResourcesLayout)
+                                             VkDescriptorSetLayout extraResourcesLayout, const UserQueue &userQueue)
     : BufferIoExecutor(context, shaderSpec)
     , m_extraResourcesLayout(extraResourcesLayout)
+    , m_userQueue(userQueue)
 {
 }
 
@@ -2797,10 +2800,12 @@ void ComputeShaderExecutor::generateSources(const ShaderSpec &shaderSpec, Source
 void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, void *const *outputs,
                                     VkDescriptorSet extraResources)
 {
-    const VkDevice vkDevice         = m_context.getDevice();
-    const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkDevice vkDevice   = m_context.getDevice();
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkQueue queue       = m_userQueue.queue == VK_NULL_HANDLE ? m_context.getUniversalQueue() : m_userQueue.queue;
+    const uint32_t queueFamilyIndex = m_userQueue.queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED ?
+                                          m_context.getUniversalQueueFamilyIndex() :
+                                          m_userQueue.queueFamilyIndex;
 
     DescriptorPoolBuilder descriptorPoolBuilder;
     DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
@@ -3904,7 +3909,7 @@ void generateSources(glu::ShaderType shaderType, const ShaderSpec &shaderSpec, v
 }
 
 ShaderExecutor *createExecutor(Context &context, glu::ShaderType shaderType, const ShaderSpec &shaderSpec,
-                               VkDescriptorSetLayout extraResourcesLayout)
+                               VkDescriptorSetLayout extraResourcesLayout, const UserQueue &userQueue)
 {
     switch (shaderType)
     {
@@ -3919,7 +3924,7 @@ ShaderExecutor *createExecutor(Context &context, glu::ShaderType shaderType, con
     case glu::SHADERTYPE_FRAGMENT:
         return new FragmentShaderExecutor(context, shaderSpec, extraResourcesLayout);
     case glu::SHADERTYPE_COMPUTE:
-        return new ComputeShaderExecutor(context, shaderSpec, extraResourcesLayout);
+        return new ComputeShaderExecutor(context, shaderSpec, extraResourcesLayout, userQueue);
 #ifndef CTS_USES_VULKANSC
     case glu::SHADERTYPE_MESH:
         return new MeshTaskShaderExecutor(context, shaderSpec, extraResourcesLayout);
