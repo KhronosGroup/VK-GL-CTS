@@ -59,16 +59,17 @@ enum UniformFlags
 
     DECLARE_VERTEX   = (1 << 11),
     DECLARE_FRAGMENT = (1 << 12),
+    DECLARE_COMPUTE  = (1 << 13),
     DECLARE_BOTH     = DECLARE_VERTEX | DECLARE_FRAGMENT,
 
-    UNUSED_VERTEX   = (1 << 13), //!< Uniform or struct member is not read in vertex shader.
-    UNUSED_FRAGMENT = (1 << 14), //!< Uniform or struct member is not read in fragment shader.
+    UNUSED_VERTEX   = (1 << 14), //!< Uniform or struct member is not read in vertex shader.
+    UNUSED_FRAGMENT = (1 << 15), //!< Uniform or struct member is not read in fragment shader.
     UNUSED_BOTH     = UNUSED_VERTEX | UNUSED_FRAGMENT,
 
-    LAYOUT_16BIT_STORAGE = (1 << 15), //!< Support VK_KHR_16bit_storage extension
-    LAYOUT_8BIT_STORAGE  = (1 << 16), //!< Support VK_KHR_8bit_storage extension
+    LAYOUT_16BIT_STORAGE = (1 << 16), //!< Support VK_KHR_16bit_storage extension
+    LAYOUT_8BIT_STORAGE  = (1 << 17), //!< Support VK_KHR_8bit_storage extension
 
-    LAYOUT_DESCRIPTOR_INDEXING = (1 << 17), //!< Support VK_KHR_descriptor_indexing extension
+    LAYOUT_DESCRIPTOR_INDEXING = (1 << 18), //!< Support VK_KHR_descriptor_indexing extension
 };
 
 enum MatrixLoadFlags
@@ -464,6 +465,7 @@ protected:
 private:
     std::string m_vertShaderSource;
     std::string m_fragShaderSource;
+    std::string m_compShaderSource;
 
     std::vector<uint8_t> m_data;           //!< Data.
     std::map<int, void *> m_blockPointers; //!< Reference block pointers.
