@@ -24,6 +24,7 @@
 
 #include "vktShaderObjectMiscTests.hpp"
 #include "deUniquePtr.hpp"
+#include "tcuImageCompare.hpp"
 #include "tcuTestCase.hpp"
 #include "vktTestCase.hpp"
 #include "vkShaderObjectUtil.hpp"
@@ -40,6 +41,7 @@
 #include "vktCustomInstancesDevices.hpp"
 #include "tcuCommandLine.hpp"
 #include "tcuTextureUtil.hpp"
+#include "vktTestCaseUtil.hpp"
 
 namespace vkt
 {
@@ -3001,6 +3003,217 @@ void ShaderObjectTessellationModesCase::initPrograms(vk::SourceCollections &prog
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
 }
 
+struct TessPatchNonMatchParams
+{
+    bool reverse;
+};
+
+void tessPatchNonMatchCheckSupport(Context &context, TessPatchNonMatchParams)
+{
+    context.requireDeviceFunctionality("VK_EXT_shader_object");
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+}
+
+void tessPatchNonMatchInitPrograms(vk::SourceCollections &programCollection, TessPatchNonMatchParams)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "};\n"
+         << "void main(void) {\n"
+         << "    const float xCoord = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+         << "    const float yCoord = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+         << "    gl_Position = vec4(xCoord, yCoord, 0.0, 1.0);\n"
+         << "}\n";
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0) in vec4 inColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main(void) {\n"
+         << "    outColor = inColor;\n"
+         << "}\n";
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+
+    const auto pcDecl = "layout (push_constant, std430) uniform PCBlock { vec4 color; } pc;\n";
+
+    for (uint32_t i = 0u; i < 2u; ++i)
+    {
+        std::string decls;
+        std::string assigns;
+
+        if (i == 0u)
+        {
+            decls   = "layout (location=1) patch out vec4 patchColor;\n";
+            assigns = "    patchColor = pc.color;\n";
+        }
+        else if (i == 1u)
+        {
+            decls   = "layout (location=0) patch out vec4 foo;\n"
+                      "layout (location=1) patch out vec4 patchColor;\n"
+                      "layout (location=2) patch out vec4 bar;\n";
+            assigns = "    foo        = pc.color.bgra;\n"
+                      "    patchColor = pc.color;\n"
+                      "    bar        = pc.color.gbra;\n";
+        }
+
+        std::ostringstream tesc;
+        tesc << "#version 460\n"
+             << "#extension GL_EXT_tessellation_shader : require\n"
+             << "layout(vertices=4) out;\n"
+             << "in gl_PerVertex\n"
+             << "{\n"
+             << "    vec4 gl_Position;\n"
+             << "} gl_in[gl_MaxPatchVertices];\n"
+             << "out gl_PerVertex\n"
+             << "{\n"
+             << "    vec4 gl_Position;\n"
+             << "} gl_out[];\n"
+             << pcDecl << decls << "void main() {\n"
+             << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+             << "    gl_TessLevelOuter[0] = 1.0;\n"
+             << "    gl_TessLevelOuter[1] = 1.0;\n"
+             << "    gl_TessLevelOuter[2] = 1.0;\n"
+             << "    gl_TessLevelOuter[3] = 1.0;\n"
+             << "    gl_TessLevelInner[0] = 1.0;\n"
+             << "    gl_TessLevelInner[1] = 1.0;\n"
+             << assigns << "}\n";
+
+        const auto shaderName = "tesc" + std::to_string(i);
+        programCollection.glslSources.add(shaderName) << glu::TessellationControlSource(tesc.str());
+    }
+
+    std::ostringstream tese;
+    tese << "#version 460\n"
+         << "#extension GL_EXT_tessellation_shader : require\n"
+         << "layout(quads) in;\n"
+         << "in gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "} gl_in[gl_MaxPatchVertices];\n"
+         << "out gl_PerVertex {\n"
+         << "    vec4 gl_Position;\n"
+         << "};\n"
+         << "layout (location=1) patch in vec4 patchColor;\n"
+         << "layout (location=0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = patchColor;\n"
+         << "    float u = gl_TessCoord.x;\n"
+         << "    float v = gl_TessCoord.y;\n"
+         << "    float omu = 1.0f - u;\n"
+         << "    float omv = 1.0f - v;\n"
+         << "    gl_Position = omu * omv * gl_in[0].gl_Position +\n"
+         << "                  u   * omv * gl_in[2].gl_Position +\n"
+         << "                  u   * v   * gl_in[3].gl_Position +\n"
+         << "                  omu * v   * gl_in[1].gl_Position;\n"
+         << "}\n";
+    programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+}
+
+tcu::TestStatus tessPatchNonMatchRun(Context &context, TessPatchNonMatchParams params)
+{
+    using namespace vk;
+
+    const auto ctx = context.getContextCommonData();
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk    = makeExtent3D(extent);
+    const auto colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const auto colorUsage  = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto colorSRR    = makeDefaultImageSubresourceRange();
+    const auto imageType   = VK_IMAGE_TYPE_2D;
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, colorFormat, colorUsage, imageType);
+
+    const auto &binaries = context.getBinaryCollection();
+
+    const auto pcSize         = DE_SIZEOF32(tcu::Vec4);
+    const auto pcStages       = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+    const auto pcRange        = makePushConstantRange(pcStages, 0u, pcSize);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, VK_NULL_HANDLE, &pcRange);
+
+    const auto vertCreateInfo =
+        makeShaderCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, binaries.get("vert"), true, false, nullptr, &pcRange);
+    const auto tesc0CreateInfo = makeShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, binaries.get("tesc0"),
+                                                      true, false, nullptr, &pcRange);
+    const auto tesc1CreateInfo = makeShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, binaries.get("tesc1"),
+                                                      true, false, nullptr, &pcRange);
+    const auto teseCreateInfo  = makeShaderCreateInfo(VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, binaries.get("tese"),
+                                                      true, false, nullptr, &pcRange);
+    const auto fragCreateInfo =
+        makeShaderCreateInfo(VK_SHADER_STAGE_FRAGMENT_BIT, binaries.get("frag"), true, false, nullptr, &pcRange);
+
+    const auto vertShader  = createShader(ctx.vkd, ctx.device, vertCreateInfo);
+    const auto tesc0Shader = createShader(ctx.vkd, ctx.device, tesc0CreateInfo);
+    const auto tesc1Shader = createShader(ctx.vkd, ctx.device, tesc1CreateInfo);
+    const auto teseShader  = createShader(ctx.vkd, ctx.device, teseCreateInfo);
+    const auto fragShader  = createShader(ctx.vkd, ctx.device, fragCreateInfo);
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const auto &meshFeatures = context.getMeshShaderFeaturesEXT();
+    const bool taskSupport   = static_cast<bool>(meshFeatures.taskShader);
+    const bool meshSupport   = static_cast<bool>(meshFeatures.meshShader);
+
+    const tcu::Vec4 clearColor(0.0f, 0.0f, 0.0f, 1.0f);
+    const tcu::Vec4 geomColor(0.0f, 0.0f, 1.0f, 1.0f);
+
+    const auto scissor           = makeRect2D(extent);
+    const auto clearValue        = makeClearValueColor(clearColor);
+    const auto &deviceExtensions = context.getDeviceExtensions();
+
+    std::vector<VkShaderEXT> tescShaders{
+        *tesc0Shader,
+        *tesc1Shader,
+    };
+    if (params.reverse)
+        std::swap(tescShaders.front(), tescShaders.back());
+    const auto secondBindStage = VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    {
+        const auto barrier =
+            makeImageMemoryBarrier(0u, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, colorBuffer.getImage(), colorSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, &barrier);
+    }
+    beginRendering(ctx.vkd, cmdBuffer, colorBuffer.getImageView(), scissor, clearValue,
+                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_ATTACHMENT_LOAD_OP_CLEAR);
+    bindGraphicsShaders(ctx.vkd, cmdBuffer, *vertShader, tescShaders.front(), *teseShader, VK_NULL_HANDLE, *fragShader,
+                        taskSupport, meshSupport);
+    setDefaultShaderObjectDynamicStates(ctx.vkd, cmdBuffer, deviceExtensions, VK_PRIMITIVE_TOPOLOGY_PATCH_LIST, false,
+                                        false, 1u, 1u);
+    // The first draw is a no-op with the clear color.
+    ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &geomColor);
+    ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    // The second draw is the good one, with the geometry color.
+    ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, &geomColor);
+    ctx.vkd.cmdBindShadersEXT(cmdBuffer, 1u, &secondBindStage, &tescShaders.back());
+    ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    endRendering(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    const auto tcuFormat = mapVkFormat(colorFormat);
+    tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess reference = refLevel.getAccess();
+    tcu::clear(reference, geomColor);
+
+    invalidateAlloc(ctx.vkd, ctx.device, colorBuffer.getBufferAllocation());
+    tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBuffer.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f);
+    auto &log = context.getTestContext().getLog();
+
+    if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+        TCU_FAIL("Unexpected results in color buffer; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
@@ -3581,6 +3794,16 @@ tcu::TestCaseGroup *createShaderObjectMiscTests(tcu::TestContext &testCtx)
         tessellationModesGroup->addChild(subdivisionGroup.release());
     }
     miscGroup->addChild(tessellationModesGroup.release());
+
+    de::MovePtr<tcu::TestCaseGroup> tessPatchNonMatchGroup(new tcu::TestCaseGroup(testCtx, "tess_patch_non_match"));
+    for (const bool reverse : {false, true})
+    {
+        TessPatchNonMatchParams params{reverse};
+        const auto testName = (reverse ? "reverse" : "standard");
+        addFunctionCaseWithPrograms(tessPatchNonMatchGroup.get(), testName, tessPatchNonMatchCheckSupport,
+                                    tessPatchNonMatchInitPrograms, tessPatchNonMatchRun, params);
+    }
+    miscGroup->addChild(tessPatchNonMatchGroup.release());
 
     return miscGroup.release();
 }

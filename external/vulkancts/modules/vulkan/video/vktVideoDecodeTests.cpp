@@ -1147,8 +1147,8 @@ DownloadedFrame getDecodedImage(DeviceContext &devctx, VkImageLayout originalLay
                 {
                     for (VkDeviceSize sampleIdx = 0; sampleIdx < planeSize; sampleIdx++)
                     {
-                        uint16_t sample                 = samples[sampleIdx];
-                        downloadedFrame.luma[sampleIdx] = roru16(sample, 4);
+                        uint16_t sample          = samples[sampleIdx];
+                        outputSamples[sampleIdx] = roru16(sample, 4);
                     }
                 }
             }
@@ -1385,9 +1385,9 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
 
     auto openTemporaryFile = [](const std::string &basename, std::FILE **handle)
     {
-        DE_ASSERT(handle != nullptr);
+        TCU_CHECK_AND_THROW(InternalError, handle != nullptr, "File handle pointer must not be null");
         *handle = std::fopen(basename.c_str(), "wb");
-        DE_ASSERT(*handle != nullptr);
+        TCU_CHECK_AND_THROW(InternalError, *handle != nullptr, "Failed to open temporary file");
     };
 
     if (dumpMode == tcu::DUMP_DEC_TO_SINGLE)
@@ -1641,15 +1641,16 @@ tcu::TestStatus InterleavingDecodeTestInstance::iterate(void)
         }
     }
 
-    bool allTestsPassed  = true;
-    int totalFramesCheck = 0;
+    bool allTestsPassed     = true;
+    size_t totalFramesCheck = 0;
     for (const auto &res : results)
     {
         if (!res.incorrectFrames.empty())
             allTestsPassed = false;
         totalFramesCheck += (res.correctFrames.size() + res.incorrectFrames.size());
     }
-    DE_ASSERT(totalFramesCheck == totalFrames);
+    TCU_CHECK_AND_THROW(InternalError, totalFramesCheck == totalFrames,
+                        "Total frames check must match expected total frames");
     DE_UNREF(totalFramesCheck);
 
     if (allTestsPassed)

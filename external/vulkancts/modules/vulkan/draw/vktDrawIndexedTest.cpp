@@ -1030,6 +1030,85 @@ void DrawIndexedTests::init(void)
 #endif
 }
 
+template <typename Instance, typename Support = NoSupport0>
+class maintenance6InstanceFactory : public TestCase
+{
+
+public:
+    maintenance6InstanceFactory(tcu::TestContext &testCtx, const std::string &name,
+                                typename Instance::TestSpec testSpec)
+        : TestCase(testCtx, name)
+        , m_testSpec(testSpec)
+        , m_support()
+    {
+    }
+
+    maintenance6InstanceFactory(tcu::TestContext &testCtx, const std::string &name,
+                                typename Instance::TestSpec testSpec, const Support &support)
+        : TestCase(testCtx, name)
+        , m_testSpec(testSpec)
+        , m_support(support)
+    {
+    }
+
+    TestInstance *createInstance(Context &context) const override
+    {
+        return new Instance(context, m_testSpec);
+    }
+
+    virtual void initPrograms(vk::SourceCollections &programCollection) const override
+    {
+        for (ShaderMap::const_iterator i = m_testSpec.shaders.begin(); i != m_testSpec.shaders.end(); ++i)
+        {
+            programCollection.glslSources.add(i->second)
+                << glu::ShaderSource(i->first, ShaderSourceProvider::getSource(m_testCtx.getArchive(), i->second));
+        }
+    }
+
+    virtual void checkSupport(Context &context) const override
+    {
+        m_support.checkSupport(context);
+    }
+
+    // When CTS_USES_VULKANSC, the default feature list is sufficient
+#ifndef CTS_USES_VULKANSC
+    std::string getRequiredCapabilitiesId() const override
+    {
+        if (m_testSpec.nullDescriptor)
+        {
+            return "maintenance6_nulldescriptor";
+        }
+        return "DEFAULT";
+    }
+
+    void initDeviceCapabilities(DevCaps &caps) override
+    {
+        caps.addExtension("VK_KHR_create_renderpass2");
+        caps.addExtension("VK_KHR_dynamic_rendering");
+
+        caps.addExtension(VK_EXT_MULTI_DRAW_EXTENSION_NAME);
+        caps.addFeature(&vk::VkPhysicalDeviceMultiDrawFeaturesEXT::multiDraw);
+
+        caps.addExtension(VK_KHR_DRAW_INDIRECT_COUNT_EXTENSION_NAME);
+
+        caps.addExtension(VK_KHR_MAINTENANCE_6_EXTENSION_NAME);
+        caps.addFeature(&vk::VkPhysicalDeviceMaintenance6FeaturesKHR::maintenance6);
+
+        caps.addExtension(VK_KHR_MAINTENANCE_5_EXTENSION_NAME);
+        caps.addFeature(&vk::VkPhysicalDeviceMaintenance5FeaturesKHR::maintenance5);
+        if (m_testSpec.nullDescriptor)
+        {
+            caps.addExtension(VK_EXT_ROBUSTNESS_2_EXTENSION_NAME);
+            caps.addFeature(&vk::VkPhysicalDeviceRobustness2FeaturesEXT::nullDescriptor);
+        }
+    }
+#endif
+
+private:
+    const typename Instance::TestSpec m_testSpec;
+    const Support m_support;
+};
+
 void DrawIndexedTests::init(bool useMaintenance5Ext)
 {
     std::string maintenance5ExtNameSuffix = useMaintenance5Ext ? "_maintenance_5" : "";
@@ -1164,7 +1243,8 @@ void DrawIndexedTests::init(bool useMaintenance5Ext)
                         vk::VK_PRIMITIVE_TOPOLOGY_POINT_LIST, m_groupParams, 0, 0, 0, maintenance6Case.testType,
                         useMaintenance5Ext, null == 1, m5 == 1, testDrawCountIdx == 1);
 
-                    addChild(new InstanceFactory<DrawIndexedMaintenance6, FunctionSupport1<DrawIndexed::TestSpec>>(
+                    addChild(new maintenance6InstanceFactory<DrawIndexedMaintenance6,
+                                                             FunctionSupport1<DrawIndexed::TestSpec>>(
                         m_testCtx, testName, testSpec,
                         FunctionSupport1<DrawIndexedMaintenance6::TestSpec>::Args(checkSupport, testSpec)));
                 }

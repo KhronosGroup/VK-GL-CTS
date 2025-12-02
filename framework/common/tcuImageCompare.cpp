@@ -1281,7 +1281,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
 
         log << TestLog::ImageSet(imageSetName, imageSetDesc);
 
-        if (!allDepthOk)
+        if (!allDepthOk || (hasDepth && log.logAllImages()))
         {
             TextureLevel refDepthLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                        depth);
@@ -1305,7 +1305,7 @@ bool dsThresholdCompare(TestLog &log, const char *imageSetName, const char *imag
                 << TestLog::Image("ErrorMaskDepth", imageSetName, errorMaskDepth);
         }
 
-        if (!allStencilOk)
+        if (!allStencilOk || (hasStencil && log.logAllImages()))
         {
             TextureLevel refStencilLevel(TextureFormat(TextureFormat::RGB, TextureFormat::UNORM_INT8), width, height,
                                          depth);

@@ -325,8 +325,8 @@ void DepthStencilSeparateCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "separateDepthStencilAttachmentAccess not supported");
 #endif // CTS_USES_VULKANSC
 
-    VkFormatProperties3KHR fp3 = initVulkanStructure();
-    VkFormatProperties2KHR fp2 = initVulkanStructure(&fp3);
+    VkFormatProperties3 fp3 = initVulkanStructure();
+    VkFormatProperties2 fp2 = initVulkanStructure(&fp3);
 
     // We need to check support for single-sample and multi-sample usages, which differ slightly.
     std::map<VkSampleCountFlagBits, VkImageUsageFlags> usageCases;

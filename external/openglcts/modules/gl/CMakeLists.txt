@@ -15,6 +15,8 @@ set(GLCTS_GL_SRCS
 	gl3cGLSLnoperspectiveTests.hpp
 	gl3cPrimitiveRestart.cpp
 	gl3cPrimitiveRestart.hpp
+	gl3cTextureFilterMinmaxTests.cpp
+	gl3cTextureFilterMinmaxTests.hpp
 	gl3cTextureSizePromotion.cpp
 	gl3cTextureSizePromotion.hpp
 	gl3cTextureSwizzleTests.cpp
@@ -93,8 +95,6 @@ set(GLCTS_GL_SRCS
 	gl4cShaderImageSizeTests.cpp
 	gl4cSyncTests.cpp
 	gl4cSyncTests.hpp
-	gl4cTextureFilterMinmaxTests.cpp
-	gl4cTextureFilterMinmaxTests.hpp
 	gl4cTextureViewTests.cpp
 	gl4cTextureViewTests.hpp
 	gl4cTextureBarrierTests.cpp

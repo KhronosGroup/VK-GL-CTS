@@ -34,6 +34,7 @@
 #include "vkBarrierUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkCmdUtil.hpp"
+#include "vkPipelineConstructionUtil.hpp"
 #include "vktDynamicRenderingLocalReadTests.hpp"
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
@@ -102,9 +103,42 @@ enum class TestType
     // Test interaction with VK_EXT_shader_object
     INTERACTION_WITH_SHADER_OBJECT,
 
+    // Test remapping a single attachment.
+    REMAP_SINGLE_ATTACHMENT_MONOLITHIC,
+    REMAP_SINGLE_ATTACHMENT_FAST_LIB,
+    REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT,
+
     // One subpass input attachment, where that input is also the color attachment
     FEEDBACK_LOOP,
+
+    // One subpass input attachment, where that input is also the color attachment,
+    // With VK_EXT_shader_object
+    FEEDBACK_LOOP_ESO,
 };
+
+bool isRemapSingle(TestType testType)
+{
+    return (testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC ||
+            testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB ||
+            testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT);
+}
+
+bool isInteractionWithShaderObjOrRemapSingle(TestType testType)
+{
+    return (testType == TestType::INTERACTION_WITH_SHADER_OBJECT || isRemapSingle(testType));
+}
+
+PipelineConstructionType getRemapSingleConstructionType(TestType testType)
+{
+    if (testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC)
+        return PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
+    if (testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
+        return PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY;
+    if (testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT)
+        return PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV;
+
+    return PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
+}
 
 // During test creation we dont know what is the maximal number of input attachments.
 // To be able to test maximal number of attachments we need to construct shaders for all possible
@@ -1473,23 +1507,26 @@ tcu::TestStatus MappingWithGraphicsPipelineLibraryTestInstance::iterate()
     return tcu::TestStatus::fail("Fail");
 }
 
-class MappingWithShaderObjectTestInstance : public vkt::TestInstance
+class MappingWithShaderObjectOrSingleAttachmentTestInstance : public vkt::TestInstance
 {
 public:
-    MappingWithShaderObjectTestInstance(Context &context, const TestType testType);
-    ~MappingWithShaderObjectTestInstance() = default;
+    MappingWithShaderObjectOrSingleAttachmentTestInstance(Context &context, const TestType testType);
+    ~MappingWithShaderObjectOrSingleAttachmentTestInstance() = default;
 
 protected:
     tcu::TestStatus iterate(void) override;
+    const TestType m_testType;
 };
 
-MappingWithShaderObjectTestInstance::MappingWithShaderObjectTestInstance(Context &context, const TestType testType)
+MappingWithShaderObjectOrSingleAttachmentTestInstance::MappingWithShaderObjectOrSingleAttachmentTestInstance(
+    Context &context, const TestType testType)
     : vkt::TestInstance(context)
+    , m_testType(testType)
 {
     DE_UNREF(testType);
 }
 
-tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
+tcu::TestStatus MappingWithShaderObjectOrSingleAttachmentTestInstance::iterate()
 {
     const auto &vki             = m_context.getInstanceInterface();
     const auto &vk              = m_context.getDeviceInterface();
@@ -1499,7 +1536,8 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     Allocator &allocator        = m_context.getDefaultAllocator();
 
     const auto imageSize(8u);
-    const auto imageCount(3u);
+    const auto maxImageCount = 3u;
+    const auto imageCount(isRemapSingle(m_testType) ? 1u : maxImageCount);
     const auto colorFormat(VK_FORMAT_R8G8B8A8_UNORM);
     const auto drawWidth(imageSize / 4);
     const auto extent(makeExtent3D(imageSize, imageSize, 1u));
@@ -1512,8 +1550,8 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     ImageWithBuffer imageWithBuffer(vk, device, allocator, extent, colorFormat, colorImageUsage, VK_IMAGE_TYPE_2D,
                                     isrrFull, 4u);
 
-    VkImageSubresourceRange isrr[imageCount];
-    Move<VkImageView> imageViews[imageCount];
+    VkImageSubresourceRange isrr[maxImageCount];
+    Move<VkImageView> imageViews[maxImageCount];
     for (uint32_t i = 0u; i < imageCount; i++)
     {
         isrr[i] = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, i, 1u);
@@ -1527,9 +1565,10 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     renderingAttachmentLocations.pColorAttachmentLocations            = colorAttachmentLocations[0];
 
     // use GraphicsPipelineWrapper for shader object
-    PipelineConstructionType pipelineType = PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
+    PipelineConstructionType pipelineType = getRemapSingleConstructionType(m_testType);
     const std::vector<VkViewport> viewport{makeViewport(imageSize, imageSize)};
     const std::vector<VkRect2D> scissor{makeRect2D(drawWidth, 0, drawWidth, imageSize)};
+    const std::vector<VkRect2D> emptyScissorList;
 
     VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
     VkPipelineColorBlendAttachmentState colorBlendState;
@@ -1550,18 +1589,47 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
     ShaderWrapper fragShader(vk, device, bc.get("frag"));
     PipelineLayoutWrapper pipelineLayout(pipelineType, vk, device);
 
-    GraphicsPipelineWrapper pipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType);
-    pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-        .setDefaultRasterizationState()
-        .setDefaultDepthStencilState()
-        .setDefaultMultisampleState()
-        .setMonolithicPipelineLayout(pipelineLayout)
-        .setupVertexInputState(&vertexInputState)
-        .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {}, {},
-                                          {}, 0, nullptr, &renderingCreateInfo)
-        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
-        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo)
-        .buildPipeline();
+    const std::vector<VkDynamicState> dynamicStates{VK_DYNAMIC_STATE_SCISSOR_WITH_COUNT};
+    const VkPipelineDynamicStateCreateInfo dynamicStateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    using GraphicsPipelineWrapperPtr = std::unique_ptr<GraphicsPipelineWrapper>;
+    std::vector<GraphicsPipelineWrapperPtr> pipelines;
+
+    // With ESO we can remap at any moment and keep using the same shaders. Without it, pipeline attachment locations
+    // must match the locations specified with vkCmdSetRenderingAttachmentLocations, so we need different pipelines.
+    const bool isESO                                 = isConstructionTypeShaderObject(pipelineType);
+    const auto pipelineCount                         = (isESO ? 1u : 3u);
+    const auto pPipelineRenderingAttachmentLocations = (isESO ? nullptr : &renderingAttachmentLocations);
+
+    for (uint32_t i = 0u; i < pipelineCount; ++i)
+    {
+        pipelines.emplace_back(
+            new GraphicsPipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType));
+        auto &pipelineWrapper = *pipelines.back();
+
+        renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[i];
+
+        pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultDepthStencilState()
+            .setDefaultMultisampleState()
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .setDynamicState(&dynamicStateInfo)
+            .setDefaultScissorsCount(0u)
+            .setupVertexInputState(&vertexInputState)
+            .setupPreRasterizationShaderState(viewport, emptyScissorList, pipelineLayout, VK_NULL_HANDLE, 0u,
+                                              vertShader, 0, {}, {}, {}, 0, nullptr, &renderingCreateInfo)
+            .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+            .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo, nullptr, VK_NULL_HANDLE, nullptr,
+                                      pPipelineRenderingAttachmentLocations)
+            .buildPipeline();
+    }
 
     const auto initialColorBarrier(makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
                                                           VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
@@ -1596,19 +1664,26 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
 
     // render fullscreen quad three times but use scissor to limit it to fragment of framebuffer
     vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
-    pipelineWrapper.bind(*cmdBuffer);
 
+    VkRect2D localScissor                                  = scissor.front();
+    renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[0];
+    pipelines.front()->bind(*cmdBuffer);
+    vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
     vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
-    VkRect2D localScissor(makeRect2D(2 * drawWidth, 0, drawWidth, imageSize));
+    localScissor                                           = makeRect2D(2 * drawWidth, 0, drawWidth, imageSize);
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[1];
+    if (pipelines.size() >= 2)
+        pipelines.at(1)->bind(*cmdBuffer);
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
     vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
 
     localScissor.offset.x += drawWidth;
     renderingAttachmentLocations.pColorAttachmentLocations = colorAttachmentLocations[2];
+    if (pipelines.size() >= 3)
+        pipelines.at(2)->bind(*cmdBuffer);
     vk.cmdSetScissorWithCount(*cmdBuffer, 1u, &localScissor);
     vk.cmdSetRenderingAttachmentLocations(*cmdBuffer, &renderingAttachmentLocations);
     vk.cmdDraw(*cmdBuffer, 4u, 1u, 0u, 0u);
@@ -1658,20 +1733,22 @@ tcu::TestStatus MappingWithShaderObjectTestInstance::iterate()
             break;
     }
 
-    if (testPassed)
-        return tcu::TestStatus::pass("Pass");
-
-    auto &log = m_context.getTestContext().getLog();
-    log << tcu::TestLog::ImageSet("Result", "");
-    for (uint32_t i = 0; i < imageCount; ++i)
+    if (!testPassed)
     {
-        tcu::PixelBufferAccess resultAccess(mapVkFormat(colorFormat), imageSize, imageSize, 1,
-                                            bufferPtr + i * 4 * imageSize * imageSize);
-        log << tcu::TestLog::Image("Image " + std::to_string(i), "", resultAccess);
-    }
-    log << tcu::TestLog::EndImageSet;
+        auto &log = m_context.getTestContext().getLog();
+        log << tcu::TestLog::ImageSet("Result", "");
+        for (uint32_t i = 0; i < imageCount; ++i)
+        {
+            tcu::PixelBufferAccess resultAccess(mapVkFormat(colorFormat), imageSize, imageSize, 1,
+                                                bufferPtr + i * 4 * imageSize * imageSize);
+            log << tcu::TestLog::Image("Image " + std::to_string(i), "", resultAccess);
+        }
+        log << tcu::TestLog::EndImageSet;
 
-    return tcu::TestStatus::fail("Fail");
+        TCU_FAIL("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 class FeedbackLoopTestInstance : public vkt::TestInstance
@@ -1682,24 +1759,34 @@ public:
 
 protected:
     tcu::TestStatus iterate(void) override;
+
+private:
+    const TestType m_testType;
 };
 
 FeedbackLoopTestInstance::FeedbackLoopTestInstance(Context &context, const TestType testType)
     : vkt::TestInstance(context)
+    , m_testType(testType)
 {
-    DE_UNREF(testType);
 }
 
 tcu::TestStatus FeedbackLoopTestInstance::iterate()
 {
+    const auto &vki                 = m_context.getInstanceInterface();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice device           = m_context.getDevice();
+    const auto physicalDevice       = m_context.getPhysicalDevice();
+    const auto deviceExtensions     = m_context.getDeviceExtensions();
     Allocator &alloc                = m_context.getDefaultAllocator();
     VkQueue queue                   = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const VkFormat imageFormat      = VK_FORMAT_R8G8B8A8_UNORM;
     const uint32_t imageSize        = 1024; // 1024 size is required to trigger delta color compression
     const auto extent               = makeExtent3D(imageSize, imageSize, 1u);
+
+    const PipelineConstructionType pipelineType = (m_testType == TestType::FEEDBACK_LOOP) ?
+                                                      PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC :
+                                                      PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_BINARY;
 
     const VkImageSubresourceRange srr = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const VkImageSubresourceLayers sl = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
@@ -1757,10 +1844,10 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
         .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0), descriptorType, &di)
         .update(vk, device);
 
-    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
-    auto &bc                              = m_context.getBinaryCollection();
-    Move<VkShaderModule> vertModule       = createShaderModule(vk, device, bc.get("vert"));
-    Move<VkShaderModule> fragModule       = createShaderModule(vk, device, bc.get("frag"));
+    PipelineLayoutWrapper pipelineLayout(pipelineType, vk, device, *descriptorSetLayout);
+    auto &bc = m_context.getBinaryCollection();
+    ShaderWrapper vertShader(vk, device, bc.get("vert"));
+    ShaderWrapper fragShader(vk, device, bc.get("frag"));
 
     // define empty VertexInputState, full screen quad will be generated in vertex shader
     const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
@@ -1776,10 +1863,19 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
     renderingCreateInfo.colorAttachmentCount          = 1;
     renderingCreateInfo.pColorAttachmentFormats       = &imageFormat;
 
-    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
-        vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, *fragModule,
-        VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0, &vertexInputState, nullptr,
-        nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &renderingCreateInfo);
+    // Pipeline
+    GraphicsPipelineWrapper pipelineWrapper(vki, vk, physicalDevice, device, deviceExtensions, pipelineType);
+    pipelineWrapper.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, VK_NULL_HANDLE, 0u, vertShader, 0, {},
+                                          {}, {}, 0, nullptr, &renderingCreateInfo)
+        .setupFragmentShaderState(pipelineLayout, VK_NULL_HANDLE, 0u, fragShader)
+        .setupFragmentOutputState(VK_NULL_HANDLE, 0u, &colorBlendStateCreateInfo)
+        .buildPipeline();
 
     const auto selfDependencyBarrier =
         makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_INPUT_ATTACHMENT_READ_BIT);
@@ -1793,7 +1889,7 @@ tcu::TestStatus FeedbackLoopTestInstance::iterate()
 
     beginRendering(vk, cmdBuffer, *imageView, scissors[0], {}, VK_IMAGE_LAYOUT_GENERAL, VK_ATTACHMENT_LOAD_OP_LOAD);
 
-    vk.cmdBindPipeline(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *graphicsPipeline);
+    pipelineWrapper.bind(cmdBuffer);
     vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet, 0u,
                              nullptr);
 
@@ -1886,10 +1982,15 @@ void LocalReadTestCase::checkSupport(Context &context) const
     }
     else if (m_testType == TestType::INTERACTION_WITH_COLOR_WRITE_ENABLE)
         context.requireDeviceFunctionality("VK_EXT_color_write_enable");
-    else if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
+    else if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY ||
+             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
         context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
-    else if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT)
+    else if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT ||
+             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT || m_testType == TestType::FEEDBACK_LOOP_ESO)
         context.requireDeviceFunctionality("VK_EXT_shader_object");
+    else if (m_testType == TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC ||
+             m_testType == TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB)
+        context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state");
     else if (m_testType == TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3)
     {
         context.requireDeviceFunctionality("VK_EXT_extended_dynamic_state3");
@@ -2447,7 +2548,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                             "}\n");
         glslSources.add("frag") << glu::FragmentSource(fragSrc);
     }
-    else if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT)
+    else if (isInteractionWithShaderObjOrRemapSingle(m_testType))
     {
         std::string fragSrc("#version 450\n"
                             "layout(location = 0) out vec4 outColor0;\n"
@@ -2460,7 +2561,7 @@ void LocalReadTestCase::initPrograms(SourceCollections &programCollection) const
                             "}\n");
         glslSources.add("frag") << glu::FragmentSource(fragSrc);
     }
-    else if (m_testType == TestType::FEEDBACK_LOOP)
+    else if ((m_testType == TestType::FEEDBACK_LOOP) || (m_testType == TestType::FEEDBACK_LOOP_ESO))
     {
         std::string fragSrc("#version 450\n"
                             "layout(input_attachment_index = 0, binding = 0) uniform subpassInput inColor;\n"
@@ -2497,13 +2598,361 @@ TestInstance *LocalReadTestCase::createInstance(Context &context) const
         return new MappingWithBlendStateTestInstance(context, m_testType);
     if (m_testType == TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY)
         return new MappingWithGraphicsPipelineLibraryTestInstance(context, m_testType);
-    if (m_testType == TestType::FEEDBACK_LOOP)
+    if ((m_testType == TestType::FEEDBACK_LOOP) || (m_testType == TestType::FEEDBACK_LOOP_ESO))
         return new FeedbackLoopTestInstance(context, m_testType);
 
-    if (m_testType == TestType::INTERACTION_WITH_SHADER_OBJECT)
-        return new MappingWithShaderObjectTestInstance(context, m_testType);
+    if (isInteractionWithShaderObjOrRemapSingle(m_testType))
+        return new MappingWithShaderObjectOrSingleAttachmentTestInstance(context, m_testType);
 
     return new BasicLocalReadTestInstance(context, m_testType);
+}
+
+class NullAttachmentLocationsTestInstance : public TestInstance
+{
+public:
+    NullAttachmentLocationsTestInstance(Context &ctx, const bool commandMode, const bool nullAfterRemap,
+                                        const bool nullBeforeIdentity);
+    virtual ~NullAttachmentLocationsTestInstance(void);
+    tcu::TestStatus iterate(void);
+
+private:
+    const bool m_commandMode;
+    const bool m_nullAfterRemap;
+    const bool m_nullBeforeIdentity;
+};
+
+NullAttachmentLocationsTestInstance::NullAttachmentLocationsTestInstance(Context &ctx, const bool commandMode,
+                                                                         const bool nullAfterRemap,
+                                                                         const bool nullBeforeIdentity)
+    : TestInstance(ctx)
+    , m_commandMode(commandMode)
+    , m_nullAfterRemap(nullAfterRemap)
+    , m_nullBeforeIdentity(nullBeforeIdentity)
+{
+}
+
+NullAttachmentLocationsTestInstance::~NullAttachmentLocationsTestInstance(void)
+{
+}
+
+class NullAttachmentLocationsTestCase : public TestCase
+{
+public:
+    NullAttachmentLocationsTestCase(tcu::TestContext &ctx, const std::string &name, const bool commandMode,
+                                    const bool nullAfterRemap, const bool nullBeforeIdentity);
+    virtual ~NullAttachmentLocationsTestCase(void);
+    virtual void checkSupport(Context &context) const;
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const;
+
+private:
+    const bool m_commandMode;
+    const bool m_nullAfterRemap;
+    const bool m_nullBeforeIdentity;
+};
+
+NullAttachmentLocationsTestCase::NullAttachmentLocationsTestCase(tcu::TestContext &ctx, const std::string &name,
+                                                                 const bool commandMode, const bool nullAfterRemap,
+                                                                 const bool nullBeforeIdentity)
+    : TestCase(ctx, name)
+    , m_commandMode(commandMode)
+    , m_nullAfterRemap(nullAfterRemap)
+    , m_nullBeforeIdentity(nullBeforeIdentity)
+{
+}
+
+NullAttachmentLocationsTestCase::~NullAttachmentLocationsTestCase(void)
+{
+}
+
+void NullAttachmentLocationsTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+}
+
+void NullAttachmentLocationsTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    {
+        vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+             << "void main (void)\n"
+             << "{\n"
+             << "  const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+             << "  const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+             << "  gl_Position = vec4(x, y, 1.0, 1.0);\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    {
+        frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+             << "layout(location=0) out vec4 outColor0;\n"
+             << "layout(location=1) out vec4 outColor1;\n"
+             << "layout(location=2) out vec4 outColor2;\n"
+             << "layout(location=3) out vec4 outColor3;\n"
+             << "\n"
+             << "void main() {\n"
+             << "    outColor0 = vec4(1.0f, 0.0f, 0.0f, 1.0f); // red\n"
+             << "    outColor1 = vec4(0.0f, 0.0f, 1.0f, 1.0f); // blue\n"
+             << "    outColor2 = vec4(0.0f, 1.0f, 0.0f, 1.0f); // green\n"
+             << "    outColor3 = vec4(0.5f, 0.5f, 0.5f, 1.0f); // gray\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance *NullAttachmentLocationsTestCase::createInstance(Context &context) const
+{
+    return new NullAttachmentLocationsTestInstance(context, m_commandMode, m_nullAfterRemap, m_nullBeforeIdentity);
+}
+
+VkRenderingAttachmentInfo makeDynamicRenderingAttachmentInfo(const VkClearValue &clearValue,
+                                                             const VkImageView colorImageView = VK_NULL_HANDLE)
+{
+    const VkRenderingAttachmentInfo dynRenderingAttachmentInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO_KHR, // VkStructureType sType;
+        nullptr,                                         // const void* pNext;
+        colorImageView,                                  // VkImageView imageView;
+        VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout imageLayout;
+        VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
+        VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
+        VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout resolveImageLayout;
+        VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
+        VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
+        clearValue                                       // VkClearValue clearValue;
+    };
+    return dynRenderingAttachmentInfo;
+}
+
+VkRenderingInfo makeDynamicRenderingInfo(const VkRect2D &renderArea, const uint32_t colorAttachmentCount,
+                                         const VkRenderingAttachmentInfo *pColorAttachments)
+{
+    const VkRenderingInfo dynRenderingInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_INFO_KHR,
+        nullptr,
+        0u,                   // VkRenderingFlagsKHR flags;
+        renderArea,           // VkRect2D renderArea;
+        1u,                   // uint32_t layerCount;
+        0u,                   // uint32_t viewMask;
+        colorAttachmentCount, // uint32_t colorAttachmentCount;
+        pColorAttachments,    // const VkRenderingAttachmentInfoKHR* pColorAttachments;
+        nullptr,              // const VkRenderingAttachmentInfoKHR* pDepthAttachment;
+        nullptr,              // const VkRenderingAttachmentInfoKHR* pStencilAttachment;
+    };
+    return dynRenderingInfo;
+}
+
+VkRenderingAttachmentLocationInfo makeDynamicRenderingAttachmentLocationInfo(
+    const uint32_t colorAttachmentCount = 0u, const uint32_t *pColorAttachmentLocations = nullptr)
+{
+    const VkRenderingAttachmentLocationInfo dynRenderingAttachmentLocationInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_LOCATION_INFO_KHR, nullptr, colorAttachmentCount,
+        pColorAttachmentLocations};
+
+    return dynRenderingAttachmentLocationInfo;
+}
+
+VkPipelineRenderingCreateInfo makeDynamicRenderingCreateInfo(
+    uint32_t colorAttachmentCount, const VkFormat *colorImageFormats,
+    const VkRenderingAttachmentLocationInfo *dynRenderingAttachmentLocationInfo)
+{
+    const VkPipelineRenderingCreateInfo dynRenderingCreateInfo = {VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO_KHR,
+                                                                  dynRenderingAttachmentLocationInfo,
+                                                                  0u,
+                                                                  colorAttachmentCount,
+                                                                  colorImageFormats,
+                                                                  VK_FORMAT_UNDEFINED,
+                                                                  VK_FORMAT_UNDEFINED};
+    return dynRenderingCreateInfo;
+}
+
+tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
+{
+    const DeviceInterface &vkd    = m_context.getDeviceInterface();
+    const VkDevice device         = m_context.getDevice();
+    const uint32_t queueFamilyIdx = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue           = m_context.getUniversalQueue();
+    Allocator &alloc              = m_context.getDefaultAllocator();
+
+    const uint32_t renderSize              = 16u;
+    const VkRect2D renderArea              = makeRect2D(renderSize, renderSize);
+    const uint32_t colorAttachmentCount    = 4u;
+    const VkFormat colorImageFormat        = VK_FORMAT_R8G8B8A8_UNORM;
+    const tcu::TextureFormat textureFormat = mapVkFormat(colorImageFormat);
+
+    const VkClearValue clearValue = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    const auto colorAttachment = makeDynamicRenderingAttachmentInfo(clearValue);
+
+    const auto colorSRR = makeDefaultImageSubresourceRange();
+
+    VkImageMemoryBarrier colorImageBarrier =
+        makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_NULL_HANDLE, colorSRR);
+
+    const VkDeviceSize outputBufferSize = (VkDeviceSize)renderSize * renderSize * tcu::getPixelSize(textureFormat);
+    const VkBufferCreateInfo outputBufferInfo =
+        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+    std::vector<ImageWithMemorySp> images(colorAttachmentCount, ImageWithMemorySp());
+    std::vector<VkImageViewSp> imageViews(colorAttachmentCount, VkImageViewSp());
+    std::vector<VkFormat> colorImageFormats(colorAttachmentCount, colorImageFormat);
+    std::vector<VkRenderingAttachmentInfo> dynRenderingColorAttachmentInfos(colorAttachmentCount, colorAttachment);
+    std::vector<VkImageMemoryBarrier> colorImageBarriers(colorAttachmentCount, colorImageBarrier);
+    std::vector<BufferWithMemorySp> outputBuffers(colorAttachmentCount, BufferWithMemorySp());
+    std::vector<uint32_t> nonIdentityColorAttachmentLocations(colorAttachmentCount);
+    std::vector<uint32_t> identityColorAttachmentLocations(colorAttachmentCount);
+
+    // Images and image views
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        images[i]     = createImage(m_context, renderSize, colorImageFormats[i],
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+        imageViews[i] = VkImageViewSp(new vk::Move<VkImageView>(
+            makeImageView(vkd, device, **images[i], VK_IMAGE_VIEW_TYPE_2D, colorImageFormats[i], colorSRR)));
+
+        dynRenderingColorAttachmentInfos[i].imageView  = **imageViews[i];
+        dynRenderingColorAttachmentInfos[i].clearValue = clearValue;
+        colorImageBarriers[i].image                    = **images[i];
+
+        outputBuffers[i] = BufferWithMemorySp(
+            new BufferWithMemory(vkd, device, alloc, outputBufferInfo, MemoryRequirement::HostVisible));
+        nonIdentityColorAttachmentLocations[i] = (colorAttachmentCount - 1) - i;
+        identityColorAttachmentLocations[i]    = i;
+    }
+
+    const auto pipelineLayout   = makePipelineLayout(vkd, device, VK_NULL_HANDLE);
+    const auto vertShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
+    const auto fragShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
+
+    // Dynamic rendering info
+    const auto dynRenderingInfo = makeDynamicRenderingInfo(renderArea, de::sizeU32(dynRenderingColorAttachmentInfos),
+                                                           de::dataOrNull(dynRenderingColorAttachmentInfos));
+
+    // Dynamic rendering attachment with non-identity mapping location info
+    const auto identityDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(
+        colorAttachmentCount, de::dataOrNull(identityColorAttachmentLocations));
+
+    // Dynamic rendering attachment with non-identity mapping location info
+    const auto nonIdentityDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(
+        colorAttachmentCount, de::dataOrNull(nonIdentityColorAttachmentLocations));
+
+    // Empty dynamic rendering attachment location info
+    const auto emptyDynRenderingAttachmentLocationInfo =
+        makeDynamicRenderingAttachmentLocationInfo(colorAttachmentCount);
+
+    const bool withLocationInfo = !m_commandMode;
+    // Dynamic rendering pipeline info
+    const auto dynRenderingCreateInfo =
+        makeDynamicRenderingCreateInfo(colorAttachmentCount, de::dataOrNull(colorImageFormats),
+                                       withLocationInfo ? &emptyDynRenderingAttachmentLocationInfo : nullptr);
+
+    // Pipeline
+    const std::vector<VkViewport> viewports{makeViewport(renderSize, renderSize)};
+    const std::vector<VkRect2D> scissors{renderArea};
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {0,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_OP_ADD,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_OP_ADD,
+                                                                           0xf};
+
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(colorAttachmentCount,
+                                                                                colorBlendAttachmentState);
+    VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+    colorBlendStateCreateInfo.attachmentCount                     = de::sizeU32(colorBlendAttachmentStates);
+    colorBlendStateCreateInfo.pAttachments                        = de::dataOrNull(colorBlendAttachmentStates);
+
+    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
+        vkd, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        *fragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+        &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &dynRenderingCreateInfo);
+
+    // Command buffer
+    const auto cmdPool =
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIdx);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = *cmdBufferPtr;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, 0u,
+                           0u, 0u, colorAttachmentCount, de::dataOrNull(colorImageBarriers));
+
+    vkd.cmdBeginRendering(cmdBuffer, &dynRenderingInfo);
+
+    vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+
+    if (m_commandMode)
+    {
+        if (m_nullAfterRemap)
+        {
+            vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &nonIdentityDynRenderingAttachmentLocationInfo);
+
+            vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+        }
+
+        vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &emptyDynRenderingAttachmentLocationInfo);
+    }
+    else
+    {
+        if (m_nullBeforeIdentity)
+            vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &identityDynRenderingAttachmentLocationInfo);
+    }
+
+    vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    vkd.cmdEndRendering(cmdBuffer);
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        colorImageBarriers[i].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        colorImageBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        colorImageBarriers[i].oldLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorImageBarriers[i].newLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    }
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                           0u, 0u, 0u, 0u, colorAttachmentCount, de::dataOrNull(colorImageBarriers));
+
+    const VkImageSubresourceLayers colorSL = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    const VkBufferImageCopy copyRegion     = makeBufferImageCopy({renderSize, renderSize, 1u}, colorSL);
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+        vkd.cmdCopyImageToBuffer(cmdBuffer, **images[i], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **outputBuffers[i], 1u,
+                                 &copyRegion);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    // Verification
+    const std::vector<tcu::Vec4> expectedColors = {tcu::RGBA::red().toVec(), tcu::RGBA::blue().toVec(),
+                                                   tcu::RGBA::green().toVec(), tcu::RGBA::gray().toVec()};
+
+    const tcu::Vec4 threshold(0.005f);
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        auto &allocation = outputBuffers[i]->getAllocation();
+        invalidateAlloc(vkd, device, allocation);
+
+        tcu::TextureLevel textureLevel(textureFormat, renderSize, renderSize, 1u);
+        const tcu::PixelBufferAccess expectedImage = textureLevel.getAccess();
+        tcu::clear(expectedImage, expectedColors[i]);
+
+        tcu::ConstPixelBufferAccess resultImage(textureFormat, renderSize, renderSize, 1u, allocation.getHostPtr());
+
+        const std::string imageSetDesc = "Image comparison " + de::toString(i);
+
+        if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Image comparison", imageSetDesc.c_str(),
+                                        expectedImage, resultImage, threshold, tcu::COMPARE_LOG_RESULT))
+            return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
 }
 
 } // namespace
@@ -2531,7 +2980,11 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
         {"interaction_with_graphics_pipeline_library", TestType::INTERACTION_WITH_GRAPHICS_PIPELINE_LIBRARY},
         {"interaction_with_extended_dynamic_state3", TestType::INTERACTION_WITH_EXTENDED_DYNAMIC_STATE3},
         {"interaction_with_shader_object", TestType::INTERACTION_WITH_SHADER_OBJECT},
+        {"remap_single_attachment_monolithic", TestType::REMAP_SINGLE_ATTACHMENT_MONOLITHIC},
+        {"remap_single_attachment_fast_lib", TestType::REMAP_SINGLE_ATTACHMENT_FAST_LIB},
+        {"remap_single_attachment_shader_object", TestType::REMAP_SINGLE_ATTACHMENT_SHADER_OBJECT},
         {"feedback_loop", TestType::FEEDBACK_LOOP},
+        {"feedback_loop_with_shader_object", TestType::FEEDBACK_LOOP_ESO},
     };
 
     de::MovePtr<tcu::TestCaseGroup> mainGroup(
@@ -2539,6 +2992,25 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
 
     for (const auto &testConfig : testConfigs)
         mainGroup->addChild(new LocalReadTestCase(testCtx, testConfig.name, testConfig.testType));
+
+    // Test pColorAttachmentLocations set to NULL
+    {
+        for (const auto nullBeforeIdentity : {false, true})
+        {
+            const std::string testName = std::string("null_color_attachment_location_with_locationinfo") +
+                                         (nullBeforeIdentity ? "_before_identity" : "");
+            mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, false /* commandMode */,
+                                                                    false /* nullAfterRemap */, nullBeforeIdentity));
+        }
+
+        for (const auto nullAfterRemap : {false, true})
+        {
+            const std::string testName =
+                std::string("null_color_attachment_location_with_command") + (nullAfterRemap ? "_after_remap" : "");
+            mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, true /* commandMode */,
+                                                                    nullAfterRemap, false /* nullBeforeIdentity */));
+        }
+    }
 
     return mainGroup.release();
 }

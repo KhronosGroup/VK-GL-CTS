@@ -18,6 +18,7 @@
  * be lost! Modify the generating script instead.
  */-->
 	<TestPackage name="Khronos Mustpass ES Single Config">
+		<Configuration caseListFile="gles31-khr-single.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-single" os="any" useForFirstEGLConfig="True"/>
 		<Configuration caseListFile="gles32-khr-single.txt" commandLine="--deqp-screen-rotation=unspecified --deqp-surface-width=64 --deqp-surface-height=64 --deqp-base-seed=1 --deqp-watchdog=disable" name="khr-single" os="any" useForFirstEGLConfig="True"/>
 	</TestPackage>
 </Mustpass>

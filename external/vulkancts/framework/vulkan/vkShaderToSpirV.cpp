@@ -30,12 +30,12 @@
 
 #include "SPIRV/GlslangToSpv.h"
 #include "SPIRV/disassemble.h"
-#include "SPIRV/SPVRemapper.h"
 #include "SPIRV/doc.h"
 #include "glslang/Include/InfoSink.h"
 #include "glslang/Include/ShHandle.h"
 #include "glslang/MachineIndependent/localintermediate.h"
 #include "glslang/Public/ShaderLang.h"
+#include "spirv-tools/optimizer.hpp"
 
 namespace vk
 {
@@ -373,15 +373,80 @@ bool compileHlslToSpirV(const HlslSource &program, std::vector<uint32_t> *dst, g
     return compileShaderToSpirV(program.sources, program.buildOptions, program.shaderLanguage, dst, buildInfo);
 }
 
-void stripSpirVDebugInfo(const size_t numSrcInstrs, const uint32_t *srcInstrs, std::vector<uint32_t> *dst)
+void stripSpirVDebugInfo(const size_t numSrcInstrs, const uint32_t *srcInstrs, std::vector<uint32_t> *dst,
+                         const SpirvValidatorOptions &options)
 {
-    spv::spirvbin_t remapper;
-    std::vector<std::string> whiteListStrings;
+    const bool allow_1_4        = options.supports_VK_KHR_spirv_1_4;
+    spv_target_env spvTargetEnv = SPV_ENV_VULKAN_1_0;
+    switch (options.vulkanVersion)
+    {
+    case VK_MAKE_API_VERSION(0, 1, 0, 0):
+        spvTargetEnv = SPV_ENV_VULKAN_1_0;
+        break;
+    case VK_MAKE_API_VERSION(0, 1, 1, 0):
+        spvTargetEnv = allow_1_4 ? SPV_ENV_VULKAN_1_1_SPIRV_1_4 : SPV_ENV_VULKAN_1_1;
+        break;
+    case VK_MAKE_API_VERSION(0, 1, 2, 0):
+        spvTargetEnv = SPV_ENV_VULKAN_1_2;
+        break;
+    case VK_MAKE_API_VERSION(1, 1, 0, 0):
+        spvTargetEnv = SPV_ENV_VULKAN_1_2;
+        break;
+    case VK_MAKE_API_VERSION(0, 1, 3, 0):
+        spvTargetEnv = SPV_ENV_VULKAN_1_3;
+        break;
+    case VK_MAKE_API_VERSION(0, 1, 4, 0):
+        spvTargetEnv = SPV_ENV_VULKAN_1_4;
+        break;
+    default:
+        break;
+    }
 
-    // glslang operates in-place
-    dst->resize(numSrcInstrs);
-    std::copy(srcInstrs, srcInstrs + numSrcInstrs, dst->begin());
-    remapper.remap(*dst, whiteListStrings, spv::spirvbin_base_t::STRIP);
+    spvtools::Optimizer opt(spvTargetEnv);
+    opt.RegisterPass(spvtools::CreateStripDebugInfoPass());
+
+    spvtools::ValidatorOptions validator_options;
+    switch (options.blockLayout)
+    {
+    case SpirvValidatorOptions::kDefaultBlockLayout:
+        break;
+    case SpirvValidatorOptions::kNoneBlockLayout:
+        validator_options.SetSkipBlockLayout(true);
+        break;
+    case SpirvValidatorOptions::kRelaxedBlockLayout:
+        validator_options.SetRelaxBlockLayout(true);
+        break;
+    case SpirvValidatorOptions::kUniformStandardLayout:
+        validator_options.SetUniformBufferStandardLayout(true);
+        break;
+    case SpirvValidatorOptions::kScalarBlockLayout:
+        validator_options.SetScalarBlockLayout(true);
+        break;
+    default:
+        break;
+    }
+
+    if (options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_WORKGROUP_SCALAR_BLOCK_LAYOUT)
+        validator_options.SetWorkgroupScalarBlockLayout(true);
+
+    if (options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_LOCALSIZEID)
+        validator_options.SetAllowLocalSizeId(true);
+
+    if (options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_NON_CONST_OFFSETS)
+        validator_options.SetAllowOffsetTextureOperand(true);
+
+    if (options.flags & SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_NON_32_BIT_BITWISE)
+        validator_options.SetAllowVulkan32BitBitwise(true);
+
+    spvtools::OptimizerOptions opt_options;
+    opt_options.set_validator_options(validator_options);
+    opt_options.set_run_validator(false);
+    std::vector<uint32_t> out;
+    if (!opt.Run(srcInstrs, numSrcInstrs, &out, opt_options))
+    {
+        TCU_THROW(InternalError, "stripSpirVDebugInfo failed");
+    }
+    *dst = std::move(out);
 }
 
 } // namespace vk

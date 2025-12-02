@@ -41,6 +41,8 @@
 #include "vkImageUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
 
+#include "../util/vktExternalMemoryUtil.hpp"
+
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
@@ -71,6 +73,7 @@ namespace pipeline
 namespace
 {
 using namespace vk;
+using namespace ExternalMemoryUtil;
 using de::MovePtr;
 using de::SharedPtr;
 using de::UniquePtr;
@@ -80,6 +83,13 @@ using tcu::UVec2;
 using tcu::UVec4;
 using tcu::Vec2;
 using tcu::Vec4;
+
+enum ImageMemoryType
+{
+    IMAGE_MEMORY_DEFAULT,
+    IMAGE_MEMORY_AHB_COLOR,
+    IMAGE_MEMORY_AHB_DS,
+};
 
 VkImageAspectFlags getDepthStencilAspectFlags(const VkFormat format)
 {
@@ -191,6 +201,7 @@ struct TestParams
     bool useGarbageAttachment; //!< Whether the test uses garbage attachments.
     bool
         renderToAttachment; //!< Whether the test renders to input attachment in previous subpass or if it's initialize outside of render pass
+    ImageMemoryType imageMemoryType; //!< Whether the test use AHB images
 
     struct PerPass
     {
@@ -256,10 +267,17 @@ struct Image
     MovePtr<Allocation> alloc;
     Move<VkImageView> view;
 
+    de::MovePtr<NativeHandle> nativeHandle;
+    Move<VkDeviceMemory> memory; // Used with ahb images
+
     void allocate(const DeviceInterface &vk, const VkDevice device, const MovePtr<Allocator> &allocator,
                   const VkFormat format, const UVec2 &size, const VkSampleCountFlagBits samples,
                   const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const uint32_t layerCount,
                   const bool usedForMSRTSS);
+    void allocateAhb(AndroidHardwareBufferExternalApi *ahbApi, const DeviceInterface &vk, const VkDevice device,
+                     const VkFormat format, const UVec2 &size, const VkSampleCountFlagBits samples,
+                     const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const uint32_t layerCount,
+                     const bool usedForMSRTSS);
     Move<VkImageView> makeView(const DeviceInterface &vk, const VkDevice device, const VkFormat format,
                                const VkImageAspectFlags aspect, const uint32_t layerCount);
 };
@@ -417,6 +435,99 @@ void Image::allocate(const DeviceInterface &vk, const VkDevice device, const Mov
     image = makeImage(vk, device, format, size, layerCount, samples, usage, usedForMSRTSS);
     alloc = bindImage(vk, device, *allocator, *image, MemoryRequirement::Any);
     view  = makeView(vk, device, format, aspect, layerCount);
+}
+
+void Image::allocateAhb(AndroidHardwareBufferExternalApi *ahbApi, const DeviceInterface &vk, const VkDevice device,
+                        const VkFormat format, const UVec2 &size, const VkSampleCountFlagBits samples,
+                        const VkImageUsageFlags usage, const VkImageAspectFlags aspect, const uint32_t layerCount,
+                        const bool usedForMSRTSS)
+{
+    DE_ASSERT(samples == VK_SAMPLE_COUNT_1_BIT);
+    uint64_t requiredAhbUsage = 0u;
+    if (usage & VK_IMAGE_USAGE_SAMPLED_BIT)
+        requiredAhbUsage |= ahbApi->vkUsageToAhbUsage(VK_IMAGE_USAGE_SAMPLED_BIT);
+    if (usage & VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)
+        requiredAhbUsage |= ahbApi->vkUsageToAhbUsage(VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT);
+    if (usage & VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT)
+        requiredAhbUsage |= ahbApi->vkUsageToAhbUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+    if (usage & VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)
+        requiredAhbUsage |= ahbApi->vkUsageToAhbUsage(VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT);
+
+    const uint32_t width  = size.x();
+    const uint32_t height = size.y();
+    pt::AndroidHardwareBufferPtr ahb =
+        ahbApi->allocate(width, height, 1u, ahbApi->vkFormatToAhbFormat(format), requiredAhbUsage);
+
+    if (ahb.internal == nullptr)
+        TCU_THROW(NotSupportedError, "Android Hardware Buffer for requested format and usage not supported");
+
+    nativeHandle = de::MovePtr<NativeHandle>(new NativeHandle(ahb));
+
+    const VkImageCreateFlags createFlags = samples == VK_SAMPLE_COUNT_1_BIT && usedForMSRTSS ?
+                                               VK_IMAGE_CREATE_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT :
+                                               0;
+
+    const vk::VkExternalMemoryImageCreateInfo externalCreateInfo = {
+        vk::VK_STRUCTURE_TYPE_EXTERNAL_MEMORY_IMAGE_CREATE_INFO, nullptr,
+        (vk::VkExternalMemoryHandleTypeFlags)VK_EXTERNAL_MEMORY_HANDLE_TYPE_ANDROID_HARDWARE_BUFFER_BIT_ANDROID};
+    const vk::VkImageCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                              &externalCreateInfo,
+                                              createFlags,
+                                              vk::VK_IMAGE_TYPE_2D,
+                                              format,
+                                              {
+                                                  width,
+                                                  height,
+                                                  1u,
+                                              },
+                                              1u,
+                                              layerCount,
+                                              samples,
+                                              VK_IMAGE_TILING_OPTIMAL,
+                                              usage,
+                                              vk::VK_SHARING_MODE_EXCLUSIVE,
+                                              0,
+                                              nullptr,
+                                              vk::VK_IMAGE_LAYOUT_UNDEFINED};
+
+    image = vk::createImage(vk, device, &createInfo);
+
+    uint32_t ahbFormat = 0;
+    ahbApi->describe(nativeHandle->getAndroidHardwareBuffer(), nullptr, nullptr, nullptr, &ahbFormat, nullptr, nullptr);
+
+    VkAndroidHardwareBufferPropertiesANDROID ahbProperties = {
+        VK_STRUCTURE_TYPE_ANDROID_HARDWARE_BUFFER_PROPERTIES_ANDROID, // VkStructureType    sType
+        nullptr,                                                      // void*              pNext
+        0u,                                                           // VkDeviceSize       allocationSize
+        0u                                                            // uint32_t           memoryTypeBits
+    };
+
+    vk.getAndroidHardwareBufferPropertiesANDROID(device, nativeHandle->getAndroidHardwareBuffer(), &ahbProperties);
+
+    const VkImportAndroidHardwareBufferInfoANDROID importInfo = {
+        VK_STRUCTURE_TYPE_IMPORT_ANDROID_HARDWARE_BUFFER_INFO_ANDROID, // VkStructureType            sType
+        nullptr,                                                       // const void*                pNext
+        nativeHandle->getAndroidHardwareBuffer()                       // struct AHardwareBuffer*    buffer
+    };
+
+    const VkMemoryDedicatedAllocateInfo dedicatedInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO_KHR, // VkStructureType    sType
+        &importInfo,                                          // const void*        pNext
+        *image,                                               // VkImage            image
+        VK_NULL_HANDLE,                                       // VkBuffer           buffer
+    };
+
+    const VkMemoryAllocateInfo allocateInfo = {
+        VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO,        // VkStructureType    sType
+        (const void *)&dedicatedInfo,                  // const void*        pNext
+        ahbProperties.allocationSize,                  // VkDeviceSize       allocationSize
+        chooseMemoryType(ahbProperties.memoryTypeBits) // uint32_t           memoryTypeIndex
+    };
+
+    memory = allocateMemory(vk, device, &allocateInfo);
+    VK_CHECK(vk.bindImageMemory(device, *image, *memory, 0u));
+
+    view = makeView(vk, device, format, aspect, layerCount);
 }
 
 Move<VkImageView> Image::makeView(const DeviceInterface &vk, const VkDevice device, const VkFormat format,
@@ -1655,16 +1766,51 @@ void createWorkingData(Context &context, const TestParams &params, WorkingData &
 
     // Create images
     {
+        if (params.imageMemoryType == IMAGE_MEMORY_AHB_COLOR || params.imageMemoryType == IMAGE_MEMORY_AHB_DS)
+        {
+            AndroidHardwareBufferExternalApi *ahbApi = AndroidHardwareBufferExternalApi::getInstance();
+            if (!ahbApi)
+                TCU_THROW(NotSupportedError, "Android Hardware Buffer not supported");
+
+            context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
+
+            if (params.imageMemoryType == IMAGE_MEMORY_AHB_COLOR)
+            {
+                wd.floatColor1.allocateAhb(ahbApi, vk, device, params.floatColor1Format, wd.framebufferSize,
+                                           params.numFloatColor1Samples, colorImageUsageFlags,
+                                           VK_IMAGE_ASPECT_COLOR_BIT, 1, true);
+
+                wd.floatColor2.allocateAhb(ahbApi, vk, device, params.floatColor2Format, wd.framebufferSize,
+                                           params.numFloatColor2Samples, colorImageUsageFlags,
+                                           VK_IMAGE_ASPECT_COLOR_BIT, 1, true);
+            }
+
+            if (params.imageMemoryType == IMAGE_MEMORY_AHB_DS)
+            {
+                wd.depthStencil.allocateAhb(ahbApi, vk, device, params.depthStencilFormat, wd.framebufferSize,
+                                            params.numDepthStencilSamples, depthStencilImageUsageFlags,
+                                            getDepthStencilAspectFlags(params.depthStencilFormat), 1, true);
+            }
+        }
+
         // TODO: change image types to be nonuniform, for example: mip 1 of 2D image, mip 2/level 3 of 2D array image, etc.
-        wd.floatColor1.allocate(vk, device, allocator, params.floatColor1Format, wd.framebufferSize,
-                                params.numFloatColor1Samples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1, true);
-        wd.floatColor2.allocate(vk, device, allocator, params.floatColor2Format, wd.framebufferSize,
-                                params.numFloatColor2Samples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1, true);
+        if (params.imageMemoryType != IMAGE_MEMORY_AHB_COLOR)
+        {
+            wd.floatColor1.allocate(vk, device, allocator, params.floatColor1Format, wd.framebufferSize,
+                                    params.numFloatColor1Samples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1,
+                                    true);
+            wd.floatColor2.allocate(vk, device, allocator, params.floatColor2Format, wd.framebufferSize,
+                                    params.numFloatColor2Samples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1,
+                                    true);
+        }
         wd.intColor.allocate(vk, device, allocator, params.intColorFormat, wd.framebufferSize,
                              params.numIntColorSamples, colorImageUsageFlags, VK_IMAGE_ASPECT_COLOR_BIT, 1, true);
-        wd.depthStencil.allocate(vk, device, allocator, params.depthStencilFormat, wd.framebufferSize,
-                                 params.numDepthStencilSamples, depthStencilImageUsageFlags,
-                                 getDepthStencilAspectFlags(params.depthStencilFormat), 1, true);
+        if (params.imageMemoryType != IMAGE_MEMORY_AHB_DS)
+        {
+            wd.depthStencil.allocate(vk, device, allocator, params.depthStencilFormat, wd.framebufferSize,
+                                     params.numDepthStencilSamples, depthStencilImageUsageFlags,
+                                     getDepthStencilAspectFlags(params.depthStencilFormat), 1, true);
+        }
 
         if (!params.renderToAttachment)
         {
@@ -3623,166 +3769,6 @@ void dispatchVerifyMultiPassRendering(Context &context, const TestParams &params
 
     postDrawBarrier(context, testObjects);
 
-    // Transition images to the correct layouts for verification
-    std::vector<VkImageMemoryBarrier> imageBarriers;
-
-    // Add layout transitions for images used in verification
-    if (params.numFloatColor1Samples != VK_SAMPLE_COUNT_1_BIT || params.renderToAttachment)
-    {
-        // Transition color1 image to SHADER_READ_ONLY_OPTIMAL layout
-        imageBarriers.push_back({
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType
-            nullptr,                                  // const void* pNext
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-            VK_ACCESS_SHADER_READ_BIT,                // VkAccessFlags dstAccessMask
-            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex
-            *wd.floatColor1.image,                    // VkImage image
-            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                      1u) // VkImageSubresourceRange subresourceRange
-        });
-
-        if (params.numFloatColor1Samples != VK_SAMPLE_COUNT_1_BIT)
-        {
-            // Transition resolve image if multisampled
-            imageBarriers.push_back({
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType
-                nullptr,                                  // const void* pNext
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-                VK_ACCESS_SHADER_READ_BIT,                // VkAccessFlags dstAccessMask
-                VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex
-                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex
-                *wd.floatResolve1.image,                  // VkImage image
-                makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                          1u) // VkImageSubresourceRange subresourceRange
-            });
-        }
-    }
-
-    if (params.numFloatColor2Samples != VK_SAMPLE_COUNT_1_BIT || params.renderToAttachment)
-    {
-        // Transition color2 image to SHADER_READ_ONLY_OPTIMAL layout
-        imageBarriers.push_back({
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType
-            nullptr,                                  // const void* pNext
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-            VK_ACCESS_SHADER_READ_BIT,                // VkAccessFlags dstAccessMask
-            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex
-            *wd.floatColor2.image,                    // VkImage image
-            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                      1u) // VkImageSubresourceRange subresourceRange
-        });
-
-        if (params.numFloatColor2Samples != VK_SAMPLE_COUNT_1_BIT)
-        {
-            // Transition resolve image if multisampled
-            imageBarriers.push_back({
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType
-                nullptr,                                  // const void* pNext
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-                VK_ACCESS_SHADER_READ_BIT,                // VkAccessFlags dstAccessMask
-                VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex
-                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex
-                *wd.floatResolve2.image,                  // VkImage image
-                makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                          1u) // VkImageSubresourceRange subresourceRange
-            });
-        }
-    }
-
-    if (params.numIntColorSamples != VK_SAMPLE_COUNT_1_BIT || params.renderToAttachment)
-    {
-        // Transition int color image to SHADER_READ_ONLY_OPTIMAL layout
-        imageBarriers.push_back({
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType
-            nullptr,                                  // const void* pNext
-            VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-            VK_ACCESS_SHADER_READ_BIT,                // VkAccessFlags dstAccessMask
-            VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex
-            VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex
-            *wd.intColor.image,                       // VkImage image
-            makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                      1u) // VkImageSubresourceRange subresourceRange
-        });
-
-        if (params.numIntColorSamples != VK_SAMPLE_COUNT_1_BIT)
-        {
-            // Transition resolve image if multisampled
-            imageBarriers.push_back({
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType
-                nullptr,                                  // const void* pNext
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags srcAccessMask
-                VK_ACCESS_SHADER_READ_BIT,                // VkAccessFlags dstAccessMask
-                VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout
-                VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t srcQueueFamilyIndex
-                VK_QUEUE_FAMILY_IGNORED,                  // uint32_t dstQueueFamilyIndex
-                *wd.intResolve.image,                     // VkImage image
-                makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
-                                          1u) // VkImageSubresourceRange subresourceRange
-            });
-        }
-    }
-
-    if ((params.numDepthStencilSamples != VK_SAMPLE_COUNT_1_BIT || params.renderToAttachment) &&
-        (isDepthFormat(params.depthStencilFormat) || isStencilFormat(params.depthStencilFormat)))
-    {
-        // Transition depth/stencil image to DEPTH_STENCIL_READ_ONLY_OPTIMAL layout
-        imageBarriers.push_back({
-            VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType
-            nullptr,                                         // const void* pNext
-            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,    // VkAccessFlags srcAccessMask
-            VK_ACCESS_SHADER_READ_BIT,                       // VkAccessFlags dstAccessMask
-            VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout oldLayout
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-            VK_QUEUE_FAMILY_IGNORED,                         // uint32_t srcQueueFamilyIndex
-            VK_QUEUE_FAMILY_IGNORED,                         // uint32_t dstQueueFamilyIndex
-            *wd.depthStencil.image,                          // VkImage image
-            makeImageSubresourceRange(getDepthStencilAspectFlags(params.depthStencilFormat), 0u, 1u, 0u,
-                                      1u) // VkImageSubresourceRange subresourceRange
-        });
-
-        if (params.numDepthStencilSamples != VK_SAMPLE_COUNT_1_BIT)
-        {
-            // Transition resolve image if multisampled
-            imageBarriers.push_back({
-                VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,          // VkStructureType sType
-                nullptr,                                         // const void* pNext
-                VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,    // VkAccessFlags srcAccessMask
-                VK_ACCESS_SHADER_READ_BIT,                       // VkAccessFlags dstAccessMask
-                VK_IMAGE_LAYOUT_UNDEFINED,                       // VkImageLayout oldLayout
-                VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL, // VkImageLayout newLayout
-                VK_QUEUE_FAMILY_IGNORED,                         // uint32_t srcQueueFamilyIndex
-                VK_QUEUE_FAMILY_IGNORED,                         // uint32_t dstQueueFamilyIndex
-                *wd.depthStencilResolve.image,                   // VkImage image
-                makeImageSubresourceRange(getDepthStencilAspectFlags(params.depthStencilFormat), 0u, 1u, 0u,
-                                          1u) // VkImageSubresourceRange subresourceRange
-            });
-        }
-    }
-
-    // Apply all image transitions if needed
-    if (!imageBarriers.empty())
-    {
-        vk.cmdPipelineBarrier(*testObjects.cmdBuffer,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
-                                  VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
-                                  VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                              VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr,
-                              static_cast<uint32_t>(imageBarriers.size()), imageBarriers.data());
-    }
-
     const VkPushConstantRange &verifyPushConstantRange = {
         VK_SHADER_STAGE_COMPUTE_BIT,                                        // VkShaderStageFlags    stageFlags;
         0,                                                                  // uint32_t              offset;
@@ -5433,6 +5419,8 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 
     const bool boolRange[] = {false, true};
 
+    const ImageMemoryType imageMemoryTypeRange[] = {IMAGE_MEMORY_DEFAULT, IMAGE_MEMORY_AHB_COLOR, IMAGE_MEMORY_AHB_DS};
+
     // Test 1: Simple tests that verify Nx multisampling actually uses N samples.
     {
         MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "basic"));
@@ -5460,29 +5448,47 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 
                                 for (const bool renderToWholeFramebuffer : boolRange)
                                 {
-                                    TestParams testParams;
-                                    deMemset(&testParams, 0, sizeof(testParams));
+                                    const char *wholeFramebufferName =
+                                        renderToWholeFramebuffer ? "whole_framebuffer" : "sub_framebuffer";
+                                    MovePtr<tcu::TestCaseGroup> wholeFramebufferGroup(
+                                        new tcu::TestCaseGroup(rootGroup->getTestContext(), wholeFramebufferName));
+                                    for (const auto imageMemoryType : imageMemoryTypeRange)
+                                    {
+                                        if ((imageMemoryType == IMAGE_MEMORY_AHB_COLOR ||
+                                             imageMemoryType == IMAGE_MEMORY_AHB_DS) &&
+                                            !isMultisampledRenderToSingleSampled)
+                                        {
+                                            continue;
+                                        }
 
-                                    testParams.pipelineConstructionType = pipelineConstructionType;
-                                    testParams.isMultisampledRenderToSingleSampled =
-                                        isMultisampledRenderToSingleSampled;
-                                    testParams.floatColor1Format    = color1Format;
-                                    testParams.floatColor2Format    = color2Format;
-                                    testParams.intColorFormat       = color3Format;
-                                    testParams.depthStencilFormat   = depthStencilFormat;
-                                    testParams.dynamicRendering     = dynamicRendering;
-                                    testParams.useGarbageAttachment = false;
-                                    testParams.renderToAttachment   = true;
+                                        TestParams testParams;
+                                        deMemset(&testParams, 0, sizeof(testParams));
 
-                                    generateBasicTest(rng, testParams, sampleCount, resolveMode,
-                                                      renderToWholeFramebuffer);
+                                        testParams.pipelineConstructionType = pipelineConstructionType;
+                                        testParams.isMultisampledRenderToSingleSampled =
+                                            isMultisampledRenderToSingleSampled;
+                                        testParams.floatColor1Format    = color1Format;
+                                        testParams.floatColor2Format    = color2Format;
+                                        testParams.intColorFormat       = color3Format;
+                                        testParams.depthStencilFormat   = depthStencilFormat;
+                                        testParams.dynamicRendering     = dynamicRendering;
+                                        testParams.useGarbageAttachment = false;
+                                        testParams.renderToAttachment   = true;
+                                        testParams.imageMemoryType      = imageMemoryType;
 
-                                    addFunctionCaseWithPrograms(
-                                        resolveGroup.get(),
-                                        renderToWholeFramebuffer ? "whole_framebuffer" : "sub_framebuffer",
-                                        checkRequirements, initBasicPrograms, testBasic, testParams);
+                                        generateBasicTest(rng, testParams, sampleCount, resolveMode,
+                                                          renderToWholeFramebuffer);
+
+                                        const char *testName = imageMemoryType == IMAGE_MEMORY_DEFAULT   ? "default" :
+                                                               imageMemoryType == IMAGE_MEMORY_AHB_COLOR ? "ahb_color" :
+                                                                                                           "ahb_ds";
+
+                                        addFunctionCaseWithPrograms(wholeFramebufferGroup.get(), testName,
+                                                                    checkRequirements, initBasicPrograms, testBasic,
+                                                                    testParams);
+                                    }
+                                    resolveGroup->addChild(wholeFramebufferGroup.release());
                                 }
-
                                 sampleGroup->addChild(resolveGroup.release());
                             }
                             formatGroup->addChild(sampleGroup.release());
@@ -5533,6 +5539,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                     testParams.dynamicRendering     = dynamicRendering;
                                     testParams.useGarbageAttachment = false;
                                     testParams.renderToAttachment   = true;
+                                    testParams.imageMemoryType      = IMAGE_MEMORY_DEFAULT;
 
                                     generateBasicTest(rng, testParams, sampleCount, resolveMode,
                                                       renderToWholeFramebuffer);
@@ -5597,6 +5604,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
             testParams.dynamicRendering                    = false;
             testParams.useGarbageAttachment                = false;
             testParams.renderToAttachment                  = true;
+            testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
             generateMultiPassTest(rng, testParams);
 
@@ -5664,6 +5672,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
             testParams.dynamicRendering                    = dynamicRendering;
             testParams.useGarbageAttachment                = false;
             testParams.renderToAttachment                  = true;
+            testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
             generateMultiPassTest(rng, testParams);
 
@@ -5743,6 +5752,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                         testParams.dynamicRendering     = false;
                                         testParams.useGarbageAttachment = false;
                                         testParams.renderToAttachment   = renderToAttachment;
+                                        testParams.imageMemoryType      = IMAGE_MEMORY_DEFAULT;
 
                                         generateInputAttachmentsTest(rng, testParams, sampleCount, resolveMode,
                                                                      renderToWholeFramebuffer, renderToAttachment);
@@ -5821,6 +5831,7 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                         testParams.dynamicRendering                    = dynamicRendering;
                         testParams.useGarbageAttachment                = true;
                         testParams.renderToAttachment                  = true;
+                        testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
                         generateBasicTest(rng, testParams, VK_SAMPLE_COUNT_2_BIT, VK_RESOLVE_MODE_SAMPLE_ZERO_BIT,
                                           true);

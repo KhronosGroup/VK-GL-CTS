@@ -2197,6 +2197,37 @@ void createMaxAttributeTests(tcu::TestCaseGroup *maxAttributeTests, PipelineCons
     }
 }
 
+void createComponentMismatchTests(tcu::TestCaseGroup *componentMismatchTests,
+                                  PipelineConstructionType pipelineConstructionType)
+{
+    const struct
+    {
+        VkFormat format;
+        VertexInputTest::GlslType glslType;
+        const char *name;
+    } testCases[] = {
+        {VK_FORMAT_R64G64_SFLOAT, VertexInputTest::GLSL_TYPE_DOUBLE, "r64g64_to_double"},
+        {VK_FORMAT_R64G64B64_SFLOAT, VertexInputTest::GLSL_TYPE_DOUBLE, "r64g64b64_to_double"},
+        {VK_FORMAT_R64G64B64_SFLOAT, VertexInputTest::GLSL_TYPE_DVEC2, "r64g64b64_to_dvec2"},
+        {VK_FORMAT_R64G64B64A64_SFLOAT, VertexInputTest::GLSL_TYPE_DOUBLE, "r64g64b64a64_to_double"},
+        {VK_FORMAT_R64G64B64A64_SFLOAT, VertexInputTest::GLSL_TYPE_DVEC2, "r64g64b64a64_to_dvec2"},
+        {VK_FORMAT_R64G64B64A64_SFLOAT, VertexInputTest::GLSL_TYPE_DVEC3, "r64g64b64a64_to_dvec3"},
+    };
+
+    for (const auto &testCase : testCases)
+    {
+        VertexInputTest::AttributeInfo attributeInfo;
+        attributeInfo.vkType    = testCase.format;
+        attributeInfo.glslType  = testCase.glslType;
+        attributeInfo.inputRate = VK_VERTEX_INPUT_RATE_VERTEX;
+
+        componentMismatchTests->addChild(new VertexInputTest(
+            componentMismatchTests->getTestContext(), testCase.name, pipelineConstructionType,
+            std::vector<VertexInputTest::AttributeInfo>(1, attributeInfo), VertexInputTest::BINDING_MAPPING_ONE_TO_ONE,
+            VertexInputTest::ATTRIBUTE_LAYOUT_INTERLEAVED));
+    }
+}
+
 // The goal of the stride change tests are checking a sequence like the following one:
 //
 // CmdBindVertexBuffers()
@@ -2632,6 +2663,7 @@ tcu::TestStatus runTest(Context &context, Params params)
         auto &alloc = vtxBuffer.getAllocation();
         void *data  = alloc.getHostPtr();
         memcpy(data, de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
     const VkDeviceSize vtxBufferOffset = 0ull;
 
@@ -3061,7 +3093,8 @@ void createVertexInputTests(tcu::TestCaseGroup *vertexInputTests, PipelineConstr
     addTestGroup(vertexInputTests, "multiple_attributes", createMultipleAttributeTests, pipelineConstructionType);
     // Implementations can use as many vertex input attributes as they advertise
     addTestGroup(vertexInputTests, "max_attributes", createMaxAttributeTests, pipelineConstructionType);
-
+    // Uses formats that has more components than shader expects (legal for 64-bit)
+    addTestGroup(vertexInputTests, "component_mismatch", createComponentMismatchTests, pipelineConstructionType);
     // Miscellaneous tests.
     addTestGroup(vertexInputTests, "misc", createMiscVertexInputTests, pipelineConstructionType);
 

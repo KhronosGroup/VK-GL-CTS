@@ -1945,7 +1945,9 @@ struct GraphicsPipelineWrapper::InternalData
 
 #ifndef CTS_USES_VULKANSC
     VkGraphicsPipelineLibraryCreateInfoEXT pipelinePartLibraryCreateInfo[4];
+    VkPipeline pipelineParts[4];
     VkPipelineLibraryCreateInfoKHR finalPipelineLibraryCreateInfo;
+    VkGraphicsPipelineCreateInfo finalPipelineCreateInfo;
     VkPipelineCreateFlags2CreateInfoKHR pipelinePartFlags2CreateInfo[4];
     VkPipelineCreateFlags2CreateInfoKHR finalPipelineFlags2CreateInfo;
 #endif
@@ -4110,26 +4112,21 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
     else
     {
 #ifndef CTS_USES_VULKANSC
-        VkGraphicsPipelineCreateInfo linkedCreateInfo = initVulkanStructure();
-        std::vector<VkPipeline> rawPipelines;
-        VkPipelineLibraryCreateInfoKHR linkingInfo{
-            VK_STRUCTURE_TYPE_PIPELINE_LIBRARY_CREATE_INFO_KHR, // VkStructureType sType;
-            creationFeedback.ptr,                               // const void* pNext;
-            0u,                                                 // uint32_t libraryCount;
-            nullptr,                                            // const VkPipeline* pLibraries;
-        };
-
         if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
         {
+            m_internalData->finalPipelineCreateInfo        = initVulkanStructure();
+            m_internalData->finalPipelineLibraryCreateInfo = initVulkanStructure(creationFeedback.ptr);
+
             for (const auto &pipelinePtr : m_pipelineParts)
             {
                 const auto &pipeline = pipelinePtr.get();
                 if (pipeline != VK_NULL_HANDLE)
-                    rawPipelines.push_back(pipeline);
+                    m_internalData->pipelineParts[m_internalData->finalPipelineLibraryCreateInfo.libraryCount++] =
+                        pipeline;
             }
 
-            linkingInfo.libraryCount = static_cast<uint32_t>(rawPipelines.size());
-            linkingInfo.pLibraries   = de::dataOrNull(rawPipelines);
+            m_internalData->finalPipelineLibraryCreateInfo.pLibraries =
+                (m_internalData->finalPipelineLibraryCreateInfo.libraryCount) ? m_internalData->pipelineParts : nullptr;
 
             // If a test hits the following assert, it's likely missing a call
             // to the setMonolithicPipelineLayout() method. Related VUs:
@@ -4139,17 +4136,19 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06729
             //   * VUID-VkGraphicsPipelineCreateInfo-flags-06730
             DE_ASSERT(m_internalData->monolithicPipelineCreateInfo.layout != VK_NULL_HANDLE);
-            linkedCreateInfo.layout = m_internalData->monolithicPipelineCreateInfo.layout;
-            linkedCreateInfo.flags  = m_internalData->pipelineFlags;
-            linkedCreateInfo.pNext  = &linkingInfo;
+            m_internalData->finalPipelineCreateInfo.layout = m_internalData->monolithicPipelineCreateInfo.layout;
+            m_internalData->finalPipelineCreateInfo.flags  = m_internalData->pipelineFlags;
+            m_internalData->finalPipelineCreateInfo.pNext  = &m_internalData->finalPipelineLibraryCreateInfo;
 
-            pointerToCreateInfo = &linkedCreateInfo;
+            pointerToCreateInfo      = &m_internalData->finalPipelineCreateInfo;
+            void *firstStructInChain = static_cast<void *>(pointerToCreateInfo);
+            addToChain(&firstStructInChain, pNext);
 
             if (m_internalData->pipelineConstructionType == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY)
-                linkedCreateInfo.flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
+                pointerToCreateInfo->flags |= VK_PIPELINE_CREATE_LINK_TIME_OPTIMIZATION_BIT_EXT;
 
             if (m_internalData->failOnCompileWhenLinking)
-                linkedCreateInfo.flags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
+                pointerToCreateInfo->flags |= VK_PIPELINE_CREATE_FAIL_ON_PIPELINE_COMPILE_REQUIRED_BIT;
         }
         else
         {
@@ -4715,7 +4714,12 @@ vk::VkPipeline GraphicsPipelineWrapper::getPartialPipeline(uint32_t part) const
 const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPipelineCreateInfo(void) const
 {
     DE_ASSERT(m_internalData);
-    return m_internalData->monolithicPipelineCreateInfo;
+#ifndef CTS_USES_VULKANSC
+    if (isConstructionTypeLibrary(m_internalData->pipelineConstructionType))
+        return m_internalData->finalPipelineCreateInfo;
+    else
+#endif
+        return m_internalData->monolithicPipelineCreateInfo;
 }
 const VkGraphicsPipelineCreateInfo &GraphicsPipelineWrapper::getPartialPipelineCreateInfo(uint32_t part) const
 {

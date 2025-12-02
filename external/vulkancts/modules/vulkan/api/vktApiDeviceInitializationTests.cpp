@@ -997,7 +997,7 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
     const VkPhysicalDevice physicalDevice =
         chooseDevice(instanceDriver, instance, context.getTestContext().getCommandLine());
     const vector<float> queuePriorities(1, 1.0f);
-    const VkQueueGlobalPriorityEXT globalPriorities[] = {
+    const VkQueueGlobalPriority globalPriorities[] = {
         VK_QUEUE_GLOBAL_PRIORITY_LOW_KHR, VK_QUEUE_GLOBAL_PRIORITY_MEDIUM_KHR, VK_QUEUE_GLOBAL_PRIORITY_HIGH_KHR,
         VK_QUEUE_GLOBAL_PRIORITY_REALTIME_KHR};
 
@@ -1044,9 +1044,9 @@ tcu::TestStatus createDeviceWithGlobalPriorityTest(Context &context, bool useKhr
         enabledExtensions.emplace_back("VK_KHR_get_physical_device_properties2");
     }
 
-    for (VkQueueGlobalPriorityEXT globalPriority : globalPriorities)
+    for (VkQueueGlobalPriority globalPriority : globalPriorities)
     {
-        const VkDeviceQueueGlobalPriorityCreateInfoEXT queueGlobalPriority = {
+        const VkDeviceQueueGlobalPriorityCreateInfo queueGlobalPriority{
             VK_STRUCTURE_TYPE_DEVICE_QUEUE_GLOBAL_PRIORITY_CREATE_INFO_KHR, //sType;
             nullptr,                                                        //pNext;
             globalPriority                                                  //globalPriority;

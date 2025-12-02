@@ -5,13 +5,8 @@
 
 static const char* s_allowedInstanceKhrExtensions[] =
 {
-	"VK_KHR_device_group_creation",
 	"VK_KHR_display",
-	"VK_KHR_external_fence_capabilities",
-	"VK_KHR_external_memory_capabilities",
-	"VK_KHR_external_semaphore_capabilities",
 	"VK_KHR_get_display_properties2",
-	"VK_KHR_get_physical_device_properties2",
 	"VK_KHR_get_surface_capabilities2",
 	"VK_KHR_surface",
 };

@@ -742,7 +742,8 @@ void CooperativeVectorTestCase::initPrograms(SourceCollections &programCollectio
                    << ">";
 
     css << vecAType.str() << " vecA;\n";
-    css << vecBType.str() << " vecB;\n";
+    // Initialize vecB to avoid division by undef/zero.
+    css << vecBType.str() << " vecB = " << vecBType.str() << "(1);\n";
     css << outputVecType.str() << " vecO;\n";
 
     if (m_data.testType == TT_CONSTANT)

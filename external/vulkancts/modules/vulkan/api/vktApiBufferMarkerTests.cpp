@@ -440,6 +440,8 @@ struct BufferMarkerMemDepCase : public ApiBufferMarkerMemDepTestCase
             {caps.getContextManager().getDeviceFeaturesAndProperties().getDeviceProperties().limits.nonCoherentAtomSize,
              static_cast<VkDeviceSize>(m_arg0.arg0.base.offset)});
         caps.setAllocatorParams(offsetParams);
+
+        caps.addFeature(&VkPhysicalDeviceFeatures::fragmentStoresAndAtomics);
     }
 };
 

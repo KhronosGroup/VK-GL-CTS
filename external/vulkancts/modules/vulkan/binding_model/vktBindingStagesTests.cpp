@@ -445,6 +445,7 @@ tcu::TestStatus StagesTestInstance::iterate(void)
         }
     }
 
+    invalidateAlloc(vk, device, colorOutputBuffer.get()->getAllocation());
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         tcu::TextureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8), renderSize.x(), renderSize.y(), 1,
         (const void *)colorOutputBuffer.get()->getAllocation().getHostPtr());

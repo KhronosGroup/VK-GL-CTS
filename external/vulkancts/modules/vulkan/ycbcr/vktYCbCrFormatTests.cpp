@@ -256,6 +256,10 @@ void checkSupport(Context &context, const TestParameters params)
         if (properties.maxArrayLayers < 2)
             TCU_THROW(NotSupportedError, "Image format does not support more than 1 maxArrayLayers");
     }
+
+    if (params.shaderType == glu::SHADERTYPE_VERTEX || params.shaderType == glu::SHADERTYPE_TESSELLATION_CONTROL ||
+        params.shaderType == glu::SHADERTYPE_TESSELLATION_EVALUATION || params.shaderType == glu::SHADERTYPE_GEOMETRY)
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_VERTEX_PIPELINE_STORES_AND_ATOMICS);
 }
 
 void generateLookupCoordinates(const UVec2 &imageSize, vector<Vec2> *dst)
@@ -292,6 +296,16 @@ tcu::TestStatus testFormat(Context &context, TestParameters params)
     const vector<AllocationSp> allocations(
         allocateAndBindImageMemory(vkd, device, context.getDefaultAllocator(), *image, format, createFlags,
                                    mappedMemory ? MemoryRequirement::HostVisible : MemoryRequirement::Any));
+
+    const VkFormatProperties formatProperties =
+        getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
+    const VkFormatFeatureFlags featureFlags = tiling == VK_IMAGE_TILING_OPTIMAL ?
+                                                  formatProperties.optimalTilingFeatures :
+                                                  formatProperties.linearTilingFeatures;
+
+    // VUID-VkSamplerYcbcrConversionCreateInfo-xChromaOffset-01652
+    if (!(featureFlags & VK_FORMAT_FEATURE_MIDPOINT_CHROMA_SAMPLES_BIT))
+        TCU_THROW(NotSupportedError, "Format does not support midpoint chroma subsampling");
 
     const VkSamplerYcbcrConversionCreateInfo conversionInfo = {
         VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_CREATE_INFO,

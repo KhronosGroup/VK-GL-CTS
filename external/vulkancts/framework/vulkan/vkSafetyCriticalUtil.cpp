@@ -247,8 +247,7 @@ void hashPNextChain(std::size_t &seed, const void *pNext, const std::map<uint64_
         }
         case VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_DIVISOR_STATE_CREATE_INFO_KHR:
         {
-            VkPipelineVertexInputDivisorStateCreateInfoEXT *ptr =
-                (VkPipelineVertexInputDivisorStateCreateInfoEXT *)pNext;
+            VkPipelineVertexInputDivisorStateCreateInfo *ptr = (VkPipelineVertexInputDivisorStateCreateInfo *)pNext;
             if (ptr->pVertexBindingDivisors != nullptr)
                 for (uint32_t i = 0; i < ptr->vertexBindingDivisorCount; ++i)
                     hash_combine(seed, ptr->pVertexBindingDivisors[i].binding, ptr->pVertexBindingDivisors[i].divisor);

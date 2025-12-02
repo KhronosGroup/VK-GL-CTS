@@ -265,7 +265,7 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
         0,                                            //    uint32_t                deviceMask
     };
 
-    VkMemoryOpaqueCaptureAddressAllocateInfoKHR captureInfo = {
+    VkMemoryOpaqueCaptureAddressAllocateInfo captureInfo = {
         VK_STRUCTURE_TYPE_MEMORY_OPAQUE_CAPTURE_ADDRESS_ALLOCATE_INFO, // VkStructureType sType
         nullptr,                                                       // const void*     pNext
         memoryOpaqueCaptureAddr,                                       // uint64_t        opaqueCaptureAddress

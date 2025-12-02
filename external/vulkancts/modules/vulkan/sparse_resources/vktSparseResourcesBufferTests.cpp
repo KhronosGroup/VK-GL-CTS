@@ -86,6 +86,8 @@ enum TestFlagBits
     TEST_FLAG_NON_RESIDENT_STRICT  = 1u << 2, //!< residencyNonResidentStrict
     TEST_FLAG_ENABLE_DEVICE_GROUPS = 1u << 3, //!< device groups are enabled
     TEST_FLAG_TRANSFORM_FEEDBACK   = 1u << 4, //!< require transform feedback extension
+    TEST_FLAG_USE_COPY_INDIRECT    = 1u << 5, //!< use VK_KHR_copy_memory_indirect
+    TEST_FLAG_USE_BUFFER_ADDRESS   = 1u << 6, //!< use VK_KHR_buffer_device_address
 };
 typedef uint32_t TestFlags;
 
@@ -618,7 +620,13 @@ public:
             requirements.push_back(QueueRequirements(VK_QUEUE_SPARSE_BINDING_BIT, 1u));
             requirements.push_back(QueueRequirements(VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, 1u));
 
-            createDeviceSupportingQueues(requirements, false, false, flags & TEST_FLAG_TRANSFORM_FEEDBACK);
+            // Check if we need to enable additional extensions for indirect copy or buffer device address
+            const bool useTransformFeedback = (flags & TEST_FLAG_TRANSFORM_FEEDBACK) != 0;
+            const bool useCopyIndirect      = (flags & TEST_FLAG_USE_COPY_INDIRECT) != 0;
+            const bool useBufferAddress     = (flags & TEST_FLAG_USE_BUFFER_ADDRESS) != 0;
+
+            createDeviceSupportingQueues(requirements, false, false, useTransformFeedback, useCopyIndirect,
+                                         useBufferAddress);
         }
 
         const DeviceInterface &vk = getDeviceInterface();
@@ -1467,6 +1475,218 @@ private:
     MovePtr<Allocation> m_vertexBufferAlloc;
 };
 
+//! Test using copy memory indirect command
+class IndirectMemoryCopyTestInstance : public DrawGridTestInstance
+{
+public:
+    IndirectMemoryCopyTestInstance(Context &context, const TestFlags flags)
+        : DrawGridTestInstance(context, flags, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,
+                               GRID_SIZE * GRID_SIZE * 6 * sizeof(Vec4))
+    {
+        // Check for extension requirements
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
+        {
+            TCU_THROW(NotSupportedError, "VK_KHR_copy_memory_indirect not supported");
+        }
+
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+        {
+            TCU_THROW(NotSupportedError, "VK_KHR_buffer_device_address not supported");
+        }
+    }
+
+    void rendererDraw(const VkPipelineLayout pipelineLayout, const VkCommandBuffer cmdBuffer) const
+    {
+        DE_UNREF(pipelineLayout);
+
+        m_context.getTestContext().getLog() << tcu::TestLog::Message
+                                            << "Drawing a grid of triangles backed by a sparse vertex buffer using "
+                                               "indirect memory copy. There should be no red pixels visible."
+                                            << tcu::TestLog::EndMessage;
+
+        const DeviceInterface &vk  = getDeviceInterface();
+        const uint32_t vertexCount = 6 * (GRID_SIZE * GRID_SIZE) / 2;
+        VkDeviceSize vertexOffset  = 0ull;
+
+        vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_sparseBuffer.get(), &vertexOffset);
+        vk.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+
+        vertexOffset += m_perDrawBufferOffset * (m_residency ? 2 : 1);
+
+        vk.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &m_sparseBuffer.get(), &vertexOffset);
+        vk.cmdDraw(cmdBuffer, vertexCount, 1u, 0u, 0u);
+    }
+
+    void initializeBuffers(void)
+    {
+        uint8_t *pData   = static_cast<uint8_t *>(m_stagingBufferAlloc->getHostPtr());
+        const float step = 2.0f / static_cast<float>(GRID_SIZE);
+
+        // Prepare data for two draw calls
+        generateGrid(pData, step, -1.0f, -1.0f, GRID_SIZE, GRID_SIZE / 2);
+        generateGrid(pData + m_perDrawBufferOffset, step, -1.0f, 0.0f, GRID_SIZE, GRID_SIZE / 2);
+    }
+
+    tcu::TestStatus iterate(void)
+    {
+        const DeviceInterface &vk = getDeviceInterface();
+
+        for (uint32_t physDevID = 0; physDevID < m_numPhysicalDevices; physDevID++)
+        {
+            const uint32_t firstDeviceID  = physDevID;
+            const uint32_t secondDeviceID = (firstDeviceID + 1) % m_numPhysicalDevices;
+
+            createResources(secondDeviceID);
+
+            if (firstDeviceID != secondDeviceID)
+            {
+                VkPeerMemoryFeatureFlags peerMemoryFeatureFlags = (VkPeerMemoryFeatureFlags)0;
+                vk.getDeviceGroupPeerMemoryFeatures(getDevice(), m_sparseAllocation->heapIndex, firstDeviceID,
+                                                    secondDeviceID, &peerMemoryFeatureFlags);
+
+                if (((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_COPY_DST_BIT) == 0) ||
+                    ((peerMemoryFeatureFlags & VK_PEER_MEMORY_FEATURE_GENERIC_SRC_BIT) == 0))
+                {
+                    TCU_THROW(NotSupportedError, "Peer memory does not support COPY_DST and GENERIC_SRC");
+                }
+            }
+
+            // Make sure the sparse buffer has device address capability
+            VkBufferCreateInfo sparseBufferCreateInfo = getSparseBufferCreateInfo(
+                VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+            sparseBufferCreateInfo.size = m_sparseAllocation->resourceSize;
+            m_sparseBuffer              = makeBuffer(vk, getDevice(), sparseBufferCreateInfo);
+
+            // Bind the memory
+            bindSparseBuffer(vk, getDevice(), m_sparseQueue.queueHandle, *m_sparseBuffer, *m_sparseAllocation,
+                             usingDeviceGroups(), firstDeviceID, secondDeviceID);
+
+            initializeBuffers();
+
+            // Recreate staging buffer with device address capability
+            const VkBufferCreateInfo stagingBufferCreateInfo = {
+                VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType        sType
+                nullptr,                              // const void*            pNext
+                0,                                    // VkBufferCreateFlags    flags
+                m_stagingBufferSize,                  // VkDeviceSize           size
+                VK_BUFFER_USAGE_TRANSFER_SRC_BIT |    // VkBufferUsageFlags     usage
+                    VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+                VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode          sharingMode
+                0u,                        // uint32_t               queueFamilyIndexCount
+                nullptr,                   // const uint32_t*        pQueueFamilyIndices
+            };
+
+            Move<VkBuffer> stagingBufferWithAddress = makeBuffer(vk, getDevice(), stagingBufferCreateInfo);
+            MovePtr<Allocation> stagingBufferWithAddressAlloc =
+                bindBuffer(vk, getDevice(), getAllocator(), *stagingBufferWithAddress, MemoryRequirement::HostVisible);
+
+            // Copy data from original staging buffer
+            deMemcpy(stagingBufferWithAddressAlloc->getHostPtr(), m_stagingBufferAlloc->getHostPtr(),
+                     static_cast<size_t>(m_stagingBufferSize));
+            flushAlloc(vk, getDevice(), *stagingBufferWithAddressAlloc);
+
+            // Create an indirect buffer for memory copy commands
+            const VkDeviceSize indirectBufferSize = 2 * sizeof(VkCopyMemoryIndirectCommandKHR);
+            Move<VkBuffer> indirectBuffer =
+                makeBuffer(vk, getDevice(), indirectBufferSize,
+                           VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+            MovePtr<Allocation> indirectBufferAlloc =
+                bindBuffer(vk, getDevice(), getAllocator(), *indirectBuffer, MemoryRequirement::HostVisible);
+
+            // Fill the indirect buffer with copy commands
+            VkCopyMemoryIndirectCommandKHR *indirectCommands =
+                static_cast<VkCopyMemoryIndirectCommandKHR *>(indirectBufferAlloc->getHostPtr());
+
+            VkDeviceSize firstChunkOffset  = 0ull;
+            VkDeviceSize secondChunkOffset = m_perDrawBufferOffset;
+
+            if (m_residency)
+                secondChunkOffset += m_perDrawBufferOffset;
+
+            if (m_aliased)
+                firstChunkOffset = secondChunkOffset + m_perDrawBufferOffset;
+
+            indirectCommands[0].srcAddress = getBufferDeviceAddress(vk, getDevice(), *stagingBufferWithAddress);
+            indirectCommands[0].dstAddress =
+                getBufferDeviceAddress(vk, getDevice(), *m_sparseBuffer) + firstChunkOffset;
+            indirectCommands[0].size = m_perDrawBufferOffset;
+
+            indirectCommands[1].srcAddress =
+                getBufferDeviceAddress(vk, getDevice(), *stagingBufferWithAddress) + m_perDrawBufferOffset;
+            indirectCommands[1].dstAddress =
+                getBufferDeviceAddress(vk, getDevice(), *m_sparseBuffer) + secondChunkOffset;
+            indirectCommands[1].size = m_perDrawBufferOffset;
+
+            flushAlloc(vk, getDevice(), *indirectBufferAlloc);
+
+            // Copy using indirect memory copy
+            flushAlloc(vk, getDevice(), *stagingBufferWithAddressAlloc);
+
+            const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, getDevice(), m_universalQueue.queueFamilyIndex));
+            const Unique<VkCommandBuffer> cmdBuffer(
+                allocateCommandBuffer(vk, getDevice(), *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+            beginCommandBuffer(vk, *cmdBuffer);
+
+            // Get device address of indirect buffer
+            VkDeviceAddress indirectBufferAddress = getBufferDeviceAddress(vk, getDevice(), *indirectBuffer);
+
+            // Set up the indirect copy info
+            VkStridedDeviceAddressRangeKHR addressRange = {
+                indirectBufferAddress,                      // VkDeviceAddress deviceAddress
+                2 * sizeof(VkCopyMemoryIndirectCommandKHR), // VkDeviceSize size
+                sizeof(VkCopyMemoryIndirectCommandKHR)      // VkDeviceSize stride
+            };
+
+            VkCopyMemoryIndirectInfoKHR copyMemoryIndirectKHR = {};
+            copyMemoryIndirectKHR.sType                       = VK_STRUCTURE_TYPE_COPY_MEMORY_INDIRECT_INFO_KHR;
+            copyMemoryIndirectKHR.pNext                       = nullptr;
+            copyMemoryIndirectKHR.copyAddressRange            = addressRange;
+            copyMemoryIndirectKHR.srcCopyFlags                = VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR;
+            copyMemoryIndirectKHR.dstCopyFlags                = VK_ADDRESS_COPY_SPARSE_BIT_KHR;
+            copyMemoryIndirectKHR.copyCount                   = 2;
+
+            // Perform the indirect memory copy
+            vk.cmdCopyMemoryIndirectKHR(*cmdBuffer, &copyMemoryIndirectKHR);
+
+            // Memory barrier to ensure copy completes before rendering
+            VkBufferMemoryBarrier bufferBarrier = {};
+            bufferBarrier.sType                 = VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER;
+            bufferBarrier.srcAccessMask         = VK_ACCESS_TRANSFER_WRITE_BIT;
+            bufferBarrier.dstAccessMask         = VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
+            bufferBarrier.buffer                = *m_sparseBuffer;
+            bufferBarrier.offset                = 0;
+            bufferBarrier.size                  = VK_WHOLE_SIZE;
+
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0, 0,
+                                  nullptr, 1, &bufferBarrier, 0, nullptr);
+
+            endCommandBuffer(vk, *cmdBuffer);
+
+            submitCommandsAndWait(vk, getDevice(), m_universalQueue.queueHandle, *cmdBuffer, 0u, nullptr, nullptr, 0,
+                                  nullptr, usingDeviceGroups(), firstDeviceID);
+
+            // Draw and verify
+            Renderer::SpecializationMap specMap;
+            draw(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, VK_NULL_HANDLE, specMap, usingDeviceGroups(), firstDeviceID);
+
+            if (!isResultCorrect())
+                return tcu::TestStatus::fail("Some buffer values were incorrect");
+        }
+        return tcu::TestStatus::pass("Pass");
+    }
+
+private:
+    // Helper function to get buffer device address
+    VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, VkDevice device, VkBuffer buffer)
+    {
+        VkBufferDeviceAddressInfo addressInfo = {};
+        addressInfo.sType                     = VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO;
+        addressInfo.buffer                    = buffer;
+        return vk.getBufferDeviceAddress(device, &addressInfo);
+    }
+};
+
 //! Use sparse transform feedback buffer
 class TransformFeedbackTestInstance : public DrawGridTestInstance
 {
@@ -2115,6 +2335,52 @@ tcu::TestStatus NullAddressReadInstance::iterate()
 
 #endif // CTS_USES_VULKANSC
 
+void checkSupportForMemoryCopyTest(Context &context, const TestFlags flags)
+{
+    // Check basic sparse functionality requirements first
+    checkSupport(context, flags);
+
+    // Now check for required extensions
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
+        TCU_THROW(NotSupportedError, "Extension VK_KHR_copy_memory_indirect not supported");
+
+    if (!context.isDeviceFunctionalitySupported("VK_KHR_buffer_device_address"))
+        TCU_THROW(NotSupportedError, "Extension VK_KHR_buffer_device_address not supported");
+}
+
+// Custom TestCase that will enable required extensions
+class IndirectMemoryCopyTestCase : public TestCase
+{
+public:
+    IndirectMemoryCopyTestCase(tcu::TestContext &testCtx, const std::string &name, const TestFlags flags)
+        : TestCase(testCtx, name)
+        , m_flags(flags)
+    {
+    }
+
+    void initPrograms(vk::SourceCollections &programCollection) const
+    {
+        initProgramsDrawGrid(programCollection, m_flags);
+    }
+
+    void checkSupport(Context &context) const
+    {
+        checkSupportForMemoryCopyTest(context, m_flags);
+    }
+
+    TestInstance *createInstance(Context &context) const
+    {
+        std::vector<std::string> requiredExtensions;
+        requiredExtensions.push_back("VK_KHR_copy_memory_indirect");
+        requiredExtensions.push_back("VK_KHR_buffer_device_address");
+
+        return new IndirectMemoryCopyTestInstance(context, m_flags);
+    }
+
+private:
+    const TestFlags m_flags;
+};
+
 //! Convenience function to create a TestCase based on a freestanding initPrograms and a TestInstance implementation
 template <typename TestInstanceT, typename Arg0>
 TestCase *createTestInstanceWithPrograms(tcu::TestContext &testCtx, const std::string &name,
@@ -2336,6 +2602,23 @@ void populateTestGroup(tcu::TestCaseGroup *parentGroup)
         parentGroup->addChild(miscGroup.release());
     }
 #endif // CTS_USES_VULKANSC
+
+    // Memory copy indirect
+    {
+        MovePtr<tcu::TestCaseGroup> group(
+            new tcu::TestCaseGroup(parentGroup->getTestContext(), "memory_copy_indirect"));
+
+        for (int groupNdx = 0u; groupNdx < numGroupsDefaultList; ++groupNdx)
+        {
+            // Add the required extensions flags
+            TestFlags testFlags = groups[groupNdx].flags | TEST_FLAG_USE_COPY_INDIRECT | TEST_FLAG_USE_BUFFER_ADDRESS;
+
+            group->addChild(createTestInstanceWithPrograms<IndirectMemoryCopyTestInstance>(
+                group->getTestContext(), groups[groupNdx].name.c_str(), initProgramsDrawGrid, testFlags));
+        }
+
+        parentGroup->addChild(group.release());
+    }
 }
 
 } // namespace

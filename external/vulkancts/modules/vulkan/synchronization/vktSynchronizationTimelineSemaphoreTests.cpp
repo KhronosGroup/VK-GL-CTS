@@ -42,6 +42,7 @@
 #include "vkTypeUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkSafetyCriticalUtil.hpp"
+#include "vkBuilderUtil.hpp"
 
 #include "tcuTestLog.hpp"
 #include "tcuCommandLine.hpp"
@@ -2223,7 +2224,8 @@ public:
 
         // Submit
         {
-            submit(vk, *writeCmdBuffer, *m_writeIteration, *semaphore, &m_hostTimelineValue, 1);
+            uint64_t hostWaitValues[] = {m_hostTimelineValue, 0u};
+            submit(vk, *writeCmdBuffer, *m_writeIteration, *semaphore, hostWaitValues, 1);
             for (uint32_t copyOpIdx = 0; copyOpIdx < m_copyIterations.size(); copyOpIdx++)
             {
                 uint64_t waitValues[2] = {
@@ -2721,6 +2723,197 @@ public:
 
 #endif // CTS_USES_VULKANSC
 
+// Check VkTimelineSemaphoreSubmitInfo is correctly ignored when not needed.
+void ignoreTimelineSemaphoreSubmitInfoSupportCheck(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_timeline_semaphore");
+}
+
+void ignoreTimelineSemaphoreSubmitInfoPrograms(vk::SourceCollections &dst)
+{
+    std::ostringstream comp;
+    comp << "#version 460\n"
+         << "layout (local_size_x=1) in;\n"
+         << "layout (push_constant, std430) uniform PCBlock { uint value; } pc;\n"
+         << "layout (set=0, binding=0, std430) buffer BufferBlock { uint value; } ssbo;\n"
+         << "void main (void) {\n"
+         << "    ssbo.value = pc.value;\n"
+         << "}\n";
+    dst.glslSources.add("comp") << glu::ComputeSource(comp.str());
+}
+
+void deviceWaitVec(const DeviceInterface &vkd, VkDevice device, VkQueue queue,
+                   const std::vector<VkSemaphore> &semaphores)
+{
+    const auto topOfPipe = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT);
+    const std::vector<VkPipelineStageFlags> stages(semaphores.size(), topOfPipe);
+
+    const VkSubmitInfo submitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        nullptr,
+        de::sizeU32(semaphores),
+        de::dataOrNull(semaphores),
+        de::dataOrNull(stages),
+        0u,
+        nullptr,
+        0u,
+        nullptr,
+    };
+
+    const auto fence = createFence(vkd, device);
+    VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+    waitForFence(vkd, device, *fence);
+}
+
+void deviceSignalVec(const DeviceInterface &vkd, VkDevice device, VkQueue queue,
+                     const std::vector<VkSemaphore> &semaphores)
+{
+    const VkSubmitInfo submitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr, 0u, nullptr, nullptr, 0u, nullptr, de::sizeU32(semaphores),
+        de::dataOrNull(semaphores),
+    };
+
+    const auto fence = createFence(vkd, device);
+    VK_CHECK(vkd.queueSubmit(queue, 1u, &submitInfo, *fence));
+    waitForFence(vkd, device, *fence);
+}
+
+using SemaphorePtrVec = std::vector<std::unique_ptr<Move<VkSemaphore>>>;
+
+SemaphorePtrVec createBinarySemaphores(const DeviceInterface &vkd, VkDevice device, uint32_t count)
+{
+    SemaphorePtrVec semaphores(count);
+    for (uint32_t i = 0u; i < count; ++i)
+        semaphores.at(i).reset(new Move<VkSemaphore>(createSemaphoreType(vkd, device, VK_SEMAPHORE_TYPE_BINARY)));
+    return semaphores;
+}
+
+using SemaphoreHandleVec = std::vector<VkSemaphore>;
+SemaphoreHandleVec getSemHandles(const SemaphorePtrVec &semaphores)
+{
+    SemaphoreHandleVec handles(semaphores.size(), VK_NULL_HANDLE);
+    for (size_t i = 0; i < semaphores.size(); ++i)
+        handles.at(i) = semaphores.at(i)->get();
+    return handles;
+}
+
+tcu::TestStatus ignoreTimelineSemaphoreSubmitInfoRun(Context &context)
+{
+    const auto ctx              = context.getContextCommonData();
+    const auto descType         = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto bindPoint        = VK_PIPELINE_BIND_POINT_COMPUTE;
+    const auto shaderStages     = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_COMPUTE_BIT);
+    const auto pipelineStages   = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+    const auto dataSize         = DE_SIZEOF32(uint32_t);
+    const auto semaphoreSetSize = 64u;
+
+    DescriptorSetLayoutBuilder setLayoutBuilder;
+    setLayoutBuilder.addSingleBinding(descType, shaderStages);
+    const auto setLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
+
+    const auto pcRange        = makePushConstantRange(shaderStages, 0u, dataSize);
+    const auto pipelineLayout = makePipelineLayout(ctx.vkd, ctx.device, *setLayout, &pcRange);
+
+    const auto &binaries  = context.getBinaryCollection();
+    const auto compShader = createShaderModule(ctx.vkd, ctx.device, binaries.get("comp"));
+    const auto pipeline   = makeComputePipeline(ctx.vkd, ctx.device, *pipelineLayout, *compShader);
+
+    // Output buffer.
+    const auto bufferInfo = makeBufferCreateInfo(dataSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory buffer(ctx.vkd, ctx.device, ctx.allocator, bufferInfo, HostIntent::R);
+
+    // Descriptor pool and set.
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    const auto descriptorPool =
+        poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+    const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *setLayout);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto binding        = DescriptorSetUpdateBuilder::Location::binding;
+    const auto bufferDescInfo = makeDescriptorBufferInfo(*buffer, 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*descriptorSet, binding(0u), descType, &bufferDescInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
+
+    // Create multiple semaphores to wait on, and multiple semaphores to signal. None of them are timeline semaphores.
+    const auto waitSemaphores         = createBinarySemaphores(ctx.vkd, ctx.device, semaphoreSetSize);
+    const auto signalSemaphores       = createBinarySemaphores(ctx.vkd, ctx.device, semaphoreSetSize);
+    const auto waitSemaphoreHandles   = getSemHandles(waitSemaphores);
+    const auto signalSemaphoreHandles = getSemHandles(signalSemaphores);
+
+    // The semaphores to be waited on should be signaled.
+    deviceSignalVec(ctx.vkd, ctx.device, ctx.queue, waitSemaphoreHandles);
+
+    // Main job.
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    const uint32_t pcValue = 777u;
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    ctx.vkd.cmdBindPipeline(cmdBuffer, bindPoint, *pipeline);
+    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, bindPoint, *pipelineLayout, 0u, 1u, &descriptorSet.get(), 0u, nullptr);
+    ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, shaderStages, 0u, dataSize, &pcValue);
+    ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    {
+        const auto barrier  = makeMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+        const auto dstStage = VK_PIPELINE_STAGE_HOST_BIT;
+        cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, pipelineStages, dstStage, &barrier);
+    }
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+
+    // Submit the previous work with unneeded VkTimelineSemaphoreSubmitInfo, where the arrays referenced by it will not
+    // have matching counts with VkSubmitInfo, and are smaller, to make sure the driver ignores the struct instead of
+    // reading beyond the end of the arrays. See VUID-VkSubmitInfo-pNext-03240 and others in the spec (VUIDs from
+    // 1.4.326).
+    const std::vector<VkShaderStageFlags> waitStages(waitSemaphoreHandles.size(), pipelineStages);
+
+    // To see if the implementation tries to access the values array beyond the end, we will allocate a large chunk of
+    // memory and use the end of it to hold the real value, so chances are if the implementation tries to read beyond
+    // that, the read will fail or cause a segfault.
+    constexpr size_t valuesVectorCount = 1000000;
+    std::vector<uint64_t> waitValues(valuesVectorCount, 0);
+    std::vector<uint64_t> signalValues(valuesVectorCount, 0);
+    waitValues.back()   = 1000ull;
+    signalValues.back() = 2000ull;
+
+    const VkTimelineSemaphoreSubmitInfo timelineSemaphoreSubmitInfo = {
+        VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO, nullptr, 1u, &waitValues.back(), 1u, &signalValues.back(),
+    };
+
+    const VkSubmitInfo submitInfo = {
+        VK_STRUCTURE_TYPE_SUBMIT_INFO,
+        &timelineSemaphoreSubmitInfo,
+        de::sizeU32(waitSemaphoreHandles),
+        de::dataOrNull(waitSemaphoreHandles),
+        de::dataOrNull(waitStages),
+        1u,
+        &cmdBuffer,
+        de::sizeU32(signalSemaphoreHandles),
+        de::dataOrNull(signalSemaphoreHandles),
+    };
+
+    const auto fence = createFence(ctx.vkd, ctx.device);
+    VK_CHECK(ctx.vkd.queueSubmit(ctx.queue, 1u, &submitInfo, *fence));
+    waitForFence(ctx.vkd, ctx.device, *fence);
+
+    // Let's wait for the signaled semaphores.
+    deviceWaitVec(ctx.vkd, ctx.device, ctx.queue, signalSemaphoreHandles);
+
+    // Check buffer contents and finish.
+    invalidateAlloc(ctx.vkd, ctx.device, buffer.getAllocation());
+    uint32_t outputValue = 0u;
+    memcpy(&outputValue, buffer.getAllocation().getHostPtr(), sizeof(outputValue));
+
+    if (outputValue != pcValue)
+    {
+        std::ostringstream msg;
+        msg << "Unexpected value found in output buffer: expected " << pcValue << " but found " << outputValue;
+        TCU_FAIL(msg.str());
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createTimelineSemaphoreTests(tcu::TestContext &testCtx)
@@ -2735,6 +2928,12 @@ tcu::TestCaseGroup *createTimelineSemaphoreTests(tcu::TestContext &testCtx)
 #ifndef CTS_USES_VULKANSC
     basicTests->addChild(new SparseBindGroup(testCtx));
 #endif // CTS_USES_VULKANSC
+
+    de::MovePtr<tcu::TestCaseGroup> miscGroup(new tcu::TestCaseGroup(testCtx, "misc"));
+    addFunctionCaseWithPrograms(miscGroup.get(), "ignore_timeline_semaphore_info",
+                                ignoreTimelineSemaphoreSubmitInfoSupportCheck,
+                                ignoreTimelineSemaphoreSubmitInfoPrograms, ignoreTimelineSemaphoreSubmitInfoRun);
+    basicTests->addChild(miscGroup.release());
 
     return basicTests.release();
 }

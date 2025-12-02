@@ -131,7 +131,7 @@ VkImageCreateInfo makeImageCreateInfo(uint32_t width, uint32_t height, VkFormat 
 
 struct TestDeviceFeatures
 {
-    VkPhysicalDeviceRobustness2FeaturesEXT robustness2Features;
+    VkPhysicalDeviceRobustness2FeaturesKHR robustness2Features;
     VkPhysicalDeviceRayTracingPipelineFeaturesKHR rayTracingPipelineFeatures;
     VkPhysicalDeviceAccelerationStructureFeaturesKHR accelerationStructureFeatures;
     VkPhysicalDeviceBufferDeviceAddressFeaturesKHR deviceAddressFeatures;
@@ -148,7 +148,7 @@ struct TestDeviceFeatures
 
     TestDeviceFeatures(const InstanceInterface &vki, VkPhysicalDevice physicalDevice)
     {
-        robustness2Features.sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_EXT;
+        robustness2Features.sType           = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ROBUSTNESS_2_FEATURES_KHR;
         rayTracingPipelineFeatures.sType    = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
         accelerationStructureFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_ACCELERATION_STRUCTURE_FEATURES_KHR;
         deviceAddressFeatures.sType         = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_BUFFER_DEVICE_ADDRESS_FEATURES_KHR;

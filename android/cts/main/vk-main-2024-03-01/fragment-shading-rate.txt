@@ -1,5 +1,9 @@
+dEQP-VK.fragment_shading_rate.dynamic_rendering.primary_cmd_buff.fast_linked_library.misc_tests.helper_invocation
 dEQP-VK.fragment_shading_rate.dynamic_rendering.primary_cmd_buff.monolithic.attachment_rate.misc.maintenance5
 dEQP-VK.fragment_shading_rate.dynamic_rendering.primary_cmd_buff.monolithic.misc.explicit_and_implicit_enable
+dEQP-VK.fragment_shading_rate.dynamic_rendering.primary_cmd_buff.monolithic.misc_tests.helper_invocation
+dEQP-VK.fragment_shading_rate.dynamic_rendering.primary_cmd_buff.pipeline_library.misc_tests.helper_invocation
+dEQP-VK.fragment_shading_rate.renderpass2.fast_linked_library.misc_tests.helper_invocation
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.memory_access
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_depth_read_only_optimal
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.attachment_rate.misc.ro_ds_general
@@ -2233,6 +2237,7 @@ dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.enable_disable_attachm
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.no_frag_shader
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment_robustness2
+dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc_tests.helper_invocation
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.151x431.samples1.ms
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.151x431.samples1.vs
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass.dynamic.attachment.noshaderrate.keep.keep.1x1.samples1.ms
@@ -2493,3 +2498,4 @@ dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass_fragstencil.dynam
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass_fragstencil.dynamic.attachment.shaderrate.replace.replace.33x35.samples1.vs
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass_fragstencil.dynamic.attachment.shaderrate.replace.replace.4x4.samples1.ms
 dEQP-VK.fragment_shading_rate.renderpass2.monolithic.multipass_fragstencil.dynamic.attachment.shaderrate.replace.replace.4x4.samples1.vs
+dEQP-VK.fragment_shading_rate.renderpass2.pipeline_library.misc_tests.helper_invocation

@@ -683,6 +683,7 @@ tcu::TestStatus GPQInstance<VK_QUEUE_COMPUTE_BIT, VK_QUEUE_GRAPHICS_BIT>::iterat
         makeBufferCreateInfo(de::dataSize(positions), VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, producerIndices);
     BufferWithMemory positionsBuffer(vki, vkd, phys, device, allocator, posBuffInfo, MemoryRequirement::HostVisible);
     std::copy_n(positions.data(), positions.size(), begin<tcu::Vec2>(positionsBuffer.getHostPtr()));
+    positionsBuffer.flushAlloc(vkd, device);
     const VkDescriptorBufferInfo posDsBuffInfo =
         makeDescriptorBufferInfo(positionsBuffer.get(), 0, positionsBuffer.getSize());
 
@@ -879,6 +880,7 @@ tcu::TestStatus GPQInstance<VK_QUEUE_GRAPHICS_BIT, VK_QUEUE_COMPUTE_BIT>::iterat
     BufferWithMemory positionsBuffer(vki, vkd, phys, device, allocator, positionBuffInfo,
                                      MemoryRequirement::HostVisible);
     std::copy_n(positions.data(), positions.size(), begin<tcu::Vec2>(positionsBuffer.getHostPtr()));
+    positionsBuffer.flushAlloc(vkd, device);
     const VkDescriptorBufferInfo posDsBuffInfo =
         makeDescriptorBufferInfo(positionsBuffer.get(), 0, positionsBuffer.getSize());
 
@@ -1637,6 +1639,7 @@ BufferWithMemoryPtr makeBlankBuffer(const DeviceInterface &vkd, VkDevice dev, Al
     auto &allocation = buffer->getAllocation();
     void *dataPtr    = allocation.getHostPtr();
     deMemset(dataPtr, 0, static_cast<size_t>(createInfo.size));
+    flushAlloc(vkd, dev, allocation);
 
     return buffer;
 }
@@ -1695,6 +1698,7 @@ BufferWithMemoryPtr makeVertexBuffer(const DeviceInterface &vkd, VkDevice dev, A
     auto &allocation = buffer->getAllocation();
     void *dataPtr    = allocation.getHostPtr();
     deMemcpy(dataPtr, de::dataOrNull(vertices), bufferSize);
+    flushAlloc(vkd, dev, buffer->getAllocation());
 
     return buffer;
 }
@@ -1883,6 +1887,11 @@ tcu::TestStatus PreemptionInstance::iterate(void)
         (compOutBufferB ? compOutBufferB->get() : VK_NULL_HANDLE),
         (transferInBufferB ? transferInBufferB->get() : VK_NULL_HANDLE),
         (transferOutBufferB ? transferOutBufferB->get() : VK_NULL_HANDLE));
+
+    if (transferInBufferA)
+        flushAlloc(vkdA, devA, transferInBufferA->getAllocation());
+    if (transferInBufferB)
+        flushAlloc(vkdB, devB, transferInBufferB->getAllocation());
 
     // Submit both workloads, with the large one first.
     const auto fenceA = submitCommands(vkdA, devA, queueA, *wlDataA.commandBuffer);

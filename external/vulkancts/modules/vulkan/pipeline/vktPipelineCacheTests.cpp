@@ -266,7 +266,7 @@ protected:
     Move<VkPipelineCache> m_cache;
 
     // binary related structures are used when m_mode is set to TestMode::BINARY
-    PipelineBinaryWrapper m_binaries[4];
+    PipelineBinaryWrapper m_binaries[5];
 };
 
 void BaseTestCase::checkSupport(Context &context) const
@@ -279,9 +279,8 @@ BaseTestInstance::BaseTestInstance(Context &context, const TestParam *param)
     : TestInstance(context)
     , m_param(param)
     , m_binaries{
-          {context.getDeviceInterface(), context.getDevice()},
-          {context.getDeviceInterface(), context.getDevice()},
-          {context.getDeviceInterface(), context.getDevice()},
+          {context.getDeviceInterface(), context.getDevice()}, {context.getDeviceInterface(), context.getDevice()},
+          {context.getDeviceInterface(), context.getDevice()}, {context.getDeviceInterface(), context.getDevice()},
           {context.getDeviceInterface(), context.getDevice()},
       }
 {
@@ -533,11 +532,7 @@ GraphicsTestInstance::GraphicsTestInstance(Context &context, const TestParam *pa
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
 
-    // pipeline reconstructed from binaries should not use RETAIN_LINK_TIME_OPTIMIZATION/LINK_TIME_OPTIMIZATION
     PipelineConstructionType pipelineConstructionTypeForUseBlobs = param->getPipelineConstructionType();
-    if ((param->getMode() == TestMode::BINARY) &&
-        (pipelineConstructionTypeForUseBlobs == PIPELINE_CONSTRUCTION_TYPE_LINK_TIME_OPTIMIZED_LIBRARY))
-        pipelineConstructionTypeForUseBlobs = PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY;
 
     m_pipeline[PIPELINE_NDX_NO_BLOBS]  = GraphicsPipelinePtr(new GraphicsPipelineWrapper(
         context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(), context.getDevice(),
@@ -810,20 +805,18 @@ void GraphicsTestInstance::preparePipelineWrapper(GraphicsPipelineWrapper &gpw, 
     // reuse graphics tests to also check if pipeline key is valid when pipeline binaries are tested
     if ((m_param->getMode() == TestMode::BINARY) && useShaderModules)
     {
-        if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
-        {
-            auto &pipelineCreateInfo = gpw.getPipelineCreateInfo();
-            auto pipelineKey         = m_binaries[0].getPipelineKey(&pipelineCreateInfo);
-            if (pipelineKey.keySize == 0)
-                TCU_FAIL("vkGetPipelineKeyKHR returned keySize == 0");
-        }
-        else
+        auto &pipelineCreateInfo = gpw.getPipelineCreateInfo();
+        auto pipelineKey         = m_binaries[0].getPipelineKey(&pipelineCreateInfo);
+        if (pipelineKey.keySize == 0)
+            TCU_FAIL("vkGetPipelineKeyKHR returned keySize == 0");
+
+        if (m_param->getPipelineConstructionType() != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
         {
             for (uint32_t i = 0; i < 4; ++i)
             {
-                auto &pipelineCreateInfo = gpw.getPartialPipelineCreateInfo(i);
-                auto pipelineKey         = m_binaries[i].getPipelineKey(&pipelineCreateInfo);
-                if (pipelineKey.keySize == 0)
+                auto &partialPipelineCreateInfo = gpw.getPartialPipelineCreateInfo(i);
+                auto partialPipelineKey         = m_binaries[1 + i].getPipelineKey(&partialPipelineCreateInfo);
+                if (partialPipelineKey.keySize == 0)
                     TCU_FAIL("vkGetPipelineKeyKHR returned keySize == 0");
             }
         }
@@ -839,53 +832,48 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
 
     preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_NO_BLOBS], VK_NULL_HANDLE, false, true);
 
-    if (m_param->getPipelineConstructionType() == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    VkPipeline pipeline = m_pipeline[PIPELINE_NDX_NO_BLOBS]->getPipeline();
+    m_binaries[0].createPipelineBinariesFromPipeline(pipeline);
+
+    if (createFromBlobs)
     {
-        VkPipeline pipeline = m_pipeline[PIPELINE_NDX_NO_BLOBS]->getPipeline();
-        m_binaries[0].createPipelineBinariesFromPipeline(pipeline);
+        // read binaries data out of the device
+        std::vector<VkPipelineBinaryDataKHR> pipelineDataInfo;
+        std::vector<std::vector<uint8_t>> pipelineDataBlob;
+        m_binaries[0].getPipelineBinaryData(pipelineDataInfo, pipelineDataBlob);
 
-        if (createFromBlobs)
-        {
-            // read binaries data out of the device
-            std::vector<VkPipelineBinaryDataKHR> pipelineDataInfo;
-            std::vector<std::vector<uint8_t>> pipelineDataBlob;
-            m_binaries[0].getPipelineBinaryData(pipelineDataInfo, pipelineDataBlob);
+        // clear pipeline binaries objects
+        m_binaries[0].deletePipelineBinariesKeepKeys();
 
-            // clear pipeline binaries objects
-            m_binaries[0].deletePipelineBinariesKeepKeys();
-
-            // recreate binaries from data blobs
-            m_binaries[0].createPipelineBinariesFromBinaryData(pipelineDataInfo);
-        }
-        else
-        {
-            VkReleaseCapturedPipelineDataInfoKHR releaseCapturedPipelineDataInfo = initVulkanStructure();
-            releaseCapturedPipelineDataInfo.pipeline                             = pipeline;
-            vk.releaseCapturedPipelineDataKHR(vkDevice, &releaseCapturedPipelineDataInfo, nullptr);
-        }
-
-        VkPipelineBinaryInfoKHR pipelineBinaryInfo = m_binaries[0].preparePipelineBinaryInfo();
-        preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_USE_BLOBS], VK_NULL_HANDLE, false, false, &pipelineBinaryInfo);
+        // recreate binaries from data blobs
+        m_binaries[0].createPipelineBinariesFromBinaryData(pipelineDataInfo);
     }
     else
+    {
+        VkReleaseCapturedPipelineDataInfoKHR releaseCapturedPipelineDataInfo = initVulkanStructure();
+        releaseCapturedPipelineDataInfo.pipeline                             = pipeline;
+        vk.releaseCapturedPipelineDataKHR(vkDevice, &releaseCapturedPipelineDataInfo, nullptr);
+    }
+
+    if (m_param->getPipelineConstructionType() != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
     {
         for (uint32_t i = 0; i < 4; ++i)
         {
             VkPipeline partialPipeline = m_pipeline[PIPELINE_NDX_NO_BLOBS]->getPartialPipeline(i);
-            m_binaries[i].createPipelineBinariesFromPipeline(partialPipeline);
+            m_binaries[1 + i].createPipelineBinariesFromPipeline(partialPipeline);
 
             if (createFromBlobs)
             {
                 // read binaries data out of the device
                 std::vector<VkPipelineBinaryDataKHR> pipelineDataInfo;
                 std::vector<std::vector<uint8_t>> pipelineDataBlob;
-                m_binaries[i].getPipelineBinaryData(pipelineDataInfo, pipelineDataBlob);
+                m_binaries[1 + i].getPipelineBinaryData(pipelineDataInfo, pipelineDataBlob);
 
                 // clear pipeline binaries objects
-                m_binaries[i].deletePipelineBinariesKeepKeys();
+                m_binaries[1 + i].deletePipelineBinariesKeepKeys();
 
                 // recreate binaries from data blobs
-                m_binaries[i].createPipelineBinariesFromBinaryData(pipelineDataInfo);
+                m_binaries[1 + i].createPipelineBinariesFromBinaryData(pipelineDataInfo);
             }
             else
             {
@@ -894,22 +882,31 @@ void GraphicsTestInstance::preparePipelinesForBinaries(bool createFromBlobs = fa
                 vk.releaseCapturedPipelineDataKHR(vkDevice, &releaseCapturedPipelineDataInfo, nullptr);
             }
         }
+    }
 
-        VkPipelineBinaryInfoKHR pipelinePartsBinaryInfo[4];
-        VkPipelineBinaryInfoKHR *binaryInfoPtr[4];
-        deMemset(binaryInfoPtr, 0, 4 * sizeof(nullptr));
+    VkPipelineBinaryInfoKHR pipelineBinaryInfo[5];
+    VkPipelineBinaryInfoKHR *binaryInfoPtr[5];
+    deMemset(binaryInfoPtr, 0, 5 * sizeof(nullptr));
 
+    if (m_binaries[0].getBinariesCount() > 0U)
+    {
+        pipelineBinaryInfo[0] = m_binaries[0].preparePipelineBinaryInfo();
+        binaryInfoPtr[0]      = &pipelineBinaryInfo[0];
+    }
+
+    if (m_param->getPipelineConstructionType() != PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
         for (uint32_t i = 0; i < 4; ++i)
         {
-            if (m_binaries[i].getBinariesCount() == 0)
+            if (m_binaries[1 + i].getBinariesCount() == 0)
                 continue;
-            pipelinePartsBinaryInfo[i] = m_binaries[i].preparePipelineBinaryInfo();
-            binaryInfoPtr[i]           = &pipelinePartsBinaryInfo[i];
+            pipelineBinaryInfo[1 + i] = m_binaries[1 + i].preparePipelineBinaryInfo();
+            binaryInfoPtr[1 + i]      = &pipelineBinaryInfo[1 + i];
         };
-
-        preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_USE_BLOBS], VK_NULL_HANDLE, false, false, nullptr,
-                               binaryInfoPtr[0], binaryInfoPtr[1], binaryInfoPtr[2], binaryInfoPtr[3]);
     }
+
+    preparePipelineWrapper(*m_pipeline[PIPELINE_NDX_USE_BLOBS], VK_NULL_HANDLE, false, false, binaryInfoPtr[0],
+                           binaryInfoPtr[1], binaryInfoPtr[2], binaryInfoPtr[3], binaryInfoPtr[4]);
 }
 
 void GraphicsTestInstance::preparePipelines(void)

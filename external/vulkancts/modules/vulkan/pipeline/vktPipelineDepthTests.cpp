@@ -2119,6 +2119,7 @@ tcu::TestStatus DepthOnlyInstance::iterate(void)
     {
         auto &bufferAlloc = vertexBuffer.getAllocation();
         memcpy(bufferAlloc.getHostPtr(), de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, bufferAlloc);
     }
     const VkDeviceSize vertexBufferOffset = 0ull;
 
