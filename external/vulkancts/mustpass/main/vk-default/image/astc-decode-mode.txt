@@ -36,7 +36,6 @@ dEQP-VK.image.astc_decode_mode.12x12_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.12x12_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.3x3x3_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.3x3x3_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.3x3x3_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.3x3x3_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.3x3x3_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.3x3x3_srgb_to_r8g8b8a8_unorm
@@ -45,7 +44,6 @@ dEQP-VK.image.astc_decode_mode.3x3x3_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.3x3x3_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.4x3x3_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.4x3x3_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.4x3x3_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.4x3x3_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.4x3x3_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.4x3x3_srgb_to_r8g8b8a8_unorm
@@ -60,7 +58,6 @@ dEQP-VK.image.astc_decode_mode.4x4_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.4x4_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.4x4x3_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.4x4x3_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.4x4x3_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.4x4x3_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.4x4x3_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.4x4x3_srgb_to_r8g8b8a8_unorm
@@ -69,7 +66,6 @@ dEQP-VK.image.astc_decode_mode.4x4x3_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.4x4x3_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.4x4x4_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.4x4x4_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.4x4x4_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.4x4x4_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.4x4x4_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.4x4x4_srgb_to_r8g8b8a8_unorm
@@ -84,7 +80,6 @@ dEQP-VK.image.astc_decode_mode.5x4_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.5x4_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.5x4x4_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.5x4x4_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.5x4x4_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.5x4x4_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.5x4x4_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.5x4x4_srgb_to_r8g8b8a8_unorm
@@ -99,7 +94,6 @@ dEQP-VK.image.astc_decode_mode.5x5_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.5x5_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.5x5x4_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.5x5x4_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.5x5x4_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.5x5x4_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.5x5x4_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.5x5x4_srgb_to_r8g8b8a8_unorm
@@ -108,7 +102,6 @@ dEQP-VK.image.astc_decode_mode.5x5x4_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.5x5x4_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.5x5x5_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.5x5x5_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.5x5x5_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.5x5x5_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.5x5x5_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.5x5x5_srgb_to_r8g8b8a8_unorm
@@ -123,7 +116,6 @@ dEQP-VK.image.astc_decode_mode.6x5_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.6x5_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.6x5x5_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.6x5x5_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.6x5x5_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.6x5x5_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.6x5x5_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.6x5x5_srgb_to_r8g8b8a8_unorm
@@ -138,7 +130,6 @@ dEQP-VK.image.astc_decode_mode.6x6_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.6x6_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.6x6x5_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.6x6x5_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.6x6x5_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.6x6x5_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.6x6x5_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.6x6x5_srgb_to_r8g8b8a8_unorm
@@ -147,7 +138,6 @@ dEQP-VK.image.astc_decode_mode.6x6x5_unorm_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.6x6x5_unorm_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.6x6x6_sfloat_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.6x6x6_sfloat_to_r16g16b16a16_sfloat
-dEQP-VK.image.astc_decode_mode.6x6x6_sfloat_to_r8g8b8a8_unorm
 dEQP-VK.image.astc_decode_mode.6x6x6_srgb_to_e5b9g9r9_ufloat_pack32
 dEQP-VK.image.astc_decode_mode.6x6x6_srgb_to_r16g16b16a16_sfloat
 dEQP-VK.image.astc_decode_mode.6x6x6_srgb_to_r8g8b8a8_unorm

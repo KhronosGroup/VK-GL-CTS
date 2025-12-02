@@ -594,6 +594,9 @@ tcu::TestCaseGroup *createImageAstcDecodeModeTests(tcu::TestContext &testCtx)
     {
         for (const DecodeModeData &mode : decodeModes)
         {
+            // Skip invalid combination
+            if (format.isSfloat && (mode.mode == VK_FORMAT_R8G8B8A8_UNORM))
+                continue;
             const TestParameters parameters = {IMAGE_TYPE_3D,
                                                UVec3(64u, 64u, 3u),
                                                format.format,
