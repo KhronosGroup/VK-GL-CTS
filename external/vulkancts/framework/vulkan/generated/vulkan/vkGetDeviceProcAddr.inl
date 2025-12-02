@@ -361,6 +361,12 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_EXT_pipeline_properties
 		"vkGetPipelinePropertiesEXT",
 
+		// "VK_EXT_present_timing
+		"vkGetPastPresentationTimingEXT",
+		"vkGetSwapchainTimeDomainPropertiesEXT",
+		"vkGetSwapchainTimingPropertiesEXT",
+		"vkSetSwapchainPresentTimingQueueSizeEXT",
+
 		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
 		"vkDestroyPrivateDataSlotEXT",

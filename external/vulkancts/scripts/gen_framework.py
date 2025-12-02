@@ -63,6 +63,7 @@ VK_EXT_color_write_enable
 VK_EXT_conditional_rendering
 VK_EXT_conservative_rasterization
 VK_EXT_custom_border_color
+VK_EXT_custom_resolve
 VK_EXT_depth_bias_control
 VK_EXT_depth_clamp_control
 VK_EXT_depth_clamp_zero_one
@@ -102,6 +103,7 @@ VK_EXT_opacity_micromap
 VK_EXT_pageable_device_local_memory
 VK_EXT_pipeline_library_group_handles
 VK_EXT_present_mode_fifo_latest_ready
+VK_EXT_present_timing
 VK_EXT_primitive_topology_list_restart
 VK_EXT_primitives_generated_query
 VK_EXT_provoking_vertex
@@ -131,6 +133,7 @@ VK_KHR_cooperative_matrix
 VK_KHR_copy_memory_indirect
 VK_KHR_deferred_host_operations
 VK_KHR_depth_clamp_zero_one
+VK_KHR_device_address_commands
 VK_KHR_display
 VK_KHR_display_swapchain
 VK_KHR_external_fence_fd

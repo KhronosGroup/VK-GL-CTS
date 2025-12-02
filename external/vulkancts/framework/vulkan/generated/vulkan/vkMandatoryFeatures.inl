@@ -716,6 +716,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_mode_fifo_latest_ready", "VK_EXT_present_mode_fifo_latest_ready"))
 		addFeatures(&physicalDevicePresentModeFifoLatestReadyFeaturesKHR);
 
+	// VkPhysicalDevicePresentTimingFeaturesEXT for ext [VK_EXT_present_timing]
+	vk::VkPhysicalDevicePresentTimingFeaturesEXT physicalDevicePresentTimingFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_present_timing"))
+		addFeatures(&physicalDevicePresentTimingFeaturesEXT);
+
 	// VkPhysicalDevicePresentWait2FeaturesKHR for ext [VK_KHR_present_wait2]
 	vk::VkPhysicalDevicePresentWait2FeaturesKHR physicalDevicePresentWait2FeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_present_wait2"))
@@ -1416,6 +1421,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("synchronization2");
 	}
 
+	// VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_device_address_commands")) )
+	{
+		if ( physicalDeviceDeviceAddressCommandsFeaturesKHR.deviceAddressCommands == VK_FALSE )
+			failMesages.push_back("deviceAddressCommands");
+	}
+
 	// VkPhysicalDeviceFragmentShaderBarycentricFeaturesKHR
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_fragment_shader_barycentric")) )
 	{
@@ -1939,6 +1951,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceExclusiveScissorFeaturesNV.exclusiveScissor == VK_FALSE )
 			failMesages.push_back("exclusiveScissor");
+	}
+
+	// VkPhysicalDevicePresentTimingFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_present_timing")) )
+	{
+		if ( physicalDevicePresentTimingFeaturesEXT.presentTiming == VK_FALSE )
+			failMesages.push_back("presentTiming");
 	}
 
 	// VkPhysicalDeviceShaderIntegerFunctions2FeaturesINTEL
@@ -3080,6 +3099,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceShader64BitIndexingFeaturesEXT.shader64BitIndexing == VK_FALSE )
 			failMesages.push_back("shader64BitIndexing");
+	}
+
+	// VkPhysicalDeviceCustomResolveFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_custom_resolve")) )
+	{
+		if ( physicalDeviceCustomResolveFeaturesEXT.customResolve == VK_FALSE )
+			failMesages.push_back("customResolve");
 	}
 
 	// VkPhysicalDeviceDataGraphModelFeaturesQCOM
