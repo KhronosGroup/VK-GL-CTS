@@ -56,9 +56,11 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context,
                                               const VkPhysicalDeviceFeatures2 *enabledFeatures2)
 {
     const float queuePriority = 1.0f;
+    uint32_t queueCnt         = 1u;
 
     // Create a universal queue that supports graphics and compute
-    const VkDeviceQueueCreateInfo queueParams = {
+    VkDeviceQueueCreateInfo queueParams[2];
+    queueParams[0] = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
         nullptr,                                    // const void* pNext;
         0u,                                         // VkDeviceQueueCreateFlags flags;
@@ -66,6 +68,18 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context,
         1u,                                         // uint32_t queueCount;
         &queuePriority                              // const float* pQueuePriorities;
     };
+    if (context.getComputeQueueFamilyIndex() != -1)
+    {
+        queueParams[1] = {
+            VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,     // VkStructureType sType;
+            nullptr,                                        // const void* pNext;
+            0u,                                             // VkDeviceQueueCreateFlags flags;
+            (uint32_t)context.getComputeQueueFamilyIndex(), // uint32_t queueFamilyIndex;
+            1u,                                             // uint32_t queueCount;
+            &queuePriority                                  // const float* pQueuePriorities;
+        };
+        queueCnt++;
+    }
 
     VkPhysicalDeviceFeatures enabledFeatures = context.getDeviceFeatures();
     enabledFeatures.robustBufferAccess       = true;
@@ -117,8 +131,8 @@ Move<VkDevice> createRobustBufferAccessDevice(Context &context,
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,         // VkStructureType sType;
         pNext,                                        // const void* pNext;
         0u,                                           // VkDeviceCreateFlags flags;
-        1u,                                           // uint32_t queueCreateInfoCount;
-        &queueParams,                                 // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        queueCnt,                                     // uint32_t queueCreateInfoCount;
+        queueParams,                                  // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                           // uint32_t enabledLayerCount;
         nullptr,                                      // const char* const* ppEnabledLayerNames;
         de::sizeU32(extensionPtrs),                   // uint32_t enabledExtensionCount;
