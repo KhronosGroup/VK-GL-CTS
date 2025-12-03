@@ -24,6 +24,7 @@
 #include "vktRenderPassTests.hpp"
 #include "vktRenderPassTestsUtil.hpp"
 #include "vktRenderPassGroupParams.hpp"
+#include "vktRenderPassClearSomeAttachmentsTests.hpp"
 #include "vktRenderPassMultisampleTests.hpp"
 #include "vktRenderPassMultisampleResolveTests.hpp"
 #include "vktRenderPassSampleReadTests.hpp"
@@ -8533,6 +8534,9 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
     {
         // repeat only dynamic_rendering_local_read tests for GPL
         suballocationTestGroup->addChild(createRenderPassUnusedClearAttachmentTests(testCtx, groupParams));
+
+        if (groupParams->useSecondaryCmdBuffer == groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
+            suballocationTestGroup->addChild(createRenderPassClearSomeAttachmentsTests(testCtx, groupParams));
 
 #ifndef CTS_USES_VULKANSC
         suballocationTestGroup->addChild(createRenderPassSparseRenderTargetTests(testCtx, groupParams));

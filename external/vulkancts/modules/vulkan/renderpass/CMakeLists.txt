@@ -16,6 +16,8 @@ set(DEQP_VK_VKSC_RENDER_PASS_SRCS
 	vktRenderPassMultisampleTests.hpp
 	vktRenderPassMultisampleResolveTests.cpp
 	vktRenderPassMultisampleResolveTests.hpp
+	vktRenderPassClearSomeAttachmentsTests.cpp
+	vktRenderPassClearSomeAttachmentsTests.hpp
 	vktRenderPassDepthStencilResolveTests.cpp
 	vktRenderPassDepthStencilResolveTests.hpp
 	vktRenderPassPerformanceCountersByRegionTests.cpp
