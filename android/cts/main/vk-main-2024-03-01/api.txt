@@ -143329,6 +143329,7 @@ dEQP-VK.api.info.vulkan1p4.features
 dEQP-VK.api.info.vulkan1p4.properties
 dEQP-VK.api.info.vulkan1p4.property_extensions_consistency
 dEQP-VK.api.info.vulkan1p4_limits_validation.general
+dEQP-VK.api.maintenance11.queue_properties
 dEQP-VK.api.maintenance3_check.support_count_combined_image_sampler
 dEQP-VK.api.maintenance3_check.support_count_combined_image_sampler_create_layout
 dEQP-VK.api.maintenance3_check.support_count_combined_image_sampler_extra_bindings

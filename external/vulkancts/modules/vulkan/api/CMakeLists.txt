@@ -68,6 +68,8 @@ set(DEQP_VK_VKSC_API_SRCS
 	vktApiMaintenance7Tests.hpp
 	vktApiDSColorBitCopyTests.cpp
 	vktApiDSColorBitCopyTests.hpp
+	vktApiMaintenance11Tests.hpp
+	vktApiMaintenance11Tests.cpp
 	)
 
 set(DEQP_VK_API_SRCS
