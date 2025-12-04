@@ -620,7 +620,9 @@ void AmberTestCase::setSpirVAsmBuildOptions(const vk::SpirVAsmBuildOptions &asm_
 
 void AmberTestCase::addRequirement(const std::string &requirement)
 {
-    if (requirement.find(".") != std::string::npos)
+    if (requirement.find("Properties.") != std::string::npos)
+        m_required_properties.insert(requirement);
+    else if (requirement.find(".") != std::string::npos)
         m_required_features.insert(requirement);
     else
         m_required_extensions.insert(requirement);
