@@ -734,7 +734,6 @@ protected:
 
 TestInstance *LinearSweptSpheresTestCase::createInstance(Context &context) const
 {
-    std::cout << "createInstance" << std::endl;
     if (m_data.geometryType == GeometryType::SPHERES)
     {
         return new SpheresTestInstance(context, m_data);
@@ -771,7 +770,6 @@ void LinearSweptSpheresTestCase::checkSupport(Context &context) const
 
 void LinearSweptSpheresTestCase::initPrograms(SourceCollections &programCollection) const
 {
-    std::cout << "initPrograms" << std::endl;
     const vk::ShaderBuildOptions glslBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
 
     // Create shader modules
