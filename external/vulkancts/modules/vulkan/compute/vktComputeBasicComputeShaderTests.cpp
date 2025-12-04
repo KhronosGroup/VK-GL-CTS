@@ -2984,6 +2984,7 @@ DispatchBaseTest::DispatchBaseTest(tcu::TestContext &testCtx, const std::string 
 
 void DispatchBaseTest::checkSupport(Context &context) const
 {
+    context.requireDeviceFunctionality("VK_KHR_device_group");
     checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                   m_computePipelineConstructionType);
     if (m_useMaintenance5)
@@ -3277,6 +3278,7 @@ SequentialDispatchTest::~SequentialDispatchTest(void)
 
 void SequentialDispatchTest::checkSupport(Context &context) const
 {
+    context.requireDeviceFunctionality("VK_KHR_device_group");
     checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                   m_computePipelineConstructionType);
 }
