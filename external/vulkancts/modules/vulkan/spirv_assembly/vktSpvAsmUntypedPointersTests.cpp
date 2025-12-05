@@ -6791,13 +6791,10 @@ std::string createShaderMain(COOPERATIVE_MATRIX_TEST_CASE testCase)
     }
     case CooperativeMatrixTestCases::MIXED_LOAD:
     {
-        main += std::string("%id_loc = OpAccessChain %uint32_input_ptr %id %c_uint32_0\n"
-                            "%x      = OpLoad        %uint32           %id_loc\n"
-
-                            "%input_loc  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr"
-                            "              %input_buffer           %input_data_untyped_var %c_uint32_0 %x\n"
+        main += std::string("%input_loc  = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr"
+                            "              %input_buffer           %input_data_untyped_var %c_uint32_0 %c_uint32_0\n"
                             "%output_loc = OpAccessChain           %${baseType}_storage_buffer_ptr"
-                            "              %output_data_var        %c_uint32_0 %x\n"
+                            "              %output_data_var        %c_uint32_0 %c_uint32_0\n"
 
                             "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix %input_loc"
                             "                 %c_matrix_layout            %stride             None\n"
@@ -6807,13 +6804,10 @@ std::string createShaderMain(COOPERATIVE_MATRIX_TEST_CASE testCase)
     }
     case CooperativeMatrixTestCases::MIXED_STORE:
     {
-        main += std::string("%id_loc = OpAccessChain %uint32_input_ptr %id %c_uint32_0\n"
-                            "%x      = OpLoad        %uint32           %id_loc\n"
-
-                            "%input_loc  = OpAccessChain           %${baseType}_storage_buffer_ptr"
-                            "              %input_data_var         %c_uint32_0 %x\n"
+        main += std::string("%input_loc  = OpAccessChain           %${baseType}_storage_buffer_ptr"
+                            "              %input_data_var         %c_uint32_0 %c_uint32_0\n"
                             "%output_loc = OpUntypedAccessChainKHR %storage_buffer_untyped_ptr"
-                            "              %output_buffer          %output_data_untyped_var %c_uint32_0 %x\n"
+                            "              %output_buffer          %output_data_untyped_var %c_uint32_0 %c_uint32_0\n"
 
                             "%loaded_matrix = OpCooperativeMatrixLoadKHR  %${baseType}_matrix %input_loc"
                             "                 %c_matrix_layout            %stride             None\n"
@@ -12079,10 +12073,12 @@ tcu::TestStatus CooperativeMatrixInteractionTestInstance::iterate(void)
     const uint32_t queueNdx                = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator                   = m_context.getDefaultAllocator();
 
-    MatrixSize matrixSize         = getMatrixSize(ivk, physicalDevice, m_params.matType, m_params.dataType);
-    const VkDeviceSize bufferSize = matrixSize.rows * matrixSize.cols * getSizeInBytes(m_params.dataType);
-    if (bufferSize == 0)
-        TCU_THROW(NotSupportedError, "Cooperative matrix feature is not supported");
+    DATA_TYPE matrixDataType = m_params.testCase != CooperativeMatrixTestCases::TYPE_PUNNING_LOAD ?
+                                   m_params.dataType :
+                                   m_params.sameSizeDataType;
+
+    MatrixSize matrixSize         = getMatrixSize(ivk, physicalDevice, m_params.matType, matrixDataType);
+    const VkDeviceSize bufferSize = matrixSize.rows * matrixSize.cols * getSizeInBytes(matrixDataType);
 
     // Gen input and expected data
     FilledBufferDesc desc;
@@ -12557,6 +12553,8 @@ void addCooperativeMatrixInteractionMixedTests(tcu::TestCaseGroup *testGroup, ME
 
             storeGroup->addChild(useCaseGroup.release());
         }
+
+        testGroup->addChild(storeGroup.release());
     }
 }
 
