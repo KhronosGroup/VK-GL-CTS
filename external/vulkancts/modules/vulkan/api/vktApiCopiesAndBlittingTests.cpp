@@ -144,6 +144,7 @@ enum ExtensionUseBits
     MAINTENANCE_8                 = (1 << 5),
     INDIRECT_COPY                 = (1 << 6),
     MAINTENANCE_10                = (1 << 7),
+    MAINTENANCE_11                = (1 << 8),
 };
 
 template <typename Type>
@@ -541,6 +542,9 @@ void checkExtensionSupport(Context &context, uint32_t flags)
 
     if (flags & MAINTENANCE_10)
         context.requireDeviceFunctionality("VK_KHR_maintenance10");
+
+    if (flags & MAINTENANCE_11)
+        context.requireDeviceFunctionality("VK_KHR_maintenance11");
 }
 
 inline uint32_t getArraySize(const ImageParms &parms)
@@ -14576,7 +14580,12 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                 group->addChild(new CopyImageToBufferTestCase(testCtx, "buffer_offset" + testNameSuffix, params));
             }
 
-            if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+            bool testBufferOffsetRelaxed = testGroupParams->queueSelection == QueueSelectionOptions::Universal;
+#ifndef CTS_USES_VULKANSC
+            testBufferOffsetRelaxed |= testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly;
+#endif // CTS_USES_VULKANSC
+
+            if (testBufferOffsetRelaxed)
             {
                 TestParams params;
                 params.src.image.imageType       = VK_IMAGE_TYPE_2D;
@@ -14590,6 +14599,9 @@ void add2dImageToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                 params.queueSelection            = testGroupParams->queueSelection;
                 params.useSparseBinding          = testGroupParams->useSparseBinding;
                 params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+                if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+                    params.extensionFlags |= MAINTENANCE_11;
 
                 const auto bufferOffset = de::roundUp(defaultSize * defaultHalfSize + 1, tcu::getPixelSize(tcuFormat));
 
@@ -15782,7 +15794,12 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             group->addChild(new CopyBufferToImageTestCase(testCtx, testName, params));
         }
 
-        if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+        bool testBufferOffsetRelaxed = testGroupParams->queueSelection == QueueSelectionOptions::Universal;
+#ifndef CTS_USES_VULKANSC
+        testBufferOffsetRelaxed |= testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly;
+#endif // CTS_USES_VULKANSC
+
+        if (testBufferOffsetRelaxed)
         {
             TestParams params;
             params.src.buffer.size           = defaultSize * defaultSize;
@@ -15796,6 +15813,9 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             params.queueSelection            = testGroupParams->queueSelection;
             params.useSparseBinding          = testGroupParams->useSparseBinding;
             params.useGeneralLayout          = testGroupParams->useGeneralLayout;
+
+            if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+                params.extensionFlags |= MAINTENANCE_11;
 
             const auto offset = de::roundUp(defaultQuarterSize + 1, pixelSize);
 
@@ -18194,7 +18214,12 @@ void add2dMemoryToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         group->addChild(new CopyMemoryToImageIndirectTestCase(testCtx, "buffer_offset", params));
     }
 
-    if (testGroupParams->queueSelection == QueueSelectionOptions::Universal)
+    bool testBufferOffsetRelaxed = testGroupParams->queueSelection == QueueSelectionOptions::Universal;
+#ifndef CTS_USES_VULKANSC
+    testBufferOffsetRelaxed |= testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly;
+#endif // CTS_USES_VULKANSC
+
+    if (testBufferOffsetRelaxed)
     {
         TestParams params;
         params.src.buffer.size           = defaultSize * defaultSize;
@@ -18207,6 +18232,9 @@ void add2dMemoryToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         params.extensionFlags            = testGroupParams->extensionFlags;
         params.queueSelection            = testGroupParams->queueSelection;
         params.useSparseBinding          = testGroupParams->useSparseBinding;
+
+        if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+            params.extensionFlags |= MAINTENANCE_11;
 
         const VkBufferImageCopy bufferImageCopy = {
             defaultQuarterSize + 1u,                     // VkDeviceSize bufferOffset;
