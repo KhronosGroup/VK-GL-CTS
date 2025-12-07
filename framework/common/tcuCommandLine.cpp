@@ -220,7 +220,7 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<RunMode>(nullptr, "deqp-runmode",
                            "Execute tests, write list of test cases into a file, or verify amber capability coherency",
                            s_runModes, "execute")
-        << Option<NoProgramFail>(nullptr, "depq-no-program-fail", "Prevents the program to return -1 on test failure", s_enableNames, "disable")
+        << Option<NoProgramFail>(nullptr, "deqp-no-program-fail", "Prevents the program to return -1 on test failure", s_enableNames, "disable")
         << Option<ExportFilenamePattern>(nullptr, "deqp-caselist-export-file",
                                          "Set the target file name pattern for caselist export",
                                          "${packageName}-cases.${typeExtension}")
