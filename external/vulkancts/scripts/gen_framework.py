@@ -3419,9 +3419,10 @@ class ConformanceVersionsGenerator(BaseGenerator):
         # get list of all vulkan/vulkansc tags from git
         remote_urls = os.popen("git remote -v").read().split('\n')
         remote_url = None
-        url_regexp = r'\bgerrit\.khronos\.org\b.*\bvk-gl-cts\b'
+        url_khronos_regexp = r'\bgerrit\.khronos\.org\b.*\bvk-gl-cts\b'
+        url_github_regexp = r'\bgithub\.com\b.*\bvk-gl-cts\b'
         for line in remote_urls:
-            if re.search(url_regexp, line, re.IGNORECASE) is not None:
+            if re.search(url_khronos_regexp, line, re.IGNORECASE) is not None or re.search(url_github_regexp, line, re.IGNORECASE) is not None:
                 remote_url = line.split()[1]
                 break
         listOfTags = os.popen("git ls-remote -t %s" % (remote_url)).read()
