@@ -146,8 +146,13 @@ void checkSupport(Context &context, ConditionalTestSpec testSpec)
 
     if (!context.getTransformFeedbackFeaturesEXT().geometryStreams)
         TCU_THROW(NotSupportedError, "geometryStreams feature not supported");
-    if (context.getTransformFeedbackPropertiesEXT().transformFeedbackDraw == VK_FALSE)
+
+    if (testSpec.command == DRAW_COMMAND_TYPE_INDIRECT_BYTE_COUNT_EXT &&
+        context.getTransformFeedbackPropertiesEXT().transformFeedbackDraw == VK_FALSE)
+    {
         TCU_THROW(NotSupportedError, "transformFeedbackDraw feature not supported");
+    }
+
     if (context.getTransformFeedbackPropertiesEXT().maxTransformFeedbackBuffers < 4)
         TCU_THROW(NotSupportedError, "maxTransformFeedbackBuffers is less than required");
     if (context.getTransformFeedbackPropertiesEXT().maxTransformFeedbackStreams < 4)
