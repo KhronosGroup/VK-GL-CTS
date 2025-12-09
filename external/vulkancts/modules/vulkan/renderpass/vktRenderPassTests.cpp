@@ -8475,6 +8475,10 @@ tcu::TestCaseGroup *createRenderPassTestsInternal(tcu::TestContext &testCtx, con
         suballocationTestGroup->addChild(createRenderPassSubpassMergeFeedbackTests(testCtx, renderingType));
 #endif // CTS_USES_VULKANSC
         renderingTests->addChild(createRenderPass2DepthStencilResolveTests(testCtx));
+#ifndef CTS_USES_VULKANSC
+        if (!groupParams->useSecondaryCmdBuffer)
+            renderingTests->addChild(createRenderPassCustomResolveTests(testCtx, groupParams));
+#endif // CTS_USES_VULKANSC
 
         break;
 
