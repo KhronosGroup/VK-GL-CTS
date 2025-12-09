@@ -400,13 +400,11 @@ PipelineLayoutWrapper::PipelineLayoutWrapper(PipelineConstructionType pipelineCo
     m_pipelineLayout                      = createPipelineLayout(vk, device, &createInfo);
 }
 
-PipelineLayoutWrapper::PipelineLayoutWrapper(PipelineConstructionType pipelineConstructionType,
-                                             const DeviceInterface &vk, const VkDevice device,
-                                             const uint32_t setLayoutCount,
-                                             const VkDescriptorSetLayout *descriptorSetLayout,
-                                             const uint32_t pushConstantRangeCount,
-                                             const VkPushConstantRange *pPushConstantRanges,
-                                             const VkPipelineLayoutCreateFlags flags)
+PipelineLayoutWrapper::PipelineLayoutWrapper(
+    PipelineConstructionType pipelineConstructionType, const DeviceInterface &vk, const VkDevice device,
+    const uint32_t setLayoutCount, const VkDescriptorSetLayout *descriptorSetLayout,
+    const uint32_t pushConstantRangeCount, const VkPushConstantRange *pPushConstantRanges,
+    const VkPipelineLayoutCreateFlags flags, bool keepShaderObjectIndependentSets)
     : m_pipelineConstructionType(pipelineConstructionType)
     , m_vk(&vk)
     , m_device(device)
@@ -415,8 +413,10 @@ PipelineLayoutWrapper::PipelineLayoutWrapper(PipelineConstructionType pipelineCo
     , m_pushConstantRangeCount(pushConstantRangeCount)
 {
 #ifndef CTS_USES_VULKANSC
-    if (isConstructionTypeShaderObject(pipelineConstructionType))
+    if (!keepShaderObjectIndependentSets && isConstructionTypeShaderObject(pipelineConstructionType))
         m_flags &= ~(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+#else
+    DE_UNREF(keepShaderObjectIndependentSets);
 #endif
 
     m_setLayouts.resize(m_setLayoutCount);
@@ -1926,10 +1926,13 @@ void ShaderWrapper::createModule(void)
         m_module = createShaderModule(*m_vk, m_device, *m_binary, m_moduleCreateFlags);
 }
 
-void ShaderWrapper::setLayoutAndSpecialization(const PipelineLayoutWrapper *layout,
-                                               const VkSpecializationInfo *specializationInfo)
+void ShaderWrapper::setPipelineLayout(const PipelineLayoutWrapper *layout)
 {
-    m_layout             = layout;
+    m_layout = layout;
+}
+
+void ShaderWrapper::setSpecialization(const VkSpecializationInfo *specializationInfo)
+{
     m_specializationInfo = specializationInfo;
 }
 
@@ -2785,7 +2788,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     VkPipelineCreateFlags shaderModuleIdFlags = 0u;
 
     m_internalData->vertexShader = vertexShader;
-    m_internalData->vertexShader.setLayoutAndSpecialization(&layout, vertSpecializationInfo);
+    if (!m_internalData->vertexShader.getPipelineLayout())
+        m_internalData->vertexShader.setPipelineLayout(&layout);
+    m_internalData->vertexShader.setSpecialization(vertSpecializationInfo);
     VkShaderModule shaderModule = VK_NULL_HANDLE;
     if (m_internalData->useShaderModules && !isConstructionTypeShaderObject(m_internalData->pipelineConstructionType))
         shaderModule = m_internalData->vertexShader.getModule();
@@ -2820,7 +2825,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     if (hasTesc)
     {
         m_internalData->tessellationControlShader = tessellationControlShader;
-        m_internalData->tessellationControlShader.setLayoutAndSpecialization(&layout, tescSpecializationInfo);
+        if (!m_internalData->tessellationControlShader.getPipelineLayout())
+            m_internalData->tessellationControlShader.setPipelineLayout(&layout);
+        m_internalData->tessellationControlShader.setSpecialization(tescSpecializationInfo);
 
         shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
@@ -2849,7 +2856,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     if (hasTese)
     {
         m_internalData->tessellationEvaluationShader = tessellationEvalShader;
-        m_internalData->tessellationEvaluationShader.setLayoutAndSpecialization(&layout, teseSpecializationInfo);
+        if (!m_internalData->tessellationEvaluationShader.getPipelineLayout())
+            m_internalData->tessellationEvaluationShader.setPipelineLayout(&layout);
+        m_internalData->tessellationEvaluationShader.setSpecialization(teseSpecializationInfo);
 
         shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
@@ -2878,7 +2887,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationShaderSta
     if (hasGeom)
     {
         m_internalData->geometryShader = geometryShader;
-        m_internalData->geometryShader.setLayoutAndSpecialization(&layout, geomSpecializationInfo);
+        if (!m_internalData->geometryShader.getPipelineLayout())
+            m_internalData->geometryShader.setPipelineLayout(&layout);
+        m_internalData->geometryShader.setSpecialization(geomSpecializationInfo);
 
         shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
@@ -3064,7 +3075,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     auto currStage = m_internalData->pipelineShaderStages.begin();
     {
         m_internalData->meshShader = meshShader;
-        m_internalData->meshShader.setLayoutAndSpecialization(&layout, meshSpecializationInfo);
+        if (!m_internalData->meshShader.getPipelineLayout())
+            m_internalData->meshShader.setPipelineLayout(&layout);
+        m_internalData->meshShader.setSpecialization(meshSpecializationInfo);
 
         VkShaderModule shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
@@ -3093,7 +3106,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupPreRasterizationMeshShade
     if (hasTask)
     {
         m_internalData->taskShader = taskShader;
-        m_internalData->taskShader.setLayoutAndSpecialization(&layout, taskSpecializationInfo);
+        if (!m_internalData->taskShader.getPipelineLayout())
+            m_internalData->taskShader.setPipelineLayout(&layout);
+        m_internalData->taskShader.setSpecialization(taskSpecializationInfo);
 
         VkShaderModule shaderModule = VK_NULL_HANDLE;
         if (m_internalData->useShaderModules &&
@@ -3269,7 +3284,9 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
             if (m_internalData->pipelineShaderStages[stageIndex].stage == VK_SHADER_STAGE_VERTEX_BIT)
             {
                 m_internalData->fragmentShader = fragmentShader;
-                m_internalData->fragmentShader.setLayoutAndSpecialization(&layout, specializationInfo);
+                if (!m_internalData->fragmentShader.getPipelineLayout())
+                    m_internalData->fragmentShader.setPipelineLayout(&layout);
+                m_internalData->fragmentShader.setSpecialization(specializationInfo);
 
                 VkShaderModule shaderModule = VK_NULL_HANDLE;
                 if (m_internalData->useShaderModules &&
@@ -3566,7 +3583,7 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo(VkShader
         shaderCreateInfo.pCode    = shader.getBinary();
     }
     shaderCreateInfo.pName = "main";
-    if (shader.getPipelineLayout() != VK_NULL_HANDLE)
+    if (shader.getPipelineLayout() != nullptr)
     {
         shaderCreateInfo.setLayoutCount         = shader.getPipelineLayout()->getSetLayoutCount();
         shaderCreateInfo.pSetLayouts            = shader.getPipelineLayout()->getSetLayouts();

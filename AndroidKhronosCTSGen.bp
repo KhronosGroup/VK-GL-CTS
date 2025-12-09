@@ -1717,6 +1717,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectBindingTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectCreateTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectCreateUtil.cpp",
+        "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectIndependentSetsTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectLinkTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectMiscTests.cpp",
         "external/vulkancts/modules/vulkan/shader_object/vktShaderObjectPerformanceTests.cpp",
