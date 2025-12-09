@@ -37,9 +37,36 @@ inline NullStream SLANG_LOG;
 #include <slang.h>
 #include <slang-com-ptr.h>
 
-// Additional includes
-#include <core/slang-list.h>
-#include <slang-test/test-context.h>
+// Local definitions for types previously pulled from private Slang headers
+// These replace includes of <core/slang-list.h> and <slang-test/test-context.h>
+namespace Slang
+{
+    typedef intptr_t Index;
+
+    enum class FileAccess
+    {
+        None = 0,
+        Read = 1,
+        Write = 2,
+        ReadWrite = 3
+    };
+
+    enum class StdStreamType
+    {
+        ErrorOut,
+        Out,
+        In,
+        CountOf,
+    };
+
+    namespace Process
+    {
+        enum Flag
+        {
+            DisableStdErrRedirection = 0x01,
+        };
+    }
+}
 
 #ifndef SLANG_RETURN_FAIL_ON_FALSE
 #define SLANG_RETURN_FAIL_ON_FALSE(x) \
@@ -533,6 +560,7 @@ public:
                 return SLANG_FAIL;
             }
         }
+        SLANG_LOG << "Slang DLL loaded successfully from path: " << slangDllPath << std::endl;
         return SLANG_OK;
     }
 

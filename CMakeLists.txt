@@ -485,13 +485,9 @@ add_subdirectory(external/slang EXCLUDE_FROM_ALL)
 
 target_include_directories(vkutil PRIVATE
     ${CMAKE_SOURCE_DIR}/external/slang/src/include
-    ${CMAKE_SOURCE_DIR}/external/slang/src/source
-    ${CMAKE_SOURCE_DIR}/external/slang/src/tools
 )
 target_include_directories(vkscutil PRIVATE
     ${CMAKE_SOURCE_DIR}/external/slang/src/include
-    ${CMAKE_SOURCE_DIR}/external/slang/src/source
-    ${CMAKE_SOURCE_DIR}/external/slang/src/tools
 )
 
 target_compile_definitions(vkutil PRIVATE ENABLE_SLANG_COMPILATION)
