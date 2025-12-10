@@ -4148,6 +4148,7 @@ dEQP-VK.ray_tracing_pipeline.linear_swept_spheres.spheres.vertices.no_blascopy.e
 dEQP-VK.ray_tracing_pipeline.linear_swept_spheres.spheres.vertices.no_blascopy.endcaps.use_ray_query.use_hit_object.half2.half
 dEQP-VK.ray_tracing_pipeline.linear_swept_spheres.spheres.vertices.no_blascopy.endcaps.use_ray_query.use_hit_object.half3.float
 dEQP-VK.ray_tracing_pipeline.linear_swept_spheres.spheres.vertices.no_blascopy.endcaps.use_ray_query.use_hit_object.half3.half
+dEQP-VK.ray_tracing_pipeline.misc.shaders_from_lib
 dEQP-VK.ray_tracing_pipeline.misc.update_empty_bottom
 dEQP-VK.ray_tracing_pipeline.misc.update_empty_top
 dEQP-VK.ray_tracing_pipeline.null_as.mixed_dispatches
