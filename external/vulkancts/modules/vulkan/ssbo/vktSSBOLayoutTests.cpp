@@ -26,6 +26,7 @@
 #include "vktSSBOLayoutTests.hpp"
 #include "vktSSBOLayoutCase.hpp"
 #include "vktSSBOCornerCase.hpp"
+#include "vktSSBOLayoutNestedUnsizedArraysTests.hpp"
 
 #include "deUniquePtr.hpp"
 #include "tcuCommandLine.hpp"
@@ -2225,6 +2226,8 @@ void createUnsizedArrayTests(tcu::TestCaseGroup *testGroup)
                                                             createUnsizedArrayLengthProgs, ssboUnsizedArrayLengthTest,
                                                             params);
     }
+
+    appendNestedUnsizedArraysTests(testGroup);
 }
 
 } // namespace

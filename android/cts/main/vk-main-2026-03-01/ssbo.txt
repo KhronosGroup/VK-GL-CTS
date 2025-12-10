@@ -62,3 +62,4 @@ dEQP-VK.ssbo.unsized_array_length.float_offset_explicit_size_64b_length64_2_varp
 dEQP-VK.ssbo.unsized_array_length.float_offset_explicit_size_64b_length64_varptr
 dEQP-VK.ssbo.unsized_array_length.float_offset_explicit_size_64b_varptr
 dEQP-VK.ssbo.unsized_array_length.float_offset_whole_size_varptr
+dEQP-VK.ssbo.unsized_array_length.nested_unsized_arrays
