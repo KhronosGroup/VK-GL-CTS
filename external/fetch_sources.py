@@ -278,6 +278,10 @@ def parseArgs ():
 						" Minimum python version required " + versionsForInsecureStr)
 	parser.add_argument('--protocol', dest='protocol', default=None, choices=['ssh', 'https'],
 						help="Select protocol to checkout git repositories.")
+	parser.add_argument("-v", "--verbose",
+						dest="verbose",
+						action="store_true",
+						help="(ignored)")
 
 	args = parser.parse_args()
 
