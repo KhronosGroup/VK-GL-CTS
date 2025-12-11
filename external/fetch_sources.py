@@ -356,6 +356,10 @@ def parseArgs ():
                         help="Select protocol to checkout git repositories.")
     parser.add_argument('--force', dest='force', action='store_true', default=False,
                         help="Pass --force to git fetch and checkout commands")
+    parser.add_argument("-v", "--verbose",
+                        dest="verbose",
+                        action="store_true",
+                        help="(ignored)")
 
     args = parser.parse_args()
 
