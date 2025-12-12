@@ -830,7 +830,7 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Write test results to given file
     default: 'TestResults.qpa'
 
-  --deqp-runmode=[execute|xml-caselist|txt-caselist|stdout-caselist]
+  --deqp-runmode=[execute|xml-caselist|txt-caselist|stdout-caselist|txt-trie|stdout-trie]
     Execute tests, or write list of test cases into a file
     default: 'execute'
 
