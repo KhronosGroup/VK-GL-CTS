@@ -315,7 +315,13 @@ void RandomSSBOLayoutCase::generateBlock(de::Random &rnd, uint32_t layoutFlags)
                 if (m_features & FEATURE_64B)
                 {
                     auto const &elemType = lastType.getElementType();
-                    const int elemSize   = computeSize(elemType, layoutFlags);
+                    int elemSize         = computeSize(elemType, layoutFlags);
+
+                    // pad to vec4 for std140 rules
+                    if ((layoutFlags & LAYOUT_STD140) && elemSize < 16)
+                    {
+                        elemSize = 16;
+                    }
 
                     // targeting just over 4GB allocation
                     arrSize = 1ull << 32;
@@ -1041,205 +1047,218 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
     const VkQueue queue       = context.getUniversalQueue();
     Allocator &allocator      = context.getDefaultAllocator();
 
-    DescriptorSetLayoutBuilder builder;
-    builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // input buffer
-    builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // result buffer
-
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(builder.build(vk, device));
-    const Unique<VkDescriptorPool> descriptorPool(
-        vk::DescriptorPoolBuilder()
-            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
-            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
-
-    const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        nullptr,
-        (VkPipelineLayoutCreateFlags)0,
-        1,                          // setLayoutCount,
-        &descriptorSetLayout.get(), // pSetLayouts
-        0,                          // pushConstantRangeCount
-        nullptr,                    // pPushConstantRanges
-    };
-    const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
-
-    const Unique<VkShaderModule> computeModule(
-        createShaderModule(vk, device, context.getBinaryCollection().get("comp"), (VkShaderModuleCreateFlags)0u));
-
-    const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        nullptr,
-        (VkPipelineShaderStageCreateFlags)0,
-        VK_SHADER_STAGE_COMPUTE_BIT, // stage
-        *computeModule,              // shader
-        "main",
-        nullptr, // pSpecializationInfo
-    };
-
-    const void *pNext = nullptr;
-#ifndef CTS_USES_VULKANSC
-    VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
-    if (params.bufferSize > (uint64_t{1} << 32))
+    try
     {
-        pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
-        pNext                          = &pipelineFlags2CreateInfo;
-    }
+        DescriptorSetLayoutBuilder builder;
+        builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // input buffer
+        builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // result buffer
+
+        const Unique<VkDescriptorSetLayout> descriptorSetLayout(builder.build(vk, device));
+        const Unique<VkDescriptorPool> descriptorPool(
+            vk::DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+                .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
+
+        const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            nullptr,
+            (VkPipelineLayoutCreateFlags)0,
+            1,                          // setLayoutCount,
+            &descriptorSetLayout.get(), // pSetLayouts
+            0,                          // pushConstantRangeCount
+            nullptr,                    // pPushConstantRanges
+        };
+        const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
+
+        const Unique<VkShaderModule> computeModule(
+            createShaderModule(vk, device, context.getBinaryCollection().get("comp"), (VkShaderModuleCreateFlags)0u));
+
+        const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            nullptr,
+            (VkPipelineShaderStageCreateFlags)0,
+            VK_SHADER_STAGE_COMPUTE_BIT, // stage
+            *computeModule,              // shader
+            "main",
+            nullptr, // pSpecializationInfo
+        };
+
+        const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+        VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+        if (params.bufferSize > (uint64_t{1} << 32))
+        {
+            pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+            pNext                          = &pipelineFlags2CreateInfo;
+        }
 #endif
 
-    const VkComputePipelineCreateInfo pipelineCreateInfo = {
-        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        pNext,
-        0u,               // flags
-        shaderCreateInfo, // cs
-        *pipelineLayout,  // layout
-        VK_NULL_HANDLE,   // basePipelineHandle
-        0u,               // basePipelineIndex
-    };
+        const VkComputePipelineCreateInfo pipelineCreateInfo = {
+            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+            pNext,
+            0u,               // flags
+            shaderCreateInfo, // cs
+            *pipelineLayout,  // layout
+            VK_NULL_HANDLE,   // basePipelineHandle
+            0u,               // basePipelineIndex
+        };
 
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
+        const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
 
-    // Input buffer
-    const VkBufferCreateInfo inputBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr,
-        0,                                  // flags
-        (VkDeviceSize)params.bufferSize,    // size
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage TODO: also test _DYNAMIC case.
-        VK_SHARING_MODE_EXCLUSIVE,
-        0u,      // queueFamilyCount
-        nullptr, // pQueueFamilyIndices
-    };
-    const Unique<VkBuffer> inputBuffer(createBuffer(vk, device, &inputBufferCreateInfo));
-    const VkMemoryRequirements inputBufferRequirements = getBufferMemoryRequirements(vk, device, *inputBuffer);
-    const de::MovePtr<Allocation> inputBufferMemory =
-        allocator.allocate(inputBufferRequirements, MemoryRequirement::HostVisible);
+        // Input buffer
+        const VkBufferCreateInfo inputBufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            nullptr,
+            0,                                  // flags
+            (VkDeviceSize)params.bufferSize,    // size
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage TODO: also test _DYNAMIC case.
+            VK_SHARING_MODE_EXCLUSIVE,
+            0u,      // queueFamilyCount
+            nullptr, // pQueueFamilyIndices
+        };
+        const Unique<VkBuffer> inputBuffer(createBuffer(vk, device, &inputBufferCreateInfo));
+        const VkMemoryRequirements inputBufferRequirements = getBufferMemoryRequirements(vk, device, *inputBuffer);
+        const de::MovePtr<Allocation> inputBufferMemory =
+            allocator.allocate(inputBufferRequirements, MemoryRequirement::HostVisible);
 
-    VK_CHECK(vk.bindBufferMemory(device, *inputBuffer, inputBufferMemory->getMemory(), inputBufferMemory->getOffset()));
-    // Note: don't care about the contents of the input buffer -- we only determine a size.
+        VK_CHECK(
+            vk.bindBufferMemory(device, *inputBuffer, inputBufferMemory->getMemory(), inputBufferMemory->getOffset()));
+        // Note: don't care about the contents of the input buffer -- we only determine a size.
 
-    // Output buffer
-    const VkBufferCreateInfo outputBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr,
-        0,
-        (VkDeviceSize)8,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0u,
-        nullptr,
-    };
-    const Unique<VkBuffer> outputBuffer(createBuffer(vk, device, &outputBufferCreateInfo));
-    const VkMemoryRequirements outputBufferRequirements = getBufferMemoryRequirements(vk, device, *outputBuffer);
-    const de::MovePtr<Allocation> outputBufferMemory =
-        allocator.allocate(outputBufferRequirements, MemoryRequirement::HostVisible);
+        // Output buffer
+        const VkBufferCreateInfo outputBufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            nullptr,
+            0,
+            (VkDeviceSize)8,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            0u,
+            nullptr,
+        };
+        const Unique<VkBuffer> outputBuffer(createBuffer(vk, device, &outputBufferCreateInfo));
+        const VkMemoryRequirements outputBufferRequirements = getBufferMemoryRequirements(vk, device, *outputBuffer);
+        const de::MovePtr<Allocation> outputBufferMemory =
+            allocator.allocate(outputBufferRequirements, MemoryRequirement::HostVisible);
 
-    VK_CHECK(
-        vk.bindBufferMemory(device, *outputBuffer, outputBufferMemory->getMemory(), outputBufferMemory->getOffset()));
+        VK_CHECK(vk.bindBufferMemory(device, *outputBuffer, outputBufferMemory->getMemory(),
+                                     outputBufferMemory->getOffset()));
 
-    // Initialize output buffer contents
-    const VkMappedMemoryRange range = {
-        VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // sType
-        nullptr,                               // pNext
-        outputBufferMemory->getMemory(),       // memory
-        0,                                     // offset
-        VK_WHOLE_SIZE,                         // size
-    };
-    int64_t *outputBufferPtr = (int64_t *)outputBufferMemory->getHostPtr();
-    if (params.length64)
-    {
-        *outputBufferPtr = -int64_t{1};
+        // Initialize output buffer contents
+        const VkMappedMemoryRange range = {
+            VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // sType
+            nullptr,                               // pNext
+            outputBufferMemory->getMemory(),       // memory
+            0,                                     // offset
+            VK_WHOLE_SIZE,                         // size
+        };
+        int64_t *outputBufferPtr = (int64_t *)outputBufferMemory->getHostPtr();
+        if (params.length64)
+        {
+            *outputBufferPtr = -int64_t{1};
+        }
+        else
+        {
+            *outputBufferPtr = 0xFFFFFFFF;
+        }
+        VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+
+        // Build descriptor set
+        vk::VkDeviceSize bufferBindOffset = 0;
+        if (params.useMinBufferOffset)
+        {
+            const VkPhysicalDeviceLimits deviceLimits =
+                getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
+            bufferBindOffset = deviceLimits.minStorageBufferOffsetAlignment;
+        }
+
+        const VkDescriptorBufferInfo inputBufferDesc =
+            makeDescriptorBufferInfo(*inputBuffer, bufferBindOffset, params.bufferBindLength);
+        const VkDescriptorBufferInfo outputBufferDesc = makeDescriptorBufferInfo(*outputBuffer, 0u, VK_WHOLE_SIZE);
+
+        const VkDescriptorSetAllocateInfo descAllocInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            nullptr,
+            *descriptorPool,            // pool
+            1u,                         // setLayoutCount
+            &descriptorSetLayout.get(), // pSetLayouts
+        };
+        const Unique<VkDescriptorSet> descSet(allocateDescriptorSet(vk, device, &descAllocInfo));
+
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                         &inputBufferDesc)
+            .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                         &outputBufferDesc)
+            .update(vk, device);
+
+        const VkCommandPoolCreateInfo cmdPoolParams = {
+            VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
+            nullptr,                                         // pNext
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
+            context.getUniversalQueueFamilyIndex(),          // queueFamilyIndex
+        };
+        const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolParams));
+
+        // Command buffer
+        const VkCommandBufferAllocateInfo cmdBufParams = {
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
+            nullptr,                                        // pNext
+            *cmdPool,                                       // pool
+            VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
+            1u,                                             // bufferCount
+        };
+        const Unique<VkCommandBuffer> cmdBuf(allocateCommandBuffer(vk, device, &cmdBufParams));
+
+        // Record commands
+        beginCommandBuffer(vk, *cmdBuf);
+
+        vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descSet.get(), 0u,
+                                 nullptr);
+        vk.cmdDispatch(*cmdBuf, 1, 1, 1);
+
+        const VkMemoryBarrier barrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+            nullptr,                          // pNext
+            VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+            VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+        };
+        vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
+
+        endCommandBuffer(vk, *cmdBuf);
+
+        submitCommandsAndWait(vk, device, queue, cmdBuf.get());
+
+        // Read back output buffer contents
+        VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1, &range));
+
+        // Expected number of elements in array at end of storage buffer
+        const VkDeviceSize boundLength =
+            params.bufferBindLength == VK_WHOLE_SIZE ? params.bufferSize - bufferBindOffset : params.bufferBindLength;
+        const int64_t expectedResult = (int64_t)(boundLength / params.elementSize);
+        const int64_t actualResult   = *outputBufferPtr;
+
+        context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Buffer size " << params.bufferSize << " offset " << bufferBindOffset
+            << " length " << params.bufferBindLength << " element size " << params.elementSize
+            << " expected array size: " << expectedResult << " actual array size: " << actualResult
+            << tcu::TestLog::EndMessage;
+
+        if (expectedResult == actualResult)
+            return tcu::TestStatus::pass("Got expected array size");
+        else
+            return tcu::TestStatus::fail("Mismatch array size");
     }
-    else
+    catch (const vk::OutOfMemoryError &)
     {
-        *outputBufferPtr = 0xFFFFFFFF;
+        if (params.bufferSize >= (1ull << 32))
+        {
+            TCU_THROW(NotSupportedError, "Out of memory");
+        }
+        throw;
     }
-    VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
-
-    // Build descriptor set
-    vk::VkDeviceSize bufferBindOffset = 0;
-    if (params.useMinBufferOffset)
-    {
-        const VkPhysicalDeviceLimits deviceLimits =
-            getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
-        bufferBindOffset = deviceLimits.minStorageBufferOffsetAlignment;
-    }
-
-    const VkDescriptorBufferInfo inputBufferDesc =
-        makeDescriptorBufferInfo(*inputBuffer, bufferBindOffset, params.bufferBindLength);
-    const VkDescriptorBufferInfo outputBufferDesc = makeDescriptorBufferInfo(*outputBuffer, 0u, VK_WHOLE_SIZE);
-
-    const VkDescriptorSetAllocateInfo descAllocInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        nullptr,
-        *descriptorPool,            // pool
-        1u,                         // setLayoutCount
-        &descriptorSetLayout.get(), // pSetLayouts
-    };
-    const Unique<VkDescriptorSet> descSet(allocateDescriptorSet(vk, device, &descAllocInfo));
-
-    DescriptorSetUpdateBuilder()
-        .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                     &inputBufferDesc)
-        .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                     &outputBufferDesc)
-        .update(vk, device);
-
-    const VkCommandPoolCreateInfo cmdPoolParams = {
-        VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        nullptr,                                         // pNext
-        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
-        context.getUniversalQueueFamilyIndex(),          // queueFamilyIndex
-    };
-    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolParams));
-
-    // Command buffer
-    const VkCommandBufferAllocateInfo cmdBufParams = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-        nullptr,                                        // pNext
-        *cmdPool,                                       // pool
-        VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
-        1u,                                             // bufferCount
-    };
-    const Unique<VkCommandBuffer> cmdBuf(allocateCommandBuffer(vk, device, &cmdBufParams));
-
-    // Record commands
-    beginCommandBuffer(vk, *cmdBuf);
-
-    vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-    vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descSet.get(), 0u,
-                             nullptr);
-    vk.cmdDispatch(*cmdBuf, 1, 1, 1);
-
-    const VkMemoryBarrier barrier = {
-        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
-        nullptr,                          // pNext
-        VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
-        VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
-    };
-    vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
-                          1, &barrier, 0, nullptr, 0, nullptr);
-
-    endCommandBuffer(vk, *cmdBuf);
-
-    submitCommandsAndWait(vk, device, queue, cmdBuf.get());
-
-    // Read back output buffer contents
-    VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1, &range));
-
-    // Expected number of elements in array at end of storage buffer
-    const VkDeviceSize boundLength =
-        params.bufferBindLength == VK_WHOLE_SIZE ? params.bufferSize - bufferBindOffset : params.bufferBindLength;
-    const int64_t expectedResult = (int64_t)(boundLength / params.elementSize);
-    const int64_t actualResult   = *outputBufferPtr;
-
-    context.getTestContext().getLog() << tcu::TestLog::Message << "Buffer size " << params.bufferSize << " offset "
-                                      << bufferBindOffset << " length " << params.bufferBindLength << " element size "
-                                      << params.elementSize << " expected array size: " << expectedResult
-                                      << " actual array size: " << actualResult << tcu::TestLog::EndMessage;
-
-    if (expectedResult == actualResult)
-        return tcu::TestStatus::pass("Got expected array size");
-    else
-        return tcu::TestStatus::fail("Mismatch array size");
 }
 
 class SSBOLayoutTests : public tcu::TestCaseGroup

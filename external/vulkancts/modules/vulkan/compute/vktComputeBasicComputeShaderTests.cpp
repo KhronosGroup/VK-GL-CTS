@@ -1406,191 +1406,207 @@ BufferToBufferInvertTestInstance::BufferToBufferInvertTestInstance(
 tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
 {
     const VkDeviceSize bufferSizeBytes = sizeof(tcu::UVec4) * m_numValues;
-    Move<VkDevice> robustDevice;
-    if (m_doBoundsCheck)
+    try
     {
-        robustDevice = getRobustDevice(m_context, bufferSizeBytes >= (1ULL << 32));
-    }
+        Move<VkDevice> robustDevice;
+        if (m_doBoundsCheck)
+        {
+            robustDevice = getRobustDevice(m_context, bufferSizeBytes >= (1ULL << 32));
+        }
 
-    const auto &vki     = m_context.getInstanceInterface();
-    const auto &vkp     = m_context.getPlatformInterface();
-    const auto device   = m_doBoundsCheck ? *robustDevice : m_context.getDevice();
-    const auto instance = m_context.getInstance();
+        const auto &vki     = m_context.getInstanceInterface();
+        const auto &vkp     = m_context.getPlatformInterface();
+        const auto device   = m_doBoundsCheck ? *robustDevice : m_context.getDevice();
+        const auto instance = m_context.getInstance();
 
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
-    auto driver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device, m_context.getUsedApiVersion(),
-                                                             m_context.getTestContext().getCommandLine()));
-    const DeviceInterface &vk = *driver;
+        const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+        auto driver = de::MovePtr<DeviceDriver>(new DeviceDriver(vkp, instance, device, m_context.getUsedApiVersion(),
+                                                                 m_context.getTestContext().getCommandLine()));
+        const DeviceInterface &vk = *driver;
 
-    auto queue           = getDeviceQueue(*driver, device, queueFamilyIndex, 0u);
-    auto customallocator = de::MovePtr<Allocator>(
-        new SimpleAllocator(*driver, device, getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice())));
-    auto &allocator = *customallocator;
+        auto queue           = getDeviceQueue(*driver, device, queueFamilyIndex, 0u);
+        auto customallocator = de::MovePtr<Allocator>(new SimpleAllocator(
+            *driver, device, getPhysicalDeviceMemoryProperties(vki, m_context.getPhysicalDevice())));
+        auto &allocator      = *customallocator;
 
-    // Customize the test based on buffer type
+        // Customize the test based on buffer type
 
-    const VkBufferUsageFlags inputBufferUsageFlags =
-        (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT : VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
-    const VkDescriptorType inputBufferDescriptorType =
-        (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER : VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
-    const uint32_t randomSeed = (m_bufferType == BUFFER_TYPE_UNIFORM ? 0x111223f : 0x124fef);
+        const VkBufferUsageFlags inputBufferUsageFlags =
+            (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT :
+                                                   VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+        const VkDescriptorType inputBufferDescriptorType =
+            (m_bufferType == BUFFER_TYPE_UNIFORM ? VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                                   VK_DESCRIPTOR_TYPE_STORAGE_BUFFER);
+        const uint32_t randomSeed = (m_bufferType == BUFFER_TYPE_UNIFORM ? 0x111223f : 0x124fef);
 
-    // Create an input buffer
+        // Create an input buffer
 
-    const BufferWithMemory inputBuffer(vk, device, allocator,
-                                       makeBufferCreateInfo(bufferSizeBytes, inputBufferUsageFlags),
-                                       MemoryRequirement::HostVisible | MemoryRequirement::Cached);
+        const BufferWithMemory inputBuffer(vk, device, allocator,
+                                           makeBufferCreateInfo(bufferSizeBytes, inputBufferUsageFlags),
+                                           MemoryRequirement::HostVisible | MemoryRequirement::Cached);
 
-    // Fill the input buffer with data
-    {
-        de::Random rnd(randomSeed);
-        const Allocation &inputBufferAllocation = inputBuffer.getAllocation();
-        tcu::UVec4 *bufferPtr                   = static_cast<tcu::UVec4 *>(inputBufferAllocation.getHostPtr());
-        for (uint32_t i = 0; i < m_numValues; ++i)
-            bufferPtr[i].x() = rnd.getUint32();
+        // Fill the input buffer with data
+        {
+            de::Random rnd(randomSeed);
+            const Allocation &inputBufferAllocation = inputBuffer.getAllocation();
+            tcu::UVec4 *bufferPtr                   = static_cast<tcu::UVec4 *>(inputBufferAllocation.getHostPtr());
+            for (uint32_t i = 0; i < m_numValues; ++i)
+                bufferPtr[i].x() = rnd.getUint32();
 
-        flushAlloc(vk, device, inputBufferAllocation);
-    }
+            flushAlloc(vk, device, inputBufferAllocation);
+        }
 
-    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-    const Unique<VkCommandBuffer> cmdBuffer(
-        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+        const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+        const Unique<VkCommandBuffer> cmdBuffer(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
-    // Create an output buffer
+        // Create an output buffer
 
-    const BufferWithMemory outputBuffer(
-        vk, device, allocator,
-        makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
-                                                  VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-        m_deviceLocal ? MemoryRequirement::Local : (MemoryRequirement::HostVisible | MemoryRequirement::Cached));
-    beginCommandBuffer(vk, *cmdBuffer);
-    vk.cmdFillBuffer(*cmdBuffer, *outputBuffer, 0, bufferSizeBytes, 0xBEBEBEBE);
-    endCommandBuffer(vk, *cmdBuffer);
-
-    // Wait for completion
-    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-    const BufferWithMemory readbackBuffer(vk, device, allocator,
-                                          makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
-                                          MemoryRequirement::HostVisible | MemoryRequirement::Cached);
-    const Allocation &readbackBufferAllocation = readbackBuffer.getAllocation();
-
-    // Create descriptor set
-
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-        DescriptorSetLayoutBuilder()
-            .addSingleBinding(inputBufferDescriptorType, VK_SHADER_STAGE_COMPUTE_BIT)
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-            .build(vk, device));
-
-    const Unique<VkDescriptorPool> descriptorPool(
-        DescriptorPoolBuilder()
-            .addType(inputBufferDescriptorType)
-            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
-
-    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
-
-    VkDeviceSize inputRange  = m_doBoundsCheck ? bufferSizeBytes * 3 / 4 : VK_WHOLE_SIZE;
-    VkDeviceSize outputRange = m_doBoundsCheck ? bufferSizeBytes * 7 / 8 : VK_WHOLE_SIZE;
-
-    const VkDescriptorBufferInfo inputBufferDescriptorInfo = makeDescriptorBufferInfo(*inputBuffer, 0ull, inputRange);
-    const VkDescriptorBufferInfo outputBufferDescriptorInfo =
-        makeDescriptorBufferInfo(*outputBuffer, 0ull, outputRange);
-    DescriptorSetUpdateBuilder()
-        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), inputBufferDescriptorType,
-                     &inputBufferDescriptorInfo)
-        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
-                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputBufferDescriptorInfo)
-        .update(vk, device);
-
-    // Perform the computation
-
-    ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
-                                    m_context.getBinaryCollection().get("comp"));
-    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
-#ifndef CTS_USES_VULKANSC
-    if (bufferSizeBytes > (uint64_t{1} << 32) && !m_use64bExecutionMode)
-    {
-        pipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT);
-    }
-#endif
-    DE_UNREF(m_use64bExecutionMode);
-    pipeline.buildPipeline();
-
-    const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(
-        VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
-
-    const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(
-        VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, bufferSizeBytes);
-
-    const VkBufferMemoryBarrier transferWriteBarrier = makeBufferMemoryBarrier(
-        VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *readbackBuffer, 0ull, bufferSizeBytes);
-
-    // Start recording commands
-
-    beginCommandBuffer(vk, *cmdBuffer);
-
-    pipeline.bind(*cmdBuffer);
-    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, nullptr);
-
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
-    vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
-
-    endCommandBuffer(vk, *cmdBuffer);
-
-    // Wait for completion
-
-    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-    // Validate the results
-    const Allocation &outputBufferAllocation = outputBuffer.getAllocation();
-
-    if (m_deviceLocal)
-    {
-        VkBufferCopy copy{0, 0, bufferSizeBytes};
+        const BufferWithMemory outputBuffer(
+            vk, device, allocator,
+            makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
+                                                      VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                                      VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+            m_deviceLocal ? MemoryRequirement::Local : (MemoryRequirement::HostVisible | MemoryRequirement::Cached));
         beginCommandBuffer(vk, *cmdBuffer);
-
-        vk.cmdCopyBuffer(*cmdBuffer, *outputBuffer, *readbackBuffer, 1, &copy);
-
-        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                              (VkDependencyFlags)0, 0, nullptr, 1, &transferWriteBarrier, 0, nullptr);
-
+        vk.cmdFillBuffer(*cmdBuffer, *outputBuffer, 0, bufferSizeBytes, 0xBEBEBEBE);
         endCommandBuffer(vk, *cmdBuffer);
 
         // Wait for completion
         submitCommandsAndWait(vk, device, queue, *cmdBuffer);
 
-        invalidateAlloc(vk, device, readbackBufferAllocation);
-    }
-    else
-    {
-        invalidateAlloc(vk, device, outputBufferAllocation);
-    }
+        const BufferWithMemory readbackBuffer(vk, device, allocator,
+                                              makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+                                              MemoryRequirement::HostVisible | MemoryRequirement::Cached);
+        const Allocation &readbackBufferAllocation = readbackBuffer.getAllocation();
 
-    const tcu::UVec4 *bufferPtr    = static_cast<tcu::UVec4 *>(m_deviceLocal ? readbackBufferAllocation.getHostPtr() :
-                                                                               outputBufferAllocation.getHostPtr());
-    const tcu::UVec4 *refBufferPtr = static_cast<tcu::UVec4 *>(inputBuffer.getAllocation().getHostPtr());
+        // Create descriptor set
 
-    for (uint32_t ndx = 0; ndx < m_numValues; ++ndx)
-    {
-        bool inputInRange  = ndx * sizeof(tcu::UVec4) < inputRange;
-        bool outputInRange = ndx * sizeof(tcu::UVec4) < outputRange;
-        const uint32_t res = bufferPtr[ndx].x();
-        const uint32_t ref = outputInRange ? ~(inputInRange ? refBufferPtr[ndx].x() : 0) : 0xBEBEBEBE;
+        const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+            DescriptorSetLayoutBuilder()
+                .addSingleBinding(inputBufferDescriptorType, VK_SHADER_STAGE_COMPUTE_BIT)
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                .build(vk, device));
 
-        if (res != ref)
+        const Unique<VkDescriptorPool> descriptorPool(
+            DescriptorPoolBuilder()
+                .addType(inputBufferDescriptorType)
+                .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+        const Unique<VkDescriptorSet> descriptorSet(
+            makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+        VkDeviceSize inputRange  = m_doBoundsCheck ? bufferSizeBytes * 3 / 4 : VK_WHOLE_SIZE;
+        VkDeviceSize outputRange = m_doBoundsCheck ? bufferSizeBytes * 7 / 8 : VK_WHOLE_SIZE;
+
+        const VkDescriptorBufferInfo inputBufferDescriptorInfo =
+            makeDescriptorBufferInfo(*inputBuffer, 0ull, inputRange);
+        const VkDescriptorBufferInfo outputBufferDescriptorInfo =
+            makeDescriptorBufferInfo(*outputBuffer, 0ull, outputRange);
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), inputBufferDescriptorType,
+                         &inputBufferDescriptorInfo)
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &outputBufferDescriptorInfo)
+            .update(vk, device);
+
+        // Perform the computation
+
+        ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
+                                        m_context.getBinaryCollection().get("comp"));
+        pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+#ifndef CTS_USES_VULKANSC
+        if (bufferSizeBytes > (uint64_t{1} << 32) && !m_use64bExecutionMode)
         {
-            std::ostringstream msg;
-            msg << "Comparison failed for Output.values[" << ndx << "]";
-            return tcu::TestStatus::fail(msg.str());
+            pipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT);
         }
+#endif
+        DE_UNREF(m_use64bExecutionMode);
+        pipeline.buildPipeline();
+
+        const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *inputBuffer, 0ull, bufferSizeBytes);
+
+        const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *outputBuffer, 0ull, bufferSizeBytes);
+
+        const VkBufferMemoryBarrier transferWriteBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *readbackBuffer, 0ull, bufferSizeBytes);
+
+        // Start recording commands
+
+        beginCommandBuffer(vk, *cmdBuffer);
+
+        pipeline.bind(*cmdBuffer);
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
+                                 &descriptorSet.get(), 0u, nullptr);
+
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
+        vk.cmdDispatch(*cmdBuffer, m_workSize.x(), m_workSize.y(), m_workSize.z());
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
+
+        endCommandBuffer(vk, *cmdBuffer);
+
+        // Wait for completion
+
+        submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+        // Validate the results
+        const Allocation &outputBufferAllocation = outputBuffer.getAllocation();
+
+        if (m_deviceLocal)
+        {
+            VkBufferCopy copy{0, 0, bufferSizeBytes};
+            beginCommandBuffer(vk, *cmdBuffer);
+
+            vk.cmdCopyBuffer(*cmdBuffer, *outputBuffer, *readbackBuffer, 1, &copy);
+
+            vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                  (VkDependencyFlags)0, 0, nullptr, 1, &transferWriteBarrier, 0, nullptr);
+
+            endCommandBuffer(vk, *cmdBuffer);
+
+            // Wait for completion
+            submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+            invalidateAlloc(vk, device, readbackBufferAllocation);
+        }
+        else
+        {
+            invalidateAlloc(vk, device, outputBufferAllocation);
+        }
+
+        const tcu::UVec4 *bufferPtr = static_cast<tcu::UVec4 *>(m_deviceLocal ? readbackBufferAllocation.getHostPtr() :
+                                                                                outputBufferAllocation.getHostPtr());
+        const tcu::UVec4 *refBufferPtr = static_cast<tcu::UVec4 *>(inputBuffer.getAllocation().getHostPtr());
+
+        for (uint32_t ndx = 0; ndx < m_numValues; ++ndx)
+        {
+            bool inputInRange  = ndx * sizeof(tcu::UVec4) < inputRange;
+            bool outputInRange = ndx * sizeof(tcu::UVec4) < outputRange;
+            const uint32_t res = bufferPtr[ndx].x();
+            const uint32_t ref = outputInRange ? ~(inputInRange ? refBufferPtr[ndx].x() : 0) : 0xBEBEBEBE;
+
+            if (res != ref)
+            {
+                std::ostringstream msg;
+                msg << "Comparison failed for Output.values[" << ndx << "]";
+                return tcu::TestStatus::fail(msg.str());
+            }
+        }
+        return tcu::TestStatus::pass("Compute succeeded");
     }
-    return tcu::TestStatus::pass("Compute succeeded");
+    catch (const vk::OutOfMemoryError &)
+    {
+        if (bufferSizeBytes >= (1ULL << 32))
+        {
+            TCU_THROW(NotSupportedError, "Out of memory");
+        }
+        throw;
+    }
 }
 
 class InvertSSBOInPlaceTest : public vkt::TestCase
