@@ -1428,7 +1428,8 @@ protected:
     BufferPtr creatAndFillVertexBuffer(void);
     virtual void createPipeline(void) = 0;
     void commandClearAttachment(const vk::DeviceInterface &vk, const vk::VkCommandBuffer commandBuffer);
-    void creatColorAttachmentAndRenderPass(void);
+    void createColorAttachmentAndRenderPass(void);
+    void createDepthsBuffer(void);
     bool checkImage(void);
     virtual tcu::TestStatus executeTest(void)                  = 0;
     virtual tcu::TestStatus checkResult(VkQueryPool queryPool) = 0;
@@ -1441,8 +1442,12 @@ protected:
     Move<VkImageView> m_depthView;
     Move<VkRenderPass> m_renderPass;
     Move<VkFramebuffer> m_framebuffer;
-    Move<VkPipeline> m_pipeline;
+    std::unique_ptr<BufferWithMemory> m_depthsBuffer;
+    Move<VkDescriptorPool> m_depthsBufferPool;
+    Move<VkDescriptorSetLayout> m_depthsBufferSetLayout;
+    Move<VkDescriptorSet> m_depthsBufferSet;
     Move<VkPipelineLayout> m_pipelineLayout;
+    Move<VkPipeline> m_pipeline;
     const std::vector<VertexData> &m_data;
     const ParametersGraphic &m_parametersGraphic;
     const std::vector<uint64_t> m_drawRepeats;
@@ -1471,7 +1476,8 @@ GraphicBasicTestInstance::GraphicBasicTestInstance(vkt::Context &context, const 
 tcu::TestStatus GraphicBasicTestInstance::iterate(void)
 {
     checkExtensions((m_parametersGraphic.resetType == RESET_TYPE_HOST) ? true : false);
-    creatColorAttachmentAndRenderPass();
+    createColorAttachmentAndRenderPass();
+    createDepthsBuffer();
     createPipeline();
     return executeTest();
 }
@@ -1521,7 +1527,7 @@ void GraphicBasicTestInstance::commandClearAttachment(const vk::DeviceInterface 
     vk.cmdClearAttachments(commandBuffer, 1u, &attachment, 1u, &rect);
 }
 
-void GraphicBasicTestInstance::creatColorAttachmentAndRenderPass(void)
+void GraphicBasicTestInstance::createColorAttachmentAndRenderPass(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
@@ -1652,6 +1658,44 @@ void GraphicBasicTestInstance::creatColorAttachmentAndRenderPass(void)
         FramebufferCreateInfo framebufferCreateInfo(*m_renderPass, attachments, m_width, m_height, 1);
         m_framebuffer = createFramebuffer(vk, device, &framebufferCreateInfo);
     }
+}
+
+void GraphicBasicTestInstance::createDepthsBuffer(void)
+{
+    // This is only created for cases with no color attachments.
+    if (!m_parametersGraphic.noColorAttachments)
+        return;
+
+    const auto ctx = m_context.getContextCommonData();
+    const std::vector<float> depthValues{0.0f, 0.25f, 0.5f, 0.75f, 1.0f};
+
+    const auto bufferSize  = static_cast<VkDeviceSize>(de::dataSize(depthValues));
+    const auto bufferUsage = static_cast<VkBufferUsageFlags>(VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    const auto createInfo  = makeBufferCreateInfo(bufferSize, bufferUsage);
+    m_depthsBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, createInfo, HostIntent::W));
+    {
+        auto &alloc = m_depthsBuffer->getAllocation();
+        memcpy(alloc.getHostPtr(), de::dataOrNull(depthValues), de::dataSize(depthValues));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
+    }
+
+    const auto descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const auto stages   = static_cast<VkShaderStageFlags>(VK_SHADER_STAGE_FRAGMENT_BIT);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(descType);
+    m_depthsBufferPool = poolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
+
+    DescriptorSetLayoutBuilder layoutBuilder;
+    layoutBuilder.addSingleBinding(descType, stages);
+    m_depthsBufferSetLayout = layoutBuilder.build(ctx.vkd, ctx.device);
+    m_depthsBufferSet       = makeDescriptorSet(ctx.vkd, ctx.device, *m_depthsBufferPool, *m_depthsBufferSetLayout);
+
+    DescriptorSetUpdateBuilder updateBuilder;
+    const auto binding  = DescriptorSetUpdateBuilder::Location::binding;
+    const auto descInfo = makeDescriptorBufferInfo(m_depthsBuffer->get(), 0ull, VK_WHOLE_SIZE);
+    updateBuilder.writeSingle(*m_depthsBufferSet, binding(0u), descType, &descInfo);
+    updateBuilder.update(ctx.vkd, ctx.device);
 }
 
 bool GraphicBasicTestInstance::checkImage(void)
@@ -1830,10 +1874,14 @@ void VertexShaderTestInstance::createPipeline(void)
     if (m_parametersGraphic.clearOp == CLEAR_SKIP)
         pcRanges.push_back(makePushConstantRange(VK_SHADER_STAGE_VERTEX_BIT, 0u, kFloatSize));
 
+    std::vector<VkDescriptorSetLayout> setLayouts;
     if (m_parametersGraphic.noColorAttachments)
-        pcRanges.push_back(makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, kFloatSize, kFloatSize));
+    {
+        DE_ASSERT(*m_depthsBufferSetLayout != VK_NULL_HANDLE);
+        setLayouts.push_back(*m_depthsBufferSetLayout);
+    }
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(std::vector<VkDescriptorSetLayout>(), de::sizeU32(pcRanges),
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(setLayouts, de::sizeU32(pcRanges),
                                                             de::dataOrNull(pcRanges));
     m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
 
@@ -1894,7 +1942,7 @@ tcu::TestStatus VertexShaderTestInstance::executeTest(void)
     const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
     const VkBuffer vertexBuffer           = vertexBufferSp->object();
     const bool useOffsetPC                = (m_parametersGraphic.clearOp == CLEAR_SKIP);
-    const bool useFragDepthPC             = m_parametersGraphic.noColorAttachments;
+    const bool useFragDepth               = m_parametersGraphic.noColorAttachments;
 
     const Unique<VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -1936,11 +1984,11 @@ tcu::TestStatus VertexShaderTestInstance::executeTest(void)
                                         &currentOffset);
                     currentOffset += offsetStep;
                 }
-                if (useFragDepthPC)
+                if (useFragDepth)
                 {
-                    static const float fragDepth = 1.0f;
-                    vk.cmdPushConstants(*cmdBuffer, *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, kFloatSize,
-                                        kFloatSize, &fragDepth);
+                    DE_ASSERT(m_depthsBufferSet.get() != VK_NULL_HANDLE);
+                    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
+                                             &m_depthsBufferSet.get(), 0u, nullptr);
                 }
                 draw(*cmdBuffer);
             }
@@ -2273,7 +2321,7 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest(void)
     const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
     const VkBuffer vertexBuffer           = vertexBufferSp->object();
     const bool useOffsetPC                = (m_parametersGraphic.clearOp == CLEAR_SKIP);
-    const bool useFragDepthPC             = m_parametersGraphic.noColorAttachments;
+    const bool useFragDepth               = m_parametersGraphic.noColorAttachments;
 
     const Unique<VkCommandBuffer> primaryCmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -2301,11 +2349,11 @@ tcu::TestStatus VertexShaderSecondaryTestInstance::executeTest(void)
                                     kFloatSize, &currentOffset);
                 currentOffset += offsetStep;
             }
-            if (useFragDepthPC)
+            if (useFragDepth)
             {
-                static const float fragDepth = 1.0f;
-                vk.cmdPushConstants(secondaryCmdBuffers[i]->get(), *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                    kFloatSize, kFloatSize, &fragDepth);
+                DE_ASSERT(m_depthsBufferSet.get() != VK_NULL_HANDLE);
+                vk.cmdBindDescriptorSets(secondaryCmdBuffers[i]->get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                         *m_pipelineLayout, 0u, 1u, &m_depthsBufferSet.get(), 0u, nullptr);
             }
 
             draw(secondaryCmdBuffers[i]->get());
@@ -2440,7 +2488,7 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest(void)
     const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
     const VkBuffer vertexBuffer           = vertexBufferSp->object();
     const bool useOffsetPC                = (m_parametersGraphic.clearOp == CLEAR_SKIP);
-    const bool useFragDepthPC             = m_parametersGraphic.noColorAttachments;
+    const bool useFragDepth               = m_parametersGraphic.noColorAttachments;
 
     const Unique<VkCommandBuffer> primaryCmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -2467,11 +2515,11 @@ tcu::TestStatus VertexShaderSecondaryInheritedTestInstance::executeTest(void)
                                     kFloatSize, &currentOffset);
                 currentOffset += offsetStep;
             }
-            if (useFragDepthPC)
+            if (useFragDepth)
             {
-                static const float fragDepth = 1.0f;
-                vk.cmdPushConstants(secondaryCmdBuffers[i]->get(), *m_pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT,
-                                    kFloatSize, kFloatSize, &fragDepth);
+                DE_ASSERT(m_depthsBufferSet.get() != VK_NULL_HANDLE);
+                vk.cmdBindDescriptorSets(secondaryCmdBuffers[i]->get(), VK_PIPELINE_BIND_POINT_GRAPHICS,
+                                         *m_pipelineLayout, 0u, 1u, &m_depthsBufferSet.get(), 0u, nullptr);
             }
             draw(secondaryCmdBuffers[i]->get());
         }
@@ -2611,10 +2659,14 @@ void GeometryShaderTestInstance::createPipeline(void)
 
     std::vector<VkPushConstantRange> pcRanges;
 
+    std::vector<VkDescriptorSetLayout> setLayouts;
     if (m_parametersGraphic.noColorAttachments)
-        pcRanges.push_back(makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, kFloatSize, kFloatSize));
+    {
+        DE_ASSERT(*m_depthsBufferSetLayout != VK_NULL_HANDLE);
+        setLayouts.push_back(*m_depthsBufferSetLayout);
+    }
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(std::vector<VkDescriptorSetLayout>(), de::sizeU32(pcRanges),
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(setLayouts, de::sizeU32(pcRanges),
                                                             de::dataOrNull(pcRanges));
 
     m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
@@ -2711,6 +2763,12 @@ tcu::TestStatus GeometryShaderTestInstance::executeTest(void)
             vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
             vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
+            if (m_parametersGraphic.noColorAttachments)
+            {
+                DE_ASSERT(m_depthsBufferSet.get() != VK_NULL_HANDLE);
+                vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
+                                         &m_depthsBufferSet.get(), 0u, nullptr);
+            }
             for (uint64_t j = 0; j < m_drawRepeats[i]; ++j)
                 draw(*cmdBuffer);
 
@@ -3276,10 +3334,14 @@ void TessellationShaderTestInstance::createPipeline(void)
 
     std::vector<VkPushConstantRange> pcRanges;
 
+    std::vector<VkDescriptorSetLayout> setLayouts;
     if (m_parametersGraphic.noColorAttachments)
-        pcRanges.push_back(makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, kFloatSize, kFloatSize));
+    {
+        DE_ASSERT(*m_depthsBufferSetLayout != VK_NULL_HANDLE);
+        setLayouts.push_back(*m_depthsBufferSetLayout);
+    }
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(std::vector<VkDescriptorSetLayout>(), de::sizeU32(pcRanges),
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(setLayouts, de::sizeU32(pcRanges),
                                                             de::dataOrNull(pcRanges));
 
     m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
@@ -3375,6 +3437,12 @@ tcu::TestStatus TessellationShaderTestInstance::executeTest(void)
             vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
             vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
 
+            if (m_parametersGraphic.noColorAttachments)
+            {
+                DE_ASSERT(m_depthsBufferSet.get() != VK_NULL_HANDLE);
+                vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
+                                         &m_depthsBufferSet.get(), 0u, nullptr);
+            }
             for (uint64_t j = 0; j < m_drawRepeats[i]; ++j)
                 draw(*cmdBuffer);
 
@@ -4473,12 +4541,17 @@ public:
                 << "layout(location = 0) in vec4 in_color;\n"
                 << "layout(location = 0) out vec4 out_color;\n"
                 << (m_parametersGraphic.noColorAttachments ?
-                        "layout (push_constant, std430) uniform PCBlock { layout (offset=4) float fragDepth; } pc;\n" :
+                        // For the size of this array, see createDepthsBuffer().
+                        "layout (set=0, binding=0, std430) readonly buffer DepthsBlock { float depths[5]; } "
+                        "depthsBuffer;\n" :
                         "")
                 << "void main()\n"
                 << "{\n"
                 << "    out_color = in_color;\n"
-                << (m_parametersGraphic.noColorAttachments ? "    gl_FragDepth = pc.fragDepth;\n" : "") << "}\n";
+                << (m_parametersGraphic.noColorAttachments ?
+                        "    gl_FragDepth = depthsBuffer.depths[((int(gl_FragCoord.x) + int(gl_FragCoord.y)) % 5)];\n" :
+                        "")
+                << "}\n";
             sourceCollections.glslSources.add("fragment") << glu::FragmentSource(source.str());
         }
     }
@@ -4567,7 +4640,7 @@ public:
 protected:
     BufferPtr creatAndFillVertexBuffer(void);
     virtual void createPipeline(void) = 0;
-    void creatColorAttachmentAndRenderPass(void);
+    void createColorAttachmentAndRenderPass(void);
     virtual tcu::TestStatus executeTest(void)                  = 0;
     virtual tcu::TestStatus checkResult(VkQueryPool queryPool) = 0;
     virtual void draw(VkCommandBuffer cmdBuffer)               = 0;
@@ -4599,7 +4672,7 @@ GraphicBasicMultipleQueryTestInstance::GraphicBasicMultipleQueryTestInstance(vkt
 tcu::TestStatus GraphicBasicMultipleQueryTestInstance::iterate(void)
 {
     checkExtensions();
-    creatColorAttachmentAndRenderPass();
+    createColorAttachmentAndRenderPass();
     createPipeline();
     return executeTest();
 }
@@ -4624,7 +4697,7 @@ BufferPtr GraphicBasicMultipleQueryTestInstance::creatAndFillVertexBuffer(void)
     return vertexBuffer;
 }
 
-void GraphicBasicMultipleQueryTestInstance::creatColorAttachmentAndRenderPass(void)
+void GraphicBasicMultipleQueryTestInstance::createColorAttachmentAndRenderPass(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice device     = m_context.getDevice();
