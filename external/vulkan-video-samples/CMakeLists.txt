@@ -33,7 +33,10 @@ list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
 
 # Use FindShaderc.cmake to find or build shaderc
 include(FetchContent)
-include(FindShaderc)
+unset(USE_SYSTEM_SHADERC CACHE)
+set(USE_SYSTEM_SHADERC OFF CACHE BOOL "Use system installed shaderc" FORCE)
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}")
+include(FindShaderc_modified)
 
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/common/include
