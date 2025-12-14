@@ -37,6 +37,7 @@
 #include <algorithm>
 #include <array>
 #include <regex>
+#include <array>
 
 namespace vkt
 {
