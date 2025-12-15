@@ -1,0 +1,48 @@
+{
+	"summary": {
+		"app": {
+			"bundleName": "com.OpenHarmony.app.test",
+			"version": {
+				"code": 1000000,
+				"name": "1.0.0"
+			}
+		},
+		"modules": [
+			{
+				"mainAbility": "EntryAbility",
+				"deviceType": [
+					"default",
+					"tablet"
+				],
+				"abilities": [
+					{
+						"name": "EntryAbility",
+						"label": "$string:EntryAbility_label"
+					}
+				],
+				"distro": {
+					"moduleType": "entry",
+					"installationFree": false,
+					"deliveryWithInstall": true,
+					"moduleName": "entry"
+				},
+				"apiVersion": {
+					"compatible": 11,
+					"releaseType": "Release",
+					"target": 11
+				}
+			}
+		]
+	},
+	"packages": [
+		{
+			"deviceType": [
+				"default",
+				"tablet"
+			],
+			"moduleType": "entry",
+			"deliveryWithInstall": true,
+			"name": "entry-default"
+		}
+	]
+}
