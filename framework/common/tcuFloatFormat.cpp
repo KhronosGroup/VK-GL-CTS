@@ -272,11 +272,14 @@ static FloatFormat nativeFormat(void)
     return FloatFormat(Limits::min_exponent - 1, // These have a built-in offset of one
                        Limits::max_exponent - 1,
                        Limits::digits - 1, // don't count the hidden bit
+#pragma clang diagnostic push
+#pragma clang diagnostic ignored "-Wdeprecated-declarations"
                        Limits::has_denorm != std::denorm_absent, Limits::has_infinity ? YES : NO,
                        Limits::has_quiet_NaN ? YES : NO,
                        ((Limits::has_denorm == std::denorm_present) ? YES :
                         (Limits::has_denorm == std::denorm_absent)  ? NO :
                                                                       MAYBE));
+#pragma clang diagnostic pop
 }
 
 FloatFormat FloatFormat::nativeFloat(void)
