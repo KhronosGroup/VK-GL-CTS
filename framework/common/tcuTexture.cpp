@@ -1719,6 +1719,8 @@ IVec4 ConstPixelBufferAccess::getPixelInt(int x, int y, int z) const
     case TextureFormat::UNSIGNED_INT_1010102_REV:
         return swizzleGe(UVec4(U32(0, 10), U32(10, 10), U32(20, 10), U32(30, 2)), m_format.order, TextureFormat::RGBA)
             .cast<int>();
+    case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
+        return swizzleGe(IVec4(U32(0, 11), U32(11, 11), U32(22, 10), 1), m_format.order, TextureFormat::RGB);
     case TextureFormat::SNORM_INT_1010102_REV:   // Fall-through
     case TextureFormat::SSCALED_INT_1010102_REV: // Fall-through
     case TextureFormat::SIGNED_INT_1010102_REV:
