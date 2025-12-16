@@ -35,6 +35,7 @@
 #include "vkTensorMemoryUtil.hpp"
 
 #include <algorithm>
+#include <array>
 #include <regex>
 
 namespace vkt
