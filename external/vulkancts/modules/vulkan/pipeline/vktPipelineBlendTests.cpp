@@ -37,7 +37,6 @@
 #include "vkImageWithMemory.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkMemUtil.hpp"
-#include "vkPlatform.hpp"
 #include "vkPrograms.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkCmdUtil.hpp"
@@ -46,12 +45,8 @@
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "vkBarrierUtil.hpp"
 #include "tcuImageCompare.hpp"
-#include "tcuPlatform.hpp"
 #include "tcuTextureUtil.hpp"
-#include "deRandom.hpp"
-#include "deStringUtil.hpp"
 #include "deUniquePtr.hpp"
 #include <cstring>
 #include <set>
@@ -71,14 +66,10 @@ using namespace blending_common;
 namespace
 {
 
-bool isSupportedBlendFormat(const InstanceInterface &instanceInterface, VkPhysicalDevice device, VkFormat format)
+void checkSupportedBlendFormat(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkFormat format)
 {
-    VkFormatProperties formatProps;
-
-    instanceInterface.getPhysicalDeviceFormatProperties(device, format, &formatProps);
-
-    return (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) &&
-           (formatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BLEND_BIT);
+    if (!isSupportedBlendFormat(vki, physicalDevice, format))
+        TCU_THROW(NotSupportedError, std::string(getFormatName(format)) + " does not supporte blending");
 }
 
 class BlendStateUniqueRandomIterator : public UniqueRandomIterator<VkPipelineColorBlendAttachmentState>
@@ -399,8 +390,7 @@ TestInstance *BlendTest::createInstance(Context &context) const
 
 void BlendTest::checkSupport(Context &context) const
 {
-    if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
-        throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
+    checkSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat);
 
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
@@ -500,10 +490,10 @@ void DualSourceBlendTest::checkSupport(Context &context) const
             break;
     }
     if (isDualSourceTest && !features.dualSrcBlend)
-        throw tcu::NotSupportedError("Dual-Source blending not supported");
+        TCU_THROW(NotSupportedError, "dualSrcBlend not supported");
 
-    if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat))
-        throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") + getFormatName(m_colorFormat));
+    checkSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_colorFormat);
+
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
 }
@@ -1112,7 +1102,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
 
         compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare",
                                                "Image comparison", refRenderer.getAccess(), result->getAccess(),
-                                               threshold, tcu::COMPARE_LOG_RESULT);
+                                               threshold, tcu::COMPARE_LOG_ON_ERROR);
 
         if (isLegalExpandableFormat(tcuColorFormat.type))
         {
@@ -1124,7 +1114,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
                 compareOk =
                     tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare",
                                                "Image comparison, 8 bit intermediate format", refLevel.getAccess(),
-                                               result->getAccess(), threshold, tcu::COMPARE_LOG_RESULT);
+                                               result->getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR);
             }
 
             if (!compareOk)
@@ -1135,7 +1125,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
                 compareOk =
                     tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare",
                                                "Image comparison, 64 bit intermediate format", refLevel.getAccess(),
-                                               result->getAccess(), threshold, tcu::COMPARE_LOG_RESULT);
+                                               result->getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR);
             }
         }
     }
@@ -1344,7 +1334,11 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance(
             &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
         };
 
-        m_vertices          = createOverlappingQuadsDualSource();
+        const auto tcuColorFormat = mapVkFormat(m_colorFormat);
+        const auto componentBits  = tcu::getTextureFormatBitDepth(tcuColorFormat);
+        const bool forceAlphaOne  = (componentBits.w() > 0 && componentBits.w() < 8); // Verifying low precission alpha.
+
+        m_vertices          = createOverlappingQuadsDualSource(forceAlphaOne);
         m_vertexBuffer      = createBuffer(vk, vkDevice, &vertexBufferParams);
         m_vertexBufferAlloc = memAlloc.allocate(getBufferMemoryRequirements(vk, vkDevice, *m_vertexBuffer),
                                                 MemoryRequirement::HostVisible);
@@ -1355,7 +1349,7 @@ DualSourceBlendTestInstance::DualSourceBlendTestInstance(
         // Adjust vertex colors
         if (!isFloatFormat(m_colorFormat))
         {
-            const tcu::TextureFormatInfo formatInfo = tcu::getTextureFormatInfo(mapVkFormat(m_colorFormat));
+            const tcu::TextureFormatInfo formatInfo = tcu::getTextureFormatInfo(tcuColorFormat);
             for (size_t vertexNdx = 0; vertexNdx < m_vertices.size(); vertexNdx++)
             {
                 m_vertices[vertexNdx].color0 =
@@ -1552,7 +1546,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
 
         compareOk =
             tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare", "Image comparison",
-                                       access, result->getAccess(), threshold, tcu::COMPARE_LOG_RESULT);
+                                       access, result->getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR);
 
         if (isLegalExpandableFormat(tcuColorFormat.type))
         {
@@ -1564,7 +1558,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
                 compareOk =
                     tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare",
                                                "Image comparison, 8 bit intermediate format", refLevel.getAccess(),
-                                               result->getAccess(), threshold, tcu::COMPARE_LOG_RESULT);
+                                               result->getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR);
             }
 
             if (!compareOk)
@@ -1575,7 +1569,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
                 compareOk =
                     tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "FloatImageCompare",
                                                "Image comparison, 64 bit intermediate format", refLevel.getAccess(),
-                                               result->getAccess(), threshold, tcu::COMPARE_LOG_RESULT);
+                                               result->getAccess(), threshold, tcu::COMPARE_LOG_ON_ERROR);
             }
         }
     }
@@ -1676,9 +1670,8 @@ void ClampTest::initPrograms(SourceCollections &sourceCollections) const
 
 void ClampTest::checkSupport(Context &context) const
 {
-    if (!isSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.colorFormat))
-        throw tcu::NotSupportedError(std::string("Unsupported color blending format: ") +
-                                     getFormatName(m_params.colorFormat));
+    checkSupportedBlendFormat(context.getInstanceInterface(), context.getPhysicalDevice(), m_params.colorFormat);
+
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -2462,14 +2455,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
                     de::MovePtr<tcu::TestCaseGroup> shaderOutputTypeTests(
                         new tcu::TestCaseGroup(testCtx, shaderOutputType.first));
 
-                    de::MovePtr<tcu::TestCaseGroup> blendStateTests;
-                    {
-                        std::ostringstream blendStateDescription;
-                        blendStateDescription << "Combines blend factors, operators and channel write masks. The "
-                                                 "constant color used in all tests is "
-                                              << BlendTest::s_blendConst;
-                        blendStateTests = de::MovePtr<tcu::TestCaseGroup>(new tcu::TestCaseGroup(testCtx, "states"));
-                    }
+                    de::MovePtr<tcu::TestCaseGroup> blendStateTests(new tcu::TestCaseGroup(testCtx, "states"));
 
                     dualSourceBlendStateItr.reset();
 
