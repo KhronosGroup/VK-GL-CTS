@@ -100,6 +100,7 @@ struct GraphicsResources
     GraphicsVerifyBinaryFunc verifyBinary;
     SpirvVersion spirvVersion;
     const bool graphicsFeaturesRequired;
+    bool uses64BitIndexing;
 
     GraphicsResources()
         : inputFormat(VK_FORMAT_R32G32B32A32_SFLOAT)
@@ -107,6 +108,7 @@ struct GraphicsResources
         , verifyBinary(nullptr)
         , spirvVersion(SPIRV_VERSION_1_0)
         , graphicsFeaturesRequired(true)
+        , uses64BitIndexing(false)
     {
     }
 };

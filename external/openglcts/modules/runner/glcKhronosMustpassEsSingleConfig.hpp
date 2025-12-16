@@ -22,6 +22,7 @@
 const char* mustpassDir = "gl_cts/data/mustpass/gles/khronos_mustpass_single/main/";
 
 static const RunParams khronos_mustpass_es_single_config_first_cfg[] = {
+	{ glu::ApiType::es(3, 1), "khr-single", nullptr, "unspecified", 1, nullptr, 64, 64 },
 	{ glu::ApiType::es(3, 2), "khr-single", nullptr, "unspecified", 1, nullptr, 64, 64 },
 };
 

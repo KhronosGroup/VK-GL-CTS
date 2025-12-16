@@ -38,6 +38,8 @@ tcu::TestCaseGroup *createBasicComputeShaderTests(tcu::TestContext &testCtx,
                                                   vk::ComputePipelineConstructionType computePipelineConstructionType);
 tcu::TestCaseGroup *createBasicDeviceGroupComputeShaderTests(
     tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
+tcu::TestCaseGroup *create64bIndexingComputeShaderTests(
+    tcu::TestContext &testCtx, vk::ComputePipelineConstructionType computePipelineConstructionType);
 
 } // namespace compute
 } // namespace vkt

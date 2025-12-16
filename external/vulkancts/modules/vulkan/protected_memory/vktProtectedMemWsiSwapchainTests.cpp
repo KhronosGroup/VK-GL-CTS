@@ -219,15 +219,15 @@ static vk::VkCompositeAlphaFlagBitsKHR firstSupportedCompositeAlpha(const vk::Vk
     return (vk::VkCompositeAlphaFlagBitsKHR)alphaMode;
 }
 
-using SwapchainCreationExecutor = void (*)(const vk::DeviceDriver &, vk::VkDevice, const vk::VkSwapchainCreateInfoKHR &,
-                                           tcu::TestLog &, uint32_t, uint32_t);
-void swapchainCreateExecutor(const vk::DeviceDriver &vk, vk::VkDevice device,
+using SwapchainCreationExecutor = void (*)(const vk::DeviceDriver &, vk::VkDevice, vk::wsi::Type wsiType,
+                                           const vk::VkSwapchainCreateInfoKHR &, tcu::TestLog &, uint32_t, uint32_t);
+void swapchainCreateExecutor(const vk::DeviceDriver &vk, vk::VkDevice device, vk::wsi::Type wsiType,
                              const vk::VkSwapchainCreateInfoKHR &createInfo, tcu::TestLog &log, uint32_t caseIndex,
                              uint32_t caseCount)
 {
     log << tcu::TestLog::Message << "Sub-case " << caseIndex << " / " << caseCount << ": " << createInfo
         << tcu::TestLog::EndMessage;
-    const vk::Unique<vk::VkSwapchainKHR> swapchain(createSwapchainKHR(vk, device, &createInfo));
+    const vk::Unique<vk::VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vk, device, &createInfo));
 }
 
 tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimension dimension,
@@ -366,7 +366,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 {
                     vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
                     createInfo.minImageCount                = imageCount;
-                    testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+                    testExecutor(vkd, device, wsiType, createInfo, log, ++testIndex, testCount);
                 }
                 passed = true;
             }
@@ -454,7 +454,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 createInfo.imageColorSpace              = curFmt->colorSpace;
                 try
                 {
-                    testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+                    testExecutor(vkd, device, wsiType, createInfo, log, ++testIndex, testCount);
                     atLeastOnePassed |= true;
                 }
                 catch (vk::OutOfMemoryError &)
@@ -541,7 +541,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                                   capabilities.maxImageExtent.height);
                     try
                     {
-                        testExecutor(vkd, device, createInfo, log, ndx + 1u, testCount);
+                        testExecutor(vkd, device, wsiType, createInfo, log, ndx + 1u, testCount);
                         atLeastOnePassed |= true;
                     }
                     catch (vk::OutOfMemoryError &)
@@ -593,7 +593,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 createInfo.imageExtent                  = capabilities.currentExtent;
                 try
                 {
-                    testExecutor(vkd, device, createInfo, log, 1u, 1u);
+                    testExecutor(vkd, device, wsiType, createInfo, log, 1u, 1u);
                     atLeastOnePassed |= true;
                 }
                 catch (vk::OutOfMemoryError &)
@@ -650,7 +650,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                     createInfo.imageExtent                  = s_testExtentSizes[ndx];
                     try
                     {
-                        testExecutor(vkd, device, createInfo, log, ndx + 1u, testCount);
+                        testExecutor(vkd, device, wsiType, createInfo, log, ndx + 1u, testCount);
                         atLeastOnePassed |= true;
                     }
                     catch (vk::OutOfMemoryError &)
@@ -680,7 +680,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
         {
             vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
             createInfo.imageArrayLayers             = numLayers;
-            testExecutor(vkd, device, createInfo, log, numLayers, maxLayers + 1u);
+            testExecutor(vkd, device, wsiType, createInfo, log, numLayers, maxLayers + 1u);
         }
 
         break;
@@ -712,7 +712,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             }
         }
         for (uint32_t caseNdx = 0; caseNdx < cases.size(); ++caseNdx)
-            testExecutor(vkd, device, cases[caseNdx], log, caseNdx + 1, (uint32_t)cases.size());
+            testExecutor(vkd, device, wsiType, cases[caseNdx], log, caseNdx + 1, (uint32_t)cases.size());
 
         break;
     }
@@ -721,7 +721,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
     {
         vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
         createInfo.imageSharingMode             = vk::VK_SHARING_MODE_EXCLUSIVE;
-        testExecutor(vkd, device, createInfo, log, 1u, 2u);
+        testExecutor(vkd, device, wsiType, createInfo, log, 1u, 2u);
 
         uint32_t additionalQueueIndex = std::numeric_limits<uint32_t>::max();
         {
@@ -756,7 +756,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             createInfo.imageSharingMode      = vk::VK_SHARING_MODE_CONCURRENT;
             createInfo.queueFamilyIndexCount = 2u;
             createInfo.pQueueFamilyIndices   = queueIndices;
-            testExecutor(vkd, device, createInfo, log, 2u, 2u);
+            testExecutor(vkd, device, wsiType, createInfo, log, 2u, 2u);
         }
         else
             log << tcu::TestLog::Message
@@ -782,7 +782,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             {
                 vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
                 createInfo.preTransform                 = (vk::VkSurfaceTransformFlagBitsKHR)transform;
-                testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+                testExecutor(vkd, device, wsiType, createInfo, log, ++testIndex, testCount);
             }
         }
 
@@ -805,7 +805,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
             {
                 vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
                 createInfo.compositeAlpha               = (vk::VkCompositeAlphaFlagBitsKHR)alphaMode;
-                testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+                testExecutor(vkd, device, wsiType, createInfo, log, ++testIndex, testCount);
             }
         }
 
@@ -834,7 +834,7 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
                 }
             }
             createInfo.presentMode = *curMode;
-            testExecutor(vkd, device, createInfo, log, ++testIndex, testCount);
+            testExecutor(vkd, device, wsiType, createInfo, log, ++testIndex, testCount);
         }
 
         break;
@@ -844,10 +844,10 @@ tcu::TestStatus executeSwapchainParameterCases(vk::wsi::Type wsiType, TestDimens
     {
         vk::VkSwapchainCreateInfoKHR createInfo = baseParameters;
         createInfo.clipped                      = VK_FALSE;
-        testExecutor(vkd, device, createInfo, log, 1u, 2u);
+        testExecutor(vkd, device, wsiType, createInfo, log, 1u, 2u);
 
         createInfo.clipped = VK_TRUE;
-        testExecutor(vkd, device, createInfo, log, 2u, 2u);
+        testExecutor(vkd, device, wsiType, createInfo, log, 2u, 2u);
 
         break;
     }
@@ -1320,7 +1320,7 @@ tcu::TestStatus basicRenderTest(Context &baseCtx, vk::wsi::Type wsiType)
 
     const vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
         wsiType, context.getInstanceDriver(), context.getPhysicalDevice(), surface, desiredSize, 2);
-    const vk::Unique<vk::VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+    const vk::Unique<vk::VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, device, &swapchainInfo));
     const std::vector<vk::VkImage> swapchainImages = vk::wsi::getSwapchainImages(vkd, device, *swapchain);
 
     const TriangleRenderer renderer(context, context.getBinaryCollection(), swapchainImages, swapchainInfo.imageFormat,

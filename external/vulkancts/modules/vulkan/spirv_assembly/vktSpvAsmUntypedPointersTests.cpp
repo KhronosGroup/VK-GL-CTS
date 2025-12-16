@@ -2053,14 +2053,13 @@ enum class FillingTypes : uint8_t
 };
 using FILLING_TYPE = FillingTypes;
 
-struct FilledResourceDesc
+struct FilledBufferDesc
 {
     union
     {
         uint32_t seed;
         double value;
     };
-    vk::VkDescriptorType descriptorType;
     uint32_t elemCount;
     uint32_t padding;
     DATA_TYPE dataType;
@@ -2073,20 +2072,16 @@ struct AtomicResourceDesc
     uint32_t elemCount;
 };
 
-static Resource createFilledResource(const FilledResourceDesc &desc)
+static BufferSp createFilledBuffer(const FilledBufferDesc &desc)
 {
-    const DATA_TYPE type = desc.dataType;
-
-    switch (type)
+    switch (desc.dataType)
     {
     case DataTypes::UINT8:
     {
         if (desc.fillType == FillingTypes::VALUE)
         {
             const uint8_t converted = static_cast<uint8_t>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<uint8_t>(std::vector<uint8_t>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<uint8_t>(std::vector<uint8_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2096,7 +2091,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<uint8_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<uint8_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint8_t>(data, desc.padding));
         }
         else
         {
@@ -2111,7 +2106,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getUint8s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<uint8_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint8_t>(randoms, desc.padding));
         }
     }
     case DataTypes::INT8:
@@ -2119,8 +2114,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const int8_t converted = static_cast<int8_t>(desc.value);
-            return Resource(BufferSp(new Buffer<int8_t>(std::vector<int8_t>(desc.elemCount, converted), desc.padding)),
-                            desc.descriptorType);
+            return BufferSp(new Buffer<int8_t>(std::vector<int8_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2130,7 +2124,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<int8_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<int8_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int8_t>(data, desc.padding));
         }
         else
         {
@@ -2145,7 +2139,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getInt8s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<int8_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int8_t>(randoms, desc.padding));
         }
     }
     case DataTypes::UINT16:
@@ -2153,9 +2147,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const uint16_t converted = static_cast<uint16_t>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<uint16_t>(std::vector<uint16_t>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<uint16_t>(std::vector<uint16_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2165,7 +2157,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<uint16_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<uint16_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint16_t>(data, desc.padding));
         }
         else
         {
@@ -2180,7 +2172,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getUint16s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<uint16_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint16_t>(randoms, desc.padding));
         }
     }
     case DataTypes::INT16:
@@ -2188,9 +2180,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const int16_t converted = static_cast<int16_t>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<int16_t>(std::vector<int16_t>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<int16_t>(std::vector<int16_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2200,7 +2190,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<int16_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<int16_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int16_t>(data, desc.padding));
         }
         else
         {
@@ -2215,7 +2205,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getInt16s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<int16_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int16_t>(randoms, desc.padding));
         }
     }
     case DataTypes::FLOAT16:
@@ -2223,9 +2213,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const deFloat16 converted = static_cast<deFloat16>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<deFloat16>(std::vector<deFloat16>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<deFloat16>(std::vector<deFloat16>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2235,7 +2223,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<deFloat16>(ndx);
             }
-            return Resource(BufferSp(new Buffer<deFloat16>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<deFloat16>(data, desc.padding));
         }
         else
         {
@@ -2250,7 +2238,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getFloat16s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<deFloat16>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<deFloat16>(randoms, desc.padding));
         }
     }
     case DataTypes::UINT32:
@@ -2258,9 +2246,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const uint32_t converted = static_cast<uint32_t>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<uint32_t>(std::vector<uint32_t>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<uint32_t>(std::vector<uint32_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2270,7 +2256,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<uint32_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<uint32_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint32_t>(data, desc.padding));
         }
         else
         {
@@ -2285,7 +2271,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getUint32s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<uint32_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint32_t>(randoms, desc.padding));
         }
     }
     case DataTypes::INT32:
@@ -2293,9 +2279,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const int32_t converted = static_cast<int32_t>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<int32_t>(std::vector<int32_t>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<int32_t>(std::vector<int32_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2305,7 +2289,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<int32_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<int32_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int32_t>(data, desc.padding));
         }
         else
         {
@@ -2320,7 +2304,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getInt32s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<int32_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int32_t>(randoms, desc.padding));
         }
     }
     case DataTypes::FLOAT32:
@@ -2328,8 +2312,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const float converted = static_cast<float>(desc.value);
-            return Resource(BufferSp(new Buffer<float>(std::vector<float>(desc.elemCount, converted), desc.padding)),
-                            desc.descriptorType);
+            return BufferSp(new Buffer<float>(std::vector<float>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2339,7 +2322,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<float>(ndx);
             }
-            return Resource(BufferSp(new Buffer<float>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<float>(data, desc.padding));
         }
         else
         {
@@ -2354,7 +2337,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getFloat32s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<float>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<float>(randoms, desc.padding));
         }
     }
     case DataTypes::UINT64:
@@ -2362,9 +2345,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const uint64_t converted = static_cast<uint64_t>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<uint64_t>(std::vector<uint64_t>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<uint64_t>(std::vector<uint64_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2374,7 +2355,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<uint64_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<uint64_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint64_t>(data, desc.padding));
         }
         else
         {
@@ -2389,7 +2370,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getUint64s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<uint64_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<uint64_t>(randoms, desc.padding));
         }
     }
     case DataTypes::INT64:
@@ -2397,9 +2378,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
         if (desc.fillType == FillingTypes::VALUE)
         {
             const int64_t converted = static_cast<int64_t>(desc.value);
-            return Resource(
-                BufferSp(new Buffer<int64_t>(std::vector<int64_t>(desc.elemCount, converted), desc.padding)),
-                desc.descriptorType);
+            return BufferSp(new Buffer<int64_t>(std::vector<int64_t>(desc.elemCount, converted), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2409,7 +2388,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<int64_t>(ndx);
             }
-            return Resource(BufferSp(new Buffer<int64_t>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int64_t>(data, desc.padding));
         }
         else
         {
@@ -2424,15 +2403,14 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getInt64s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<int64_t>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<int64_t>(randoms, desc.padding));
         }
     }
     case DataTypes::FLOAT64:
     {
         if (desc.fillType == FillingTypes::VALUE)
         {
-            return Resource(BufferSp(new Buffer<double>(std::vector<double>(desc.elemCount, desc.value), desc.padding)),
-                            desc.descriptorType);
+            return BufferSp(new Buffer<double>(std::vector<double>(desc.elemCount, desc.value), desc.padding));
         }
         else if (desc.fillType == FillingTypes::INCREMENTED)
         {
@@ -2442,7 +2420,7 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 data[ndx] = static_cast<double>(ndx);
             }
-            return Resource(BufferSp(new Buffer<double>(data, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<double>(data, desc.padding));
         }
         else
         {
@@ -2457,16 +2435,19 @@ static Resource createFilledResource(const FilledResourceDesc &desc)
             {
                 randoms = getFloat64s(rnd, desc.elemCount);
             }
-            return Resource(BufferSp(new Buffer<double>(randoms, desc.padding)), desc.descriptorType);
+            return BufferSp(new Buffer<double>(randoms, desc.padding));
         }
     }
     default:
         DE_ASSERT(0);
         DE_FATAL("Unsupported data type");
-        return Resource(BufferSp(new Buffer<uint8_t>(std::vector<uint8_t>(), desc.padding)), desc.descriptorType);
+        return BufferSp(nullptr);
     }
+}
 
-    return Resource(BufferSp(new Buffer<uint8_t>(std::vector<uint8_t>(), desc.padding)), desc.descriptorType);
+static Resource createFilledResource(VkDescriptorType type, const FilledBufferDesc &desc)
+{
+    return Resource(createFilledBuffer(desc), type);
 }
 
 static Resource createAtomicResource(const AtomicResourceDesc &desc, const std::vector<AtomicOpDesc> &atomicOpDescs)
@@ -6901,15 +6882,14 @@ void addDescriptorArrayTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE me
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.value          = 1;
-        desc.elemCount      = 4;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.value     = 1;
+        desc.elemCount = 4;
+        desc.fillType  = FillingTypes::VALUE;
+        desc.padding   = 0;
 
-        Resource inputOutput = createFilledResource(desc);
+        Resource inputOutput = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -6967,19 +6947,18 @@ void addOpArrayLengthTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.value          = 1;
-        desc.elemCount      = numWorkgroup;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.value     = 1;
+        desc.elemCount = numWorkgroup;
+        desc.fillType  = FillingTypes::VALUE;
+        desc.padding   = 0;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        Resource input  = createFilledResource(desc);
         desc.value      = numWorkgroup;
         desc.elemCount  = 1;
         desc.dataType   = DataTypes::UINT32;
-        Resource output = createFilledResource(desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(numWorkgroup, 1, 1);
@@ -7057,38 +7036,34 @@ void addLoadTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-            FilledResourceDesc desc;
+            FilledBufferDesc desc;
             desc.dataType  = BASE_DATA_TYPE_CASES[i];
             desc.elemCount = numWorkgroup;
             desc.fillType  = FillingTypes::RANDOM;
             desc.seed      = deStringHash(testGroup->getName());
+            VkDescriptorType inpDescType;
             if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
             {
-                desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                desc.padding        = Constants::uniformAlignment - getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
+                inpDescType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                desc.padding = Constants::uniformAlignment - getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
             }
             else
             {
-                desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                desc.padding        = 0;
+                inpDescType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                desc.padding = 0;
             }
 
-            Resource inputResource  = createFilledResource(desc);
-            desc.descriptorType     = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            Resource outputResource = createFilledResource(desc);
+            BufferSp inputBuffer    = createFilledBuffer(desc);
+            Resource outputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
             if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT)
-            {
-                spec.pushConstants = inputResource.getBuffer();
-                spec.outputs.push_back(outputResource);
-            }
+                spec.pushConstants = inputBuffer;
             else
-            {
-                spec.inputs.push_back(inputResource);
-                spec.outputs.push_back(outputResource);
-            }
+                spec.inputs.push_back(Resource(inputBuffer, inpDescType));
+
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(numWorkgroup, 1, 1);
+            spec.outputs.push_back(outputResource);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
             if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -7159,17 +7134,15 @@ void addLoadAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMode
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = ATOMIC_DATA_TYPE_CASES[i];
-        desc.elemCount      = numWorkgroup;
-        desc.fillType       = FillingTypes::RANDOM;
-        desc.seed           = deStringHash(testGroup->getName());
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
+        FilledBufferDesc desc;
+        desc.dataType  = ATOMIC_DATA_TYPE_CASES[i];
+        desc.elemCount = numWorkgroup;
+        desc.fillType  = FillingTypes::RANDOM;
+        desc.seed      = deStringHash(testGroup->getName());
+        desc.padding   = 0;
 
-        Resource inputResource  = createFilledResource(desc);
-        desc.descriptorType     = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        Resource outputResource = createFilledResource(desc);
+        Resource inputResource  = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource outputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.inputs.push_back(inputResource);
         spec.outputs.push_back(outputResource);
@@ -7269,38 +7242,35 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
+                    FilledBufferDesc desc;
                     desc.dataType  = sameSizeTypes[l];
                     desc.elemCount = numWorkgroup;
                     desc.fillType  = FillingTypes::RANDOM;
                     desc.seed      = deStringHash(testGroup->getName());
+
+                    VkDescriptorType inpDescType;
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
                     {
-                        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
-                        desc.padding        = Constants::uniformAlignment - getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
+                        inpDescType  = VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+                        desc.padding = Constants::uniformAlignment - getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
                     }
                     else
                     {
-                        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                        desc.padding        = 0;
+                        inpDescType  = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                        desc.padding = 0;
                     }
 
-                    Resource inputResource  = createFilledResource(desc);
-                    desc.descriptorType     = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    Resource outputResource = createFilledResource(desc);
+                    BufferSp inputBuffer    = createFilledBuffer(desc);
+                    Resource outputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT)
-                    {
-                        spec.pushConstants = inputResource.getBuffer();
-                        spec.outputs.push_back(outputResource);
-                    }
+                        spec.pushConstants = inputBuffer;
                     else
-                    {
-                        spec.inputs.push_back(inputResource);
-                        spec.outputs.push_back(outputResource);
-                    }
+                        spec.inputs.push_back(Resource(inputBuffer, inpDescType));
+
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(numWorkgroup, 1, 1);
+                    spec.outputs.push_back(outputResource);
                     spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
 
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM)
@@ -7405,28 +7375,26 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                    desc.elemCount      = 2;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-                    desc.descriptorType = LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM ?
-                                              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
-                                              VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                    FilledBufferDesc desc;
+                    desc.dataType  = BASE_DATA_TYPE_CASES[i];
+                    desc.elemCount = 2;
+                    desc.padding   = 0;
+                    desc.fillType  = FillingTypes::VALUE;
+                    desc.value     = 1;
 
-                    Resource inputResource  = createFilledResource(desc);
+                    BufferSp inputBuffer = createFilledBuffer(desc);
+
                     desc.elemCount          = 1;
-                    desc.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    Resource outputResource = createFilledResource(desc);
+                    Resource outputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT)
-                    {
-                        spec.pushConstants = inputResource.getBuffer();
-                    }
+                        spec.pushConstants = inputBuffer;
                     else
                     {
-                        spec.inputs.push_back(inputResource);
+                        VkDescriptorType t = LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM ?
+                                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                        spec.inputs.push_back(Resource(inputBuffer, t));
                     }
 
                     spec.assembly      = shaderAsm;
@@ -7534,29 +7502,27 @@ void addLoadMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memM
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType  = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
-                    desc.elemCount = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]) *
-                                     2 /* We use only first value to meet push constant requirements */;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-                    desc.descriptorType = LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM ?
-                                              VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
-                                              VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                    FilledBufferDesc desc;
+                    desc.dataType = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
+                    /* We use only first value to meet push constant requirements */;
+                    desc.elemCount = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]) * 2;
+                    desc.padding   = 0;
+                    desc.fillType  = FillingTypes::VALUE;
+                    desc.value     = 1;
 
-                    Resource inputResource  = createFilledResource(desc);
+                    BufferSp inputBuffer = createFilledBuffer(desc);
+
                     desc.elemCount          = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
-                    desc.descriptorType     = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    Resource outputResource = createFilledResource(desc);
+                    Resource outputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     if (LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::PUSH_CONSTANT)
-                    {
-                        spec.pushConstants = inputResource.getBuffer();
-                    }
+                        spec.pushConstants = inputBuffer;
                     else
                     {
-                        spec.inputs.push_back(inputResource);
+                        VkDescriptorType t = LOAD_CONTAINER_TYPE_CASES[j] == ContainerTypes::UNIFORM ?
+                                                 VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER :
+                                                 VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+                        spec.inputs.push_back(Resource(inputBuffer, t));
                     }
 
                     spec.assembly      = shaderAsm;
@@ -7634,15 +7600,14 @@ void addStoreTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel)
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::RANDOM;
-        desc.seed           = deStringHash(testGroup->getName());
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = Constants::numThreads;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::RANDOM;
+        desc.seed      = deStringHash(testGroup->getName());
 
-        Resource inputOutputResource = createFilledResource(desc);
+        Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -7699,15 +7664,14 @@ void addStoreAtomicTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memMod
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = ATOMIC_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::RANDOM;
-        desc.seed           = deStringHash(testGroup->getName());
+        FilledBufferDesc desc;
+        desc.dataType  = ATOMIC_DATA_TYPE_CASES[i];
+        desc.elemCount = Constants::numThreads;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::RANDOM;
+        desc.seed      = deStringHash(testGroup->getName());
 
-        Resource inputOutputResource = createFilledResource(desc);
+        Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -7783,15 +7747,14 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                               shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-                FilledResourceDesc desc;
-                desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                desc.elemCount      = Constants::numThreads;
-                desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                desc.padding        = 0;
-                desc.fillType       = FillingTypes::RANDOM;
-                desc.seed           = deStringHash(testGroup->getName());
+                FilledBufferDesc desc;
+                desc.dataType  = BASE_DATA_TYPE_CASES[i];
+                desc.elemCount = Constants::numThreads;
+                desc.padding   = 0;
+                desc.fillType  = FillingTypes::RANDOM;
+                desc.seed      = deStringHash(testGroup->getName());
 
-                Resource inputOutputResource = createFilledResource(desc);
+                Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                 spec.assembly      = shaderAsm;
                 spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -7872,15 +7835,14 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                               shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-                FilledResourceDesc desc;
-                desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                desc.elemCount      = 1;
-                desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                desc.padding        = 0;
-                desc.fillType       = FillingTypes::VALUE;
-                desc.value          = 1;
+                FilledBufferDesc desc;
+                desc.dataType  = BASE_DATA_TYPE_CASES[i];
+                desc.elemCount = 1;
+                desc.padding   = 0;
+                desc.fillType  = FillingTypes::VALUE;
+                desc.value     = 1;
 
-                Resource inputOutputResource = createFilledResource(desc);
+                Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                 spec.assembly      = shaderAsm;
                 spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -7958,15 +7920,14 @@ void addStoreMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE mem
                 const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                               shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-                FilledResourceDesc desc;
-                desc.dataType       = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
-                desc.elemCount      = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
-                desc.fillType       = FillingTypes::VALUE;
-                desc.value          = 1;
-                desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                desc.padding        = 0;
+                FilledBufferDesc desc;
+                desc.dataType  = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
+                desc.elemCount = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
+                desc.fillType  = FillingTypes::VALUE;
+                desc.value     = 1;
+                desc.padding   = 0;
 
-                Resource inputOutputResource = createFilledResource(desc);
+                Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                 spec.assembly      = shaderAsm;
                 spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -8038,15 +7999,14 @@ void addCopyTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE memModel, boo
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-            FilledResourceDesc desc;
-            desc.dataType       = BASE_DATA_TYPE_CASES[i];
-            desc.elemCount      = Constants::numThreads;
-            desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            desc.padding        = 0;
-            desc.fillType       = FillingTypes::RANDOM;
-            desc.seed           = deStringHash(testGroup->getName());
+            FilledBufferDesc desc;
+            desc.dataType  = BASE_DATA_TYPE_CASES[i];
+            desc.elemCount = Constants::numThreads;
+            desc.padding   = 0;
+            desc.fillType  = FillingTypes::RANDOM;
+            desc.seed      = deStringHash(testGroup->getName());
 
-            Resource inputOutputResource = createFilledResource(desc);
+            Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -8147,15 +8107,14 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                    desc.elemCount      = Constants::numThreads;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::RANDOM;
-                    desc.seed           = deStringHash(testGroup->getName());
+                    FilledBufferDesc desc;
+                    desc.dataType  = BASE_DATA_TYPE_CASES[i];
+                    desc.elemCount = Constants::numThreads;
+                    desc.padding   = 0;
+                    desc.fillType  = FillingTypes::RANDOM;
+                    desc.seed      = deStringHash(testGroup->getName());
 
-                    Resource inputOutputResource = createFilledResource(desc);
+                    Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -8248,15 +8207,14 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                    desc.elemCount      = 1;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
+                    FilledBufferDesc desc;
+                    desc.dataType  = BASE_DATA_TYPE_CASES[i];
+                    desc.elemCount = 1;
+                    desc.fillType  = FillingTypes::VALUE;
+                    desc.value     = 1;
+                    desc.padding   = 0;
 
-                    Resource inputOutputResource = createFilledResource(desc);
+                    Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -8349,15 +8307,14 @@ void addCopyFromUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   shaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType       = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
-                    desc.elemCount      = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
+                    FilledBufferDesc desc;
+                    desc.dataType  = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
+                    desc.elemCount = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
+                    desc.fillType  = FillingTypes::VALUE;
+                    desc.value     = 1;
+                    desc.padding   = 0;
 
-                    Resource inputOutputResource = createFilledResource(desc);
+                    Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -8453,15 +8410,14 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                    desc.elemCount      = Constants::numThreads;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::RANDOM;
-                    desc.seed           = deStringHash(testGroup->getName());
+                    FilledBufferDesc desc;
+                    desc.dataType  = BASE_DATA_TYPE_CASES[i];
+                    desc.elemCount = Constants::numThreads;
+                    desc.padding   = 0;
+                    desc.fillType  = FillingTypes::RANDOM;
+                    desc.seed      = deStringHash(testGroup->getName());
 
-                    Resource inputOutputResource = createFilledResource(desc);
+                    Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -8553,15 +8509,14 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType       = BASE_DATA_TYPE_CASES[i];
-                    desc.elemCount      = 1;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
+                    FilledBufferDesc desc;
+                    desc.dataType  = BASE_DATA_TYPE_CASES[i];
+                    desc.elemCount = 1;
+                    desc.padding   = 0;
+                    desc.fillType  = FillingTypes::VALUE;
+                    desc.value     = 1;
 
-                    Resource inputOutputResource = createFilledResource(desc);
+                    Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -8654,15 +8609,14 @@ void addCopyToUntypedMixedTypeTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
                                                   shaderAnnotations.specialize(specMap) + shaderVariablesStr +
                                                   tempShaderFunctions.specialize(specMap);
 
-                    FilledResourceDesc desc;
-                    desc.dataType       = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
-                    desc.elemCount      = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
-                    desc.fillType       = FillingTypes::VALUE;
-                    desc.value          = 1;
-                    desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-                    desc.padding        = 0;
+                    FilledBufferDesc desc;
+                    desc.dataType  = getCompositeBaseDataType(COMPOSITE_DATA_TYPE_CASES[i]);
+                    desc.elemCount = getElementCount(COMPOSITE_DATA_TYPE_CASES[i]);
+                    desc.fillType  = FillingTypes::VALUE;
+                    desc.value     = 1;
+                    desc.padding   = 0;
 
-                    Resource inputOutputResource = createFilledResource(desc);
+                    Resource inputOutputResource = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
                     spec.assembly      = shaderAsm;
                     spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -9289,40 +9243,29 @@ void addVariablePtrOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-            FilledResourceDesc desc;
-            desc.dataType       = BASE_DATA_TYPE_CASES[i];
-            desc.elemCount      = 1;
-            desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            desc.padding        = 0;
-            desc.fillType       = FillingTypes::VALUE;
-            desc.value          = 1;
-            Resource input0     = createFilledResource(desc);
-            desc.value          = 0;
-            Resource input1     = createFilledResource(desc);
+            FilledBufferDesc desc;
+            desc.dataType   = BASE_DATA_TYPE_CASES[i];
+            desc.elemCount  = 1;
+            desc.padding    = 0;
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = 1;
+            Resource input0 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            desc.value      = 0;
+            Resource input1 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-            if (j)
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 1.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
-            else
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 0.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = j ? 1.0 : 0.0;
+            Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            spec.outputs.push_back(output);
 
             desc.dataType      = DataTypes::UINT32;
             desc.value         = j;
-            Resource pushConst = createFilledResource(desc);
+            BufferSp pushConst = createFilledBuffer(desc);
 
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
             spec.spirvVersion  = SPIRV_VERSION_1_4;
-            spec.pushConstants = pushConst.getBuffer();
+            spec.pushConstants = pushConst;
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -9391,42 +9334,31 @@ void addPhysicalStorageOpSelectTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-            FilledResourceDesc desc;
-            desc.dataType       = BASE_DATA_TYPE_CASES[i];
-            desc.elemCount      = 1;
-            desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            desc.padding        = 0;
-            desc.fillType       = FillingTypes::VALUE;
-            desc.value          = 1;
-            Resource input0     = createFilledResource(desc);
-            desc.value          = 0;
-            Resource input1     = createFilledResource(desc);
+            FilledBufferDesc desc;
+            desc.dataType   = BASE_DATA_TYPE_CASES[i];
+            desc.elemCount  = 1;
+            desc.padding    = 0;
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = 1;
+            Resource input0 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            desc.value      = 0;
+            Resource input1 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-            if (j)
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 1.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
-            else
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 0.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = j ? 1.0 : 0.0;
+            Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            spec.outputs.push_back(output);
 
             desc.dataType      = DataTypes::UINT32;
             desc.elemCount     = 1;
             desc.value         = j;
-            Resource pushConst = createFilledResource(desc);
+            BufferSp pushConst = createFilledBuffer(desc);
 
             spec.assembly              = shaderAsm;
             spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
             spec.spirvVersion          = SPIRV_VERSION_1_4;
             spec.usesPhysStorageBuffer = true;
-            spec.pushConstants         = pushConst.getBuffer();
+            spec.pushConstants         = pushConst;
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -9496,41 +9428,30 @@ void addVariablePtrOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYPE m
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-            FilledResourceDesc desc;
-            desc.dataType       = BASE_DATA_TYPE_CASES[i];
-            desc.elemCount      = 1;
-            desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            desc.padding        = 0;
-            desc.fillType       = FillingTypes::VALUE;
-            desc.value          = 1;
-            Resource input0     = createFilledResource(desc);
-            desc.value          = 0;
-            Resource input1     = createFilledResource(desc);
+            FilledBufferDesc desc;
+            desc.dataType   = BASE_DATA_TYPE_CASES[i];
+            desc.elemCount  = 1;
+            desc.padding    = 0;
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = 1;
+            Resource input0 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            desc.value      = 0;
+            Resource input1 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-            if (j)
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 1.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
-            else
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 0.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = j ? 1.0 : 0.0;
+            Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            spec.outputs.push_back(output);
 
             desc.dataType      = DataTypes::UINT32;
             desc.value         = j;
-            Resource pushConst = createFilledResource(desc);
+            BufferSp pushConst = createFilledBuffer(desc);
 
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-            spec.spirvVersion =
-                SPIRV_VERSION_1_4; // After spir-v version 1.6 OpBranchConditional labels nust not be the same.
-            spec.pushConstants = pushConst.getBuffer();
+            // After spir-v version 1.6 OpBranchConditional labels nust not be the same.
+            spec.spirvVersion  = SPIRV_VERSION_1_4;
+            spec.pushConstants = pushConst;
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -9599,43 +9520,32 @@ void addPhysicalStorageOpPhiTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
             const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                           shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-            FilledResourceDesc desc;
-            desc.dataType       = BASE_DATA_TYPE_CASES[i];
-            desc.elemCount      = 1;
-            desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-            desc.padding        = 0;
-            desc.fillType       = FillingTypes::VALUE;
-            desc.value          = 1;
-            Resource input0     = createFilledResource(desc);
-            desc.value          = 0;
-            Resource input1     = createFilledResource(desc);
+            FilledBufferDesc desc;
+            desc.dataType   = BASE_DATA_TYPE_CASES[i];
+            desc.elemCount  = 1;
+            desc.padding    = 0;
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = 1;
+            Resource input0 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            desc.value      = 0;
+            Resource input1 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-            if (j)
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 1.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
-            else
-            {
-                desc.fillType   = FillingTypes::VALUE;
-                desc.value      = 0.0;
-                Resource output = createFilledResource(desc);
-                spec.outputs.push_back(output);
-            }
+            desc.fillType   = FillingTypes::VALUE;
+            desc.value      = j ? 1.0 : 0.0;
+            Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+            spec.outputs.push_back(output);
 
             desc.dataType      = DataTypes::UINT32;
             desc.elemCount     = 1;
             desc.value         = j;
-            Resource pushConst = createFilledResource(desc);
+            BufferSp pushConst = createFilledBuffer(desc);
 
             spec.assembly      = shaderAsm;
             spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-            spec.spirvVersion =
-                SPIRV_VERSION_1_4; // After spir-v version 1.6 OpBranchConditional labels nust not be the same.
+            // After spir-v version 1.6 OpBranchConditional labels nust not be the same.
+            spec.spirvVersion          = SPIRV_VERSION_1_4;
             spec.usesPhysStorageBuffer = true;
-            spec.pushConstants         = pushConst.getBuffer();
+            spec.pushConstants         = pushConst;
             spec.inputs.push_back(input0);
             spec.inputs.push_back(input1);
             spec.extensions.push_back("VK_KHR_storage_buffer_storage_class");
@@ -9710,21 +9620,19 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 1;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -9784,21 +9692,19 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 1;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -9852,21 +9758,19 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 1;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -9918,21 +9822,19 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 0;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 0;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -9986,21 +9888,19 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 0;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 0;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10050,21 +9950,19 @@ void addVariablePtrOpPtrEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_T
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 0;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 0;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10135,21 +10033,19 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 0;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 0;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10209,21 +10105,19 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 0;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 0;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10277,21 +10171,19 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 0;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 0;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10343,21 +10235,19 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 1;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10411,21 +10301,19 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 1;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10475,21 +10363,19 @@ void addVariablePtrOpPtrNotEqualTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        desc.dataType       = DataTypes::UINT32;
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
-        Resource output     = createFilledResource(desc);
+        desc.dataType   = DataTypes::UINT32;
+        desc.elemCount  = 1;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 1;
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10556,20 +10442,19 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::RANDOM;
-        desc.seed           = deStringHash(testGroup->getName());
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::RANDOM;
+        desc.seed      = deStringHash(testGroup->getName());
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        Resource input  = createFilledResource(desc);
         desc.dataType   = DataTypes::UINT32;
         desc.elemCount  = 1;
         desc.fillType   = FillingTypes::VALUE;
         desc.value      = 12 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
-        Resource output = createFilledResource(desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10628,20 +10513,19 @@ void addVariablePtrOpPtrDiffTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TY
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::RANDOM;
-        desc.seed           = deStringHash(testGroup->getName());
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::RANDOM;
+        desc.seed      = deStringHash(testGroup->getName());
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        Resource input  = createFilledResource(desc);
         desc.dataType   = DataTypes::UINT32;
         desc.elemCount  = 1;
         desc.fillType   = FillingTypes::VALUE;
         desc.value      = 0 * getSizeInBytes(BASE_DATA_TYPE_CASES[i]);
-        Resource output = createFilledResource(desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10701,18 +10585,17 @@ void addVariablePtrOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY_MOD
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         desc.elemCount  = 1;
         desc.fillType   = FillingTypes::VALUE;
         desc.value      = 8;
-        Resource output = createFilledResource(desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
@@ -10771,16 +10654,15 @@ void addPhysicalStorageOpFunctionCallTests(tcu::TestCaseGroup *testGroup, MEMORY
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1.0;
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 1;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::VALUE;
+        desc.value     = 1.0;
 
-        Resource input  = createFilledResource(desc);
-        Resource output = createFilledResource(desc);
+        Resource input  = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly              = shaderAsm;
         spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
@@ -10838,16 +10720,15 @@ void addVariablePtrOpPtrAccessChain(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::RANDOM;
-        desc.seed           = deStringHash(testGroup->getName());
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = Constants::numThreads;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::RANDOM;
+        desc.seed      = deStringHash(testGroup->getName());
 
-        Resource input  = createFilledResource(desc);
-        Resource output = createFilledResource(desc);
+        Resource input  = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -10905,16 +10786,15 @@ void addPhysicalStorageOpPtrAccessChainTests(tcu::TestCaseGroup *testGroup, MEMO
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::RANDOM;
-        desc.seed           = deStringHash(testGroup->getName());
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 1;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::RANDOM;
+        desc.seed      = deStringHash(testGroup->getName());
 
-        Resource input  = createFilledResource(desc);
-        Resource output = createFilledResource(desc);
+        Resource input  = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly              = shaderAsm;
         spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
@@ -10970,26 +10850,25 @@ void addVariablePtrFunctionVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_M
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1.0;
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 1;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::VALUE;
+        desc.value     = 1.0;
 
-        Resource input0 = createFilledResource(desc);
-        Resource output = createFilledResource(desc);
+        Resource input0 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
         desc.value      = 0.0;
-        Resource input1 = createFilledResource(desc);
+        Resource input1 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         desc.dataType      = DataTypes::UINT32;
         desc.value         = 1u;
-        Resource pushConst = createFilledResource(desc);
+        BufferSp pushConst = createFilledBuffer(desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-        spec.pushConstants = pushConst.getBuffer();
+        spec.pushConstants = pushConst;
         spec.inputs.push_back(input0);
         spec.inputs.push_back(input1);
         spec.outputs.push_back(output);
@@ -11042,26 +10921,25 @@ void addVariablePtrPrivateVariableTests(tcu::TestCaseGroup *testGroup, MEMORY_MO
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1.0;
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 1;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::VALUE;
+        desc.value     = 1.0;
 
-        Resource input0 = createFilledResource(desc);
-        Resource output = createFilledResource(desc);
+        Resource input0 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
         desc.value      = 0.0;
-        Resource input1 = createFilledResource(desc);
+        Resource input1 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         desc.dataType      = DataTypes::UINT32;
         desc.value         = 1u;
-        Resource pushConst = createFilledResource(desc);
+        BufferSp pushConst = createFilledBuffer(desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(1, 1, 1);
-        spec.pushConstants = pushConst.getBuffer();
+        spec.pushConstants = pushConst;
         spec.inputs.push_back(input0);
         spec.inputs.push_back(input1);
         spec.outputs.push_back(output);
@@ -11709,16 +11587,14 @@ void addMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, MEMORY_MODEL_TYP
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 2;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 2;
-        Resource input      = createFilledResource(desc);
-        desc.value          = 2;
-        Resource output     = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType   = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount  = 2;
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 2;
+        Resource input  = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -11780,13 +11656,12 @@ void addVariablePointersMultipleAccessChainTests(tcu::TestCaseGroup *testGroup, 
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 32;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::INCREMENTED;
-        Resource input      = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 32;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::INCREMENTED;
+        Resource input = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         std::vector<uint8_t> inputBytes(input.getByteSize());
         input.getBytes(inputBytes);
@@ -11858,15 +11733,14 @@ void addPhysicalStorageOpBitcastTests(tcu::TestCaseGroup *testGroup, MEMORY_MODE
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 1;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
+        FilledBufferDesc desc;
+        desc.dataType  = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount = 1;
+        desc.padding   = 0;
+        desc.fillType  = FillingTypes::VALUE;
+        desc.value     = 1;
 
-        Resource inputOutput = createFilledResource(desc);
+        Resource inputOutput = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly              = shaderAsm;
         spec.numWorkGroups         = tcu::IVec3(1, 1, 1);
@@ -11923,15 +11797,14 @@ void addVariablePointersWorkgroupMemoryTests(tcu::TestCaseGroup *testGroup, MEMO
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + shaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = Constants::numThreads;
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.seed           = deStringHash(testGroup->getName());
-        desc.fillType       = FillingTypes::RANDOM;
-        Resource input      = createFilledResource(desc);
-        Resource output     = createFilledResource(desc);
+        FilledBufferDesc desc;
+        desc.dataType   = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount  = Constants::numThreads;
+        desc.padding    = 0;
+        desc.seed       = deStringHash(testGroup->getName());
+        desc.fillType   = FillingTypes::RANDOM;
+        Resource input  = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
+        Resource output = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -11992,17 +11865,16 @@ void addWorkgroupMemoryExplicitLayoutInteractionTests(tcu::TestCaseGroup *testGr
         const std::string shaderAsm = shaderHeader.specialize(specMap) + shaderAnnotations.specialize(specMap) +
                                       shaderVariablesStr + tempShaderFunctions.specialize(specMap);
 
-        FilledResourceDesc desc;
-        desc.dataType       = BASE_DATA_TYPE_CASES[i];
-        desc.elemCount      = 5; // scalar + vec4
-        desc.descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
-        desc.padding        = 0;
-        desc.fillType       = FillingTypes::VALUE;
-        desc.value          = 1;
+        FilledBufferDesc desc;
+        desc.dataType   = BASE_DATA_TYPE_CASES[i];
+        desc.elemCount  = 5; // scalar + vec4
+        desc.padding    = 0;
+        desc.fillType   = FillingTypes::VALUE;
+        desc.value      = 1;
+        Resource input0 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
-        Resource input0 = createFilledResource(desc);
         desc.value      = 4;
-        Resource input1 = createFilledResource(desc);
+        Resource input1 = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
 
         spec.assembly      = shaderAsm;
         spec.numWorkGroups = tcu::IVec3(Constants::numThreads, 1, 1);
@@ -12213,14 +12085,13 @@ tcu::TestStatus CooperativeMatrixInteractionTestInstance::iterate(void)
         TCU_THROW(NotSupportedError, "Cooperative matrix feature is not supported");
 
     // Gen input and expected data
-    FilledResourceDesc desc;
+    FilledBufferDesc desc;
     desc.dataType        = m_params.dataType;
     desc.elemCount       = 1;
-    desc.descriptorType  = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     desc.padding         = 0;
     desc.fillType        = FillingTypes::VALUE;
     desc.value           = 1;
-    Resource inputOutput = createFilledResource(desc);
+    Resource inputOutput = createFilledResource(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, desc);
     std::vector<uint8_t> expectedBytes;
     inputOutput.getBytes(expectedBytes);
 

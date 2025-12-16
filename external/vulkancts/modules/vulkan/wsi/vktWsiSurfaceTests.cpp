@@ -398,6 +398,11 @@ tcu::TestStatus queryPresentationSupportTest(Context &context, Type wsiType)
         TCU_THROW(NotSupportedError, "No presentation support query for Drm.");
     }
 
+    if (wsiType == TYPE_DIRECT)
+    {
+        TCU_THROW(NotSupportedError, "No presentation support query for direct display.");
+    }
+
     tcu::TestLog &log = context.getTestContext().getLog();
     tcu::ResultCollector results(log);
 

@@ -260,6 +260,12 @@ void NoQueuesTestCase::checkSupport(Context &context) const
     if (isTessStage(m_data.stage) && !features.tessellationShader)
         TCU_THROW(NotSupportedError, "Tessellation shaders not supported");
 
+    if ((isTessStage(m_data.stage) || m_data.stage == Stage::STAGE_VERTEX) && !features.vertexPipelineStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "SSBO writes not supported in vertex pipeline");
+
+    if (m_data.stage == Stage::STAGE_FRAGMENT && !features.fragmentStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "SSBO writes not supported in fragment shader");
+
     if (m_data.testType == TT_PIPELINE_BINARY)
     {
         context.requireDeviceFunctionality("VK_KHR_pipeline_binary");

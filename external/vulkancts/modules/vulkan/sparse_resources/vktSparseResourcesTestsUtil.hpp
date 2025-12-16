@@ -205,6 +205,8 @@ uint32_t getSparseAspectRequirementsIndex(const std::vector<vk::VkSparseImageMem
 
 vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescription &formatInfo, uint32_t planeNdx);
 
+vk::VkFormat getStorageCompatibleFormat(vk::VkFormat planeFormat);
+
 bool areLsb6BitsDontCare(vk::VkFormat format);
 
 bool areLsb4BitsDontCare(vk::VkFormat format);

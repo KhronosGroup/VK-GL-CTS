@@ -1617,7 +1617,7 @@ void SharedFragLibraryCase::checkSupport(Context &context) const
     }
     else
     {
-        if (context.getUsedApiVersion() < VK_API_VERSION_1_2)
+        if (context.getEquivalentApiVersion() < VK_API_VERSION_1_2)
             context.requireDeviceFunctionality("VK_EXT_shader_viewport_index_layer");
         else
         {

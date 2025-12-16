@@ -20,7 +20,7 @@
  *
  *//*!
  * \file
- * \brief Ray Tracing Watertightness tests
+ * \brief Ray Tracing Misc tests
  *//*--------------------------------------------------------------------*/
 
 #include "tcuDefs.hpp"

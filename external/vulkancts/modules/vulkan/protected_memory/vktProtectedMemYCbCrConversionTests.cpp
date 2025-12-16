@@ -35,6 +35,7 @@
 #include "vkYCbCrImageWithMemory.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkFormatLists.hpp"
 
 #include "vktProtectedMemContext.hpp"
 #include "vktProtectedMemUtils.hpp"
@@ -1279,74 +1280,8 @@ tcu::TestCaseGroup *createYCbCrConversionTests(tcu::TestContext &testCtx)
     const vk::VkImageTiling tiling = imageTilings[tilingNdx].value;
     const char *tilingName         = imageTilings[tilingNdx].name;
 
-    const vk::VkFormat testFormats[] = {
-        // noChromaSubsampledFormats
-        vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16,
-        vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16,
-        vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
-        vk::VK_FORMAT_B5G6R5_UNORM_PACK16,
-        vk::VK_FORMAT_R5G5B5A1_UNORM_PACK16,
-        vk::VK_FORMAT_B5G5R5A1_UNORM_PACK16,
-        vk::VK_FORMAT_A1R5G5B5_UNORM_PACK16,
-        vk::VK_FORMAT_R8G8B8_UNORM,
-        vk::VK_FORMAT_B8G8R8_UNORM,
-        vk::VK_FORMAT_R8G8B8A8_UNORM,
-        vk::VK_FORMAT_B8G8R8A8_UNORM,
-        vk::VK_FORMAT_A8B8G8R8_UNORM_PACK32,
-        vk::VK_FORMAT_A2R10G10B10_UNORM_PACK32,
-        vk::VK_FORMAT_A2B10G10R10_UNORM_PACK32,
-        vk::VK_FORMAT_R16G16B16_UNORM,
-        vk::VK_FORMAT_R16G16B16A16_UNORM,
-        vk::VK_FORMAT_R10X6_UNORM_PACK16,
-        vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16,
-        vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16,
-        vk::VK_FORMAT_R12X4_UNORM_PACK16,
-        vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16,
-        vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
-
-        // xChromaSubsampledFormats
-        vk::VK_FORMAT_G8B8G8R8_422_UNORM,
-        vk::VK_FORMAT_B8G8R8G8_422_UNORM,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
-
-        vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G16B16G16R16_422_UNORM,
-        vk::VK_FORMAT_B16G16R16G16_422_UNORM,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
-
-        // xyChromaSubsampledFormats
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
-
-        // Extended YCbCr formats
-        vk::VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
-    };
-
-    for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(testFormats); formatNdx++)
+    for (auto format : formats::basicUnsignedFloatFormats)
     {
-        const vk::VkFormat format(testFormats[formatNdx]);
         const std::string formatName(de::toLower(std::string(getFormatName(format)).substr(10)));
         de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 

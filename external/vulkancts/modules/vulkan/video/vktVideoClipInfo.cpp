@@ -23,8 +23,8 @@
  * See the <vulkan_data_dir>/vulkan/video/frame_checksums.py file for
  * instructions on generating the checksums for new tests.
  *
- * Another option would be to run:
- * ffmpeg -i file -f framemd5 frame_hashes.txt
+ * Another option would be to run directly:
+ * <vulkan_data_dir>/vulkan/video/frame_checksums_ffmpeg.py
  *--------------------------------------------------------------------*/
 
 #include "vktVideoClipInfo.hpp"
@@ -148,6 +148,18 @@ static const char *basic8AV1[30] = {
     "7926240a6ff3c690f419987f929cc558", "ced2e44e064ddded6f8403a5d29c3c4c", "3f7668e8a48d074eeb733cc158603873",
     "495538554c8063a4332dd00531e70f15", "e23c1dbe349d1f116fbe040efeac8931", "efa8967dbcf46dd114ac714f4216d2f3",
 };
+
+static const char *ltrOnHEVC[30] = {
+    "4e64af1aa83230cc36062dbf3f2de357", "4966c8c308eece5e96cf76aaa7196e55", "e27ccfd30525887d5631f6a3b8ed98ee",
+    "08abdbbe2be70f63aca7d75f3fd97f7d", "f29395f55ffefcebe864921f069fa466", "cf7342e356a7907bba71f8364abf98f3",
+    "370f4752c4b40bbf88d2ba6dd093d43c", "d4614647d5e9ad6e7228341a7a810734", "c46cbf642d83e61d466bbcb945c014de",
+    "b48e81754c0a167897f24c050d427278", "c91763f73cbe05d4ff55b7cd71b1e3ef", "dfe85b92978b4eea7e9ee93ad4eb7acd",
+    "42510e910e1c50ad164d2f47e6b35d7d", "218b130b0efecd9ca8c40ae6b034b71a", "42d0d4de67f616d022f443959af67406",
+    "e7b605cfb55da001e6fe26b403d3f175", "e193cefeba65d1a13107c43149639ce5", "cc08616b493231d5aef6a8596d2a3d1a",
+    "8dbc802ccb5d2b4c7158269569c89003", "46459b2898ae156cf7116489a36bd1d5", "9bb6a959016c22a2bf329565e09dea67",
+    "b9257e1b0cad62ca85d22fe9743ffb90", "783c38955510f70039ad003c2aadb000", "a1cde6b66e0101f502907b0a1be9fdae",
+    "0cfc1a5e8553fce8038d1ebcf700b520", "c173b8e66bdda68fcb218db8493e44ae", "2e866e5842137c118259dfb87d385402",
+    "a5f12a64acbc1f7ae7ca691353d2840c", "abb86c2037f270b79bb9d5e4c345f685", "d832a894fb1e75004139c800aa47e8e4"};
 
 static const char *basic10AV1[30] = {
     "3da842f80be1583785df87a14d28f861", "3e629c6552343e3213569b160288908c", "e2e69fa47ba4346e7b425516cd3ad399",
@@ -600,6 +612,19 @@ static ClipInfo Clips[] = {
         65,
         65,
         slistBHEVC,
+    },
+    // LTRPSPS_A_Qualcomm_1.bit from JCT-VC-HEVC_V1 test suite.
+    {
+        CLIP_H265_DEC_ITU_LTRPSPS_A_QUALCOMM_1,
+        "hevc/LTRPSPS_A_Qualcomm_1.bit",
+        {H265_420_8BIT_MAIN_DECODE_PROFILE},
+        ElementaryStreamFraming::H26X_BYTE_STREAM,
+        416,
+        240,
+        50,
+        30,
+        30,
+        ltrOnHEVC,
     },
     {
         CLIP_AV1_DEC_BASIC_8,

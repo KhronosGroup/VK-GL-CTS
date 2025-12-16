@@ -5,6 +5,7 @@
  * Copyright (c) 2015 Google Inc.
  * Copyright (c) 2023 LunarG, Inc.
  * Copyright (c) 2023 Nintendo
+ * Copyright (c) 2024-2025 Arm Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -92,7 +93,9 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_clip_space_w_scaling",
         "VK_NV_scissor_exclusive",
         "VK_NV_shading_rate_image",
+        "VK_ARM_data_graph",
         "VK_ARM_rasterization_order_attachment_access",
+        "VK_ARM_tensors",
         "VK_GOOGLE_surfaceless_query",
         "VK_FUCHSIA_",
         "VK_NV_fragment_coverage_to_color",
@@ -108,6 +111,9 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_NV_cooperative_matrix2",
         "VK_NV_cooperative_vector",
         "VK_QCOM_fragment_density_map_offset",
+        "VK_QCOM_image_processing",
+        "VK_ARM_performance_counters_by_region",
+        "VK_IMG_format_pvrtc",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
@@ -1321,6 +1327,24 @@ vk::Allocator &Context::getDefaultAllocator(void) const
 uint32_t Context::getUsedApiVersion(void) const
 {
     return m_device->getUsedApiVersion();
+}
+uint32_t Context::getEquivalentApiVersion(void) const
+{
+    const auto apiVersion = getUsedApiVersion();
+    auto apiVariant       = VK_API_VERSION_VARIANT(apiVersion);
+
+    // return apiVersion for normal Vulkan
+    if (apiVariant == 0)
+        return apiVersion;
+
+    auto major = VK_API_VERSION_MAJOR(apiVersion);
+    auto minor = VK_API_VERSION_MINOR(apiVersion);
+
+    // return 1.2 for Vulkan SC 1.0
+    if ((apiVariant == VKSC_API_VARIANT) && (major == 1) && (minor == 0))
+        return VK_API_VERSION_1_2;
+
+    TCU_THROW(InternalError, "Unsupported Vulkan version");
 }
 bool Context::contextSupports(const uint32_t variantNum, const uint32_t majorNum, const uint32_t minorNum,
                               const uint32_t patchNum) const

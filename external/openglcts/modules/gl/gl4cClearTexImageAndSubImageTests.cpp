@@ -48,8 +48,8 @@ ClearTexAndSubImageTest::ClearTexAndSubImageTest(deqp::Context &context, const c
                                                  glw::GLint texLevel, TestOptions testOptions)
     : TestCase(context, test_name, test_description)
     , m_texture(0)
-    , m_width(context.getRenderTarget().getWidth())
-    , m_height(context.getRenderTarget().getHeight())
+    , m_width(0)
+    , m_height(0)
     , m_format(format)
     , m_internalFormat(internalFormat)
     , m_pixelSize(pixelSize)
@@ -63,6 +63,12 @@ ClearTexAndSubImageTest::ClearTexAndSubImageTest(deqp::Context &context, const c
     const glw::GLint max_level = glw::GLint(log2(double(gl_max_texture_size)) / log2(2.0));
     if (m_texLevel > max_level)
         m_texLevel = max_level;
+
+    glw::GLint max_width  = gl_max_texture_size >> m_texLevel;
+    glw::GLint max_height = gl_max_texture_size >> m_texLevel;
+
+    m_width  = std::min(max_width, context.getRenderTarget().getWidth());
+    m_height = std::min(max_height, context.getRenderTarget().getHeight());
 
     m_name.append("_format_" + std::string(glu::getTextureFormatName(m_format)) + "_internalFormat_" +
                   std::string(glu::getTextureFormatName(m_internalFormat)) + "_type_" +
@@ -418,6 +424,9 @@ bool ClearTexAndSubImageTest::verifyClearImageResults()
     auto size = m_width * m_height * m_pixelSize;
     std::vector<type> texReadData(size, 0);
 
+    if (m_pixelSize < 4)
+        gl.pixelStorei(GL_PACK_ALIGNMENT, 1);
+
     gl.getTexImage(GL_TEXTURE_2D, m_texLevel, m_format, m_type, texReadData.data());
     GLU_EXPECT_NO_ERROR(gl.getError(), "getTexImage");
 
@@ -535,6 +544,9 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
     auto size = m_width * m_height * m_pixelSize;
     std::vector<type> texReadData(size, 0);
 
+    if (m_pixelSize < 4)
+        gl.pixelStorei(GL_PACK_ALIGNMENT, 1);
+
     gl.getTexImage(GL_TEXTURE_2D, m_texLevel, m_format, m_type, texReadData.data());
     GLU_EXPECT_NO_ERROR(gl.getError(), "getTexImage");
 
@@ -546,7 +558,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE))
@@ -559,7 +571,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) || (texReadData[pixel + 1] != 0))
@@ -572,7 +584,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) || (texReadData[pixel + 1] != 0) ||
@@ -591,7 +603,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
             }
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) || (texReadData[pixel + 1] != 0) ||
@@ -613,7 +625,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE))
@@ -626,7 +638,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) ||
@@ -640,7 +652,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) ||
@@ -659,7 +671,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
             }
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) ||
@@ -682,7 +694,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE))
@@ -695,7 +707,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) ||
@@ -709,7 +721,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
         {
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) ||
@@ -729,7 +741,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
             }
             for (size_t h = 0; h < (m_height) / 2; ++h)
             {
-                for (size_t w = 0; w < (m_width * m_pixelSize) / 2; w += m_pixelSize)
+                for (size_t w = 0; w < ((m_width / 2) * m_pixelSize); w += m_pixelSize)
                 {
                     auto pixel = h * m_width * m_pixelSize + w;
                     if ((texReadData[pixel] != CLEAR_SUB_IMAGE_VALUE) ||
@@ -752,7 +764,7 @@ bool ClearTexAndSubImageTest::verifyClearSubImageResults()
 
         for (size_t h = 0; h < (m_height) / 2; ++h)
         {
-            for (size_t w = 0; w < (m_width * m_pixelSize) / 2; ++w)
+            for (size_t w = 0; w < (m_width / 2 * m_pixelSize); ++w)
             {
                 if (texReadData[h * m_width * m_pixelSize + w] != clear)
                     return false;

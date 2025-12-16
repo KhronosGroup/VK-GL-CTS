@@ -5,6 +5,7 @@
  * Copyright (c) 2015 Google Inc.
  * Copyright (c) 2023 LunarG, Inc.
  * Copyright (c) 2023 Nintendo
+ * Copyright (c) 2024-2025 Arm Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -85,6 +86,7 @@
 #include "vktComputeTests.hpp"
 #include "vktConditionalTests.hpp"
 #include "vktImageTests.hpp"
+#include "vktImageProcessingTests.hpp"
 #include "vktInfoTests.hpp"
 #include "vktWsiTests.hpp"
 #include "vktSynchronizationTests.hpp"
@@ -134,6 +136,8 @@
 #include "vktShaderObjectTests.hpp"
 #include "vktDGCTests.hpp"
 #include "vktCooperativeVectorTests.hpp"
+#include "vktTensorTests.hpp"
+#include "vktDataGraphTests.hpp"
 
 #include <vector>
 #include <sstream>
@@ -1308,6 +1312,7 @@ void TestPackage::init(void)
     addRootChild("draw", m_caseListFilter, Draw::createTests);
     addRootChild("compute", m_caseListFilter, compute::createTests);
     addRootChild("image", m_caseListFilter, image::createTests);
+    addRootChild("image_processing", m_caseListFilter, ImageProcessing::createTests);
     addRootChild("wsi", m_caseListFilter, wsi::createTests);
     addRootChild("synchronization", m_caseListFilter, createSynchronizationTests);
     addRootChild("synchronization2", m_caseListFilter, createSynchronization2Tests);
@@ -1346,6 +1351,8 @@ void TestPackage::init(void)
     addRootChild("shader_object", m_caseListFilter, ShaderObject::createTests);
     addRootChild("dgc", m_caseListFilter, DGC::createTests);
     addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);
+    addRootChild("tensor", m_caseListFilter, tensor::createTests);
+    addRootChild("data_graph", m_caseListFilter, dataGraph::createTests);
 }
 
 void ExperimentalTestPackage::init(void)

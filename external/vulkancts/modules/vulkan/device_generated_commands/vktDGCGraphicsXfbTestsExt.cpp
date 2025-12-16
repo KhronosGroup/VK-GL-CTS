@@ -106,7 +106,15 @@ void XfbTestCase::checkSupport(Context &context) const
     const auto stages = m_params.getShaderStages();
     checkDGCExtSupport(context, stages, 0u, 0u, 0u, true /*xfb*/);
 
-    context.requireDeviceFunctionality("VK_EXT_transform_feedback");
+    {
+        const auto &xfbFeatures = context.getTransformFeedbackFeaturesEXT();
+        if (!xfbFeatures.transformFeedback)
+            TCU_THROW(NotSupportedError, "transformFeedback not supported");
+
+        const auto &xfbProperties = context.getTransformFeedbackPropertiesEXT();
+        if (!xfbProperties.transformFeedbackDraw)
+            TCU_THROW(NotSupportedError, "transformFeedbackDraw not supported");
+    }
 
     if (m_params.useShaderObjects)
         context.requireDeviceFunctionality("VK_EXT_shader_object");

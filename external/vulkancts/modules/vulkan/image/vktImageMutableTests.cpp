@@ -1102,7 +1102,8 @@ void UploadDownloadExecutor::run(Context &context, VkBuffer buffer)
         const vk::VkSampleCountFlagBits samples =
             getMaxAvailableSampleCount(context, format, imageType, imageUsage, msImgflags);
 
-        if ((context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+        if ((samples == VK_SAMPLE_COUNT_1_BIT) ||
+            (context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
                  context.getPhysicalDevice(), format, getImageType(m_caseDef.imageType), VK_IMAGE_TILING_OPTIMAL,
                  imageUsage, msImgflags, &properties) == VK_ERROR_FORMAT_NOT_SUPPORTED))
         {
@@ -2005,6 +2006,10 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     if (isDisplaySurface(wsiType))
         extensions.push_back("VK_KHR_display");
 
+    // VUID-vkCreateInstance-ppEnabledExtensionNames-01388
+    if (wsiType == TYPE_DIRECT_DRM)
+        extensions.push_back("VK_EXT_direct_mode_display");
+
     // VK_EXT_swapchain_colorspace adds new surface formats. Driver can enumerate
     // the formats regardless of whether VK_EXT_swapchain_colorspace was enabled,
     // but using them without enabling the extension is not allowed. Thus we have
@@ -2234,7 +2239,7 @@ Move<VkSwapchainKHR> makeSwapchain(const DeviceInterface &vk, const VkDevice dev
         VK_NULL_HANDLE                                            // VkSwapchainKHR oldSwapchain;
     };
 
-    return createSwapchainKHR(vk, device, &swapchainInfo);
+    return createWsiSwapchain(wsiType, vk, device, &swapchainInfo);
 }
 
 tcu::TestStatus testSwapchainMutable(Context &context, CaseDef caseDef)

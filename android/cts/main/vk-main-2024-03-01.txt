@@ -4,6 +4,7 @@ vk-main-2024-03-01/clipping.txt
 vk-main-2024-03-01/compute.txt
 vk-main-2024-03-01/conditional-rendering.txt
 vk-main-2024-03-01/cooperative-vector.txt
+vk-main-2024-03-01/data-graph.txt
 vk-main-2024-03-01/descriptor-indexing.txt
 vk-main-2024-03-01/dgc.txt
 vk-main-2024-03-01/draw.txt
@@ -29,7 +30,9 @@ vk-main-2024-03-01/image/non-uniform-offset-sample.txt
 vk-main-2024-03-01/image/queue-transfer.txt
 vk-main-2024-03-01/image/store.txt
 vk-main-2024-03-01/image/subresource-layout.txt
+vk-main-2024-03-01/image/swapchain-mutable.txt
 vk-main-2024-03-01/image/texel-view-compatible.txt
+vk-main-2024-03-01/image-processing.txt
 vk-main-2024-03-01/memory.txt
 vk-main-2024-03-01/mesh-shader.txt
 vk-main-2024-03-01/multiview.txt
@@ -58,13 +61,17 @@ vk-main-2024-03-01/shader-object/misc.txt
 vk-main-2024-03-01/shader-object/performance.txt
 vk-main-2024-03-01/shader-object/pipeline-interaction.txt
 vk-main-2024-03-01/shader-object/rendering.txt
+vk-main-2024-03-01/shader-object/tessellation.txt
 vk-main-2024-03-01/sparse-resources.txt
 vk-main-2024-03-01/spirv-assembly.txt
+vk-main-2024-03-01/ssbo.txt
 vk-main-2024-03-01/subgroups.txt
 vk-main-2024-03-01/synchronization.txt
 vk-main-2024-03-01/synchronization2.txt
+vk-main-2024-03-01/tensor.txt
 vk-main-2024-03-01/tessellation.txt
 vk-main-2024-03-01/texture.txt
 vk-main-2024-03-01/transform-feedback.txt
+vk-main-2024-03-01/ubo.txt
 vk-main-2024-03-01/wsi.txt
 vk-main-2024-03-01/ycbcr.txt

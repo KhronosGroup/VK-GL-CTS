@@ -172,6 +172,12 @@ PACKAGES = [
         "vulkancts/data/vulkan/video/hevc",
         ""),
     SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/hevc/LTRPSPS_A_Qualcomm_1.bit",
+        "LTRPSPS_A_Qualcomm_1.bit",
+        "8f8e50fa408b7e96e76e6936b380fc34c208271efb8c283b15a42cb1f8c78ae7",
+        "vulkancts/data/vulkan/video/hevc",
+        ""),
+    SourceFile(
         "https://storage.googleapis.com/vulkan-video-samples/av1/av1-176x144-main-basic-8.ivf",
         "av1-176x144-main-basic-8.ivf",
         "798b52f372a95b4da01334ba97c651e8c2e21e887180f6ad401cf9d4e3a15aa7",
