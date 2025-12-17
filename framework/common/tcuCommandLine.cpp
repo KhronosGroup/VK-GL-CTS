@@ -72,6 +72,7 @@ namespace opt
 {
 
 DE_DECLARE_COMMAND_LINE_OPT(CasePath, std::string);
+DE_DECLARE_COMMAND_LINE_OPT(ExcludeCasePath, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseList, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseListFile, std::string);
 DE_DECLARE_COMMAND_LINE_OPT(CaseListResource, std::string);
@@ -211,6 +212,9 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<CasePath>("n", "deqp-case",
                             "Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to separate "
                             "multiple patterns")
+        << Option<ExcludeCasePath>("e", "deqp-exclude-case",
+                                   "Test case(s) to exclude, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to "
+                                   "separate multiple patterns")
         << Option<CaseListFile>("f", "deqp-caselist-file", "Read case list (in trie format) from given file")
         << Option<CaseList>(nullptr, "deqp-caselist",
                             "Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})")
@@ -1588,9 +1592,13 @@ bool CaseListFilter::checkTestCaseName(const char *caseName) const
     else if (m_caseTree)
         result = tcu::checkTestCaseName(m_caseTree, caseName);
     else
-        return true;
+        result = true;
     if (!result && m_caseFractionMandatoryTests.get() != nullptr)
         result = m_caseFractionMandatoryTests->matches(caseName, false);
+
+    if (result && m_excludePaths && m_excludePaths->matches(caseName, false))
+        result = false;
+
     return result;
 }
 
@@ -1673,6 +1681,9 @@ CaseListFilter::CaseListFilter(const de::cmdline::CommandLine &cmdLine, const tc
     }
     else if (cmdLine.hasOption<opt::CasePath>())
         m_casePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::CasePath>()));
+
+    if (cmdLine.hasOption<opt::ExcludeCasePath>())
+        m_excludePaths = de::MovePtr<const CasePaths>(new CasePaths(cmdLine.getOption<opt::ExcludeCasePath>()));
 
     if (!cmdLine.getOption<opt::SubProcess>())
         m_caseFraction = cmdLine.getOption<opt::CaseFraction>();
