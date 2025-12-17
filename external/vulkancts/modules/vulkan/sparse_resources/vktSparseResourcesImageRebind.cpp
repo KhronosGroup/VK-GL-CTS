@@ -338,29 +338,64 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
             {
                 const VkImageSubresource subresource = {aspect, 0, layerNdx};
 
-                const VkSparseImageMemoryBind imageFullBind = {
-                    subresource,                 // VkImageSubresource subresource;
-                    makeOffset3D(0u, 0u, 0u),    // VkOffset3D offset;
-                    planeExtent,                 // VkExtent3D extent;
-                    VK_NULL_HANDLE,              // VkDeviceMemory            memory; // will be patched in later
-                    allocationSize,              // VkDeviceSize memoryOffset;
-                    (VkSparseMemoryBindFlags)0u, // VkSparseMemoryBindFlags flags;
-                };
+                VkDeviceSize sparseMemoryOffset = allocationSize;
+                for (uint32_t sparseBlockIndex = 0; sparseBlockIndex < numSparseBlocks; sparseBlockIndex++)
+                {
+                    const uint32_t sparseBlockIdz = sparseBlockIndex / (sparseBlocks.x() * sparseBlocks.y());
+                    const uint32_t sparseBlockIdy =
+                        (sparseBlockIndex % (sparseBlocks.x() * sparseBlocks.y())) / sparseBlocks.x();
+                    const uint32_t sparseBlockIdx = sparseBlockIndex % sparseBlocks.x();
 
-                for (uint32_t memoryIdx = 0; memoryIdx < kMemoryObjectCount; memoryIdx++)
-                    imageFullBinds[memoryIdx].push_back(imageFullBind);
+                    VkOffset3D sparseBlockOffset =
+                        makeOffset3D(sparseBlockIdx * imageGranularity.width, sparseBlockIdy * imageGranularity.height,
+                                     sparseBlockIdz * imageGranularity.depth);
+
+                    VkExtent3D sparseBlockExtent =
+                        makeExtent3D(de::min(imageGranularity.width, planeExtent.width - sparseBlockOffset.x),
+                                     de::min(imageGranularity.height, planeExtent.height - sparseBlockOffset.y),
+                                     de::min(imageGranularity.depth, planeExtent.depth - sparseBlockOffset.z));
+
+                    const VkSparseImageMemoryBind sparseBlockBind = {
+                        subresource,                 // VkImageSubresource subresource;
+                        sparseBlockOffset,           // VkOffset3D offset;
+                        sparseBlockExtent,           // VkExtent3D extent;
+                        VK_NULL_HANDLE,              // VkDeviceMemory            memory; // will be patched in later
+                        sparseMemoryOffset,          // VkDeviceSize memoryOffset;
+                        (VkSparseMemoryBindFlags)0u, // VkSparseMemoryBindFlags flags;
+                    };
+
+                    for (uint32_t memoryIdx = 0; memoryIdx < kMemoryObjectCount; memoryIdx++)
+                        imageFullBinds[memoryIdx].push_back(sparseBlockBind);
+
+                    sparseMemoryOffset += imageMemoryRequirements.alignment;
+                }
 
                 // Partially bind only one layer
                 if (layerNdx == partiallyBoundLayer)
                 {
                     // Offset by one block in every direction if possible
-                    VkOffset3D partialOffset = makeOffset3D(0, 0, 0);
+                    VkOffset3D partialOffset     = makeOffset3D(0, 0, 0);
+                    VkOffset3D sparseBlockOffset = makeOffset3D(0, 0, 0);
                     if (sparseBlocks.x() > 1)
-                        partialOffset.x = imageGranularity.width;
+                    {
+                        partialOffset.x     = imageGranularity.width;
+                        sparseBlockOffset.x = 1;
+                    }
                     if (sparseBlocks.y() > 1)
-                        partialOffset.y = imageGranularity.height;
+                    {
+                        partialOffset.y     = imageGranularity.height;
+                        sparseBlockOffset.y = 1;
+                    }
                     if (sparseBlocks.z() > 1)
-                        partialOffset.z = imageGranularity.depth;
+                    {
+                        partialOffset.z     = imageGranularity.depth;
+                        sparseBlockOffset.z = 1;
+                    }
+
+                    const VkDeviceSize partialMemoryOffset =
+                        (sparseBlocks.x() * sparseBlocks.y() * sparseBlockOffset.z +
+                         sparseBlocks.x() * sparseBlockOffset.y + sparseBlockOffset.x) *
+                        imageMemoryRequirements.alignment;
 
                     // Map only one block and clamp it to the image dimensions
                     VkExtent3D partialExtent =
@@ -373,7 +408,7 @@ tcu::TestStatus ImageSparseRebindInstance::iterate(void)
                         partialOffset,               // VkOffset3D offset;
                         partialExtent,               // VkExtent3D extent;
                         VK_NULL_HANDLE,              // VkDeviceMemory            memory; // will be patched in later
-                        allocationSize,              // VkDeviceSize memoryOffset;
+                        partialMemoryOffset,         // VkDeviceSize memoryOffset;
                         (VkSparseMemoryBindFlags)0u, // VkSparseMemoryBindFlags flags;
                     };
                 }
