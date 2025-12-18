@@ -722,12 +722,12 @@ static void parseSimpleCaseList(vector<CaseTreeNode *> &nodeStack, std::istream 
     string line;
 
     // Outer loop to iterate every line.
-    for (;;)
+    while (in.good())
     {
-        if (!in)
+        std::getline(in, line);
+        if (in.fail())
             break;
 
-        std::getline(in, line);
         trimString(line);
         if (line.empty() || line.front() == '#') // Ignore empty lines and comments.
             continue;
