@@ -2470,36 +2470,37 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
         stream.append('} // vk')
         self.write(combineLines(stream, INL_HEADER))
 
+UNSUFFIXED_STRUCTURES = [
+    "CornerSampledImage",
+    "ShaderSMBuiltins",
+    "ShadingRateImage",
+    "RayTracing",
+    "RepresentativeFragmentTest",
+    "ComputeShaderDerivatives",
+    "MeshShader",
+    "ShaderImageFootprint",
+    "ExclusiveScissor",
+    "DedicatedAllocationImageAliasing",
+    "CoverageReductionMode",
+    "DeviceGeneratedCommands",
+    "InheritedViewportScissor",
+    "PresentBarrier",
+    "DiagnosticsConfig",
+    "FragmentShadingRateEnums",
+    "RayTracingMotionBlur",
+    "ExternalMemoryRDMA",
+    "MemoryDecompression",
+    "LinearColorAttachment",
+    "OpticalFlow",
+    "RayTracingInvocationReorder",
+    "DisplacementMicromap"]
+
 class FeaturesOrPropertiesMethodsGenerator(CTSGenerator):
     def __init__(self, ctsLists, params):
         CTSGenerator.__init__(self, ctsLists)
         self.featureStructs, self.pattern = params
 
     def generate(self):
-        UNSUFFIXED_STRUCTURES = [
-            "CornerSampledImage",
-            "ShaderSMBuiltins",
-            "ShadingRateImage",
-            "RayTracing",
-            "RepresentativeFragmentTest",
-            "ComputeShaderDerivatives",
-            "MeshShader",
-            "ShaderImageFootprint",
-            "ExclusiveScissor",
-            "DedicatedAllocationImageAliasing",
-            "CoverageReductionMode",
-            "DeviceGeneratedCommands",
-            "InheritedViewportScissor",
-            "PresentBarrier",
-            "DiagnosticsConfig",
-            "FragmentShadingRateEnums",
-            "RayTracingMotionBlur",
-            "ExternalMemoryRDMA",
-            "MemoryDecompression",
-            "LinearColorAttachment",
-            "OpticalFlow",
-            "RayTracingInvocationReorder",
-            "DisplacementMicromap"]
         stream = []
         for fop in self.featureStructs:
             # remove VkPhysicalDevice prefix from structure name
@@ -2523,6 +2524,51 @@ class FeaturesOrPropertiesMethodsGenerator(CTSGenerator):
             constStr = "// Contains const pNext " if pnext and getattr(pnext, "const", False) else ""
             stream.append(constStr + self.pattern.format(fop.name, nameSubStr))
         self.write(combineLines(indentLines(stream), INL_HEADER))
+
+class FeaturesForShaderObjectGenerator(CTSGenerator):
+    def __init__(self, ctsLists, params):
+        CTSGenerator.__init__(self, ctsLists)
+        self.featureStructs = params
+
+    def generate(self):
+        allNames = []
+        stream = ['']
+
+        for struct in self.cts.structs:
+            if re.search(fr'VkPhysicalDevice(\w+)Features', struct.name, re.IGNORECASE):
+                # check if struct extends VkPhysicalDeviceFeatures2
+                if struct.extends is None or 'VkPhysicalDeviceFeatures2' not in struct.extends:
+                    continue
+                # generate base for variable and method name
+                nameSubStr = struct.name[16:]
+                # skip video features
+                if nameSubStr.startswith('Video'):
+                    continue
+                # skip structures that are already in the list
+                if nameSubStr in allNames:
+                    continue
+                # skip shader obiect features, they are always added manually
+                if 'ShaderObject' in nameSubStr:
+                    continue
+                if nameSubStr.startswith('Vulkan1'):
+                    nameSubStr = 'Device' + nameSubStr
+                if nameSubStr[-3:] == "KHR":
+                    nameSubStr = nameSubStr[:-3]
+                elif nameSubStr[-2:] == "NV" and nameSubStr[:-10] in UNSUFFIXED_STRUCTURES:
+                    nameSubStr = nameSubStr[:-2]
+
+                allNames.append(nameSubStr)
+                # save copy of each structure
+                spacing = ' ' * max(1, int(50 - len(nameSubStr)))
+                stream.append(f'auto f{nameSubStr}{spacing}= m_context.get{nameSubStr}();')
+
+        stream.append('\n'\
+            'std::vector<void *> pNextFeatures = {')
+        for n in allNames:
+            stream.append(f'\t&f{n},')
+        stream.append('};\n')
+
+        self.write(combineLines(stream, INL_HEADER))
 
 class DeviceFeatureTestGenerator(CTSGenerator):
     def __init__(self, ctsLists, _):
@@ -3699,6 +3745,7 @@ if __name__ == "__main__":
         GenData('vkDeviceFeaturesForDefaultDeviceDefs.inl',   FeaturesOrPropertiesMethodsGenerator, (featureStructs, featuresForDDDefsPattern)),
         GenData('vkDeviceFeaturesForContextDecl.inl',         FeaturesOrPropertiesMethodsGenerator, (featureStructs, contextDeclPattern)),
         GenData('vkDeviceFeaturesForContextDefs.inl',         FeaturesOrPropertiesMethodsGenerator, (featureStructs, contextDefsPattern)),
+        GenData('vkDeviceFeaturesForShaderObject.inl',        FeaturesForShaderObjectGenerator, (featureStructs)),
         GenData('vkDeviceFeatureTest.inl',                    DeviceFeatureTestGenerator),
         GenData("vkDeviceFeatures2.inl",                      DeviceFeatures2Generator),
 
