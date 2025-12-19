@@ -394,6 +394,7 @@ bool TestInstance::testImage(const ImageWithMemory &image)
 
     vkd.resetCommandPool(device, *m_cmdPool, 0);
     deMemset(m_resultBuffer->getAllocation().getHostPtr(), 0, m_bufferSize);
+    invalidateAlloc(vkd, device, m_resultBuffer->getAllocation());
 
     // Copy the gradient to the image, filling the whole image. Then release ownership of image to foreign queue.
     {
