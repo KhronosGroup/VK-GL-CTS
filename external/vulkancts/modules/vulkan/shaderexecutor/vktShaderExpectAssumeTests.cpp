@@ -595,10 +595,11 @@ private:
 
         void *outputData = m_outputAlloc->getHostPtr();
         deMemset(outputData, 0, sizeof(outputBufferSize));
+        flushAlloc(m_vk, device, *m_outputAlloc);
 
         VK_CHECK(
             m_vk.bindBufferMemory(device, *m_outputBuffer, m_outputAlloc->getMemory(), m_outputAlloc->getOffset()));
-        flushAlloc(m_vk, device, *m_outputAlloc);
+        invalidateAlloc(m_vk, device, *m_outputAlloc);
     }
 
     void generateComputePipeline()
