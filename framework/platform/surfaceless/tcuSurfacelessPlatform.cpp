@@ -94,6 +94,14 @@ using std::vector;
 #define DEQP_VULKAN_LIBRARY_PATH DEQP_VULKAN_LIBRARY_BASENAME DEQP_VULKAN_LIBRARY_SUFFIX
 #endif
 
+#if !defined(DEQP_EGL_LIBRARY_PATH)
+#if defined(DEQP_EGL_DIRECT_LINK)
+#define DEQP_EGL_LIBRARY_PATH nullptr // Static linking on embedded - no dynamic library
+#else
+#define DEQP_EGL_LIBRARY_PATH "libEGL.so"
+#endif
+#endif
+
 namespace tcu
 {
 namespace surfaceless
@@ -265,7 +273,7 @@ glu::RenderContext *ContextFactory::createContext(const glu::RenderConfig &confi
 
 EglRenderContext::EglRenderContext(const glu::RenderConfig &config, const tcu::CommandLine &cmdLine,
                                    const glu::RenderContext *sharedContext)
-    : m_egl("libEGL.so")
+    : m_egl(DEQP_EGL_LIBRARY_PATH)
     , m_contextType(config.type)
     , m_eglDisplay(EGL_NO_DISPLAY)
     , m_eglContext(EGL_NO_CONTEXT)
