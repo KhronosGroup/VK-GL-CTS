@@ -54,6 +54,8 @@ namespace
 
 using namespace vk;
 
+constexpr uint32_t kMaxLocation = 3u;
+
 enum class TestType
 {
     // Test maximum number of attachments(color + depth + stencil) readback as input
@@ -3319,6 +3321,268 @@ tcu::TestStatus NullAttachmentLocationsTestInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+class RemapToHighLocationTestInstance : public TestInstance
+{
+public:
+    RemapToHighLocationTestInstance(Context &ctx, const uint32_t numAttachments, const uint32_t firstRemapLocation);
+    virtual ~RemapToHighLocationTestInstance(void);
+    tcu::TestStatus iterate(void);
+
+private:
+    const uint32_t m_numAttachments;
+    const uint32_t m_firstRemapLocation;
+};
+
+RemapToHighLocationTestInstance::RemapToHighLocationTestInstance(Context &ctx, const uint32_t numAttachments,
+                                                                 const uint32_t firstRemapLocation)
+    : TestInstance(ctx)
+    , m_numAttachments(numAttachments)
+    , m_firstRemapLocation(firstRemapLocation)
+{
+}
+
+RemapToHighLocationTestInstance::~RemapToHighLocationTestInstance(void)
+{
+}
+
+class RemappingToHighLocationTestCase : public TestCase
+{
+public:
+    RemappingToHighLocationTestCase(tcu::TestContext &ctx, const std::string &name, const uint32_t numAttachments,
+                                    const uint32_t firstRemapLocation);
+    virtual ~RemappingToHighLocationTestCase(void);
+    virtual void checkSupport(Context &context) const;
+    virtual void initPrograms(SourceCollections &programCollection) const;
+    virtual TestInstance *createInstance(Context &context) const;
+
+private:
+    const uint32_t m_numAttachments;
+    const uint32_t m_firstRemapLocation;
+};
+
+RemappingToHighLocationTestCase::RemappingToHighLocationTestCase(tcu::TestContext &ctx, const std::string &name,
+                                                                 const uint32_t numAttachments,
+                                                                 const uint32_t firstRemapLocation)
+    : TestCase(ctx, name)
+    , m_numAttachments(numAttachments)
+    , m_firstRemapLocation(firstRemapLocation)
+{
+}
+
+RemappingToHighLocationTestCase::~RemappingToHighLocationTestCase(void)
+{
+}
+
+void RemappingToHighLocationTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+}
+
+void RemappingToHighLocationTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    std::ostringstream vert;
+    {
+        vert << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+             << "void main (void)\n"
+             << "{\n"
+             << "  const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+             << "  const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+             << "  gl_Position = vec4(x, y, 1.0, 1.0);\n"
+             << "}\n";
+    }
+    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    std::ostringstream frag;
+    {
+        const std::string outColors[2] = {"vec4(0.0f, 1.0f, 0.0f, 1.0f)", "vec4(1.0f, 0.0f, 0.0f, 1.0f)"};
+
+        frag << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
+
+        for (uint32_t attIdx = 0u; attIdx < m_numAttachments; attIdx++)
+        {
+            const uint32_t locIdx = attIdx + m_firstRemapLocation;
+            frag << "layout(location=" << locIdx << ") out vec4 outColor" << attIdx << ";\n";
+        }
+
+        frag << "\n"
+             << "void main() {\n";
+
+        for (uint32_t attIdx = 0u; attIdx < m_numAttachments; attIdx++)
+        {
+            frag << "    outColor" << attIdx << " = " << outColors[attIdx % 2] << ";\n";
+        }
+
+        frag << "}\n";
+    }
+    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance *RemappingToHighLocationTestCase::createInstance(Context &context) const
+{
+    return new RemapToHighLocationTestInstance(context, m_numAttachments, m_firstRemapLocation);
+}
+
+tcu::TestStatus RemapToHighLocationTestInstance::iterate(void)
+{
+    const DeviceInterface &vkd    = m_context.getDeviceInterface();
+    const VkDevice device         = m_context.getDevice();
+    const uint32_t queueFamilyIdx = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue           = m_context.getUniversalQueue();
+    Allocator &alloc              = m_context.getDefaultAllocator();
+
+    const uint32_t renderSize              = 16u;
+    const VkRect2D renderArea              = makeRect2D(renderSize, renderSize);
+    const uint32_t colorAttachmentCount    = m_numAttachments;
+    const VkFormat colorImageFormat        = VK_FORMAT_R8G8B8A8_UNORM;
+    const tcu::TextureFormat textureFormat = mapVkFormat(colorImageFormat);
+
+    const VkClearValue clearValue = makeClearValueColor(tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f));
+
+    const auto colorAttachment = makeDynamicRenderingAttachmentInfo(clearValue);
+
+    const auto colorSRR = makeDefaultImageSubresourceRange();
+
+    VkImageMemoryBarrier colorImageBarrier =
+        makeImageMemoryBarrier(0, VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_NULL_HANDLE, colorSRR);
+
+    const VkDeviceSize outputBufferSize = (VkDeviceSize)renderSize * renderSize * tcu::getPixelSize(textureFormat);
+    const VkBufferCreateInfo outputBufferInfo =
+        makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT);
+
+    std::vector<ImageWithMemorySp> images(colorAttachmentCount, ImageWithMemorySp());
+    std::vector<VkImageViewSp> imageViews(colorAttachmentCount, VkImageViewSp());
+    std::vector<VkFormat> colorImageFormats(colorAttachmentCount, colorImageFormat);
+    std::vector<VkRenderingAttachmentInfo> dynRenderingColorAttachmentInfos(colorAttachmentCount, colorAttachment);
+    std::vector<VkImageMemoryBarrier> colorImageBarriers(colorAttachmentCount, colorImageBarrier);
+    std::vector<BufferWithMemorySp> outputBuffers(colorAttachmentCount, BufferWithMemorySp());
+    std::vector<uint32_t> nonIdentityColorAttachmentLocations(colorAttachmentCount);
+    std::vector<uint32_t> identityColorAttachmentLocations(colorAttachmentCount);
+
+    // Images and image views
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        images[i]     = createImage(m_context, renderSize, colorImageFormats[i],
+                                    VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+        imageViews[i] = VkImageViewSp(new vk::Move<VkImageView>(
+            makeImageView(vkd, device, **images[i], VK_IMAGE_VIEW_TYPE_2D, colorImageFormats[i], colorSRR)));
+
+        dynRenderingColorAttachmentInfos[i].imageView  = **imageViews[i];
+        dynRenderingColorAttachmentInfos[i].clearValue = clearValue;
+        colorImageBarriers[i].image                    = **images[i];
+
+        outputBuffers[i] = BufferWithMemorySp(
+            new BufferWithMemory(vkd, device, alloc, outputBufferInfo, MemoryRequirement::HostVisible));
+        nonIdentityColorAttachmentLocations[i] = i + m_firstRemapLocation;
+    }
+
+    const auto pipelineLayout   = makePipelineLayout(vkd, device, VK_NULL_HANDLE);
+    const auto vertShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("vert"));
+    const auto fragShaderModule = createShaderModule(vkd, device, m_context.getBinaryCollection().get("frag"));
+
+    // Dynamic rendering info
+    const auto dynRenderingInfo = makeDynamicRenderingInfo(renderArea, de::sizeU32(dynRenderingColorAttachmentInfos),
+                                                           de::dataOrNull(dynRenderingColorAttachmentInfos));
+
+    // Dynamic rendering attachment with non-identity mapping location info
+    const auto nonIdentityDynRenderingAttachmentLocationInfo = makeDynamicRenderingAttachmentLocationInfo(
+        colorAttachmentCount, de::dataOrNull(nonIdentityColorAttachmentLocations));
+
+    // Dynamic rendering pipeline info
+    const auto dynRenderingCreateInfo = makeDynamicRenderingCreateInfo(
+        colorAttachmentCount, de::dataOrNull(colorImageFormats), &nonIdentityDynRenderingAttachmentLocationInfo);
+
+    // Pipeline
+    const std::vector<VkViewport> viewports{makeViewport(renderSize, renderSize)};
+    const std::vector<VkRect2D> scissors{renderArea};
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    const VkPipelineColorBlendAttachmentState colorBlendAttachmentState = {0,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_OP_ADD,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_FACTOR_ZERO,
+                                                                           VK_BLEND_OP_ADD,
+                                                                           0xf};
+
+    std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(colorAttachmentCount,
+                                                                                colorBlendAttachmentState);
+    VkPipelineColorBlendStateCreateInfo colorBlendStateCreateInfo = initVulkanStructure();
+    colorBlendStateCreateInfo.attachmentCount                     = de::sizeU32(colorBlendAttachmentStates);
+    colorBlendStateCreateInfo.pAttachments                        = de::dataOrNull(colorBlendAttachmentStates);
+
+    Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
+        vkd, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+        *fragShaderModule, VK_NULL_HANDLE, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+        &vertexInputState, nullptr, nullptr, nullptr, &colorBlendStateCreateInfo, nullptr, &dynRenderingCreateInfo);
+
+    // Command buffer
+    const auto cmdPool =
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIdx);
+    const auto cmdBufferPtr = allocateCommandBuffer(vkd, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = *cmdBufferPtr;
+
+    beginCommandBuffer(vkd, cmdBuffer);
+
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_NONE, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, 0u,
+                           0u, 0u, colorAttachmentCount, de::dataOrNull(colorImageBarriers));
+
+    vkd.cmdBeginRendering(cmdBuffer, &dynRenderingInfo);
+
+    vkd.cmdBindPipeline(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, graphicsPipeline.get());
+
+    vkd.cmdSetRenderingAttachmentLocations(cmdBuffer, &nonIdentityDynRenderingAttachmentLocationInfo);
+
+    vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+
+    vkd.cmdEndRendering(cmdBuffer);
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        colorImageBarriers[i].srcAccessMask = VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;
+        colorImageBarriers[i].dstAccessMask = VK_ACCESS_TRANSFER_READ_BIT;
+        colorImageBarriers[i].oldLayout     = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        colorImageBarriers[i].newLayout     = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    }
+    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
+                           0u, 0u, 0u, 0u, colorAttachmentCount, de::dataOrNull(colorImageBarriers));
+
+    const VkImageSubresourceLayers colorSL = makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u);
+    const VkBufferImageCopy copyRegion     = makeBufferImageCopy({renderSize, renderSize, 1u}, colorSL);
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+        vkd.cmdCopyImageToBuffer(cmdBuffer, **images[i], VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, **outputBuffers[i], 1u,
+                                 &copyRegion);
+
+    endCommandBuffer(vkd, cmdBuffer);
+    submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+
+    // Verification
+    const std::vector<tcu::Vec4> expectedColors = {tcu::RGBA::green().toVec(), tcu::RGBA::red().toVec()};
+
+    const tcu::Vec4 threshold(0.005f);
+
+    for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        auto &allocation = outputBuffers[i]->getAllocation();
+        invalidateAlloc(vkd, device, allocation);
+
+        tcu::TextureLevel textureLevel(textureFormat, renderSize, renderSize, 1u);
+        const tcu::PixelBufferAccess expectedImage = textureLevel.getAccess();
+        tcu::clear(expectedImage, expectedColors[i % 2]);
+
+        tcu::ConstPixelBufferAccess resultImage(textureFormat, renderSize, renderSize, 1u, allocation.getHostPtr());
+
+        const std::string imageSetDesc = "Image comparison " + de::toString(i);
+
+        if (!tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "Image comparison", imageSetDesc.c_str(),
+                                        expectedImage, resultImage, threshold, tcu::COMPARE_LOG_RESULT))
+            return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testCtx, const SharedGroupParams grpParams)
@@ -3374,6 +3638,25 @@ tcu::TestCaseGroup *createDynamicRenderingLocalReadTests(tcu::TestContext &testC
                 std::string("null_color_attachment_location_with_command") + (nullAfterRemap ? "_after_remap" : "");
             mainGroup->addChild(new NullAttachmentLocationsTestCase(testCtx, testName, true /* commandMode */,
                                                                     nullAfterRemap, false /* nullBeforeIdentity */));
+        }
+    }
+
+    // Test mapping to (unused) locations higher than default locations
+    {
+        for (const auto numAttachments : {1, 2})
+        {
+            for (uint32_t firstRemapLocation = numAttachments; firstRemapLocation <= kMaxLocation; firstRemapLocation++)
+            {
+                const auto lastLocation = firstRemapLocation + (numAttachments - 1u); // includes first used location
+
+                if (lastLocation > kMaxLocation)
+                    break;
+
+                const std::string testName = "mapping_" + de::toString(numAttachments) + "_attachments_to_locs_from_" +
+                                             de::toString(firstRemapLocation);
+                mainGroup->addChild(
+                    new RemappingToHighLocationTestCase(testCtx, testName, numAttachments, firstRemapLocation));
+            }
         }
     }
 
