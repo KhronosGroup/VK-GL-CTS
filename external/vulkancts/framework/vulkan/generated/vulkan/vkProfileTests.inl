@@ -18,6 +18,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkVulkan13Features);
 	auto& vkFeatures = vkFeatures2.features;
 	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
+	DE_UNREF(vkFeatures);
 
 	VkPhysicalDeviceVulkan11Properties vkVulkan11Properties = initVulkanStructure();
 	VkPhysicalDeviceVulkan12Properties vkVulkan12Properties = initVulkanStructure(&vkVulkan11Properties);
@@ -26,6 +27,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure(&vkVulkan13Properties);
 	auto& vkProperties = vkProperties2.properties;
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
+	DE_UNREF(vkProperties);
 
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan10requirements
@@ -247,12 +249,14 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkVulkan12Features);
 	auto& vkFeatures = vkFeatures2.features;
 	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
+	DE_UNREF(vkFeatures);
 
 	VkPhysicalDeviceVulkan12Properties vkVulkan12Properties = initVulkanStructure();
 
 	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure(&vkVulkan12Properties);
 	auto& vkProperties = vkProperties2.properties;
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
+	DE_UNREF(vkProperties);
 
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan10requirements_roadmap2024
@@ -329,7 +333,116 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	return tcu::TestStatus::pass("Profile supported");
 }
 
+tcu::TestStatus validate_roadmap_2026(Context& context)
+{
+	const VkBool32 checkAlways = true;
+	bool oneOrMoreChecksFailed = false;
+	auto pd = context.getPhysicalDevice();
+	const auto &vki = context.getInstanceInterface();
+	TestLog& log = context.getTestContext().getLog();
+
+	VkPhysicalDeviceVulkan14Features vkVulkan14Features = initVulkanStructure();
+	VkPhysicalDeviceRobustness2FeaturesKHR vkRobustness2FeaturesKHR = initVulkanStructure(&vkVulkan14Features);
+
+	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkRobustness2FeaturesKHR);
+	auto& vkFeatures = vkFeatures2.features;
+	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
+	DE_UNREF(vkFeatures);
+
+
+	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure();
+	auto& vkProperties = vkProperties2.properties;
+	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
+	DE_UNREF(vkProperties);
+
+	const std::vector<FeatureEntry> featureTable {
+		// vulkan14requirements_roadmap2026
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, hostImageCopy),
+
+
+		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, robustBufferAccess2),
+		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, robustImageAccess2),
+		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, nullDescriptor),
+	};
+	for (const auto &testedFeature : featureTable)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        log << TestLog::Message
+	            << "Feature " << testedFeature.fieldName << " is not supported"
+	            << TestLog::EndMessage;
+	        oneOrMoreChecksFailed = true;
+	    }
+	}
+
+	const std::vector<FeatureLimitTableItem> propertyTable {
+		// vulkan10requirements_roadmap2026
+		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorUniformBuffers), LIM_MIN_UINT32(200) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorStorageBuffers), LIM_MIN_UINT32(200) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorInputAttachments), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxDescriptorSetStorageBuffers), LIM_MIN_UINT32(1800) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxDescriptorSetUniformBuffers), LIM_MIN_UINT32(1800) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxDescriptorSetInputAttachments), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxVertexOutputComponents), LIM_MIN_UINT32(124) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationControlPerVertexInputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationControlPerVertexOutputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationControlTotalOutputComponents), LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationEvaluationInputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationEvaluationOutputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxGeometryOutputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFragmentInputComponents), LIM_MIN_UINT32(112) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFragmentOutputAttachments), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxComputeSharedMemorySize), LIM_MIN_UINT32(32768) },
+		{ PN(checkAlways), PN(vkProperties.limits.subPixelPrecisionBits), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxViewportDimensions[0]), LIM_MIN_UINT32(8192) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxViewportDimensions[1]), LIM_MIN_UINT32(8192) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFramebufferWidth), LIM_MIN_UINT32(8192) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFramebufferHeight), LIM_MIN_UINT32(8192) },
+	};
+	for (const auto& testedProperty : propertyTable)
+	    oneOrMoreChecksFailed |= !validateLimit(testedProperty, log);
+
+	std::vector<std::string> extensionList {
+		"VK_KHR_robustness2",
+		"VK_KHR_pipeline_binary",
+		"VK_KHR_fragment_shading_rate",
+		"VK_KHR_shader_clock",
+		"VK_KHR_workgroup_memory_explicit_layout",
+		"VK_KHR_compute_shader_derivatives",
+		"VK_KHR_maintenance7",
+		"VK_KHR_maintenance8",
+		"VK_KHR_maintenance9",
+		"VK_KHR_depth_clamp_zero_one",
+		"VK_KHR_copy_memory_indirect",
+		"VK_KHR_shader_untyped_pointers",
+		"VK_KHR_surface",
+		"VK_KHR_swapchain",
+		"VK_KHR_present_mode_fifo_latest_ready",
+		"VK_KHR_present_id2",
+		"VK_KHR_present_wait2",
+		"VK_KHR_surface_maintenance1",
+		"VK_KHR_swapchain_maintenance1",
+		"VK_KHR_cooperative_matrix"
+	};
+	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
+	for (const auto& testedExtension : extensionList)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    log << TestLog::Message
+	        << testedExtension << " is not supported"
+	        << TestLog::EndMessage;
+	    oneOrMoreChecksFailed = true;
+	}
+
+	if (oneOrMoreChecksFailed)
+	    TCU_THROW(NotSupportedError, "Profile not supported");
+	return tcu::TestStatus::pass("Profile supported");
+}
+
 static const std::vector<ProfileEntry> profileEntries {
 	{ "roadmap_2022", checkApiVersionSupport<1, 3>, validate_roadmap_2022 },
 	{ "roadmap_2024", checkApiVersionSupport<1, 3>, validate_roadmap_2024 },
+	{ "roadmap_2026", checkApiVersionSupport<1, 4>, validate_roadmap_2026 },
 };
