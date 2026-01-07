@@ -376,10 +376,10 @@ glu::ProgramSources InternalformatCaseBase::prepareTexturingProgramSources(GLint
              "  gl_FragColor = ${CALCULATE_COLOR};\n"
              "}\n";
 
-        if ((internalFormat == GL_DEPTH_COMPONENT) || (internalFormat == GL_DEPTH_STENCIL))
-            specializationMap["CALCULATE_COLOR"] = "vec4(color.r, 0.0, 0.0, 1.0)";
-        else if (internalFormat == GL_DEPTH_COMPONENT32F)
+        if (internalFormat == GL_DEPTH_COMPONENT32F)
             specializationMap["CALCULATE_COLOR"] = "vec4(color.r, color.r, color.r, 1.0)";
+        else if ((format == GL_DEPTH_COMPONENT) || (format == GL_DEPTH_STENCIL))
+            specializationMap["CALCULATE_COLOR"] = "vec4(color.r, 0.0, 0.0, 1.0)";
         else
             specializationMap["CALCULATE_COLOR"] = "color";
     }
