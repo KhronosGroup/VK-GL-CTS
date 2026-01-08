@@ -1641,7 +1641,7 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
     if (testColor)
     {
         DE_ASSERT(m_params.attFormat == VK_FORMAT_R8G8B8A8_UNORM);
-        const float threshold = 0.005f;                                      // 1/255 < 0.005 < 2/255
+        const float threshold = 2.0f / 0xff; // Max error for 8-bit unorm subtraction is 2/0xff
         const tcu::Vec4 thresholdVec(threshold, threshold, threshold, 0.0f); // Alpha is always 1.0
 
         for (uint32_t i = 0u; i < attCount; ++i)
@@ -1669,9 +1669,9 @@ tcu::TestStatus DRLRFeedbackLoopInstance::iterate(void)
         const auto &attFormat = m_params.attFormat;
         float threshold       = 0.0f;
         if (attFormat == VK_FORMAT_D16_UNORM)
-            threshold = 0.000025f; // 1/65535 < 0.000025 < 2/65535
+            threshold = 2.0f / 0xffff; // Max error for 16-bit unorm subtraction is 2/0xffff
         else if (attFormat == VK_FORMAT_D24_UNORM_S8_UINT || attFormat == VK_FORMAT_D32_SFLOAT_S8_UINT)
-            threshold = 0.0000000625f; // 1/16777215 < 0.0000000625 < 2/16777215
+            threshold = 2.0f / 0xffffff; // Max error for 24-bit unorm subtraction is 2/0xffffff
         else
             DE_ASSERT(false);
 
