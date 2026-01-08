@@ -659,6 +659,9 @@ void TextureBinding::updateTextureViewMipLevels(uint32_t baseLevel, uint32_t max
         (m_aspectMask != VK_IMAGE_ASPECT_FLAG_BITS_MAX_ENUM) ? m_aspectMask : guessAspectMask(format);
     const uint32_t layerCount = m_textureData->getArraySize();
 
+    if (VK_IMAGE_VIEW_TYPE_CUBE_ARRAY == imageViewType)
+        m_context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
+
 #ifndef CTS_USES_VULKANSC
     vk::VkImageViewMinLodCreateInfoEXT imageViewMinLodCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_VIEW_MIN_LOD_CREATE_INFO_EXT, // VkStructureType    sType
