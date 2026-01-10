@@ -128,7 +128,7 @@ void deAssertFail(const char *reason, const char *file, int line)
     fprintf(stderr, "Assertion '%s' failed at %s:%d\n", reason, file, line);
     raise(SIGTRAP);
     abort();
-#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_FUCHSIA)
+#elif (DE_OS == DE_OS_UNIX) || (DE_OS == DE_OS_FUCHSIA) || (DE_OS == DE_OS_OHOS)
     __assert_fail(reason, file, (unsigned int)line, "Unknown function");
 #elif (DE_OS == DE_OS_QNX)
     __assert(reason, file, (unsigned int)line, "Unknown function");
