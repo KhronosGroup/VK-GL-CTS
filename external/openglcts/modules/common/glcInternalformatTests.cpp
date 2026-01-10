@@ -1586,10 +1586,10 @@ void InternalformatTests::getESTestData(TestData &testData, glu::ContextType &co
         TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float),
         TF(GL_RGB, GL_HALF_FLOAT_OES, GL_RGB, OES_texture_half_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
         TF(GL_RGBA, GL_HALF_FLOAT_OES, GL_RGBA, OES_texture_half_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
-        TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float),
-        TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float),
-        TF(GL_RGB, GL_FLOAT, GL_RGB32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
-        TF(GL_RGBA, GL_FLOAT, GL_RGBA32F, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
+        TF(GL_RGB, GL_FLOAT, GL_RGB, OES_texture_float),
+        TF(GL_RGBA, GL_FLOAT, GL_RGBA, OES_texture_float),
+        TF(GL_RGB, GL_FLOAT, GL_RGB, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
+        TF(GL_RGBA, GL_FLOAT, GL_RGBA, OES_texture_float_linear, nullptr, GL_LINEAR, GL_LINEAR),
     };
 
     CopyTexImageFormat commonCopyTexImageFormats[] = {
