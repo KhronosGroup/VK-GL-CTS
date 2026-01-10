@@ -148,6 +148,7 @@ DE_DECLARE_COMMAND_LINE_OPT(ComputeOnly, bool);
 DE_DECLARE_COMMAND_LINE_OPT(VideoLogPrint, bool);
 DE_DECLARE_COMMAND_LINE_OPT(VideoDecodeOutputDump, VideoDecodeOutput);
 DE_DECLARE_COMMAND_LINE_OPT(VideoEncodeOutputDump, VideoEncodeOutput);
+DE_DECLARE_COMMAND_LINE_OPT(NoProgramFail, bool);
 
 static void parseIntList(const char *src, std::vector<int> *dst)
 {
@@ -221,6 +222,7 @@ void registerOptions(de::cmdline::Parser &parser)
         << Option<RunMode>(nullptr, "deqp-runmode",
                            "Execute tests, write list of test cases into a file, or verify amber capability coherency",
                            s_runModes, "execute")
+        << Option<NoProgramFail>(nullptr, "deqp-no-program-fail", "Prevents the program to return -1 on test failure", s_enableNames, "disable")
         << Option<ExportFilenamePattern>(nullptr, "deqp-caselist-export-file",
                                          "Set the target file name pattern for caselist export",
                                          "${packageName}-cases.${typeExtension}")
@@ -1212,6 +1214,10 @@ bool CommandLine::parse(const std::string &cmdLine)
 bool CommandLine::quietMode(void) const
 {
     return m_cmdLine.getOption<opt::QuietStdout>();
+}
+bool CommandLine::isNoProgramFailEnabled(void) const
+{
+    return m_cmdLine.getOption<opt::NoProgramFail>();
 }
 const char *CommandLine::getLogFileName(void) const
 {
