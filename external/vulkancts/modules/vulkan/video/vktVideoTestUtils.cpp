@@ -851,6 +851,9 @@ vector<AllocationPtr> getAndBindVideoSessionMemory(const DeviceInterface &vkd, c
     vector<AllocationPtr> allocations(videoSessionMemoryRequirements.size());
     vector<VkBindVideoSessionMemoryInfoKHR> videoBindsMemoryKHR(videoSessionMemoryRequirements.size());
 
+    if (allocations.empty())
+        return allocations;
+    
     for (size_t ndx = 0; ndx < allocations.size(); ++ndx)
     {
         const VkMemoryRequirements &requirements = videoSessionMemoryRequirements[ndx].memoryRequirements;
