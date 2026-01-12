@@ -4410,6 +4410,8 @@ PipelineLibraryMiscTestCase::PipelineLibraryMiscTestCase(tcu::TestContext &conte
 void PipelineLibraryMiscTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
+    if (m_testParams.mode == MiscTestMode::VIEW_INDEX_FROM_DEVICE_INDEX)
+        context.requireInstanceFunctionality("VK_KHR_device_group_creation");
 
     if ((m_testParams.mode == MiscTestMode::INDEPENDENT_PIPELINE_LAYOUT_SETS_FAST_LINKED) &&
         !context.getGraphicsPipelineLibraryPropertiesEXT().graphicsPipelineLibraryFastLinking)

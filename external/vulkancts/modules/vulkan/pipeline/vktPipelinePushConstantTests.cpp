@@ -241,7 +241,7 @@ public:
                                      const bool multipleUpdate, const IndexType indexType, const bool pushConstant2,
                                      const PushConstantUseStage pcUsedStage = PC_USE_STAGE_ALL,
                                      const bool sizeQueriedFromDevice       = false);
-    virtual ~PushConstantGraphicsTestInstance(void);
+    virtual ~PushConstantGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     virtual std::vector<VkPushConstantRange> getPushConstantRanges(void)                         = 0;
@@ -513,16 +513,10 @@ void PushConstantGraphicsTestInstance::init(void)
             }
         }
 
-        VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
-
         createShaderModule(vk, vkDevice, m_context.getBinaryCollection(), "color_vert", &m_vertexShaderModule);
         if (m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT ||
             m_shaderFlags & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT)
         {
-            if (features.tessellationShader == VK_FALSE)
-            {
-                TCU_THROW(NotSupportedError, "Tessellation Not Supported");
-            }
             createShaderModule(vk, vkDevice, m_context.getBinaryCollection(), "color_tesc", &m_tessControlShaderModule);
             createShaderModule(vk, vkDevice, m_context.getBinaryCollection(), "color_tese",
                                &m_tessEvaluationShaderModule);
@@ -530,10 +524,6 @@ void PushConstantGraphicsTestInstance::init(void)
         }
         if (m_shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT)
         {
-            if (features.geometryShader == VK_FALSE)
-            {
-                TCU_THROW(NotSupportedError, "Geometry Not Supported");
-            }
             createShaderModule(vk, vkDevice, m_context.getBinaryCollection(), "color_geom", &m_geometryShaderModule);
             useGeometry = true;
         }
@@ -680,10 +670,6 @@ void PushConstantGraphicsTestInstance::init(void)
         m_renderPass.end(vk, *m_cmdBuffer);
         endCommandBuffer(vk, *m_cmdBuffer);
     }
-}
-
-PushConstantGraphicsTestInstance::~PushConstantGraphicsTestInstance(void)
-{
 }
 
 tcu::TestStatus PushConstantGraphicsTestInstance::iterate(void)
@@ -1176,14 +1162,32 @@ void PushConstantGraphicsTest::checkSupport(Context &context) const
     {
         for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
         {
-            if (m_pushConstantRange[rangeNdx].range.size > limits.maxPushConstantsSize)
+            const auto &range = m_pushConstantRange[rangeNdx].range;
+            if (range.size > limits.maxPushConstantsSize)
             {
-                TCU_THROW(NotSupportedError,
-                          "PushConstant size " + std::to_string(m_pushConstantRange[rangeNdx].range.size) +
-                              " exceeds device limit " + std::to_string(limits.maxPushConstantsSize));
+                TCU_THROW(NotSupportedError, "PushConstant size " + std::to_string(range.size) +
+                                                 " exceeds device limit " +
+                                                 std::to_string(limits.maxPushConstantsSize));
             }
         }
     }
+
+    bool requiresTessellation = false;
+    bool requiresGeometry     = false;
+    for (size_t rangeNdx = 0; rangeNdx < m_rangeCount; rangeNdx++)
+    {
+        auto shaderStage = m_pushConstantRange[rangeNdx].range.shaderStage;
+        if (shaderStage & VK_SHADER_STAGE_GEOMETRY_BIT)
+            requiresGeometry = true;
+        if (shaderStage & (VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT))
+            requiresTessellation = true;
+    }
+
+    const auto &features = context.getDeviceFeatures();
+    if (requiresTessellation && !features.tessellationShader)
+        TCU_THROW(NotSupportedError, "Tessellation Not Supported");
+    if (requiresGeometry && !features.geometryShader)
+        TCU_THROW(NotSupportedError, "Geometry Not Supported");
 }
 
 RangeSizeCase PushConstantGraphicsTest::getRangeSizeCase(uint32_t rangeSize) const

@@ -85,20 +85,35 @@ VkDeviceSize calcItemSize(const InstanceInterface &vki, VkPhysicalDevice physica
     return de::roundUp(kSizeofVec4 * numElements, lcm);
 }
 
-void checkAllSupported(const Extensions &supportedExtensions, const vector<string> &requiredExtensions)
+void commonCheckSupported(Context &context, const TestParams &params)
 {
-    for (auto &requiredExtName : requiredExtensions)
+    context.requireInstanceFunctionality("VK_KHR_get_physical_device_properties2");
+    context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+    if (params.useMaintenance5)
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+    if (isConstructionTypeLibrary(params.pipelineConstructionType))
     {
-        if (!isExtensionStructSupported(supportedExtensions, RequiredExtension(requiredExtName)))
-            TCU_THROW(NotSupportedError, (requiredExtName + " is not supported").c_str());
+        context.requireDeviceFunctionality("VK_KHR_pipeline_library");
+        context.requireDeviceFunctionality("VK_EXT_graphics_pipeline_library");
+        if (!context.getGraphicsPipelineLibraryFeaturesEXT().graphicsPipelineLibrary)
+            TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
+    }
+    else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
+    {
+        if (context.getEquivalentApiVersion() < VK_API_VERSION_1_3)
+            context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+        context.requireDeviceFunctionality("VK_EXT_shader_object");
+        if (!context.getShaderObjectFeaturesEXT().shaderObject)
+            TCU_THROW(NotSupportedError, "shaderObjectFeaturesEXT.shaderObject required");
+        if (!context.getDynamicRenderingFeatures().dynamicRendering)
+            TCU_THROW(NotSupportedError, "dynamicRendering required");
     }
 }
 
-CustomInstance createInstanceWithGetPhysicalDeviceProperties2(Context &context, const Extensions &supportedExtensions)
+CustomInstance createInstanceWithGetPhysicalDeviceProperties2(Context &context)
 {
-    vector<string> requiredExtensions = {"VK_KHR_get_physical_device_properties2"};
-    checkAllSupported(supportedExtensions, requiredExtensions);
-
+    vector<string> requiredExtensions{"VK_KHR_get_physical_device_properties2"};
     return createCustomInstanceWithExtensions(context, requiredExtensions);
 }
 
@@ -109,8 +124,8 @@ const char *innerCString(const string &str)
 
 Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const PlatformInterface &vkp, VkInstance instance,
                                               const InstanceInterface &vki, VkPhysicalDevice physicalDevice,
-                                              const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
-                                              const TestParams &params, std::vector<std::string> &enabledExtensions)
+                                              const uint32_t queueFamilyIndex, const TestParams &params,
+                                              std::vector<std::string> &enabledExtensions)
 {
 
     const float queuePriority               = 1.0f;
@@ -154,8 +169,6 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
         requiredExtensionsStr.push_back("VK_KHR_pipeline_library");
         requiredExtensionsStr.push_back("VK_EXT_graphics_pipeline_library");
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-        if (!graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary)
-            TCU_THROW(NotSupportedError, "graphicsPipelineLibraryFeaturesEXT.graphicsPipelineLibrary required");
     }
     else if (isConstructionTypeShaderObject(params.pipelineConstructionType))
     {
@@ -164,15 +177,10 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
             requiredExtensionsStr.push_back("VK_KHR_dynamic_rendering");
         requiredExtensionsStr.push_back("VK_EXT_shader_object");
         vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
-        if (!shaderObjectFeaturesEXT.shaderObject)
-            TCU_THROW(NotSupportedError, "shaderObjectFeaturesEXT.shaderObject required");
-        if (!dynamicRenderingFeaturesKHR.dynamicRendering)
-            TCU_THROW(NotSupportedError, "dynamicRendering required");
     }
 
-    vector<const char *> requiredExtensions;
-    checkAllSupported(supportedExtensions, requiredExtensionsStr);
     // We need the contents of requiredExtensionsStr as a vector<const char*> in VkDeviceCreateInfo.
+    vector<const char *> requiredExtensions;
     transform(begin(requiredExtensionsStr), end(requiredExtensionsStr), back_inserter(requiredExtensions),
               innerCString);
 
@@ -254,7 +262,7 @@ class PushDescriptorBufferGraphicsTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorBufferGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorBufferGraphicsTestInstance(void);
+    virtual ~PushDescriptorBufferGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -262,12 +270,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -300,14 +306,12 @@ PushDescriptorBufferGraphicsTestInstance::PushDescriptorBufferGraphicsTestInstan
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -607,10 +611,6 @@ void PushDescriptorBufferGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorBufferGraphicsTestInstance::~PushDescriptorBufferGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorBufferGraphicsTestInstance::iterate(void)
 {
     init();
@@ -661,7 +661,7 @@ class PushDescriptorBufferGraphicsTest : public vkt::TestCase
 {
 public:
     PushDescriptorBufferGraphicsTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorBufferGraphicsTest(void);
+    ~PushDescriptorBufferGraphicsTest(void) = default;
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
@@ -677,10 +677,6 @@ PushDescriptorBufferGraphicsTest::PushDescriptorBufferGraphicsTest(tcu::TestCont
 {
 }
 
-PushDescriptorBufferGraphicsTest::~PushDescriptorBufferGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorBufferGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorBufferGraphicsTestInstance(context, m_params);
@@ -688,9 +684,7 @@ TestInstance *PushDescriptorBufferGraphicsTest::createInstance(Context &context)
 
 void PushDescriptorBufferGraphicsTest::checkSupport(Context &context) const
 {
-    if (m_params.useMaintenance5)
-        context.requireDeviceFunctionality("VK_KHR_maintenance5");
-
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -735,7 +729,7 @@ class PushDescriptorBufferComputeTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorBufferComputeTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorBufferComputeTestInstance(void);
+    virtual ~PushDescriptorBufferComputeTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyOutput(void);
@@ -743,12 +737,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -773,14 +765,12 @@ PushDescriptorBufferComputeTestInstance::PushDescriptorBufferComputeTestInstance
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice))
@@ -1003,10 +993,6 @@ void PushDescriptorBufferComputeTestInstance::init(void)
     }
 }
 
-PushDescriptorBufferComputeTestInstance::~PushDescriptorBufferComputeTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorBufferComputeTestInstance::iterate(void)
 {
     init();
@@ -1035,7 +1021,8 @@ class PushDescriptorBufferComputeTest : public vkt::TestCase
 {
 public:
     PushDescriptorBufferComputeTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorBufferComputeTest(void);
+    ~PushDescriptorBufferComputeTest(void) = default;
+    void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -1050,8 +1037,9 @@ PushDescriptorBufferComputeTest::PushDescriptorBufferComputeTest(tcu::TestContex
 {
 }
 
-PushDescriptorBufferComputeTest::~PushDescriptorBufferComputeTest(void)
+void PushDescriptorBufferComputeTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
 }
 
 TestInstance *PushDescriptorBufferComputeTest::createInstance(Context &context) const
@@ -1089,7 +1077,7 @@ class PushDescriptorImageGraphicsTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorImageGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorImageGraphicsTestInstance(void);
+    virtual ~PushDescriptorImageGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -1097,12 +1085,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -1139,14 +1125,12 @@ PushDescriptorImageGraphicsTestInstance::PushDescriptorImageGraphicsTestInstance
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -1730,10 +1714,6 @@ void PushDescriptorImageGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorImageGraphicsTestInstance::~PushDescriptorImageGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorImageGraphicsTestInstance::iterate(void)
 {
     init();
@@ -1816,7 +1796,7 @@ class PushDescriptorImageGraphicsTest : public vkt::TestCase
 {
 public:
     PushDescriptorImageGraphicsTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorImageGraphicsTest(void);
+    ~PushDescriptorImageGraphicsTest(void) = default;
 
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
@@ -1833,10 +1813,6 @@ PushDescriptorImageGraphicsTest::PushDescriptorImageGraphicsTest(tcu::TestContex
 {
 }
 
-PushDescriptorImageGraphicsTest::~PushDescriptorImageGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorImageGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorImageGraphicsTestInstance(context, m_params);
@@ -1844,6 +1820,7 @@ TestInstance *PushDescriptorImageGraphicsTest::createInstance(Context &context) 
 
 void PushDescriptorImageGraphicsTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -1945,7 +1922,7 @@ class PushDescriptorImageComputeTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorImageComputeTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorImageComputeTestInstance(void);
+    virtual ~PushDescriptorImageComputeTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyOutput(void);
@@ -1953,12 +1930,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -1989,15 +1964,13 @@ PushDescriptorImageComputeTestInstance::PushDescriptorImageComputeTestInstance(C
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(
           findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice, 2u))
@@ -2472,10 +2445,6 @@ void PushDescriptorImageComputeTestInstance::init(void)
     }
 }
 
-PushDescriptorImageComputeTestInstance::~PushDescriptorImageComputeTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorImageComputeTestInstance::iterate(void)
 {
     init();
@@ -2624,7 +2593,8 @@ class PushDescriptorImageComputeTest : public vkt::TestCase
 {
 public:
     PushDescriptorImageComputeTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorImageComputeTest(void);
+    ~PushDescriptorImageComputeTest(void) = default;
+    void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -2639,8 +2609,9 @@ PushDescriptorImageComputeTest::PushDescriptorImageComputeTest(tcu::TestContext 
 {
 }
 
-PushDescriptorImageComputeTest::~PushDescriptorImageComputeTest(void)
+void PushDescriptorImageComputeTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
 }
 
 TestInstance *PushDescriptorImageComputeTest::createInstance(Context &context) const
@@ -2754,7 +2725,7 @@ class PushDescriptorTexelBufferGraphicsTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorTexelBufferGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorTexelBufferGraphicsTestInstance(void);
+    virtual ~PushDescriptorTexelBufferGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -2762,12 +2733,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -2802,14 +2771,12 @@ PushDescriptorTexelBufferGraphicsTestInstance::PushDescriptorTexelBufferGraphics
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -3113,10 +3080,6 @@ void PushDescriptorTexelBufferGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorTexelBufferGraphicsTestInstance::~PushDescriptorTexelBufferGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorTexelBufferGraphicsTestInstance::iterate(void)
 {
     init();
@@ -3167,7 +3130,7 @@ class PushDescriptorTexelBufferGraphicsTest : public vkt::TestCase
 {
 public:
     PushDescriptorTexelBufferGraphicsTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorTexelBufferGraphicsTest(void);
+    ~PushDescriptorTexelBufferGraphicsTest(void) = default;
 
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
@@ -3185,10 +3148,6 @@ PushDescriptorTexelBufferGraphicsTest::PushDescriptorTexelBufferGraphicsTest(tcu
 {
 }
 
-PushDescriptorTexelBufferGraphicsTest::~PushDescriptorTexelBufferGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorTexelBufferGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorTexelBufferGraphicsTestInstance(context, m_params);
@@ -3196,9 +3155,7 @@ TestInstance *PushDescriptorTexelBufferGraphicsTest::createInstance(Context &con
 
 void PushDescriptorTexelBufferGraphicsTest::checkSupport(Context &context) const
 {
-    if (m_params.useMaintenance5)
-        context.requireDeviceFunctionality("VK_KHR_maintenance5");
-
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
@@ -3259,7 +3216,7 @@ class PushDescriptorTexelBufferComputeTestInstance : public vkt::TestInstance
 {
 public:
     PushDescriptorTexelBufferComputeTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorTexelBufferComputeTestInstance(void);
+    virtual ~PushDescriptorTexelBufferComputeTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyOutput(void);
@@ -3267,12 +3224,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -3298,14 +3253,12 @@ PushDescriptorTexelBufferComputeTestInstance::PushDescriptorTexelBufferComputeTe
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_COMPUTE_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_itemSize(calcItemSize(m_vki, m_physicalDevice))
@@ -3529,10 +3482,6 @@ void PushDescriptorTexelBufferComputeTestInstance::init(void)
     }
 }
 
-PushDescriptorTexelBufferComputeTestInstance::~PushDescriptorTexelBufferComputeTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorTexelBufferComputeTestInstance::iterate(void)
 {
     init();
@@ -3571,7 +3520,8 @@ class PushDescriptorTexelBufferComputeTest : public vkt::TestCase
 {
 public:
     PushDescriptorTexelBufferComputeTest(tcu::TestContext &testContext, const string &name, const TestParams &params);
-    ~PushDescriptorTexelBufferComputeTest(void);
+    ~PushDescriptorTexelBufferComputeTest(void) = default;
+    void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
     TestInstance *createInstance(Context &context) const;
 
@@ -3586,8 +3536,9 @@ PushDescriptorTexelBufferComputeTest::PushDescriptorTexelBufferComputeTest(tcu::
 {
 }
 
-PushDescriptorTexelBufferComputeTest::~PushDescriptorTexelBufferComputeTest(void)
+void PushDescriptorTexelBufferComputeTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
 }
 
 TestInstance *PushDescriptorTexelBufferComputeTest::createInstance(Context &context) const
@@ -3645,7 +3596,7 @@ class PushDescriptorInputAttachmentGraphicsTestInstance : public vkt::TestInstan
 {
 public:
     PushDescriptorInputAttachmentGraphicsTestInstance(Context &context, const TestParams &params);
-    virtual ~PushDescriptorInputAttachmentGraphicsTestInstance(void);
+    virtual ~PushDescriptorInputAttachmentGraphicsTestInstance(void) = default;
     void init(void);
     virtual tcu::TestStatus iterate(void);
     tcu::TestStatus verifyImage(void);
@@ -3653,12 +3604,10 @@ public:
 private:
     const TestParams m_params;
     const PlatformInterface &m_vkp;
-    const Extensions m_instanceExtensions;
     const CustomInstance m_instance;
     const InstanceDriver &m_vki;
     const VkPhysicalDevice m_physicalDevice;
     const uint32_t m_queueFamilyIndex;
-    const Extensions m_deviceExtensions;
     std::vector<std::string> m_deviceEnabledExtensions;
     const Unique<VkDevice> m_device;
     const DeviceDriver m_vkd;
@@ -3692,14 +3641,12 @@ PushDescriptorInputAttachmentGraphicsTestInstance::PushDescriptorInputAttachment
     : vkt::TestInstance(context)
     , m_params(params)
     , m_vkp(context.getPlatformInterface())
-    , m_instanceExtensions(enumerateInstanceExtensionProperties(m_vkp, nullptr))
-    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context, m_instanceExtensions))
+    , m_instance(createInstanceWithGetPhysicalDeviceProperties2(context))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
     , m_queueFamilyIndex(findQueueFamilyIndexWithCaps(m_vki, m_physicalDevice, VK_QUEUE_GRAPHICS_BIT))
-    , m_deviceExtensions(enumerateDeviceExtensionProperties(m_vki, m_physicalDevice, nullptr))
-    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_deviceExtensions,
-                                              m_queueFamilyIndex, params, m_deviceEnabledExtensions))
+    , m_device(createDeviceWithPushDescriptor(context, m_vkp, m_instance, m_vki, m_physicalDevice, m_queueFamilyIndex,
+                                              params, m_deviceEnabledExtensions))
     , m_vkd(m_vkp, m_instance, *m_device, context.getUsedApiVersion(), context.getTestContext().getCommandLine())
     , m_queue(getDeviceQueue(m_vkd, *m_device, m_queueFamilyIndex, 0u))
     , m_allocator(m_vkd, *m_device, getPhysicalDeviceMemoryProperties(m_vki, m_physicalDevice))
@@ -4175,10 +4122,6 @@ void PushDescriptorInputAttachmentGraphicsTestInstance::init(void)
     }
 }
 
-PushDescriptorInputAttachmentGraphicsTestInstance::~PushDescriptorInputAttachmentGraphicsTestInstance(void)
-{
-}
-
 tcu::TestStatus PushDescriptorInputAttachmentGraphicsTestInstance::iterate(void)
 {
     init();
@@ -4239,7 +4182,7 @@ class PushDescriptorInputAttachmentGraphicsTest : public vkt::TestCase
 public:
     PushDescriptorInputAttachmentGraphicsTest(tcu::TestContext &testContext, const string &name,
                                               const TestParams &params);
-    ~PushDescriptorInputAttachmentGraphicsTest(void);
+    ~PushDescriptorInputAttachmentGraphicsTest(void) = default;
 
     void checkSupport(Context &context) const;
     void initPrograms(SourceCollections &sourceCollections) const;
@@ -4257,10 +4200,6 @@ PushDescriptorInputAttachmentGraphicsTest::PushDescriptorInputAttachmentGraphics
 {
 }
 
-PushDescriptorInputAttachmentGraphicsTest::~PushDescriptorInputAttachmentGraphicsTest(void)
-{
-}
-
 TestInstance *PushDescriptorInputAttachmentGraphicsTest::createInstance(Context &context) const
 {
     return new PushDescriptorInputAttachmentGraphicsTestInstance(context, m_params);
@@ -4268,6 +4207,7 @@ TestInstance *PushDescriptorInputAttachmentGraphicsTest::createInstance(Context 
 
 void PushDescriptorInputAttachmentGraphicsTest::checkSupport(Context &context) const
 {
+    commonCheckSupported(context, m_params);
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_params.pipelineConstructionType);
 }
