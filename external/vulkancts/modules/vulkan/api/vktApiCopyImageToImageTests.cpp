@@ -4055,6 +4055,327 @@ void addImageToImageArrayTests(tcu::TestCaseGroup *group, TestGroupParamsPtr tes
     }
 }
 
+struct MultiSampleThenSingleSampleParams
+{
+    TestGroupParamsPtr testGroupParams;
+    VkPipelineStageFlagBits barrierSrcStage;
+};
+
+void checkQueueSupport(Context &context, MultiSampleThenSingleSampleParams params)
+{
+    const auto &testGroupParams = params.testGroupParams;
+    if (testGroupParams->queueSelection == QueueSelectionOptions::ComputeOnly)
+        context.getComputeQueue();
+    else if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+        context.getTransferQueue();
+}
+
+// Goal: reproducing an issue found in Mesa drivers, found when copying an MS image on the transfer queue, followed by
+// a single-sample copy on the same transfer queue, same command buffer.
+//
+// Mechanism:
+// * Create a MS image pair, an SS image pair and an extra SS image.
+// * Clear all images in the graphics (universal) queue first.
+// * Copy from src MS image to dst MS image on the transfer queue.
+// * (Optionally) Insert a barrier here, despite both copies being unrelated.
+// * Copy from src SS image to dst SS image on the transfer queue.
+// * Resolve MS image on the graphics (universal) queue to the extra SS image.
+// * Copy dst SS image and extra SS image to buffers on the universal queue.
+// * Verify both images.
+tcu::TestStatus multiSampleThenSingleSampleTest(Context &context, MultiSampleThenSingleSampleParams params)
+{
+    const auto &testGroupParams = params.testGroupParams;
+    DE_ASSERT(testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly);
+    DE_ASSERT(testGroupParams->allocationKind == ALLOCATION_KIND_DEDICATED);
+    DE_ASSERT((testGroupParams->extensionFlags & COPY_COMMANDS_2) != 0u);
+    DE_UNREF(testGroupParams); // For release builds.
+
+    const auto ctx       = context.getContextCommonData();
+    const auto imageType = VK_IMAGE_TYPE_2D;
+    const auto format    = VK_FORMAT_R8G8B8A8_UNORM;
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk = makeExtent3D(extent);
+    const auto usage =
+        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT);
+    const auto colorSRR      = makeDefaultImageSubresourceRange();
+    const auto colorSRL      = makeDefaultImageSubresourceLayers();
+    const auto xferSrcLayout = VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL;
+    const auto xferDstLayout = VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
+    const auto zeroOffset    = makeOffset3D(0, 0, 0);
+
+    const VkImageCreateInfo msCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+        nullptr,
+        0u,
+        imageType,
+        format,
+        extentVk,
+        1u,
+        1u,
+        VK_SAMPLE_COUNT_4_BIT,
+        VK_IMAGE_TILING_OPTIMAL,
+        usage,
+        VK_SHARING_MODE_EXCLUSIVE,
+        0u,
+        nullptr,
+        VK_IMAGE_LAYOUT_UNDEFINED,
+    };
+
+    auto ssCreateInfo    = msCreateInfo;
+    ssCreateInfo.samples = VK_SAMPLE_COUNT_1_BIT;
+
+    // Create images.
+    ImageWithMemory msSrcImg(ctx.vkd, ctx.device, ctx.allocator, msCreateInfo, MemoryRequirement::Any);
+    ImageWithMemory msDstImg(ctx.vkd, ctx.device, ctx.allocator, msCreateInfo, MemoryRequirement::Any);
+    ImageWithMemory ssSrcImg(ctx.vkd, ctx.device, ctx.allocator, ssCreateInfo, MemoryRequirement::Any);
+    ImageWithBuffer ssDstImg(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, usage, imageType, colorSRR);
+    ImageWithBuffer ssExtraImg(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, usage, imageType, colorSRR);
+
+    std::vector<VkImage> allHandles;
+    allHandles.reserve(5u);
+    allHandles.push_back(msSrcImg.get());
+    allHandles.push_back(msDstImg.get());
+    allHandles.push_back(ssSrcImg.get());
+    allHandles.push_back(ssDstImg.getImage());
+    allHandles.push_back(ssExtraImg.getImage());
+
+    const auto msSrcColorVec = tcu::Vec4(0.0f, 0.0f, 1.0f, 1.0f);
+    const auto ssSrcColorVec = tcu::Vec4(0.0f, 1.0f, 1.0f, 1.0f);
+    const auto clearColorVec = tcu::Vec4(0.0f, 0.0f, 0.0f, 1.0f);
+
+    const auto msSrcColor = makeClearValueColor(msSrcColorVec);
+    const auto ssSrcColor = makeClearValueColor(ssSrcColorVec);
+    const auto clearColor = makeClearValueColor(clearColorVec);
+
+    const auto univCmdPool = makeCommandPool(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto xferCmdPool = makeCommandPool(ctx.vkd, ctx.device, context.getTransferQueueFamilyIndex());
+
+    // Clear images.
+    {
+        const auto cmdBufferPtr =
+            allocateCommandBuffer(ctx.vkd, ctx.device, *univCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto cmdBuffer = *cmdBufferPtr;
+
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+        {
+            std::vector<VkImageMemoryBarrier> prepareBarriers;
+            prepareBarriers.reserve(allHandles.size());
+            for (const auto &imgHandle : allHandles)
+                prepareBarriers.push_back(makeImageMemoryBarrier(
+                    0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, xferDstLayout, imgHandle, colorSRR));
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, 0u, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          de::dataOrNull(prepareBarriers), prepareBarriers.size());
+        }
+
+        ctx.vkd.cmdClearColorImage(cmdBuffer, msSrcImg.get(), xferDstLayout, &msSrcColor.color, 1u, &colorSRR);
+        ctx.vkd.cmdClearColorImage(cmdBuffer, msDstImg.get(), xferDstLayout, &clearColor.color, 1u, &colorSRR);
+        ctx.vkd.cmdClearColorImage(cmdBuffer, ssSrcImg.get(), xferDstLayout, &ssSrcColor.color, 1u, &colorSRR);
+        ctx.vkd.cmdClearColorImage(cmdBuffer, ssDstImg.getImage(), xferDstLayout, &clearColor.color, 1u, &colorSRR);
+        ctx.vkd.cmdClearColorImage(cmdBuffer, ssExtraImg.getImage(), xferDstLayout, &clearColor.color, 1u, &colorSRR);
+
+        {
+            // Move source images to the right layout.
+            std::vector<VkImageMemoryBarrier> postClearBarriers;
+            postClearBarriers.reserve(2u);
+            postClearBarriers.push_back(makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0u, xferDstLayout,
+                                                               xferSrcLayout, msSrcImg.get(), colorSRR));
+            postClearBarriers.push_back(makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, 0u, xferDstLayout,
+                                                               xferSrcLayout, ssSrcImg.get(), colorSRR));
+
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                          VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, de::dataOrNull(postClearBarriers),
+                                          postClearBarriers.size());
+        }
+
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+    }
+
+    // Copy src images to dst images.
+    {
+        const auto cmdBufferPtr =
+            allocateCommandBuffer(ctx.vkd, ctx.device, *xferCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto cmdBuffer = *cmdBufferPtr;
+
+        const VkImageCopy2 copyRegion = {
+            VK_STRUCTURE_TYPE_IMAGE_COPY_2, nullptr, colorSRL, zeroOffset, colorSRL, zeroOffset, extentVk,
+        };
+
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+        // MS image.
+        const VkCopyImageInfo2 msCopyImageInfo = {
+            VK_STRUCTURE_TYPE_COPY_IMAGE_INFO_2,
+            nullptr,
+            msSrcImg.get(),
+            xferSrcLayout,
+            msDstImg.get(),
+            xferDstLayout,
+            1u,
+            &copyRegion,
+        };
+        ctx.vkd.cmdCopyImage2(cmdBuffer, &msCopyImageInfo);
+
+        // Optional barrier.
+        if (params.barrierSrcStage != VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM)
+        {
+            const auto dstStage = static_cast<VkPipelineStageFlags>(VK_PIPELINE_STAGE_TRANSFER_BIT);
+            const auto dstMask  = (VK_ACCESS_TRANSFER_READ_BIT | VK_ACCESS_TRANSFER_WRITE_BIT);
+
+            const auto srcStage = static_cast<VkPipelineStageFlags>(params.barrierSrcStage);
+            const auto srcMask  = ((params.barrierSrcStage == VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT) ? 0u : dstMask);
+
+            const auto barrier = makeMemoryBarrier(srcMask, dstMask);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, srcStage, dstStage, &barrier);
+        }
+
+        // SS image.
+        VkCopyImageInfo2 ssCopyImageInfo = msCopyImageInfo;
+        ssCopyImageInfo.srcImage         = ssSrcImg.get();
+        ssCopyImageInfo.dstImage         = ssDstImg.getImage();
+        ctx.vkd.cmdCopyImage2(cmdBuffer, &ssCopyImageInfo);
+
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, context.getTransferQueue(), cmdBuffer);
+    }
+
+    // Resolve MS image and copy SS images to verification buffers.
+    {
+        const auto cmdBufferPtr =
+            allocateCommandBuffer(ctx.vkd, ctx.device, *univCmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+        const auto cmdBuffer = *cmdBufferPtr;
+
+        beginCommandBuffer(ctx.vkd, cmdBuffer);
+
+        // Move dst MS image to the proper layout.
+        {
+            const auto preResolveBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_READ_BIT, xferDstLayout,
+                                                                  xferSrcLayout, msDstImg.get(), colorSRR);
+            cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                          VK_PIPELINE_STAGE_TRANSFER_BIT, &preResolveBarrier);
+        }
+
+        // Resolve dst MS image to the extra SS layout.
+        {
+            const VkImageResolve2 resolveRegion = {
+                VK_STRUCTURE_TYPE_IMAGE_RESOLVE_2, nullptr, colorSRL, zeroOffset, colorSRL, zeroOffset, extentVk,
+            };
+
+            const VkResolveImageInfo2 resolveInfo = {
+                VK_STRUCTURE_TYPE_RESOLVE_IMAGE_INFO_2,
+                nullptr,
+                msDstImg.get(),
+                xferSrcLayout,
+                ssExtraImg.getImage(),
+                xferDstLayout,
+                1u,
+                &resolveRegion,
+            };
+
+            ctx.vkd.cmdResolveImage2(cmdBuffer, &resolveInfo);
+        }
+
+        // Copy SS dst and extra images to their buffers, for verification.
+        {
+            std::vector<VkImageMemoryBarrier> preVerifBarriers;
+            preVerifBarriers.reserve(2u);
+            preVerifBarriers.push_back(makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                                              xferDstLayout, xferSrcLayout, ssExtraImg.getImage(),
+                                                              colorSRR));
+            preVerifBarriers.push_back(makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_READ_BIT, xferDstLayout,
+                                                              xferSrcLayout, ssDstImg.getImage(), colorSRR));
+            cmdPipelineImageMemoryBarrier(
+                ctx.vkd, cmdBuffer, (VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT | VK_PIPELINE_STAGE_TRANSFER_BIT),
+                VK_PIPELINE_STAGE_TRANSFER_BIT, de::dataOrNull(preVerifBarriers), preVerifBarriers.size());
+
+            const VkBufferImageCopy2 copyRegion = {
+                VK_STRUCTURE_TYPE_BUFFER_IMAGE_COPY_2, nullptr, 0ull, 0u, 0u, colorSRL, zeroOffset, extentVk,
+            };
+
+            const VkCopyImageToBufferInfo2 ssExtraCopyImageToBufferInfo = {
+                VK_STRUCTURE_TYPE_COPY_IMAGE_TO_BUFFER_INFO_2,
+                nullptr,
+                ssExtraImg.getImage(),
+                xferSrcLayout,
+                ssExtraImg.getBuffer(),
+                1u,
+                &copyRegion,
+            };
+            ctx.vkd.cmdCopyImageToBuffer2(cmdBuffer, &ssExtraCopyImageToBufferInfo);
+
+            auto ssOrigCopyImageToBufferInfo      = ssExtraCopyImageToBufferInfo;
+            ssOrigCopyImageToBufferInfo.srcImage  = ssDstImg.getImage();
+            ssOrigCopyImageToBufferInfo.dstBuffer = ssDstImg.getBuffer();
+            ctx.vkd.cmdCopyImageToBuffer2(cmdBuffer, &ssOrigCopyImageToBufferInfo);
+
+            const auto hostBarrier = makeMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT);
+            cmdPipelineMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                                     &hostBarrier);
+        }
+
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+    }
+
+    invalidateAlloc(ctx.vkd, ctx.device, ssDstImg.getBufferAllocation());
+    invalidateAlloc(ctx.vkd, ctx.device, ssExtraImg.getBufferAllocation());
+
+    const auto tcuFormat = mapVkFormat(format);
+
+    tcu::TextureLevel origRefLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess origRefAccess = origRefLevel.getAccess();
+    tcu::clear(origRefAccess, ssSrcColorVec);
+
+    tcu::TextureLevel extraRefLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+    tcu::PixelBufferAccess extraRefAccess = extraRefLevel.getAccess();
+    tcu::clear(extraRefAccess, msSrcColorVec);
+
+    tcu::ConstPixelBufferAccess origResAccess(tcuFormat, extent, ssDstImg.getBufferAllocation().getHostPtr());
+    tcu::ConstPixelBufferAccess extraResAccess(tcuFormat, extent, ssExtraImg.getBufferAllocation().getHostPtr());
+
+    const tcu::Vec4 threshold(0.0f);
+    auto &log = context.getTestContext().getLog();
+    bool fail = false;
+
+    if (!tcu::floatThresholdCompare(log, "MultiSample", "", extraRefAccess, extraResAccess, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        fail = true;
+
+    if (!tcu::floatThresholdCompare(log, "SingleSample", "", origRefAccess, origResAccess, threshold,
+                                    tcu::COMPARE_LOG_ON_ERROR))
+        fail = true;
+
+    if (fail)
+        TCU_FAIL("Unexpected results found in copy destination images; check log for details --");
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+void addImageToImageMiscTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
+{
+    if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+    {
+        const struct
+        {
+            VkPipelineStageFlagBits barrierStage;
+            std::string suffix;
+        } barrierCases[] = {
+            {VK_PIPELINE_STAGE_FLAG_BITS_MAX_ENUM, ""},
+            {VK_PIPELINE_STAGE_BOTTOM_OF_PIPE_BIT, "bottom_of_pipe"},
+            {VK_PIPELINE_STAGE_TRANSFER_BIT, "transfer"},
+            {VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, "all_commands"},
+        };
+        for (const auto &barrierCase : barrierCases)
+        {
+            std::string testName = "ms_then_ss";
+            if (!barrierCase.suffix.empty())
+                testName += "_" + barrierCase.suffix + "_barrier";
+            const MultiSampleThenSingleSampleParams params{testGroupParams, barrierCase.barrierStage};
+            addFunctionCase(group, testName, checkQueueSupport, multiSampleThenSingleSampleTest, params);
+        }
+    }
+}
+
 } // namespace
 
 void addCopyImageToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
@@ -4067,6 +4388,10 @@ void addCopyImageToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr test
         addTestGroup(group, "dimensions", addImageToImageDimensionsTests, testGroupParams);
     addTestGroup(group, "cube", addImageToImageCubeTests, testGroupParams);
     addTestGroup(group, "array", addImageToImageArrayTests, testGroupParams);
+    if (testGroupParams->queueSelection == QueueSelectionOptions::TransferOnly)
+    {
+        addTestGroup(group, "misc", addImageToImageMiscTests, testGroupParams);
+    }
 }
 
 void addCopyImageToImageTestsSimpleOnly(tcu::TestCaseGroup *group, TestGroupParamsPtr testGroupParams)
