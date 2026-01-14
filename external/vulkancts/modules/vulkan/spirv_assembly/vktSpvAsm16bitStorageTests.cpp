@@ -4224,6 +4224,11 @@ void addShaderCode16BitStorageInputOutput16To16x2(vk::SourceCollections &dst, Te
         << fragmentShader.specialize(spec) << SpirVAsmBuildOptions(vulkanVersion, targetSpirvVersion);
 }
 
+void checkSupport(Context &context, TestDefinition testDef)
+{
+    defaultCheckSupport(context, testDef.instanceContext);
+}
+
 TestStatus runAndVerifyDefaultPipeline(Context &context, TestDefinition testDef)
 {
     return runAndVerifyDefaultPipeline(context, testDef.instanceContext);
@@ -4284,7 +4289,7 @@ void addGraphics16BitStorageInputOutputFloat16To16x2Group(tcu::TestCaseGroup *te
 
         TestDefinition testDef = {instanceContext, cases[caseIdx].dataType};
 
-        addFunctionCaseWithPrograms<TestDefinition>(testGroup, cases[caseIdx].name,
+        addFunctionCaseWithPrograms<TestDefinition>(testGroup, cases[caseIdx].name, checkSupport,
                                                     addShaderCode16BitStorageInputOutput16To16x2,
                                                     runAndVerifyDefaultPipeline, testDef);
     }
@@ -4346,7 +4351,7 @@ void addGraphics16BitStorageInputOutputInt16To16x2Group(tcu::TestCaseGroup *test
 
         TestDefinition testDef = {instanceContext, cases[caseIdx].dataType};
 
-        addFunctionCaseWithPrograms<TestDefinition>(testGroup, cases[caseIdx].name,
+        addFunctionCaseWithPrograms<TestDefinition>(testGroup, cases[caseIdx].name, checkSupport,
                                                     addShaderCode16BitStorageInputOutput16To16x2,
                                                     runAndVerifyDefaultPipeline, testDef);
     }

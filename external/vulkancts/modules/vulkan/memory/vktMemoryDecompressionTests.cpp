@@ -235,9 +235,9 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
     DE_ASSERT(m_decompressionParams.decompressionCount >= m_decompressionParams.executedDecompressionCount);
 
     const uint32_t stride                  = m_decompressionParams.stride;
-    const size_t compressedSize            = static_cast<VkDeviceSize>(m_compressedSize);
+    const VkDeviceSize compressedSize      = static_cast<VkDeviceSize>(m_compressedSize);
     const size_t decompressedSizeAligned64 = 64 * ((m_decompressedSize + 63) / 64);
-    const size_t totalDecompressedSize =
+    const VkDeviceSize totalDecompressedSize =
         static_cast<VkDeviceSize>(m_decompressionParams.decompressionCount * decompressedSizeAligned64);
 
     // Create buffers for compression/decompression/copy
@@ -306,13 +306,13 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
     {
         const Allocation &bufferAllocation = srcBuffer.getAllocation();
         invalidateAlloc(vkd, device, bufferAllocation);
-        deMemcpy(bufferAllocation.getHostPtr(), m_compressedData, compressedSize);
+        deMemcpy(bufferAllocation.getHostPtr(), m_compressedData, m_compressedSize);
     }
 
     {
         const Allocation &bufferAllocation = dstBuffer.getAllocation();
         invalidateAlloc(vkd, device, bufferAllocation);
-        deMemset(bufferAllocation.getHostPtr(), 0xFF, totalDecompressedSize);
+        deMemset(bufferAllocation.getHostPtr(), 0xFF, static_cast<size_t>(totalDecompressedSize));
     }
 
     {

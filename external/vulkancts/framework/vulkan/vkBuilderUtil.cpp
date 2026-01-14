@@ -93,7 +93,8 @@ DescriptorSetLayoutBuilder &DescriptorSetLayoutBuilder::addIndexedBinding(
 }
 
 Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build(const DeviceInterface &vk, VkDevice device,
-                                                              VkDescriptorSetLayoutCreateFlags extraFlags) const
+                                                              VkDescriptorSetLayoutCreateFlags extraFlags,
+                                                              const void *pNext) const
 {
     // Create new layout bindings with pImmutableSamplers updated
     std::vector<VkDescriptorSetLayoutBinding> bindings = m_bindings;
@@ -116,7 +117,8 @@ Move<VkDescriptorSetLayout> DescriptorSetLayoutBuilder::build(const DeviceInterf
     }
 
     const VkDescriptorSetLayoutBindingFlagsCreateInfo flagsCreateInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO, nullptr,
+        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_BINDING_FLAGS_CREATE_INFO,
+        pNext,                                                        // pNext
         (uint32_t)bindingFlags.size(),                                // bindingCount
         (bindingFlags.empty()) ? (nullptr) : (&bindingFlags.front()), // pBindingFlags
     };

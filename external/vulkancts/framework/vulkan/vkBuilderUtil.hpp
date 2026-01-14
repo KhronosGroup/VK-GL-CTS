@@ -47,7 +47,8 @@ public:
                                                   VkDescriptorBindingFlags bindingFlags = 0);
 
     Move<VkDescriptorSetLayout> build(const DeviceInterface &vk, VkDevice device,
-                                      VkDescriptorSetLayoutCreateFlags extraFlags = 0) const;
+                                      VkDescriptorSetLayoutCreateFlags extraFlags = 0,
+                                      const void *pNext                           = nullptr) const;
 
     // helpers
 

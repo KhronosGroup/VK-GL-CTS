@@ -47,6 +47,7 @@
 #include "vktSpvAsmComputeShaderTestUtil.hpp"
 #include "vktSpvAsmGraphicsShaderTestUtil.hpp"
 #include "vktSpvAsmVariablePointersTests.hpp"
+#include "vktSpvAsmOpSelectDifferentStridesTests.hpp"
 #include "vktTestCaseUtil.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktAmberTestCase.hpp"
@@ -1382,6 +1383,26 @@ void addNullptrVariablePointersComputeGroup(tcu::TestCaseGroup *group, bool uses
         spec.extensions.push_back("VK_KHR_variable_pointers");
         group->addChild(new SpvAsmComputeShaderCase(testCtx, name.c_str(), spec));
     }
+}
+
+void addVariablePointersComputeCustomTests(tcu::TestCaseGroup *parentGroup, const std::string &testsGroupName)
+{
+#ifdef CTS_USES_VULKANSC
+    DE_UNREF(parentGroup);
+    DE_UNREF(testsGroupName);
+#else
+    std::vector<tcu::TestNode *> children;
+    parentGroup->getChildren(children);
+    for (auto child : children)
+    {
+        if (testsGroupName == child->getName())
+        {
+            addOpSelectDifferentStridesTest(static_cast<tcu::TestCaseGroup *>(child));
+            return;
+        }
+    }
+    TCU_THROW(NotSupportedError, "Unknown subgroup " + testsGroupName + " in " + parentGroup->getName() + " group.");
+#endif // !CTS_USES_VULKANSC
 }
 
 void addVariablePointersGraphicsGroup(tcu::TestCaseGroup *testGroup)
@@ -2729,6 +2750,7 @@ tcu::TestCaseGroup *createVariablePointersComputeGroup(tcu::TestContext &testCtx
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "variable_pointers"));
     // Test the variable pointer extension using a compute shader
     addTestGroup(group.get(), "compute", addPhysicalOrVariablePointersComputeGroup, false, false);
+    addVariablePointersComputeCustomTests(group.get(), "compute");
     // Testing Variable Pointers pointing to various types in different input buffers
     addTestGroup(group.get(), "complex_types_compute", addComplexTypesPhysicalOrVariablePointersComputeGroup, false,
                  false);

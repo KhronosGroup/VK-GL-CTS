@@ -275,6 +275,8 @@ VK_NV_shader_sm_builtins
 VK_NV_shading_rate_image
 VK_NV_viewport_swizzle
 VK_QCOM_image_processing
+VK_QCOM_multiview_per_view_viewports
+VK_QCOM_multiview_per_view_render_areas
 VK_QNX_external_memory_screen_buffer
 """.splitlines()
 
@@ -3396,8 +3398,11 @@ class FormatListsGenerator(CTSGenerator):
                     return False
                 if f.className == bitClass:
                     return True
-                # add selected compressed formats to 64-bit+ formats
                 if bitValue >= 64:
+                    # skip ASTC 3d formats
+                    if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                        return False
+                    # add selected compressed formats to 64-bit+ formats
                     return f.compressed is not None and f.blockSize == (bitValue / 8)
                 return False
             self.writeList(f'compatibleFormats{arraySubName}', compatibleFormatsCheckFun)
@@ -3430,6 +3435,9 @@ class FormatListsGenerator(CTSGenerator):
                 # generation of format lists
                 if 'ASTC' in f.name and 'SFLOAT' in f.name:
                     return False
+                # skip ASTC 3d formats
+                if len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                    return False
                 # skip vendor extension formats
                 return not self.isPartOfVendorExtension(f.name)
             return False
@@ -3439,6 +3447,9 @@ class FormatListsGenerator(CTSGenerator):
         self.writeList(f'compatibleFormatsSrgb', compatibleFormatsSrgbCheckFun)
 
         def compressedFormatsSrgbCheckFun(f):
+            # skip ASTC 3d formats
+            if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                return False
             return not self.isPartOfVendorExtension(f.name) and f.compressed is not None and 'SRGB' in f.name
         self.writeList(f'compressedFormatsSrgb', compressedFormatsSrgbCheckFun)
 
@@ -3469,12 +3480,19 @@ class FormatListsGenerator(CTSGenerator):
         xyChromaSubsampledCheckFun = lambda f: not self.isPartOfVendorExtension(f.name) and '420_UNORM' in f.name
         self.writeList(f'xyChromaSubsampledFormats', xyChromaSubsampledCheckFun)
 
-        allFormatsCheckFun = lambda f: not self.isPartOfVendorExtension(f.name)
+        def allFormatsCheckFun(f):
+            # skip ASTC 3d formats
+            if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                return False
+            return not self.isPartOfVendorExtension(f.name)
         self.writeList(f'allFormats', allFormatsCheckFun)
 
         def nonPlanarFormatsCheckFun(f):
             # skip vendor extension formats
             if self.isPartOfVendorExtension(f.name):
+                return False
+            # skip ASTC 3d formats
+            if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
                 return False
             return 'plane' not in f.className
         self.writeList(f'nonPlanarFormats', nonPlanarFormatsCheckFun)
@@ -3529,6 +3547,9 @@ class FormatListsGenerator(CTSGenerator):
                 return False
             if '64' in f.name:
                 return False
+            # skip ASTC 3d formats
+            if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                return False
             return True
         self.writeList(f'pipelineImageFormats', pipelineImageCheckFun)
 
@@ -3536,44 +3557,14 @@ class FormatListsGenerator(CTSGenerator):
         listOfFormatsNotSupportedBySC = [
             'VK_FORMAT_A1B5G5R5_UNORM_PACK16',
             'VK_FORMAT_A8_UNORM',
-
-            'VK_FORMAT_R16G16_SFIXED5_NV',
-            'VK_FORMAT_R10X6_UINT_PACK16_ARM',
-            'VK_FORMAT_R10X6G10X6_UINT_2PACK16_ARM',
-            'VK_FORMAT_R10X6G10X6B10X6A10X6_UINT_4PACK16_ARM',
-            'VK_FORMAT_R12X4_UINT_PACK16_ARM',
-            'VK_FORMAT_R12X4G12X4_UINT_2PACK16_ARM',
-            'VK_FORMAT_R12X4G12X4B12X4A12X4_UINT_4PACK16_ARM',
-            'VK_FORMAT_R14X2_UINT_PACK16_ARM',
-            'VK_FORMAT_R14X2G14X2_UINT_2PACK16_ARM',
-            'VK_FORMAT_R14X2G14X2B14X2A14X2_UINT_4PACK16_ARM',
-            'VK_FORMAT_R14X2_UNORM_PACK16_ARM',
-            'VK_FORMAT_R14X2G14X2_UNORM_2PACK16_ARM',
-            'VK_FORMAT_R14X2G14X2B14X2A14X2_UNORM_4PACK16_ARM',
-            'VK_FORMAT_G14X2_B14X2R14X2_2PLANE_420_UNORM_3PACK16_ARM',
-            'VK_FORMAT_G14X2_B14X2R14X2_2PLANE_422_UNORM_3PACK16_ARM',
-            'VK_FORMAT_R8_BOOL_ARM',
-
-            # removed from Vulkan SC test set: VK_IMG_format_pvrtc extension does not exist in Vulkan SC
-            'VK_FORMAT_PVRTC1_2BPP_UNORM_BLOCK_IMG',
-            'VK_FORMAT_PVRTC1_4BPP_UNORM_BLOCK_IMG',
-            'VK_FORMAT_PVRTC2_2BPP_UNORM_BLOCK_IMG',
-            'VK_FORMAT_PVRTC2_4BPP_UNORM_BLOCK_IMG',
-            'VK_FORMAT_PVRTC1_2BPP_SRGB_BLOCK_IMG',
-            'VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG',
-            'VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG',
-            'VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG',
-            'VK_FORMAT_A4R4G4B4_UNORM_PACK16_EXT',
-            'VK_FORMAT_A4B4G4R4_UNORM_PACK16_EXT',
-            'VK_FORMAT_G8_B8R8_2PLANE_444_UNORM_EXT',
-            'VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16_EXT',
-            'VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT',
-            'VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT',
         ]
+
+        formatsSupportedBySC = [fe.name for fe in self.vk.enums['VkFormat'].fields]
+        formatsSupportedBySC = list(set(formatsSupportedBySC) - set(listOfFormatsNotSupportedBySC))
 
         formats = []
         for f in self.vk.formats.values():
-            if self.targetApiName == "vulkansc" and f.name in listOfFormatsNotSupportedBySC:
+            if self.targetApiName == "vulkansc" and f.name not in formatsSupportedBySC:
                 continue
             if checkCallback(f):
                 formats.append(f.name)

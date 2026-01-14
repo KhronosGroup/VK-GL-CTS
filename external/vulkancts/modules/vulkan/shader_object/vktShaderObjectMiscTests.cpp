@@ -943,13 +943,14 @@ std::vector<vk::VkDynamicState> ShaderObjectStateInstance::getDynamicStates(void
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT);
     if (eds3Features.extendedDynamicState3AlphaToOneEnable)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_ALPHA_TO_ONE_ENABLE_EXT);
-    if (eds3Features.extendedDynamicState3LogicOpEnable)
+    // VUID-vkCmdDraw-None-10862
+    if (eds3Features.extendedDynamicState3LogicOpEnable && m_params.fragShader)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_LOGIC_OP_ENABLE_EXT);
-    if (eds3Features.extendedDynamicState3ColorBlendEnable)
+    if (eds3Features.extendedDynamicState3ColorBlendEnable && m_params.fragShader)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT);
-    if (eds3Features.extendedDynamicState3ColorBlendEquation)
+    if (eds3Features.extendedDynamicState3ColorBlendEquation && m_params.fragShader)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
-    if (eds3Features.extendedDynamicState3ColorWriteMask)
+    if (eds3Features.extendedDynamicState3ColorWriteMask && m_params.fragShader)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
     if (eds3Features.extendedDynamicState3RasterizationStream)
         dynamicStates.push_back(vk::VK_DYNAMIC_STATE_RASTERIZATION_STREAM_EXT);

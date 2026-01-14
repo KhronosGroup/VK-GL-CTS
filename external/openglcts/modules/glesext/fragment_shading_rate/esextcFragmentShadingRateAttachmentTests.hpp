@@ -101,6 +101,7 @@ private:
     glw::GLuint m_to_id;
     glw::GLuint m_sr_to_id;
     glw::GLuint m_fbo_id;
+    glw::GLuint m_vao_id;
     glw::GLuint m_vbo_id;
     Box m_scissorBox;
     std::vector<glw::GLenum> m_availableShadingRates;

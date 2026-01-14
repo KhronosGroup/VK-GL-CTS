@@ -18,6 +18,7 @@
 # incorrectly in the compiler backend.
 
 DEVICE_FEATURE Storage16BitFeatures.storageBuffer16BitAccess
+DEVICE_FEATURE Storage16BitFeatures.uniformAndStorageBuffer16BitAccess
 DEVICE_FEATURE shaderInt16
 
 SHADER compute compute_shader GLSL

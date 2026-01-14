@@ -25,6 +25,8 @@
 
 #include "vktDataGraphTestProvider.hpp"
 
+#include <array>
+
 namespace vkt
 {
 namespace dataGraph

@@ -65,7 +65,16 @@ using namespace vk;
 namespace
 {
 
-vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
+vector<string> getExtensionNames(const vector<VkExtensionProperties> &extensions)
+{
+    std::vector<string> extensionNames;
+    extensionNames.reserve(extensions.size());
+    std::transform(begin(extensions), end(extensions), std::back_inserter(extensionNames),
+                   [](const VkExtensionProperties &extProperties) { return std::string(extProperties.extensionName); });
+    return extensionNames;
+}
+
+vector<string> filterExtensions(const vector<string> &extensionNames)
 {
     vector<string> enabledExtensions;
     bool khrBufferDeviceAddress = false;
@@ -114,32 +123,34 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
         "VK_QCOM_image_processing",
         "VK_ARM_performance_counters_by_region",
         "VK_IMG_format_pvrtc",
+        "VK_QCOM_multiview_per_view_viewports",
+        "VK_QCOM_multiview_per_view_render_areas",
     };
 
     const char *exclusions[] = {"VK_EXT_device_address_binding_report", "VK_EXT_device_memory_report"};
 
-    for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
+    for (size_t extNdx = 0; extNdx < extensionNames.size(); extNdx++)
     {
-        if (strcmp(extensions[extNdx].extensionName, "VK_KHR_buffer_device_address") == 0)
+        if (strcmp(extensionNames[extNdx].c_str(), "VK_KHR_buffer_device_address") == 0)
         {
             khrBufferDeviceAddress = true;
             break;
         }
     }
 
-    for (size_t extNdx = 0; extNdx < extensions.size(); extNdx++)
+    for (size_t extNdx = 0; extNdx < extensionNames.size(); extNdx++)
     {
-        const auto &extName = extensions[extNdx].extensionName;
+        const auto &extName = extensionNames[extNdx];
 
         excludeExtension = false;
 
         // VK_EXT_buffer_device_address is deprecated and must not be enabled if VK_KHR_buffer_device_address is enabled
-        if (khrBufferDeviceAddress && strcmp(extName, "VK_EXT_buffer_device_address") == 0)
+        if (khrBufferDeviceAddress && strcmp(extName.c_str(), "VK_EXT_buffer_device_address") == 0)
             continue;
 
         for (int exclusionsNdx = 0; exclusionsNdx < DE_LENGTH_OF_ARRAY(exclusions); exclusionsNdx++)
         {
-            if (strcmp(extName, exclusions[exclusionsNdx]) == 0)
+            if (strcmp(extName.c_str(), exclusions[exclusionsNdx]) == 0)
             {
                 excludeExtension = true;
                 break;
@@ -151,7 +162,7 @@ vector<string> filterExtensions(const vector<VkExtensionProperties> &extensions)
 
         for (int extGroupNdx = 0; extGroupNdx < DE_LENGTH_OF_ARRAY(extensionGroups); extGroupNdx++)
         {
-            if (deStringBeginsWith(extName, extensionGroups[extGroupNdx]))
+            if (deStringBeginsWith(extName.c_str(), extensionGroups[extGroupNdx]))
                 enabledExtensions.push_back(extName);
         }
     }
@@ -808,7 +819,8 @@ InstCaps::InstCaps(const PlatformInterface &vkPlatform, const tcu::CommandLine &
     , deviceVersions(determineDeviceVersions(vkPlatform, usedInstanceVersion, commandLine))
     , usedApiVersion(sanitizeApiVersion(minVulkanAPIVersion(usedInstanceVersion, deviceVersions.first)))
     , coreExtensions(addCoreInstanceExtensions(
-          filterExtensions(enumerateInstanceExtensionProperties(vkPlatform, nullptr)), usedApiVersion))
+          filterExtensions(getExtensionNames(enumerateInstanceExtensionProperties(vkPlatform, nullptr))),
+          usedApiVersion))
     , id(id_)
     , m_extensions()
 {
@@ -852,9 +864,9 @@ ContextManager::ContextManager(const PlatformInterface &vkPlatform, const tcu::C
     , m_physicalDevice(chooseDevice(*m_instanceInterface, *m_instance, m_commandLine))
     , m_deviceVersion(getPhysicalDeviceProperties(*m_instanceInterface, m_physicalDevice).apiVersion)
     , m_maxCustomDevices(maxCustomDevices)
-    , m_deviceExtensions(addCoreDeviceExtensions(
-          filterExtensions(enumerateDeviceExtensionProperties(*m_instanceInterface, m_physicalDevice, nullptr)),
-          m_usedApiVersion))
+    , m_deviceExtensions(addCoreDeviceExtensions(filterExtensions(getExtensionNames(enumerateDeviceExtensionProperties(
+                                                     *m_instanceInterface, m_physicalDevice, nullptr))),
+                                                 m_usedApiVersion))
     , m_creationExtensions(removeCoreExtensions(m_usedApiVersion, m_deviceExtensions))
     , m_deviceFeaturesPtr(new DeviceFeatures(*m_instanceInterface, m_usedApiVersion, m_physicalDevice,
                                              m_instanceExtensions, m_deviceExtensions))

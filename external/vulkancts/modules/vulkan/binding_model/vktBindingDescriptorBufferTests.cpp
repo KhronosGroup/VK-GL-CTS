@@ -3425,7 +3425,8 @@ void DescriptorBufferTestInstance::createDescriptorSetLayouts()
 
         dsl.layout = createDescriptorSetLayout(*m_deviceInterface, *m_device, &createInfo);
 
-        if (!dsl.usePushDescriptors)
+        // VUID-vkGetDescriptorSetLayoutSizeEXT-layout-11812
+        if (!dsl.usePushDescriptors && !dsl.hasEmbeddedImmutableSamplers)
         {
             m_deviceInterface->getDescriptorSetLayoutSizeEXT(*m_device, *dsl.layout, &dsl.sizeOfLayout);
 

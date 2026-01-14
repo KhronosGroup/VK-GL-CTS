@@ -172,7 +172,9 @@ void registerOptions(de::cmdline::Parser &parser)
                                                                         {"xml-caselist", RUNMODE_DUMP_XML_CASELIST},
                                                                         {"txt-caselist", RUNMODE_DUMP_TEXT_CASELIST},
                                                                         {"stdout-caselist", RUNMODE_DUMP_STDOUT_CASELIST},
-                                                                        {"amber-verify", RUNMODE_VERIFY_AMBER_COHERENCY}};
+                                                                        {"amber-verify", RUNMODE_VERIFY_AMBER_COHERENCY},
+                                                                        {"txt-trie", RUNMODE_DUMP_TEXT_TRIE},
+                                                                        {"stdout-trie", RUNMODE_DUMP_STDOUT_TRIE}};
     static const NamedValue<WindowVisibility> s_visibilites[]        = {{"windowed", WINDOWVISIBILITY_WINDOWED},
                                                                         {"fullscreen", WINDOWVISIBILITY_FULLSCREEN},
                                                                         {"hidden", WINDOWVISIBILITY_HIDDEN}};
@@ -720,14 +722,14 @@ static void parseSimpleCaseList(vector<CaseTreeNode *> &nodeStack, std::istream 
     string line;
 
     // Outer loop to iterate every line.
-    for (;;)
+    while (in.good())
     {
-        if (!in)
+        std::getline(in, line);
+        if (in.fail())
             break;
 
-        std::getline(in, line);
         trimString(line);
-        if (line.empty())
+        if (line.empty() || line.front() == '#') // Ignore empty lines and comments.
             continue;
 
         std::istringstream inputLine(line);

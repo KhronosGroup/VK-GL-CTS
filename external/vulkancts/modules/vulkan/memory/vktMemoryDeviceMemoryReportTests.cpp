@@ -2076,8 +2076,8 @@ tcu::TestStatus testImportAndUnimportExternalMemory(Context &context,
 
     recorder.setCallbackMarker(MARKER_UNKNOWN);
 
-    bool allocateEvent      = false;
-    bool freeEvent          = false;
+    bool allocateOrImport   = false;
+    bool freeOrUnimport     = false;
     bool importA            = false;
     bool importB            = false;
     bool unimportA          = false;
@@ -2089,18 +2089,19 @@ tcu::TestStatus testImportAndUnimportExternalMemory(Context &context,
         const VkDeviceMemoryReportCallbackDataEXT &record = iter->first;
         const CallbackMarker marker                       = iter->second;
 
-        if (record.objectHandle == objectHandle && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT)
+        if (record.objectHandle == objectHandle && (record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_ALLOCATE_EXT ||
+                                                    record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT))
         {
             TCU_CHECK(marker == MARKER_ALLOCATE);
             TCU_CHECK(record.objectType == VK_OBJECT_TYPE_DEVICE_MEMORY);
-            TCU_CHECK(memoryObjectId == 0);
+            TCU_CHECK(memoryObjectId == 0 || memoryObjectId == record.memoryObjectId);
             TCU_CHECK(record.memoryObjectId != 0);
             TCU_CHECK_MSG(record.size >= requirements.size, ("size: record=" + de::toString(record.size) +
                                                              ", requirements=" + de::toString(requirements.size))
                                                                 .c_str());
 
-            allocateEvent  = true;
-            memoryObjectId = record.memoryObjectId;
+            allocateOrImport = true;
+            memoryObjectId   = record.memoryObjectId;
         }
         else if (record.objectHandle == objectHandleA && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_IMPORT_EXT)
         {
@@ -2150,7 +2151,9 @@ tcu::TestStatus testImportAndUnimportExternalMemory(Context &context,
 
             unimportA = true;
         }
-        else if (record.objectHandle == objectHandle && record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT)
+        else if (record.objectHandle == objectHandle &&
+                 (record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_FREE_EXT ||
+                  record.type == VK_DEVICE_MEMORY_REPORT_EVENT_TYPE_UNIMPORT_EXT))
         {
             TCU_CHECK(marker == MARKER_FREE);
             TCU_CHECK_MSG(record.memoryObjectId == memoryObjectId,
@@ -2158,16 +2161,16 @@ tcu::TestStatus testImportAndUnimportExternalMemory(Context &context,
                            ", original=" + de::toString(memoryObjectId))
                               .c_str());
 
-            freeEvent = true;
+            freeOrUnimport = true;
         }
     }
 
-    TCU_CHECK(allocateEvent);
+    TCU_CHECK(allocateOrImport);
     TCU_CHECK(importA);
     TCU_CHECK(importB);
     TCU_CHECK(unimportB);
     TCU_CHECK(unimportA);
-    TCU_CHECK(freeEvent);
+    TCU_CHECK(freeOrUnimport);
 
     return tcu::TestStatus::pass("Pass");
 }

@@ -208,6 +208,7 @@ enum TestType
     TEST_TYPE_AV1_DECODE_CDEF_10,
     TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10,
     TEST_TYPE_AV1_DECODE_ARGON_TEST_787,
+    TEST_TYPE_AV1_DECODE_GOLDEN_FRAME,
 
     TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8,
 
@@ -370,6 +371,9 @@ static const char *testTypeToStr(TestType type)
     case TEST_TYPE_AV1_DECODE_CDEF_10:
         testName = "cdef_10";
         break;
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
+        testName = "golden_frame";
+        break;
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
         testName = "argon_filmgrain_10_test1019";
         break;
@@ -510,6 +514,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
     case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
     case TEST_TYPE_AV1_DECODE_CDEF_10:
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
@@ -642,6 +647,8 @@ struct DecodeTestParam
     {TEST_TYPE_AV1_DECODE_LOSSLESS_10, {CLIP_AV1_DEC_LOSSLESS_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_LOOPFILTER_10, {CLIP_AV1_DEC_LOOPFILTER_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_CDEF_10, {CLIP_AV1_DEC_CDEF_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_GOLDEN_FRAME,
+     {CLIP_AV1_DEC_FRAMES_REFS_SHORT_SIGNALING_GOLDEN, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::UseInlineSessionParams}},
     {TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::ResetCodecNoSessionParams}},
 
@@ -1821,6 +1828,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
     case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
     case TEST_TYPE_AV1_DECODE_CDEF_10:
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     {

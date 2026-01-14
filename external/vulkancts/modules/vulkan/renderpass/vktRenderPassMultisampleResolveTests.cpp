@@ -275,62 +275,29 @@ Move<VkImage> MultisampleRenderPassTestBase::createImage(VkSampleCountFlagBits s
 Move<VkImage> MultisampleRenderPassTestBase::createImage(VkSampleCountFlagBits sampleCountBit, VkImageUsageFlags usage,
                                                          uint32_t width, uint32_t height, uint32_t mipLevels) const
 {
-    const InstanceInterface &vki    = m_context.getInstanceInterface();
-    const DeviceInterface &vkd      = m_context.getDeviceInterface();
-    VkDevice device                 = m_context.getDevice();
-    VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
-    const tcu::TextureFormat format(mapVkFormat(m_format));
+    const DeviceInterface &vkd = m_context.getDeviceInterface();
+    VkDevice device            = m_context.getDevice();
     const VkImageType imageType(VK_IMAGE_TYPE_2D);
     const VkImageTiling imageTiling(VK_IMAGE_TILING_OPTIMAL);
-    const VkFormatProperties formatProperties(getPhysicalDeviceFormatProperties(vki, physicalDevice, m_format));
     const VkExtent3D imageExtent = {width, height, 1u};
 
-    try
-    {
-        const VkImageFormatProperties imageFormatProperties(
-            getPhysicalDeviceImageFormatProperties(vki, physicalDevice, m_format, imageType, imageTiling, usage, 0u));
-        const auto isDSFormat = (tcu::hasDepthComponent(format.order) || tcu::hasStencilComponent(format.order));
+    const VkImageCreateInfo pCreateInfo{VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
+                                        nullptr,
+                                        0u,
+                                        imageType,
+                                        m_format,
+                                        imageExtent,
+                                        mipLevels,
+                                        totalLayers(),
+                                        sampleCountBit,
+                                        imageTiling,
+                                        usage,
+                                        VK_SHARING_MODE_EXCLUSIVE,
+                                        0u,
+                                        nullptr,
+                                        VK_IMAGE_LAYOUT_UNDEFINED};
 
-        if (isDSFormat &&
-            (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_DEPTH_STENCIL_ATTACHMENT_BIT) == 0)
-            TCU_THROW(NotSupportedError, "Format can't be used as depth stencil attachment");
-
-        if (!isDSFormat && (formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
-            TCU_THROW(NotSupportedError, "Format can't be used as color attachment");
-
-        if (imageFormatProperties.maxExtent.width < imageExtent.width ||
-            imageFormatProperties.maxExtent.height < imageExtent.height ||
-            ((imageFormatProperties.sampleCounts & m_sampleCount) == 0) ||
-            imageFormatProperties.maxArrayLayers < m_layerCount)
-        {
-            TCU_THROW(NotSupportedError, "Image type not supported");
-        }
-
-        const VkImageCreateInfo pCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
-                                               nullptr,
-                                               0u,
-                                               imageType,
-                                               m_format,
-                                               imageExtent,
-                                               mipLevels,
-                                               totalLayers(),
-                                               sampleCountBit,
-                                               imageTiling,
-                                               usage,
-                                               VK_SHARING_MODE_EXCLUSIVE,
-                                               0u,
-                                               nullptr,
-                                               VK_IMAGE_LAYOUT_UNDEFINED};
-
-        return ::createImage(vkd, device, &pCreateInfo);
-    }
-    catch (const vk::Error &error)
-    {
-        if (error.getError() == VK_ERROR_FORMAT_NOT_SUPPORTED)
-            TCU_THROW(NotSupportedError, "Image format not supported");
-
-        throw;
-    }
+    return ::createImage(vkd, device, &pCreateInfo);
 }
 
 vector<VkImageSp> MultisampleRenderPassTestBase::createImages(VkSampleCountFlagBits sampleCountBit,
@@ -3071,6 +3038,35 @@ void checkSupport(Context &context, TestConfigType config)
     if (config.testType == MAX_ATTACHMENTS &&
         config.attachmentCount > properties.limits.maxPerStageDescriptorInputAttachments)
         TCU_THROW(NotSupportedError, "Required number of per stage descriptor input attachments not supported.");
+
+    auto usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (config.testType == MAX_ATTACHMENTS)
+        usage |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
+    try
+    {
+        const VkFormatProperties formatProperties(
+            getPhysicalDeviceFormatProperties(vki, physicalDevice, config.format));
+        const VkImageFormatProperties imageFormatProperties(getPhysicalDeviceImageFormatProperties(
+            vki, physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u));
+
+        if ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0)
+            TCU_THROW(NotSupportedError, "Format can't be used as color attachment");
+
+        if (imageFormatProperties.maxExtent.width < config.width ||
+            imageFormatProperties.maxExtent.height < config.height ||
+            ((imageFormatProperties.sampleCounts & config.sampleCount) == 0) ||
+            imageFormatProperties.maxArrayLayers < config.layerCount)
+        {
+            TCU_THROW(NotSupportedError, "Image type not supported");
+        }
+    }
+    catch (const vk::Error &error)
+    {
+        if (error.getError() == VK_ERROR_FORMAT_NOT_SUPPORTED)
+            TCU_THROW(NotSupportedError, "Image format not supported");
+        throw;
+    }
 }
 
 std::string formatToName(VkFormat format)

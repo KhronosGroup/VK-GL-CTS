@@ -5553,10 +5553,14 @@ void TessellationGeometryShaderTestInstance::createPipeline(void)
 
     std::vector<VkPushConstantRange> pcRanges;
 
+    std::vector<VkDescriptorSetLayout> setLayouts;
     if (m_parametersGraphic.noColorAttachments)
-        pcRanges.push_back(makePushConstantRange(VK_SHADER_STAGE_FRAGMENT_BIT, kFloatSize, kFloatSize));
+    {
+        DE_ASSERT(*m_depthsBufferSetLayout != VK_NULL_HANDLE);
+        setLayouts.push_back(*m_depthsBufferSetLayout);
+    }
 
-    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(std::vector<VkDescriptorSetLayout>(), de::sizeU32(pcRanges),
+    const PipelineLayoutCreateInfo pipelineLayoutCreateInfo(setLayouts, de::sizeU32(pcRanges),
                                                             de::dataOrNull(pcRanges));
 
     m_pipelineLayout = createPipelineLayout(vk, device, &pipelineLayoutCreateInfo);
@@ -5627,6 +5631,7 @@ tcu::TestStatus TessellationGeometryShaderTestInstance::executeTest(void)
     const VkDeviceSize vertexBufferOffset = 0u;
     const BufferPtr vertexBufferSp        = creatAndFillVertexBuffer();
     const VkBuffer vertexBuffer           = vertexBufferSp->object();
+    const bool useFragDepth               = m_parametersGraphic.noColorAttachments;
 
     const Unique<VkCommandBuffer> cmdBuffer(
         allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
@@ -5657,6 +5662,13 @@ tcu::TestStatus TessellationGeometryShaderTestInstance::executeTest(void)
             vk.cmdBeginQuery(*cmdBuffer, *queryPool, i, (VkQueryControlFlags)0u);
             vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBuffer, &vertexBufferOffset);
             vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipeline);
+
+            if (useFragDepth)
+            {
+                DE_ASSERT(m_depthsBufferSet.get() != VK_NULL_HANDLE);
+                vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *m_pipelineLayout, 0u, 1u,
+                                         &m_depthsBufferSet.get(), 0u, nullptr);
+            }
 
             for (uint64_t j = 0; j < m_drawRepeats[i]; ++j)
                 draw(*cmdBuffer);

@@ -274,17 +274,16 @@ PipelineConstructionType getConstructionTypeFromRobustnessCase(PipelineRobustnes
 
 VkFlags getAllShaderStages(tcu::TestContext &testCtx)
 {
-    return testCtx.getCommandLine().isComputeOnly() ?
-               VK_SHADER_STAGE_COMPUTE_BIT :
-               VK_SHADER_STAGE_COMPUTE_BIT | VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT;
+    DE_UNREF(testCtx);
+
+    return VK_SHADER_STAGE_ALL;
 }
 
 VkFlags getAllPipelineStages(tcu::TestContext &testCtx)
 {
-    return testCtx.getCommandLine().isComputeOnly() ?
-               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT :
-               VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_SHADER_BIT |
-                   VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT | VK_PIPELINE_STAGE_VERTEX_INPUT_BIT;
+    DE_UNREF(testCtx);
+
+    return VK_PIPELINE_STAGE_ALL_COMMANDS_BIT;
 }
 
 struct CaseDef
@@ -308,6 +307,7 @@ struct CaseDef
     uint32_t imageDim[3]; // width, height, depth or layers
     bool readOnly;
     bool uses64BitIndexing;
+    bool useComputeQueue;
 
     bool needsScalarBlockLayout() const
     {
@@ -721,6 +721,9 @@ void RobustnessExtsTestCase::checkSupport(Context &context) const
     if (m_data.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
 #endif
+
+    if (m_data.useComputeQueue && (context.getComputeQueueFamilyIndex() == -1))
+        TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
 }
 
 void generateLayout(Layout &layout, const CaseDef &caseDef)
@@ -2123,7 +2126,16 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         // Create a buffer to hold data for all descriptors.
         VkDeviceSize size = de::max((VkDeviceSize)(m_data.bufferLen ? m_data.bufferLen : 1), (VkDeviceSize)256);
 
-        VkBufferUsageFlags usage = VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        VkBufferUsageFlags usage = 0;
+        if ((m_data.stage == STAGE_COMPUTE) || (m_data.stage == STAGE_RAYGEN))
+        {
+            usage |= VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
+        }
+        else
+        {
+            usage |= VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+        }
+
         if (m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER ||
             m_data.descriptorType == VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER_DYNAMIC)
         {
@@ -2172,7 +2184,8 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
         }
     }
 
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const uint32_t queueFamilyIndex =
+        m_data.useComputeQueue ? m_context.getComputeQueueFamilyIndex() : m_context.getUniversalQueueFamilyIndex();
 
     Move<VkDescriptorSetLayout> descriptorSetLayoutR64;
     Move<VkDescriptorPool> descriptorPoolR64;
@@ -3355,7 +3368,7 @@ tcu::TestStatus RobustnessExtsTestInstance::iterate(void)
 
     memBarrier.srcAccessMask = VK_ACCESS_TRANSFER_WRITE_BIT;
     memBarrier.dstAccessMask = VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT;
-    if (!m_context.getTestContext().getCommandLine().isComputeOnly())
+    if (!m_context.getTestContext().getCommandLine().isComputeOnly() && !m_data.useComputeQueue)
         memBarrier.dstAccessMask |= VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT;
     vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, m_data.allPipelineStages, 0, 1, &memBarrier, 0,
                           nullptr, 0, nullptr);
@@ -3785,6 +3798,13 @@ std::string getGPLSuffix(PipelineRobustnessCase prCase)
     return "";
 }
 
+std::string getQueueSufix(uint32_t queue)
+{
+    if (queue)
+        return "_compute";
+    return "";
+}
+
 } // namespace
 
 static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipelineRobustness, bool uses64BitIndexing)
@@ -3870,6 +3890,11 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
         // raygen
         {STAGE_RAYGEN, "rgen"},
 #endif
+    };
+
+    TestGroupCase queueCases[] = {
+        {0, ""},
+        {1, "compute"},
     };
 
     TestGroupCase volCases[] = {
@@ -4144,38 +4169,52 @@ static void createTests(tcu::TestCaseGroup *group, bool robustness2, bool pipeli
 
                                                     for (const auto &pipelineRobustnessCase : pipelineRobustnessCases)
                                                     {
-                                                        CaseDef c = {
-                                                            (VkFormat)fmtCases[fmtNdx].count, // VkFormat format;
-                                                            currentStage,                     // Stage stage;
-                                                            allShaderStages,   // VkFlags allShaderStages;
-                                                            allPipelineStages, // VkFlags allPipelineStages;
-                                                            (int)descCases[descNdx]
-                                                                .count, // VkDescriptorType descriptorType;
-                                                            (VkImageViewType)viewCases[viewNdx]
-                                                                .count, // VkImageViewType viewType;
-                                                            (VkSampleCountFlagBits)sampCases[sampNdx]
-                                                                .count, // VkSampleCountFlagBits samples;
-                                                            (int)lenCases[lenNdx].count,        // int bufferLen;
-                                                            (bool)unrollCases[unrollNdx].count, // bool unroll;
-                                                            (bool)volCases[volNdx].count,       // bool vol;
-                                                            (bool)(lenCases[lenNdx].count ==
-                                                                   ~0U),                    // bool nullDescriptor
-                                                            (bool)tempCases[tempNdx].count, // bool useTemplate
-                                                            (bool)fmtQualCases[fmtQualNdx]
-                                                                .count,                     // bool formatQualifier
-                                                            (bool)pushCases[pushNdx].count, // bool pushDescriptor;
-                                                            (bool)robustness2,              // bool testRobustness2;
-                                                            pipelineRobustnessCase, // PipelineRobustnessCase pipelineRobustnessCase;
-                                                            {imageDim[0], imageDim[1],
-                                                             imageDim[2]}, // uint32_t imageDim[3];
-                                                            (bool)(readOnlyCases[roNdx].count == 1), // bool readOnly;
-                                                            uses64BitIndexing, // bool uses64BitIndexing;
-                                                        };
+                                                        for (int queueNdx = 0;
+                                                             queueNdx < DE_LENGTH_OF_ARRAY(queueCases); queueNdx++)
+                                                        {
+                                                            if (((currentStage != STAGE_COMPUTE) &&
+                                                                 (currentStage != STAGE_RAYGEN)) &&
+                                                                (queueNdx == 1))
+                                                                continue;
 
-                                                        const auto name = stageCases[stageNdx].name +
-                                                                          getGPLSuffix(pipelineRobustnessCase);
-                                                        viewGroup->addChild(
-                                                            new RobustnessExtsTestCase(testCtx, name, c));
+                                                            CaseDef c = {
+                                                                (VkFormat)fmtCases[fmtNdx].count, // VkFormat format;
+                                                                currentStage,                     // Stage stage;
+                                                                allShaderStages,   // VkFlags allShaderStages;
+                                                                allPipelineStages, // VkFlags allPipelineStages;
+                                                                (int)descCases[descNdx]
+                                                                    .count, // VkDescriptorType descriptorType;
+                                                                (VkImageViewType)viewCases[viewNdx]
+                                                                    .count, // VkImageViewType viewType;
+                                                                (VkSampleCountFlagBits)sampCases[sampNdx]
+                                                                    .count, // VkSampleCountFlagBits samples;
+                                                                (int)lenCases[lenNdx].count,        // int bufferLen;
+                                                                (bool)unrollCases[unrollNdx].count, // bool unroll;
+                                                                (bool)volCases[volNdx].count,       // bool vol;
+                                                                (bool)(lenCases[lenNdx].count ==
+                                                                       ~0U),                    // bool nullDescriptor
+                                                                (bool)tempCases[tempNdx].count, // bool useTemplate
+                                                                (bool)fmtQualCases[fmtQualNdx]
+                                                                    .count,                     // bool formatQualifier
+                                                                (bool)pushCases[pushNdx].count, // bool pushDescriptor;
+                                                                (bool)robustness2,              // bool testRobustness2;
+                                                                pipelineRobustnessCase, // PipelineRobustnessCase pipelineRobustnessCase;
+                                                                {imageDim[0], imageDim[1],
+                                                                 imageDim[2]}, // uint32_t imageDim[3];
+                                                                (bool)(readOnlyCases[roNdx].count ==
+                                                                       1),         // bool readOnly;
+                                                                uses64BitIndexing, // bool uses64BitIndexing;
+                                                                (bool)queueCases[queueNdx]
+                                                                    .count, // bool useComputeQueue
+                                                            };
+
+                                                            const auto name = stageCases[stageNdx].name +
+                                                                              getGPLSuffix(pipelineRobustnessCase) +
+                                                                              getQueueSufix(queueCases[queueNdx].count);
+
+                                                            viewGroup->addChild(
+                                                                new RobustnessExtsTestCase(testCtx, name, c));
+                                                        }
                                                     }
                                                 }
                                                 sampGroup->addChild(viewGroup.release());
