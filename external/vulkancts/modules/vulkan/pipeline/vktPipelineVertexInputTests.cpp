@@ -3096,18 +3096,22 @@ void createVertexInputTests(tcu::TestCaseGroup *vertexInputTests, PipelineConstr
 {
     // Uses one attribute
     addTestGroup(vertexInputTests, "single_attribute", createSingleAttributeTests, pipelineConstructionType);
-    // Uses more than one attribute
-    addTestGroup(vertexInputTests, "multiple_attributes", createMultipleAttributeTests, pipelineConstructionType);
-    // Implementations can use as many vertex input attributes as they advertise
-    addTestGroup(vertexInputTests, "max_attributes", createMaxAttributeTests, pipelineConstructionType);
+    if (!isConstructionTypeShaderObject(pipelineConstructionType))
+    {
+        // Uses more than one attribute
+        addTestGroup(vertexInputTests, "multiple_attributes", createMultipleAttributeTests, pipelineConstructionType);
+        // Implementations can use as many vertex input attributes as they advertise
+        addTestGroup(vertexInputTests, "max_attributes", createMaxAttributeTests, pipelineConstructionType);
+    }
+
     // Uses formats that has more components than shader expects (legal for 64-bit)
     addTestGroup(vertexInputTests, "component_mismatch", createComponentMismatchTests, pipelineConstructionType);
+
     // Miscellaneous tests.
     addTestGroup(vertexInputTests, "misc", createMiscVertexInputTests, pipelineConstructionType);
 
     if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
-        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
-        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY)
     {
         addTestGroup(vertexInputTests, "legacy_vertex_attributes", createLegacyVertexAttributesTests,
                      pipelineConstructionType);

@@ -97,13 +97,6 @@ CustomInstance createInstanceWithWsi(Context &context, const Extensions &support
     return vkt::createCustomInstanceWithExtensions(context, extensions);
 }
 
-vk::VkPhysicalDeviceFeatures getDeviceNullFeatures(void)
-{
-    vk::VkPhysicalDeviceFeatures features;
-    deMemset(&features, 0, sizeof(features));
-    return features;
-}
-
 vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkInstance instance,
                                            const vk::InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                            const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
@@ -114,7 +107,10 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
     const vk::VkDeviceQueueCreateInfo queueInfos[] = {{vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, nullptr,
                                                        (vk::VkDeviceQueueCreateFlags)0, queueFamilyIndex,
                                                        DE_LENGTH_OF_ARRAY(queuePriorities), &queuePriorities[0]}};
-    const vk::VkPhysicalDeviceFeatures features    = getDeviceNullFeatures();
+
+    vk::VkPhysicalDeviceFeatures2 features                                            = vk::initVulkanStructure();
+    vk::VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR fifoLatestReadyFeatures = vk::initVulkanStructure();
+    fifoLatestReadyFeatures.presentModeFifoLatestReady                                = VK_TRUE;
 
     std::vector<const char *> extensions;
     extensions.push_back("VK_KHR_swapchain");
@@ -125,8 +121,14 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
     if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_swapchain_colorspace")))
         extensions.push_back("VK_EXT_swapchain_colorspace");
 
+    if (isExtensionStructSupported(supportedExtensions, vk::RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
+    {
+        extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
+        features.pNext = &fifoLatestReadyFeatures;
+    }
+
     const vk::VkDeviceCreateInfo deviceParams = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                                 nullptr,
+                                                 &features,
                                                  (vk::VkDeviceCreateFlags)0,
                                                  DE_LENGTH_OF_ARRAY(queueInfos),
                                                  &queueInfos[0],
@@ -134,7 +136,7 @@ vk::Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk:
                                                  nullptr,
                                                  static_cast<uint32_t>(extensions.size()),
                                                  extensions.data(),
-                                                 &features};
+                                                 nullptr};
 
     for (size_t ndx = 0; ndx < extensions.size(); ++ndx)
     {

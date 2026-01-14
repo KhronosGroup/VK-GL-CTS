@@ -260,6 +260,9 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
                 if (!checkImageFormatFeatureSupport(instance, physicalDevice, storageFormat,
                                                     VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
                     TCU_THROW(NotSupportedError, "Device does not support storage-compatible format for plane");
+
+                if (storageFormat != planeFormat)
+                    imageSparseInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
             }
         }
         else
@@ -267,6 +270,10 @@ tcu::TestStatus ImageSparseMemoryAliasingInstance::iterate(void)
             if (!checkImageFormatFeatureSupport(instance, physicalDevice, imageSparseInfo.format,
                                                 VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
                 TCU_THROW(NotSupportedError, "Device does not support image format for storage image");
+
+            const VkFormat storageFormat = getStorageCompatibleFormat(imageSparseInfo.format);
+            if (storageFormat != imageSparseInfo.format)
+                imageSparseInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
         }
 
         {

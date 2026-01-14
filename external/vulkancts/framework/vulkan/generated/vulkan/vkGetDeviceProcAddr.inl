@@ -858,6 +858,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBuildClusterAccelerationStructureIndirectNV",
 		"vkGetClusterAccelerationStructureBuildSizesNV",
 
+		// "VK_NV_compute_occupancy_priority
+		"vkCmdSetComputeOccupancyPriorityNV",
+
 		// "VK_NV_cooperative_matrix
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesNV",
 
@@ -972,11 +975,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_OHOS_external_memory
 		"vkGetMemoryNativeBufferOHOS",
 		"vkGetNativeBufferPropertiesOHOS",
-
-		// "VK_OHOS_native_buffer
-		"vkAcquireImageOHOS",
-		"vkGetSwapchainGrallocUsageOHOS",
-		"vkQueueSignalReleaseImageOHOS",
 
 		// "VK_OHOS_surface
 		"vkCreateSurfaceOHOS",

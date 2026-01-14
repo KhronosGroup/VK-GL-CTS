@@ -2145,7 +2145,7 @@ struct VkDataGraphPipelineInfoARM
 struct VkDataGraphPipelinePropertyQueryResultARM
 {
 	VkStructureType					sType;
-	const void*						pNext;
+	void*							pNext;
 	VkDataGraphPipelinePropertyARM	property;
 	VkBool32						isText;
 	size_t							dataSize;
@@ -2174,7 +2174,7 @@ struct VkDataGraphPipelineCreateInfoARM
 struct VkDataGraphPipelineSessionBindPointRequirementARM
 {
 	VkStructureType								sType;
-	const void*									pNext;
+	void*										pNext;
 	VkDataGraphPipelineSessionBindPointARM		bindPoint;
 	VkDataGraphPipelineSessionBindPointTypeARM	bindPointType;
 	uint32_t									numObjects;
@@ -6368,6 +6368,20 @@ struct VkPhysicalDeviceMultiviewFeatures
 	VkBool32		multiviewTessellationShader;
 };
 
+struct VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewRenderAreas;
+};
+
+struct VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		multiviewPerViewViewports;
+};
+
 struct VkPhysicalDeviceMultiviewProperties
 {
 	VkStructureType	sType;
@@ -8525,7 +8539,7 @@ struct VkQueryPoolVideoEncodeFeedbackCreateInfoKHR
 struct VkQueueFamilyDataGraphProcessingEnginePropertiesARM
 {
 	VkStructureType						sType;
-	const void*							pNext;
+	void*								pNext;
 	VkExternalSemaphoreHandleTypeFlags	foreignSemaphoreHandleTypes;
 	VkExternalMemoryHandleTypeFlags		foreignMemoryHandleTypes;
 };
@@ -8533,7 +8547,7 @@ struct VkQueueFamilyDataGraphProcessingEnginePropertiesARM
 struct VkQueueFamilyDataGraphPropertiesARM
 {
 	VkStructureType									sType;
-	const void*										pNext;
+	void*											pNext;
 	VkPhysicalDeviceDataGraphProcessingEngineARM	engine;
 	VkPhysicalDeviceDataGraphOperationSupportARM	operation;
 };
@@ -8652,6 +8666,14 @@ struct VkDisplayPresentInfoKHR
 	VkRect2D		srcRect;
 	VkRect2D		dstRect;
 	VkBool32		persistent;
+};
+
+struct VkMultiviewPerViewRenderAreasRenderPassBeginInfoQCOM
+{
+	VkStructureType	sType;
+	const void*		pNext;
+	uint32_t		perViewRenderAreaCount;
+	const VkRect2D*	pPerViewRenderAreas;
 };
 
 struct VkPipelineDiscardRectangleStateCreateInfoEXT

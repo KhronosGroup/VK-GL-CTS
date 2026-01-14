@@ -319,6 +319,26 @@ static const char *argonTest787[10] = {
     "58cf033ef8015fc3a34d8e2f1213d160",
 };
 
+static const char *framesRefsShortSignalingGoldenAV1[50] = {
+    "46a894ab2f032aafdc9be1381d05e9a6", "542162d6ce7a1aa824a5f9add38b3709", "f878e83734305b2399e21e5478d8cef3",
+    "663bc3f73e129c3f2bb79de303265d38", "dc6f4321e3db636f3e2befead000e212", "632be885a79c525478d0dbe12681f62a",
+    "794a6b61f939befb1aca1071f344b927", "b9aec565ffc850a7cfa3b17e8d84dc36", "813f8ee91696e412e79ea2f84a3bab18",
+    "bb8943c7e11b6e1ee934bacf4301761b", "909473d5aa319d023fa830773d42c4ad", "696a2955744365af30b60a6525ef56ac",
+    "143fc1076aa4a2e3c4bf99d804973e71", "d9849595f9cef7b41e811f0faa16dcde", "fbc8168c0c3ebe7318886088f8a5dbdd",
+    "a386e1a18eeef1f5a65f113d1875f687", "592e2cfb7f8d7ad5ef1a851010d84090", "dc0f457032ccc8da93bc0d4eb08fef35",
+    "d3f122cc9a5327373901d782037222c0", "d32222e940ab4127cfdd409a1564cabf", "884bea381248b6c9c0804f647ddee529",
+    "ed617d1d89881f1f2ae902d30bd572ee", "e369f0aec55407f9de56656b874ab2c8", "8ddfa674d19abcea587cbb7f01a52ed6",
+    "12d7edd3e42ded29fcb6ae4490f3d234", "d54ce33678597cdae77a28ae9e0b7307", "b2afe865c504702a901ccf6de3b4da26",
+    "1788c91878d60ac328960c674ce2e95e", "65dcae05b3d7500c1f96c34eb963c603", "88bf3750f4dbb525fdd9c70045cba430",
+    "bf872db3b00f5211a04f6618d40f5975", "26f10b51a3ba6209ad9cc43c6afba667", "c629ca9c0660e171d0673fd634f7b117",
+    "c5268f6c62bae612cd45608e242e4f90", "c2b2bf90776e2fa3eebde291ab7fe430", "b65e01017dcded33de2a2f281b1d5c9d",
+    "c2d818cf68b8f2c0d3ccd3e208ced157", "81247ac5d6c727e44c9a7ceac614e6f1", "1f899ed5263f26c1dc3be159902a1094",
+    "83b775d8e7f9adcce0ad1c70a7654fde", "75cc465bdb91e454ebb271ff4cc73862", "f1d6b8a25fffbb3e731605b40adf736d",
+    "034e591a744844c56d6a791642603769", "e3cba2e6a170e185f4fc006f6dfce15b", "8e5dfd74ed44d5f7cdc7715320a1db32",
+    "ea737ffb328383adf208fc1bc6c4a25c", "040320c0824e3c2fbf4c21d6fd56b02d", "e339131d9e7a49e3371f87b939faf6a2",
+    "6482aa78a277eeaf54129f1eac7b69b9", "f90462195c0777d9a1c51eac974bcda2",
+};
+
 static const char *vp9Key[10] = {
     "22d7a1f4c4de3090b8f355dbc868155d", "1ba2c3e6afd30d9eb39a56e65580f4d7", "068513b8d436c718fe4ab43d224cc644",
     "6d19ebf4967334a205d9b9f95fea9c3c", "ebeb6c20c0ef9df90aeb720e45921472", "b38a9add57304c9201c8535313b43cf5",
@@ -830,6 +850,18 @@ static ClipInfo Clips[] = {
         10,
         0,
         argonTest787,
+    },
+    {
+        CLIP_AV1_DEC_FRAMES_REFS_SHORT_SIGNALING_GOLDEN,
+        "av1/av1-frames_refs_short_signaling_golden.ivf",
+        {AV1_420_8BIT_MAIN_DECODE_PROFILE},
+        ElementaryStreamFraming::IVF,
+        640,
+        360,
+        0,
+        50,
+        0,
+        framesRefsShortSignalingGoldenAV1,
     },
     {
         CLIP_VP9_DEC_KEYFRAME_10,

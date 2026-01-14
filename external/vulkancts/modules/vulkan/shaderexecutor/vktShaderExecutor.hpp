@@ -90,6 +90,21 @@ enum
     EXTRA_RESOURCES_DESCRIPTOR_SET_INDEX = 1,
 };
 
+//! User queue
+struct UserQueue
+{
+    vk::VkQueue queue;
+    uint32_t queueFamilyIndex;
+
+    UserQueue(vk::VkQueue _queue, uint32_t _queueFamilyIndex) : queue(_queue), queueFamilyIndex(_queueFamilyIndex)
+    {
+    }
+
+    UserQueue(void) : queue(VK_NULL_HANDLE), queueFamilyIndex(VK_QUEUE_FAMILY_IGNORED)
+    {
+    }
+};
+
 //! Base class for shader executor.
 class ShaderExecutor
 {
@@ -130,7 +145,8 @@ private:
 bool executorSupported(glu::ShaderType shaderType);
 void generateSources(glu::ShaderType shaderType, const ShaderSpec &shaderSpec, vk::SourceCollections &dst);
 ShaderExecutor *createExecutor(Context &context, glu::ShaderType shaderType, const ShaderSpec &shaderSpec,
-                               vk::VkDescriptorSetLayout extraResourcesLayout = VK_NULL_HANDLE);
+                               vk::VkDescriptorSetLayout extraResourcesLayout = VK_NULL_HANDLE,
+                               const UserQueue &userQueue                     = UserQueue());
 void checkSupportShader(Context &context, const glu::ShaderType shaderType);
 
 } // namespace shaderexecutor

@@ -3120,102 +3120,64 @@ VkImageAspectFlags getImageAspectFlags(VkFormat format)
     return aspectFlags;
 }
 
-TestStatus runAndVerifyUnusedVariablePipeline(Context &context, UnusedVariableContext unusedVariableContext)
-{
-    return runAndVerifyDefaultPipeline(context, unusedVariableContext.instanceContext);
-}
-
-TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instance)
+void defaultCheckSupport(Context &context, InstanceContext instance)
 {
     if (getMinRequiredVulkanVersion(instance.resources.spirvVersion) > context.getEquivalentApiVersion())
     {
-        TCU_THROW(NotSupportedError,
-                  string("Vulkan higher than or equal to " +
-                         getVulkanName(getMinRequiredVulkanVersion(instance.resources.spirvVersion)) +
-                         " is required for this test to run")
-                      .c_str());
+        auto vulkanName = getVulkanName(getMinRequiredVulkanVersion(instance.resources.spirvVersion));
+        auto msg        = string("Vulkan higher than or equal to ") + vulkanName + " is required for this test to run";
+        TCU_THROW(NotSupportedError, msg.c_str());
     }
 
-    const DeviceInterface &vk               = context.getDeviceInterface();
-    const InstanceInterface &vkInstance     = context.getInstanceInterface();
-    const VkPhysicalDevice vkPhysicalDevice = context.getPhysicalDevice();
-    const uint32_t queueFamilyIndex         = context.getUniversalQueueFamilyIndex();
-    const VkQueue queue                     = context.getUniversalQueue();
-    const VkDevice &device                  = context.getDevice();
-    Allocator &allocator                    = context.getDefaultAllocator();
-    vector<ModuleHandleSp> modules;
-    map<VkShaderStageFlagBits, VkShaderModule> moduleByStage;
-    const uint32_t fullRenderSize    = 256;
-    const uint32_t quarterRenderSize = 64;
-    const tcu::UVec2 renderSize(fullRenderSize, fullRenderSize);
-    const int testSpecificSeed     = 31354125;
-    const int seed                 = context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
-    bool supportsGeometry          = false;
-    bool supportsTessellation      = false;
-    bool hasGeometry               = false;
-    bool hasTessellation           = false;
-    const bool hasPushConstants    = !instance.pushConstants.empty();
-    const uint32_t numInResources  = static_cast<uint32_t>(instance.resources.inputs.size());
-    const uint32_t numOutResources = static_cast<uint32_t>(instance.resources.outputs.size());
-    const uint32_t numResources    = numInResources + numOutResources;
-    const bool needInterface       = !instance.interfaces.empty();
     const VkPhysicalDeviceFeatures &features = context.getDeviceFeatures();
-    const Vec4 defaulClearColor(0.125f, 0.25f, 0.75f, 1.0f);
-    bool splitRenderArea = instance.splitRenderArea;
-
-    const uint32_t renderDimension = splitRenderArea ? quarterRenderSize : fullRenderSize;
-    const int numRenderSegments    = splitRenderArea ? 4 : 1;
-
-    supportsGeometry     = features.geometryShader == VK_TRUE;
-    supportsTessellation = features.tessellationShader == VK_TRUE;
-    hasGeometry          = (instance.requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT);
-    hasTessellation      = (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
-                      (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
+    const bool supportsGeometry              = features.geometryShader == VK_TRUE;
+    const bool supportsTessellation          = features.tessellationShader == VK_TRUE;
+    const bool hasGeometry                   = (instance.requiredStages & VK_SHADER_STAGE_GEOMETRY_BIT);
+    const bool hasTessellation = (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
+                                 (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
     if (hasGeometry && !supportsGeometry)
-    {
         TCU_THROW(NotSupportedError, "Geometry not supported");
-    }
 
     if (hasTessellation && !supportsTessellation)
-    {
         TCU_THROW(NotSupportedError, "Tessellation not supported");
+
+    // Check all required extensions are supported
+    for (const auto &req : instance.requiredDeviceExtensions)
+    {
+        if (!de::contains(context.getDeviceExtensions(), req))
+            TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + req).c_str());
     }
 
 #ifndef CTS_USES_VULKANSC
     if (instance.resources.uses64BitIndexing && !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
-    {
         TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
-    }
-#endif
 
-    // Check all required extensions are supported
-    for (std::vector<std::string>::const_iterator i = instance.requiredDeviceExtensions.begin();
-         i != instance.requiredDeviceExtensions.end(); ++i)
+    if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset"))
     {
-        if (!de::contains(context.getDeviceExtensions().begin(), context.getDeviceExtensions().end(), *i))
-            TCU_THROW(NotSupportedError, (std::string("Extension not supported: ") + *i).c_str());
-    }
-
-#ifndef CTS_USES_VULKANSC
-    if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
-        !context.getPortabilitySubsetFeatures().mutableComparisonSamplers)
-    {
-        // In portability when mutableComparisonSamplers is false then
-        // VkSamplerCreateInfo can't have compareEnable set to true
-        for (uint32_t inputNdx = 0; inputNdx < numInResources; ++inputNdx)
+        if (!context.getPortabilitySubsetFeatures().mutableComparisonSamplers)
         {
-            const Resource &resource = instance.resources.inputs[inputNdx];
-            const bool hasSampler    = (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
-                                    (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_SAMPLER) ||
-                                    (resource.getDescriptorType() == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
-            if (hasSampler && tcu::hasDepthComponent(vk::mapVkFormat(instance.resources.inputFormat).order))
+            // In portability when mutableComparisonSamplers is false then
+            // VkSamplerCreateInfo can't have compareEnable set to true
+            const uint32_t numInResources = static_cast<uint32_t>(instance.resources.inputs.size());
+            for (uint32_t inputNdx = 0; inputNdx < numInResources; ++inputNdx)
             {
-                TCU_THROW(
-                    NotSupportedError,
-                    "VK_KHR_portability_subset: mutableComparisonSamplers are not supported by this implementation");
+                const Resource &resource = instance.resources.inputs[inputNdx];
+                auto dt                  = resource.getDescriptorType();
+                const bool hasSampler    = (dt == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ||
+                                        (dt == VK_DESCRIPTOR_TYPE_SAMPLER) ||
+                                        (dt == VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+                if (hasSampler && tcu::hasDepthComponent(vk::mapVkFormat(instance.resources.inputFormat).order))
+                {
+                    TCU_THROW(NotSupportedError,
+                              "VK_KHR_portability_subset: mutableComparisonSamplers are not supported");
+                }
             }
         }
+
+        const uint32_t stride = instance.interfaces.getInputType().getNumBytes();
+        if ((stride % context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0)
+            DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
     }
 #endif // CTS_USES_VULKANSC
 
@@ -3223,12 +3185,12 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         VulkanFeatures localRequired = instance.requestedFeatures;
 
         const VkShaderStageFlags vertexPipelineStoresAndAtomicsAffected =
-            vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT |
-            vk::VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | vk::VK_SHADER_STAGE_GEOMETRY_BIT;
+            VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT |
+            VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT | VK_SHADER_STAGE_GEOMETRY_BIT;
 
         // reset fragment stores and atomics feature requirement
         if ((localRequired.coreFeatures.fragmentStoresAndAtomics != false) &&
-            (instance.customizedStages & vk::VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
+            (instance.customizedStages & VK_SHADER_STAGE_FRAGMENT_BIT) == 0)
         {
             localRequired.coreFeatures.fragmentStoresAndAtomics = false;
         }
@@ -3247,30 +3209,69 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
     }
 
     // Check Interface Input/Output formats are supported
-    if (needInterface)
+    if (!instance.interfaces.empty())
     {
+        const InstanceInterface &vkInstance     = context.getInstanceInterface();
+        const VkPhysicalDevice vkPhysicalDevice = context.getPhysicalDevice();
+        const auto format                       = instance.interfaces.getOutputType().getVkFormat();
+        const std::string formatName            = getFormatName(format);
         VkFormatProperties formatProperties;
-        vkInstance.getPhysicalDeviceFormatProperties(vkPhysicalDevice, instance.interfaces.getInputType().getVkFormat(),
-                                                     &formatProperties);
+
+        vkInstance.getPhysicalDeviceFormatProperties(vkPhysicalDevice, format, &formatProperties);
         if ((formatProperties.bufferFeatures & VK_FORMAT_FEATURE_VERTEX_BUFFER_BIT) == 0)
         {
-            std::string error            = "Interface Input format (";
-            const std::string formatName = getFormatName(instance.interfaces.getInputType().getVkFormat());
+            std::string error = "Interface Input format (";
             error += formatName + ") not supported";
             TCU_THROW(NotSupportedError, error.c_str());
         }
 
-        vkInstance.getPhysicalDeviceFormatProperties(
-            vkPhysicalDevice, instance.interfaces.getOutputType().getVkFormat(), &formatProperties);
         if (((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) == 0) ||
             ((formatProperties.optimalTilingFeatures & VK_FORMAT_FEATURE_TRANSFER_SRC_BIT) == 0))
         {
-            std::string error            = "Interface Output format (";
-            const std::string formatName = getFormatName(instance.interfaces.getInputType().getVkFormat());
+            std::string error = "Interface Output format (";
             error += formatName + ") not supported";
             TCU_THROW(NotSupportedError, error.c_str());
         }
+
+        // Check the usage bits on the given image format are supported.
+        const auto tiling = VK_IMAGE_TILING_OPTIMAL;
+        const auto usage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        requireFormatUsageSupport(vkInstance, vkPhysicalDevice, format, tiling, usage);
     }
+}
+
+TestStatus runAndVerifyUnusedVariablePipeline(Context &context, UnusedVariableContext unusedVariableContext)
+{
+    return runAndVerifyDefaultPipeline(context, unusedVariableContext.instanceContext);
+}
+
+TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instance)
+{
+    const DeviceInterface &vk       = context.getDeviceInterface();
+    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = context.getUniversalQueue();
+    const VkDevice &device          = context.getDevice();
+    Allocator &allocator            = context.getDefaultAllocator();
+    vector<ModuleHandleSp> modules;
+    map<VkShaderStageFlagBits, VkShaderModule> moduleByStage;
+    const uint32_t fullRenderSize    = 256;
+    const uint32_t quarterRenderSize = 64;
+    const tcu::UVec2 renderSize(fullRenderSize, fullRenderSize);
+    const int testSpecificSeed     = 31354125;
+    const int seed                 = context.getTestContext().getCommandLine().getBaseSeed() ^ testSpecificSeed;
+    const bool hasPushConstants    = !instance.pushConstants.empty();
+    const uint32_t numInResources  = static_cast<uint32_t>(instance.resources.inputs.size());
+    const uint32_t numOutResources = static_cast<uint32_t>(instance.resources.outputs.size());
+    const uint32_t numResources    = numInResources + numOutResources;
+    const bool needInterface       = !instance.interfaces.empty();
+    const Vec4 defaulClearColor(0.125f, 0.25f, 0.75f, 1.0f);
+    bool splitRenderArea = instance.splitRenderArea;
+
+    const uint32_t renderDimension = splitRenderArea ? quarterRenderSize : fullRenderSize;
+    const int numRenderSegments    = splitRenderArea ? 4 : 1;
+
+    const bool hasTessellation = (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT) ||
+                                 (instance.requiredStages & VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT);
 
     de::Random(seed).shuffle(instance.inputColors, instance.inputColors + 4);
     de::Random(seed).shuffle(instance.outputColors, instance.outputColors + 4);
@@ -3448,10 +3449,6 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         // Create an additional image and backing memory for attachment.
         // Reuse the previous imageParams since we only need to change the image format.
         imageParams.format = instance.interfaces.getOutputType().getVkFormat();
-
-        // Check the usage bits on the given image format are supported.
-        requireFormatUsageSupport(vkInstance, vkPhysicalDevice, imageParams.format, imageParams.tiling,
-                                  imageParams.usage);
 
         fragOutputImage = createImage(vk, device, &imageParams);
         fragOutputImageMemory =
@@ -4142,22 +4139,14 @@ TestStatus runAndVerifyDefaultPipeline(Context &context, InstanceContext instanc
         // this value is usually 4 and current tests meet this requirement but
         // if this changes in future then this limit should be verified in checkSupport
         const uint32_t stride = instance.interfaces.getInputType().getNumBytes();
-#ifndef CTS_USES_VULKANSC
-        if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
-            ((stride % context.getPortabilitySubsetProperties().minVertexInputBindingStrideAlignment) != 0))
-        {
-            DE_FATAL("stride is not multiply of minVertexInputBindingStrideAlignment");
-        }
-#endif // CTS_USES_VULKANSC
-
-        const VkVertexInputBindingDescription vertexBinding1 = {
+        const VkVertexInputBindingDescription vertexBinding1{
             1u,                         // uint32_t binding;
             stride,                     // uint32_t strideInBytes;
             VK_VERTEX_INPUT_RATE_VERTEX // VkVertexInputStepRate stepRate;
         };
         vertexBindings.push_back(vertexBinding1);
 
-        VkVertexInputAttributeDescription attr = {
+        VkVertexInputAttributeDescription attr{
             2u,                                               // uint32_t location;
             1u,                                               // uint32_t binding;
             instance.interfaces.getInputType().getVkFormat(), // VkFormat format;
@@ -4883,8 +4872,8 @@ void createTestForStage(vk::VkShaderStageFlagBits stage, const std::string &name
 
     ctx.renderFullSquare = renderFullSquare;
     ctx.splitRenderArea  = splitRenderArea;
-    addFunctionCaseWithPrograms<InstanceContext>(tests, name, stageData.initProgramsFn, runAndVerifyDefaultPipeline,
-                                                 ctx);
+    addFunctionCaseWithPrograms<InstanceContext>(tests, name, defaultCheckSupport, stageData.initProgramsFn,
+                                                 runAndVerifyDefaultPipeline, ctx);
 }
 
 void createTestsForAllStages(const std::string &name, const RGBA (&inputColors)[4], const RGBA (&outputColors)[4],

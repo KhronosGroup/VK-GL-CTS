@@ -469,8 +469,6 @@ DiscardRectanglesTestInstance::DiscardRectanglesTestInstance(Context &context, T
 tcu::TestStatus DiscardRectanglesTestInstance::iterate(void)
 {
     const DeviceInterface &vk                            = m_context.getDeviceInterface();
-    const InstanceInterface &vki                         = m_context.getInstanceInterface();
-    const VkPhysicalDevice physicalDevice                = m_context.getPhysicalDevice();
     const VkDevice device                                = m_context.getDevice();
     const VkQueue queue                                  = m_context.getUniversalQueue();
     const uint32_t queueFamilyIndex                      = m_context.getUniversalQueueFamilyIndex();
@@ -484,40 +482,6 @@ tcu::TestStatus DiscardRectanglesTestInstance::iterate(void)
     const VkFormat colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
     const VkDeviceSize colorBufferSize =
         m_renderSize.x() * m_renderSize.y() * tcu::getPixelSize(mapVkFormat(colorFormat));
-
-    // Check for VK_EXT_discard_rectangles support and maximum number of active discard rectangles
-    {
-        VkPhysicalDeviceDiscardRectanglePropertiesEXT discardRectangleProperties;
-        deMemset(&discardRectangleProperties, 0, sizeof(VkPhysicalDeviceDiscardRectanglePropertiesEXT));
-        discardRectangleProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DISCARD_RECTANGLE_PROPERTIES_EXT;
-
-        VkPhysicalDeviceProperties2 physicalDeviceProperties;
-        physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-        physicalDeviceProperties.pNext = &discardRectangleProperties;
-
-        vki.getPhysicalDeviceProperties2(physicalDevice, &physicalDeviceProperties);
-
-        if (discardRectangleProperties.maxDiscardRectangles == 0)
-        {
-            throw tcu::NotSupportedError("Implementation doesn't support discard rectangles");
-        }
-
-        if (discardRectangleProperties.maxDiscardRectangles < 4)
-        {
-            std::ostringstream message;
-            message << "Implementation doesn't support the minimum value for maxDiscardRectangles: "
-                    << discardRectangleProperties.maxDiscardRectangles << " < 4";
-            return tcu::TestStatus::fail(message.str());
-        }
-
-        if (discardRectangleProperties.maxDiscardRectangles < m_params.numRectangles)
-        {
-            std::ostringstream message;
-            message << "Implementation doesn't support the required number of discard rectangles: "
-                    << discardRectangleProperties.maxDiscardRectangles << " < " << m_params.numRectangles;
-            throw tcu::NotSupportedError(message.str());
-        }
-    }
 
     // Color attachment
     {
@@ -803,6 +767,28 @@ void DiscardRectanglesTestCase::checkSupport(Context &context) const
     context.requireDeviceFunctionality("VK_EXT_discard_rectangles");
     if (m_params.groupParams->useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    // Check for VK_EXT_discard_rectangles support and maximum number of active discard rectangles
+    VkPhysicalDeviceDiscardRectanglePropertiesEXT discardRectangleProperties = initVulkanStructure();
+    VkPhysicalDeviceProperties2 physicalDeviceProperties = initVulkanStructure(&discardRectangleProperties);
+
+    vki.getPhysicalDeviceProperties2(physicalDevice, &physicalDeviceProperties);
+
+    if (discardRectangleProperties.maxDiscardRectangles == 0)
+    {
+        throw tcu::NotSupportedError("Implementation doesn't support discard rectangles");
+    }
+
+    if (discardRectangleProperties.maxDiscardRectangles < m_params.numRectangles)
+    {
+        std::ostringstream message;
+        message << "Implementation doesn't support the required number of discard rectangles: "
+                << discardRectangleProperties.maxDiscardRectangles << " < " << m_params.numRectangles;
+        throw tcu::NotSupportedError(message.str());
+    }
 }
 
 TestInstance *DiscardRectanglesTestCase::createInstance(Context &context) const

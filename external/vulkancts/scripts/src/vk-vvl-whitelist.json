@@ -24,32 +24,18 @@
         {
             "groups": [
                 "dEQP-VK.inding_model.unused_invalid_descriptor.write.unused.*",
-                "dEQP-VK.binding_model.unused_invalid_descriptor.copy.*"
-            ],
-            "messages": [
-                "VUID-vkCmdDispatch-None-08114"
-            ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline, is declared in pipeline layout and not written to descriptor set or was destroyed before copying to destination set. Producing this error is intentional"
-        },
-        {
-            "groups": [
-                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.storage_image"
-            ],
-            "messages": [
-                "VUID-vkCmdDispatch-format-07753"
-            ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional"
-        },
-        {
-            "groups": [
+                "dEQP-VK.binding_model.unused_invalid_descriptor.copy.*",
+                "dEQP-VK.binding_model.unused_invalid_descriptor.write.invail.storage_image",
                 "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.sampled_image",
                 "dEQP-VK.binding_model.unused_invalid_descriptor.write.invalid.combined_image_sampler"
             ],
             "messages": [
+                "VUID-vkCmdDispatch-None-08114",
+                "VUID-vkCmdDispatch-format-07753",
                 "VUID-RuntimeSpirv-samples-08725",
                 "VUID-VkImageCreateInfo-samples-02258"
             ],
-            "description": "Tests checks if implementation do not fall over if binding, which is not used in the pipeline and is other than declared in pipeline layout. Producing this error is intentional"
+            "description": "Tests verify implementations handle unused bindings with invalid or mismatched descriptors (not written, destroyed, wrong format, or type mismatch). Producing these errors is intentional"
         },
         {
             "groups": [
@@ -71,30 +57,15 @@
         },
         {
             "groups": [
-                "dEQP-VK.pipeline.*.extended_dynamic_state.mesh_shader.*.null_*"
-            ],
-            "messages": [
-                "vkCreateGraphicsPipelines(): pCreateInfos[0].pMultisampleState is NULL, but pipeline is being created with fragment shader that uses samples"
-            ],
-            "description": "Warning about null at pMultisampleState  with pipeline that uses samples, however, this behavior is intentional"
-        },
-        {
-            "groups": [
+                "dEQP-VK.pipeline.*.extended_dynamic_state.mesh_shader.*.null_*",
                 "dEQP-VK.pipeline.*.extended_dynamic_state.*.null_multisample_state*"
             ],
             "messages": [
-                "VUID-VkGraphicsPipelineCreateInfo-renderpass-06631"
-            ],
-            "description": "Warning about null pMultisampleState when alphaToOne feature is disabled but VK_DYNAMIC_STATE_ALPHA_TO_COVERAGE_ENABLE_EXT is not dynamic, this behavior is intentional"
-        },
-        {
-            "groups": [
-                "dEQP-VK.pipeline.*.extended_dynamic_state.*.null_multisample_state_no_alpha_to_one"
-            ],
-            "messages": [
+                "vkCreateGraphicsPipelines(): pCreateInfos[0].pMultisampleState is NULL, but pipeline is being created with fragment shader that uses samples",
+                "VUID-VkGraphicsPipelineCreateInfo-renderpass-06631",
                 "VUID-VkGraphicsPipelineCreateInfo-multisampledRenderToSingleSampled-06853"
             ],
-            "description": "Warning about sample count mismatch between static pipeline (4 samples) and renderpass (1 sample) for 'to_one' sample transitions, however, this behavior is intentional"
+            "description": "Tests intentionally use null pMultisampleState with extended dynamic state to test various edge cases including alpha coverage, sample count mismatches, and mesh shader pipelines"
         },
         {
             "groups": [
@@ -171,7 +142,7 @@
                 "VUID-VkImageMemoryBarrier-subresourceRange-01725",
                 "VUID-vkCmdDraw-None-09600"
             ],
-            "description": "TODO raport validaiton layers issue in 3D layered rendering tests when using 3D images with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT"
+            "description": "TODO raport validaiton layers issue in 3D layered rendering tests when using 3D images with VK_IMAGE_CREATE_2D_ARRAY_COMPATIBLE_BIT without maintenance9. See https://gitlab.khronos.org/vulkan/vulkan/-/issues/4308"
         },
         {
             "groups": [
@@ -219,38 +190,43 @@
         },
         {
             "groups": [
-                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial00",
-                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial01",
-                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial02",
-                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial03",
-                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_partial04"
+                "dEQP-VK.subgroups.subgroup_uniform_control_flow.large_partial_control.subgroup_reconverge_*",
+                "dEQP-VK.reconvergence.subgroup_uniform_control_flow_elect.compute.*",
+                "dEQP-VK.reconvergence.subgroup_uniform_control_flow_ballot.compute.*"
             ],
             "messages": [
-                "VUID-vkCmdPipelineBarrier-srcAccessMask-02815",
-                "VUID-vkCmdPipelineBarrier-dstAccessMask-02816",
-                "VUID-VkPipelineShaderStageCreateInfo-flags-02759"
+                "VUID-VkPipelineShaderStageCreateInfo-flags-02759",
+                "VUID-VkPipelineShaderStageCreateInfo-pNext-02757"
             ],
-            "description": "Partial subgroup tests intentionally use workgroup size that is not a multiple of subgroup size, TODO 02815 and 02816 are validation layers issue in google amber shader test framework"
+            "description": "Partial subgroup tests intentionally use workgroup size that is not a multiple of subgroup size"
         },
         {
             "groups": [
                 "dEQP-VK.query_pool.statistics_query.*.*_with_no_color_attachments",
-                "dEQP-VK.shader_object.rendering.color_attachment_count_0.*.extra_output_*"
+                "dEQP-VK.shader_object.rendering.color_attachment_count_0.*.extra_output_*",
+                "dEQP-VK.renderpasses.dynamic_rendering.primary_cmd_buff.basic.partial_binding_depth_stencil",
+                "dEQP-VK.renderpasses.dynamic_rendering.*.local_read.unused_writen_discarded",
+                "dEQP-VK.renderpasses.dynamic_rendering.*.local_read.remap_single_attachment_monolithic",
+                "dEQP-VK.renderpasses.dynamic_rendering.*.local_read.remap_single_attachment_fast_lib",
+                "dEQP-VK.renderpasses.dynamic_rendering.*.dithering.*"
             ],
             "messages": [
                 "Undefined-Value-ShaderOutputNotConsumed",
                 "Undefined-Value-ShaderOutputNotConsumed-DynamicRendering"
             ],
-            "description": "Tests intentionally create pipelines with no color attachments while fragment shaders still write to output"
+            "description": "Tests intentionally write fragment shader outputs when no color attachments are bound or when attachments are set to VK_ATTACHMENT_UNUSED"
         },
         {
             "groups": [
-                "dEQP-VK.renderpasses.dynamic_rendering.primary_cmd_buff.basic.partial_binding_depth_stencil"
+                "dEQP-VK.renderpasses.dynamic_rendering.*.local_read.null_color_attachment_location_with_*",
+                "dEQP-VK.renderpasses.dynamic_rendering.*.local_read.interaction_with_color_write_enable",
+                "dEQP-VK.renderpasses.dynamic_rendering.*.local_read.interaction_with_extended_dynamic_state3"
             ],
             "messages": [
-                "Undefined-Value-ShaderOutputNotConsumed-DynamicRendering"
+                "VUID-vkCmdBeginRendering-pRenderingInfo-09592",
+                "VUID-vkCmdDraw-None-09548"
             ],
-            "description": "Partial binding depth/stencil test intentionally writes to color outputs when no color attachments are bound, testing depth/stencil-only rendering"
+            "description": "Tests intentionally use non-identity or NULL color attachment location mapping, causing expected pipeline/runtime state mismatch"
         },
         {
             "groups": [
@@ -358,11 +334,13 @@
                 "dEQP-VK.binding_model.descriptor_buffer.traditional_buffer.capture_replay.*"
             ],
             "messages": [
-                "VUID-VkOpaqueCaptureDescriptorDataCreateInfoEXT-opaqueCaptureDescriptorData-parameter"
+                "VUID-VkOpaqueCaptureDescriptorDataCreateInfoEXT-opaqueCaptureDescriptorData-parameter",
+                "VUID-vkGetSamplerOpaqueCaptureDescriptorDataEXT-pData-parameter",
+                "VUID-vkGetBufferOpaqueCaptureDescriptorDataEXT-pData-parameter"
             ],
             "description": "TODO clearyfy Vulkan spec .Capture/replay tests may pass NULL opaqueCaptureDescriptorData when imageViewCaptureReplayDescriptorDataSize is 0, indicating the implementation requires no capture data. Validation layer requires non-NULL pointer even when size is 0"
         },
-        {
+         {
             "groups": [
                 "dEQP-VK.protected_memory.image.access.misc.maintenance5_no_protected_access"
             ],
@@ -370,6 +348,26 @@
                 "VUID-vkCmdDraw-None-09600"
             ],
             "description": "TODO report validation layer bug in maintenance5 protected memory test using VK_PIPELINE_CREATE_NO_PROTECTED_ACCESS_BIT_EXT. Validation layer incorrectly reports image layout mismatch even though image is properly transitioned to GENERAL layout"
+        },
+        {
+            "groups": [
+                "dEQP-VK.renderpasses.dynamic_rendering.primary_cmd_buff.random.*",
+                "dEQP-VK.renderpasses.dynamic_rendering.partial_secondary_cmd_buff.fragment_density_map.offset.*suspend_resume*"
+            ],
+            "messages": [
+                "VUID-vkCmdExecuteCommands-pCommandBuffers-06021"
+            ],
+            "description": "TODO report validation layer bug when using secondary command buffers with suspended/resumed render passes. The action commands are recorded inside the render pass, not between the suspend and resume operations. The validation layer incorrectly flags this as a violation"
+        },
+        {
+            "groups": [
+                "dEQP-VK.tessellation.misc_draw.tess_factor_barrier_bug"
+            ],
+            "messages": [
+                "VUID-vkFreeCommandBuffers-pCommandBuffers-00047",
+                "VUID-vkDestroyDevice-device-05137"
+            ],
+            "description": "Test intentionally stresses tessellation factor barrier. On some drivers this causes device loss, leaving resources in pending state during cleanup"
         }
     ]
 }

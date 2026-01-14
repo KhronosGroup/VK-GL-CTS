@@ -2262,6 +2262,282 @@ void IdenticallyDefinedLayoutTestCases::checkSupport(Context &context) const
     context.requireDeviceFunctionality("VK_KHR_maintenance5");
 }
 
+class PipelineColorWriteMaskNoneTestInstance : public vkt::TestInstance
+{
+public:
+    PipelineColorWriteMaskNoneTestInstance(Context &context, const PipelineConstructionType pipelineConstructionType)
+        : vkt::TestInstance(context)
+        , m_pipelineConstructionType(pipelineConstructionType)
+    {
+    }
+    ~PipelineColorWriteMaskNoneTestInstance(void)
+    {
+    }
+    tcu::TestStatus iterate(void) override;
+
+private:
+    const PipelineConstructionType m_pipelineConstructionType;
+};
+
+tcu::TestStatus PipelineColorWriteMaskNoneTestInstance::iterate(void)
+{
+    const auto &vki                 = m_context.getInstanceInterface();
+    const auto physDevice           = m_context.getPhysicalDevice();
+    const auto &vk                  = m_context.getDeviceInterface();
+    const VkDevice device           = m_context.getDevice();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = m_context.getUniversalQueue();
+    auto &alloc                     = m_context.getDefaultAllocator();
+    auto &log                       = m_context.getTestContext().getLog();
+
+    const uint32_t renderSize = 16u;
+
+    VkBufferCreateInfo bufferCreateInfo1 =
+        makeBufferCreateInfo(64, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    VkBufferCreateInfo bufferCreateInfo2 = makeBufferCreateInfo(64, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
+    BufferWithMemory payloadBuffer(vk, device, alloc, bufferCreateInfo1,
+                                   MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    BufferWithMemory ssboBuffer(vk, device, alloc, bufferCreateInfo2, MemoryRequirement::HostVisible);
+
+    VkBufferDeviceAddressInfo bufferDeviceAddressInfo = {
+        VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, // VkStructureType	sType;
+        nullptr,                                      // const void*		pNext;
+        *payloadBuffer,                               // VkBuffer		    buffer;
+    };
+    VkDeviceAddress payloadAddress  = vk.getBufferDeviceAddress(device, &bufferDeviceAddressInfo);
+    VkDeviceAddress *ssboBufferData = (VkDeviceAddress *)ssboBuffer.getAllocation().getHostPtr();
+    *ssboBufferData                 = payloadAddress;
+
+    VkImageCreateInfo imageCreateInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType			sType;
+        nullptr,                             // const void*				pNext;
+        (VkImageCreateFlags)0u,              // VkImageCreateFlags		flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType				imageType;
+        VK_FORMAT_B8G8R8A8_UNORM,            // VkFormat				    format;
+        {renderSize, renderSize, 1u},        // VkExtent3D				extent;
+        1u,                                  // uint32_t				    mipLevels;
+        1u,                                  // uint32_t				    arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits	samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling			tiling;
+        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, // VkImageUsageFlags		usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode			sharingMode;
+        0u,                                  // uint32_t				    queueFamilyIndexCount;
+        nullptr,                             // const uint32_t*			pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout			initialLayout;
+    };
+    ImageWithMemory colorImage(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any);
+    Move<VkImageView> colorImageView =
+        makeImageView(vk, device, *colorImage, VK_IMAGE_VIEW_TYPE_2D, imageCreateInfo.format,
+                      makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+
+    imageCreateInfo.usage = VK_IMAGE_USAGE_SAMPLED_BIT;
+    ImageWithMemory image(vk, device, alloc, imageCreateInfo, MemoryRequirement::Any);
+
+    Move<VkImageView> imageView = makeImageView(vk, device, *image, VK_IMAGE_VIEW_TYPE_2D, imageCreateInfo.format,
+                                                makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+
+    const VkSamplerCreateInfo samplerCreateInfo = {
+        VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,   // VkStructureType sType;
+        nullptr,                                 // const void* pNext;
+        (VkSamplerCreateFlags)0,                 // VkSamplerCreateFlags flags;
+        VK_FILTER_NEAREST,                       // VkFilter magFilter;
+        VK_FILTER_NEAREST,                       // VkFilter minFilter;
+        VK_SAMPLER_MIPMAP_MODE_NEAREST,          // VkSamplerMipmapMode mipmapMode;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeU;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeV;
+        VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,   // VkSamplerAddressMode addressModeW;
+        0.0f,                                    // float mipLodBias;
+        VK_FALSE,                                // VkBool32 anisotropyEnable;
+        1.0f,                                    // float maxAnisotropy;
+        VK_FALSE,                                // VkBool32 compareEnable;
+        VK_COMPARE_OP_ALWAYS,                    // VkCompareOp compareOp;
+        0.0f,                                    // float minLod;
+        0.0f,                                    // float maxLod;
+        VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, // VkBorderColor borderColor;
+        VK_FALSE,                                // VkBool32 unnormalizedCoordinates;
+    };
+    Move<VkSampler> sampler = createSampler(vk, device, &samplerCreateInfo);
+
+    vk::DescriptorSetLayoutBuilder layoutBuilder0;
+    layoutBuilder0.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL);
+
+    vk::DescriptorSetLayoutBuilder layoutBuilder1;
+    layoutBuilder1.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_ALL);
+
+    vk::DescriptorSetLayoutBuilder layoutBuilder2;
+    layoutBuilder2.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_ALL);
+
+    auto descriptorSetLayout0 = layoutBuilder0.build(vk, device);
+    auto descriptorSetLayout1 = layoutBuilder1.build(vk, device);
+    auto descriptorSetLayout2 = layoutBuilder2.build(vk, device);
+
+    VkDescriptorSetLayout descriptorSetLayouts[] = {descriptorSetLayout0.get(), descriptorSetLayout1.get(),
+                                                    descriptorSetLayout2.get()};
+    vk::PipelineLayoutWrapper pipelineLayout(m_pipelineConstructionType, vk, device, 3u, descriptorSetLayouts);
+
+    DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u);
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+
+    const auto descriptorPool = poolBuilder.build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2);
+    const auto descriptorSet0 = makeDescriptorSet(vk, device, descriptorPool.get(), *descriptorSetLayout0);
+    const auto descriptorSet2 = makeDescriptorSet(vk, device, descriptorPool.get(), *descriptorSetLayout2);
+
+    DescriptorSetUpdateBuilder updater;
+
+    const auto imageInfo  = makeDescriptorImageInfo(*sampler, *imageView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
+    const auto bufferInfo = makeDescriptorBufferInfo(*ssboBuffer, 0ull, bufferCreateInfo2.size);
+    updater.writeSingle(descriptorSet0.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                        VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &imageInfo);
+    updater.writeSingle(descriptorSet2.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                        VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+
+    updater.update(vk, device);
+
+    RenderPassWrapper renderPass(m_pipelineConstructionType, vk, device, VK_FORMAT_B8G8R8A8_UNORM);
+    renderPass.createFramebuffer(vk, device, *colorImage, *colorImageView, renderSize, renderSize);
+
+    const auto &binaries  = m_context.getBinaryCollection();
+    const auto vertModule = ShaderWrapper(vk, device, binaries.get("vert"));
+    const auto fragModule = ShaderWrapper(vk, device, binaries.get("frag"));
+
+    vk::GraphicsPipelineWrapper pipeline(vki, vk, physDevice, device, m_context.getDeviceExtensions(),
+                                         m_pipelineConstructionType);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+    const std::vector<VkViewport> viewports(1u, makeViewport(renderSize, renderSize));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(renderSize, renderSize));
+
+    VkPipelineColorBlendAttachmentState colorBlendAttachment = {};
+    colorBlendAttachment.colorWriteMask                      = 0x0;
+    VkPipelineColorBlendStateCreateInfo colorBlendState      = initVulkanStructure();
+    colorBlendState.attachmentCount                          = 1u;
+    colorBlendState.pAttachments                             = &colorBlendAttachment;
+
+    VkPipelineMultisampleStateCreateInfo multisampleState = initVulkanStructure();
+    multisampleState.rasterizationSamples                 = VK_SAMPLE_COUNT_1_BIT;
+
+    pipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertModule)
+        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+        .setupFragmentOutputState(*renderPass, 0u, &colorBlendState, &multisampleState)
+        .setMonolithicPipelineLayout(pipelineLayout)
+        .buildPipeline();
+
+    const auto cmdPool      = makeCommandPool(vk, device, queueFamilyIndex);
+    const auto cmdBufferPtr = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+    const auto cmdBuffer    = cmdBufferPtr.get();
+
+    beginCommandBuffer(vk, cmdBuffer);
+    VkImageMemoryBarrier imageMemoryBarrier = makeImageMemoryBarrier(
+        0u, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *image,
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u));
+    vk.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u,
+                          nullptr, 0u, nullptr, 1u, &imageMemoryBarrier);
+    pipeline.bind(cmdBuffer);
+    vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &descriptorSet0.get(),
+                             0u, nullptr);
+    vk.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 2u, 1u, &descriptorSet2.get(),
+                             0u, nullptr);
+    renderPass.begin(vk, cmdBuffer, makeRect2D(renderSize, renderSize), tcu::Vec4(0.0f));
+    vk.cmdDraw(cmdBuffer, 3u, 1u, 0u, 0u);
+    renderPass.end(vk, cmdBuffer);
+    endCommandBuffer(vk, cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, cmdBuffer);
+
+    uint32_t *payloadData = reinterpret_cast<uint32_t *>(payloadBuffer.getAllocation().getHostPtr());
+    invalidateAlloc(vk, device, payloadBuffer.getAllocation());
+    if (payloadData[0] != 2 || payloadData[1] != 3 || payloadData[2] != 4)
+    {
+        log << tcu::TestLog::Message << "Data: " << payloadData[0] << ", " << payloadData[1] << ", " << payloadData[2]
+            << ", expected: 2, 3, 4" << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class PipelineColorWriteMaskNoneTestCase : public vkt::TestCase
+{
+public:
+    PipelineColorWriteMaskNoneTestCase(tcu::TestContext &testCtx, const std::string &name,
+                                       PipelineConstructionType pipelineConstructionType)
+        : vkt::TestCase(testCtx, name)
+        , m_pipelineConstructionType(pipelineConstructionType)
+    {
+    }
+    ~PipelineColorWriteMaskNoneTestCase(void)
+    {
+    }
+    void initPrograms(SourceCollections &programCollection) const override;
+    void checkSupport(Context &context) const override;
+    TestInstance *createInstance(Context &context) const override;
+
+private:
+    const PipelineConstructionType m_pipelineConstructionType;
+};
+
+TestInstance *PipelineColorWriteMaskNoneTestCase::createInstance(Context &context) const
+{
+    return new PipelineColorWriteMaskNoneTestInstance(context, m_pipelineConstructionType);
+}
+
+void PipelineColorWriteMaskNoneTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_buffer_device_address");
+    context.requireDeviceFunctionality("VK_EXT_scalar_block_layout");
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_FRAGMENT_STORES_AND_ATOMICS);
+
+    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                          m_pipelineConstructionType);
+}
+
+void PipelineColorWriteMaskNoneTestCase::initPrograms(SourceCollections &sources) const
+{
+    std::stringstream vert;
+    std::stringstream frag;
+
+    vert << "#version 450\n"
+         << "vec2 vertices[3];\n"
+         << "void main(){\n"
+         << "    vertices[0] = vec2(-1.0, -1.0);\n"
+         << "    vertices[1] = vec2( 1.0, -1.0);\n"
+         << "    vertices[2] = vec2( 0.0,  1.0);\n"
+         << "    gl_Position = vec4(vertices[gl_VertexIndex % 3], 0.0, 1.0);\n"
+         << "}\n";
+
+    frag << "#version 450\n"
+         << "#extension GL_EXT_buffer_reference2 : require\n"
+         << "#extension GL_EXT_scalar_block_layout : require\n"
+         << "\n"
+         << "layout(buffer_reference, buffer_reference_align = 4, scalar) buffer Payload {\n"
+         << "	uvec3 payload[];\n"
+         << "};\n"
+         << "\n"
+         << "layout(set = 2, binding = 0, std430) buffer SSBO {\n"
+         << "	Payload outData[4];\n"
+         << "};\n"
+         << "\n"
+         << "layout(set = 0, binding = 0) uniform sampler2D s;\n"
+         << "layout(location = 0) out vec4 color;\n"
+         << "\n"
+         << "void main()\n"
+         << "{\n"
+         << "	outData[0].payload[0] = uvec3(2, 3, 4);\n"
+         << "	color = texture(s, vec2(0.0));\n"
+         << "}\n";
+
+    const vk::SpirvVersion spirvVersion = vk::SPIRV_VERSION_1_0;
+    vk::ShaderBuildOptions::Flags flags = vk::ShaderBuildOptions::FLAG_ALLOW_SCALAR_OFFSETS;
+
+    sources.glslSources.add("vert") << glu::VertexSource(vert.str());
+    sources.glslSources.add("frag") << glu::FragmentSource(frag.str())
+                                    << vk::ShaderBuildOptions(sources.usedVulkanVersion, spirvVersion, flags);
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx, PipelineConstructionType pipelineConstructionType)
@@ -2339,6 +2615,9 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx, PipelineConstruct
             new PipelineNoRenderingTestCase(testCtx, "no_rendering_unused_attachment", pipelineConstructionType, true));
     }
 #endif
+
+    miscTests->addChild(
+        new PipelineColorWriteMaskNoneTestCase(testCtx, "color_write_mask_none", pipelineConstructionType));
 
     return miscTests.release();
 }

@@ -476,6 +476,16 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_multiview"))
 		addFeatures(&physicalDeviceMultiviewFeatures);
 
+	// VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM for ext [VK_QCOM_multiview_per_view_render_areas]
+	vk::VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM physicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_QCOM_multiview_per_view_render_areas"))
+		addFeatures(&physicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM);
+
+	// VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM for ext [VK_QCOM_multiview_per_view_viewports]
+	vk::VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM physicalDeviceMultiviewPerViewViewportsFeaturesQCOM = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_QCOM_multiview_per_view_viewports"))
+		addFeatures(&physicalDeviceMultiviewPerViewViewportsFeaturesQCOM);
+
 	// VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT, VkPhysicalDeviceMutableDescriptorTypeFeaturesVALVE for ext [VK_VALVE_mutable_descriptor_type, VK_EXT_mutable_descriptor_type]
 	vk::VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT physicalDeviceMutableDescriptorTypeFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_VALVE_mutable_descriptor_type", "VK_EXT_mutable_descriptor_type"))
@@ -2341,6 +2351,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("shaderObject");
 	}
 
+	// VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_QCOM_multiview_per_view_viewports")) )
+	{
+		if ( physicalDeviceMultiviewPerViewViewportsFeaturesQCOM.multiviewPerViewViewports == VK_FALSE )
+			failMesages.push_back("multiviewPerViewViewports");
+	}
+
 	// VkPhysicalDeviceCooperativeVectorFeaturesNV
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_cooperative_vector")) )
 	{
@@ -2381,6 +2398,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceDataGraphFeaturesARM.dataGraph == VK_FALSE )
 			failMesages.push_back("dataGraph");
+	}
+
+	// VkPhysicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_QCOM_multiview_per_view_render_areas")) )
+	{
+		if ( physicalDeviceMultiviewPerViewRenderAreasFeaturesQCOM.multiviewPerViewRenderAreas == VK_FALSE )
+			failMesages.push_back("multiviewPerViewRenderAreas");
 	}
 
 	// VkPhysicalDeviceAttachmentFeedbackLoopDynamicStateFeaturesEXT
