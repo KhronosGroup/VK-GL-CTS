@@ -34,6 +34,10 @@ include(framework/delibs/cmake/CFlags.cmake)
 
 add_definitions(-DDE_ASSERT_FAILURE_CALLBACK)
 
+# enable parallel builds for msbuild
+list(APPEND CMAKE_VS_GLOBALS UseMultiToolTask=true)
+list(APPEND CMAKE_VS_GLOBALS EnforceProcessCountAcrossBuilds=true)
+
 # dEQP-specific configuration. Target file should override these.
 set(DEQP_TARGET_NAME		"UNKNOWN")		# Target name
 

@@ -544,7 +544,7 @@ bool validateFeatureLimits(VkPhysicalDeviceProperties *properties, VkPhysicalDev
                 {
                     log << TestLog::Message << "limit validation failed, " << featureLimitTable[ndx].name
                         << " not valid-limit type bitmask actual is "
-                        << *((uint64_t *)((uint8_t *)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
+                        << *((uint32_t *)((uint8_t *)limits + featureLimitTable[ndx].offset)) << TestLog::EndMessage;
                     limitsOk = false;
                 }
             }
@@ -8516,13 +8516,6 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     }
 
     return tcu::TestStatus::pass("Pass");
-}
-
-std::string getFormatSimpleName(VkFormat format)
-{
-    static size_t prefixLen    = std::strlen("VK_FORMAT_");
-    const std::string fullName = getFormatName(format);
-    return de::toLower(fullName.substr(prefixLen));
 }
 
 } // namespace

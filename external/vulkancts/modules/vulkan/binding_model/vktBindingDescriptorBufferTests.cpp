@@ -3425,12 +3425,16 @@ void DescriptorBufferTestInstance::createDescriptorSetLayouts()
 
         dsl.layout = createDescriptorSetLayout(*m_deviceInterface, *m_device, &createInfo);
 
-        m_deviceInterface->getDescriptorSetLayoutSizeEXT(*m_device, *dsl.layout, &dsl.sizeOfLayout);
-
-        for (auto &binding : dsl.bindings)
+        // VUID-vkGetDescriptorSetLayoutSizeEXT-layout-11812
+        if (!dsl.usePushDescriptors && !dsl.hasEmbeddedImmutableSamplers)
         {
-            m_deviceInterface->getDescriptorSetLayoutBindingOffsetEXT(*m_device, *dsl.layout, binding.binding,
-                                                                      &binding.offset);
+            m_deviceInterface->getDescriptorSetLayoutSizeEXT(*m_device, *dsl.layout, &dsl.sizeOfLayout);
+
+            for (auto &binding : dsl.bindings)
+            {
+                m_deviceInterface->getDescriptorSetLayoutBindingOffsetEXT(*m_device, *dsl.layout, binding.binding,
+                                                                          &binding.offset);
+            }
         }
     }
 }

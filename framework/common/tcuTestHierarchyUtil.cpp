@@ -183,7 +183,8 @@ void writeXmlCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const
 /*--------------------------------------------------------------------*//*!
  * \brief Export the test list of each package into a separate ascii file.
  *//*--------------------------------------------------------------------*/
-void writeTxtCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const CommandLine &cmdLine)
+void writeTxtCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const CommandLine &cmdLine, bool printPrefix,
+                              bool skipGroups)
 {
     DefaultHierarchyInflater inflater(testCtx);
     de::MovePtr<const CaseListFilter> caseListFilter(
@@ -219,8 +220,14 @@ void writeTxtCaselistsToFiles(TestPackageRoot &root, TestContext &testCtx, const
         while (iter.getNode()->getNodeType() != NODETYPE_PACKAGE)
         {
             if (iter.getState() == TestHierarchyIterator::STATE_ENTER_NODE)
-                out << (isTestNodeTypeExecutable(iter.getNode()->getNodeType()) ? "TEST" : "GROUP") << ": "
-                    << iter.getNodePath() << "\n";
+            {
+                const bool isTest = isTestNodeTypeExecutable(iter.getNode()->getNodeType());
+                if (isTest || !skipGroups)
+                {
+                    const char *prefix = (printPrefix ? (isTest ? "TEST: " : "GROUP: ") : "");
+                    out << prefix << iter.getNodePath() << "\n";
+                }
+            }
             iter.next();
         }
 

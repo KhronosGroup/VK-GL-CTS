@@ -812,7 +812,7 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Suppress messages to standard output
 
   -n, --deqp-case=<value>
-    Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*)
+    Test case(s) to run, supports wildcards (e.g. dEQP-GLES2.info.*) and commas to separate multiple patterns
 
   --deqp-caselist=<value>
     Case list to run in trie format (e.g. {dEQP-GLES2{info{version,renderer}}})
@@ -830,7 +830,7 @@ OpenGL and OpenCL parameters not affecting Vulkan API were suppressed.
     Write test results to given file
     default: 'TestResults.qpa'
 
-  --deqp-runmode=[execute|xml-caselist|txt-caselist|stdout-caselist]
+  --deqp-runmode=[execute|xml-caselist|txt-caselist|stdout-caselist|txt-trie|stdout-trie]
     Execute tests, or write list of test cases into a file
     default: 'execute'
 

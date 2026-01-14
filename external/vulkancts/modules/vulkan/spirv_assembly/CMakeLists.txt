@@ -103,6 +103,8 @@ set(DEQP_VK_SPIRV_ASSEMBLY_SRCS
 	vktSpvAsmComputeShaderDerivativesTests.hpp
 	vktSpvAsmLdexpTests.cpp
 	vktSpvAsmLdexpTests.hpp
+	vktSpvAsmOpSelectDifferentStridesTests.cpp
+	vktSpvAsmOpSelectDifferentStridesTests.hpp
 	)
 
 set(DEQP_VK_SPIRV_ASSEMBLY_LIBS

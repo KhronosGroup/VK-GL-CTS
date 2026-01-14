@@ -123,9 +123,13 @@ tcu::TestStatus testShaderAndHostAccess(Context &context)
     const auto bufferAllocation         = buffer->getAllocation();
     uint8_t *bufferHostPtr              = reinterpret_cast<uint8_t *>(bufferAllocation.getHostPtr());
 
-    // find smallest supported integer type
-    VkDeviceSize smallestIntBytes = context.isDeviceFunctionalitySupported("VK_KHR_16bit_storage") ? 2 : 4;
-    smallestIntBytes = context.isDeviceFunctionalitySupported("VK_KHR_8bit_storage") ? 1 : smallestIntBytes;
+    // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+    // VUID-RuntimeSpirv-uniformAndStorageBuffer8BitAccess-06329
+    VkDeviceSize smallestIntBytes = 4;
+    if (context.get16BitStorageFeatures().uniformAndStorageBuffer16BitAccess)
+        smallestIntBytes = 2;
+    if (context.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess)
+        smallestIntBytes = 1;
 
     // clear the buffer to a known bit pattern in each byte (not 0)
     for (VkDeviceSize b = 0; b < bufferSize; ++b)

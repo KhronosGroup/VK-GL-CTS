@@ -1331,20 +1331,21 @@ tcu::TestStatus DGCDrawInstance::iterate(void)
     if (m_params.isShaderObjects())
     {
         vertNormalShader = maybeCreateShader(ctx.vkd, ctx.device, binaries, "vert_normal", VK_SHADER_STAGE_VERTEX_BIT,
-                                             nullptr, tessFeature, geomFeature);
+                                             &pcRange, tessFeature, geomFeature);
         vertFlipShader   = maybeCreateShader(ctx.vkd, ctx.device, binaries, "vert_flip", VK_SHADER_STAGE_VERTEX_BIT,
-                                             nullptr, tessFeature, geomFeature);
+                                             &pcRange, tessFeature, geomFeature);
         tescNormalShader =
             maybeCreateShader(ctx.vkd, ctx.device, binaries, "tesc_normal", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
-                              nullptr, tessFeature, geomFeature);
-        tescFlipShader   = maybeCreateShader(ctx.vkd, ctx.device, binaries, "tesc_flip",
-                                             VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT, nullptr, tessFeature, geomFeature);
+                              &pcRange, tessFeature, geomFeature);
+        tescFlipShader =
+            maybeCreateShader(ctx.vkd, ctx.device, binaries, "tesc_flip", VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                              &pcRange, tessFeature, geomFeature);
         teseShader       = maybeCreateShader(ctx.vkd, ctx.device, binaries, "tese",
-                                             VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, nullptr, tessFeature, geomFeature);
+                                             VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT, &pcRange, tessFeature, geomFeature);
         geomNormalShader = maybeCreateShader(ctx.vkd, ctx.device, binaries, "geom_normal", VK_SHADER_STAGE_GEOMETRY_BIT,
-                                             nullptr, tessFeature, geomFeature);
+                                             &pcRange, tessFeature, geomFeature);
         geomFlipShader   = maybeCreateShader(ctx.vkd, ctx.device, binaries, "geom_flip", VK_SHADER_STAGE_GEOMETRY_BIT,
-                                             nullptr, tessFeature, geomFeature);
+                                             &pcRange, tessFeature, geomFeature);
         fragNormalShader = maybeCreateShader(ctx.vkd, ctx.device, binaries, "frag_normal", VK_SHADER_STAGE_FRAGMENT_BIT,
                                              &pcRange, tessFeature, geomFeature);
         fragAltShader    = maybeCreateShader(ctx.vkd, ctx.device, binaries, "frag_alt", VK_SHADER_STAGE_FRAGMENT_BIT,

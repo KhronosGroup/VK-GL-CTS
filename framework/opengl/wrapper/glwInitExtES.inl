@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 
 if (de::contains(extSet, "GL_KHR_blend_equation_advanced"))
@@ -151,6 +151,11 @@ if (de::contains(extSet, "GL_OES_EGL_image"))
 	gl->eglImageTargetTexture2DOES				= (glEGLImageTargetTexture2DOESFunc)			loader->get("glEGLImageTargetTexture2DOES");
 }
 
+if (de::contains(extSet, "GL_OES_EGL_image_external"))
+{
+	gl->eglImageTargetTexture2DOES	= (glEGLImageTargetTexture2DOESFunc)	loader->get("glEGLImageTargetTexture2DOES");
+}
+
 if (de::contains(extSet, "GL_OES_texture_3D"))
 {
 	gl->compressedTexImage3DOES		= (glCompressedTexImage3DOESFunc)		loader->get("glCompressedTexImage3DOES");
@@ -217,7 +222,8 @@ if (de::contains(extSet, "GL_OES_draw_elements_base_vertex"))
 
 if (de::contains(extSet, "GL_OVR_multiview"))
 {
-	gl->framebufferTextureMultiviewOVR	= (glFramebufferTextureMultiviewOVRFunc)	loader->get("glFramebufferTextureMultiviewOVR");
+	gl->framebufferTextureMultiviewOVR		= (glFramebufferTextureMultiviewOVRFunc)		loader->get("glFramebufferTextureMultiviewOVR");
+	gl->namedFramebufferTextureMultiviewOVR	= (glNamedFramebufferTextureMultiviewOVRFunc)	loader->get("glNamedFramebufferTextureMultiviewOVR");
 }
 
 if (de::contains(extSet, "GL_OVR_multiview_multisampled_render_to_texture"))

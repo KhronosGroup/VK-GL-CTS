@@ -430,14 +430,14 @@ void BasicOcclusionQueryTestInstance::clearAttachments(vk::VkCommandBuffer cmdBu
     const vk::DeviceInterface &vk = m_context.getDeviceInterface();
 
     vk::VkClearAttachment attachment = {
-        vk::VK_IMAGE_ASPECT_COLOR_BIT,                    // VkImageAspectFlags	aspectMask;
-        0,                                                // uint32_t			    colorAttachment;
-        vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f}) // VkClearValue		    clearValue;
+        vk::VK_IMAGE_ASPECT_COLOR_BIT,                    // VkImageAspectFlags aspectMask;
+        0,                                                // uint32_t     colorAttachment;
+        vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f}) // VkClearValue     clearValue;
     };
     vk::VkClearRect rect = {
-        {{0, 0}, {StateObjects::WIDTH, StateObjects::HEIGHT}}, // VkRect2D	rect;
-        0u,                                                    // uint32_t	baseArrayLayer;
-        1u,                                                    // uint32_t	layerCount;
+        {{0, 0}, {StateObjects::WIDTH, StateObjects::HEIGHT}}, // VkRect2D rect;
+        0u,                                                    // uint32_t baseArrayLayer;
+        1u,                                                    // uint32_t layerCount;
     };
     vk.cmdClearAttachments(cmdBuffer, 1u, &attachment, 1u, &rect);
 }

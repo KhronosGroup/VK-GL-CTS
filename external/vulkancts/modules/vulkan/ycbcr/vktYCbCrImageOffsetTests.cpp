@@ -30,6 +30,7 @@
 #include "vkQueryUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
+#include "vkFormatLists.hpp"
 
 #include <string>
 #include <vector>
@@ -152,38 +153,8 @@ tcu::TestStatus imageOffsetTest(Context &context, const TestConfig config)
 
 void initYcbcrImageOffsetTests(tcu::TestCaseGroup *testGroup)
 {
-    const vk::VkFormat ycbcrFormats[] = {
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_444_UNORM,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_444_UNORM,
-#ifndef CTS_USES_VULKANSC
-        vk::VK_FORMAT_G8_B8R8_2PLANE_444_UNORM,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_444_UNORM,
-#endif // CTS_USES_VULKANSC
-    };
-
-    for (int i = 0; i < DE_LENGTH_OF_ARRAY(ycbcrFormats); i++)
+    for (auto srcFormat : formats::disjointPlanesFormats)
     {
-        const vk::VkFormat srcFormat(ycbcrFormats[i]);
         const string srcFormatName(de::toLower(std::string(getFormatName(srcFormat)).substr(10)));
 
         const TestConfig config(srcFormat);

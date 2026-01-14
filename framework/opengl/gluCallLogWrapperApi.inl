@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 void					glActiveShaderProgram								(glw::GLuint pipeline, glw::GLuint program);
 void					glActiveTexture										(glw::GLenum texture);
@@ -532,6 +532,7 @@ void					glNamedFramebufferTextureEXT						(glw::GLuint framebuffer, glw::GLenum
 void					glNamedFramebufferTextureFaceEXT					(glw::GLuint framebuffer, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLenum face);
 void					glNamedFramebufferTextureLayer						(glw::GLuint framebuffer, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer);
 void					glNamedFramebufferTextureLayerEXT					(glw::GLuint framebuffer, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint layer);
+void					glNamedFramebufferTextureMultiviewOVR				(glw::GLuint framebuffer, glw::GLenum attachment, glw::GLuint texture, glw::GLint level, glw::GLint baseViewIndex, glw::GLsizei numViews);
 void					glNamedProgramLocalParameter4dEXT					(glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLdouble x, glw::GLdouble y, glw::GLdouble z, glw::GLdouble w);
 void					glNamedProgramLocalParameter4dvEXT					(glw::GLuint program, glw::GLenum target, glw::GLuint index, const glw::GLdouble *params);
 void					glNamedProgramLocalParameter4fEXT					(glw::GLuint program, glw::GLenum target, glw::GLuint index, glw::GLfloat x, glw::GLfloat y, glw::GLfloat z, glw::GLfloat w);

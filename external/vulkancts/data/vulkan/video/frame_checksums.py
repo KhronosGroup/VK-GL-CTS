@@ -50,13 +50,61 @@ import os
 import sys
 import hashlib
 
-if len(sys.argv) != 4:
-    print("Usage: frame_checksums.py yuvFile width height")
-    sys.exit(1)
+def print_help():
+    help_text = """Usage: frame_checksums.py [OPTIONS] yuvFile width height
 
-yuv_filename = sys.argv[1]
-width = int(sys.argv[2])
-height = int(sys.argv[3])
+Generate MD5 checksums from YUV frames in C array format.
+
+Arguments:
+  yuvFile              YUV file to process (YV12 format)
+  width                Frame width in pixels
+  height               Frame height in pixels
+
+Options:
+  -a NAME              C array name (default: frameChecksums)
+  -n NUM               Process only first NUM frames
+  -h, --help           Show this help message and exit
+
+Examples:
+  python frame_checksums.py clip-a.out 176 144
+  python frame_checksums.py -n 30 -a clipAChecksums clip-a.out 176 144
+"""
+    print(help_text)
+    sys.exit(0)
+
+# Parse command line arguments
+yuv_filename = None
+width = None
+height = None
+array_name = "frameChecksums"
+frame_limit = None
+
+i = 1
+while i < len(sys.argv):
+    if sys.argv[i] in ('-h', '--help'):
+        print_help()
+    elif sys.argv[i] == '-n' and i + 1 < len(sys.argv):
+        frame_limit = int(sys.argv[i + 1])
+        i += 2
+    elif sys.argv[i] == '-a' and i + 1 < len(sys.argv):
+        array_name = sys.argv[i + 1]
+        i += 2
+    elif yuv_filename is None:
+        yuv_filename = sys.argv[i]
+        i += 1
+    elif width is None:
+        width = int(sys.argv[i])
+        i += 1
+    elif height is None:
+        height = int(sys.argv[i])
+        i += 1
+    else:
+        i += 1
+
+if yuv_filename is None or width is None or height is None:
+    print("Usage: frame_checksums.py [OPTIONS] yuvFile width height")
+    print("Use -h or --help for more information")
+    sys.exit(1)
 
 def checksum(bs: bytes) -> str:
     md5 = hashlib.md5()
@@ -70,7 +118,27 @@ file_size = os.path.getsize(yuv_filename)
 frame_size = int(width * height * 1.5)
 n_frames = file_size // frame_size
 
+# Apply frame limit if specified
+if frame_limit is not None:
+    n_frames = min(n_frames, frame_limit)
+
+md5_hashes = []
 with open(yuv_filename, 'rb') as f:
-    print("Computing checksums for ", n_frames, " frames")
+    print("Computing checksums for ", n_frames, " frames", file=sys.stderr)
     for frame in range(n_frames):
-        print(checksum(f.read(frame_size)))
+        md5_hashes.append(checksum(f.read(frame_size)))
+
+# Output in C array format (3 hashes per line)
+print(f"static const char *{array_name}[{n_frames}] = {{")
+
+for i in range(0, n_frames, 3):
+    # Get up to 3 hashes for this line
+    line_hashes = md5_hashes[i:i+3]
+    formatted_hashes = ', '.join(f'"{h}"' for h in line_hashes)
+
+    # Add comma after line unless it's the last line
+    line_end = ',' if i + 3 < n_frames else ''
+    print(f"    {formatted_hashes}{line_end}")
+
+print("};")
+print("", file=sys.stderr)

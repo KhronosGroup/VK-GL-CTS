@@ -96,7 +96,7 @@ struct VarTypeComponent
         VTCTYPE_LAST
     };
 
-    VarTypeComponent(Type type_, int index_) : type(type_), index(index_)
+    VarTypeComponent(Type type_, int64_t index_) : type(type_), index(index_)
     {
     }
     VarTypeComponent(void) : type(VTCTYPE_LAST), index(0)
@@ -113,7 +113,7 @@ struct VarTypeComponent
     }
 
     Type type;
-    int index;
+    int64_t index;
 };
 
 typedef std::vector<VarTypeComponent> TypeComponentVector;
@@ -159,25 +159,25 @@ class SubTypeAccess
 public:
     SubTypeAccess(const VarType &type);
 
-    SubTypeAccess &member(int ndx)
+    SubTypeAccess &member(int64_t ndx)
     {
         m_path.push_back(VarTypeComponent(VarTypeComponent::STRUCT_MEMBER, ndx));
         DE_ASSERT(isValid());
         return *this;
     } //!< Access struct element.
-    SubTypeAccess &element(int ndx)
+    SubTypeAccess &element(int64_t ndx)
     {
         m_path.push_back(VarTypeComponent(VarTypeComponent::ARRAY_ELEMENT, ndx));
         DE_ASSERT(isValid());
         return *this;
     } //!< Access array element.
-    SubTypeAccess &column(int ndx)
+    SubTypeAccess &column(int64_t ndx)
     {
         m_path.push_back(VarTypeComponent(VarTypeComponent::MATRIX_COLUMN, ndx));
         DE_ASSERT(isValid());
         return *this;
     } //!< Access column.
-    SubTypeAccess &component(int ndx)
+    SubTypeAccess &component(int64_t ndx)
     {
         m_path.push_back(VarTypeComponent(VarTypeComponent::VECTOR_COMPONENT, ndx));
         DE_ASSERT(isValid());
@@ -190,19 +190,19 @@ public:
         return *this;
     }
 
-    SubTypeAccess member(int ndx) const
+    SubTypeAccess member(int64_t ndx) const
     {
         return SubTypeAccess(*this).member(ndx);
     }
-    SubTypeAccess element(int ndx) const
+    SubTypeAccess element(int64_t ndx) const
     {
         return SubTypeAccess(*this).element(ndx);
     }
-    SubTypeAccess column(int ndx) const
+    SubTypeAccess column(int64_t ndx) const
     {
         return SubTypeAccess(*this).column(ndx);
     }
-    SubTypeAccess component(int ndx) const
+    SubTypeAccess component(int64_t ndx) const
     {
         return SubTypeAccess(*this).component(ndx);
     }
@@ -463,15 +463,17 @@ bool isValidTypePath(const VarType &type, Iterator begin, Iterator end)
     {
         if (pathIter->type == VarTypeComponent::STRUCT_MEMBER)
         {
-            if (!curType->isStructType() || !de::inBounds(pathIter->index, 0, curType->getStructPtr()->getNumMembers()))
+            if (!curType->isStructType() ||
+                !de::inBounds(pathIter->index, int64_t{0}, (int64_t)curType->getStructPtr()->getNumMembers()))
                 return false;
 
             curType = &curType->getStructPtr()->getMember(pathIter->index).getType();
         }
         else if (pathIter->type == VarTypeComponent::ARRAY_ELEMENT)
         {
-            if (!curType->isArrayType() || (curType->getArraySize() != VarType::UNSIZED_ARRAY &&
-                                            !de::inBounds(pathIter->index, 0, curType->getArraySize())))
+            if (!curType->isArrayType() ||
+                (curType->getArraySize() != VarType::UNSIZED_ARRAY &&
+                 !de::inBounds(pathIter->index, int64_t{0}, (int64_t)curType->getArraySize())))
                 return false;
 
             curType = &curType->getElementType();

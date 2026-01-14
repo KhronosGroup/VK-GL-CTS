@@ -949,11 +949,16 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             // Use the color image memory requirements, assume depth stencil uses the same memory type
             memoryTypeNdx =
                 selectMatchingMemoryType(memoryProperties, colorImageMemReqs.memoryTypeBits, MemoryRequirement::Any);
+#ifdef CTS_USES_VULKANSC // Don't artificially limit image size to totalSystemMemory in Vulkan SC
+            VkDeviceSize maxMemory =
+                memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size;
+#else
             tcu::PlatformMemoryLimits memoryLimits;
             context.getTestContext().getPlatform().getMemoryLimits(memoryLimits);
             VkDeviceSize maxMemory =
                 std::min(memoryProperties.memoryHeaps[memoryProperties.memoryTypes[memoryTypeNdx].heapIndex].size,
                          VkDeviceSize(memoryLimits.totalSystemMemory));
+#endif
 
             if (neededMemory > maxMemory)
             {
@@ -966,6 +971,9 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
             }
         }
 
+#ifdef CTS_USES_VULKANSC // Memory can't be freed in Vulkan SC, so don't waste any here doing a trial allocation
+        allocationPossible = true;
+#else
         // Attempt a memory allocation
         {
             VkDeviceMemory object                   = VK_NULL_HANDLE;
@@ -997,6 +1005,7 @@ tcu::TestStatus testWithSizeReduction(Context &context, const CaseDef &caseDef)
                 allocationPossible = true;
             }
         }
+#endif
     }
 
     context.getTestContext().getLog() << tcu::TestLog::Message

@@ -4938,8 +4938,8 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup *parentGroup, 
         InstanceContext ctxVertex = createInstanceContext(testCaseInfo);
         string testName           = replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-        addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_vert", getGraphicsShaderCode,
-                                                     runAndVerifyDefaultPipeline, ctxVertex);
+        addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_vert", defaultCheckSupport,
+                                                     getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxVertex);
     }
 
     // create test cases for fragment stage
@@ -4958,8 +4958,8 @@ void GraphicsTestGroupBuilder::createOperationTests(TestCaseGroup *parentGroup, 
         InstanceContext ctxFragment = createInstanceContext(testCaseInfo);
         string testName             = replace(testCase.baseName, "op", testCaseInfo.operation.name);
 
-        addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_frag", getGraphicsShaderCode,
-                                                     runAndVerifyDefaultPipeline, ctxFragment);
+        addFunctionCaseWithPrograms<InstanceContext>(group, testName + "_frag", defaultCheckSupport,
+                                                     getGraphicsShaderCode, runAndVerifyDefaultPipeline, ctxFragment);
     }
 }
 

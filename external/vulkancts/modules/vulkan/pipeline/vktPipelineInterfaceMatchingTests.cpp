@@ -24,6 +24,7 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktPipelineInterfaceMatchingTests.hpp"
+#include "vktPipelineShaderComponentDecoratedLayoutMatchingTests.hpp"
 #include "vktPipelineImageUtil.hpp"
 
 #include "vkBuilderUtil.hpp"
@@ -1340,6 +1341,10 @@ tcu::TestCaseGroup *createInterfaceMatchingTests(tcu::TestContext &testCtx,
                 decorationMismatching->addChild(new InterfaceMatchingTestCase(testCtx, TestParamsSp(testParams)));
             }
     testGroup->addChild(decorationMismatching.release());
+
+#ifndef CTS_USES_VULKANSC
+    testGroup->addChild(createShaderCompDecorLayoutMatchingTests(testCtx, pipelineConstructionType));
+#endif
 
     // miscellaneous tests
     de::MovePtr<tcu::TestCaseGroup> miscTests(new tcu::TestCaseGroup(testCtx, "misc"));

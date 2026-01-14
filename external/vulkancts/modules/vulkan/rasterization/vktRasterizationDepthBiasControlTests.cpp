@@ -62,14 +62,6 @@ VkDepthBiasRepresentationInfoEXT makeDepthBiasRepresentationInfo(const VkDepthBi
     return info;
 }
 
-std::string getFormatNameShort(const VkFormat format)
-{
-    static const size_t prefixLen = std::strlen("VK_FORMAT_");
-    const auto fullName           = getFormatName(format);
-    const auto shortName          = de::toLower(std::string(fullName).substr(prefixLen));
-    return shortName;
-}
-
 inline tcu::IVec3 getExtent(void)
 {
     return tcu::IVec3(1, 1, 1);
@@ -347,7 +339,7 @@ void DepthBiasControlCase::checkSupport(Context &context) const
         physDev, m_params.attachmentFormat, imageCreateInfo.imageType, imageCreateInfo.tiling, imageUsage,
         imageCreateInfo.flags, &formatProperties);
     if (formatSupport == VK_ERROR_FORMAT_NOT_SUPPORTED)
-        TCU_THROW(NotSupportedError, getFormatNameShort(m_params.attachmentFormat) + " not supported");
+        TCU_THROW(NotSupportedError, getFormatSimpleName(m_params.attachmentFormat) + " not supported");
 }
 
 TestInstance *DepthBiasControlCase::createInstance(Context &context) const
@@ -813,7 +805,7 @@ tcu::TestCaseGroup *createDepthBiasControlTests(tcu::TestContext &testCtx)
 
     for (const auto &format : attachmentFormats)
     {
-        const auto formatName = getFormatNameShort(format);
+        const auto formatName = getFormatSimpleName(format);
 
         GroupPtr formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
 

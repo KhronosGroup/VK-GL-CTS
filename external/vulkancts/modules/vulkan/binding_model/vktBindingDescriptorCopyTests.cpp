@@ -3315,7 +3315,9 @@ void CopyImmutableSamplerCase::initPrograms(vk::SourceCollections &progCollectio
          << "layout (location=0) in vec4 inPos;\n"
          << "layout (location=0) out flat int quadrant;\n"
          << "void main(void) {\n"
-         << "    gl_Position = inPos;\n";
+         << "    gl_Position = inPos;\n"
+         // VUID-VkGraphicsPipelineCreateInfo-topology-08773
+         << "    gl_PointSize = 1.0;\n";
 
     if (m_params.samplerCount == 1u)
         vert << "    quadrant = 0;\n";
@@ -3441,14 +3443,24 @@ tcu::TestStatus CopyImmutableSamplerTest::iterate(void)
     };
 
     BufferData bufferData;
-    const auto redBufferSize     = static_cast<VkDeviceSize>(sizeof(bufferData));
-    const auto redBufferSizeHalf = redBufferSize / 2u;
+    // VUID-VkWriteDescriptorSet-descriptorType-00328
+    const auto &vki           = m_context.getInstanceInterface();
+    const auto physicalDevice = m_context.getPhysicalDevice();
+    const auto minAlignment   = getPhysicalDeviceProperties(vki, physicalDevice).limits.minStorageBufferOffsetAlignment;
+    const auto rawBufferSize  = static_cast<VkDeviceSize>(sizeof(bufferData));
+    const auto alignedHalfSize   = deAlign64(rawBufferSize / 2u, minAlignment);
+    const auto redBufferSize     = alignedHalfSize * 2u;
+    const auto redBufferSizeHalf = alignedHalfSize;
     const auto redBufferUsage    = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     const auto redBufferInfo     = makeBufferCreateInfo(redBufferSize, redBufferUsage);
     BufferWithMemory redBuffer(ctx.vkd, ctx.device, ctx.allocator, redBufferInfo, MemoryRequirement::HostVisible);
     {
-        auto &alloc = redBuffer.getAllocation();
-        memcpy(alloc.getHostPtr(), &bufferData, sizeof(bufferData));
+        auto &alloc        = redBuffer.getAllocation();
+        uint8_t *bufferPtr = static_cast<uint8_t *>(alloc.getHostPtr());
+        // Copy first half (0.5 values) at offset 0
+        memcpy(bufferPtr, bufferData.redValues, rawBufferSize / 2u);
+        // Copy second half (1.0 values) at aligned offset
+        memcpy(bufferPtr + redBufferSizeHalf, bufferData.redValues + 4, rawBufferSize / 2u);
         flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 

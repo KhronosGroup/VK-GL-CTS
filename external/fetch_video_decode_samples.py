@@ -172,6 +172,12 @@ PACKAGES = [
         "vulkancts/data/vulkan/video/hevc",
         ""),
     SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/hevc/LTRPSPS_A_Qualcomm_1.bit",
+        "LTRPSPS_A_Qualcomm_1.bit",
+        "8f8e50fa408b7e96e76e6936b380fc34c208271efb8c283b15a42cb1f8c78ae7",
+        "vulkancts/data/vulkan/video/hevc",
+        ""),
+    SourceFile(
         "https://storage.googleapis.com/vulkan-video-samples/av1/av1-176x144-main-basic-8.ivf",
         "av1-176x144-main-basic-8.ivf",
         "798b52f372a95b4da01334ba97c651e8c2e21e887180f6ad401cf9d4e3a15aa7",
@@ -265,6 +271,12 @@ PACKAGES = [
         "https://storage.googleapis.com/vulkan-video-samples/av1/av1-argon_test787.obu",
         "av1-argon_test787.obu",
         "3c2df56e296cf387efb0474d7c588d68eca55592e15d4731bb85e2122059d367",
+        "vulkancts/data/vulkan/video/av1",
+        ""),
+    SourceFile(
+        "https://storage.googleapis.com/vulkan-video-samples/av1/av1-frames_refs_short_signaling_golden.ivf",
+        "av1-frames_refs_short_signaling_golden.ivf",
+        "d9136e7e427a1ec1423823f1d8cee37ed0aa354d16bb6607feb5413436810918",
         "vulkancts/data/vulkan/video/av1",
         ""),
     SourceFile(

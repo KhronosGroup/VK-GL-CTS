@@ -35,6 +35,7 @@
 #include "vkBarrierUtil.hpp"
 #include "vkImageUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkFormatLists.hpp"
 
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
@@ -1246,12 +1247,6 @@ tcu::TestStatus DepthFormatTest::iterate(void)
 
 using GroupPtr = de::MovePtr<tcu::TestCaseGroup>;
 
-std::string getSimpleName(VkFormat format)
-{
-    static const size_t prefixLen = strlen("VK_FORMAT_");
-    return de::toLower(std::string(getFormatName(format)).substr(prefixLen));
-}
-
 } // namespace
 
 tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCtx)
@@ -1367,7 +1362,7 @@ tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCt
                                 format,   usageCase.usage,         tcu::IVec3(mipSize.x(), mipSize.y(), 1),
                                 firstMip, readStageCase.readStage,
                             };
-                            const auto testName = getSimpleName(format) + "_" + usageCase.name + "_shader_" +
+                            const auto testName = getFormatSimpleName(format) + "_" + usageCase.name + "_shader_" +
                                                   readStageCase.name + "_" + std::to_string(mipSize.x()) + "x" +
                                                   std::to_string(mipSize.y()) +
                                                   (firstMip ? "_first_mip" : "_second_mip");
@@ -1378,12 +1373,8 @@ tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCt
     }
 
     {
-        const std::vector<VkFormat> formatList{
-            VK_FORMAT_D16_UNORM,         VK_FORMAT_X8_D24_UNORM_PACK32, VK_FORMAT_D32_SFLOAT,         VK_FORMAT_S8_UINT,
-            VK_FORMAT_D16_UNORM_S8_UINT, VK_FORMAT_D24_UNORM_S8_UINT,   VK_FORMAT_D32_SFLOAT_S8_UINT,
-        };
 
-        for (const auto &format : formatList)
+        for (const VkFormat format : formats::depthAndStencilFormats)
             for (const auto &mipSize : mipSizes)
                 for (const bool firstMip : {true, false})
                 {
@@ -1392,7 +1383,7 @@ tcu::TestCaseGroup *createClearedAllocationControlTests(tcu::TestContext &testCt
                         tcu::IVec3(mipSize.x(), mipSize.y(), 1),
                         firstMip,
                     };
-                    const auto testName = getSimpleName(format) + "_" + std::to_string(mipSize.x()) + "x" +
+                    const auto testName = getFormatSimpleName(format) + "_" + std::to_string(mipSize.x()) + "x" +
                                           std::to_string(mipSize.y()) + (firstMip ? "_first_mip" : "_second_mip");
                     imageTransition->addChild(new DepthFormatCase(testCtx, testName, params));
                 }

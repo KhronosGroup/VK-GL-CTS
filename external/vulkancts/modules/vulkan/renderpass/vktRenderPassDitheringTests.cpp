@@ -499,9 +499,7 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
         const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                                 VK_ACCESS_SHADER_READ_BIT | VK_ACCESS_SHADER_WRITE_BIT);
         const auto dstStage  = (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
-        const auto layout    = (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING) ?
-                                   VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
-                                   VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+        const auto layout    = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
         auto clearColor      = makeClearValueColorF32(0.0f, 0.0f, 0.0f, 1.0f).color;
 
         if (m_testParams.blending)
@@ -518,9 +516,7 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
         const auto dstAccess =
             (VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
         const auto dstStage = (VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
-        const auto layout   = m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING ?
-                                  VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL :
-                                  VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        const auto layout   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
         clearDepthStencilImage(vk, vkDevice, queue, queueFamilyIndex, *m_drawResources[resourceNdx].depthStencilImage,
                                m_testParams.depthStencilFormat, m_testParams.depthClearValue,
@@ -618,7 +614,43 @@ void DitheringTestInstance::render(const VkViewport &vp, bool useDithering)
             vk.cmdDraw(*cmdBuffer, 6u, 1, 0, 0);
 
         if (m_testParams.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
+        {
             vk.cmdEndRendering(*cmdBuffer);
+
+            // VUID-vkCmdBeginRendering-pRenderingInfo-09592
+            for (const auto &image : m_drawResources[resourceNdx].attachmentImages)
+            {
+                const VkImageMemoryBarrier barrier = {VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                                                      nullptr,
+                                                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,
+                                                      VK_ACCESS_TRANSFER_READ_BIT,
+                                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+                                                      VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                                      VK_QUEUE_FAMILY_IGNORED,
+                                                      VK_QUEUE_FAMILY_IGNORED,
+                                                      *image,
+                                                      {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u}};
+                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier);
+            }
+
+            if (useDepthStencil)
+            {
+                const VkImageMemoryBarrier barrier = {
+                    VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,
+                    nullptr,
+                    VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT,
+                    VK_ACCESS_TRANSFER_READ_BIT,
+                    VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL,
+                    VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    VK_QUEUE_FAMILY_IGNORED,
+                    VK_QUEUE_FAMILY_IGNORED,
+                    *m_drawResources[resourceNdx].depthStencilImage,
+                    {VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT, 0u, 1u, 0u, 1u}};
+                vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                                      VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u, &barrier);
+            }
+        }
         else
             RenderpassSubpass::cmdEndRenderPass(vk, *cmdBuffer, &subpassEndInfo);
         endCommandBuffer(vk, *cmdBuffer);
@@ -959,7 +991,8 @@ void DitheringTestInstance::createDrawResources(bool useDithering)
 
             nextPtr = &renderingCreateInfo;
 
-            if (m_testParams.revision2)
+            // VUID-vkCmdDraw-None-09643
+            if (m_testParams.revision2 && useDithering)
             {
                 pipelineCreateFlags2Info.pNext = nextPtr;
                 nextPtr                        = &pipelineCreateFlags2Info;

@@ -50,7 +50,6 @@
 #include "deUniquePtr.hpp"
 #include "deMath.h"
 #include "deRandom.hpp"
-#include "tcuStringTemplate.hpp"
 
 #include "vktSpvAsmCrossStageInterfaceTests.hpp"
 #include "vktSpvAsm8bitStorageTests.hpp"
@@ -2128,14 +2127,14 @@ bool compareNMin(const std::vector<Resource> &, const vector<AllocationSp> &outp
     if (outputAllocs.size() != 1)
         return false;
 
-    const BufferSp &expectedOutput(expectedOutputs[0].getBuffer());
+    const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput->getBytes(data);
+    expectedOutput.getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float); ++idx)
+    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float); ++idx)
     {
         const float f0 = expectedOutputAsFloat[idx];
         const float f1 = outputAsFloat[idx];
@@ -2252,14 +2251,14 @@ bool compareNMax(const std::vector<Resource> &, const vector<AllocationSp> &outp
     if (outputAllocs.size() != 1)
         return false;
 
-    const BufferSp &expectedOutput = expectedOutputs[0].getBuffer();
+    const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput->getBytes(data);
+    expectedOutput.getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float); ++idx)
+    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float); ++idx)
     {
         const float f0 = expectedOutputAsFloat[idx];
         const float f1 = outputAsFloat[idx];
@@ -2375,14 +2374,14 @@ bool compareNClamp(const std::vector<Resource> &, const vector<AllocationSp> &ou
     if (outputAllocs.size() != 1)
         return false;
 
-    const BufferSp &expectedOutput = expectedOutputs[0].getBuffer();
+    const Resource &expectedOutput = expectedOutputs[0];
     std::vector<uint8_t> data;
-    expectedOutput->getBytes(data);
+    expectedOutput.getBytes(data);
 
     const float *const expectedOutputAsFloat = reinterpret_cast<const float *>(&data.front());
     const float *const outputAsFloat         = static_cast<const float *>(outputAllocs[0]->getHostPtr());
 
-    for (size_t idx = 0; idx < expectedOutput->getByteSize() / sizeof(float) / 2; ++idx)
+    for (size_t idx = 0; idx < expectedOutput.getByteSize() / sizeof(float) / 2; ++idx)
     {
         const float e0  = expectedOutputAsFloat[idx * 2];
         const float e1  = expectedOutputAsFloat[idx * 2 + 1];
@@ -5760,42 +5759,41 @@ tcu::TestCaseGroup *createOpConstantNullGroup(tcu::TestContext &testCtx)
     const int numElements = 100;
     vector<float> positiveFloats(numElements, 0);
     vector<float> negativeFloats(numElements, 0);
-    const StringTemplate shaderTemplate(
-        string(getComputeAsmShaderPreamble("${CAPABILITY}", "${EXTENSION}", "", "", "")) +
+    const StringTemplate shaderTemplate(string(getComputeAsmShaderPreamble()) +
 
-        "OpSource GLSL 430\n"
-        "OpName %main           \"main\"\n"
-        "OpName %id             \"gl_GlobalInvocationID\"\n"
+                                        "OpSource GLSL 430\n"
+                                        "OpName %main           \"main\"\n"
+                                        "OpName %id             \"gl_GlobalInvocationID\"\n"
 
-        "OpDecorate %id BuiltIn GlobalInvocationId\n"
+                                        "OpDecorate %id BuiltIn GlobalInvocationId\n"
 
-        + string(getComputeAsmInputOutputBufferTraits()) + string(getComputeAsmCommonTypes()) +
-        "%uvec2     = OpTypeVector %u32 2\n"
-        "%bvec3     = OpTypeVector %bool 3\n"
-        "%fvec4     = OpTypeVector %f32 4\n"
-        "%fmat33    = OpTypeMatrix %fvec3 3\n"
-        "%const100  = OpConstant %u32 100\n"
-        "%uarr100   = OpTypeArray %i32 %const100\n"
-        "%struct    = OpTypeStruct %f32 %i32 %u32\n"
-        "%pointer   = OpTypePointer Function %i32\n" +
-        string(getComputeAsmInputOutputBuffer()) +
+                                        + string(getComputeAsmInputOutputBufferTraits()) +
+                                        string(getComputeAsmCommonTypes()) +
+                                        "%uvec2     = OpTypeVector %u32 2\n"
+                                        "%bvec3     = OpTypeVector %bool 3\n"
+                                        "%fvec4     = OpTypeVector %f32 4\n"
+                                        "%fmat33    = OpTypeMatrix %fvec3 3\n"
+                                        "%const100  = OpConstant %u32 100\n"
+                                        "%uarr100   = OpTypeArray %i32 %const100\n"
+                                        "%struct    = OpTypeStruct %f32 %i32 %u32\n" +
+                                        string(getComputeAsmInputOutputBuffer()) +
 
-        "%null      = OpConstantNull ${TYPE}\n"
+                                        "%null      = OpConstantNull ${TYPE}\n"
 
-        "%id        = OpVariable %uvec3ptr Input\n"
-        "%zero      = OpConstant %i32 0\n"
+                                        "%id        = OpVariable %uvec3ptr Input\n"
+                                        "%zero      = OpConstant %i32 0\n"
 
-        "%main      = OpFunction %void None %voidf\n"
-        "%label     = OpLabel\n"
-        "%idval     = OpLoad %uvec3 %id\n"
-        "%x         = OpCompositeExtract %u32 %idval 0\n"
-        "%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
-        "%inval     = OpLoad %f32 %inloc\n"
-        "%neg       = OpFNegate %f32 %inval\n"
-        "%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
-        "             OpStore %outloc %neg\n"
-        "             OpReturn\n"
-        "             OpFunctionEnd\n");
+                                        "%main      = OpFunction %void None %voidf\n"
+                                        "%label     = OpLabel\n"
+                                        "%idval     = OpLoad %uvec3 %id\n"
+                                        "%x         = OpCompositeExtract %u32 %idval 0\n"
+                                        "%inloc     = OpAccessChain %f32ptr %indata %zero %x\n"
+                                        "%inval     = OpLoad %f32 %inloc\n"
+                                        "%neg       = OpFNegate %f32 %inval\n"
+                                        "%outloc    = OpAccessChain %f32ptr %outdata %zero %x\n"
+                                        "             OpStore %outloc %neg\n"
+                                        "             OpReturn\n"
+                                        "             OpFunctionEnd\n");
 
     cases.push_back(CaseParameter("bool", "%bool"));
     cases.push_back(CaseParameter("sint32", "%i32"));
@@ -5807,7 +5805,6 @@ tcu::TestCaseGroup *createOpConstantNullGroup(tcu::TestContext &testCtx)
     cases.push_back(CaseParameter("matrix", "%fmat33"));
     cases.push_back(CaseParameter("array", "%uarr100"));
     cases.push_back(CaseParameter("struct", "%struct"));
-    cases.push_back(CaseParameter("pointer", "%pointer"));
 
     fillRandomScalars(rnd, 1.f, 100.f, &positiveFloats[0], numElements);
 
@@ -5819,19 +5816,8 @@ tcu::TestCaseGroup *createOpConstantNullGroup(tcu::TestContext &testCtx)
         map<string, string> specializations;
         ComputeShaderSpec spec;
 
-        // OpConstantNull with a pointer type requires the VariablePointers capability.
-        string capability = "";
-        string extension  = "";
-        if (strcmp(cases[caseNdx].name, "pointer") == 0)
-        {
-            spec.extensions.push_back("VK_KHR_variable_pointers");
-            capability = "OpCapability VariablePointers\n";
-            extension  = "OpExtension \"SPV_KHR_variable_pointers\"\n";
-        }
-        specializations["CAPABILITY"] = capability;
-        specializations["EXTENSION"]  = extension;
-        specializations["TYPE"]       = cases[caseNdx].param;
-        spec.assembly                 = shaderTemplate.specialize(specializations);
+        specializations["TYPE"] = cases[caseNdx].param;
+        spec.assembly           = shaderTemplate.specialize(specializations);
         spec.inputs.push_back(BufferSp(new Float32Buffer(positiveFloats)));
         spec.outputs.push_back(BufferSp(new Float32Buffer(negativeFloats)));
         spec.numWorkGroups = IVec3(numElements, 1, 1);
@@ -9684,8 +9670,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                                                       ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
 
         // Shader stages: vertex, geometry and fragment
@@ -9695,8 +9681,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                                                       ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module_geom", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module_geom", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
 
         // Shader stages: vertex, tessellation control, tessellation evaluation and fragment
@@ -9708,8 +9694,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                 ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module_tessc_tesse", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module_tessc_tesse", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
 
         // Shader stages: vertex, tessellation control, tessellation evaluation, geometry and fragment
@@ -9722,8 +9708,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                 ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module_tessc_tesse_geom", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module_tessc_tesse_geom", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
     }
 
@@ -9755,13 +9741,13 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
             0)
         {
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), name, createMultipleEntries, runAndVerifyDefaultPipeline,
+                moduleTests.get(), name, defaultCheckSupport, createMultipleEntries, runAndVerifyDefaultPipeline,
                 createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
         }
         else
         {
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), name, createMultipleEntries, runAndVerifyDefaultPipeline,
+                moduleTests.get(), name, defaultCheckSupport, createMultipleEntries, runAndVerifyDefaultPipeline,
                 createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
         }
     }
@@ -9823,6 +9809,11 @@ std::string getUnusedVarTestName(const ShaderTaskArray &shaderTasks, const Varia
     return testName;
 }
 
+static void checkUnusedVariableSupport(Context &context, UnusedVariableContext ctx)
+{
+    defaultCheckSupport(context, ctx.instanceContext);
+}
+
 tcu::TestCaseGroup *createUnusedVariableTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> moduleTests(new tcu::TestCaseGroup(testCtx, "unused_variables"));
@@ -9854,9 +9845,9 @@ tcu::TestCaseGroup *createUnusedVariableTests(tcu::TestContext &testCtx)
             const VariableLocation &location   = testLocations[locationNdx];
             std::string testName               = getUnusedVarTestName(shaderTasks, location);
 
-            addFunctionCaseWithPrograms<UnusedVariableContext>(moduleTests.get(), testName, createUnusedVariableModules,
-                                                               runAndVerifyUnusedVariablePipeline,
-                                                               createUnusedVariableContext(shaderTasks, location));
+            addFunctionCaseWithPrograms<UnusedVariableContext>(
+                moduleTests.get(), testName, checkUnusedVariableSupport, createUnusedVariableModules,
+                runAndVerifyUnusedVariablePipeline, createUnusedVariableContext(shaderTasks, location));
         }
     }
 
