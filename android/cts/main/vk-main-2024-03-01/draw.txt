@@ -11060,6 +11060,9 @@ dEQP-VK.draw.renderpass.indexed_draw.multibind_8bit_case_8
 dEQP-VK.draw.renderpass.indexed_draw.multibind_8bit_case_8_sorted
 dEQP-VK.draw.renderpass.indexed_draw.multibind_8bit_case_9
 dEQP-VK.draw.renderpass.indexed_draw.multibind_8bit_case_9_sorted
+dEQP-VK.draw.renderpass.indexed_draw.update_index_buffer_before_draw_16
+dEQP-VK.draw.renderpass.indexed_draw.update_index_buffer_before_draw_32
+dEQP-VK.draw.renderpass.indexed_draw.update_index_buffer_before_draw_8
 dEQP-VK.draw.renderpass.indirect_draw.indexed.indirect_draw.triangle_list_multi_draw
 dEQP-VK.draw.renderpass.indirect_draw.indexed.indirect_draw_count.triangle_list_multi_draw
 dEQP-VK.draw.renderpass.indirect_draw.indexed.indirect_draw_count_instanced.first_instance.triangle_list_multi_draw
