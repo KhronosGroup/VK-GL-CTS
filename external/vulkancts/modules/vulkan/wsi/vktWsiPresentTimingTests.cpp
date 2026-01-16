@@ -40,6 +40,7 @@
 
 #include "tcuPlatform.hpp"
 
+#include "deMutex.hpp"
 #include "deStringUtil.hpp"
 #include "deThread.hpp"
 
@@ -196,6 +197,7 @@ Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkI
                                        const InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice,
                                        const Extensions &supportedExtensions, const uint32_t queueFamilyIndex,
                                        PresentAtMode presentAtMethod, bool validationEnabled,
+                                       bool requireFifoLatestReady,
                                        const vk::VkAllocationCallbacks *pAllocator = nullptr)
 {
     const float queuePriorities[]                  = {1.0f};
@@ -218,7 +220,8 @@ Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkI
     if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_KHR_shared_presentable_image")))
         extensions.push_back("VK_KHR_shared_presentable_image");
 
-    if (isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
+    if (requireFifoLatestReady &&
+        isExtensionStructSupported(supportedExtensions, RequiredExtension("VK_EXT_present_mode_fifo_latest_ready")))
         extensions.push_back("VK_EXT_present_mode_fifo_latest_ready");
 
     checkAllSupported(supportedExtensions, extensions);
@@ -237,7 +240,13 @@ Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkI
         (presentAtMethod == PresentAtMode::RELATIVE) ? VK_TRUE : VK_FALSE  // VkBool32 presentAtRelativeTime;
     };
 
-    vk::VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&presentTimingFeatures);
+    VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR fifoLatestReadyFeatures{
+        VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PRESENT_MODE_FIFO_LATEST_READY_FEATURES_KHR,
+        &presentTimingFeatures,
+        requireFifoLatestReady,
+    };
+
+    vk::VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&fifoLatestReadyFeatures);
     features2.features                      = features;
 
     vk::VkDeviceCreateInfo deviceParams = {
@@ -256,9 +265,9 @@ Move<vk::VkDevice> createDeviceWithWsi(const vk::PlatformInterface &vkp, vk::VkI
     return createCustomDevice(validationEnabled, vkp, instance, vki, physicalDevice, &deviceParams, pAllocator);
 }
 
-vk::VkPresentTimingSurfaceCapabilitiesEXT getSurfacePresentTimingCapabilities(const InstanceInterface &vki,
-                                                                              vk::VkPhysicalDevice physicalDevice,
-                                                                              vk::VkSurfaceKHR surface)
+vk::VkPresentTimingSurfaceCapabilitiesEXT getSurfacePresentTimingCapabilities(
+    const InstanceInterface &vki, vk::VkPhysicalDevice physicalDevice, vk::VkSurfaceKHR surface,
+    vk::VkSurfaceCapabilitiesKHR *pSurfCaps = nullptr)
 {
     const vk::VkPhysicalDeviceSurfaceInfo2KHR info = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR,
@@ -286,8 +295,14 @@ vk::VkPresentTimingSurfaceCapabilitiesEXT getSurfacePresentTimingCapabilities(co
 
     VK_CHECK(vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevice, &info, &capabilities));
 
+    if (!presentTimingCaps.presentTimingSupported)
+        TCU_THROW(NotSupportedError, "VK_EXT_present_timing not supported by surface");
+
     if (!presentId2Caps.presentId2Supported)
         TCU_THROW(NotSupportedError, "VK_KHR_present_id2 not supported by surface");
+
+    if (pSurfCaps)
+        *pSurfCaps = capabilities.surfaceCapabilities;
 
     return presentTimingCaps;
 }
@@ -297,8 +312,9 @@ vk::VkSwapchainCreateInfoKHR getBasicSwapchainParameters(vk::wsi::Type wsiType, 
                                                          const tcu::UVec2 &desiredSize,
                                                          vk::VkPresentModeKHR presentMode, uint32_t desiredImageCount)
 {
-    const vk::VkSurfaceCapabilitiesKHR capabilities =
-        vk::wsi::getPhysicalDeviceSurfaceCapabilities(vki, physicalDevice, surface);
+    vk::VkSurfaceCapabilitiesKHR capabilities{};
+    getSurfacePresentTimingCapabilities(vki, physicalDevice, surface, &capabilities);
+
     const std::vector<vk::VkSurfaceFormatKHR> formats =
         vk::wsi::getPhysicalDeviceSurfaceFormats(vki, physicalDevice, surface);
     const vk::wsi::PlatformProperties &platformProperties = vk::wsi::getPlatformProperties(wsiType);
@@ -438,13 +454,14 @@ struct DeviceHelper
     const vk::VkQueue queue;
 
     DeviceHelper(Context &context, const InstanceInterface &vki, vk::VkInstance instance, vk::VkSurfaceKHR surface,
-                 PresentAtMode presentAtMethod, const vk::VkAllocationCallbacks *pAllocator = nullptr)
+                 PresentAtMode presentAtMethod, bool requireFifoLatestReady,
+                 const vk::VkAllocationCallbacks *pAllocator = nullptr)
         : physicalDevice(chooseDevice(vki, instance, context.getTestContext().getCommandLine()))
         , queueFamilyIndex(chooseQueueFamilyIndex(vki, physicalDevice, surface))
         , device(createDeviceWithWsi(context.getPlatformInterface(), instance, vki, physicalDevice,
                                      enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr), queueFamilyIndex,
                                      presentAtMethod, context.getTestContext().getCommandLine().isValidationEnabled(),
-                                     pAllocator))
+                                     requireFifoLatestReady, pAllocator))
         , vkd(context.getPlatformInterface(), instance, *device, context.getUsedApiVersion(),
               context.getTestContext().getCommandLine())
         , queue(getDeviceQueue(vkd, *device, queueFamilyIndex, 0))
@@ -488,9 +505,10 @@ struct PresentTimingHelper
 
         for (uint32_t i = 0; i < timings.size(); i++)
         {
-            timings[i].sType          = VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT;
-            timings[i].pNext          = nullptr;
-            timings[i].pPresentStages = stageTimes.data() + i * stageCount;
+            timings[i].sType             = VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_EXT;
+            timings[i].pNext             = nullptr;
+            timings[i].pPresentStages    = stageTimes.data() + i * stageCount;
+            timings[i].presentStageCount = stageCount;
         }
     }
 
@@ -499,7 +517,37 @@ struct PresentTimingHelper
         std::sort(results.begin(), results.end(),
                   [](const PresentResult &a, const PresentResult &b) { return a.presentId < b.presentId; });
     }
+
+    void verifyPresentIds(uint64_t initialPresentId, uint64_t presentIdStep, uint32_t frameCount,
+                          VkPresentStageFlagsEXT expectedPresentStages)
+    {
+        if (results.size() != frameCount)
+            TCU_FAIL("Did not receive correct number of results");
+
+        uint32_t expectedPresentStageCount = static_cast<uint32_t>(std::bitset<32>(expectedPresentStages).count());
+
+        // Verify the timing data report is complete for each result
+        for (uint32_t i = 0; i < frameCount; i++)
+        {
+            uint64_t expectedPresentId = initialPresentId + i * presentIdStep;
+            if (results[i].presentId != expectedPresentId)
+                TCU_FAIL("Unexpected present ID");
+
+            if (i > 0 && results[i].times.begin()->second != 0 && results[i - 1].times.begin()->second != 0 &&
+                results[i].times.begin()->second < results[i - 1].times.begin()->second)
+                TCU_FAIL("Times are not increasing");
+
+            if (results[i].stageCount != expectedPresentStageCount)
+                TCU_FAIL("Unexpected present stage count");
+
+            if (results[i].stages != expectedPresentStages)
+                TCU_FAIL("Unexpected present stage");
+        }
+    }
 };
+
+uint32_t acquireNextImage(const DeviceInterface &vkd, vk::VkDevice device, SwapchainAndImage &swapchain,
+                          vk::VkFence acquireFence, de::Mutex *pSwapchainMutex);
 
 class FrameStreamObjects
 {
@@ -507,12 +555,17 @@ public:
     struct FrameObjects
     {
         const vk::VkFence &acquireFence;
-        const vk::VkSemaphore &renderSemaphore;
+        const vk::VkFence &renderFence;
         const vk::VkCommandBuffer &commandBuffer;
+        uint32_t imageIndex{};
     };
 
     FrameStreamObjects(const vk::DeviceInterface &vkd, vk::VkDevice device, vk::VkCommandPool cmdPool,
                        size_t maxQueuedFrames)
+        : m_vkd(vkd)
+        , m_device(device)
+        , m_acquireFences(maxQueuedFrames)
+        , m_renderFences(maxQueuedFrames)
     {
         m_maxQueuedFrames = maxQueuedFrames;
 
@@ -521,27 +574,34 @@ public:
             nullptr,
             VK_FENCE_CREATE_SIGNALED_BIT,
         };
-        m_acquireFence     = FenceSp(new Unique<vk::VkFence>(createFence(vkd, device, &fenceCreateInfo)));
-        m_renderSemaphores = allocateSemaphores(vkd, device, maxQueuedFrames);
+        for (size_t i = 0; i < m_maxQueuedFrames; ++i)
+        {
+            m_acquireFences[i] = FenceSp(new Unique<vk::VkFence>(createFence(vkd, device, &fenceCreateInfo)));
+            m_renderFences[i]  = FenceSp(new Unique<vk::VkFence>(createFence(vkd, device, &fenceCreateInfo)));
+        }
         m_commandBuffers =
             allocateCommandBuffers(vkd, device, cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY, maxQueuedFrames);
     }
 
-    FrameObjects newFrame()
+    FrameObjects newFrame(SwapchainAndImage &swapchain, de::Mutex *pSwapchainMutex = nullptr)
     {
         const size_t idx = m_nextFrame % m_maxQueuedFrames;
         FrameObjects ret = {
-            **m_acquireFence,
-            **m_renderSemaphores[idx],
+            **m_acquireFences[idx],
+            **m_renderFences[idx],
             **m_commandBuffers[idx],
         };
+
+        ret.imageIndex = acquireNextImage(m_vkd, m_device, swapchain, ret.acquireFence, pSwapchainMutex);
         ++m_nextFrame;
         return ret;
     }
 
 private:
-    FenceSp m_acquireFence;
-    std::vector<SemaphoreSp> m_renderSemaphores;
+    const vk::DeviceInterface &m_vkd;
+    vk::VkDevice m_device{};
+    std::vector<FenceSp> m_acquireFences;
+    std::vector<FenceSp> m_renderFences;
     std::vector<CommandBufferSp> m_commandBuffers;
     size_t m_maxQueuedFrames{};
     size_t m_nextFrame{};
@@ -617,8 +677,8 @@ struct TimeDomainHelper
 
             // Retry if the number of properties available has grown since the size query
             result = fetchProperties(vkd);
-            if (result == VK_INCOMPLETE)
-                continue;
+            if (result != VK_INCOMPLETE)
+                break;
         }
 
         return result;
@@ -630,7 +690,7 @@ struct TimeDomainHelper
         if (it == mapDomainToId.end())
             return UINT64_MAX;
 
-        return mapDomainToId[desiredTimeDomain];
+        return it->second;
     }
 
     bool hasUniqueIds()
@@ -667,7 +727,6 @@ struct CalibratedTimestampHelper
     struct Timestamp
     {
         uint64_t host{};
-        uint64_t swapchain{};
         std::map<VkPresentStageFlagsEXT, uint64_t> presentStages{};
 
         uint64_t deviation{};
@@ -694,29 +753,28 @@ struct CalibratedTimestampHelper
 #endif
     }
 
-    void getCalibratedTimestamps(const DeviceInterface &vkd, const std::vector<VkTimeDomainKHR> &domains,
+    void getCalibratedTimestamps(const DeviceInterface &vkd, VkTimeDomainKHR hostDomain, VkTimeDomainKHR targetDomain,
                                  const std::vector<VkSwapchainCalibratedTimestampInfoEXT> &swapchainCalibratedTimeInfos)
     {
         std::vector<VkCalibratedTimestampInfoKHR> infos;
 
-        for (auto domain : domains)
+        VkCalibratedTimestampInfoKHR info = {
+            getStructureType<VkCalibratedTimestampInfoKHR>(),
+            nullptr,    // const void* pNext;
+            hostDomain, // VkTimeDomainKHR timeDomain;
+        };
+
+        infos.push_back(info);
+
+        // Multiply targetDomain by the number of present stages even if it's not PRESENT_STAGE_LOCAL, to simplify usage of the results
+        info.timeDomain = targetDomain;
+        for (const auto &swapchainCalibratedTimesInfo : swapchainCalibratedTimeInfos)
         {
-            VkCalibratedTimestampInfoKHR info;
-            info.sType      = getStructureType<VkCalibratedTimestampInfoKHR>();
-            info.pNext      = nullptr;
-            info.timeDomain = domain;
-            if (domain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT && !swapchainCalibratedTimeInfos.empty())
-            {
-                for (const auto &swapchainCalibratedTimesInfo : swapchainCalibratedTimeInfos)
-                {
-                    info.pNext = &swapchainCalibratedTimesInfo;
-                    infos.push_back(info);
-                }
-            }
-            else
-            {
-                infos.push_back(info);
-            }
+            if (targetDomain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT ||
+                targetDomain == VK_TIME_DOMAIN_SWAPCHAIN_LOCAL_EXT)
+                info.pNext = &swapchainCalibratedTimesInfo;
+
+            infos.push_back(info);
         }
 
         std::vector<uint64_t> curTimestamps(infos.size());
@@ -727,37 +785,14 @@ struct CalibratedTimestampHelper
 
         timestamps.push_back({});
         timestamps.back().deviation = deviation;
+        timestamps.back().host      = convertHostTimestampToNs(curTimestamps[0], m_freq);
 
-        // Add timestamps to results
-        uint32_t presentStageTimestampIdx = UINT32_MAX;
-        for (size_t i = 0; i < infos.size(); ++i)
+        uint32_t const presentStageTimestampIdx = 1;
+        for (size_t i = 1; i < infos.size(); ++i)
         {
-            switch (infos[i].timeDomain)
-            {
-            case VK_TIME_DOMAIN_QUERY_PERFORMANCE_COUNTER_KHR:
-            case VK_TIME_DOMAIN_CLOCK_MONOTONIC_RAW_KHR:
-            case VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR:
-                timestamps.back().host = convertHostTimestampToNs(curTimestamps[i], m_freq);
-                break;
 
-            case VK_TIME_DOMAIN_SWAPCHAIN_LOCAL_EXT:
-                timestamps.back().swapchain = curTimestamps[i];
-                break;
-
-            case VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT:
-                if (presentStageTimestampIdx == UINT32_MAX)
-                {
-                    presentStageTimestampIdx = static_cast<uint32_t>(i);
-                }
-
-                timestamps.back().presentStages.emplace(
-                    swapchainCalibratedTimeInfos[i - presentStageTimestampIdx].presentStage, curTimestamps[i]);
-                break;
-
-            default:
-                // Unused by test
-                break;
-            }
+            timestamps.back().presentStages.emplace(
+                swapchainCalibratedTimeInfos[i - presentStageTimestampIdx].presentStage, curTimestamps[i]);
         }
     }
 };
@@ -813,9 +848,13 @@ vk::VkResult presentWithTimingInfo(const DeviceInterface &vkd, vk::VkQueue queue
     return vkd.queuePresentKHR(queue, &presentInfo);
 }
 
-void recordAndSubmitFrame(const DeviceInterface &vkd, vk::VkQueue queue, vk::VkCommandBuffer cmdbuf, vk::VkImage image,
-                          vk::VkSemaphore renderSemaphore)
+void recordAndSubmitFrame(const DeviceInterface &vkd, vk::VkDevice device, vk::VkQueue queue,
+                          vk::VkCommandBuffer cmdbuf, vk::VkImage image, vk::VkSemaphore renderSemaphore,
+                          vk::VkFence renderFence)
 {
+    VK_CHECK(vkd.waitForFences(device, 1u, &renderFence, VK_TRUE, UINT64_MAX));
+    VK_CHECK(vkd.resetFences(device, 1u, &renderFence));
+
     beginCommandBuffer(vkd, cmdbuf, 0);
 
     transitionImage(vkd, cmdbuf, image, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
@@ -838,18 +877,24 @@ void recordAndSubmitFrame(const DeviceInterface &vkd, vk::VkQueue queue, vk::VkC
     const vk::VkSubmitInfo submitInfo = {
         VK_STRUCTURE_TYPE_SUBMIT_INFO, nullptr,          0, nullptr, nullptr, 1, &cmdbuf,
         signalSemaphoreCount,          pSignalSemaphores};
-    VK_CHECK(vkd.queueSubmit(queue, 1, &submitInfo, VK_NULL_HANDLE));
+    VK_CHECK(vkd.queueSubmit(queue, 1, &submitInfo, renderFence));
 }
 
 uint32_t acquireNextImage(const DeviceInterface &vkd, vk::VkDevice device, SwapchainAndImage &swapchain,
-                          vk::VkFence acquireFence)
+                          vk::VkFence acquireFence, de::Mutex *pSwapchainMutex)
 {
     if (swapchain.m_isSharedPresentMode && swapchain.m_sharedImageIndex != UINT32_MAX)
         return swapchain.m_sharedImageIndex;
 
     uint32_t imageIndex;
     VK_CHECK(vkd.resetFences(device, 1u, &acquireFence));
+
+    if (pSwapchainMutex)
+        pSwapchainMutex->lock();
     VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, UINT64_MAX, VK_NULL_HANDLE, acquireFence, &imageIndex));
+    if (pSwapchainMutex)
+        pSwapchainMutex->unlock();
+
     VK_CHECK(vkd.waitForFences(device, 1u, &acquireFence, VK_TRUE, UINT64_MAX));
 
     if (swapchain.m_isSharedPresentMode)
@@ -877,28 +922,46 @@ bool isPresentModeSupported(const InstanceInterface &vki, vk::VkPhysicalDevice p
 }
 
 uint32_t getPastPresentationTiming(const DeviceInterface &vkd, vk::VkDevice device, vk::VkSwapchainKHR swapchain,
-                                   PresentTimingHelper &pth)
+                                   PresentTimingHelper &pth, de::Mutex *pSwapchainMutex = nullptr)
 {
     vk::VkPastPresentationTimingInfoEXT pastTimingInfo = {VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_INFO_EXT, nullptr,
                                                           pth.pastPresentationTimingFlags, swapchain};
 
+    uint64_t fakeTimingPropertiesCounter                           = pth.timingPropertiesCounter - 1;
+    uint64_t fakeTimeDomainsCounter                                = pth.timeDomainsCounter - 1;
     vk::VkPastPresentationTimingPropertiesEXT pastTimingProperties = {
         VK_STRUCTURE_TYPE_PAST_PRESENTATION_TIMING_PROPERTIES_EXT,
         nullptr,
-        pth.timingPropertiesCounter, // timingPropertiesCounter
-        pth.timeDomainsCounter,      // timeDomainsCounter
+        fakeTimingPropertiesCounter, // timingPropertiesCounter
+        fakeTimeDomainsCounter,      // timeDomainsCounter
         pth.queueSize,               // presentationTimingCount
         pth.timings.data()           // pPresentationTimings
     };
 
     VkResult vkResult = vkd.getPastPresentationTimingEXT(device, &pastTimingInfo, &pastTimingProperties);
     if (vkResult != VK_INCOMPLETE)
-    {
         VK_CHECK(vkResult);
-    }
+
+    if (pastTimingProperties.timingPropertiesCounter == fakeTimingPropertiesCounter)
+        TCU_FAIL("timingPropertiesCounter was not set");
+    if (pastTimingProperties.timingPropertiesCounter < pth.timingPropertiesCounter)
+        TCU_FAIL("timingPropertiesCounter regressed");
+
+    if (pastTimingProperties.timeDomainsCounter == fakeTimeDomainsCounter)
+        TCU_FAIL("timeDomainsCounter was not set");
+    if (pastTimingProperties.timeDomainsCounter < pth.timeDomainsCounter)
+        TCU_FAIL("timeDomainsCounter regressed");
 
     if (pastTimingProperties.timingPropertiesCounter != pth.timingPropertiesCounter)
+    {
+        if (pSwapchainMutex)
+            pSwapchainMutex->lock();
+
         updateSwapchainTimingProperties(vkd, device, swapchain, pth);
+
+        if (pSwapchainMutex)
+            pSwapchainMutex->unlock();
+    }
 
     uint32_t resultCount = 0;
 
@@ -969,7 +1032,7 @@ tcu::TestStatus surfaceCapabilitiesTest(Context &context, Type wsiType)
         instHelper.vki, chooseDevice(instHelper.vki, instHelper.instance, context.getTestContext().getCommandLine()),
         *surface);
 
-    if (caps.presentTimingSupported && (caps.presentStageQueries & VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT) == 0)
+    if ((caps.presentStageQueries & VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT) == 0)
         TCU_FAIL("VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT must be supported if presentTimingSupported is true");
 
     return tcu::TestStatus::pass("Tests ran successfully");
@@ -1001,7 +1064,7 @@ tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(kDefaultWindowSize));
     Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                    native.getWindow(), context.getTestContext().getCommandLine()));
-    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE);
+    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device  = *devHelper.device;
 
@@ -1029,9 +1092,11 @@ tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
     // Grow queue size back to maxQueueSize and start filling it up
     VK_CHECK(vkd.setSwapchainPresentTimingQueueSizeEXT(device, *swapchain, maxQueueSize));
 
-    const Unique<vk::VkCommandPool> commandPool(createCommandPool(vkd, device, 0, devHelper.queueFamilyIndex));
+    const Unique<vk::VkCommandPool> commandPool(
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
     FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, maxQueueSize);
-    const std::vector<vk::VkImage> images = getSwapchainImages(vkd, device, *swapchain);
+    const std::vector<vk::VkImage> images     = getSwapchainImages(vkd, device, *swapchain);
+    std::vector<SemaphoreSp> renderSemaphores = allocateSemaphores(vkd, device, images.size());
 
     TimeDomainHelper timeDomainsHelper(vkd, device, *swapchain);
     const uint64_t timeDomainId = timeDomainsHelper.getSwapchainTimeDomainId(VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT);
@@ -1052,34 +1117,34 @@ tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
 
     for (uint32_t i = 0; i < maxQueueSize; i++)
     {
-        uint32_t imageIndex;
-        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
+        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
 
-        imageIndex = acquireNextImage(vkd, device, swapchain, frame.acquireFence);
+        recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, images[frame.imageIndex],
+                             **renderSemaphores[frame.imageIndex], frame.renderFence);
 
-        recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, images[imageIndex], frame.renderSemaphore);
-
-        VK_CHECK_WSI(
-            presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex, timingInfo, 0));
+        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                           frame.imageIndex, timingInfo, 0));
     }
 
     // Present queue is now full. Present one additional time to check for VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT
-    uint32_t imageIndex;
-    imageIndex = acquireNextImage(vkd, device, swapchain, frameStreamObjects.newFrame().acquireFence);
-
-    result = presentWithTimingInfo(vkd, devHelper.queue, VK_NULL_HANDLE, *swapchain, imageIndex, timingInfo, 0);
+    FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
+    recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, images[frame.imageIndex],
+                         **renderSemaphores[frame.imageIndex], frame.renderFence);
+    result = presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                   frame.imageIndex, timingInfo, 0);
     if (result != VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT)
         TCU_FAIL("Failed to trigger VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT");
 
     // We should be able to present with an empty stage mask though.
     timingInfo.presentStageQueries = 0;
-    VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, VK_NULL_HANDLE, *swapchain, imageIndex, timingInfo, 0));
+    VK_CHECK_WSI(
+        presentWithTimingInfo(vkd, devHelper.queue, VK_NULL_HANDLE, *swapchain, frame.imageIndex, timingInfo, 0));
     timingInfo.presentStageQueries = VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT;
 
     // Try shrinking queue size and check for VK_NOT_READY
     result = vkd.setSwapchainPresentTimingQueueSizeEXT(device, *swapchain, 2);
     if (result != VK_NOT_READY)
-        TCU_FAIL("Unexpected result from vkd.setSwapchainPresentTimingQueueSizeEXT");
+        TCU_FAIL("Unexpected result from vkSetSwapchainPresentTimingQueueSizeEXT");
 
     PresentTimingHelper pth(maxQueueSize, std::bitset<32>(timingInfo.presentStageQueries).count(),
                             timeDomainsHelper.timeDomainsCounter);
@@ -1087,11 +1152,21 @@ tcu::TestStatus timingQueueTest(Context &context, vk::wsi::Type wsiType)
     // Retrieve at least 1 result to make space in the results queue.
     uint32_t resultsCount = drainPresentationTimingResults(vkd, device, *swapchain, pth, 1);
     if (resultsCount == 0)
-        TCU_FAIL("Failed to retrieve all timing results");
+        TCU_FAIL("Failed to retrieve any timing results");
+
+    uint32_t const remainingResults = maxQueueSize - resultsCount;
 
     // Present again, it should work now.
-    imageIndex = acquireNextImage(vkd, device, swapchain, frameStreamObjects.newFrame().acquireFence);
-    VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, VK_NULL_HANDLE, *swapchain, imageIndex, timingInfo, 0));
+    FrameStreamObjects::FrameObjects retryFrame = frameStreamObjects.newFrame(swapchain);
+    recordAndSubmitFrame(vkd, device, devHelper.queue, retryFrame.commandBuffer, images[retryFrame.imageIndex],
+                         **renderSemaphores[retryFrame.imageIndex], retryFrame.renderFence);
+    VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[retryFrame.imageIndex], *swapchain,
+                                       retryFrame.imageIndex, timingInfo, 0));
+
+    // Drain all outstanding results
+    resultsCount = drainPresentationTimingResults(vkd, device, *swapchain, pth, remainingResults + 1);
+    if (resultsCount != remainingResults + 1)
+        TCU_FAIL("Failed to retrieve remaining results");
 
     return tcu::TestStatus::pass("Tests ran successfully");
 }
@@ -1104,7 +1179,8 @@ tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
     Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, config.wsiType,
                                                    native.getDisplay(), native.getWindow(),
                                                    context.getTestContext().getCommandLine()));
-    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE);
+    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE,
+                           (config.presentMode == VK_PRESENT_MODE_FIFO_LATEST_READY_KHR));
     const DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device  = *devHelper.device;
 
@@ -1123,8 +1199,9 @@ tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
         getBasicSwapchainParameters(config.wsiType, instHelper.vki, devHelper.physicalDevice, *surface,
                                     tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight), config.presentMode, 3);
     SwapchainAndImage swapchain(vkd, device, swapchainInfo);
-    const std::vector<vk::VkImage> images = getSwapchainImages(vkd, device, *swapchain);
-    const uint32_t imageCount             = static_cast<uint32_t>(images.size());
+    const std::vector<vk::VkImage> images     = getSwapchainImages(vkd, device, *swapchain);
+    const uint32_t imageCount                 = static_cast<uint32_t>(images.size());
+    std::vector<SemaphoreSp> renderSemaphores = allocateSemaphores(vkd, device, imageCount);
 
     // Set present timing queue size to 2x image count to give the presentation engine some time to report results
     const uint32_t presentQueueSize = imageCount * 2;
@@ -1137,7 +1214,8 @@ tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
     if (timeDomainId == UINT64_MAX)
         TCU_THROW(NotSupportedError, "Requested time domain not supported");
 
-    const Unique<vk::VkCommandPool> commandPool(createCommandPool(vkd, device, 0, devHelper.queueFamilyIndex));
+    const Unique<vk::VkCommandPool> commandPool(
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
     FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, presentQueueSize);
     const uint32_t frameCount       = 10;
     const uint64_t initialPresentId = 1;
@@ -1161,14 +1239,13 @@ tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
 
     for (uint32_t frameIdx = 0; frameIdx < frameCount; frameIdx++)
     {
-        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
+        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
 
-        uint32_t imageIndex = acquireNextImage(vkd, device, swapchain, frame.acquireFence);
+        recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, images[frame.imageIndex],
+                             **renderSemaphores[frame.imageIndex], frame.renderFence);
 
-        recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, images[imageIndex], frame.renderSemaphore);
-
-        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex,
-                                           timingInfo, currentPresentId));
+        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                           frame.imageIndex, timingInfo, currentPresentId));
         pendingResults++;
 
         uint32_t resultCount = getPastPresentationTiming(vkd, device, *swapchain, pth);
@@ -1184,28 +1261,106 @@ tcu::TestStatus timingTest(Context &context, PresentTimingTestConfig config)
         TCU_FAIL("Failed to retrieve all timing results");
 
     pth.sortResults();
+    pth.verifyPresentIds(initialPresentId, presentIdStep, frameCount, config.presentStageQueries);
 
-    // Verify the timing data report is complete for each result
-    for (uint32_t i = 0; i < frameCount; i++)
+    return tcu::TestStatus::pass("All tests ran successfully");
+}
+
+tcu::TestStatus largeQueueSizeTest(Context &context, vk::wsi::Type wsiType)
+{
+    const InstanceHelper instHelper(context, wsiType);
+    const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(kDefaultWindowSize));
+    Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
+                                                   native.getWindow(), context.getTestContext().getCommandLine()));
+    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE, false);
+    const DeviceInterface &vkd = devHelper.vkd;
+    const vk::VkDevice device  = *devHelper.device;
+
+    std::vector<vk::VkPresentModeKHR> presentModes =
+        getPhysicalDeviceSurfacePresentModes(instHelper.vki, devHelper.physicalDevice, *surface);
+
+    // Attempt to use immediate; if unsupported, fall back to fifo
+    VkPresentModeKHR presentMode = VK_PRESENT_MODE_IMMEDIATE_KHR;
+    if (std::find(presentModes.begin(), presentModes.end(), presentMode) == presentModes.end())
+        presentMode = VK_PRESENT_MODE_FIFO_KHR;
+
+    vk::VkSwapchainCreateInfoKHR swapchainInfo =
+        getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface,
+                                    tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight), presentMode, 3);
+    SwapchainAndImage swapchain(vkd, device, swapchainInfo);
+    const std::vector<vk::VkImage> images     = getSwapchainImages(vkd, device, *swapchain);
+    std::vector<SemaphoreSp> renderSemaphores = allocateSemaphores(vkd, device, images.size());
+
+    // Use a large present timing queue size, but if immediate mode is unsupported, limit the size to keep the test reasonably quick. The test will present twice as many frames as the queue size, and drain once full, expecting to fill the queue one time.
+    const uint32_t presentQueueSize = presentMode == VK_PRESENT_MODE_IMMEDIATE_KHR ? 512 : 64;
+    const uint32_t frameCount       = presentQueueSize * 2;
+    vk::VkResult result             = vkd.setSwapchainPresentTimingQueueSizeEXT(device, *swapchain, presentQueueSize);
+    if (result != VK_SUCCESS)
+        TCU_FAIL("Failed to set swapchain present timing queue size");
+
+    TimeDomainHelper timeDomainsHelper(vkd, device, *swapchain);
+    const uint64_t timeDomainId = timeDomainsHelper.getSwapchainTimeDomainId(VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT);
+    if (timeDomainId == UINT64_MAX)
+        TCU_THROW(NotSupportedError, "Requested time domain not supported");
+
+    const Unique<vk::VkCommandPool> commandPool(
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
+    FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, presentQueueSize);
+    const uint64_t initialPresentId = 1;
+    const uint64_t presentIdStep    = 3;
+    uint64_t currentPresentId       = initialPresentId;
+    uint32_t pendingResults         = 0;
+    PresentTimingHelper pth(presentQueueSize, kMaxPresentStageCount, timeDomainsHelper.timeDomainsCounter);
+    updateSwapchainTimingProperties(vkd, device, *swapchain, pth);
+
+    showWindow(native, wsiType);
+
+    vk::VkPresentTimingInfoEXT timingInfo = {
+        VK_STRUCTURE_TYPE_PRESENT_TIMING_INFO_EXT,
+        nullptr,                                      // pNext
+        0,                                            // flags
+        0,                                            // targetTime
+        timeDomainId,                                 // timeDomainId
+        kAllPresentStages,                            // presentStageQueries
+        VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT // targetTimeDomainPresentStage
+    };
+
+    bool bufferFilledOnce = false;
+    for (uint32_t frameIdx = 0; frameIdx < frameCount; frameIdx++)
     {
-        uint64_t expectedPresentId = initialPresentId + i * presentIdStep;
-        if (pth.results[i].presentId != expectedPresentId)
+        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
+
+        recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, images[frame.imageIndex],
+                             **renderSemaphores[frame.imageIndex], frame.renderFence);
+
+        result = presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                       frame.imageIndex, timingInfo, currentPresentId);
+
+        // Drain the buffer fully the first time the queue is full
+        if (result == VK_ERROR_PRESENT_TIMING_QUEUE_FULL_EXT)
         {
-            TCU_FAIL("Unexpected present ID");
+            if (bufferFilledOnce)
+                TCU_FAIL("Present timing queue filled up more than once");
+            bufferFilledOnce = true;
+
+            pendingResults -= drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults);
+            if (pendingResults != 0)
+                TCU_FAIL("Failed to drain all results after filling the buffer once");
+
+            result = presentWithTimingInfo(vkd, devHelper.queue, VK_NULL_HANDLE, *swapchain, frame.imageIndex,
+                                           timingInfo, currentPresentId);
         }
+        VK_CHECK_WSI(result);
 
-        if (i > 0 && pth.results[i].times.begin()->second != 0 && pth.results[i - 1].times.begin()->second != 0 &&
-            pth.results[i].times.begin()->second < pth.results[i - 1].times.begin()->second)
-        {
-            TCU_FAIL("Times are not increasing");
-        }
-
-        if (pth.results[i].stageCount != 1)
-            TCU_FAIL("Unexpected present stage count");
-
-        if (pth.results[i].stages != config.presentStageQueries)
-            TCU_FAIL("Unexpected present stage");
+        pendingResults++;
+        currentPresentId += presentIdStep;
     }
+
+    if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
+        TCU_FAIL("Failed to retrieve all timing results");
+
+    pth.sortResults();
+    pth.verifyPresentIds(initialPresentId, presentIdStep, frameCount, kAllPresentStages);
 
     return tcu::TestStatus::pass("All tests ran successfully");
 }
@@ -1235,6 +1390,8 @@ struct GetPastPresentTimingThreadSharedState
     std::atomic<bool> m_presentingDone;
     std::atomic<uint32_t> m_pendingResults;
 
+    de::Mutex m_swapchainMutex;
+
     std::array<PresentTimingHelper, kNumParallelThreads> m_pths;
     std::vector<std::exception_ptr> m_threadsException;
 };
@@ -1255,8 +1412,9 @@ public:
         {
             while (!m_sharedState.m_presentingDone.load())
             {
-                uint32_t numResults = getPastPresentationTiming(m_sharedState.m_vkd, m_sharedState.m_device,
-                                                                m_sharedState.m_swapchain, m_pth);
+                uint32_t numResults =
+                    getPastPresentationTiming(m_sharedState.m_vkd, m_sharedState.m_device, m_sharedState.m_swapchain,
+                                              m_pth, &m_sharedState.m_swapchainMutex);
                 if (m_sharedState.m_pendingResults < numResults)
                     TCU_FAIL("Retrieved more results than presented");
 
@@ -1284,7 +1442,7 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(kDefaultWindowSize));
     Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                    native.getWindow(), context.getTestContext().getCommandLine()));
-    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE);
+    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device  = *devHelper.device;
 
@@ -1300,7 +1458,8 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, *surface,
                                     tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight), VK_PRESENT_MODE_FIFO_KHR, 3);
     SwapchainAndImage swapchain(vkd, device, swapchainInfo);
-    const std::vector<vk::VkImage> images = getSwapchainImages(vkd, device, *swapchain);
+    const std::vector<vk::VkImage> images     = getSwapchainImages(vkd, device, *swapchain);
+    std::vector<SemaphoreSp> renderSemaphores = allocateSemaphores(vkd, device, images.size());
 
     const uint32_t frameCount       = 10;
     const uint32_t presentQueueSize = frameCount;
@@ -1333,7 +1492,8 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
     const uint64_t initialPresentId = 1;
     const uint64_t presentIdStep    = 3;
     uint64_t currentPresentId       = initialPresentId;
-    const Unique<vk::VkCommandPool> commandPool(createCommandPool(vkd, device, 0, devHelper.queueFamilyIndex));
+    const Unique<vk::VkCommandPool> commandPool(
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
     FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, presentQueueSize);
 
     // Launch several background threads for querying timing results
@@ -1350,13 +1510,16 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
         // Present frames
         for (uint32_t frameIdx = 0; frameIdx < frameCount; frameIdx++)
         {
-            FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
-            uint32_t imageIndex                    = acquireNextImage(vkd, device, swapchain, frame.acquireFence);
+            FrameStreamObjects::FrameObjects frame =
+                frameStreamObjects.newFrame(swapchain, &sharedState.m_swapchainMutex);
 
-            recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, images[imageIndex], frame.renderSemaphore);
+            recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, images[frame.imageIndex],
+                                 **renderSemaphores[frame.imageIndex], frame.renderFence);
 
-            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex,
-                                               timingInfo, currentPresentId));
+            de::ScopedLock lock(sharedState.m_swapchainMutex);
+            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                               frame.imageIndex, timingInfo, currentPresentId));
+            sharedState.m_swapchainMutex.unlock();
 
             currentPresentId += presentIdStep;
         }
@@ -1395,26 +1558,7 @@ tcu::TestStatus timingTestWithBackgroundQueryThreads(Context &context, Type wsiT
                            sharedState.m_pths[i].results.end());
 
     pth.sortResults();
-    if (pth.results.size() != frameCount)
-        TCU_FAIL("Did not receive correct number of results");
-
-    // Verify the timing data report is complete for each result
-    for (uint32_t i = 0; i < frameCount; i++)
-    {
-        uint64_t expectedPresentId = initialPresentId + i * presentIdStep;
-        if (pth.results[i].presentId != expectedPresentId)
-            TCU_FAIL("Unexpected present ID");
-
-        if (i > 0 && pth.results[i].times.begin()->second != 0 && pth.results[i - 1].times.begin()->second != 0 &&
-            pth.results[i].times.begin()->second < pth.results[i - 1].times.begin()->second)
-            TCU_FAIL("Times are not increasing");
-
-        if (pth.results[i].stageCount != numSupportedPresentStages)
-            TCU_FAIL("Unexpected present stage count");
-
-        if (pth.results[i].stages != surfaceCaps.presentStageQueries)
-            TCU_FAIL("Unexpected present stage");
-    }
+    pth.verifyPresentIds(initialPresentId, presentIdStep, frameCount, surfaceCaps.presentStageQueries);
 
     return tcu::TestStatus::pass("All tests ran successfully");
 }
@@ -1427,24 +1571,21 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
                                                          native.getDisplay(), native.getWindow(),
                                                          context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, surface.get(), PresentAtMode::NONE);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, surface.get(), PresentAtMode::NONE,
+                                 false);
     const DeviceInterface &vkd                 = devHelper.vkd;
     const vk::VkDevice device                  = *devHelper.device;
     vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
         wsiType, instHelper.vki, devHelper.physicalDevice, *surface, kDefaultWindowSize, VK_PRESENT_MODE_FIFO_KHR, 2);
 
-    const vk::VkPresentTimingSurfaceCapabilitiesEXT surfaceCaps =
-        getSurfacePresentTimingCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
-
-    // Verify support for running with the given test parameters
-    if (!surfaceCaps.presentTimingSupported)
-        TCU_THROW(NotSupportedError, "Present Timing is not supported");
+    // Verify that capabilities are supported
+    getSurfacePresentTimingCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
 
     const Unique<vk::VkCommandPool> commandPool(
         createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
     FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, 3);
 
-    const vk::VkPresentTimingInfoEXT presentTimingInfo = {
+    vk::VkPresentTimingInfoEXT presentTimingInfo = {
         VK_STRUCTURE_TYPE_PRESENT_TIMING_INFO_EXT,
         nullptr,                                      // pNext
         0,                                            // flags
@@ -1457,8 +1598,12 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
     showWindow(native, wsiType);
 
     const uint32_t frameCount = 10;
-    std::array<SwapchainAndImage, 2> swapchains{};
-    std::array<uint64_t, 2> timeDomainCounters{};
+
+    constexpr uint32_t numSwapchains = 2;
+    std::array<SwapchainAndImage, numSwapchains> swapchains{};
+    std::array<uint64_t, numSwapchains> timeDomainCounters{};
+    std::vector<std::vector<SemaphoreSp>> renderSemaphores(numSwapchains);
+
     for (uint32_t swapchainIdx = 0; swapchainIdx < 2; swapchainIdx++)
     {
         swapchains[swapchainIdx].createSwapchain(vkd, device, swapchainInfo);
@@ -1466,19 +1611,24 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
 
         TimeDomainHelper timeDomainsHelper(vkd, device, swapchain);
         timeDomainCounters[swapchainIdx] = timeDomainsHelper.timeDomainsCounter;
+        presentTimingInfo.timeDomainId =
+            timeDomainsHelper.getSwapchainTimeDomainId(VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT);
+        if (presentTimingInfo.timeDomainId == UINT64_MAX)
+            TCU_THROW(NotSupportedError, "Time Domain not supported");
 
         VK_CHECK(vkd.setSwapchainPresentTimingQueueSizeEXT(device, swapchain, frameCount));
 
         const std::vector<vk::VkImage> images = vk::wsi::getSwapchainImages(vkd, device, swapchain);
+        renderSemaphores[swapchainIdx]        = allocateSemaphores(vkd, device, images.size());
 
         for (uint32_t frameIdx = 0; frameIdx < frameCount; frameIdx++)
         {
-            FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
+            FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchains[swapchainIdx]);
+            VkSemaphore renderSemaphore            = **renderSemaphores[swapchainIdx][frame.imageIndex];
 
-            uint32_t imageIndex = acquireNextImage(vkd, device, swapchains[swapchainIdx], frame.acquireFence);
-
-            recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, images[imageIndex], frame.renderSemaphore);
-            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, swapchain, imageIndex,
+            recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, images[frame.imageIndex],
+                                 renderSemaphore, frame.renderFence);
+            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, renderSemaphore, swapchain, frame.imageIndex,
                                                presentTimingInfo, frameIdx + 1));
         }
 
@@ -1520,7 +1670,8 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
                                                          native.getDisplay(), native.getWindow(),
                                                          context.getTestContext().getCommandLine()));
 
-    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, surface.get(), config.presentAtMode);
+    const DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, surface.get(), config.presentAtMode,
+                                 (config.presentMode == VK_PRESENT_MODE_FIFO_LATEST_READY_KHR));
     const DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device  = *devHelper.device;
     SimpleAllocator allocator(vkd, device, getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
@@ -1530,8 +1681,6 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
         getSurfacePresentTimingCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
 
     // Verify support for running with the given test parameters
-    if (!surfaceCaps.presentTimingSupported)
-        TCU_THROW(NotSupportedError, "Present Timing is not supported");
     if (config.presentAtMode == PresentAtMode::ABSOLUTE && !surfaceCaps.presentAtAbsoluteTimeSupported)
         TCU_THROW(NotSupportedError, "presentAtAbsoluteTime is not supported");
     if (config.presentAtMode == PresentAtMode::RELATIVE && !surfaceCaps.presentAtRelativeTimeSupported)
@@ -1561,6 +1710,7 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
 
     const size_t maxQueuedFrames = swapchainImages.size() * 2;
     FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, maxQueuedFrames);
+    std::vector<SemaphoreSp> renderSemaphores = allocateSemaphores(vkd, device, swapchainImages.size());
 
     VkPresentTimingInfoFlagsEXT presentAtInfoFlags{};
     if (config.presentAtMode == PresentAtMode::RELATIVE)
@@ -1592,14 +1742,13 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
         // Present frames until we have our first non-zero result
         for (; presentId < kMaxQueryAttempts && baseResult.presentId == 0; presentId++)
         {
-            FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
-            const uint32_t imageIndex              = acquireNextImage(vkd, device, swapchain, frame.acquireFence);
+            FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
 
-            recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, swapchainImages[imageIndex],
-                                 frame.renderSemaphore);
+            recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, swapchainImages[frame.imageIndex],
+                                 **renderSemaphores[frame.imageIndex], frame.renderFence);
 
-            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex,
-                                               presentTimingInfo, presentId));
+            VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                               frame.imageIndex, presentTimingInfo, presentId));
             pendingResults++;
 
             pth.results.clear();
@@ -1657,11 +1806,10 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
     const uint64_t skippedPresentId = presentId + 4;
     for (uint32_t frameIdx = 0; frameIdx < frameCount; frameIdx++)
     {
-        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
-        const uint32_t imageIndex              = acquireNextImage(vkd, device, swapchain, frame.acquireFence);
+        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
 
-        recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, swapchainImages[imageIndex],
-                             frame.renderSemaphore);
+        recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, swapchainImages[frame.imageIndex],
+                             **renderSemaphores[frame.imageIndex], frame.renderFence);
 
         if (config.presentAtMode == PresentAtMode::ABSOLUTE)
             presentTimingInfo.targetTime = calculateTargetPresentTime(basePresentId, baseResult.times.begin()->second,
@@ -1677,8 +1825,8 @@ tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
         // setting a stage, which should result in not receiving feedback on it
         if (presentId == skippedPresentId)
             presentTimingInfo.presentStageQueries = 0;
-        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex,
-                                           presentTimingInfo, presentId));
+        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                           frame.imageIndex, presentTimingInfo, presentId));
         if (presentId != skippedPresentId)
             pendingResults++;
         presentTimingInfo.presentStageQueries = kAllPresentStages;
@@ -1761,7 +1909,7 @@ tcu::TestStatus timeDomainPropertiesTest(Context &context, Type wsiType)
     const NativeObjects native(context, instHelper.supportedExtensions, wsiType, 1u, tcu::just(kDefaultWindowSize));
     Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
                                                    native.getWindow(), context.getTestContext().getCommandLine()));
-    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE);
+    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device  = *devHelper.device;
 
@@ -1775,6 +1923,7 @@ tcu::TestStatus timeDomainPropertiesTest(Context &context, Type wsiType)
 
     // Validate time domain counter behavior
     const std::vector<vk::VkImage> swapchainImages = vk::wsi::getSwapchainImages(vkd, device, *swapchain);
+    std::vector<SemaphoreSp> renderSemaphores      = allocateSemaphores(vkd, device, swapchainImages.size());
     const Unique<vk::VkCommandPool> commandPool(
         createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
 
@@ -1817,15 +1966,14 @@ tcu::TestStatus timeDomainPropertiesTest(Context &context, Type wsiType)
         const std::vector<uint64_t> prevTimeDomainIds          = timeDomainsHelper.timeDomainIds;
 
         // Submit new work and present
-        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
-        const uint32_t imageIndex              = acquireNextImage(vkd, device, swapchain, frame.acquireFence);
+        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
 
-        recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, swapchainImages[imageIndex],
-                             frame.renderSemaphore);
+        recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, swapchainImages[frame.imageIndex],
+                             **renderSemaphores[frame.imageIndex], frame.renderFence);
 
         const uint64_t presentId = frameIdx + 1;
-        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex,
-                                           timingInfo, presentId));
+        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                           frame.imageIndex, timingInfo, presentId));
 
         // Fetch new domain propterties and check the data returned is valid
         VkResult result = timeDomainsHelper.fetchProperties(vkd);
@@ -1881,6 +2029,11 @@ tcu::TestStatus timeDomainPropertiesTest(Context &context, Type wsiType)
         }
     }
 
+    // Drain all outstanding results
+    const uint32_t pendingResults = maxQueuedFrames - handledResults;
+    if (drainPresentationTimingResults(vkd, device, *swapchain, pth, pendingResults) != pendingResults)
+        TCU_FAIL("Failed to retrieve all remaining timing results");
+
     return tcu::TestStatus::pass("Tests ran successfully");
 }
 
@@ -1893,7 +2046,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     Unique<vk::VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, config.wsiType,
                                                    native.getDisplay(), native.getWindow(),
                                                    context.getTestContext().getCommandLine()));
-    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE);
+    DeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface, PresentAtMode::NONE, false);
     const DeviceInterface &vkd = devHelper.vkd;
     const vk::VkDevice device  = *devHelper.device;
 
@@ -1901,10 +2054,12 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
         getBasicSwapchainParameters(config.wsiType, instHelper.vki, devHelper.physicalDevice, *surface,
                                     tcu::UVec2(kDefaultWindowWidth, kDefaultWindowHeight), VK_PRESENT_MODE_FIFO_KHR, 3);
     SwapchainAndImage swapchain(vkd, device, swapchainInfo);
-    const std::vector<vk::VkImage> images = getSwapchainImages(vkd, device, *swapchain);
+    const std::vector<vk::VkImage> images     = getSwapchainImages(vkd, device, *swapchain);
+    std::vector<SemaphoreSp> renderSemaphores = allocateSemaphores(vkd, device, images.size());
 
     const uint32_t frameCount = 3;
-    const Unique<vk::VkCommandPool> commandPool(createCommandPool(vkd, device, 0, devHelper.queueFamilyIndex));
+    const Unique<vk::VkCommandPool> commandPool(
+        createCommandPool(vkd, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
     FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, frameCount);
 
     const vk::VkPresentTimingSurfaceCapabilitiesEXT surfaceCaps =
@@ -1918,15 +2073,6 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     vk::VkResult result             = vkd.setSwapchainPresentTimingQueueSizeEXT(device, *swapchain, presentQueueSize);
     if (result != VK_SUCCESS)
         TCU_FAIL("Failed to set swapchain present timing queue size");
-
-    VkPresentStageFlagsEXT supportedPresentStageQueries{};
-    if (config.timeDomain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT)
-    {
-        if ((surfaceCaps.presentStageQueries & VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT) == 0)
-            TCU_FAIL("VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT must be supported");
-
-        supportedPresentStageQueries = surfaceCaps.presentStageQueries;
-    }
 
     // Get calibreatable time domains.
     uint32_t domainCount;
@@ -1959,33 +2105,32 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     preferredHostDomains.push_back(VK_TIME_DOMAIN_CLOCK_MONOTONIC_KHR);
 #endif
 
-    // Populate domains with the test domain, and a host domain
-    std::vector<VkTimeDomainKHR> domains(1, config.timeDomain);
+    VkTimeDomainKHR hostDomain;
     auto it = std::find_first_of(preferredHostDomains.begin(), preferredHostDomains.end(), supportedDomains.begin(),
                                  supportedDomains.end());
-    if (it != preferredHostDomains.end())
-    {
-        domains.push_back(*it);
-    }
+    if (it == preferredHostDomains.end())
+        TCU_FAIL("Failed to find a host domain");
+    hostDomain = *it;
 
     TimeDomainHelper timeDomainsHelper(vkd, device, *swapchain);
     const uint64_t timeDomainId = timeDomainsHelper.getSwapchainTimeDomainId(config.timeDomain);
     if (timeDomainId == UINT64_MAX)
         TCU_THROW(NotSupportedError, "Failed to query time domain ID");
 
-    // With the swapchain domain, we'll still need a slot even though a specific present stage won't be queried
-    const size_t numSupportedPresentStages =
-        std::max<size_t>(1U, std::bitset<32>(supportedPresentStageQueries).count());
-    PresentTimingHelper pth(presentQueueSize, numSupportedPresentStages, timeDomainsHelper.timeDomainsCounter);
+    PresentTimingHelper pth(presentQueueSize, kMaxPresentStageCount, timeDomainsHelper.timeDomainsCounter);
     updateSwapchainTimingProperties(vkd, device, *swapchain, pth);
 
+    // With the swapchain domain, we'll still need a slot even though a specific present stage won't be queried when requesting the calibration timestamp
+    VkPresentStageFlagsEXT calibrationStageQueryMask =
+        (config.timeDomain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT) ?
+            kAllPresentStages :
+            static_cast<VkPresentStageFlagsEXT>(VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT);
     std::vector<VkSwapchainCalibratedTimestampInfoEXT> swapchainCalibratedTimesInfos{};
-    VkPresentStageFlagsEXT presentStageQueryMask = supportedPresentStageQueries;
     do
     {
         const VkPresentStageFlagsEXT presentStage =
-            presentStageQueryMask & -static_cast<int32_t>(presentStageQueryMask);
-        presentStageQueryMask &= ~presentStage;
+            calibrationStageQueryMask & -static_cast<int32_t>(calibrationStageQueryMask);
+        calibrationStageQueryMask &= ~presentStage;
 
         VkSwapchainCalibratedTimestampInfoEXT info = {
             getStructureType<VkSwapchainCalibratedTimestampInfoEXT>(),
@@ -1996,7 +2141,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
         };
 
         swapchainCalibratedTimesInfos.push_back(info);
-    } while (presentStageQueryMask);
+    } while (calibrationStageQueryMask);
 
     vk::VkPresentTimingInfoEXT timingInfo = {
         getStructureType<VkPresentTimingInfoEXT>(),
@@ -2004,7 +2149,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
         0,                                            // flags
         0,                                            // targetTime
         timeDomainId,                                 // timeDomainId
-        supportedPresentStageQueries,                 // presentStageQueries
+        kAllPresentStages,                            // presentStageQueries
         VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT // targetTimeDomainPresentStage
     };
 
@@ -2014,23 +2159,22 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     CalibratedTimestampHelper afters(device, freq);
     for (uint32_t frameIdx = 0; frameIdx < frameCount; frameIdx++)
     {
-        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame();
+        FrameStreamObjects::FrameObjects frame = frameStreamObjects.newFrame(swapchain);
 
-        uint32_t imageIndex = acquireNextImage(vkd, device, swapchain, frame.acquireFence);
+        befores.getCalibratedTimestamps(vkd, hostDomain, config.timeDomain, swapchainCalibratedTimesInfos);
 
-        befores.getCalibratedTimestamps(vkd, domains, swapchainCalibratedTimesInfos);
-
-        recordAndSubmitFrame(vkd, devHelper.queue, frame.commandBuffer, images[imageIndex], frame.renderSemaphore);
+        recordAndSubmitFrame(vkd, device, devHelper.queue, frame.commandBuffer, images[frame.imageIndex],
+                             **renderSemaphores[frame.imageIndex], frame.renderFence);
 
         const uint64_t presentId = frameIdx + 1;
-        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, frame.renderSemaphore, *swapchain, imageIndex,
-                                           timingInfo, presentId));
+        VK_CHECK_WSI(presentWithTimingInfo(vkd, devHelper.queue, **renderSemaphores[frame.imageIndex], *swapchain,
+                                           frame.imageIndex, timingInfo, presentId));
 
         uint32_t resultsCount = drainPresentationTimingResults(vkd, device, *swapchain, pth, 1);
         if (resultsCount != 1)
             TCU_FAIL("Failed to retrieve all timing results");
 
-        afters.getCalibratedTimestamps(vkd, domains, swapchainCalibratedTimesInfos);
+        afters.getCalibratedTimestamps(vkd, hostDomain, config.timeDomain, swapchainCalibratedTimesInfos);
     }
 
     pth.sortResults();
@@ -2039,7 +2183,7 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     for (uint32_t i = 0; i < frameCount; i++)
     {
         // Check that each presented timestamp falls between the before/after calibrated timestamp
-        VkPresentStageFlagsEXT presentStages = supportedPresentStageQueries;
+        VkPresentStageFlagsEXT presentStages = kAllPresentStages;
         do
         {
             const VkPresentStageFlagsEXT presentStage = presentStages & -static_cast<int32_t>(presentStages);
@@ -2153,6 +2297,7 @@ void populateBasicGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
     addFunctionCase(testGroup, "surface_capabilities", surfaceCapabilitiesTest, wsiType);
     addFunctionCase(testGroup, "timing_queue", timingQueueTest, wsiType);
     addFunctionCase(testGroup, "retired_swapchain", retiredSwapchainTest, wsiType);
+    addFunctionCase(testGroup, "large_queue_size", largeQueueSizeTest, wsiType);
 }
 
 void populateQueryGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
@@ -2191,11 +2336,20 @@ void populateQueryGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 
 void populateTimeDomainGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
-    addFunctionCase(testGroup, "properties", timeDomainPropertiesTest, wsiType);
-    addFunctionCase(testGroup, "present_stage_calibration", timeDomainCalibrationTest,
-                    CalibrationTestConfig{wsiType, VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT});
-    addFunctionCase(testGroup, "swapchain_calibration", timeDomainCalibrationTest,
-                    CalibrationTestConfig{wsiType, VK_TIME_DOMAIN_SWAPCHAIN_LOCAL_EXT});
+    de::MovePtr<tcu::TestCaseGroup> calibrationGroup(
+        new tcu::TestCaseGroup(testGroup->getTestContext(), "calibration"));
+    for (auto timeDomain : timeDomains)
+    {
+        addFunctionCase(&*calibrationGroup, timeDomain.name, timeDomainCalibrationTest,
+                        CalibrationTestConfig{wsiType, timeDomain.timeDomain});
+    }
+    testGroup->addChild(calibrationGroup.release());
+
+    // A function can't be added to a test group which already has children groups, so we must create
+    // this group for our parallel test case
+    de::MovePtr<tcu::TestCaseGroup> propertiesGroup(new tcu::TestCaseGroup(testGroup->getTestContext(), "properties"));
+    addFunctionCase(&*propertiesGroup, "properties", timeDomainPropertiesTest, wsiType);
+    testGroup->addChild(propertiesGroup.release());
 }
 
 void populatePresentAtGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
