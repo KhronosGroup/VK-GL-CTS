@@ -608,6 +608,7 @@ tcu::Format::Bitfield<32>	getVideoEncodeH265RateControlFlagsKHRStr		(VkVideoEnco
 tcu::Format::Bitfield<32>	getVideoEncodeH265StdFlagsKHRStr				(VkVideoEncodeH265StdFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeH265TransformBlockSizeFlagsKHRStr	(VkVideoEncodeH265TransformBlockSizeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeIntraRefreshModeFlagsKHRStr		(VkVideoEncodeIntraRefreshModeFlagsKHR value);
+tcu::Format::Bitfield<32>	getVideoEncodePerPartitionFeedbackFlagsKHRStr	(VkVideoEncodePerPartitionFeedbackFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeRateControlModeFlagsKHRStr		(VkVideoEncodeRateControlModeFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoEncodeUsageFlagsKHRStr					(VkVideoEncodeUsageFlagsKHR value);
 tcu::Format::Bitfield<32>	getVideoSessionCreateFlagsKHRStr				(VkVideoSessionCreateFlagsKHR value);
@@ -1429,6 +1430,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexAttribute
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoDecodeVP9FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeAV1FeaturesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeQualityLevelInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR& value);
@@ -1536,6 +1538,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolPerformanceCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolPerformanceQueryCreateInfoINTEL& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolVideoEncodeFeedbackCreateInfoKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkQueryPoolVideoEncodePerPartitionFeedbackCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyDataGraphProcessingEnginePropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyDataGraphPropertiesARM& value);
 std::ostream&	operator<<	(std::ostream& s, const VkQueueFamilyGlobalPriorityProperties& value);
@@ -1740,6 +1743,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1RateControlLaye
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1SessionCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeAV1SessionParametersCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeCapabilitiesKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeFeedback2CapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264CapabilitiesKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264DpbSlotInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVideoEncodeH264FrameSizeKHR& value);

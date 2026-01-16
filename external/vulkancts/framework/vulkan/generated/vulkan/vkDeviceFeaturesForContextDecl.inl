@@ -206,6 +206,7 @@ const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				getVertexAttr
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynamicStateFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						getVideoDecodeVP9Features							(void) const;
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						getVideoEncodeAV1Features							(void) const;
+const vk::VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR&					getVideoEncodeFeedback2Features						(void) const;
 const vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&				getVideoEncodeIntraRefreshFeatures					(void) const;
 const vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&			getVideoEncodeQuantizationMapFeatures				(void) const;
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						getVideoMaintenance1Features						(void) const;

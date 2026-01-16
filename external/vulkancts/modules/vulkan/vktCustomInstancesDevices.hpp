@@ -362,6 +362,7 @@ public:
         VIDEO_DEVICE_FLAG_REQUIRE_DECODE_VP9                   = 0x00000100,
         VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH                = 0x00000200,
         VIDEO_DEVICE_FLAG_REQUIRE_UNIFIED_IMAGE_LAYOUTS        = 0x00000400,
+        VIDEO_DEVICE_FLAG_REQUIRE_ENCODE_FEEDBACK_2            = 0x00000800,
     };
 
     typedef uint32_t VideoDeviceFlags;

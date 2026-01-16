@@ -37,6 +37,7 @@
 #include "tcuTestLog.hpp"
 #include "tcuPlatform.hpp"
 #include "tcuFunctionLibrary.hpp"
+#include <iomanip>
 #include "tcuSurface.hpp"
 
 #include "tcuTexture.hpp"
@@ -61,6 +62,9 @@
 #include <string>
 #include <algorithm>
 #include <cmath>
+#include <limits>
+
+#include "deInt32.h"
 
 namespace vkt
 {
@@ -158,6 +162,24 @@ enum TestType
     TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY,
     TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY,
 
+    // VK_KHR_video_encode_feedback2 test types for H264
+    TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1,             // Test with 1 partition
+    TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX,           // Test with max partitions
+    TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED, // Test max partitions with 1 query pool entry
+    TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS,            // Test intra/inter pixel counts
+    TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS,       // Test intra/inter/skip pixel counts
+    TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX,            // Test average/min/max QP feedback
+    TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM,                    // Test QP feedback with quantization map
+
+    // VK_KHR_video_encode_feedback2 test types for H265
+    TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1,
+    TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX,
+    TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED, // Test max partitions with 1 query pool entry
+    TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS,            // Test intra/inter pixel counts
+    TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS,       // Test intra/inter/skip pixel counts
+    TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX,
+    TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM, // Test QP feedback with quantization map
+
     TEST_TYPE_LAST
 };
 
@@ -203,6 +225,13 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
     case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM:
         return TEST_CODEC_H264;
     case TEST_TYPE_H265_ENCODE_I:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
@@ -234,11 +263,38 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY:
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY:
     case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM:
         return TEST_CODEC_H265;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
 }
+
+#ifdef DE_BUILD_VIDEO
+bool isFeedback2PartitionCountTest(const TestType testType)
+{
+    switch (testType)
+    {
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+        return true;
+    default:
+        break;
+    }
+
+    return false;
+}
+#endif // DE_BUILD_VIDEO
 
 enum FrameType
 {
@@ -278,6 +334,8 @@ enum Option : uint32_t
     IntraRefreshBlockColumn      = 1 << 15, // Block column-based intra refresh mode
     IntraRefreshEmptyRegion      = 1 << 16, // Empty region intra refresh (uses maxIntraRefreshCycleDuration)
     IntraRefreshMidway           = 1 << 17, // Start new intra refresh cycle mid-way through previous one
+    UseFeedback2                 = 1 << 18, // VK_KHR_video_encode_feedback2
+    UseMaxPartitions             = 1 << 19, // Use maximum number of partitions/slices
 };
 
 #define INTRA_REFRESH_ENCODE_TEST_PATTERN(testType, clipName, option)                                         \
@@ -649,6 +707,115 @@ struct EncodeTestParam
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
      /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockColumn | Option::IntraRefreshEmptyRegion)},
+    // Mid-way intra refresh tests for H264
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshPicturePartition),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockBased),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockRow),
+    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H264_ENC_E,
+                                      Option::IntraRefreshBlockColumn),
+
+    // VK_KHR_video_encode_feedback2 tests for H264
+    {TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1,
+     CLIP_H264_ENC_E,
+     1,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX,
+     CLIP_H264_ENC_E,
+     1,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2 | Option::UseMaxPartitions)},
+    {TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED,
+     CLIP_H264_ENC_E,
+     1,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2 | Option::UseMaxPartitions)},
+    {TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS,
+     CLIP_H264_ENC_E,
+     1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 0},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS,
+     CLIP_H264_ENC_E,
+     1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 0},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX,
+     CLIP_H264_ENC_E,
+     1, // 3 frames: QP=26, QP=minQp, QP=maxQp
+     {IDR_FRAME, IDR_FRAME, IDR_FRAME},
+     /* frameIdx */ {0, 1, 2},
+     /* FrameNum */ {0, 0, 0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(0, 0), refs(0, 0)},
+     /* refSlots */ {{}, {}, {}},
+     /* curSlot */ {0, 1, 2},
+     /* frameReferences */
+     {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM,
+     CLIP_H264_ENC_E,
+     1, // 2 frames: one with qd_map_1, one with qd_map_max
+     {IDR_FRAME, IDR_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(0, 0)},
+     /* refSlots */ {{}, {}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2 |
+                         Option::UseDeltaMap)},
+
     {TEST_TYPE_H265_ENCODE_I,
      CLIP_H265_ENC_F,
      1,
@@ -967,17 +1134,6 @@ struct EncodeTestParam
      /* curSlot */ {0, 1},
      /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
      /* encoderOptions */ static_cast<Option>(Option::IntraRefreshBlockColumn | Option::IntraRefreshEmptyRegion)},
-
-    // Mid-way intra refresh tests for H264
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshPicturePartition),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ANY_BLOCK_BASED_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockBased),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockRow),
-    INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H264_ENC_E,
-                                      Option::IntraRefreshBlockColumn),
-
     // Mid-way intra refresh tests for H265
     INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_PICTURE_PARTITION_MIDWAY, CLIP_H265_ENC_F,
                                       Option::IntraRefreshPicturePartition),
@@ -986,7 +1142,105 @@ struct EncodeTestParam
     INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_ROW_BASED_MIDWAY, CLIP_H265_ENC_F,
                                       Option::IntraRefreshBlockRow),
     INTRA_REFRESH_MIDWAY_TEST_PATTERN(TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY, CLIP_H265_ENC_F,
-                                      Option::IntraRefreshBlockColumn)};
+                                      Option::IntraRefreshBlockColumn),
+    // VK_KHR_video_encode_feedback2 tests for H265
+    {TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1,
+     CLIP_H265_ENC_F,
+     1,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX,
+     CLIP_H265_ENC_F,
+     1,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2 | Option::UseMaxPartitions)},
+    {TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED,
+     CLIP_H265_ENC_F,
+     1,
+     {IDR_FRAME},
+     /* frameIdx */ {0},
+     /* FrameNum */ {0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0)},
+     /* refSlots */ {{}},
+     /* curSlot */ {0},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2 | Option::UseMaxPartitions)},
+    {TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS,
+     CLIP_H265_ENC_F,
+     1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 0},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS,
+     CLIP_H265_ENC_F,
+     1, // 2 frames: IDR (intra only) and P (inter), identical input frames to drive skip
+     {IDR_FRAME, P_FRAME},
+     /* frameIdx */ {0, 0},
+     /* FrameNum */ {0, 1},
+     /* spsMaxRefFrames */ 2,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(1, 0)},
+     /* refSlots */ {{}, {0}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({0}, {})},
+     /* encoderOptions */ static_cast<Option>(Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX,
+     CLIP_H265_ENC_F,
+     1, // 3 frames: QP=26, QP=minQp, QP=maxQp
+     {IDR_FRAME, IDR_FRAME, IDR_FRAME},
+     /* frameIdx */ {0, 1, 2},
+     /* FrameNum */ {0, 0, 0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(0, 0), refs(0, 0)},
+     /* refSlots */ {{}, {}, {}},
+     /* curSlot */ {0, 1, 2},
+     /* frameReferences */
+     {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2)},
+    {TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM,
+     CLIP_H265_ENC_F,
+     1, // 2 frames: one with qd_map_1, one with qd_map_max
+     {IDR_FRAME, IDR_FRAME},
+     /* frameIdx */ {0, 1},
+     /* FrameNum */ {0, 0},
+     /* spsMaxRefFrames */ 1,
+     /* ppsNumActiveRefs */ {0, 0},
+     /* shNumActiveRefs */ {refs(0, 0), refs(0, 0)},
+     /* refSlots */ {{}, {}},
+     /* curSlot */ {0, 1},
+     /* frameReferences */ {refs<std::vector<uint8_t>>({}, {}), refs<std::vector<uint8_t>>({}, {})},
+     /* encoderOptions */
+     static_cast<Option>(Option::DisableRateControl | Option::UseStatusQueries | Option::UseFeedback2 |
+                         Option::UseDeltaMap)}};
 
 class TestDefinition
 {
@@ -1136,6 +1390,34 @@ public:
         case TEST_TYPE_H264_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
         case TEST_TYPE_H265_ENCODE_INTRA_REFRESH_COLUMN_BASED_MIDWAY:
             testName += "intra_refresh_column_based_midway";
+            break;
+        case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+        case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+            testName += "feedback2_partition_count_1";
+            break;
+        case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+        case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+            testName += "feedback2_partition_count_max";
+            break;
+        case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+        case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+            testName += "feedback2_partition_count_max_truncated";
+            break;
+        case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+        case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+            testName += "feedback2_intra_inter_pixels";
+            break;
+        case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+        case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+            testName += "feedback2_intra_inter_skip_pixels";
+            break;
+        case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+        case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+            testName += "feedback2_qp_average_min_max";
+            break;
+        case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM:
+        case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM:
+            testName += "feedback2_qp_with_quantization_map";
             break;
         default:
             TCU_THROW(InternalError, "Unknown TestType");
@@ -1399,6 +1681,9 @@ public:
             if (usesGeneralLayout())
                 flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_UNIFIED_IMAGE_LAYOUTS;
 
+            if (hasOption(Option::UseFeedback2) || hasOption(Option::UseMaxPartitions))
+                flags |= VideoDevice::VIDEO_DEVICE_FLAG_REQUIRE_ENCODE_FEEDBACK_2;
+
             return flags;
         }
         default:
@@ -1438,37 +1723,32 @@ private:
     VkVideoCoreProfile m_profile;
 };
 
-#ifdef DE_BUILD_VIDEO
-struct bytestreamWriteWithStatus
+// Structure for encode feedback query results
+struct encodeFeedbackResults
 {
-    uint32_t bitstreamOffset;
-    uint32_t bitstreamWrite;
+    // Existing feedback values
+    uint32_t bitstreamBufferOffset;
+    uint32_t bitstreamBytesWritten;
+    // Feedback2-specific values
+    int32_t averageQuantization;
+    int32_t minQuantization;
+    int32_t maxQuantization;
+    uint32_t intraPixels;
+    uint32_t interPixels;
+    uint32_t skippedPixels;
+    uint32_t picturePartitionCount;
     VkQueryResultStatusKHR status;
-};
 
-bool processQueryPoolResults(const DeviceInterface &vk, const VkDevice device, VkQueryPool encodeQueryPool,
-                             uint32_t firstQueryId, uint32_t queryCount, VkDeviceSize &bitstreamBufferOffset,
-                             VkDeviceSize &minBitstreamBufferOffsetAlignment, const bool queryStatus)
-{
-    bytestreamWriteWithStatus queryResultWithStatus;
-    deMemset(&queryResultWithStatus, 0xFF, sizeof(queryResultWithStatus));
-
-    if (vk.getQueryPoolResults(device, encodeQueryPool, firstQueryId, queryCount, sizeof(queryResultWithStatus),
-                               &queryResultWithStatus, sizeof(queryResultWithStatus),
-                               VK_QUERY_RESULT_WITH_STATUS_BIT_KHR | VK_QUERY_RESULT_WAIT_BIT) == VK_SUCCESS)
+    // Per picture partition feedback
+    struct PerPartitionFeedback
     {
-        bitstreamBufferOffset += queryResultWithStatus.bitstreamWrite;
-
-        // Align buffer offset after adding written data
-        bitstreamBufferOffset = deAlign64(bitstreamBufferOffset, minBitstreamBufferOffsetAlignment);
-
-        if (queryStatus && queryResultWithStatus.status != VK_QUERY_RESULT_STATUS_COMPLETE_KHR)
-        {
-            return false;
-        }
-    }
-    return true;
-}
+        VkQueryResultStatusKHR status;
+        uint32_t bitstreamBufferOffset;
+        uint32_t bitstreamBytesWritten;
+    };
+    // We'll allocate this dynamically based on max partitions
+    std::vector<PerPartitionFeedback> perPartitionFeedback;
+};
 
 StdVideoH264PictureType getH264PictureType(const FrameType frameType)
 {
@@ -1733,7 +2013,6 @@ VkVideoReferenceSlotInfoKHR makeVideoReferenceSlot(int32_t slotIndex,
 
     return videoReferenceSlotKHR;
 }
-#endif // DE_BUILD_VIDEO
 
 class VideoEncodeTestInstance : public VideoBaseTestInstance
 {
@@ -1744,8 +2023,13 @@ public:
     tcu::TestStatus iterate(void);
 
 protected:
-    Move<VkQueryPool> createEncodeVideoQueries(const DeviceInterface &videoDeviceDriver, VkDevice device,
-                                               uint32_t numQueries, const VkVideoProfileInfoKHR *pVideoProfile);
+    Move<VkQueryPool> createEncodeVideoQueries(
+        const DeviceInterface &videoDeviceDriver, VkDevice device, uint32_t numQueries,
+        const VkVideoProfileInfoKHR *pVideoProfile,
+        VkVideoEncodeFeedbackFlagsKHR feedbackFlags = VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR |
+                                                      VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR,
+        uint32_t maxPerPartitionFeedbackEntries                             = 0u,
+        VkVideoEncodePerPartitionFeedbackFlagsKHR perPartitionFeedbackFlags = 0u);
 
     VkFormat checkImageFormat(VkImageUsageFlags flags, const VkVideoProfileListInfoKHR *videoProfileList,
                               const VkFormat requiredFormat);
@@ -1821,9 +2105,11 @@ private:
     MovePtr<VkVideoEncodeH265CapabilitiesKHR> m_videoH265CapabilitiesExtension;
     MovePtr<VkVideoEncodeH264QuantizationMapCapabilitiesKHR> m_H264QuantizationMapCapabilities;
     MovePtr<VkVideoEncodeH265QuantizationMapCapabilitiesKHR> m_H265QuantizationMapCapabilities;
+    MovePtr<VkVideoEncodeQuantizationMapCapabilitiesKHR> m_videoEncodeQuantizationMapCapabilities;
 
     // Buffer management
     VkDeviceSize m_bitstreamBufferOffset;
+    VkDeviceSize m_lastEncodedDstBufferOffset;
     VkDeviceSize m_minBitstreamBufferOffsetAlignment;
     VkDeviceSize m_nonCoherentAtomSize;
     void initializeTestParameters(void);
@@ -1900,6 +2186,7 @@ private:
 
     // Frame encoding
     uint32_t m_queryId;
+    std::vector<uint8_t> m_queryResultBuffer; // Reused buffer for query pool results
     void encodeFrames(void);
     void encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBuffer encodeBuffer, VkDeviceSize encodeFrameBufferSizeAligned,
                      Move<VkQueryPool> &encodeQueryPool);
@@ -1931,6 +2218,27 @@ private:
     uint32_t getIntraRefreshIndex(uint32_t nalIdx) const;
 
     uint32_t calculateTotalFramesFromClipData(const std::vector<uint8_t> &clip, uint32_t width, uint32_t height);
+
+    // VK_KHR_video_encode_feedback2 parameters
+    bool m_useFeedback2;
+    bool m_useMaxPartitions;
+    uint32_t m_partitionCount;                 // Number of slices/partitions to encode
+    uint32_t m_maxPerPartitionFeedbackEntries; // Max entries from capabilities
+    uint32_t m_tileColumns;                    // Active tile columns for H.265 partition tests
+    uint32_t m_tileRows;                       // Active tile rows for H.265 partition tests
+    MovePtr<VkVideoEncodeFeedback2CapabilitiesKHR> m_videoEncodeFeedback2Capabilities;
+    encodeFeedbackResults m_feedbackResults; // Storage for encode feedback query results
+    uint32_t m_totalPixelCount;              // Total pixel count captured from the first frame (for pixel tests)
+    void queryFeedback2Capabilities(void);
+    uint32_t getReservedPartitionFeedbackEntryCount(TestType testType) const;
+    VkVideoEncodeFeedbackFlagsKHR getRequiredFeedbackFlags(TestType testType) const;
+    size_t calculateFeedbackQueryResultSize(void) const;
+    bool processBasicQueryResult(uint32_t bitstreamWrite, VkQueryResultStatusKHR status);
+    bool getAndProcessQueryResults(VkQueryPool queryPool, uint32_t queryId, uint32_t nalIdx);
+    bool processFeedback2QueryResults(const void *queryResults, size_t resultsSize);
+    bool validateQPFeedback(uint32_t nalIdx);
+    VkExtent2D getPixelCountBounds() const;
+    bool validatePixelCountFeedback(uint32_t nalIdx);
 };
 
 VideoEncodeTestInstance::VideoEncodeTestInstance(Context &context, const TestDefinition *testDefinition)
@@ -1944,17 +2252,30 @@ VideoEncodeTestInstance::~VideoEncodeTestInstance(void)
 {
 }
 
-#ifdef DE_BUILD_VIDEO
-Move<VkQueryPool> VideoEncodeTestInstance::createEncodeVideoQueries(const DeviceInterface &videoDeviceDriver,
-                                                                    VkDevice device, uint32_t numQueries,
-                                                                    const VkVideoProfileInfoKHR *pVideoProfile)
+Move<VkQueryPool> VideoEncodeTestInstance::createEncodeVideoQueries(
+    const DeviceInterface &videoDeviceDriver, VkDevice device, uint32_t numQueries,
+    const VkVideoProfileInfoKHR *pVideoProfile, VkVideoEncodeFeedbackFlagsKHR feedbackFlags,
+    uint32_t maxPerPartitionFeedbackEntries, VkVideoEncodePerPartitionFeedbackFlagsKHR perPartitionFeedbackFlags)
 {
+    VkVideoProfileInfoKHR profileInfo = *pVideoProfile;
+    profileInfo.pNext                 = pVideoProfile->pNext;
+
+    VkQueryPoolVideoEncodePerPartitionFeedbackCreateInfoKHR perPartitionFeedbackInfo = {
+        VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_CREATE_INFO_KHR, //  VkStructureType sType;
+        &profileInfo,                                                                     //  const void* pNext;
+        maxPerPartitionFeedbackEntries, //  uint32_t maxPerPartitionFeedbackEntries;
+        perPartitionFeedbackFlags,      //  VkVideoEncodePerPartitionFeedbackFlagsKHR perPartitionEncodeFeedbackFlags;
+    };
+
+    // Chain per-partition info only when requested.
+    const void *encodeFeedbackPNext = static_cast<const void *>(&profileInfo);
+    if (perPartitionFeedbackFlags != 0 && maxPerPartitionFeedbackEntries > 0)
+        encodeFeedbackPNext = &perPartitionFeedbackInfo;
 
     VkQueryPoolVideoEncodeFeedbackCreateInfoKHR encodeFeedbackQueryType = {
         VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR, //  VkStructureType sType;
-        pVideoProfile,                                                      //  const void* pNext;
-        VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR |
-            VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR, //  VkVideoEncodeFeedbackFlagsKHR encodeFeedbackFlags;
+        encodeFeedbackPNext,                                                //  const void* pNext;
+        feedbackFlags, //  VkVideoEncodeFeedbackFlagsKHR encodeFeedbackFlags;
     };
 
     const VkQueryPoolCreateInfo queryPoolCreateInfo = {
@@ -2071,9 +2392,20 @@ void VideoEncodeTestInstance::initializeTestParameters()
     m_maxEmphasisQpValue = 1.0f;
     m_minQpDelta         = 0;
     m_maxQpDelta         = 0;
+    m_tileColumns        = 1;
+    m_tileRows           = 1;
+    m_totalPixelCount    = 0;
+
+    TestType initTestType = m_testDefinition->getTestType();
+    if (initTestType == TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM ||
+        initTestType == TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM)
+    {
+        m_constQp = 26;
+    }
 
     // Initialize buffer offsets
-    m_bitstreamBufferOffset = 0u;
+    m_bitstreamBufferOffset      = 0u;
+    m_lastEncodedDstBufferOffset = 0u;
 
     // Set up encode usage info
     m_encodeUsageInfo = getEncodeUsageInfo(
@@ -2116,6 +2448,12 @@ void VideoEncodeTestInstance::initializeTestParameters()
     m_useIntraRefresh           = m_intraRefreshMode != VK_VIDEO_ENCODE_INTRA_REFRESH_MODE_NONE_KHR;
     m_intraRefreshRegionCount   = 0;
     m_intraRefreshCycleDuration = 0;
+
+    // Initialize VK_KHR_video_encode_feedback2 parameters
+    m_useFeedback2                   = m_testDefinition->hasOption(Option::UseFeedback2);
+    m_useMaxPartitions               = m_testDefinition->hasOption(Option::UseMaxPartitions);
+    m_partitionCount                 = 1; // Default to 1, will be updated in queryFeedback2Capabilities()
+    m_maxPerPartitionFeedbackEntries = 0; // Will be queried from capabilities
 }
 
 void VideoEncodeTestInstance::setupDeviceAndQueues()
@@ -2198,9 +2536,73 @@ void VideoEncodeTestInstance::queryAndValidateCapabilities()
                                         m_videoEncodeIntraRefreshCapabilities.get());
     }
 
+    if (quantizationMapEnabled)
+    {
+        m_videoEncodeQuantizationMapCapabilities =
+            MovePtr<VkVideoEncodeQuantizationMapCapabilitiesKHR>(new VkVideoEncodeQuantizationMapCapabilitiesKHR{
+                VK_STRUCTURE_TYPE_VIDEO_ENCODE_QUANTIZATION_MAP_CAPABILITIES_KHR, // VkStructureType sType;
+                nullptr,                                                          // void* pNext;
+                {0u, 0u}, // VkExtent2D maxQuantizationMapExtent;
+            });
+        appendStructurePtrToVulkanChain((const void **)&m_videoEncodeCapabilities->pNext,
+                                        m_videoEncodeQuantizationMapCapabilities.get());
+    }
+
+    if (m_useFeedback2)
+    {
+        m_videoEncodeFeedback2Capabilities =
+            MovePtr<VkVideoEncodeFeedback2CapabilitiesKHR>(new VkVideoEncodeFeedback2CapabilitiesKHR{
+                VK_STRUCTURE_TYPE_VIDEO_ENCODE_FEEDBACK_2_CAPABILITIES_KHR, // VkStructureType sType;
+                nullptr,                                                    // void* pNext;
+                0,                                                          // uint32_t maxPerPartitionFeedbackEntries;
+                0 // VkVideoEncodePerPartitionFeedbackFlagsKHR supportedPerPartitionEncodeFeedbackFlags;
+            });
+        appendStructurePtrToVulkanChain((const void **)&m_videoEncodeCapabilities->pNext,
+                                        m_videoEncodeFeedback2Capabilities.get());
+    }
+
     m_videoCapabilities =
         getVideoCapabilities(*m_vki, m_physicalDevice, m_videoEncodeProfile.get(), m_videoEncodeCapabilities.get());
     m_minBitstreamBufferOffsetAlignment = m_videoCapabilities->minBitstreamBufferOffsetAlignment;
+
+    if (m_testDefinition->getProfile()->IsH264())
+    {
+        DE_ASSERT(m_videoH264CapabilitiesExtension);
+        m_minQpValue = m_videoH264CapabilitiesExtension->minQp;
+        m_maxQpValue = m_videoH264CapabilitiesExtension->maxQp;
+    }
+    else if (m_testDefinition->getProfile()->IsH265())
+    {
+        DE_ASSERT(m_videoH265CapabilitiesExtension);
+        m_minQpValue = m_videoH265CapabilitiesExtension->minQp;
+        m_maxQpValue = m_videoH265CapabilitiesExtension->maxQp;
+    }
+
+    if (quantizationMapEnabled)
+    {
+        const VkExtent2D &maxQmExtent = m_videoEncodeQuantizationMapCapabilities->maxQuantizationMapExtent;
+        TCU_CHECK_AND_THROW(NotSupportedError, maxQmExtent.width > 0 && maxQmExtent.height > 0,
+                            "Quantization map extent is not supported for this encode profile");
+    }
+
+    VkVideoEncodeFeedbackFlagsKHR requiredFeedbackFlags = VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR |
+                                                          VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR;
+
+    if (m_useFeedback2)
+        requiredFeedbackFlags |= getRequiredFeedbackFlags(m_testDefinition->getTestType());
+
+    const VkVideoEncodeFeedbackFlagsKHR supportedFeedbackFlags =
+        m_videoEncodeCapabilities->supportedEncodeFeedbackFlags;
+
+    if ((supportedFeedbackFlags & requiredFeedbackFlags) != requiredFeedbackFlags)
+    {
+        const VkVideoEncodeFeedbackFlagsKHR missingFlags = requiredFeedbackFlags & ~supportedFeedbackFlags;
+        tcu::TestLog &log                                = m_context.getTestContext().getLog();
+        log << tcu::TestLog::Message << "Required video encode feedback flags not supported. Required=0x" << std::hex
+            << requiredFeedbackFlags << ", supported=0x" << supportedFeedbackFlags << ", missing=0x" << missingFlags
+            << std::dec << tcu::TestLog::EndMessage;
+        TCU_THROW(NotSupportedError, "Required video encode feedback flags not supported");
+    }
 
     if (m_useIntraRefresh)
     {
@@ -2210,13 +2612,11 @@ void VideoEncodeTestInstance::queryAndValidateCapabilities()
                             "Maximum DPB slots must be greater than or equal to GOP frame count");
     }
 
-    TCU_CHECK_AND_THROW(InternalError,
-                        m_videoEncodeCapabilities->supportedEncodeFeedbackFlags &
-                            VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR,
-                        "Implementation must support bitstream bytes written feedback");
-
     // Check intra-refresh capabilities
     queryIntraRefreshCapabilities();
+
+    // Check feedback2 capabilities
+    queryFeedback2Capabilities();
 
     // Check for required features
     if (m_useDeltaMap)
@@ -2333,7 +2733,10 @@ void VideoEncodeTestInstance::createVideoSession(void)
 
 void VideoEncodeTestInstance::setupQuantizationMapResources(void)
 {
-    m_quantizationMapCount     = m_useDeltaMap ? 3 : 2;
+    TestType testType          = m_testDefinition->getTestType();
+    bool isFeedback2QpTest     = (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM ||
+                              testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM);
+    m_quantizationMapCount     = (m_useDeltaMap && !isFeedback2QpTest) ? 3 : 2;
     m_quantizationMapExtent    = {0, 0};
     m_quantizationMapTexelSize = {0, 0};
 
@@ -2405,6 +2808,15 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
                                static_cast<uint32_t>(std::ceil(static_cast<float>(m_codedExtent.height) /
                                                                static_cast<float>(m_quantizationMapTexelSize.height)))};
 
+    if (m_videoEncodeQuantizationMapCapabilities)
+    {
+        const VkExtent2D &maxExtent    = m_videoEncodeQuantizationMapCapabilities->maxQuantizationMapExtent;
+        const uint32_t maxWidth        = std::max(1u, maxExtent.width);
+        const uint32_t maxHeight       = std::max(1u, maxExtent.height);
+        m_quantizationMapExtent.width  = std::min(m_quantizationMapExtent.width, maxWidth);
+        m_quantizationMapExtent.height = std::min(m_quantizationMapExtent.height, maxHeight);
+    }
+
     const VkImageUsageFlags quantizationMapImageUsage =
         (m_useDeltaMap ? VK_IMAGE_USAGE_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR :
                          VK_IMAGE_USAGE_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR) |
@@ -2430,8 +2842,9 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
     Allocation &quantizationMapBufferAlloc = quantizationMapBuffer.getAllocation();
     void *quantizationMapBufferHostPtr     = quantizationMapBufferAlloc.getHostPtr();
 
-    // Calculate QP values for each image sides, the type of values is based on the quantization map format and annotated by the index
-    auto calculateMapValues = [this](auto idx, QuantizationMap mapType) -> auto
+    // Calculate QP values for each image sides, the type of values is based on the quantization map format and
+    // annotated by the index.
+    auto calculateMapValues = [this, isFeedback2QpTest](auto idx, QuantizationMap mapType) -> auto
     {
         using T          = decltype(idx);
         T leftSideValue  = T{0};
@@ -2439,21 +2852,40 @@ void VideoEncodeTestInstance::setupQuantizationMapResources(void)
 
         if (mapType == QM_DELTA)
         {
-            // Quantization map provided, constant Qp set to 26
-            if (idx == 0)
+            if (isFeedback2QpTest)
             {
-                leftSideValue = rightSideValue = static_cast<T>(std::max(m_minQpValue - m_constQp, m_minQpDelta));
+                // Feedback2 QP test with quantization map
+                if (idx == 0)
+                {
+                    // qd_map_1: -1 on left, +1 on right
+                    leftSideValue  = static_cast<T>(-1);
+                    rightSideValue = static_cast<T>(1);
+                }
+                else if (idx == 1)
+                {
+                    // qd_map_max: MAX(minQp - constantQp, minQpDelta) on left, MIN(maxQp - constantQp, maxQpDelta) on right
+                    leftSideValue  = static_cast<T>(std::max(m_minQpValue - m_constQp, m_minQpDelta));
+                    rightSideValue = static_cast<T>(std::min(m_maxQpValue - m_constQp, m_maxQpDelta));
+                }
             }
-            // Quantization map provided, constant Qp set to 26
-            else if (idx == 1)
+            else
             {
-                leftSideValue = rightSideValue = static_cast<T>(std::min(m_maxQpValue - m_constQp, m_maxQpDelta));
-            }
-            // Only third frame will receive different quantization values for both sides
-            else if (idx == 2)
-            {
-                leftSideValue  = static_cast<T>(std::max(m_minQpValue - m_constQp, m_minQpDelta));
-                rightSideValue = static_cast<T>(std::min(m_maxQpValue - m_constQp, m_maxQpDelta));
+                // Quantization map provided, constant Qp set to 26
+                if (idx == 0)
+                {
+                    leftSideValue = rightSideValue = static_cast<T>(std::max(m_minQpValue - m_constQp, m_minQpDelta));
+                }
+                // Quantization map provided, constant Qp set to 26
+                else if (idx == 1)
+                {
+                    leftSideValue = rightSideValue = static_cast<T>(std::min(m_maxQpValue - m_constQp, m_maxQpDelta));
+                }
+                // Only third frame will receive different quantization values for both sides
+                else if (idx == 2)
+                {
+                    leftSideValue  = static_cast<T>(std::max(m_minQpValue - m_constQp, m_minQpDelta));
+                    rightSideValue = static_cast<T>(std::min(m_maxQpValue - m_constQp, m_maxQpDelta));
+                }
             }
         }
         else if (mapType == QM_EMPHASIS)
@@ -2595,7 +3027,7 @@ void VideoEncodeTestInstance::setupSessionParameters()
             m_videoH265CapabilitiesExtension->transformBlockSizes, stdVideoH265DecPicBufMgrs.back().get(),
             stdVideoH265ProfileTierLevels.back().get(), stdVideoH265SequenceParameterSetVuis.back().get()));
         stdVideoH265PictureParameterSets.push_back(
-            getStdVideoH265PictureParameterSet(m_videoH265CapabilitiesExtension.get()));
+            getStdVideoH265PictureParameterSet(m_videoH265CapabilitiesExtension.get(), m_tileColumns, m_tileRows));
         encodeH265SessionParametersAddInfoKHRs.push_back(getVideoEncodeH265SessionParametersAddInfoKHR(
             1u, stdVideoH265VideoParameterSets.back().get(), 1u, stdVideoH265SequenceParameterSets.back().get(), 1u,
             stdVideoH265PictureParameterSets.back().get()));
@@ -3217,6 +3649,11 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
             TCU_THROW(NotSupportedError, "Intra refresh cycle duration exceeds maximum H.264 slice count");
         }
     }
+    else if (m_useFeedback2 && m_testDefinition->getProfile()->IsH264())
+    {
+        // For feedback2 partition tests, use the calculated partition count
+        numSlices = m_partitionCount;
+    }
 
     // Create the required number of slices for H.264
     for (uint32_t sliceIdx = 0; sliceIdx < numSlices; ++sliceIdx)
@@ -3239,9 +3676,30 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
 
         stdVideoEncodeH264SliceHeaders.push_back(
             getStdVideoEncodeH264SliceHeader(currentSliceType, h264ActiveOverrideFlag));
-        videoEncodeH264NaluSlices.push_back(getVideoEncodeH264NaluSlice(
-            stdVideoEncodeH264SliceHeaders.back().get(),
-            (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? m_constQp : 0));
+
+        // Determine QP for this frame
+        int32_t frameQp = 0;
+        if (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR)
+        {
+            TestType testType = m_testDefinition->getTestType();
+            if (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX)
+            {
+                // QP test: frame 0 = 26, frame 1 = minQp, frame 2 = maxQp
+                if (nalIdx == 0)
+                    frameQp = 26;
+                else if (nalIdx == 1)
+                    frameQp = m_minQpValue;
+                else if (nalIdx == 2)
+                    frameQp = m_maxQpValue;
+            }
+            else
+            {
+                frameQp = m_constQp;
+            }
+        }
+
+        videoEncodeH264NaluSlices.push_back(
+            getVideoEncodeH264NaluSlice(stdVideoEncodeH264SliceHeaders.back().get(), frameQp));
 
         h264SliceArray.push_back(*videoEncodeH264NaluSlices.back().get());
     }
@@ -3270,6 +3728,11 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
             TCU_THROW(NotSupportedError, "Intra refresh cycle duration exceeds maximum H.265 slice segment count");
         }
     }
+    else if (m_useFeedback2 && m_testDefinition->getProfile()->IsH265())
+    {
+        // For feedback2 partition tests, use the calculated partition count
+        numSliceSegments = m_partitionCount;
+    }
 
     // Create the required number of slice segments for H.265
     for (uint32_t sliceIdx = 0; sliceIdx < numSliceSegments; ++sliceIdx)
@@ -3286,9 +3749,30 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
         }
 
         stdVideoEncodeH265SliceSegmentHeaders.push_back(getStdVideoEncodeH265SliceSegmentHeader(currentSliceType));
-        videoEncodeH265NaluSliceSegments.push_back(getVideoEncodeH265NaluSliceSegment(
-            stdVideoEncodeH265SliceSegmentHeaders.back().get(),
-            (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR) ? m_constQp : 0));
+
+        // Determine QP for this frame
+        int32_t frameQp = 0;
+        if (m_rateControlMode == VK_VIDEO_ENCODE_RATE_CONTROL_MODE_DISABLED_BIT_KHR)
+        {
+            TestType testType = m_testDefinition->getTestType();
+            if (testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX)
+            {
+                // QP test: frame 0 = 26, frame 1 = minQp, frame 2 = maxQp
+                if (nalIdx == 0)
+                    frameQp = 26;
+                else if (nalIdx == 1)
+                    frameQp = m_minQpValue;
+                else if (nalIdx == 2)
+                    frameQp = m_maxQpValue;
+            }
+            else
+            {
+                frameQp = m_constQp;
+            }
+        }
+
+        videoEncodeH265NaluSliceSegments.push_back(
+            getVideoEncodeH265NaluSliceSegment(stdVideoEncodeH265SliceSegmentHeaders.back().get(), frameQp));
 
         h265SliceSegmentArray.push_back(*videoEncodeH265NaluSliceSegments.back().get());
     }
@@ -3336,6 +3820,7 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
     {
         dstBufferOffset = m_bitstreamBufferOffset;
     }
+    m_lastEncodedDstBufferOffset = dstBufferOffset;
 
     // Set up the pNext chain for various features
     VkBaseInStructure *pStruct = (VkBaseInStructure *)videoEncodePictureInfoPtr;
@@ -3350,8 +3835,10 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
     de::MovePtr<VkVideoEncodeQuantizationMapInfoKHR> quantizationMapInfo;
     if (m_useDeltaMap || m_useEmphasisMap)
     {
-        quantizationMapInfo = getQuantizationMapInfo(
-            m_quantizationMapImageViews[gopIdx % m_quantizationMapCount]->get(), m_quantizationMapExtent);
+        DE_ASSERT(m_quantizationMapCount > 0);
+        const uint32_t mapIndex = (gopIdx * m_gopFrameCount + nalIdx) % m_quantizationMapCount;
+        quantizationMapInfo =
+            getQuantizationMapInfo(m_quantizationMapImageViews[mapIndex]->get(), m_quantizationMapExtent);
         appendStructurePtrToVulkanChain((const void **)&pStruct->pNext, quantizationMapInfo.get());
     }
 
@@ -3386,9 +3873,8 @@ void VideoEncodeTestInstance::encodeFrame(uint16_t gopIdx, uint32_t nalIdx, VkBu
     {
         submitCommandsAndWait(*m_videoDeviceDriver, m_videoEncodeDevice, m_encodeQueue, encodeCmdBuffer);
 
-        if (!processQueryPoolResults(*m_videoDeviceDriver, m_videoEncodeDevice, encodeQueryPool.get(), m_queryId, 1,
-                                     m_bitstreamBufferOffset, m_minBitstreamBufferOffsetAlignment, m_queryStatus))
-            throw tcu::TestStatus::fail("Unexpected query result status");
+        if (!getAndProcessQueryResults(encodeQueryPool.get(), m_queryId, nalIdx))
+            TCU_FAIL("Query result processing failed");
     }
 }
 
@@ -3402,18 +3888,16 @@ void VideoEncodeTestInstance::handleSwapOrderSubmission(Move<VkQueryPool> &encod
                        nullptr, nullptr, 1, &frameEncodedSemaphore.get());
     waitForFence(*m_videoDeviceDriver, m_videoEncodeDevice, *firstCommandFence);
 
-    if (!processQueryPoolResults(*m_videoDeviceDriver, m_videoEncodeDevice, encodeQueryPool.get(), m_queryId, 1,
-                                 m_bitstreamBufferOffset, m_minBitstreamBufferOffsetAlignment, m_queryStatus))
-        throw tcu::TestStatus::fail("Unexpected query result status");
+    if (!getAndProcessQueryResults(encodeQueryPool.get(), m_queryId, std::numeric_limits<uint32_t>::max()))
+        TCU_FAIL("Failed to get query pool results");
 
     const auto secondCommandFence =
         submitCommands(*m_videoDeviceDriver, m_videoEncodeDevice, m_encodeQueue, *m_secondEncodeCmdBuffer, false, 1U, 1,
                        &frameEncodedSemaphore.get(), &waitDstStageMask);
     waitForFence(*m_videoDeviceDriver, m_videoEncodeDevice, *secondCommandFence);
 
-    if (!processQueryPoolResults(*m_videoDeviceDriver, m_videoEncodeDevice, encodeQueryPool.get(), m_queryId, 1,
-                                 m_bitstreamBufferOffset, m_minBitstreamBufferOffsetAlignment, m_queryStatus))
-        throw tcu::TestStatus::fail("Unexpected query result status");
+    if (!getAndProcessQueryResults(encodeQueryPool.get(), m_queryId, std::numeric_limits<uint32_t>::max()))
+        TCU_FAIL("Failed to get query pool results");
 }
 
 tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWithMemory &encodeBuffer,
@@ -3439,6 +3923,7 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
 
     // Vulkan video is not supported on android platform
     // all external libraries, helper functions and test instances has been excluded
+#ifdef DE_BUILD_VIDEO
     DeviceContext deviceContext(&m_context, &m_videoDevice, m_physicalDevice, m_videoEncodeDevice, m_decodeQueue,
                                 m_encodeQueue, m_transferQueue);
 
@@ -3486,6 +3971,8 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
     m_context.getTestContext().getLog() << tcu::TestLog::Message << "Expecting to verify " << actualFramesToCheck
                                         << " frames" << tcu::TestLog::EndMessage;
 
+    const TestType psnrTestType = m_testDefinition->getTestType();
+
     for (uint32_t NALIdx = 0; NALIdx < actualFramesToCheck; NALIdx++)
     {
         DecodedFrame frame;
@@ -3527,7 +4014,8 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
                     return tcu::TestStatus::fail(
                         "PSNR difference for the second frame is not greater than for the first frame");
             }
-            else if (m_useDeltaMap && NALIdx == 2)
+            else if (m_useDeltaMap && NALIdx == 2 && psnrTestType != TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM &&
+                     psnrTestType != TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM)
             {
                 if (psnrDiff[2] > 0)
                     return tcu::TestStatus::fail(
@@ -3568,8 +4056,181 @@ tcu::TestStatus VideoEncodeTestInstance::verifyEncodedBitstream(const BufferWith
         }
     }
 
+    if (m_useFeedback2 && isFeedback2PartitionCountTest(psnrTestType))
+    {
+        if (basicDecoder->m_cachedDecodeParams.empty())
+            return tcu::TestStatus::fail("No decoded frame data available for partition validation");
+
+        const auto &firstDecodedParams = basicDecoder->m_cachedDecodeParams.front();
+        if (!firstDecodedParams)
+            return tcu::TestStatus::fail("Missing cached decode parameters for partition validation");
+
+        const uint32_t parserPartitionCount = firstDecodedParams->pictureParams.numSlices;
+        if (parserPartitionCount != m_feedbackResults.picturePartitionCount)
+        {
+            return tcu::TestStatus::fail("Partition count mismatch between parser and feedback query results");
+        }
+
+        const Allocation &encodeBufferAlloc = encodeBuffer.getAllocation();
+        invalidateAlloc(*m_videoDeviceDriver, m_videoEncodeDevice, encodeBufferAlloc);
+        const auto *const encodeData = static_cast<const uint8_t *>(encodeBufferAlloc.getHostPtr());
+        if (!encodeData)
+            return tcu::TestStatus::fail("Failed to map encoded bitstream buffer");
+
+        if (m_lastEncodedDstBufferOffset > encodeBufferSize)
+            return tcu::TestStatus::fail("Encoded frame start offset is out of range");
+
+        const VkDeviceSize availableBytes = encodeBufferSize - m_lastEncodedDstBufferOffset;
+        if (m_feedbackResults.bitstreamBytesWritten > availableBytes)
+            return tcu::TestStatus::fail("Whole-picture feedback range exceeds encoded buffer size");
+
+        const auto *const pictureData = encodeData + static_cast<size_t>(m_lastEncodedDstBufferOffset);
+        const size_t pictureBytes     = static_cast<size_t>(m_feedbackResults.bitstreamBytesWritten);
+
+        struct StartCodeInfo
+        {
+            uint32_t prefixOffset;
+            uint32_t oneOffset;
+            uint32_t leadingZeros;
+        };
+        std::vector<StartCodeInfo> startCodes;
+
+        for (size_t byteNdx = 2; byteNdx < pictureBytes; ++byteNdx)
+        {
+            if (pictureData[byteNdx] != 0x01 || pictureData[byteNdx - 1] != 0x00 || pictureData[byteNdx - 2] != 0x00)
+                continue;
+
+            size_t prefixOffset = byteNdx - 2;
+            size_t leadingZeros = 0;
+            while (prefixOffset > leadingZeros && pictureData[prefixOffset - leadingZeros - 1] == 0x00)
+                ++leadingZeros;
+
+            startCodes.push_back(StartCodeInfo{static_cast<uint32_t>(prefixOffset), static_cast<uint32_t>(byteNdx),
+                                               static_cast<uint32_t>(leadingZeros)});
+        }
+
+        if (startCodes.empty())
+            return tcu::TestStatus::fail("Could not find any H.26x start code in the encoded frame");
+
+        struct PartitionBoundary
+        {
+            uint32_t offset;
+            uint32_t size;
+        };
+        std::vector<PartitionBoundary> prefixBitstreamPartitions;
+        std::vector<PartitionBoundary> fullBitstreamPartitions;
+
+        const bool isH264 = m_testDefinition->getProfile()->IsH264();
+        for (size_t startNdx = 0; startNdx < startCodes.size(); ++startNdx)
+        {
+            const auto &startCode        = startCodes[startNdx];
+            const size_t nalHeaderOffset = static_cast<size_t>(startCode.oneOffset) + 1;
+            if (nalHeaderOffset >= pictureBytes)
+                continue;
+
+            bool isPartitionNal = false;
+            if (isH264)
+            {
+                const uint8_t nalUnitType = pictureData[nalHeaderOffset] & 0x1F;
+                isPartitionNal            = (nalUnitType >= 1 && nalUnitType <= 5);
+            }
+            else
+            {
+                const uint8_t nalUnitType = (pictureData[nalHeaderOffset] >> 1) & 0x3F;
+                isPartitionNal            = (nalUnitType <= 31);
+            }
+            if (!isPartitionNal)
+                continue;
+
+            if (startCode.prefixOffset < startCode.leadingZeros)
+                return tcu::TestStatus::fail("Invalid leading zero run before the current start code");
+
+            const uint32_t fullPartitionStart   = startCode.prefixOffset - startCode.leadingZeros;
+            const uint32_t prefixPartitionStart = startCode.prefixOffset;
+            uint32_t partitionEnd               = static_cast<uint32_t>(pictureBytes);
+            if (startNdx + 1u < startCodes.size())
+            {
+                const auto &nextStartCode = startCodes[startNdx + 1u];
+                if (nextStartCode.prefixOffset < nextStartCode.leadingZeros)
+                    return tcu::TestStatus::fail("Invalid leading zero run before the next start code");
+                partitionEnd = nextStartCode.prefixOffset - nextStartCode.leadingZeros;
+            }
+
+            if (partitionEnd < fullPartitionStart || partitionEnd < prefixPartitionStart)
+                return tcu::TestStatus::fail("Detected partition boundaries are not monotonic");
+
+            prefixBitstreamPartitions.push_back(
+                PartitionBoundary{prefixPartitionStart, partitionEnd - prefixPartitionStart});
+            fullBitstreamPartitions.push_back(PartitionBoundary{fullPartitionStart, partitionEnd - fullPartitionStart});
+        }
+
+        if (prefixBitstreamPartitions.size() != parserPartitionCount ||
+            fullBitstreamPartitions.size() != parserPartitionCount)
+        {
+            return tcu::TestStatus::fail("Bitstream parser partition count does not match decode parser count");
+        }
+
+        auto normalizePartitionOffsets = [](std::vector<PartitionBoundary> &partitions) -> bool
+        {
+            if (partitions.empty())
+                return true;
+
+            const uint32_t firstPartitionOffset = partitions[0].offset;
+            for (auto &partition : partitions)
+            {
+                if (partition.offset < firstPartitionOffset)
+                    return false;
+                partition.offset -= firstPartitionOffset;
+            }
+            return true;
+        };
+
+        if (!normalizePartitionOffsets(prefixBitstreamPartitions) ||
+            !normalizePartitionOffsets(fullBitstreamPartitions))
+            return tcu::TestStatus::fail("Partition offset underflow during bitstream normalization");
+
+        const uint32_t reportedPartitions =
+            std::min(m_feedbackResults.picturePartitionCount, getReservedPartitionFeedbackEntryCount(psnrTestType));
+        if (m_feedbackResults.perPartitionFeedback.size() != reportedPartitions)
+        {
+            return tcu::TestStatus::fail(
+                "Per-partition feedback entries count does not match expected reported partition count");
+        }
+
+        for (uint32_t partitionNdx = 0; partitionNdx < reportedPartitions; ++partitionNdx)
+        {
+            const auto &feedbackPartition = m_feedbackResults.perPartitionFeedback[partitionNdx];
+            if (feedbackPartition.status != VK_QUERY_RESULT_STATUS_COMPLETE_KHR)
+                return tcu::TestStatus::fail("Per-partition status is not COMPLETE");
+
+            if (feedbackPartition.bitstreamBufferOffset < m_feedbackResults.bitstreamBufferOffset)
+                return tcu::TestStatus::fail("Per-partition offset is below whole-picture offset");
+
+            const uint32_t feedbackRelativeOffset =
+                feedbackPartition.bitstreamBufferOffset - m_feedbackResults.bitstreamBufferOffset;
+
+            const uint32_t minParserOffset =
+                std::min(prefixBitstreamPartitions[partitionNdx].offset, fullBitstreamPartitions[partitionNdx].offset);
+            const uint32_t maxParserOffset =
+                std::max(prefixBitstreamPartitions[partitionNdx].offset, fullBitstreamPartitions[partitionNdx].offset);
+
+            // The extension wording requires offsets relative to dstBufferOffset, but does not define
+            // whether H.26x leading zero bytes immediately preceding a 00 00 01 prefix belong to the
+            // current partition or to padding before it. Accept any offset within that start-code run.
+            if (feedbackRelativeOffset < minParserOffset || feedbackRelativeOffset > maxParserOffset)
+            {
+                return tcu::TestStatus::fail("Per-partition offset is outside the parser-derived partition boundary");
+            }
+        }
+    }
+
     const string passMessage = std::to_string(actualFramesToCheck) + " correctly encoded frames";
     return tcu::TestStatus::pass(passMessage);
+#else
+    DE_UNREF(encodeBuffer);
+    DE_UNREF(encodeBufferSize);
+    TCU_THROW(NotSupportedError, "Vulkan video is not supported on android platform");
+#endif
 }
 
 void VideoEncodeTestInstance::prepareEncodeBuffer(void)
@@ -3593,8 +4254,39 @@ void VideoEncodeTestInstance::prepareEncodeBuffer(void)
     Allocation &encodeBufferAlloc = m_encodeBuffer.get()->getAllocation();
     void *encodeBufferHostPtr     = encodeBufferAlloc.getHostPtr();
 
-    m_encodeQueryPool =
-        createEncodeVideoQueries(*m_videoDeviceDriver, m_videoEncodeDevice, 2, m_videoEncodeProfile.get());
+    if (m_useFeedback2)
+    {
+        const TestType testType = m_testDefinition->getTestType();
+
+        // Create query pool with feedback2 support
+        VkVideoEncodeFeedbackFlagsKHR feedbackFlags = getRequiredFeedbackFlags(testType);
+
+        VkVideoEncodePerPartitionFeedbackFlagsKHR perPartitionFeedbackFlags = 0;
+
+        // Only partition tests need per-partition feedback
+        if (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1 ||
+            testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX ||
+            testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED ||
+            testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1 ||
+            testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX ||
+            testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED)
+        {
+            perPartitionFeedbackFlags = VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_STATUS_BIT_KHR |
+                                        VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR |
+                                        VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR;
+        }
+
+        const uint32_t queryPoolPartitionEntries = getReservedPartitionFeedbackEntryCount(testType);
+
+        m_encodeQueryPool =
+            createEncodeVideoQueries(*m_videoDeviceDriver, m_videoEncodeDevice, 2, m_videoEncodeProfile.get(),
+                                     feedbackFlags, queryPoolPartitionEntries, perPartitionFeedbackFlags);
+    }
+    else
+    {
+        m_encodeQueryPool =
+            createEncodeVideoQueries(*m_videoDeviceDriver, m_videoEncodeDevice, 2, m_videoEncodeProfile.get());
+    }
 
     deMemset(encodeBufferHostPtr, 0x00, static_cast<size_t>(m_encodeBufferSize));
     flushAlloc(*m_videoDeviceDriver, m_videoEncodeDevice, encodeBufferAlloc);
@@ -3775,6 +4467,934 @@ void VideoEncodeTestInstance::queryIntraRefreshCapabilities(void)
     }
 }
 
+void VideoEncodeTestInstance::queryFeedback2Capabilities(void)
+{
+    if (!m_useFeedback2)
+        return;
+
+    // The feedback2 capabilities should have been queried already during queryAndValidateCapabilities
+    if (!m_videoEncodeFeedback2Capabilities)
+        TCU_THROW(InternalError, "Feedback2 capabilities not queried");
+
+    m_maxPerPartitionFeedbackEntries = m_videoEncodeFeedback2Capabilities->maxPerPartitionFeedbackEntries;
+
+    // For partition tests, require per-partition feedback capability and required flags.
+    const TestType testType    = m_testDefinition->getTestType();
+    const bool isPartitionTest = (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1 ||
+                                  testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX ||
+                                  testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED ||
+                                  testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1 ||
+                                  testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX ||
+                                  testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED);
+
+    if (isPartitionTest)
+    {
+        if (m_maxPerPartitionFeedbackEntries == 0)
+            TCU_THROW(NotSupportedError, "Per-partition feedback not supported");
+
+        const VkVideoEncodePerPartitionFeedbackFlagsKHR required =
+            VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_STATUS_BIT_KHR |
+            VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR |
+            VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR;
+
+        if ((m_videoEncodeFeedback2Capabilities->supportedPerPartitionEncodeFeedbackFlags & required) != required)
+            TCU_THROW(NotSupportedError, "Required per-partition feedback flags not supported");
+    }
+
+    // Calculate partition count based on test requirements
+    if (m_useMaxPartitions)
+    {
+        // Use maximum number of partitions supported
+        if (m_testDefinition->getProfile()->IsH264())
+        {
+            // H.264: Use maxSliceCount from capabilities
+            m_partitionCount = m_videoH264CapabilitiesExtension->maxSliceCount;
+            // Limit to macroblock rows (16x16)
+            uint32_t mbHeight  = 16;
+            uint32_t maxMBRows = (m_codedExtent.height + mbHeight - 1) / mbHeight;
+            m_partitionCount   = std::min(m_partitionCount, maxMBRows);
+        }
+        else if (m_testDefinition->getProfile()->IsH265())
+        {
+            // H.265: Use maxSliceSegmentCount from capabilities
+            m_partitionCount = m_videoH265CapabilitiesExtension->maxSliceSegmentCount;
+            // Limit to CTU rows (64x64)
+            uint32_t ctuHeight  = 64;
+            uint32_t maxCTURows = (m_codedExtent.height + ctuHeight - 1) / ctuHeight;
+            m_partitionCount    = std::min(m_partitionCount, maxCTURows);
+        }
+
+        // Limit to the number of per-partition feedback entries we can query (spec requirement).
+        m_partitionCount = std::min(m_partitionCount, m_maxPerPartitionFeedbackEntries);
+    }
+    else
+    {
+        // Use exactly 1 partition
+        m_partitionCount = 1;
+    }
+
+    if (m_partitionCount == 0)
+        TCU_THROW(InternalError, "Partition count cannot be zero");
+
+    if (m_testDefinition->getProfile()->IsH265())
+    {
+        const bool supportsMultipleSegmentsPerTile =
+            (m_videoH265CapabilitiesExtension->flags &
+             VK_VIDEO_ENCODE_H265_CAPABILITY_MULTIPLE_SLICE_SEGMENTS_PER_TILE_BIT_KHR) != 0;
+
+        if (m_partitionCount > 1 && !supportsMultipleSegmentsPerTile)
+        {
+            uint32_t maxTileColumns = m_videoH265CapabilitiesExtension->maxTiles.width;
+            uint32_t maxTileRows    = m_videoH265CapabilitiesExtension->maxTiles.height;
+
+            if (maxTileColumns == 0)
+                maxTileColumns = 1;
+            if (maxTileRows == 0)
+                maxTileRows = 1;
+
+            uint64_t maxTileCount = static_cast<uint64_t>(maxTileColumns) * maxTileRows;
+            if (maxTileCount == 0)
+                maxTileCount = 1;
+
+            if (maxTileCount < m_partitionCount)
+                m_partitionCount = static_cast<uint32_t>(maxTileCount);
+
+            uint32_t desiredTiles = std::max(1u, m_partitionCount);
+            uint32_t tileColumns  = std::min(maxTileColumns, desiredTiles);
+            uint32_t tileRows     = (desiredTiles + tileColumns - 1u) / tileColumns;
+
+            if (tileRows > maxTileRows)
+            {
+                tileRows    = maxTileRows;
+                tileColumns = (desiredTiles + tileRows - 1u) / tileRows;
+                if (tileColumns > maxTileColumns)
+                    tileColumns = maxTileColumns;
+            }
+
+            while (tileColumns * tileRows < desiredTiles && tileRows < maxTileRows)
+                ++tileRows;
+            while (tileColumns * tileRows < desiredTiles && tileColumns < maxTileColumns)
+                ++tileColumns;
+
+            uint32_t achievableTiles = std::max(1u, std::min(tileColumns * tileRows, maxTileColumns * maxTileRows));
+            if (achievableTiles < desiredTiles)
+                m_partitionCount = achievableTiles;
+
+            m_tileColumns = std::max(1u, std::min(tileColumns, maxTileColumns));
+            m_tileRows    = std::max(1u, std::min(tileRows, maxTileRows));
+        }
+        else
+        {
+            m_tileColumns = 1;
+            m_tileRows    = 1;
+        }
+    }
+    else
+    {
+        m_tileColumns = 1;
+        m_tileRows    = 1;
+    }
+}
+
+uint32_t VideoEncodeTestInstance::getReservedPartitionFeedbackEntryCount(TestType testType) const
+{
+    if (!m_useFeedback2)
+        return 0;
+
+    switch (testType)
+    {
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+        return 1;
+
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+        return 1; // Deliberately truncate per-partition feedback to a single entry.
+
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+        if (m_useMaxPartitions)
+            return std::min(m_partitionCount, m_maxPerPartitionFeedbackEntries);
+        return m_partitionCount;
+
+    default:
+        return 0;
+    }
+}
+
+VkVideoEncodeFeedbackFlagsKHR VideoEncodeTestInstance::getRequiredFeedbackFlags(TestType testType) const
+{
+    VkVideoEncodeFeedbackFlagsKHR flags = VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR |
+                                          VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR;
+
+    switch (testType)
+    {
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+        flags |= VK_VIDEO_ENCODE_FEEDBACK_PICTURE_PARTITION_COUNT_BIT_KHR;
+        break;
+
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM:
+        flags |= VK_VIDEO_ENCODE_FEEDBACK_AVERAGE_QUANTIZATION_BIT_KHR;
+        if (m_videoEncodeCapabilities)
+        {
+            flags |= (m_videoEncodeCapabilities->supportedEncodeFeedbackFlags &
+                      (VK_VIDEO_ENCODE_FEEDBACK_MIN_QUANTIZATION_BIT_KHR |
+                       VK_VIDEO_ENCODE_FEEDBACK_MAX_QUANTIZATION_BIT_KHR));
+        }
+        break;
+
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+        flags |= VK_VIDEO_ENCODE_FEEDBACK_INTRA_PIXELS_BIT_KHR | VK_VIDEO_ENCODE_FEEDBACK_INTER_PIXELS_BIT_KHR;
+
+        if (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS ||
+            testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS)
+            flags |= VK_VIDEO_ENCODE_FEEDBACK_SKIPPED_PIXELS_BIT_KHR;
+        break;
+
+    default:
+        break;
+    }
+
+    return flags;
+}
+
+size_t VideoEncodeTestInstance::calculateFeedbackQueryResultSize(void) const
+{
+    const size_t baseFeedbackSize =
+        sizeof(uint32_t) * 2 + sizeof(VkQueryResultStatusKHR); // offset + bytesWritten + status
+
+    if (!m_useFeedback2)
+        return baseFeedbackSize;
+
+    const TestType testType                               = m_testDefinition->getTestType();
+    const VkVideoEncodeFeedbackFlagsKHR requestedFeedback = getRequiredFeedbackFlags(testType);
+    size_t wholePictureFeedbackSize                       = 0;
+
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(uint32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(uint32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_INTRA_PIXELS_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(uint32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_INTER_PIXELS_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(uint32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_SKIPPED_PIXELS_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(uint32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_AVERAGE_QUANTIZATION_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(int32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_MIN_QUANTIZATION_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(int32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_MAX_QUANTIZATION_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(int32_t);
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_PICTURE_PARTITION_COUNT_BIT_KHR)
+        wholePictureFeedbackSize += sizeof(uint32_t);
+
+    wholePictureFeedbackSize += sizeof(VkQueryResultStatusKHR);
+
+    // Partition tests:
+    // Whole-picture: offset(4) + bytesWritten(4) + partitionCount(4) + status(4) = 16 bytes
+    // Per-partition: (status(4) + offset(4) + bytesWritten(4)) * numEntries
+    const uint32_t queryPoolPartitionEntries = getReservedPartitionFeedbackEntryCount(testType);
+    size_t perPartitionFeedbackSize = queryPoolPartitionEntries * sizeof(encodeFeedbackResults::PerPartitionFeedback);
+    return wholePictureFeedbackSize + perPartitionFeedbackSize;
+}
+
+bool VideoEncodeTestInstance::processBasicQueryResult(uint32_t bitstreamWrite, VkQueryResultStatusKHR status)
+{
+    m_bitstreamBufferOffset += bitstreamWrite;
+
+    // Align buffer offset after adding written data
+    m_bitstreamBufferOffset = deAlign64(m_bitstreamBufferOffset, m_minBitstreamBufferOffsetAlignment);
+
+    if (m_queryStatus && status != VK_QUERY_RESULT_STATUS_COMPLETE_KHR)
+        return false;
+
+    return true;
+}
+
+bool VideoEncodeTestInstance::getAndProcessQueryResults(VkQueryPool queryPool, uint32_t queryId, uint32_t nalIdx)
+{
+    const size_t feedbackSize = calculateFeedbackQueryResultSize();
+    if (m_queryResultBuffer.size() != feedbackSize)
+        m_queryResultBuffer.resize(feedbackSize);
+    std::fill(m_queryResultBuffer.begin(), m_queryResultBuffer.end(), 0u);
+
+    const VkQueryResultFlags flags = VK_QUERY_RESULT_WITH_STATUS_BIT_KHR | VK_QUERY_RESULT_WAIT_BIT;
+    const VkResult result =
+        m_videoDeviceDriver->getQueryPoolResults(m_videoEncodeDevice, queryPool, queryId, 1, m_queryResultBuffer.size(),
+                                                 m_queryResultBuffer.data(), feedbackSize, flags);
+    if (result != VK_SUCCESS)
+        return false;
+
+    if (m_useFeedback2)
+    {
+        if (!processFeedback2QueryResults(m_queryResultBuffer.data(), m_queryResultBuffer.size()))
+            return false;
+
+        m_bitstreamBufferOffset += m_feedbackResults.bitstreamBytesWritten;
+        m_bitstreamBufferOffset = deAlign64(m_bitstreamBufferOffset, m_minBitstreamBufferOffsetAlignment);
+
+        if (nalIdx != std::numeric_limits<uint32_t>::max())
+        {
+            if (!validateQPFeedback(nalIdx))
+                return false;
+
+            if (!validatePixelCountFeedback(nalIdx))
+                return false;
+        }
+
+        return true;
+    }
+
+    struct BasicFeedback
+    {
+        uint32_t bitstreamOffset;
+        uint32_t bitstreamWrite;
+        VkQueryResultStatusKHR status;
+    };
+
+    const auto *basicFeedback = reinterpret_cast<const BasicFeedback *>(m_queryResultBuffer.data());
+    return processBasicQueryResult(basicFeedback->bitstreamWrite, basicFeedback->status);
+}
+
+bool VideoEncodeTestInstance::processFeedback2QueryResults(const void *queryResults, size_t resultsSize)
+{
+    if (!m_useFeedback2)
+        return true; // Not using feedback2, nothing to validate
+
+    const TestType testType                               = m_testDefinition->getTestType();
+    const VkVideoEncodeFeedbackFlagsKHR requestedFeedback = getRequiredFeedbackFlags(testType);
+    const size_t expectedSize                             = calculateFeedbackQueryResultSize();
+
+    if (resultsSize < expectedSize)
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Query results buffer too small: " << resultsSize << " < " << expectedSize
+            << tcu::TestLog::EndMessage;
+        return false;
+    }
+
+    m_feedbackResults = {};
+
+    const uint8_t *data = static_cast<const uint8_t *>(queryResults);
+    size_t offset       = 0;
+
+    // Common fields: bitstreamBufferOffset + bitstreamBytesWritten
+    memcpy(&m_feedbackResults.bitstreamBufferOffset, data + offset, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+    memcpy(&m_feedbackResults.bitstreamBytesWritten, data + offset, sizeof(uint32_t));
+    offset += sizeof(uint32_t);
+
+    // Check for pixel feedback flags
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_INTRA_PIXELS_BIT_KHR)
+    {
+        memcpy(&m_feedbackResults.intraPixels, data + offset, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_INTER_PIXELS_BIT_KHR)
+    {
+        memcpy(&m_feedbackResults.interPixels, data + offset, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_SKIPPED_PIXELS_BIT_KHR)
+    {
+        memcpy(&m_feedbackResults.skippedPixels, data + offset, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+
+    // Check for QP feedback flags
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_AVERAGE_QUANTIZATION_BIT_KHR)
+    {
+        memcpy(&m_feedbackResults.averageQuantization, data + offset, sizeof(int32_t));
+        offset += sizeof(int32_t);
+    }
+
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_MIN_QUANTIZATION_BIT_KHR)
+    {
+        memcpy(&m_feedbackResults.minQuantization, data + offset, sizeof(int32_t));
+        offset += sizeof(int32_t);
+    }
+
+    if (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_MAX_QUANTIZATION_BIT_KHR)
+    {
+        memcpy(&m_feedbackResults.maxQuantization, data + offset, sizeof(int32_t));
+        offset += sizeof(int32_t);
+    }
+
+    // Check for partition count
+    const bool needsPartitionCount =
+        (requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_PICTURE_PARTITION_COUNT_BIT_KHR) != 0;
+    const uint32_t queryPoolPartitionEntries =
+        needsPartitionCount ? getReservedPartitionFeedbackEntryCount(testType) : 0u;
+    if (needsPartitionCount)
+    {
+        memcpy(&m_feedbackResults.picturePartitionCount, data + offset, sizeof(uint32_t));
+        offset += sizeof(uint32_t);
+    }
+
+    // Always present status at the end of the whole-picture feedback segment
+    memcpy(&m_feedbackResults.status, data + offset, sizeof(VkQueryResultStatusKHR));
+    offset += sizeof(VkQueryResultStatusKHR);
+
+    // Validate status
+    if (m_feedbackResults.status != VK_QUERY_RESULT_STATUS_COMPLETE_KHR)
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Query result status is not COMPLETE: " << m_feedbackResults.status
+            << tcu::TestLog::EndMessage;
+        return false;
+    }
+
+    if (needsPartitionCount && queryPoolPartitionEntries > 0)
+    {
+        const uint32_t reportedPartitions =
+            std::min(m_feedbackResults.picturePartitionCount, queryPoolPartitionEntries);
+
+        // Per-partition feedback, if present
+        if (reportedPartitions > 0)
+        {
+            m_feedbackResults.perPartitionFeedback.resize(reportedPartitions);
+
+            for (uint32_t i = 0; i < reportedPartitions; ++i)
+            {
+                memcpy(&m_feedbackResults.perPartitionFeedback[i].status, data + offset,
+                       sizeof(VkQueryResultStatusKHR));
+                offset += sizeof(VkQueryResultStatusKHR);
+                memcpy(&m_feedbackResults.perPartitionFeedback[i].bitstreamBufferOffset, data + offset,
+                       sizeof(uint32_t));
+                offset += sizeof(uint32_t);
+                memcpy(&m_feedbackResults.perPartitionFeedback[i].bitstreamBytesWritten, data + offset,
+                       sizeof(uint32_t));
+                offset += sizeof(uint32_t);
+            }
+        }
+
+        // Log the results for debugging
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Feedback2 results: partitionCount=" << m_feedbackResults.picturePartitionCount
+            << ", status=" << m_feedbackResults.status << tcu::TestLog::EndMessage;
+
+        for (uint32_t i = 0; i < reportedPartitions; ++i)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "  Partition[" << i
+                << "]: offset=" << m_feedbackResults.perPartitionFeedback[i].bitstreamBufferOffset
+                << ", size=" << m_feedbackResults.perPartitionFeedback[i].bitstreamBytesWritten
+                << ", status=" << m_feedbackResults.perPartitionFeedback[i].status << tcu::TestLog::EndMessage;
+        }
+
+        // Validate partition count matches what we encoded
+        if (m_feedbackResults.picturePartitionCount != m_partitionCount)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Partition count mismatch: expected " << m_partitionCount << ", got "
+                << m_feedbackResults.picturePartitionCount << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        // Validate per-partition results
+        for (uint32_t i = 0; i < reportedPartitions; ++i)
+        {
+            if (m_feedbackResults.perPartitionFeedback[i].status != VK_QUERY_RESULT_STATUS_COMPLETE_KHR)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Partition[" << i
+                    << "] status is not COMPLETE: " << m_feedbackResults.perPartitionFeedback[i].status
+                    << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            // Validate monotonically increasing offsets (per spec)
+            if (i > 0 && m_feedbackResults.perPartitionFeedback[i].bitstreamBufferOffset <=
+                             m_feedbackResults.perPartitionFeedback[i - 1].bitstreamBufferOffset)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Partition offsets are not monotonically increasing: Partition["
+                    << (i - 1) << "]=" << m_feedbackResults.perPartitionFeedback[i - 1].bitstreamBufferOffset
+                    << ", Partition[" << i << "]=" << m_feedbackResults.perPartitionFeedback[i].bitstreamBufferOffset
+                    << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            // Per-partition offsets are relative to dstBufferOffset; ensure they are not below the whole-picture offset.
+            if (m_feedbackResults.perPartitionFeedback[i].bitstreamBufferOffset <
+                m_feedbackResults.bitstreamBufferOffset)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Partition[" << i << "] offset ("
+                    << m_feedbackResults.perPartitionFeedback[i].bitstreamBufferOffset
+                    << ") is below whole-picture bitstreamBufferOffset (" << m_feedbackResults.bitstreamBufferOffset
+                    << ")" << tcu::TestLog::EndMessage;
+                return false;
+            }
+        }
+
+        // Validate that partition ranges are non-overlapping and stay within the whole-picture range.
+        // Note: partitions are not guaranteed to be tightly packed (spec), so padding may exist between
+        // them. When the query pool reserves fewer per-partition entries than the encoded partition count,
+        // results are truncated to the reserved entry count.
+        const uint32_t wholePictureOffset = m_feedbackResults.bitstreamBufferOffset;
+        const uint32_t wholePictureEnd    = wholePictureOffset + m_feedbackResults.bitstreamBytesWritten;
+        uint32_t lastPartitionEnd         = wholePictureOffset;
+
+        for (uint32_t i = 0; i < reportedPartitions; ++i)
+        {
+            const auto &partition = m_feedbackResults.perPartitionFeedback[i];
+            const uint32_t start  = partition.bitstreamBufferOffset;
+            const uint32_t size   = partition.bitstreamBytesWritten;
+            const uint32_t end    = start + size;
+
+            if (start < lastPartitionEnd)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Partition[" << i << "] overlaps previous partition: start=" << start
+                    << ", previousEnd=" << lastPartitionEnd << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            if (end > wholePictureEnd)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Partition[" << i << "] end (" << end
+                    << ") exceeds picture bitstream end (" << wholePictureEnd << ")" << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            lastPartitionEnd = end;
+        }
+
+        if (reportedPartitions > 0)
+        {
+            const uint32_t coveredBytes = lastPartitionEnd - wholePictureOffset;
+            if (coveredBytes > m_feedbackResults.bitstreamBytesWritten)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Reported partitions cover " << coveredBytes
+                    << " bytes which exceeds whole-picture bytes (" << m_feedbackResults.bitstreamBytesWritten << ")"
+                    << tcu::TestLog::EndMessage;
+                return false;
+            }
+        }
+    }
+
+    return true;
+}
+
+bool VideoEncodeTestInstance::validateQPFeedback(uint32_t nalIdx)
+{
+    const TestType testType = m_testDefinition->getTestType();
+    if (testType != TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX &&
+        testType != TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX &&
+        testType != TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM &&
+        testType != TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM)
+    {
+        return true; // Not a QP test
+    }
+
+    const bool isQmVariant                                = (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM ||
+                              testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM);
+    const VkVideoEncodeFeedbackFlagsKHR requestedFeedback = getRequiredFeedbackFlags(testType);
+    const bool hasMinQp = ((requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_MIN_QUANTIZATION_BIT_KHR) != 0);
+    const bool hasMaxQp = ((requestedFeedback & VK_VIDEO_ENCODE_FEEDBACK_MAX_QUANTIZATION_BIT_KHR) != 0);
+
+    if (isQmVariant)
+    {
+        int32_t expectedAverage = m_constQp;
+        int32_t expectedMin     = m_constQp - 1;
+        int32_t expectedMax     = m_constQp + 1;
+
+        if (nalIdx == 0)
+        {
+            if ((hasMinQp && m_feedbackResults.minQuantization != expectedMin) ||
+                (hasMaxQp && m_feedbackResults.maxQuantization != expectedMax))
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx
+                    << ": Unexpected quantization feedback for qd_map_1. Expected min/max=(" << expectedMin << ", "
+                    << expectedMax << "), got min/max=(" << m_feedbackResults.minQuantization << ", "
+                    << m_feedbackResults.maxQuantization << ")" << tcu::TestLog::EndMessage;
+                return false;
+            }
+        }
+        else if (nalIdx == 1)
+        {
+            expectedMin = std::max(m_minQpValue, m_constQp + m_minQpDelta);
+            expectedMax = std::min(m_maxQpValue, m_constQp + m_maxQpDelta);
+
+            if (expectedMin > expectedMax)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx
+                    << ": Computed expected min/max are inconsistent (min=" << expectedMin << ", max=" << expectedMax
+                    << ")" << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            if ((hasMinQp && m_feedbackResults.minQuantization != expectedMin) ||
+                (hasMaxQp && m_feedbackResults.maxQuantization != expectedMax))
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx
+                    << ": Unexpected quantization feedback for qd_map_max. Expected min/max=(" << expectedMin << ", "
+                    << expectedMax << "), got min/max=(" << m_feedbackResults.minQuantization << ", "
+                    << m_feedbackResults.maxQuantization << ")" << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            const uint32_t texelWidth  = std::max(1u, m_quantizationMapTexelSize.width);
+            const uint32_t texelHeight = std::max(1u, m_quantizationMapTexelSize.height);
+            const uint32_t mapWidth    = std::max(1u, m_quantizationMapExtent.width);
+            const uint32_t mapHeight   = std::max(1u, m_quantizationMapExtent.height);
+
+            auto computeColumnPixels = [&](uint32_t startColumn, uint32_t endColumn) -> uint64_t
+            {
+                uint64_t pixels = 0;
+                for (uint32_t col = startColumn; col < endColumn; ++col)
+                {
+                    const uint32_t x0 = col * texelWidth;
+                    if (x0 >= m_codedExtent.width)
+                        break;
+
+                    const uint32_t columnWidth = std::min(texelWidth, m_codedExtent.width - x0);
+                    for (uint32_t row = 0; row < mapHeight; ++row)
+                    {
+                        const uint32_t y0 = row * texelHeight;
+                        if (y0 >= m_codedExtent.height)
+                            break;
+
+                        const uint32_t rowHeight = std::min(texelHeight, m_codedExtent.height - y0);
+                        pixels += static_cast<uint64_t>(columnWidth) * rowHeight;
+                    }
+                }
+                return pixels;
+            };
+
+            const uint32_t midColumn     = mapWidth / 2;
+            const uint64_t totalPixels64 = static_cast<uint64_t>(m_codedExtent.width) * m_codedExtent.height;
+            uint64_t leftPixels          = computeColumnPixels(0u, midColumn);
+            uint64_t rightPixels         = computeColumnPixels(midColumn, mapWidth);
+
+            if (leftPixels + rightPixels < totalPixels64)
+                rightPixels += totalPixels64 - (leftPixels + rightPixels);
+
+            if (leftPixels + rightPixels != totalPixels64)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx
+                    << ": Quantization map coverage mismatch. left=" << leftPixels << ", right=" << rightPixels
+                    << ", total=" << totalPixels64 << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            const int64_t weightedSum =
+                static_cast<int64_t>(leftPixels) * expectedMin + static_cast<int64_t>(rightPixels) * expectedMax;
+            expectedAverage = static_cast<int32_t>((weightedSum + static_cast<int64_t>(totalPixels64 / 2)) /
+                                                   static_cast<int64_t>(totalPixels64));
+        }
+        else
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx
+                << ": Unexpected frame index for quantization map QP test" << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        const bool isH265QmFrame1 = (testType == TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM && nalIdx == 1);
+
+        if (!isH265QmFrame1)
+        {
+            const int32_t averageDiff = (m_feedbackResults.averageQuantization > expectedAverage) ?
+                                            (m_feedbackResults.averageQuantization - expectedAverage) :
+                                            (expectedAverage - m_feedbackResults.averageQuantization);
+
+            if (averageDiff > 1)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx << ": Average quantization mismatch. Expected "
+                    << expectedAverage << " (tolerance 1), got " << m_feedbackResults.averageQuantization
+                    << tcu::TestLog::EndMessage;
+                return false;
+            }
+        }
+        else
+        {
+            // For H.265, average quantization is reported over encoded coding blocks, so the exact value is not
+            // guaranteed to match a pixel-area weighted estimate when partitions are not homogeneous.
+            if (m_feedbackResults.averageQuantization < expectedMin ||
+                m_feedbackResults.averageQuantization > expectedMax)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx
+                    << ": Average quantization out of expected range for H.265 qd_map_max. Expected within ["
+                    << expectedMin << ", " << expectedMax << "], got " << m_feedbackResults.averageQuantization
+                    << tcu::TestLog::EndMessage;
+                return false;
+            }
+        }
+
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Frame " << nalIdx
+            << ": QP-with-quantization-map validation passed. avg=" << m_feedbackResults.averageQuantization
+            << (hasMinQp ? ", min=" + de::toString(m_feedbackResults.minQuantization) : std::string())
+            << (hasMaxQp ? ", max=" + de::toString(m_feedbackResults.maxQuantization) : std::string())
+            << tcu::TestLog::EndMessage;
+
+        return true;
+    }
+    else
+    {
+        // Variant 1: Without quantization map
+        // Determine expected QP for this frame
+        int32_t expectedQp = 0;
+        if (nalIdx == 0)
+            expectedQp = 26;
+        else if (nalIdx == 1)
+        {
+            if (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX)
+                expectedQp = m_videoH264CapabilitiesExtension->minQp;
+            else
+                expectedQp = m_videoH265CapabilitiesExtension->minQp;
+        }
+        else if (nalIdx == 2)
+        {
+            if (testType == TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX)
+                expectedQp = m_videoH264CapabilitiesExtension->maxQp;
+            else
+                expectedQp = m_videoH265CapabilitiesExtension->maxQp;
+        }
+
+        if (hasMinQp && m_feedbackResults.minQuantization != expectedQp)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << ": Minimum QP mismatch. Expected=" << expectedQp
+                << ", got=" << m_feedbackResults.minQuantization << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        if (hasMaxQp && m_feedbackResults.maxQuantization != expectedQp)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << ": Maximum QP mismatch. Expected=" << expectedQp
+                << ", got=" << m_feedbackResults.maxQuantization << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        // Validate against expected QP
+        if (m_feedbackResults.averageQuantization != expectedQp)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << ": QP mismatch. Expected=" << expectedQp
+                << ", got=" << m_feedbackResults.averageQuantization << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Frame " << nalIdx
+            << ": QP validation passed. avg=" << m_feedbackResults.averageQuantization
+            << (hasMinQp ? ", min=" + de::toString(m_feedbackResults.minQuantization) : std::string())
+            << (hasMaxQp ? ", max=" + de::toString(m_feedbackResults.maxQuantization) : std::string())
+            << tcu::TestLog::EndMessage;
+
+        return true;
+    }
+}
+
+VkExtent2D VideoEncodeTestInstance::getPixelCountBounds() const
+{
+    // Use VkExtent2D to carry the (min, max) pixel totals.
+    VkExtent2D bounds{0u, 0u};
+
+    const uint64_t width       = static_cast<uint64_t>(m_codedExtent.width);
+    const uint64_t height      = static_cast<uint64_t>(m_codedExtent.height);
+    const uint64_t minPixels64 = std::min(width * height, static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
+
+    bounds.width  = static_cast<uint32_t>(minPixels64); // width stores minimum pixel total.
+    bounds.height = bounds.width;                       // height stores maximum pixel total.
+
+    VkExtent2D largestCodingBlock = {0u, 0u};
+
+    if (m_testDefinition->getProfile()->IsH264())
+    {
+        // Macroblock size is fixed at 16x16 for H.264.
+        largestCodingBlock = {16u, 16u};
+    }
+    else if (m_testDefinition->getProfile()->IsH265() && m_videoH265CapabilitiesExtension)
+    {
+        const uint32_t ctbSizes = m_videoH265CapabilitiesExtension->ctbSizes;
+        if (ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_64_BIT_KHR)
+            largestCodingBlock = {64u, 64u};
+        else if (ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_32_BIT_KHR)
+            largestCodingBlock = {32u, 32u};
+        else if (ctbSizes & VK_VIDEO_ENCODE_H265_CTB_SIZE_16_BIT_KHR)
+            largestCodingBlock = {16u, 16u};
+    }
+
+    if (largestCodingBlock.width > 0u && largestCodingBlock.height > 0u)
+    {
+        const uint32_t alignedWidth = static_cast<uint32_t>(deAlign32(m_codedExtent.width, largestCodingBlock.width));
+        const uint32_t alignedHeight =
+            static_cast<uint32_t>(deAlign32(m_codedExtent.height, largestCodingBlock.height));
+        const uint64_t maxPixels64 =
+            std::min(static_cast<uint64_t>(alignedWidth) * static_cast<uint64_t>(alignedHeight),
+                     static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()));
+
+        bounds.height = static_cast<uint32_t>(maxPixels64);
+        if (bounds.height < bounds.width)
+            bounds.height = bounds.width;
+    }
+
+    return bounds;
+}
+
+bool VideoEncodeTestInstance::validatePixelCountFeedback(uint32_t nalIdx)
+{
+    TestType testType = m_testDefinition->getTestType();
+    if (testType != TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS &&
+        testType != TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS &&
+        testType != TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS &&
+        testType != TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS)
+    {
+        return true; // Not a pixel count test
+    }
+
+    const VkExtent2D pixelBounds = getPixelCountBounds();
+    const uint32_t minPixels     = pixelBounds.width;
+    const uint32_t maxPixels     = pixelBounds.height;
+    const auto valueInRange      = [&](uint32_t value) { return value >= minPixels && value <= maxPixels; };
+
+    const uint64_t reportedTotal64 =
+        static_cast<uint64_t>(m_feedbackResults.intraPixels) + static_cast<uint64_t>(m_feedbackResults.interPixels);
+    if (reportedTotal64 > static_cast<uint64_t>(std::numeric_limits<uint32_t>::max()))
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Frame " << nalIdx << ": intra+inter exceeds representable range ("
+            << reportedTotal64 << " > " << std::numeric_limits<uint32_t>::max() << ")" << tcu::TestLog::EndMessage;
+        return false;
+    }
+    const uint32_t reportedTotal = static_cast<uint32_t>(reportedTotal64);
+    if (!valueInRange(reportedTotal))
+    {
+        m_context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Frame " << nalIdx << ": Total pixels " << reportedTotal
+            << " outside expected range [" << minPixels << ", " << maxPixels << "]" << tcu::TestLog::EndMessage;
+        return false;
+    }
+
+    // Frame 0 (IDR): Should have only intra pixels, no inter pixels
+    // Frame 1 (P): Should have mix of intra and inter pixels
+    if (nalIdx == 0)
+    {
+        // IDR frame validation
+        // intra + inter must remain consistent with intra; implies inter == 0 for IDR.
+        if (reportedTotal != m_feedbackResults.intraPixels)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << ": intra+inter total (" << reportedTotal
+                << ") does not match intra count (" << m_feedbackResults.intraPixels << ")" << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        // Store totalPixelCount for subsequent frames in this GOP.
+        m_totalPixelCount = m_feedbackResults.intraPixels;
+
+        // If skipped is provided, expect 0 for IDR
+        if (m_feedbackResults.skippedPixels != 0)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << " (IDR): Expected 0 skipped pixels, got "
+                << m_feedbackResults.skippedPixels << tcu::TestLog::EndMessage;
+            return false;
+        }
+    }
+    else if (nalIdx == 1)
+    {
+        // P frame validation
+        // Expect intra + inter to match the total pixel count captured from the first frame.
+        if (m_totalPixelCount == 0u)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx
+                << ": Total pixel count from first frame is zero or uninitialized; pixel count test configuration error"
+                << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        if (reportedTotal != m_totalPixelCount)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << ": intra+inter total (" << reportedTotal
+                << ") does not match total pixel count from first frame (" << m_totalPixelCount << ")"
+                << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        if (!valueInRange(reportedTotal))
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << ": Total pixels " << reportedTotal
+                << " outside expected range [" << minPixels << ", " << maxPixels << "]" << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        // Should have low intra (less than 10% of total)
+        const uint64_t intraPercent = static_cast<uint64_t>(m_feedbackResults.intraPixels) * 100ull;
+        if (intraPercent >= static_cast<uint64_t>(reportedTotal) * 10ull)
+        {
+            m_context.getTestContext().getLog()
+                << tcu::TestLog::Message << "Frame " << nalIdx << " (P): Expected intra < 10% of reported total ("
+                << reportedTotal << "), got intra=" << m_feedbackResults.intraPixels << tcu::TestLog::EndMessage;
+            return false;
+        }
+
+        // If skipped is available, must be <= inter; warn if too low ratio of skipped/inter
+        if (m_feedbackResults.skippedPixels > 0)
+        {
+            if (m_feedbackResults.skippedPixels > m_feedbackResults.interPixels)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx
+                    << " (P): Expected skipped <= inter; skipped=" << m_feedbackResults.skippedPixels
+                    << ", inter=" << m_feedbackResults.interPixels << tcu::TestLog::EndMessage;
+                return false;
+            }
+
+            // Warning: low proportion of skipped within inter for identical frames
+            // (plan suggests a warning if skipped/inter <= 50%).
+            if (m_feedbackResults.interPixels > 0 &&
+                (m_feedbackResults.skippedPixels * 100) / m_feedbackResults.interPixels <= 50)
+            {
+                m_context.getTestContext().getLog()
+                    << tcu::TestLog::Message << "Frame " << nalIdx
+                    << ": Warning: skipped/inter <= 50% (skipped=" << m_feedbackResults.skippedPixels
+                    << ", inter=" << m_feedbackResults.interPixels << ")" << tcu::TestLog::EndMessage;
+            }
+        }
+    }
+
+    m_context.getTestContext().getLog() << tcu::TestLog::Message << "Frame " << nalIdx
+                                        << ": Pixel count validation passed. "
+                                        << "intra=" << m_feedbackResults.intraPixels
+                                        << ", inter=" << m_feedbackResults.interPixels
+                                        << ", skipped=" << m_feedbackResults.skippedPixels
+                                        << ", intra+inter=" << reportedTotal << " within [" << minPixels << ", "
+                                        << maxPixels << "]" << tcu::TestLog::EndMessage;
+
+    return true;
+}
+
 MovePtr<VkVideoEncodeIntraRefreshInfoKHR> VideoEncodeTestInstance::createIntraRefreshInfo(uint32_t nalIdx)
 {
     if (!m_useIntraRefresh || nalIdx == 0)
@@ -3882,11 +5502,9 @@ uint32_t VideoEncodeTestInstance::calculateTotalFramesFromClipData(const std::ve
 
     return static_cast<uint32_t>(maxFrames);
 }
-#endif // DE_BUILD_VIDEO
 
 tcu::TestStatus VideoEncodeTestInstance::iterate(void)
 {
-#ifdef DE_BUILD_VIDEO
     initializeTestParameters();
     setupDeviceAndQueues();
     queryAndValidateCapabilities();
@@ -3904,9 +5522,6 @@ tcu::TestStatus VideoEncodeTestInstance::iterate(void)
     if (m_swapOrder)
         handleSwapOrderSubmission(m_encodeQueryPool);
     return verifyEncodedBitstream(*m_encodeBuffer.get(), m_encodeBufferSize);
-#else
-    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
-#endif // DE_BUILD_VIDEO
 }
 
 class VideoEncodeTestCase : public TestCase
@@ -3982,6 +5597,20 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
         context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
         break;
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_feedback2");
+        break;
+    case TEST_TYPE_H264_ENCODE_FEEDBACK2_QP_WITH_QM:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h264");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_feedback2");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_quantization_map");
+        break;
     case TEST_TYPE_H265_ENCODE_I:
     case TEST_TYPE_H265_ENCODE_RC_VBR:
     case TEST_TYPE_H265_ENCODE_RC_CBR:
@@ -4023,6 +5652,20 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
         context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
         context.requireDeviceFunctionality("VK_KHR_video_encode_intra_refresh");
         break;
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_1:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_PARTITION_COUNT_MAX_TRUNCATED:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_PIXELS:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_INTRA_INTER_SKIP_PIXELS:
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_AVERAGE_MIN_MAX:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_feedback2");
+        break;
+    case TEST_TYPE_H265_ENCODE_FEEDBACK2_QP_WITH_QM:
+        context.requireDeviceFunctionality("VK_KHR_video_encode_h265");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_feedback2");
+        context.requireDeviceFunctionality("VK_KHR_video_encode_quantization_map");
+        break;
     default:
         TCU_THROW(InternalError, "Unknown TestType");
     }
@@ -4039,7 +5682,13 @@ void VideoEncodeTestCase::checkSupport(Context &context) const
 
 TestInstance *VideoEncodeTestCase::createInstance(Context &context) const
 {
+#ifdef DE_BUILD_VIDEO
     return new VideoEncodeTestInstance(context, m_testDefinition.get());
+#else
+    // Vulkan video is not supported on android platform
+    DE_UNREF(context);
+    return nullptr;
+#endif
 }
 
 } // namespace

@@ -6971,6 +6971,18 @@ tcu::Format::Bitfield<32> getVideoEncodeIntraRefreshModeFlagsKHRStr (VkVideoEnco
 }
 
 
+tcu::Format::Bitfield<32> getVideoEncodePerPartitionFeedbackFlagsKHRStr (VkVideoEncodePerPartitionFeedbackFlagsKHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR,	"VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BUFFER_OFFSET_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR,	"VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_BITSTREAM_BYTES_WRITTEN_BIT_KHR"),
+		tcu::Format::BitDesc(VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_STATUS_BIT_KHR,						"VK_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_STATUS_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getVideoEncodeRateControlModeFlagsKHRStr (VkVideoEncodeRateControlModeFlagsKHR value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -16902,6 +16914,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeAV1F
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR& value)
+{
+	s << "VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvideoEncodeFeedback2 = " << value.videoEncodeFeedback2 << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR = {\n";
@@ -18351,6 +18373,17 @@ std::ostream& operator<< (std::ostream& s, const VkQueryPoolVideoEncodeFeedbackC
 	s << "\tsType = " << value.sType << '\n';
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\tencodeFeedbackFlags = " << getVideoEncodeFeedbackFlagsKHRStr(value.encodeFeedbackFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkQueryPoolVideoEncodePerPartitionFeedbackCreateInfoKHR& value)
+{
+	s << "VkQueryPoolVideoEncodePerPartitionFeedbackCreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPerPartitionFeedbackEntries = " << value.maxPerPartitionFeedbackEntries << '\n';
+	s << "\tperPartitionEncodeFeedbackFlags = " << getVideoEncodePerPartitionFeedbackFlagsKHRStr(value.perPartitionEncodeFeedbackFlags) << '\n';
 	s << '}';
 	return s;
 }
@@ -20835,6 +20868,17 @@ std::ostream& operator<< (std::ostream& s, const VkVideoEncodeCapabilitiesKHR& v
 	s << "\tmaxQualityLevels = " << value.maxQualityLevels << '\n';
 	s << "\tencodeInputPictureGranularity = " << value.encodeInputPictureGranularity << '\n';
 	s << "\tsupportedEncodeFeedbackFlags = " << getVideoEncodeFeedbackFlagsKHRStr(value.supportedEncodeFeedbackFlags) << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkVideoEncodeFeedback2CapabilitiesKHR& value)
+{
+	s << "VkVideoEncodeFeedback2CapabilitiesKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxPerPartitionFeedbackEntries = " << value.maxPerPartitionFeedbackEntries << '\n';
+	s << "\tsupportedPerPartitionEncodeFeedbackFlags = " << getVideoEncodePerPartitionFeedbackFlagsKHRStr(value.supportedPerPartitionEncodeFeedbackFlags) << '\n';
 	s << '}';
 	return s;
 }

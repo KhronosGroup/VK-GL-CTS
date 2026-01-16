@@ -206,6 +206,7 @@ const vk::VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				Context::getV
 const vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				Context::getVertexInputDynamicStateFeaturesEXT				(void) const { return m_device->getVertexInputDynamicStateFeaturesEXT();			}
 const vk::VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						Context::getVideoDecodeVP9Features							(void) const { return m_device->getVideoDecodeVP9Features();						}
 const vk::VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						Context::getVideoEncodeAV1Features							(void) const { return m_device->getVideoEncodeAV1Features();						}
+const vk::VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR&					Context::getVideoEncodeFeedback2Features					(void) const { return m_device->getVideoEncodeFeedback2Features();					}
 const vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&				Context::getVideoEncodeIntraRefreshFeatures					(void) const { return m_device->getVideoEncodeIntraRefreshFeatures();				}
 const vk::VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&			Context::getVideoEncodeQuantizationMapFeatures				(void) const { return m_device->getVideoEncodeQuantizationMapFeatures();			}
 const vk::VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						Context::getVideoMaintenance1Features						(void) const { return m_device->getVideoMaintenance1Features();						}

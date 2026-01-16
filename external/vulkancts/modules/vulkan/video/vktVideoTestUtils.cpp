@@ -1664,7 +1664,7 @@ de::MovePtr<StdVideoH265SequenceParameterSet> getStdVideoH265SequenceParameterSe
 }
 
 de::MovePtr<StdVideoH265PictureParameterSet> getStdVideoH265PictureParameterSet(
-    const VkVideoEncodeH265CapabilitiesKHR *videoH265CapabilitiesExtension)
+    const VkVideoEncodeH265CapabilitiesKHR *videoH265CapabilitiesExtension, uint32_t tileColumns, uint32_t tileRows)
 {
     uint32_t weighted_pred_flag =
         (videoH265CapabilitiesExtension->stdSyntaxFlags & VK_VIDEO_ENCODE_H265_STD_WEIGHTED_PRED_FLAG_SET_BIT_KHR) ? 1 :
@@ -1678,6 +1678,10 @@ de::MovePtr<StdVideoH265PictureParameterSet> getStdVideoH265PictureParameterSet(
             1 :
             0;
 
+    // Tiles are enabled when tileColumns/Rows exceed 1. uniform_spacing_flag is set to 1 when tiles are enabled
+    // because the tests rely on uniform spacing to simplify validation.
+    const bool tilesEnabled = (tileColumns > 1u) || (tileRows > 1u);
+
     const StdVideoH265PpsFlags stdVideoH265PpsFlags = {
         0,                                //  dependent_slice_segments_enabled_flag : 1;
         0,                                //  output_flag_present_flag : 1;
@@ -1690,9 +1694,9 @@ de::MovePtr<StdVideoH265PictureParameterSet> getStdVideoH265PictureParameterSet(
         weighted_pred_flag,               //  weighted_pred_flag : 1;
         0,                                //  weighted_bipred_flag : 1;
         0,                                //  transquant_bypass_enabled_flag : 1;
-        0,                                //  tiles_enabled_flag : 1;
+        tilesEnabled ? 1u : 0u,           //  tiles_enabled_flag : 1;
         entropy_coding_sync_enabled_flag, //  entropy_coding_sync_enabled_flag : 1;
-        0,                                //  uniform_spacing_flag : 1;
+        tilesEnabled ? 1u : 0u,           //  uniform_spacing_flag : 1 when tiles are used
         0,                                //  loop_filter_across_tiles_enabled_flag : 1;
         1,                                //  pps_loop_filter_across_slices_enabled_flag : 1;
         0,                                //  deblocking_filter_control_present_flag : 1;
@@ -1740,15 +1744,15 @@ de::MovePtr<StdVideoH265PictureParameterSet> getStdVideoH265PictureParameterSet(
         0u,                   //  uint8_t pps_num_palette_predictor_initializers;
         0u,                   //  uint8_t luma_bit_depth_entry_minus8;
         0u,                   //  uint8_t chroma_bit_depth_entry_minus8;
-        0u,                   //  uint8_t num_tile_columns_minus1;
-        0u,                   //  uint8_t num_tile_rows_minus1;
-        0u,                   //  uint8_t reserved1;
-        0u,                   //  uint8_t reserved2;
-        {},                   //  uint16_t column_width_minus1[STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_COLS_LIST_SIZE];
-        {},                   //  uint16_t row_height_minus1[STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_ROWS_LIST_SIZE];
-        0u,                   //  uint32_t reserved3;
-        nullptr,              //  const StdVideoH265ScalingLists* pScalingLists;
-        nullptr,              //  const StdVideoH265PredictorPaletteEntries* pPredictorPaletteEntries;
+        static_cast<uint8_t>(tileColumns > 0 ? tileColumns - 1 : 0), //  uint8_t num_tile_columns_minus1;
+        static_cast<uint8_t>(tileRows > 0 ? tileRows - 1 : 0),       //  uint8_t num_tile_rows_minus1;
+        0u,                                                          //  uint8_t reserved1;
+        0u,                                                          //  uint8_t reserved2;
+        {},      //  uint16_t column_width_minus1[STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_COLS_LIST_SIZE];
+        {},      //  uint16_t row_height_minus1[STD_VIDEO_H265_CHROMA_QP_OFFSET_TILE_ROWS_LIST_SIZE];
+        0u,      //  uint32_t reserved3;
+        nullptr, //  const StdVideoH265ScalingLists* pScalingLists;
+        nullptr, //  const StdVideoH265PredictorPaletteEntries* pPredictorPaletteEntries;
     };
 
     return de::MovePtr<StdVideoH265PictureParameterSet>(

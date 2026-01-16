@@ -6696,6 +6696,45 @@ tcu::TestStatus testPhysicalDeviceFeatureVideoEncodeAV1FeaturesKHR (Context& con
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureVideoEncodeFeedback2FeaturesKHR (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR deviceVideoEncodeFeedback2FeaturesKHR[count];
+    const bool                                      isVideoEncodeFeedback2FeaturesKHR = checkExtension(properties, "VK_KHR_video_encode_feedback2");
+
+    if (!isVideoEncodeFeedback2FeaturesKHR)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceVideoEncodeFeedback2FeaturesKHR[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR));
+        deviceVideoEncodeFeedback2FeaturesKHR[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_FEEDBACK_2_FEATURES_KHR;
+        deviceVideoEncodeFeedback2FeaturesKHR[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceVideoEncodeFeedback2FeaturesKHR[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceVideoEncodeFeedback2FeaturesKHR[0] << TestLog::EndMessage;
+
+    if (
+        deviceVideoEncodeFeedback2FeaturesKHR[0].videoEncodeFeedback2 != deviceVideoEncodeFeedback2FeaturesKHR[1].videoEncodeFeedback2)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureVideoEncodeIntraRefreshFeaturesKHR (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -7760,6 +7799,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", testPhysicalDeviceFeatureVertexInputDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "video_decode_vp9_features_khr", testPhysicalDeviceFeatureVideoDecodeVP9FeaturesKHR);
 	addFunctionCase(testGroup, "video_encode_av1_features_khr", testPhysicalDeviceFeatureVideoEncodeAV1FeaturesKHR);
+	addFunctionCase(testGroup, "video_encode_feedback2_features_khr", testPhysicalDeviceFeatureVideoEncodeFeedback2FeaturesKHR);
 	addFunctionCase(testGroup, "video_encode_intra_refresh_features_khr", testPhysicalDeviceFeatureVideoEncodeIntraRefreshFeaturesKHR);
 	addFunctionCase(testGroup, "video_encode_quantization_map_features_khr", testPhysicalDeviceFeatureVideoEncodeQuantizationMapFeaturesKHR);
 	addFunctionCase(testGroup, "video_maintenance1_features_khr", testPhysicalDeviceFeatureVideoMaintenance1FeaturesKHR);

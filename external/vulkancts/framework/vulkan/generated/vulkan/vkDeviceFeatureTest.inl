@@ -7800,6 +7800,43 @@ tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVideoEncodeAV1FeaturesKHR
 }
 
 
+tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVideoEncodeFeedback2FeaturesKHR (Context& context)
+{
+    tcu::TestLog&                            log = context.getTestContext().getLog();
+    tcu::ResultCollector                    resultCollector            (log);
+    const InstanceWrapper instance(createCustomInstanceWithExtensions(context, context.getInstanceExtensions(), nullptr, true));
+    const VkPhysicalDevice                    physicalDevice = instance.getPhysicalDevice();
+    const uint32_t                            queueFamilyIndex = 0;
+    const uint32_t                            queueCount = 1;
+    const float                                queuePriority = 1.0f;
+    const DeviceFeatures                    deviceFeaturesAll        (context.getInstanceInterface(), context.getUsedApiVersion(), physicalDevice, context.getInstanceExtensions(), context.getDeviceExtensions(), true);
+    const VkPhysicalDeviceFeatures2            deviceFeatures2 = deviceFeaturesAll.getCoreFeatures2();
+    int                                        numErrors = 0;
+
+    VkPhysicalDeviceFeatures emptyDeviceFeatures;
+    deMemset(&emptyDeviceFeatures, 0, sizeof(emptyDeviceFeatures));
+
+    // Only non-core extensions will be used when creating the device.
+    const auto& extensionNames = context.getDeviceCreationExtensions();
+    DE_UNREF(extensionNames); // In some cases this is not used.
+
+    if (const void* featuresStruct = findStructureInChain(const_cast<const void*>(deviceFeatures2.pNext), getStructureType<VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR>()))
+    {
+        static const Feature features[] =
+        {
+        FEATURE_ITEM (VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR, videoEncodeFeedback2),
+        };
+        auto* supportedFeatures = reinterpret_cast<const VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR*>(featuresStruct);
+        checkFeatures(instance, physicalDevice, 1, features, supportedFeatures, queueFamilyIndex, queueCount, queuePriority, numErrors, resultCollector, &extensionNames, emptyDeviceFeatures);
+    }
+
+    if (numErrors > 0)
+        return tcu::TestStatus(resultCollector.getResult(), "Enabling unsupported features didn't return VK_ERROR_FEATURE_NOT_PRESENT.");
+
+    return tcu::TestStatus(resultCollector.getResult(), resultCollector.getMessage());
+}
+
+
 tcu::TestStatus createDeviceWithUnsupportedFeaturesTestVideoEncodeIntraRefreshFeaturesKHR (Context& context)
 {
     tcu::TestLog&                            log = context.getTestContext().getLog();
@@ -8622,6 +8659,7 @@ void addSeparateUnsupportedFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "vertex_input_dynamic_state_features_ext", createDeviceWithUnsupportedFeaturesTestVertexInputDynamicStateFeaturesEXT);
 	addFunctionCase(testGroup, "video_decode_vp9_features_khr", createDeviceWithUnsupportedFeaturesTestVideoDecodeVP9FeaturesKHR);
 	addFunctionCase(testGroup, "video_encode_av1_features_khr", createDeviceWithUnsupportedFeaturesTestVideoEncodeAV1FeaturesKHR);
+	addFunctionCase(testGroup, "video_encode_feedback2_features_khr", createDeviceWithUnsupportedFeaturesTestVideoEncodeFeedback2FeaturesKHR);
 	addFunctionCase(testGroup, "video_encode_intra_refresh_features_khr", createDeviceWithUnsupportedFeaturesTestVideoEncodeIntraRefreshFeaturesKHR);
 	addFunctionCase(testGroup, "video_encode_quantization_map_features_khr", createDeviceWithUnsupportedFeaturesTestVideoEncodeQuantizationMapFeaturesKHR);
 	addFunctionCase(testGroup, "video_maintenance1_features_khr", createDeviceWithUnsupportedFeaturesTestVideoMaintenance1FeaturesKHR);

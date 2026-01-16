@@ -3478,6 +3478,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeAV1Featur
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_AV1_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_FEEDBACK_2_FEATURES_KHR;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR;
@@ -3961,6 +3966,11 @@ template<> VkStructureType getStructureType<VkQueryPoolPerformanceQueryCreateInf
 template<> VkStructureType getStructureType<VkQueryPoolVideoEncodeFeedbackCreateInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_FEEDBACK_CREATE_INFO_KHR;
+}
+
+template<> VkStructureType getStructureType<VkQueryPoolVideoEncodePerPartitionFeedbackCreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_QUERY_POOL_VIDEO_ENCODE_PER_PARTITION_FEEDBACK_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkQueueFamilyDataGraphProcessingEnginePropertiesARM> (void)
@@ -4796,6 +4806,11 @@ template<> VkStructureType getStructureType<VkVideoEncodeAV1SessionParametersCre
 template<> VkStructureType getStructureType<VkVideoEncodeCapabilitiesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_CAPABILITIES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkVideoEncodeFeedback2CapabilitiesKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_VIDEO_ENCODE_FEEDBACK_2_CAPABILITIES_KHR;
 }
 
 template<> VkStructureType getStructureType<VkVideoEncodeH264CapabilitiesKHR> (void)

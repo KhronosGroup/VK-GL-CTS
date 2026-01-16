@@ -1021,6 +1021,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_av1"))
 		addFeatures(&physicalDeviceVideoEncodeAV1FeaturesKHR);
 
+	// VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR for ext [VK_KHR_video_encode_feedback2]
+	vk::VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR physicalDeviceVideoEncodeFeedback2FeaturesKHR = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_feedback2"))
+		addFeatures(&physicalDeviceVideoEncodeFeedback2FeaturesKHR);
+
 	// VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR for ext [VK_KHR_video_encode_intra_refresh]
 	vk::VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR physicalDeviceVideoEncodeIntraRefreshFeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_video_encode_intra_refresh"))
@@ -1574,6 +1579,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceVideoMaintenance2FeaturesKHR.videoMaintenance2 == VK_FALSE )
 			failMesages.push_back("videoMaintenance2");
+	}
+
+	// VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_video_encode_feedback2")) )
+	{
+		if ( physicalDeviceVideoEncodeFeedback2FeaturesKHR.videoEncodeFeedback2 == VK_FALSE )
+			failMesages.push_back("videoEncodeFeedback2");
 	}
 
 	// VkPhysicalDeviceDepthClampZeroOneFeaturesKHR

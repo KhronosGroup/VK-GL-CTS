@@ -401,6 +401,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeRobustnessFea
 template<> void initFeatureFromBlob<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>(VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR>(VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>(VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR>(VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>(VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>(VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>(VkPhysicalDeviceVideoMaintenance1FeaturesKHR&, const AllFeaturesBlobs&) {}
@@ -614,6 +615,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVertexAttributeRobustness
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT, VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_DECODE_VP9_FEATURES_KHR, VK_KHR_VIDEO_DECODE_VP9_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_AV1_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_AV1_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_FEEDBACK_2_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_FEEDBACK_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_INTRA_REFRESH_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_INTRA_REFRESH_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_QUANTIZATION_MAP_FEATURES_KHR, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_MAINTENANCE_1_FEATURES_KHR, VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME}; }
@@ -831,6 +833,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>, VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR>, VK_KHR_VIDEO_DECODE_VP9_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>, VK_KHR_VIDEO_ENCODE_AV1_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR>, VK_KHR_VIDEO_ENCODE_FEEDBACK_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>, VK_KHR_VIDEO_ENCODE_INTRA_REFRESH_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>, VK_KHR_VIDEO_ENCODE_QUANTIZATION_MAP_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>, VK_KHR_VIDEO_MAINTENANCE_1_EXTENSION_NAME },

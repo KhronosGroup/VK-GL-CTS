@@ -8457,6 +8457,13 @@ struct VkPhysicalDeviceVideoEncodeAV1FeaturesKHR
 	VkBool32		videoEncodeAV1;
 };
 
+struct VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		videoEncodeFeedback2;
+};
+
 struct VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR
 {
 	VkStructureType	sType;
@@ -9544,6 +9551,14 @@ struct VkQueryPoolVideoEncodeFeedbackCreateInfoKHR
 	VkStructureType					sType;
 	const void*						pNext;
 	VkVideoEncodeFeedbackFlagsKHR	encodeFeedbackFlags;
+};
+
+struct VkQueryPoolVideoEncodePerPartitionFeedbackCreateInfoKHR
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	uint32_t									maxPerPartitionFeedbackEntries;
+	VkVideoEncodePerPartitionFeedbackFlagsKHR	perPartitionEncodeFeedbackFlags;
 };
 
 struct VkQueueFamilyDataGraphProcessingEnginePropertiesARM
@@ -11868,6 +11883,14 @@ struct VkVideoEncodeCapabilitiesKHR
 	uint32_t								maxQualityLevels;
 	VkExtent2D								encodeInputPictureGranularity;
 	VkVideoEncodeFeedbackFlagsKHR			supportedEncodeFeedbackFlags;
+};
+
+struct VkVideoEncodeFeedback2CapabilitiesKHR
+{
+	VkStructureType								sType;
+	void*										pNext;
+	uint32_t									maxPerPartitionFeedbackEntries;
+	VkVideoEncodePerPartitionFeedbackFlagsKHR	supportedPerPartitionEncodeFeedbackFlags;
 };
 
 struct VkVideoEncodeH264CapabilitiesKHR

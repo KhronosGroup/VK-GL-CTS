@@ -1388,6 +1388,7 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     const bool requireQuantizationMap     = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_QUANTIZATION_MAP) != 0;
     const bool requireIntraRefresh        = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_INTRA_REFRESH) != 0;
     const bool requireUnifiedImageLayouts = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_UNIFIED_IMAGE_LAYOUTS) != 0;
+    const bool requireEncodeFeedback2     = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_ENCODE_FEEDBACK_2) != 0;
     const bool requireYCBCRorNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_YCBCR_OR_NOT_SUPPORTED) != 0;
     const bool requireSync2orNotSupported = (videoDeviceFlags & VIDEO_DEVICE_FLAG_REQUIRE_SYNC2_OR_NOT_SUPPORTED) != 0;
     const bool requireTimelineSemOrNotSupported =
@@ -1539,6 +1540,10 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_unified_image_layouts"))
             deviceExtensions.push_back("VK_KHR_unified_image_layouts");
 
+    if (requireEncodeFeedback2)
+        if (!vk::isCoreDeviceExtension(apiVersion, "VK_KHR_video_encode_feedback2"))
+            deviceExtensions.push_back("VK_KHR_video_encode_feedback2");
+
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
             deviceExtensions.push_back("VK_KHR_timeline_semaphore");
@@ -1591,6 +1596,12 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
         false,                                                                    //  VkBool32 unifiedImageLayoutsVideo;
     };
 
+    vk::VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR encodeFeedback2Features = {
+        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_ENCODE_FEEDBACK_2_FEATURES_KHR, //  VkStructureType sType;
+        nullptr,                                                                    //  void* pNext;
+        false,                                                                      //  VkBool32 videoEncodeFeedback2;
+    };
+
     vk::VkPhysicalDeviceTimelineSemaphoreFeatures timelineSemaphoreFeatures = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, // VkStructureType sType;
         nullptr,                                                           // void* pNext;
@@ -1627,6 +1638,9 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
     if (requireUnifiedImageLayouts)
         appendStructurePtrToVulkanChain((const void **)&features2.pNext, &unifiedImageLayoutsFeatures);
 
+    if (requireEncodeFeedback2)
+        appendStructurePtrToVulkanChain((const void **)&features2.pNext, &encodeFeedback2Features);
+
     if (requireTimelineSemOrNotSupported)
         if (m_context.isDeviceFunctionalitySupported("VK_KHR_timeline_semaphore"))
             appendStructurePtrToVulkanChain((const void **)&features2.pNext, &timelineSemaphoreFeatures);
@@ -1659,6 +1673,9 @@ bool VideoDevice::createDeviceSupportingQueue(const vk::VkQueueFlags queueFlagsR
 
     if (requireUnifiedImageLayouts && unifiedImageLayoutsFeatures.unifiedImageLayouts == false)
         TCU_THROW(NotSupportedError, "unifiedImageLayouts feature is required");
+
+    if (requireEncodeFeedback2 && encodeFeedback2Features.videoEncodeFeedback2 == false)
+        TCU_THROW(NotSupportedError, "videoEncodeFeedback2 feature is required");
 
     features2.features.robustBufferAccess = false;
 

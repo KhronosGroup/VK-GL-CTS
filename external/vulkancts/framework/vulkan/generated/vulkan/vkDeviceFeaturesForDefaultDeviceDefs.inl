@@ -206,6 +206,7 @@ const VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&				getVertexAttribut
 const VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT&				getVertexInputDynamicStateFeaturesEXT				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT>();			}
 const VkPhysicalDeviceVideoDecodeVP9FeaturesKHR&						getVideoDecodeVP9Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoDecodeVP9FeaturesKHR>();						}
 const VkPhysicalDeviceVideoEncodeAV1FeaturesKHR&						getVideoEncodeAV1Features							(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeAV1FeaturesKHR>();						}
+const VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR&					getVideoEncodeFeedback2Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeFeedback2FeaturesKHR>();				}
 const VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR&				getVideoEncodeIntraRefreshFeatures					(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeIntraRefreshFeaturesKHR>();			}
 const VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR&			getVideoEncodeQuantizationMapFeatures				(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoEncodeQuantizationMapFeaturesKHR>();			}
 const VkPhysicalDeviceVideoMaintenance1FeaturesKHR&						getVideoMaintenance1Features						(void) const { return m_deviceFeatures.getFeatureType<VkPhysicalDeviceVideoMaintenance1FeaturesKHR>();					}

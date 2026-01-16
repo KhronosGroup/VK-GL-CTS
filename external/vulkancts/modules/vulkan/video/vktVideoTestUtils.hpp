@@ -238,7 +238,7 @@ de::MovePtr<StdVideoH265SequenceParameterSet> getStdVideoH265SequenceParameterSe
     const StdVideoH265SequenceParameterSetVui *pSequenceParameterSetVui);
 
 de::MovePtr<StdVideoH265PictureParameterSet> getStdVideoH265PictureParameterSet(
-    const VkVideoEncodeH265CapabilitiesKHR *videoH265CapabilitiesExtension);
+    const VkVideoEncodeH265CapabilitiesKHR *videoH265CapabilitiesExtension, uint32_t tileColumns, uint32_t tileRows);
 
 de::MovePtr<VkVideoEncodeH265SessionParametersAddInfoKHR> getVideoEncodeH265SessionParametersAddInfoKHR(
     uint32_t stdVPSCount, const StdVideoH265VideoParameterSet *pStdVPSs, uint32_t stdSPSCount,
