@@ -772,11 +772,21 @@ public:
         return index;
     }
 
-    void addSubpassColorAttachment(const uint32_t attachmentIndex, const VkImageLayout subpassLayout)
+    void addSubpassColorAttachment(const uint32_t attachmentIndex, const VkImageLayout subpassLayout,
+                                   const VkSampleLocationsInfoEXT *pSampleLocations = nullptr)
     {
         m_subpasses.back().colorAttachmentReferences.push_back(makeAttachmentReference(attachmentIndex, subpassLayout));
         m_subpasses.back().resolveAttachmentReferences.push_back(
             makeAttachmentReference(VK_ATTACHMENT_UNUSED, VK_IMAGE_LAYOUT_UNDEFINED));
+
+        if (pSampleLocations)
+        {
+            const VkSubpassSampleLocationsEXT subpassSampleLocations = {
+                static_cast<uint32_t>(m_subpasses.size() - 1), // uint32_t                    subpassIndex;
+                *pSampleLocations,                             // VkSampleLocationsInfoEXT    sampleLocationsInfo;
+            };
+            m_subpassSampleLocations.push_back(subpassSampleLocations);
+        }
     }
 
     void addSubpassColorAttachmentWithResolve(const uint32_t colorAttachmentIndex,
@@ -1654,9 +1664,9 @@ protected:
 
         if (isMSAA())
         {
-            if (TEST_OPTION_VARIABLE_SAMPLE_LOCATIONS_BIT & m_params.options)
+            // VUID-vkCmdBindPipeline-variableSampleLocations-01525
+            if (!useStdLocations)
             {
-                DE_ASSERT(!useStdLocations);
                 rt.addSubpassColorAttachmentWithResolve(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
                                                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, &sampleLocationsInfo);
             }
@@ -1668,7 +1678,15 @@ protected:
         }
         else
         {
-            rt.addSubpassColorAttachment(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            // VUID-vkCmdBindPipeline-variableSampleLocations-01525
+            if (!useStdLocations)
+            {
+                rt.addSubpassColorAttachment(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, &sampleLocationsInfo);
+            }
+            else
+            {
+                rt.addSubpassColorAttachment(0u, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+            }
         }
 
         rt.bake(vk, device, m_params.pipelineConstructionType, m_renderSize);

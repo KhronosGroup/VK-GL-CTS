@@ -33,6 +33,7 @@
 #include "vkCmdUtil.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkMemUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include <chrono>
 
 namespace vkt
@@ -596,11 +597,46 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     const vk::VkPipelineDynamicStateCreateInfo *pDynamicStateCreateInfo =
         (m_type == DRAW_DYNAMIC_PIPELINE) ? &dynamicStateCreateInfo : nullptr;
 
+    //  VUID-VkGraphicsPipelineCreateInfo-pDynamicState-09639
+    const bool needsConservativeRasterization =
+        (m_type == DRAW_DYNAMIC_PIPELINE) &&
+        std::find(dynamicStates.begin(), dynamicStates.end(),
+                  vk::VK_DYNAMIC_STATE_CONSERVATIVE_RASTERIZATION_MODE_EXT) != dynamicStates.end() &&
+        std::find(dynamicStates.begin(), dynamicStates.end(),
+                  vk::VK_DYNAMIC_STATE_EXTRA_PRIMITIVE_OVERESTIMATION_SIZE_EXT) == dynamicStates.end();
+
+    const vk::VkPipelineRasterizationConservativeStateCreateInfoEXT conservativeRasterizationState = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_CONSERVATIVE_STATE_CREATE_INFO_EXT, // VkStructureType sType;
+        nullptr,                                                                         // const void* pNext;
+        (vk::VkPipelineRasterizationConservativeStateCreateFlagsEXT)0u, // VkPipelineRasterizationConservativeStateCreateFlagsEXT flags;
+        vk::VK_CONSERVATIVE_RASTERIZATION_MODE_DISABLED_EXT, // VkConservativeRasterizationModeEXT conservativeRasterizationMode;
+        0.0f                                                 // float extraPrimitiveOverestimationSize;
+    };
+
+    const vk::VkPipelineRasterizationStateCreateInfo rasterizationState = {
+        vk::VK_STRUCTURE_TYPE_PIPELINE_RASTERIZATION_STATE_CREATE_INFO,             // VkStructureType sType;
+        needsConservativeRasterization ? &conservativeRasterizationState : nullptr, // const void* pNext;
+        (vk::VkPipelineRasterizationStateCreateFlags)0, // VkPipelineRasterizationStateCreateFlags flags;
+        VK_FALSE,                                       // VkBool32 depthClampEnable;
+        VK_FALSE,                                       // VkBool32 rasterizerDiscardEnable;
+        vk::VK_POLYGON_MODE_FILL,                       // VkPolygonMode polygonMode;
+        vk::VK_CULL_MODE_NONE,                          // VkCullModeFlags cullMode;
+        vk::VK_FRONT_FACE_CLOCKWISE,                    // VkFrontFace frontFace;
+        VK_FALSE,                                       // VkBool32 depthBiasEnable;
+        0.0f,                                           // float depthBiasConstantFactor;
+        0.0f,                                           // float depthBiasClamp;
+        0.0f,                                           // float depthBiasSlopeFactor;
+        1.0f                                            // float lineWidth;
+    };
+
+    const vk::VkPipelineRasterizationStateCreateInfo *pRasterizationState =
+        needsConservativeRasterization ? &rasterizationState : nullptr;
+
     const auto pipeline = makeGraphicsPipeline(
         vk, device, emptyPipelineLayout.get(), vertShaderModule.get(), tescShaderModule.get(), teseShaderModule.get(),
         geomShaderModule.get(), fragShaderModule.get(), VK_NULL_HANDLE, 0u, &vertexInputStateParams,
-        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, nullptr, nullptr, nullptr,
-        nullptr, pDynamicStateCreateInfo, &pipelineRenderingCreateInfo);
+        &pipelineInputAssemblyStateInfo, &tessStateCreateInfo, &viewportStateCreateInfo, pRasterizationState, nullptr,
+        nullptr, nullptr, pDynamicStateCreateInfo, &pipelineRenderingCreateInfo);
     pipelineInputAssemblyStateInfo.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
     viewportStateCreateInfo.viewportCount   = 1u;
     viewportStateCreateInfo.scissorCount    = 1u;
@@ -661,6 +697,12 @@ tcu::TestStatus ShaderObjectPerformanceInstance::iterate(void)
     // Do a dummy run, to ensure memory allocations are done with before performance testing
     {
         vk::beginCommandBuffer(vk, *cmdBuffer, 0u);
+        vk::VkImageMemoryBarrier imageMemoryBarrier = vk::makeImageMemoryBarrier(
+            vk::VK_ACCESS_NONE_KHR, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+            vk::VK_IMAGE_LAYOUT_GENERAL, **image, subresourceRange);
+        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                              vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, 0u, 0u, nullptr, 0u, nullptr, 1u,
+                              &imageMemoryBarrier);
         vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *dummyPipeline);
         vk::beginRendering(vk, *cmdBuffer, *imageView, renderArea, clearValue, vk::VK_IMAGE_LAYOUT_GENERAL,
                            vk::VK_ATTACHMENT_LOAD_OP_CLEAR);

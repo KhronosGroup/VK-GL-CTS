@@ -26,6 +26,7 @@
 #include "vktShaderObjectApiTests.hpp"
 #include "vktShaderObjectCreateTests.hpp"
 #include "vktShaderObjectLinkTests.hpp"
+#include "vktShaderObjectTessellationTests.hpp"
 #include "vktShaderObjectBinaryTests.hpp"
 #include "vktShaderObjectPipelineInteractionTests.hpp"
 #include "vktShaderObjectBindingTests.hpp"
@@ -50,6 +51,7 @@ tcu::TestCaseGroup *createTests(tcu::TestContext &testCtx, const std::string &na
     mainGroup->addChild(createShaderObjectApiTests(testCtx));
     mainGroup->addChild(createShaderObjectCreateTests(testCtx));
     mainGroup->addChild(createShaderObjectLinkTests(testCtx));
+    mainGroup->addChild(createShaderObjectTessellationTests(testCtx));
     mainGroup->addChild(createShaderObjectBinaryTests(testCtx));
     mainGroup->addChild(createShaderObjectPipelineInteractionTests(testCtx));
     mainGroup->addChild(createShaderObjectBindingTests(testCtx));

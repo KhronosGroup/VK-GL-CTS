@@ -291,13 +291,6 @@ VKAPI_ATTR VkResult VKAPI_CALL acquireProfilingLockKHR (VkDevice device, const V
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL acquireWinrtDisplayNV (VkPhysicalDevice physicalDevice, VkDisplayKHR display)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(display);
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL beginCommandBuffer (VkCommandBuffer commandBuffer, const VkCommandBufferBeginInfo* pBeginInfo)
 {
 	DE_UNREF(commandBuffer);
@@ -1785,14 +1778,6 @@ VKAPI_ATTR VkResult VKAPI_CALL getSwapchainStatusKHR (VkDevice device, VkSwapcha
 	return VK_SUCCESS;
 }
 
-VKAPI_ATTR VkResult VKAPI_CALL getWinrtDisplayNV (VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay)
-{
-	DE_UNREF(physicalDevice);
-	DE_UNREF(deviceRelativeId);
-	DE_UNREF(pDisplay);
-	return VK_SUCCESS;
-}
-
 VKAPI_ATTR VkResult VKAPI_CALL importFenceFdKHR (VkDevice device, const VkImportFenceFdInfoKHR* pImportFenceFdInfo)
 {
 	DE_UNREF(device);
@@ -2058,7 +2043,6 @@ static const tcu::StaticFunctionLibrary::Entry s_platformFunctions[] =
 
 static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 {
-	VK_NULL_FUNC_ENTRY(vkAcquireWinrtDisplayNV,											acquireWinrtDisplayNV),
 	VK_NULL_FUNC_ENTRY(vkCreateDebugUtilsMessengerEXT,									createDebugUtilsMessengerEXT),
 	VK_NULL_FUNC_ENTRY(vkCreateDevice,													createDevice),
 	VK_NULL_FUNC_ENTRY(vkCreateDisplayModeKHR,											createDisplayModeKHR),
@@ -2113,7 +2097,6 @@ static const tcu::StaticFunctionLibrary::Entry s_instanceFunctions[] =
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfacePresentModesKHR,						getPhysicalDeviceSurfacePresentModesKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceSurfaceSupportKHR,							getPhysicalDeviceSurfaceSupportKHR),
 	VK_NULL_FUNC_ENTRY(vkGetPhysicalDeviceToolProperties,								getPhysicalDeviceToolProperties),
-	VK_NULL_FUNC_ENTRY(vkGetWinrtDisplayNV,												getWinrtDisplayNV),
 	VK_NULL_FUNC_ENTRY(vkReleaseDisplayEXT,												releaseDisplayEXT),
 	VK_NULL_FUNC_ENTRY(vkSubmitDebugUtilsMessageEXT,									submitDebugUtilsMessageEXT),
 };

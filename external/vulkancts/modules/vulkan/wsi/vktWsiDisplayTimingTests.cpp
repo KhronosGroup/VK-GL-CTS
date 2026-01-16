@@ -433,6 +433,7 @@ private:
     const CustomInstance m_instance;
     const vk::InstanceDriver &m_vki;
     const vk::VkPhysicalDevice m_physicalDevice;
+    const vk::wsi::Type m_wsiType;
     const de::UniquePtr<vk::wsi::Display> m_nativeDisplay;
     const de::UniquePtr<vk::wsi::Window> m_nativeWindow;
     const vk::Unique<vk::VkSurfaceKHR> m_surface;
@@ -581,6 +582,7 @@ DisplayTimingTestInstance::DisplayTimingTestInstance(Context &context, const Tes
     , m_instance(createInstanceWithWsi(context, m_instanceExtensions, testConfig.wsiType))
     , m_vki(m_instance.getDriver())
     , m_physicalDevice(vk::chooseDevice(m_vki, m_instance, context.getTestContext().getCommandLine()))
+    , m_wsiType(testConfig.wsiType)
     , m_nativeDisplay(createDisplay(context.getTestContext().getPlatform().getVulkanPlatform(), m_instanceExtensions,
                                     testConfig.wsiType))
     , m_nativeWindow(createWindow(*m_nativeDisplay, tcu::Nothing))
@@ -637,7 +639,7 @@ void DisplayTimingTestInstance::initSwapchainResources(void)
     const uint32_t imageHeight     = m_swapchainConfig.imageExtent.height;
     const vk::VkFormat imageFormat = m_swapchainConfig.imageFormat;
 
-    m_swapchain       = vk::createSwapchainKHR(m_vkd, *m_device, &m_swapchainConfig);
+    m_swapchain       = createWsiSwapchain(m_wsiType, m_vkd, *m_device, &m_swapchainConfig);
     m_swapchainImages = vk::wsi::getSwapchainImages(m_vkd, *m_device, *m_swapchain);
     m_isFirst.resize(m_swapchainImages.size(), true);
 
@@ -732,10 +734,12 @@ vector<vk::VkPastPresentationTimingGOOGLE> getPastPresentationTiming(const vk::D
 void DisplayTimingTestInstance::render(void)
 {
     const uint64_t foreverNs = ~0x0ull;
-    const vk::VkFence fence  = m_fences[m_frameNdx % m_fences.size()];
-    const uint32_t width     = m_swapchainConfig.imageExtent.width;
-    const uint32_t height    = m_swapchainConfig.imageExtent.height;
-    tcu::TestLog &log        = m_context.getTestContext().getLog();
+    // VUID-vkAcquireNextImageKHR-surface-07783
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
+    const vk::VkFence fence             = m_fences[m_frameNdx % m_fences.size()];
+    const uint32_t width                = m_swapchainConfig.imageExtent.width;
+    const uint32_t height               = m_swapchainConfig.imageExtent.height;
+    tcu::TestLog &log                   = m_context.getTestContext().getLog();
 
     // Throttle execution
     if (m_frameNdx >= m_fences.size())
@@ -753,8 +757,8 @@ void DisplayTimingTestInstance::render(void)
     uint32_t imageIndex;
 
     // Acquire next image
-    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, foreverNs, currentAcquireSemaphore, VK_NULL_HANDLE,
-                                       &imageIndex));
+    VK_CHECK(m_vkd.acquireNextImageKHR(*m_device, *m_swapchain, kAcquireImageTimeout, currentAcquireSemaphore,
+                                       VK_NULL_HANDLE, &imageIndex));
 
     // Create command buffer
     m_commandBuffers[m_frameNdx % m_commandBuffers.size()] =

@@ -216,6 +216,8 @@ void AhbTestCase::initPrograms(SourceCollections &programCollection) const
 
 void AhbTestCase::checkSupport(Context &context) const
 {
+    context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
+
     const InstanceInterface &vki                    = context.getInstanceInterface();
     vk::VkPhysicalDevice physicalDevice             = context.getPhysicalDevice();
     const vk::VkPhysicalDeviceProperties properties = vk::getPhysicalDeviceProperties(vki, physicalDevice);
@@ -323,8 +325,6 @@ tcu::TestStatus AhbTestInstance::iterate(void)
 
     if (!ahbApi)
         TCU_THROW(NotSupportedError, "Android Hardware Buffer not supported");
-
-    m_context.requireDeviceFunctionality("VK_ANDROID_external_memory_android_hardware_buffer");
 
     uint64_t requiredAhbUsage = ahbApi->vkUsageToAhbUsage(VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
 

@@ -223,8 +223,9 @@ void addGraphicsVaryingNameTest(tcu::TestCaseGroup *group, const TestParams &par
             noInterfaces, extensions, features, VK_SHADER_STAGE_VERTEX_BIT | VK_SHADER_STAGE_FRAGMENT_BIT,
             QP_TEST_RESULT_FAIL, string());
 
-        addFunctionCaseWithPrograms<InstanceContext>(group, params.name.c_str(), params.createShaders,
-                                                     runAndVerifyDefaultPipeline, instanceContext);
+        addFunctionCaseWithPrograms<InstanceContext>(group, params.name.c_str(), defaultCheckSupport,
+                                                     params.createShaders, runAndVerifyDefaultPipeline,
+                                                     instanceContext);
     }
 }
 

@@ -109,10 +109,12 @@ void FragmentShadingRateAttachment::deinit(void)
     // Reset GLES state
     gl.bindTexture(GL_TEXTURE_2D, 0);
     gl.bindBuffer(GL_ARRAY_BUFFER, 0);
+    gl.bindVertexArray(0);
     gl.bindFramebuffer(GL_FRAMEBUFFER, 0);
 
     gl.deleteTextures(1, &m_to_id);
     gl.deleteFramebuffers(1, &m_fbo_id);
+    gl.deleteVertexArrays(1, &m_vao_id);
     gl.deleteBuffers(1, &m_vbo_id);
 
     delete m_program;
@@ -332,6 +334,12 @@ void FragmentShadingRateAttachment::setupTest(void)
     {
         randomVertices.push_back((deRandom_getFloat(&rnd) * 2.0f - 1.0f));
     }
+
+    gl.genVertexArrays(1, &m_vao_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error generate vertex arrays");
+
+    gl.bindVertexArray(m_vao_id);
+    GLU_EXPECT_NO_ERROR(gl.getError(), "Error bind vertex array");
 
     gl.genBuffers(1, &m_vbo_id);
     GLU_EXPECT_NO_ERROR(gl.getError(), "Error generate buffer objects");

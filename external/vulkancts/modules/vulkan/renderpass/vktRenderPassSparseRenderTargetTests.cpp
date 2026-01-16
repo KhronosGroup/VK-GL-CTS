@@ -70,6 +70,7 @@ de::MovePtr<Allocation> createBufferMemory(const DeviceInterface &vk, VkDevice d
     de::MovePtr<Allocation> allocation(
         allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), MemoryRequirement::HostVisible));
     VK_CHECK(vk.bindBufferMemory(device, buffer, allocation->getMemory(), allocation->getOffset()));
+    invalidateAlloc(vk, device, *allocation);
     return allocation;
 }
 
@@ -102,9 +103,6 @@ Move<VkImage> createSparseImageAndMemory(const DeviceInterface &vk, VkDevice dev
                                                sharingMode == VK_SHARING_MODE_CONCURRENT ? 2u : 1u,
                                                queueFamilyIndices,
                                                VK_IMAGE_LAYOUT_UNDEFINED};
-
-    if (!checkSparseImageFormatSupport(physicalDevice, instance, imageCreateInfo))
-        TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
 
     Move<VkImage> destImage = createImage(vk, device, &imageCreateInfo);
     allocateAndBindSparseImage(vk, device, physicalDevice, instance, imageCreateInfo, bindSemaphore, sparseQueue,
@@ -372,7 +370,7 @@ class SparseRenderTargetTestInstance : public TestInstance
 {
 public:
     SparseRenderTargetTestInstance(Context &context, TestConfig testConfig);
-    ~SparseRenderTargetTestInstance(void);
+    ~SparseRenderTargetTestInstance(void) = default;
 
     tcu::TestStatus iterate(void);
 
@@ -436,10 +434,6 @@ SparseRenderTargetTestInstance::SparseRenderTargetTestInstance(Context &context,
                                             m_width, m_height))
     , m_commandPool(createCommandPool(context.getDeviceInterface(), context.getDevice(),
                                       VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, context.getUniversalQueueFamilyIndex()))
-{
-}
-
-SparseRenderTargetTestInstance::~SparseRenderTargetTestInstance(void)
 {
 }
 
@@ -583,6 +577,9 @@ tcu::TestStatus SparseRenderTargetTestInstance::iterateInternalDynamicRendering(
 
 tcu::TestStatus SparseRenderTargetTestInstance::verify(void)
 {
+    const DeviceInterface &vkd(m_context.getDeviceInterface());
+    invalidateAlloc(vkd, m_context.getDevice(), *m_dstBufferMemory);
+
     const tcu::TextureFormat format(mapVkFormat(m_format));
     const void *const ptr(m_dstBufferMemory->getHostPtr());
     const tcu::ConstPixelBufferAccess access(format, m_width, m_height, 1, ptr);
@@ -774,16 +771,25 @@ void checkSupport(Context &context, TestConfigType config)
     if (config.groupParams->renderingType == RENDERING_TYPE_DYNAMIC_RENDERING)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+    // VUID-VkImageCreateInfo-imageType-00971
+    if (!context.getDeviceFeatures().sparseResidencyImage2D)
+        TCU_THROW(NotSupportedError, "sparseResidencyImage2D feature not supported");
+
     const auto &vki            = context.getInstanceInterface();
     const auto &physicalDevice = context.getPhysicalDevice();
+    const auto usage           = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
     VkImageFormatProperties formatProperties;
     const auto result = vki.getPhysicalDeviceImageFormatProperties(
-        physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-        VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, 0u, &formatProperties);
+        physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u, &formatProperties);
     if (result == VK_ERROR_FORMAT_NOT_SUPPORTED)
     {
         TCU_THROW(NotSupportedError, "Image format not supported");
     }
+
+    const auto propVec = getPhysicalDeviceSparseImageFormatProperties(
+        vki, physicalDevice, config.format, VK_IMAGE_TYPE_2D, VK_SAMPLE_COUNT_1_BIT, usage, VK_IMAGE_TILING_OPTIMAL);
+    if (propVec.empty())
+        TCU_THROW(NotSupportedError, "The image format does not support sparse operations");
 }
 
 void initTests(tcu::TestCaseGroup *group, const SharedGroupParams groupParams)

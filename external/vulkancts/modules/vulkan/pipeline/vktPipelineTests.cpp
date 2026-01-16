@@ -78,6 +78,7 @@
 #include "vktPipelineInputAttributeOffsetTests.hpp"
 #include "vktPipelineEmptyFSTests.hpp"
 #include "vktPipelineNoQueuesTests.hpp"
+#include "vktPipelineShaderComponentDecoratedLayoutMatchingTests.hpp"
 #include "vktTestGroupUtil.hpp"
 
 namespace vkt

@@ -1,0 +1,43 @@
+{
+    "register_extension": {
+        "type": "device",
+        "core": ""
+    },
+    "mandatory_features": {
+        "VkPhysicalDeviceImageProcessingFeaturesQCOM": [
+            {
+                "features": [
+                    "textureSampleWeighted"
+                ],
+                "requirements": [
+                    "VK_QCOM_image_processing"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "textureBoxFilter"
+                ],
+                "requirements": [
+                    "VK_QCOM_image_processing"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            },
+            {
+                "features": [
+                    "textureBlockMatch"
+                ],
+                "requirements": [
+                    "VK_QCOM_image_processing"
+                ],
+                "mandatory_variant": [
+                    "vulkan"
+                ]
+            }
+        ]
+    }
+}

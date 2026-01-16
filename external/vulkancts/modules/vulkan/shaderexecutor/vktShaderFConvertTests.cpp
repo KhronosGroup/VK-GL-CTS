@@ -471,8 +471,7 @@ bool validConversion(const T1 &orig, const T2 &result, bool sat)
                 valid = true;
             else if (validResult.isZero() && result.isZero())
                 valid = true;
-            // XXX This line should not include "result.isDenorm() ||" and is hiding a bug in tcu::Float denorm handling
-            else if (validResult.isDenorm() && (result.isDenorm() || result.isZero()))
+            else if (validResult.isDenorm() && result.isZero())
                 valid = true;
             else if (validResult.bits() == result.bits() && !(sat && result.isInf())) // Exact conversion, up or down.
                 valid = true;
@@ -991,6 +990,9 @@ void FConvertTestCase::checkSupport(Context &context) const
         auto &storage16 = context.get16BitStorageFeatures();
         if (!storage16.storageBuffer16BitAccess)
             TCU_THROW(NotSupportedError, "16-bit floats not supported for storage buffers");
+        // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+        if (!storage16.uniformAndStorageBuffer16BitAccess)
+            TCU_THROW(NotSupportedError, "16-bit uniform and storage buffer access not supported");
     }
 
     if (m_params.usesBFloat16())

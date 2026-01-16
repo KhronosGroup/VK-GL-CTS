@@ -1182,6 +1182,11 @@ tcu::TestStatus M9V_Instance::iterate(void)
         operations.emplace_back(std::move(values));
     }
 
+    for (const auto &buffer : buffers)
+    {
+        flushAlloc(ctx.vkd, ctx.device, buffer->getAllocation());
+    }
+
     // Prepare storage buffer with buffer references.
     const auto referencesBufferSize  = static_cast<VkDeviceSize>(buffers.size() * sizeof(VkDeviceAddress));
     const auto referencesBufferUsage = VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;

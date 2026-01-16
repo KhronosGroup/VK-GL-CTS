@@ -104,6 +104,58 @@ void createBlockBasicTypeCases(tcu::TestCaseGroup &group, tcu::TestContext &test
     group.addChild(typeGroup.release());
 }
 
+class BlockBasicUnsizedArrayCase : public UniformBlockCase
+{
+public:
+    BlockBasicUnsizedArrayCase(tcu::TestContext &testCtx, const std::string &name, const VarType &elementType,
+                               int arraySize, uint32_t layoutFlags, MatrixLoadFlags matrixLoadFlag)
+        : UniformBlockCase(testCtx, name, BUFFERMODE_PER_BLOCK, matrixLoadFlag)
+    {
+        UniformBlock &block = m_interface.allocBlock("Block");
+
+        // Add unsized array as the last member of the block
+        block.addUniform(Uniform("var", VarType(elementType, glu::VarType::UNSIZED_ARRAY), 0));
+
+        VarType tempType = elementType;
+        while (tempType.isArrayType())
+        {
+            tempType = tempType.getElementType();
+        }
+        if (getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_UINT16 ||
+            getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_INT16 ||
+            getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_FLOAT16)
+        {
+            layoutFlags |= LAYOUT_16BIT_STORAGE;
+        }
+        if (getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_UINT8 ||
+            getDataTypeScalarType(tempType.getBasicType()) == glu::TYPE_INT8)
+        {
+            layoutFlags |= LAYOUT_8BIT_STORAGE;
+        }
+
+        block.setFlags(layoutFlags);
+
+        // Set the unsized array size for test purposes
+        block.setLastUnsizedArraySize(0, arraySize);
+    }
+};
+
+void createUnsizedArrayTestCases(tcu::TestCaseGroup &group, tcu::TestContext &testCtx, const std::string &name,
+                                 const VarType &type, uint32_t layoutFlags, int arraySize,
+                                 MatrixLoadFlags matrixLoadFlag = LOAD_FULL_MATRIX)
+{
+    const std::string suffix = (matrixLoadFlag == LOAD_MATRIX_COMPONENTS) ? "_comp_access" : "";
+
+    group.addChild(new BlockBasicUnsizedArrayCase(testCtx, name + "_vertex" + suffix, type, arraySize,
+                                                  layoutFlags | DECLARE_VERTEX, matrixLoadFlag));
+
+    group.addChild(new BlockBasicUnsizedArrayCase(testCtx, name + "_fragment" + suffix, type, arraySize,
+                                                  layoutFlags | DECLARE_FRAGMENT, matrixLoadFlag));
+
+    group.addChild(new BlockBasicUnsizedArrayCase(testCtx, name + "_both" + suffix, type, arraySize,
+                                                  layoutFlags | DECLARE_VERTEX | DECLARE_FRAGMENT, matrixLoadFlag));
+}
+
 class BlockSingleStructCase : public UniformBlockCase
 {
 public:
@@ -631,6 +683,47 @@ void UniformBlockTests::init(void)
                 }
             }
             singleBasicArrayGroup->addChild(layoutGroup.release());
+        }
+    }
+
+    // ubo.unsized_array
+    {
+        tcu::TestCaseGroup *unsizedArrayGroup = new tcu::TestCaseGroup(m_testCtx, "unsized_array");
+        addChild(unsizedArrayGroup);
+
+        for (int layoutFlagNdx = 0; layoutFlagNdx < DE_LENGTH_OF_ARRAY(layoutFlags); layoutFlagNdx++)
+        {
+            de::MovePtr<tcu::TestCaseGroup> layoutGroup(
+                new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name));
+
+            for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypes); basicTypeNdx++)
+            {
+                const glu::DataType type = basicTypes[basicTypeNdx];
+                const char *typeName     = glu::getDataTypeName(type);
+                const int arraySize      = 19;
+                const VarType typeWithPrecision(type, !dataTypeSupportsPrecisionModifier(type) ? 0 : PRECISION_HIGH);
+
+                createUnsizedArrayTestCases(*layoutGroup, m_testCtx, typeName, typeWithPrecision,
+                                            layoutFlags[layoutFlagNdx].flags, arraySize);
+
+                if (glu::isDataTypeMatrix(type))
+                {
+                    for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
+                    {
+                        const std::string matName = std::string(matrixFlags[matFlagNdx].name) + "_" + typeName;
+                        const uint32_t matFlags   = layoutFlags[layoutFlagNdx].flags | matrixFlags[matFlagNdx].flags;
+
+                        // Regular matrix tests
+                        createUnsizedArrayTestCases(*layoutGroup, m_testCtx, matName, typeWithPrecision, matFlags,
+                                                    arraySize);
+
+                        // Component access matrix tests
+                        createUnsizedArrayTestCases(*layoutGroup, m_testCtx, matName, typeWithPrecision, matFlags,
+                                                    arraySize, LOAD_MATRIX_COMPONENTS);
+                    }
+                }
+            }
+            unsizedArrayGroup->addChild(layoutGroup.release());
         }
     }
 

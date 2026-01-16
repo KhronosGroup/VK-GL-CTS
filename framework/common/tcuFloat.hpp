@@ -407,7 +407,14 @@ Float<StorageType, ExponentBits, MantissaBits, ExponentBias, Flags> Float<Storag
         if ((Flags & FLOAT_SUPPORT_DENORM) && (eMin - e - 1 <= MantissaBits))
         {
             // Shift and round.
-            int bitDiff           = (OtherMantissaBits - MantissaBits) + (eMin - e);
+            int bitDiff = (OtherMantissaBits - MantissaBits) + (eMin - e);
+
+            if (bitDiff < 0)
+            {
+                // The mantissa has more bits than the original and should be left shifted, no need to round.
+                return Float(StorageType(s | (m << -bitDiff)));
+            }
+
             uint64_t lastBitsMask = (1ull << bitDiff) - 1ull;
             uint64_t lastBits     = (static_cast<uint64_t>(m) & lastBitsMask);
             uint64_t half         = (1ull << (bitDiff - 1)) - 1;

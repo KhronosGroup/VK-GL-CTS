@@ -337,8 +337,9 @@ void copyLayeredImageToBuffer(const DeviceInterface &vk, VkCommandBuffer cmdBuff
 {
     // Image read barrier
     {
+        // VUID-VkImageMemoryBarrier-subresourceRange-01725
         const uint32_t numLayers =
-            (VK_IMAGE_VIEW_TYPE_3D == imageParams.viewType ? imageParams.size.depth : imageParams.numLayers);
+            (VK_IMAGE_VIEW_TYPE_3D == imageParams.viewType ? VK_REMAINING_ARRAY_LAYERS : imageParams.numLayers);
         const VkImageSubresourceRange colorSubresourceRange =
             makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, numLayers);
         const VkImageMemoryBarrier barrier = {
@@ -1792,12 +1793,15 @@ tcu::TestStatus testSecondaryCmdBuffer(Context &context, const TestParams params
             vk::allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
         beginCommandBuffer(vk, *clearCmdBuffer);
 
+        // VUID-VkImageMemoryBarrier-subresourceRange-01725
+        const uint32_t barrierLayerCount =
+            (VK_IMAGE_VIEW_TYPE_3D == params.image.viewType ? VK_REMAINING_ARRAY_LAYERS : numLayers);
         const vk::VkImageSubresourceRange subresourceRange = {
             vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags    aspectMask
             0u,                            // uint32_t                baseMipLevel
             1u,                            // uint32_t                levelCount
             0u,                            // uint32_t                baseArrayLayer
-            numLayers                      // uint32_t                layerCount
+            barrierLayerCount              // uint32_t                layerCount
         };
 
         const vk::VkImageMemoryBarrier preImageBarrier = {

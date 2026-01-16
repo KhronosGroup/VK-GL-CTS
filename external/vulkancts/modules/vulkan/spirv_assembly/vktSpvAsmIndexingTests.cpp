@@ -91,7 +91,7 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
             for (int sign = 0; sign < 2; ++sign)
             {
                 const int idxSize = idxSizes[idxSizeIdx];
-                const string testName =
+                string testName =
                     chainOpTestNames[chainOpIdx] + string(sign == 0 ? "_u" : "_s") + de::toString(idxSize);
                 VulkanFeatures vulkanFeatures;
                 map<string, string> specs;
@@ -99,7 +99,7 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
                 ComputeShaderSpec spec;
                 int element = 0;
 
-                // Index an input buffer containing 2D array of 4x4 matrices. The indices are read from another
+                // Index an input buffer containing 3D array of vec4s. The indices are read from another
                 // input and converted to the desired bit size and sign.
                 const StringTemplate shaderSource(
                     "                             OpCapability Shader\n"
@@ -117,11 +117,10 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
                     "                             OpDecorate %Output BufferBlock\n"
                     "                             OpDecorate %dataOutput DescriptorSet 0\n"
                     "                             OpDecorate %dataOutput Binding 2\n"
+                    "                             OpDecorate %_arr_v4float_uint_4 ArrayStride 16\n"
                     "                             OpDecorate %_arr_mat4v4float_uint_32 ArrayStride 64\n"
                     "                             OpDecorate %_arr__arr_mat4v4float_uint_32_uint_32 ArrayStride 2048\n"
-                    "                             OpMemberDecorate %InputStruct 0 ColMajor\n"
                     "                             OpMemberDecorate %InputStruct 0 Offset 0\n"
-                    "                             OpMemberDecorate %InputStruct 0 MatrixStride 16\n"
                     "                             OpDecorate %InputStructArr ArrayStride 65536\n"
                     "                             OpDecorate %Input ${inputdecoration}\n"
                     "                             OpMemberDecorate %Input 0 Offset 0\n"
@@ -151,13 +150,14 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
                     "                 %uint_128 = OpConstant %u32 128\n"
                     "                  %uint_32 = OpConstant %u32 32\n"
                     "                   %uint_2 = OpConstant %u32 2\n"
+                    "                   %uint_4 = OpConstant %u32 4\n"
                     "      %_arr_float_uint_128 = OpTypeArray %float %uint_128\n"
                     "                   %Output = OpTypeStruct %_arr_float_uint_128\n"
                     "      %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
                     "               %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
                     "                  %v4float = OpTypeVector %float 4\n"
-                    "              %mat4v4float = OpTypeMatrix %v4float 4\n"
-                    " %_arr_mat4v4float_uint_32 = OpTypeArray %mat4v4float %uint_32\n"
+                    "      %_arr_v4float_uint_4 = OpTypeArray %v4float %uint_4\n"
+                    " %_arr_mat4v4float_uint_32 = OpTypeArray %_arr_v4float_uint_4 %uint_32\n"
                     " %_arr__arr_mat4v4float_uint_32_uint_32 = OpTypeArray %_arr_mat4v4float_uint_32 %uint_32\n"
                     "              %InputStruct = OpTypeStruct %_arr__arr_mat4v4float_uint_32_uint_32\n"
                     "           %InputStructArr = OpTypeArray %InputStruct %uint_2\n"
@@ -280,6 +280,12 @@ void addComputeIndexingStructTests(tcu::TestCaseGroup *group)
                     spec.requestedVulkanFeatures.coreFeatures.shaderInt64 = VK_TRUE;
 
                 structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+
+#ifndef CTS_USES_VULKANSC
+                spec.uses64BitIndexing = true;
+                testName += "_64bit_indexing";
+                structGroup->addChild(new SpvAsmComputeShaderCase(testCtx, testName.c_str(), spec));
+#endif
             }
         }
     }
@@ -315,7 +321,7 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
             for (int sign = 0; sign < 2; sign++)
             {
                 const int idxSize = idxSizes[idxSizeIdx];
-                const string testName =
+                string testName =
                     chainOpTestNames[chainOpIdx] + string(sign == 0 ? "_u" : "_s") + de::toString(idxSize);
                 VulkanFeatures vulkanFeatures;
                 vector<string> extensions;
@@ -325,7 +331,6 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
                 map<string, string> specs;
                 map<string, string> fragments;
                 vector<float> outputData;
-                ComputeShaderSpec spec;
                 int element = 0;
                 GraphicsResources resources;
 
@@ -338,13 +343,14 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
                     "                   %uint_1 = OpConstant ${idx_uint} 1\n"
                     "                   %uint_2 = OpConstant ${idx_uint} 2\n"
                     "                   %uint_3 = OpConstant ${idx_uint} 3\n"
+                    "                   %uint_4 = OpConstant ${idx_uint} 4\n"
                     "      %_arr_float_uint_128 = OpTypeArray %f32 %uint_128\n"
                     "                   %Output = OpTypeStruct %_arr_float_uint_128\n"
                     "      %_ptr_Uniform_Output = OpTypePointer Uniform %Output\n"
                     "               %dataOutput = OpVariable %_ptr_Uniform_Output Uniform\n"
                     "                    %int_0 = OpConstant ${idx_int} 0\n"
-                    "              %mat4v4float = OpTypeMatrix %v4f32 4\n"
-                    " %_arr_mat4v4float_uint_32 = OpTypeArray %mat4v4float %uint_32\n"
+                    "      %_arr_v4float_uint_4 = OpTypeArray %v4f32 %uint_4\n"
+                    " %_arr_mat4v4float_uint_32 = OpTypeArray %_arr_v4float_uint_4 %uint_32\n"
                     " %_arr__arr_mat4v4float_uint_32_uint_32 = OpTypeArray %_arr_mat4v4float_uint_32 %uint_32\n"
                     "              %InputStruct = OpTypeStruct %_arr__arr_mat4v4float_uint_32_uint_32\n"
                     "           %InputStructArr = OpTypeArray %InputStruct %uint_2\n"
@@ -365,11 +371,10 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
                                                 "OpDecorate %Output BufferBlock\n"
                                                 "OpDecorate %dataOutput DescriptorSet 0\n"
                                                 "OpDecorate %dataOutput Binding 2\n"
+                                                "OpDecorate %_arr_v4float_uint_4 ArrayStride 16\n"
                                                 "OpDecorate %_arr_mat4v4float_uint_32 ArrayStride 64\n"
                                                 "OpDecorate %_arr__arr_mat4v4float_uint_32_uint_32 ArrayStride 2048\n"
-                                                "OpMemberDecorate %InputStruct 0 ColMajor\n"
                                                 "OpMemberDecorate %InputStruct 0 Offset 0\n"
-                                                "OpMemberDecorate %InputStruct 0 MatrixStride 16\n"
                                                 "OpDecorate %InputStructArr ArrayStride 65536\n"
                                                 "OpDecorate %Input ${inputdecoration}\n"
                                                 "OpMemberDecorate %Input 0 Offset 0\n"
@@ -512,6 +517,14 @@ void addGraphicsIndexingStructTests(tcu::TestCaseGroup *group)
                 createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
                                         noPushConstants, resources, noInterfaces, extensions, vulkanFeatures,
                                         structGroup.get());
+
+#ifndef CTS_USES_VULKANSC
+                resources.uses64BitIndexing = true;
+                testName += "_64bit_indexing";
+                createTestsForAllStages(testName.c_str(), defaultColors, defaultColors, fragments, noSpecConstants,
+                                        noPushConstants, resources, noInterfaces, extensions, vulkanFeatures,
+                                        structGroup.get());
+#endif
             }
         }
     }

@@ -3,6 +3,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2024-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -392,6 +393,59 @@ VkMemoryRequirements getImageMemoryRequirements(const DeviceInterface &vk, VkDev
     vk.getImageMemoryRequirements(device, image, &req);
     return req;
 }
+
+#ifndef CTS_USES_VULKANSC
+VkMemoryRequirements getTensorMemoryRequirements(const DeviceInterface &vk, VkDevice device, VkTensorARM tensor)
+{
+    VkTensorMemoryRequirementsInfoARM memInfo;
+    VkMemoryRequirements2 reqs;
+
+    deMemset(&memInfo, 0, sizeof(memInfo));
+    deMemset(&reqs, 0, sizeof(reqs));
+
+    memInfo.sType  = VK_STRUCTURE_TYPE_TENSOR_MEMORY_REQUIREMENTS_INFO_ARM;
+    memInfo.tensor = tensor;
+
+    reqs.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+
+    vk.getTensorMemoryRequirementsARM(device, &memInfo, &reqs);
+
+    return reqs.memoryRequirements;
+}
+
+std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> getDataGraphPipelineSessionBindPointRequirements(
+    const DeviceInterface &vk, VkDevice device, VkDataGraphPipelineSessionARM session)
+{
+    uint32_t numRequiredBindPoints = 0;
+
+    VkDataGraphPipelineSessionBindPointRequirementsInfoARM bindPointReqsInfo = initVulkanStructure();
+
+    bindPointReqsInfo.session = session;
+
+    VK_CHECK(vk.getDataGraphPipelineSessionBindPointRequirementsARM(device, &bindPointReqsInfo, &numRequiredBindPoints,
+                                                                    nullptr));
+
+    if (numRequiredBindPoints > 0)
+    {
+        VkDataGraphPipelineSessionBindPointRequirementARM bindPointReqs = initVulkanStructure();
+        std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> bindPoints(numRequiredBindPoints, bindPointReqs);
+        VK_CHECK(vk.getDataGraphPipelineSessionBindPointRequirementsARM(device, &bindPointReqsInfo,
+                                                                        &numRequiredBindPoints, bindPoints.data()));
+
+        for (const auto &bindPoint : bindPoints)
+        {
+            (void)bindPoint;
+            DE_ASSERT(bindPoint.bindPoint != VK_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_TRANSIENT_ARM ||
+                      bindPoint.numObjects == 1);
+        }
+
+        return bindPoints;
+    }
+
+    return {};
+}
+
+#endif // CTS_USES_VULKANSC
 
 VkMemoryRequirements getImagePlaneMemoryRequirements(const DeviceInterface &vkd, VkDevice device, VkImage image,
                                                      VkImageAspectFlagBits planeAspect)

@@ -20,7 +20,9 @@
 #
 # Compiled with `clspv -no-inline-single -cl-opt-disable <X.clc>` with an incorrect ArrayStride decoration
 # added. This decoration should be ignored, so it should give the same results as ArrayStride == 4.
+
 [require]
+VK_KHR_workgroup_memory_explicit_layout
 VariablePointerFeatures.variablePointers
 
 [compute shader spirv]

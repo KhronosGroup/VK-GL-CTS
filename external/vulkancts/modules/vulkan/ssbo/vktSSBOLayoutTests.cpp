@@ -82,7 +82,27 @@ enum FeatureBits
     FEATURE_8BIT_STORAGE        = (1 << 15),
     FEATURE_SCALAR_LAYOUT       = (1 << 16),
     FEATURE_DESCRIPTOR_INDEXING = (1 << 17),
+    FEATURE_64B                 = (1 << 18),
 };
+
+int getDataTypeByteSize(glu::DataType type)
+{
+    if (deInRange32(type, glu::TYPE_UINT8, glu::TYPE_UINT8_VEC4) ||
+        deInRange32(type, glu::TYPE_INT8, glu::TYPE_INT8_VEC4))
+    {
+        return glu::getDataTypeScalarSize(type) * (int)sizeof(uint8_t);
+    }
+    else if (deInRange32(type, glu::TYPE_UINT16, glu::TYPE_UINT16_VEC4) ||
+             deInRange32(type, glu::TYPE_INT16, glu::TYPE_INT16_VEC4) ||
+             deInRange32(type, glu::TYPE_FLOAT16, glu::TYPE_FLOAT16_VEC4))
+    {
+        return glu::getDataTypeScalarSize(type) * (int)sizeof(uint16_t);
+    }
+    else
+    {
+        return glu::getDataTypeScalarSize(type) * (int)sizeof(uint32_t);
+    }
+}
 
 class RandomSSBOLayoutCase : public SSBOLayoutCase
 {
@@ -112,9 +132,10 @@ private:
 
 RandomSSBOLayoutCase::RandomSSBOLayoutCase(tcu::TestContext &testCtx, const char *name, BufferMode bufferMode,
                                            uint32_t features, uint32_t seed, bool usePhysStorageBuffer)
-    : SSBOLayoutCase(testCtx, name, bufferMode, LOAD_FULL_MATRIX, STORE_FULL_MATRIX, usePhysStorageBuffer)
+    : SSBOLayoutCase(testCtx, name, bufferMode, LOAD_FULL_MATRIX, STORE_FULL_MATRIX, usePhysStorageBuffer,
+                     (features & FEATURE_64B) != 0)
     , m_features(features)
-    , m_maxBlocks((features & FEATURE_DESCRIPTOR_INDEXING) ? 1 : 4)
+    , m_maxBlocks(((features & FEATURE_DESCRIPTOR_INDEXING) || (features & FEATURE_64B)) ? 1 : 4)
     , m_maxInstances((features & FEATURE_INSTANCE_ARRAYS) ? 3 : 0)
     , m_maxArrayLength((features & FEATURE_ARRAYS) ? 8 : 1)
     , m_maxArrayDepth((features & FEATURE_ARRAYS_OF_ARRAYS) ? 2 : 0)
@@ -134,6 +155,91 @@ RandomSSBOLayoutCase::RandomSSBOLayoutCase(tcu::TestContext &testCtx, const char
         generateBlock(rnd, 0);
 
     init();
+}
+
+int computeSize(const VarType &type, uint32_t layoutFlags)
+{
+    // Reference layout uses std430 rules by default. std140 rules are
+    // choosen only for blocks that have std140 layout.
+    const int baseAlignment = computeBaseAlignment(type, layoutFlags);
+
+    int curOffset = 0;
+
+    if (type.isBasicType())
+    {
+        const glu::DataType basicType = type.getBasicType();
+
+        if (glu::isDataTypeMatrix(basicType))
+        {
+            // Array of vectors as specified in rules 5 & 7.
+            const bool isRowMajor = !!(layoutFlags & LAYOUT_ROW_MAJOR);
+            const int vecSize =
+                isRowMajor ? glu::getDataTypeMatrixNumColumns(basicType) : glu::getDataTypeMatrixNumRows(basicType);
+            const glu::DataType vecType = glu::getDataTypeFloatVec(vecSize);
+            const int numVecs =
+                isRowMajor ? glu::getDataTypeMatrixNumRows(basicType) : glu::getDataTypeMatrixNumColumns(basicType);
+            const int vecStride = (layoutFlags & LAYOUT_SCALAR) ? getDataTypeByteSize(vecType) : baseAlignment;
+
+            curOffset += numVecs * vecStride;
+        }
+        else
+        {
+            if (!(layoutFlags & LAYOUT_SCALAR) && (layoutFlags & LAYOUT_RELAXED) && glu::isDataTypeVector(basicType) &&
+                (getDataTypeByteSize(basicType) <= 16 ?
+                     curOffset / 16 != (curOffset + getDataTypeByteSize(basicType) - 1) / 16 :
+                     curOffset % 16 != 0))
+                curOffset = deIntRoundToPow2(curOffset, 16);
+
+            curOffset += getDataTypeByteSize(basicType);
+        }
+    }
+    else if (type.isArrayType())
+    {
+        const VarType &elemType = type.getElementType();
+
+        if (elemType.isBasicType() && !glu::isDataTypeMatrix(elemType.getBasicType()))
+        {
+            // Array of scalars or vectors.
+            const glu::DataType elemBasicType = elemType.getBasicType();
+            const int stride = (layoutFlags & LAYOUT_SCALAR) ? getDataTypeByteSize(elemBasicType) : baseAlignment;
+
+            curOffset += stride * type.getArraySize();
+        }
+        else if (elemType.isBasicType() && glu::isDataTypeMatrix(elemType.getBasicType()))
+        {
+            // Array of matrices.
+            const glu::DataType elemBasicType = elemType.getBasicType();
+            const bool isRowMajor             = !!(layoutFlags & LAYOUT_ROW_MAJOR);
+            const int vecSize                 = isRowMajor ? glu::getDataTypeMatrixNumColumns(elemBasicType) :
+                                                             glu::getDataTypeMatrixNumRows(elemBasicType);
+            const glu::DataType vecType       = glu::getDataTypeFloatVec(vecSize);
+            const int numVecs                 = isRowMajor ? glu::getDataTypeMatrixNumRows(elemBasicType) :
+                                                             glu::getDataTypeMatrixNumColumns(elemBasicType);
+            const int vecStride = (layoutFlags & LAYOUT_SCALAR) ? getDataTypeByteSize(vecType) : baseAlignment;
+
+            curOffset += vecStride * numVecs * type.getArraySize();
+        }
+        else
+        {
+            DE_ASSERT(elemType.isStructType() || elemType.isArrayType());
+
+            for (int elemNdx = 0; elemNdx < type.getArraySize(); elemNdx++)
+                curOffset += computeSize(type.getElementType(), layoutFlags);
+        }
+    }
+    else
+    {
+        DE_ASSERT(type.isStructType());
+
+        for (StructType::ConstIterator memberIter = type.getStructPtr()->begin();
+             memberIter != type.getStructPtr()->end(); memberIter++)
+            curOffset += computeSize(memberIter->getType(), layoutFlags);
+
+        if (!(layoutFlags & LAYOUT_SCALAR))
+            curOffset = deAlign32(curOffset, baseAlignment);
+    }
+
+    return curOffset;
 }
 
 void RandomSSBOLayoutCase::generateBlock(de::Random &rnd, uint32_t layoutFlags)
@@ -204,7 +310,28 @@ void RandomSSBOLayoutCase::generateBlock(de::Random &rnd, uint32_t layoutFlags)
         {
             for (int instanceNdx = 0; instanceNdx < (numInstances ? numInstances : 1); instanceNdx++)
             {
-                const int arrSize = rnd.getInt(1, m_maxArrayLength);
+                uint64_t arrSize;
+
+                if (m_features & FEATURE_64B)
+                {
+                    auto const &elemType = lastType.getElementType();
+                    int elemSize         = computeSize(elemType, layoutFlags);
+
+                    // pad to vec4 for std140 rules
+                    if ((layoutFlags & LAYOUT_STD140) && elemSize < 16)
+                    {
+                        elemSize = 16;
+                    }
+
+                    // targeting just over 4GB allocation
+                    arrSize = 1ull << 32;
+                    arrSize /= elemSize;
+                    arrSize += 5;
+                }
+                else
+                {
+                    arrSize = rnd.getInt(1, m_maxArrayLength);
+                }
                 block.setLastUnsizedArraySize(instanceNdx, arrSize);
             }
         }
@@ -386,7 +513,8 @@ public:
     BlockBasicTypeCase(tcu::TestContext &testCtx, const char *name, const VarType &type, uint32_t layoutFlags,
                        int numInstances, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag,
                        bool usePhysStorageBuffer, bool readonly)
-        : SSBOLayoutCase(testCtx, name, BUFFERMODE_PER_BLOCK, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, BUFFERMODE_PER_BLOCK, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer,
+                         false)
     {
         VarType tempType = type;
         while (tempType.isArrayType())
@@ -431,10 +559,12 @@ public:
 class BlockBasicUnsizedArrayCase : public SSBOLayoutCase
 {
 public:
-    BlockBasicUnsizedArrayCase(tcu::TestContext &testCtx, const char *name, const VarType &elementType, int arraySize,
-                               uint32_t layoutFlags, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag,
-                               bool usePhysStorageBuffer, bool readonly)
-        : SSBOLayoutCase(testCtx, name, BUFFERMODE_PER_BLOCK, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+    BlockBasicUnsizedArrayCase(tcu::TestContext &testCtx, const char *name, const VarType &elementType,
+                               uint64_t arraySize, uint32_t layoutFlags, MatrixLoadFlags matrixLoadFlag,
+                               MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer, bool readonly,
+                               bool use64BitIndexing)
+        : SSBOLayoutCase(testCtx, name, BUFFERMODE_PER_BLOCK, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer,
+                         use64BitIndexing)
     {
         BufferBlock &block = m_interface.allocBlock("Block");
         block.addMember(BufferVar("var", VarType(elementType, VarType::UNSIZED_ARRAY),
@@ -479,6 +609,11 @@ static void createRandomCaseGroup(tcu::TestCaseGroup *parentGroup, tcu::TestCont
 
     baseSeed += (uint32_t)testCtx.getCommandLine().getBaseSeed();
 
+    if (features & FEATURE_64B)
+    {
+        group->setUseFraction0(true);
+    }
+
     for (int ndx = 0; ndx < numCases; ndx++)
         group->addChild(new RandomSSBOLayoutCase(testCtx, de::toString(ndx).c_str(), bufferMode, features,
                                                  (uint32_t)ndx + baseSeed, usePhysStorageBuffer));
@@ -490,7 +625,7 @@ public:
     BlockSingleStructCase(tcu::TestContext &testCtx, const char *name, uint32_t layoutFlags, BufferMode bufferMode,
                           int numInstances, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag,
                           bool usePhysStorageBuffer, bool readonly)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_layoutFlags(layoutFlags)
         , m_numInstances(numInstances)
     {
@@ -523,7 +658,7 @@ public:
     BlockSingleStructArrayCase(tcu::TestContext &testCtx, const char *name, uint32_t layoutFlags, BufferMode bufferMode,
                                int numInstances, MatrixLoadFlags matrixLoadFlag, MatrixStoreFlags matrixStoreFlag,
                                bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_layoutFlags(layoutFlags)
         , m_numInstances(numInstances)
     {
@@ -558,7 +693,7 @@ public:
     BlockSingleNestedStructCase(tcu::TestContext &testCtx, const char *name, uint32_t layoutFlags,
                                 BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag,
                                 MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_layoutFlags(layoutFlags)
         , m_numInstances(numInstances)
     {
@@ -598,7 +733,7 @@ public:
     BlockSingleNestedStructArrayCase(tcu::TestContext &testCtx, const char *name, uint32_t layoutFlags,
                                      BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag,
                                      MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_layoutFlags(layoutFlags)
         , m_numInstances(numInstances)
     {
@@ -638,7 +773,7 @@ public:
     BlockUnsizedStructArrayCase(tcu::TestContext &testCtx, const char *name, uint32_t layoutFlags,
                                 BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag,
                                 MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_layoutFlags(layoutFlags)
         , m_numInstances(numInstances)
     {
@@ -682,7 +817,7 @@ public:
     Block2LevelUnsizedStructArrayCase(tcu::TestContext &testCtx, const char *name, uint32_t layoutFlags,
                                       BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag,
                                       MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_layoutFlags(layoutFlags)
         , m_numInstances(numInstances)
     {
@@ -726,7 +861,7 @@ public:
     BlockUnsizedNestedStructArrayCase(tcu::TestContext &testCtx, const char *name, uint32_t layoutFlags,
                                       BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag,
                                       MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_layoutFlags(layoutFlags)
         , m_numInstances(numInstances)
     {
@@ -776,7 +911,7 @@ public:
     BlockMultiBasicTypesCase(tcu::TestContext &testCtx, const char *name, uint32_t flagsA, uint32_t flagsB,
                              BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag,
                              MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_flagsA(flagsA)
         , m_flagsB(flagsB)
         , m_numInstances(numInstances)
@@ -817,7 +952,7 @@ public:
     BlockMultiNestedStructCase(tcu::TestContext &testCtx, const char *name, uint32_t flagsA, uint32_t flagsB,
                                BufferMode bufferMode, int numInstances, MatrixLoadFlags matrixLoadFlag,
                                MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer)
-        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer)
+        : SSBOLayoutCase(testCtx, name, bufferMode, matrixLoadFlag, matrixStoreFlag, usePhysStorageBuffer, false)
         , m_flagsA(flagsA)
         , m_flagsB(flagsB)
         , m_numInstances(numInstances)
@@ -870,22 +1005,39 @@ struct UnsizedArrayCaseParams
     vk::VkDeviceSize bufferSize;
     bool useMinBufferOffset;
     vk::VkDeviceSize bufferBindLength;
+    bool variablePointers;
+    bool length64;
     const char *name;
 };
 
-void createUnsizedArrayLengthProgs(SourceCollections &dst, UnsizedArrayCaseParams)
+void createUnsizedArrayLengthProgs(SourceCollections &dst, UnsizedArrayCaseParams params)
 {
-    dst.glslSources.add("comp") << glu::ComputeSource("#version 310 es\n"
-                                                      "layout(set=0, binding=0, std430) readonly buffer x {\n"
-                                                      "   int xs[];\n"
-                                                      "};\n"
-                                                      "layout(set=0, binding=1, std430) writeonly buffer y {\n"
-                                                      "   int observed_size;\n"
-                                                      "};\n"
-                                                      "layout(local_size_x=1) in;\n"
-                                                      "void main (void) {\n"
-                                                      "   observed_size = xs.length();\n"
-                                                      "}\n");
+    std::string sizeType     = params.length64 ? "int64_t" : "int";
+    std::string lengthMethod = params.length64 ? "length64" : "length";
+    std::ostringstream src;
+    src << "#version 450 core\n"
+        << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n"
+        << "#extension GL_EXT_shader_64bit_indexing : enable\n"
+        << (params.variablePointers ? "#pragma use_variable_pointers\n" : "")
+        << "layout(set=0, binding=0, std430) readonly buffer x {\n"
+           "   int xs[];\n"
+           "};\n"
+           "layout(set=0, binding=1, std430) writeonly buffer y {\n"
+           "   "
+        << sizeType
+        << " observed_size;\n"
+           "};\n"
+           "layout(local_size_x=1) in;\n"
+           "void main (void) {\n"
+           "   observed_size = xs."
+        << lengthMethod
+        << "();\n"
+           "}\n";
+
+    auto spirvVersion = params.variablePointers ? vk::SPIRV_VERSION_1_3 : vk::SPIRV_VERSION_1_0;
+
+    dst.glslSources.add("comp") << glu::ComputeSource(src.str())
+                                << vk::ShaderBuildOptions(dst.usedVulkanVersion, spirvVersion, 0);
 }
 
 tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCaseParams params)
@@ -895,188 +1047,218 @@ tcu::TestStatus ssboUnsizedArrayLengthTest(Context &context, UnsizedArrayCasePar
     const VkQueue queue       = context.getUniversalQueue();
     Allocator &allocator      = context.getDefaultAllocator();
 
-    DescriptorSetLayoutBuilder builder;
-    builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // input buffer
-    builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // result buffer
-
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(builder.build(vk, device));
-    const Unique<VkDescriptorPool> descriptorPool(
-        vk::DescriptorPoolBuilder()
-            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
-            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
-
-    const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
-        nullptr,
-        (VkPipelineLayoutCreateFlags)0,
-        1,                          // setLayoutCount,
-        &descriptorSetLayout.get(), // pSetLayouts
-        0,                          // pushConstantRangeCount
-        nullptr,                    // pPushConstantRanges
-    };
-    const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
-
-    const Unique<VkShaderModule> computeModule(
-        createShaderModule(vk, device, context.getBinaryCollection().get("comp"), (VkShaderModuleCreateFlags)0u));
-
-    const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
-        nullptr,
-        (VkPipelineShaderStageCreateFlags)0,
-        VK_SHADER_STAGE_COMPUTE_BIT, // stage
-        *computeModule,              // shader
-        "main",
-        nullptr, // pSpecializationInfo
-    };
-
-    const VkComputePipelineCreateInfo pipelineCreateInfo = {
-        VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
-        nullptr,
-        0u,               // flags
-        shaderCreateInfo, // cs
-        *pipelineLayout,  // layout
-        VK_NULL_HANDLE,   // basePipelineHandle
-        0u,               // basePipelineIndex
-    };
-
-    const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
-
-    // Input buffer
-    const VkBufferCreateInfo inputBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr,
-        0,                                  // flags
-        (VkDeviceSize)params.bufferSize,    // size
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage TODO: also test _DYNAMIC case.
-        VK_SHARING_MODE_EXCLUSIVE,
-        0u,      // queueFamilyCount
-        nullptr, // pQueueFamilyIndices
-    };
-    const Unique<VkBuffer> inputBuffer(createBuffer(vk, device, &inputBufferCreateInfo));
-    const VkMemoryRequirements inputBufferRequirements = getBufferMemoryRequirements(vk, device, *inputBuffer);
-    const de::MovePtr<Allocation> inputBufferMemory =
-        allocator.allocate(inputBufferRequirements, MemoryRequirement::HostVisible);
-
-    VK_CHECK(vk.bindBufferMemory(device, *inputBuffer, inputBufferMemory->getMemory(), inputBufferMemory->getOffset()));
-    // Note: don't care about the contents of the input buffer -- we only determine a size.
-
-    // Output buffer
-    const VkBufferCreateInfo outputBufferCreateInfo = {
-        VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
-        nullptr,
-        0,
-        (VkDeviceSize)4,
-        VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
-        VK_SHARING_MODE_EXCLUSIVE,
-        0u,
-        nullptr,
-    };
-    const Unique<VkBuffer> outputBuffer(createBuffer(vk, device, &outputBufferCreateInfo));
-    const VkMemoryRequirements outputBufferRequirements = getBufferMemoryRequirements(vk, device, *outputBuffer);
-    const de::MovePtr<Allocation> outputBufferMemory =
-        allocator.allocate(outputBufferRequirements, MemoryRequirement::HostVisible);
-
-    VK_CHECK(
-        vk.bindBufferMemory(device, *outputBuffer, outputBufferMemory->getMemory(), outputBufferMemory->getOffset()));
-
-    // Initialize output buffer contents
-    const VkMappedMemoryRange range = {
-        VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // sType
-        nullptr,                               // pNext
-        outputBufferMemory->getMemory(),       // memory
-        0,                                     // offset
-        VK_WHOLE_SIZE,                         // size
-    };
-    int *outputBufferPtr = (int *)outputBufferMemory->getHostPtr();
-    *outputBufferPtr     = -1;
-    VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
-
-    // Build descriptor set
-    vk::VkDeviceSize bufferBindOffset = 0;
-    if (params.useMinBufferOffset)
+    try
     {
-        const VkPhysicalDeviceLimits deviceLimits =
-            getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
-        bufferBindOffset = deviceLimits.minStorageBufferOffsetAlignment;
+        DescriptorSetLayoutBuilder builder;
+        builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // input buffer
+        builder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT); // result buffer
+
+        const Unique<VkDescriptorSetLayout> descriptorSetLayout(builder.build(vk, device));
+        const Unique<VkDescriptorPool> descriptorPool(
+            vk::DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 2u)
+                .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
+
+        const VkPipelineLayoutCreateInfo pipelineLayoutCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+            nullptr,
+            (VkPipelineLayoutCreateFlags)0,
+            1,                          // setLayoutCount,
+            &descriptorSetLayout.get(), // pSetLayouts
+            0,                          // pushConstantRangeCount
+            nullptr,                    // pPushConstantRanges
+        };
+        const Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(vk, device, &pipelineLayoutCreateInfo));
+
+        const Unique<VkShaderModule> computeModule(
+            createShaderModule(vk, device, context.getBinaryCollection().get("comp"), (VkShaderModuleCreateFlags)0u));
+
+        const VkPipelineShaderStageCreateInfo shaderCreateInfo = {
+            VK_STRUCTURE_TYPE_PIPELINE_SHADER_STAGE_CREATE_INFO,
+            nullptr,
+            (VkPipelineShaderStageCreateFlags)0,
+            VK_SHADER_STAGE_COMPUTE_BIT, // stage
+            *computeModule,              // shader
+            "main",
+            nullptr, // pSpecializationInfo
+        };
+
+        const void *pNext = nullptr;
+#ifndef CTS_USES_VULKANSC
+        VkPipelineCreateFlags2CreateInfo pipelineFlags2CreateInfo = initVulkanStructure();
+        if (params.bufferSize > (uint64_t{1} << 32))
+        {
+            pipelineFlags2CreateInfo.flags = VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT;
+            pNext                          = &pipelineFlags2CreateInfo;
+        }
+#endif
+
+        const VkComputePipelineCreateInfo pipelineCreateInfo = {
+            VK_STRUCTURE_TYPE_COMPUTE_PIPELINE_CREATE_INFO,
+            pNext,
+            0u,               // flags
+            shaderCreateInfo, // cs
+            *pipelineLayout,  // layout
+            VK_NULL_HANDLE,   // basePipelineHandle
+            0u,               // basePipelineIndex
+        };
+
+        const Unique<VkPipeline> pipeline(createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo));
+
+        // Input buffer
+        const VkBufferCreateInfo inputBufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            nullptr,
+            0,                                  // flags
+            (VkDeviceSize)params.bufferSize,    // size
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT, // usage TODO: also test _DYNAMIC case.
+            VK_SHARING_MODE_EXCLUSIVE,
+            0u,      // queueFamilyCount
+            nullptr, // pQueueFamilyIndices
+        };
+        const Unique<VkBuffer> inputBuffer(createBuffer(vk, device, &inputBufferCreateInfo));
+        const VkMemoryRequirements inputBufferRequirements = getBufferMemoryRequirements(vk, device, *inputBuffer);
+        const de::MovePtr<Allocation> inputBufferMemory =
+            allocator.allocate(inputBufferRequirements, MemoryRequirement::HostVisible);
+
+        VK_CHECK(
+            vk.bindBufferMemory(device, *inputBuffer, inputBufferMemory->getMemory(), inputBufferMemory->getOffset()));
+        // Note: don't care about the contents of the input buffer -- we only determine a size.
+
+        // Output buffer
+        const VkBufferCreateInfo outputBufferCreateInfo = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO,
+            nullptr,
+            0,
+            (VkDeviceSize)8,
+            VK_BUFFER_USAGE_STORAGE_BUFFER_BIT,
+            VK_SHARING_MODE_EXCLUSIVE,
+            0u,
+            nullptr,
+        };
+        const Unique<VkBuffer> outputBuffer(createBuffer(vk, device, &outputBufferCreateInfo));
+        const VkMemoryRequirements outputBufferRequirements = getBufferMemoryRequirements(vk, device, *outputBuffer);
+        const de::MovePtr<Allocation> outputBufferMemory =
+            allocator.allocate(outputBufferRequirements, MemoryRequirement::HostVisible);
+
+        VK_CHECK(vk.bindBufferMemory(device, *outputBuffer, outputBufferMemory->getMemory(),
+                                     outputBufferMemory->getOffset()));
+
+        // Initialize output buffer contents
+        const VkMappedMemoryRange range = {
+            VK_STRUCTURE_TYPE_MAPPED_MEMORY_RANGE, // sType
+            nullptr,                               // pNext
+            outputBufferMemory->getMemory(),       // memory
+            0,                                     // offset
+            VK_WHOLE_SIZE,                         // size
+        };
+        int64_t *outputBufferPtr = (int64_t *)outputBufferMemory->getHostPtr();
+        if (params.length64)
+        {
+            *outputBufferPtr = -int64_t{1};
+        }
+        else
+        {
+            *outputBufferPtr = 0xFFFFFFFF;
+        }
+        VK_CHECK(vk.flushMappedMemoryRanges(device, 1u, &range));
+
+        // Build descriptor set
+        vk::VkDeviceSize bufferBindOffset = 0;
+        if (params.useMinBufferOffset)
+        {
+            const VkPhysicalDeviceLimits deviceLimits =
+                getPhysicalDeviceProperties(context.getInstanceInterface(), context.getPhysicalDevice()).limits;
+            bufferBindOffset = deviceLimits.minStorageBufferOffsetAlignment;
+        }
+
+        const VkDescriptorBufferInfo inputBufferDesc =
+            makeDescriptorBufferInfo(*inputBuffer, bufferBindOffset, params.bufferBindLength);
+        const VkDescriptorBufferInfo outputBufferDesc = makeDescriptorBufferInfo(*outputBuffer, 0u, VK_WHOLE_SIZE);
+
+        const VkDescriptorSetAllocateInfo descAllocInfo = {
+            VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
+            nullptr,
+            *descriptorPool,            // pool
+            1u,                         // setLayoutCount
+            &descriptorSetLayout.get(), // pSetLayouts
+        };
+        const Unique<VkDescriptorSet> descSet(allocateDescriptorSet(vk, device, &descAllocInfo));
+
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                         &inputBufferDesc)
+            .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
+                         &outputBufferDesc)
+            .update(vk, device);
+
+        const VkCommandPoolCreateInfo cmdPoolParams = {
+            VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
+            nullptr,                                         // pNext
+            VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
+            context.getUniversalQueueFamilyIndex(),          // queueFamilyIndex
+        };
+        const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolParams));
+
+        // Command buffer
+        const VkCommandBufferAllocateInfo cmdBufParams = {
+            VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
+            nullptr,                                        // pNext
+            *cmdPool,                                       // pool
+            VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
+            1u,                                             // bufferCount
+        };
+        const Unique<VkCommandBuffer> cmdBuf(allocateCommandBuffer(vk, device, &cmdBufParams));
+
+        // Record commands
+        beginCommandBuffer(vk, *cmdBuf);
+
+        vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descSet.get(), 0u,
+                                 nullptr);
+        vk.cmdDispatch(*cmdBuf, 1, 1, 1);
+
+        const VkMemoryBarrier barrier = {
+            VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
+            nullptr,                          // pNext
+            VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
+            VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
+        };
+        vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0, 1, &barrier, 0, nullptr, 0, nullptr);
+
+        endCommandBuffer(vk, *cmdBuf);
+
+        submitCommandsAndWait(vk, device, queue, cmdBuf.get());
+
+        // Read back output buffer contents
+        VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1, &range));
+
+        // Expected number of elements in array at end of storage buffer
+        const VkDeviceSize boundLength =
+            params.bufferBindLength == VK_WHOLE_SIZE ? params.bufferSize - bufferBindOffset : params.bufferBindLength;
+        const int64_t expectedResult = (int64_t)(boundLength / params.elementSize);
+        const int64_t actualResult   = *outputBufferPtr;
+
+        context.getTestContext().getLog()
+            << tcu::TestLog::Message << "Buffer size " << params.bufferSize << " offset " << bufferBindOffset
+            << " length " << params.bufferBindLength << " element size " << params.elementSize
+            << " expected array size: " << expectedResult << " actual array size: " << actualResult
+            << tcu::TestLog::EndMessage;
+
+        if (expectedResult == actualResult)
+            return tcu::TestStatus::pass("Got expected array size");
+        else
+            return tcu::TestStatus::fail("Mismatch array size");
     }
-
-    const VkDescriptorBufferInfo inputBufferDesc =
-        makeDescriptorBufferInfo(*inputBuffer, bufferBindOffset, params.bufferBindLength);
-    const VkDescriptorBufferInfo outputBufferDesc = makeDescriptorBufferInfo(*outputBuffer, 0u, VK_WHOLE_SIZE);
-
-    const VkDescriptorSetAllocateInfo descAllocInfo = {
-        VK_STRUCTURE_TYPE_DESCRIPTOR_SET_ALLOCATE_INFO,
-        nullptr,
-        *descriptorPool,            // pool
-        1u,                         // setLayoutCount
-        &descriptorSetLayout.get(), // pSetLayouts
-    };
-    const Unique<VkDescriptorSet> descSet(allocateDescriptorSet(vk, device, &descAllocInfo));
-
-    DescriptorSetUpdateBuilder()
-        .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(0u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                     &inputBufferDesc)
-        .writeSingle(*descSet, DescriptorSetUpdateBuilder::Location::binding(1u), VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                     &outputBufferDesc)
-        .update(vk, device);
-
-    const VkCommandPoolCreateInfo cmdPoolParams = {
-        VK_STRUCTURE_TYPE_COMMAND_POOL_CREATE_INFO,      // sType
-        nullptr,                                         // pNext
-        VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, // flags
-        context.getUniversalQueueFamilyIndex(),          // queueFamilyIndex
-    };
-    const Unique<VkCommandPool> cmdPool(createCommandPool(vk, device, &cmdPoolParams));
-
-    // Command buffer
-    const VkCommandBufferAllocateInfo cmdBufParams = {
-        VK_STRUCTURE_TYPE_COMMAND_BUFFER_ALLOCATE_INFO, // sType
-        nullptr,                                        // pNext
-        *cmdPool,                                       // pool
-        VK_COMMAND_BUFFER_LEVEL_PRIMARY,                // level
-        1u,                                             // bufferCount
-    };
-    const Unique<VkCommandBuffer> cmdBuf(allocateCommandBuffer(vk, device, &cmdBufParams));
-
-    // Record commands
-    beginCommandBuffer(vk, *cmdBuf);
-
-    vk.cmdBindPipeline(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
-    vk.cmdBindDescriptorSets(*cmdBuf, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &descSet.get(), 0u,
-                             nullptr);
-    vk.cmdDispatch(*cmdBuf, 1, 1, 1);
-
-    const VkMemoryBarrier barrier = {
-        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // sType
-        nullptr,                          // pNext
-        VK_ACCESS_SHADER_WRITE_BIT,       // srcAccessMask
-        VK_ACCESS_HOST_READ_BIT,          // dstAccessMask
-    };
-    vk.cmdPipelineBarrier(*cmdBuf, VK_PIPELINE_STAGE_ALL_COMMANDS_BIT, VK_PIPELINE_STAGE_HOST_BIT, (VkDependencyFlags)0,
-                          1, &barrier, 0, nullptr, 0, nullptr);
-
-    endCommandBuffer(vk, *cmdBuf);
-
-    submitCommandsAndWait(vk, device, queue, cmdBuf.get());
-
-    // Read back output buffer contents
-    VK_CHECK(vk.invalidateMappedMemoryRanges(device, 1, &range));
-
-    // Expected number of elements in array at end of storage buffer
-    const VkDeviceSize boundLength =
-        params.bufferBindLength == VK_WHOLE_SIZE ? params.bufferSize - bufferBindOffset : params.bufferBindLength;
-    const int expectedResult = (int)(boundLength / params.elementSize);
-    const int actualResult   = *outputBufferPtr;
-
-    context.getTestContext().getLog() << tcu::TestLog::Message << "Buffer size " << params.bufferSize << " offset "
-                                      << bufferBindOffset << " length " << params.bufferBindLength << " element size "
-                                      << params.elementSize << " expected array size: " << expectedResult
-                                      << " actual array size: " << actualResult << tcu::TestLog::EndMessage;
-
-    if (expectedResult == actualResult)
-        return tcu::TestStatus::pass("Got expected array size");
-    else
-        return tcu::TestStatus::fail("Mismatch array size");
+    catch (const vk::OutOfMemoryError &)
+    {
+        if (params.bufferSize >= (1ull << 32))
+        {
+            TCU_THROW(NotSupportedError, "Out of memory");
+        }
+        throw;
+    }
 }
 
 class SSBOLayoutTests : public tcu::TestCaseGroup
@@ -1122,6 +1304,12 @@ void SSBOLayoutTests::init(void)
         glu::TYPE_INT16_VEC4,   glu::TYPE_FLOAT16,      glu::TYPE_FLOAT16_VEC2, glu::TYPE_FLOAT16_VEC3,
         glu::TYPE_FLOAT16_VEC4,
     };
+
+#ifndef CTS_USES_VULKANSC
+    static const glu::DataType basicTypesFew[] = {
+        glu::TYPE_UINT, glu::TYPE_UINT_VEC3, glu::TYPE_FLOAT_MAT2X4, glu::TYPE_UINT8, glu::TYPE_INT8_VEC3,
+    };
+#endif
 
     static const struct
     {
@@ -1274,13 +1462,12 @@ void SSBOLayoutTests::init(void)
                 glu::DataType type   = basicTypes[basicTypeNdx];
                 const char *typeName = glu::getDataTypeName(type);
                 const int arraySize  = 19;
-
                 layoutGroup->addChild(new BlockBasicUnsizedArrayCase(
                     m_testCtx, typeName,
                     VarType(type,
                             !glu::dataTypeSupportsPrecisionModifier(type) ? glu::PRECISION_LAST : glu::PRECISION_HIGHP),
                     arraySize, layoutFlags[layoutFlagNdx].flags, LOAD_FULL_MATRIX, STORE_FULL_MATRIX,
-                    m_usePhysStorageBuffer, m_readonly));
+                    m_usePhysStorageBuffer, m_readonly, false));
 
                 if (glu::isDataTypeMatrix(type))
                 {
@@ -1295,12 +1482,68 @@ void SSBOLayoutTests::init(void)
                                         .c_str(),
                                     VarType(type, glu::PRECISION_HIGHP), arraySize,
                                     layoutFlags[layoutFlagNdx].flags | matrixFlags[matFlagNdx].flags, loadType.second,
-                                    storeType.second, m_usePhysStorageBuffer, m_readonly));
+                                    storeType.second, m_usePhysStorageBuffer, m_readonly, false));
                     }
                 }
             }
         }
     }
+#ifndef CTS_USES_VULKANSC
+    // ssbo.basic_unsized_array_64b
+    {
+        tcu::TestCaseGroup *basicUnsizedArray = new tcu::TestCaseGroup(m_testCtx, "basic_unsized_array_64b");
+        addChild(basicUnsizedArray);
+
+        for (int layoutFlagNdx = 0; layoutFlagNdx < DE_LENGTH_OF_ARRAY(layoutFlags); layoutFlagNdx++)
+        {
+            tcu::TestCaseGroup *layoutGroup = new tcu::TestCaseGroup(m_testCtx, layoutFlags[layoutFlagNdx].name);
+            basicUnsizedArray->addChild(layoutGroup);
+
+            layoutGroup->setUseFraction0(true);
+
+            for (int basicTypeNdx = 0; basicTypeNdx < DE_LENGTH_OF_ARRAY(basicTypesFew); basicTypeNdx++)
+            {
+                glu::DataType type   = basicTypesFew[basicTypeNdx];
+                const char *typeName = glu::getDataTypeName(type);
+
+                VarType varType(type, !glu::dataTypeSupportsPrecisionModifier(type) ? glu::PRECISION_LAST :
+                                                                                      glu::PRECISION_HIGHP);
+
+                const int elemSize = computeSize(VarType(varType, 1), layoutFlags[layoutFlagNdx].flags);
+
+                // targeting just over 4GB allocation
+                uint64_t arraySize = 1ull << 32;
+                arraySize /= elemSize;
+                arraySize += 5;
+
+                layoutGroup->addChild(new BlockBasicUnsizedArrayCase(
+                    m_testCtx, typeName,
+                    VarType(type,
+                            !glu::dataTypeSupportsPrecisionModifier(type) ? glu::PRECISION_LAST : glu::PRECISION_HIGHP),
+                    arraySize, layoutFlags[layoutFlagNdx].flags, LOAD_FULL_MATRIX, STORE_FULL_MATRIX,
+                    m_usePhysStorageBuffer, m_readonly, true));
+#if 0
+                if (glu::isDataTypeMatrix(type))
+                {
+                    for (int matFlagNdx = 0; matFlagNdx < DE_LENGTH_OF_ARRAY(matrixFlags); matFlagNdx++)
+                    {
+                        for (const auto &loadType : matrixLoadTypes)
+                            for (const auto &storeType : matrixStoreTypes)
+                                layoutGroup->addChild(new BlockBasicUnsizedArrayCase(
+                                    m_testCtx,
+                                    (string(matrixFlags[matFlagNdx].name) + "_" + typeName + loadType.first +
+                                     storeType.first)
+                                        .c_str(),
+                                    VarType(type, glu::PRECISION_HIGHP), arraySize,
+                                    layoutFlags[layoutFlagNdx].flags | matrixFlags[matFlagNdx].flags, loadType.second,
+                                    storeType.second, m_usePhysStorageBuffer, m_readonly, true));
+                    }
+                }
+#endif
+            }
+        }
+    }
+#endif
 
     // ssbo.2_level_array
     if (!m_readonly)
@@ -1423,7 +1666,7 @@ void SSBOLayoutTests::init(void)
 
                 layoutGroup->addChild(new BlockBasicUnsizedArrayCase(
                     m_testCtx, typeName, childType1, parentSize, layoutFlags[layoutFlagNdx].flags, LOAD_FULL_MATRIX,
-                    STORE_FULL_MATRIX, m_usePhysStorageBuffer, m_readonly));
+                    STORE_FULL_MATRIX, m_usePhysStorageBuffer, m_readonly, false));
 
                 if (glu::isDataTypeMatrix(type))
                 {
@@ -1438,7 +1681,7 @@ void SSBOLayoutTests::init(void)
                                         .c_str(),
                                     childType1, parentSize,
                                     layoutFlags[layoutFlagNdx].flags | matrixFlags[matFlagNdx].flags, loadType.second,
-                                    storeType.second, m_usePhysStorageBuffer, m_readonly));
+                                    storeType.second, m_usePhysStorageBuffer, m_readonly, false));
                     }
                 }
             }
@@ -1825,10 +2068,10 @@ void SSBOLayoutTests::init(void)
         const uint32_t unsized       = FEATURE_UNSIZED_ARRAYS;
         const uint32_t matFlags      = FEATURE_MATRIX_LAYOUT;
         const uint32_t allButRelaxed = ~FEATURE_RELAXED_LAYOUT & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE &
-                                       ~FEATURE_SCALAR_LAYOUT & ~FEATURE_DESCRIPTOR_INDEXING;
+                                       ~FEATURE_SCALAR_LAYOUT & ~FEATURE_DESCRIPTOR_INDEXING & ~FEATURE_64B;
         const uint32_t allRelaxed = FEATURE_VECTORS | FEATURE_RELAXED_LAYOUT | FEATURE_INSTANCE_ARRAYS;
         const uint32_t allScalar  = ~FEATURE_RELAXED_LAYOUT & ~allStdLayouts & ~FEATURE_16BIT_STORAGE &
-                                   ~FEATURE_8BIT_STORAGE & ~FEATURE_DESCRIPTOR_INDEXING;
+                                   ~FEATURE_8BIT_STORAGE & ~FEATURE_DESCRIPTOR_INDEXING & ~FEATURE_64B;
         const uint32_t descriptorIndexing = allStdLayouts | FEATURE_RELAXED_LAYOUT | FEATURE_SCALAR_LAYOUT |
                                             FEATURE_DESCRIPTOR_INDEXING | allBasicTypes | unused | matFlags;
 
@@ -1875,6 +2118,13 @@ void SSBOLayoutTests::init(void)
                                   use8BitStorage | use16BitStorage | allStdLayouts | unused | allBasicTypes | matFlags |
                                       unsized | FEATURE_ARRAYS,
                                   25, 50, m_usePhysStorageBuffer);
+#ifndef CTS_USES_VULKANSC
+            // Unsized arrays, per-block buffers
+            createRandomCaseGroup(group, m_testCtx, "unsized_arrays_64b", SSBOLayoutCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allStdLayouts | unused | allBasicTypes | matFlags |
+                                      unsized | FEATURE_ARRAYS | FEATURE_64B,
+                                  2, 50, m_usePhysStorageBuffer);
+#endif
             // Arrays of arrays, per-block buffers
             createRandomCaseGroup(group, m_testCtx, "arrays_of_arrays", SSBOLayoutCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allStdLayouts | unused | allBasicTypes | matFlags |
@@ -1931,20 +2181,44 @@ void SSBOLayoutTests::init(void)
     }
 }
 
+void checkSupportUnsizedArrays(Context &context, UnsizedArrayCaseParams params)
+{
+    if (params.variablePointers && !context.getVariablePointersFeatures().variablePointersStorageBuffer)
+        TCU_THROW(NotSupportedError, "variablePointersStorageBuffer capability not supported");
+
+#ifndef CTS_USES_VULKANSC
+    if ((params.length64 || params.bufferSize > (uint64_t{1} << 32)) &&
+        !context.getShader64BitIndexingFeaturesEXT().shader64BitIndexing)
+        TCU_THROW(NotSupportedError, "shader64BitIndexing not supported by this implementation");
+#endif
+}
+
 void createUnsizedArrayTests(tcu::TestCaseGroup *testGroup)
 {
     const UnsizedArrayCaseParams subcases[] = {
-        {4, 256, false, 256, "float_no_offset_explicit_size"},
-        {4, 256, false, VK_WHOLE_SIZE, "float_no_offset_whole_size"},
-        {4, 512, true, 32, "float_offset_explicit_size"},
-        {4, 512, true, VK_WHOLE_SIZE, "float_offset_whole_size"},
+        {4, 256, false, 256, false, false, "float_no_offset_explicit_size"},
+        {4, 256, false, VK_WHOLE_SIZE, false, false, "float_no_offset_whole_size"},
+        {4, 512, true, 32, false, false, "float_offset_explicit_size"},
+        {4, 512, true, VK_WHOLE_SIZE, false, false, "float_offset_whole_size"},
+        {4, 512, true, VK_WHOLE_SIZE, true, false, "float_offset_whole_size_varptr"},
+#ifndef CTS_USES_VULKANSC
+        {4, 3ull << 31, true, 3ull << 31, false, false, "float_offset_explicit_size_64b"},
+        {4, 3ull << 31, true, 3ull << 31, true, false, "float_offset_explicit_size_64b_varptr"},
+        {4, 3ull << 31, true, 3ull << 31, false, true, "float_offset_explicit_size_64b_length64"},
+        {4, 3ull << 31, true, 3ull << 31, true, true, "float_offset_explicit_size_64b_length64_varptr"},
+        {4, 9ull << 31, true, VK_WHOLE_SIZE, false, true, "float_offset_explicit_size_64b_length64_2"},
+        {4, 9ull << 31, true, VK_WHOLE_SIZE, true, true, "float_offset_explicit_size_64b_length64_2_varptr"},
+#endif
     };
+
+    testGroup->setUseFraction0(true);
 
     for (int ndx = 0; ndx < DE_LENGTH_OF_ARRAY(subcases); ndx++)
     {
         const UnsizedArrayCaseParams &params = subcases[ndx];
-        addFunctionCaseWithPrograms<UnsizedArrayCaseParams>(testGroup, params.name, createUnsizedArrayLengthProgs,
-                                                            ssboUnsizedArrayLengthTest, params);
+        addFunctionCaseWithPrograms<UnsizedArrayCaseParams>(testGroup, params.name, checkSupportUnsizedArrays,
+                                                            createUnsizedArrayLengthProgs, ssboUnsizedArrayLengthTest,
+                                                            params);
     }
 }
 

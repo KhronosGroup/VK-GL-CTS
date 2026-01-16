@@ -104,6 +104,7 @@
 #include "../glesext/texture_border_clamp/esextcTextureBorderClampTests.hpp"
 #include "../glesext/texture_buffer/esextcTextureBufferTests.hpp"
 #include "../glesext/texture_cube_map_array/esextcTextureCubeMapArrayTests.hpp"
+#include "../glesext/fragment_shading_rate/esextcFragmentShadingRateTests.hpp"
 
 namespace gl4cts
 {
@@ -138,6 +139,9 @@ void GL40TestPackage::init(void)
         addChild(
             new gl4cts::TextureBarrierTests(getContext(), gl4cts::TextureBarrierTests::API_GL_ARB_texture_barrier));
         addChild(new glcts::ExposedExtensionsTests(getContext()));
+
+        glcts::ExtParameters extParamsEXT(glu::GLSL_VERSION_400, glcts::EXTENSIONTYPE_EXT);
+        addChild(new glcts::FragmentShadingRateTests(getContext(), extParamsEXT));
     }
     catch (...)
     {

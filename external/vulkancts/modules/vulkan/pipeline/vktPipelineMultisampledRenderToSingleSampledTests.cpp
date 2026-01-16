@@ -31,7 +31,6 @@
 
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
-#include "vkPlatform.hpp"
 #include "vkMemUtil.hpp"
 #include "vkQueryUtil.hpp"
 #include "vkTypeUtil.hpp"
@@ -40,19 +39,18 @@
 #include "vkPrograms.hpp"
 #include "vkImageUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 #include "../util/vktExternalMemoryUtil.hpp"
 
 #include "deUniquePtr.hpp"
 #include "deSharedPtr.hpp"
 #include "deRandom.hpp"
-#include "deMath.h"
 
 #include "tcuVector.hpp"
 #include "tcuTestLog.hpp"
 #include "tcuImageCompare.hpp"
 #include "tcuTextureUtil.hpp"
-#include "tcuRGBA.hpp"
 
 #include <string>
 #include <vector>
@@ -258,6 +256,46 @@ struct TestParams
     bool usesDepthStencilInPass(const size_t passNdx) const
     {
         return perPass[passNdx].hasDepthStencil;
+    }
+
+    bool usesColor1InAnyPass() const
+    {
+        for (size_t i = 0; i < perPass.size(); ++i)
+        {
+            if (usesColor1InPass(i))
+                return true;
+        }
+        return false;
+    }
+
+    bool usesColor2InAnyPass() const
+    {
+        for (size_t i = 0; i < perPass.size(); ++i)
+        {
+            if (usesColor2InPass(i))
+                return true;
+        }
+        return false;
+    }
+
+    bool usesColor3InAnyPass() const
+    {
+        for (size_t i = 0; i < perPass.size(); ++i)
+        {
+            if (usesColor3InPass(i))
+                return true;
+        }
+        return false;
+    }
+
+    bool usesDepthStencilInAnyPass() const
+    {
+        for (size_t i = 0; i < perPass.size(); ++i)
+        {
+            if (usesDepthStencilInPass(i))
+                return true;
+        }
+        return false;
     }
 };
 
@@ -1028,13 +1066,18 @@ void initializeAttachments(const TestParams &params, WorkingData &wd, std::vecto
 
 void initializeAttachmentDescriptions(const TestParams &params, std::vector<VkAttachmentDescription2> &descs,
                                       const bool preCleared, const int32_t attachmentNdxes[8],
-                                      uint32_t &attachmentUseMask)
+                                      uint32_t &attachmentUseMask, bool preTransitioned = false)
 {
     // The attachments are either cleared already or should be cleared now.  If an attachment was used in a previous render pass,
     // it will override these values to always LOAD and use the SHADER_READ_ONLY layout.  It's SHADER_READ_ONLY because final layout
     // is always that for simplicity.
-    const VkAttachmentLoadOp loadOp   = preCleared ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
-    const VkImageLayout initialLayout = preCleared ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL : VK_IMAGE_LAYOUT_UNDEFINED;
+    const VkAttachmentLoadOp loadOp = preCleared ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
+    const VkImageLayout preClearedColorLayout =
+        (preTransitioned ? VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    const VkImageLayout preClearedDSLayout =
+        (preTransitioned ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
+    const VkImageLayout initialLayoutColor = (preCleared ? preClearedColorLayout : VK_IMAGE_LAYOUT_UNDEFINED);
+    const VkImageLayout initialLayoutDS    = (preCleared ? preClearedDSLayout : VK_IMAGE_LAYOUT_UNDEFINED);
 
     // Output attachments
     if (attachmentNdxes[0] >= 0)
@@ -1050,8 +1093,8 @@ void initializeAttachmentDescriptions(const TestParams &params, std::vector<VkAt
             VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
             (attachmentUseMask & (1 << 0)) != 0 ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
-                                                  initialLayout, // VkImageLayout initialLayout;
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL             // VkImageLayout finalLayout;
+                                                  initialLayoutColor, // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL                  // VkImageLayout finalLayout;
         });
         attachmentUseMask |= 1 << 0;
     }
@@ -1069,8 +1112,8 @@ void initializeAttachmentDescriptions(const TestParams &params, std::vector<VkAt
             VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
             (attachmentUseMask & (1 << 1)) != 0 ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
-                                                  initialLayout, // VkImageLayout initialLayout;
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL             // VkImageLayout finalLayout;
+                                                  initialLayoutColor, // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL                  // VkImageLayout finalLayout;
         });
         attachmentUseMask |= 1 << 1;
     }
@@ -1088,8 +1131,8 @@ void initializeAttachmentDescriptions(const TestParams &params, std::vector<VkAt
             VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_DONT_CARE, // VkAttachmentStoreOp stencilStoreOp;
             (attachmentUseMask & (1 << 2)) != 0 ? VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL :
-                                                  initialLayout, // VkImageLayout initialLayout;
-            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL             // VkImageLayout finalLayout;
+                                                  initialLayoutColor, // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL                  // VkImageLayout finalLayout;
         });
         attachmentUseMask |= 1 << 2;
     }
@@ -1108,8 +1151,8 @@ void initializeAttachmentDescriptions(const TestParams &params, std::vector<VkAt
                                                   loadOp, // VkAttachmentLoadOp stencilLoadOp;
             VK_ATTACHMENT_STORE_OP_STORE,                 // VkAttachmentStoreOp stencilStoreOp;
             (attachmentUseMask & (1 << 3)) != 0 ? VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL :
-                                                  initialLayout, // VkImageLayout initialLayout;
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL      // VkImageLayout finalLayout;
+                                                  initialLayoutDS, // VkImageLayout initialLayout;
+            VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL        // VkImageLayout finalLayout;
         });
         attachmentUseMask |= 1 << 3;
     }
@@ -1393,7 +1436,7 @@ void initResolveImageLayouts(Context &context, const TestParams &params, Working
 }
 
 void preRenderingImageLayoutTransition(Context &context, const TestParams &params, WorkingData &wd,
-                                       TestObjects &testObjects)
+                                       TestObjects &testObjects, bool inputAttachmentsCase = false)
 {
     const DeviceInterface &vk = context.getDeviceInterface();
     const bool preCleared     = params.clearBeforeRenderPass;
@@ -1415,22 +1458,98 @@ void preRenderingImageLayoutTransition(Context &context, const TestParams &param
                                   1u), // VkImageSubresourceRange    subresourceRange;
     };
 
-    VkImageMemoryBarrier barriers[4] = {imageBarrierTemplate, imageBarrierTemplate, imageBarrierTemplate,
-                                        imageBarrierTemplate};
-    barriers[0].image                = *wd.floatColor1.image;
-    barriers[1].image                = *wd.floatColor2.image;
-    barriers[2].image                = *wd.intColor.image;
-    barriers[3].image                = *wd.depthStencil.image;
+    std::vector<VkImageMemoryBarrier> barriers;
+    barriers.reserve(5u);
+
+    for (int i = 0; i < 4; ++i)
+        barriers.push_back(imageBarrierTemplate);
+
+    barriers[0].image = *wd.floatColor1.image;
+    if (inputAttachmentsCase && !params.renderToAttachment)
+        barriers[0].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+    barriers[1].image = *wd.floatColor2.image;
+    barriers[2].image = *wd.intColor.image;
+    barriers[3].image = *wd.depthStencil.image;
     barriers[3].dstAccessMask =
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
     barriers[3].newLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
     barriers[3].subresourceRange.aspectMask = getDepthStencilAspectFlags(params.depthStencilFormat);
 
+    if (inputAttachmentsCase && !params.renderToAttachment)
+    {
+        barriers.push_back(imageBarrierTemplate);
+        barriers.back().image = *wd.dataColor1.image;
+    }
+
     vk.cmdPipelineBarrier(*testObjects.cmdBuffer,
                           preCleared ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
                           VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
                               VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                          0u, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers);
+                          0u, 0u, nullptr, 0u, nullptr, de::sizeU32(barriers), de::dataOrNull(barriers));
+}
+
+// Prepare images for the compute pass.
+void postRenderingImageLayoutTransition(Context &context, const TestParams &params, WorkingData &wd,
+                                        TestObjects &testObjects, bool includeAll = true)
+{
+    const DeviceInterface &vk = context.getDeviceInterface();
+
+    const VkImageMemoryBarrier imageBarrierTemplate = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType;
+        nullptr,                                // const void*                pNext;
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags            srcAccessMask
+        VK_ACCESS_SHADER_READ_BIT,                        // VkAccessFlags            dstAccessMask
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // VkImageLayout            oldLayout
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // VkImageLayout            newLayout
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex;
+        VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   dstQueueFamilyIndex;
+        VK_NULL_HANDLE,                                   // VkImage                    image;
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
+                                  1u), // VkImageSubresourceRange    subresourceRange;
+    };
+
+    std::vector<VkImageMemoryBarrier> barriers;
+    barriers.reserve(4u);
+
+    // includeAll is typically set for dynamic rendering, which means we have to transition all images to the
+    // appropriate layout for the compute pass, because there are no automatic layout transitions.
+    //
+    // if not (typically for classic render passes), we only need to transition those images that have not been used
+    // by any render pass or subpass, and are still in the pre-pass layout.
+    if (includeAll || !params.usesColor1InAnyPass())
+    {
+        barriers.push_back(imageBarrierTemplate);
+        barriers.back().image = *wd.floatColor1.image;
+    }
+
+    if (includeAll || !params.usesColor2InAnyPass())
+    {
+        barriers.push_back(imageBarrierTemplate);
+        barriers.back().image = *wd.floatColor2.image;
+    }
+
+    if (includeAll || !params.usesColor3InAnyPass())
+    {
+        barriers.push_back(imageBarrierTemplate);
+        barriers.back().image = *wd.intColor.image;
+    }
+
+    if (includeAll || !params.usesDepthStencilInAnyPass())
+    {
+        barriers.push_back(imageBarrierTemplate);
+        barriers.back().image                       = *wd.depthStencil.image;
+        barriers.back().srcAccessMask               = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
+        barriers.back().oldLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        barriers.back().newLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
+        barriers.back().subresourceRange.aspectMask = getDepthStencilAspectFlags(params.depthStencilFormat);
+    }
+
+    vk.cmdPipelineBarrier(*testObjects.cmdBuffer,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                              VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                          VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u, nullptr, 0u, nullptr, de::sizeU32(barriers),
+                          de::dataOrNull(barriers));
 }
 
 void postRenderingResolveImageLayoutTransition(Context &context, const TestParams &params, WorkingData &wd,
@@ -3195,9 +3314,11 @@ void drawBasic(Context &context, const TestParams &params, WorkingData &wd, Test
         clearImagesBeforeDraw(context, params, wd, testObjects);
     }
 
+    // This avoids write-after-write sync hazards with attachment layout transitions after the pre-clear.
+    preRenderingImageLayoutTransition(context, params, wd, testObjects);
+
     if (params.dynamicRendering)
     {
-        preRenderingImageLayoutTransition(context, params, wd, testObjects);
         initResolveImageLayouts(context, params, wd, testObjects);
     }
 
@@ -3242,7 +3363,7 @@ void drawBasic(Context &context, const TestParams &params, WorkingData &wd, Test
         else
         {
             initializeAttachmentDescriptions(params, attachmentDescriptions, params.clearBeforeRenderPass,
-                                             attachmentNdxes, attachmentUseMask);
+                                             attachmentNdxes, attachmentUseMask, true);
 
             addSubpassDescription(params, 0, attachmentReferences, resolveAttachmentReferences, depthStencilResolve,
                                   nullptr, msrtss, subpasses, {}, attachmentNdxes);
@@ -3301,6 +3422,7 @@ void drawBasic(Context &context, const TestParams &params, WorkingData &wd, Test
 
     if (params.dynamicRendering)
     {
+        postRenderingImageLayoutTransition(context, params, wd, testObjects);
         postRenderingResolveImageLayoutTransition(context, params, wd, testObjects);
     }
 
@@ -3503,9 +3625,11 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         clearImagesBeforeDraw(context, params, wd, testObjects);
     }
 
+    // Avoid write-after-write hazard with layout transitions by pre-transitioning attachments.
+    preRenderingImageLayoutTransition(context, params, wd, testObjects);
+
     if (params.dynamicRendering)
     {
-        preRenderingImageLayoutTransition(context, params, wd, testObjects);
         initResolveImageLayouts(context, params, wd, testObjects);
     }
 
@@ -3550,7 +3674,7 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         else
         {
             initializeAttachmentDescriptions(params, attachmentDescriptions, params.clearBeforeRenderPass,
-                                             attachmentNdxes, attachmentUseMask);
+                                             attachmentNdxes, attachmentUseMask, true);
 
             addSubpassDescription(params, 0, attachmentReferences, resolveAttachmentReferences, depthStencilResolve,
                                   nullptr, msrtss, subpasses, {}, attachmentNdxes);
@@ -3667,6 +3791,7 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
 
     if (params.dynamicRendering)
     {
+        postRenderingImageLayoutTransition(context, params, wd, testObjects);
         postRenderingResolveImageLayoutTransition(context, params, wd, testObjects);
     }
 
@@ -3807,6 +3932,18 @@ void dispatchVerifyMultiPassRendering(Context &context, const TestParams &params
     invalidateAlloc(vk, device, *wd.verificationBufferAlloc);
 }
 
+// Finds the attachment reference with the given attachment index. Returns nullptr if not found.
+const VkAttachmentReference2 *findAttachment(const VkAttachmentReference2 *array, uint32_t count, uint32_t attIndex)
+{
+    if (!array || count == 0u)
+        return nullptr;
+
+    const auto arrayEnd = array + count;
+    const auto match    = [attIndex](const VkAttachmentReference2 &ref) { return (ref.attachment == attIndex); };
+    const auto pos      = std::find_if(array, arrayEnd, match);
+    return (pos == arrayEnd ? nullptr : pos);
+}
+
 void drawSingleRenderPass(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
 {
     const DeviceInterface &vk   = context.getDeviceInterface();
@@ -3845,6 +3982,77 @@ void drawSingleRenderPass(Context &context, const TestParams &params, WorkingDat
 
             if (passNdx > 0)
                 addSubpassDependency(passNdx, subpassDependencies);
+        }
+
+        if (params.clearBeforeRenderPass)
+        {
+            // We need to avoid a write-after-write hazard coming from image layout changes. We'll transition all
+            // cleared images to the layout used in the first subpass that uses the image.
+            std::vector<VkImageMemoryBarrier> layoutBarriers;
+            layoutBarriers.reserve(images.size());
+
+            for (uint32_t attIdx = 0u; attIdx < de::sizeU32(attachmentDescriptions); ++attIdx)
+            {
+                auto &attDesc                = attachmentDescriptions.at(attIdx);
+                const auto oldLayout         = attDesc.initialLayout;
+                VkImageLayout firstUseLayout = VK_IMAGE_LAYOUT_UNDEFINED;
+                auto imgSRR                  = makeDefaultImageSubresourceRange();
+
+                // Not cleared before, no sync needed.
+                if (oldLayout == VK_IMAGE_LAYOUT_UNDEFINED)
+                    continue;
+
+                // Find the first subpass that uses the attachment and save the first use layout.
+                for (uint32_t subpassIdx = 0u; subpassIdx < de::sizeU32(subpasses); ++subpassIdx)
+                {
+                    const auto &subpass = subpasses.at(subpassIdx);
+
+                    if (subpass.pDepthStencilAttachment && subpass.pDepthStencilAttachment->attachment == attIdx)
+                    {
+                        firstUseLayout    = subpass.pDepthStencilAttachment->layout;
+                        imgSRR.aspectMask = getDepthStencilAspectFlags(attDesc.format);
+                        break;
+                    }
+
+                    const auto colorPos =
+                        findAttachment(subpass.pColorAttachments, subpass.colorAttachmentCount, attIdx);
+                    if (colorPos)
+                    {
+                        firstUseLayout = colorPos->layout;
+                        break;
+                    }
+
+                    const auto resolvePos =
+                        findAttachment(subpass.pResolveAttachments, subpass.colorAttachmentCount, attIdx);
+                    if (resolvePos)
+                    {
+                        firstUseLayout = resolvePos->layout;
+                        break;
+                    }
+                }
+
+                if (firstUseLayout != VK_IMAGE_LAYOUT_UNDEFINED)
+                {
+                    const auto dstAccess =
+                        (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+                         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+                    layoutBarriers.push_back(makeImageMemoryBarrier(VK_ACCESS_TRANSFER_WRITE_BIT, dstAccess, oldLayout,
+                                                                    firstUseLayout, images.at(attIdx), imgSRR));
+
+                    // Change initial layout in the render pass.
+                    attDesc.initialLayout = firstUseLayout;
+                }
+            }
+
+            if (!layoutBarriers.empty())
+            {
+                const auto ctx = context.getContextCommonData();
+                const auto dstStages =
+                    (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                     VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+                cmdPipelineImageMemoryBarrier(ctx.vkd, *testObjects.cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                              dstStages, layoutBarriers.data(), layoutBarriers.size());
+            }
         }
 
         createRenderPassAndFramebuffer(context, wd, testObjects, params.pipelineConstructionType, images, attachments,
@@ -3905,9 +4113,11 @@ void drawMultiRenderPass(Context &context, const TestParams &params, WorkingData
         clearImagesBeforeDraw(context, params, wd, testObjects);
     }
 
+    // Avoid write-after-write hazards in layout transitions by pre-transitioning attachments.
+    preRenderingImageLayoutTransition(context, params, wd, testObjects);
+
     if (params.dynamicRendering)
     {
-        preRenderingImageLayoutTransition(context, params, wd, testObjects);
         initResolveImageLayouts(context, params, wd, testObjects);
     }
 
@@ -3945,6 +4155,7 @@ void drawMultiRenderPass(Context &context, const TestParams &params, WorkingData
         VkRenderingAttachmentInfo depthStencilAttachmentInfo;
 
         std::vector<VkClearValue> clearValues;
+        std::vector<VkSubpassDependency2> subpassDependencies;
 
         initializeAttachments(params, wd, images, attachments, renderPassNdx, attachmentNdxes);
         if (params.dynamicRendering)
@@ -3974,13 +4185,13 @@ void drawMultiRenderPass(Context &context, const TestParams &params, WorkingData
         else
         {
             initializeAttachmentDescriptions(params, attachmentDescriptions, params.clearBeforeRenderPass,
-                                             attachmentNdxes, attachmentUseMask);
+                                             attachmentNdxes, attachmentUseMask, true);
 
             addSubpassDescription(params, renderPassNdx, attachmentReferences, resolveAttachmentReferences,
                                   depthStencilResolve, nullptr, msrtss, subpasses, {}, attachmentNdxes);
 
             createRenderPassAndFramebuffer(context, wd, testObjects, params.pipelineConstructionType, images,
-                                           attachments, attachmentDescriptions, subpasses, {});
+                                           attachments, attachmentDescriptions, subpasses, subpassDependencies);
 
             // Init clear values
             if (attachmentNdxes[0] >= 0)
@@ -4040,7 +4251,12 @@ void drawMultiRenderPass(Context &context, const TestParams &params, WorkingData
 
     if (params.dynamicRendering)
     {
+        postRenderingImageLayoutTransition(context, params, wd, testObjects);
         postRenderingResolveImageLayoutTransition(context, params, wd, testObjects);
+    }
+    else
+    {
+        postRenderingImageLayoutTransition(context, params, wd, testObjects, false);
     }
 
     // Verify results
@@ -4696,7 +4912,7 @@ void copyToInputAttachment(Context &context, const TestParams &params, WorkingDa
         VK_ATTACHMENT_STORE_OP_STORE,               // VkAttachmentStoreOp storeOp;
         VK_ATTACHMENT_LOAD_OP_DONT_CARE,            // VkAttachmentLoadOp stencilLoadOp;
         VK_ATTACHMENT_STORE_OP_DONT_CARE,           // VkAttachmentStoreOp stencilStoreOp;
-        VK_IMAGE_LAYOUT_UNDEFINED,                  // VkImageLayout initialLayout;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout initialLayout;
         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout finalLayout;
     };
 
@@ -4815,7 +5031,7 @@ void copyToInputAttachment(Context &context, const TestParams &params, WorkingDa
         VK_ACCESS_TRANSFER_WRITE_BIT,               // VkAccessFlags srcAccessMask;
         VK_ACCESS_SHADER_READ_BIT,                  // VkAccessFlags dstAccessMask;
         VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       // VkImageLayout oldLayout;
-        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,       // VkImageLayout newLayout;
+        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,   // VkImageLayout newLayout;
         0u,                                         // uint32_t srcQueueFamilyIndex;
         0u,                                         // uint32_t dstQueueFamilyIndex;
         *wd.floatColor1.image,                      // VkImage image;
@@ -4860,6 +5076,9 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
         clearImagesBeforeDraw(context, params, wd, testObjects);
     }
 
+    // This avoids write-after-write sync hazards with attachment layout transitions after the pre-clear.
+    preRenderingImageLayoutTransition(context, params, wd, testObjects, true);
+
     // Create a render pass and a framebuffer
     {
         std::vector<VkSubpassDescription2> subpasses;
@@ -4878,7 +5097,7 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
 
         initializeAttachments(params, wd, images, attachments, params.perPass.size(), attachmentNdxes);
         initializeAttachmentDescriptions(params, attachmentDescriptions, params.clearBeforeRenderPass, attachmentNdxes,
-                                         attachmentUseMask);
+                                         attachmentUseMask, true);
 
         DE_ASSERT(numSubpasses == 2);
         inputAttachmentReferences.resize(2,
@@ -4913,12 +5132,14 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
             VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT |
                 VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT, // VkPipelineStageFlags    srcStageMask;
 
-            VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, // VkPipelineStageFlags    dstStageMask;
+            (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT |
+             VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT), // VkPipelineStageFlags    dstStageMask;
 
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
                 VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags           srcAccessMask;
 
-            VK_ACCESS_INPUT_ATTACHMENT_READ_BIT, // VkAccessFlags           dstAccessMask;
+            (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT |
+             VK_ACCESS_INPUT_ATTACHMENT_READ_BIT), // VkAccessFlags           dstAccessMask;
 
             VK_DEPENDENCY_BY_REGION_BIT, // VkDependencyFlags       dependencyFlags;
             0,                           // int32_t                 viewOffset;
@@ -5850,7 +6071,11 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
 void createMultisampledRenderToSingleSampledTestsInGroup(tcu::TestCaseGroup *rootGroup,
                                                          PipelineConstructionType pipelineConstructionType)
 {
-    createMultisampledTestsInGroup(rootGroup, true, pipelineConstructionType, false);
+    const auto useESO = isConstructionTypeShaderObject(pipelineConstructionType);
+
+    // Shader objects can only be used with dynamic rendering.
+    if (!useESO)
+        createMultisampledTestsInGroup(rootGroup, true, pipelineConstructionType, false);
 
     MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup(
         new tcu::TestCaseGroup(rootGroup->getTestContext(), "dynamic_rendering"));
@@ -5861,7 +6086,11 @@ void createMultisampledRenderToSingleSampledTestsInGroup(tcu::TestCaseGroup *roo
 void createMultisampledMiscTestsInGroup(tcu::TestCaseGroup *rootGroup,
                                         PipelineConstructionType pipelineConstructionType)
 {
-    createMultisampledTestsInGroup(rootGroup, false, pipelineConstructionType, false);
+    const auto useESO = isConstructionTypeShaderObject(pipelineConstructionType);
+
+    // Shader objects can only be used with dynamic rendering.
+    if (!useESO)
+        createMultisampledTestsInGroup(rootGroup, false, pipelineConstructionType, false);
 
     MovePtr<tcu::TestCaseGroup> dynamicRenderingGroup(
         new tcu::TestCaseGroup(rootGroup->getTestContext(), "dynamic_rendering"));

@@ -8194,6 +8194,8 @@ public:
                     else
                     {
                         requirements.push_back("Storage16BitFeatures.storageBuffer16BitAccess");
+                        // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+                        requirements.push_back("Storage16BitFeatures.uniformAndStorageBuffer16BitAccess");
                     }
                 }
             }

@@ -2007,7 +2007,7 @@ const std::string TestConfigurationFlow::getShaderBodyText(const TestParams &tes
             "    if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
             "    {\n"
             "      value--;\n"
-            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n"
+            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n"
             "\n"
             "      rayQueryProceedEXT(rayQuery);\n"
             "\n"
@@ -2183,7 +2183,7 @@ const std::string TestConfigurationPrimitiveId::getShaderBodyText(const TestPara
             "    if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
             "    {\n"
             "      value--;\n"
-            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n"
+            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n"
             "\n"
             "      rayQueryProceedEXT(rayQuery);\n"
             "\n"
@@ -2359,7 +2359,7 @@ const std::string TestConfigurationGetRayTMin::getShaderBodyText(const TestParam
             "      if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
             "      {\n" +
             std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
-                            "          rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "          rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n" :
                             "") +
             std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
                             "          rayQueryConfirmIntersectionEXT(rayQuery);\n" :
@@ -2525,7 +2525,7 @@ const std::string TestConfigurationGetWorldRayOrigin::getShaderBodyText(const Te
             "      intersection_found = true;\n"
             "\n" +
             std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
-                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n" :
                             "") +
             std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
                             "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
@@ -2703,7 +2703,7 @@ const std::string TestConfigurationGetWorldRayDirection::getShaderBodyText(const
             "  while (rayQueryProceedEXT(rayQuery))\n"
             "  {\n" +
             std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
-                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n" :
                             "") +
             std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
                             "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
@@ -2853,7 +2853,7 @@ const std::string TestConfigurationInstanceId::getShaderBodyText(const TestParam
             "    if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
             "    {\n"
             "      value--;\n"
-            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n"
+            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n"
             "\n"
             "      rayQueryProceedEXT(rayQuery);\n"
             "\n"
@@ -3029,7 +3029,7 @@ const std::string TestConfigurationInstanceCustomIndex::getShaderBodyText(const 
             "    if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
             "    {\n"
             "      value--;\n"
-            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n"
+            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n"
             "\n"
             "      rayQueryProceedEXT(rayQuery);\n"
             "\n"
@@ -4321,7 +4321,7 @@ const std::string TestConfigurationGetIntersectionCandidateAABBOpaque::getShader
             "      if (rayQueryGetIntersectionTypeEXT(rayQuery, false) == gl_RayQueryCandidateIntersectionAABBEXT)\n"
             "      {\n"
             "          result_i32 |= rayQueryGetIntersectionCandidateAABBOpaqueEXT(rayQuery) ? 1 : 0;\n"
-            "          rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n"
+            "          rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n"
             "      }\n"
             "  }\n"
             "\n"
@@ -4627,33 +4627,34 @@ const std::string TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTe
 {
     if (testParams.geomType == GEOM_TYPE_AABBS || testParams.geomType == GEOM_TYPE_TRIANGLES)
     {
-        const std::string result = "  uint        rayFlags = 0;\n"
-                                   "  uint        cullMask = 0xFF;\n"
-                                   "  float       tmin     = 0.0001;\n"
-                                   "  float       tmax     = 9.0;\n"
-                                   "  vec3        origin   = vec3((float(pos.x) + 0.5f) / float(size.x), (float(pos.y) "
-                                   "+ 0.5f) / float(size.y),  0.2);\n"
-                                   "  vec3        direct   = vec3(0,   0,      -1.0);\n"
-                                   "  rayQueryEXT rayQuery;\n"
-                                   "\n"
-                                   "  int result_i32 = 123456;\n"
-                                   "\n"
-                                   "  rayQueryInitializeEXT(rayQuery, rayQueryTopLevelAccelerationStructure, rayFlags, "
-                                   "cullMask, origin, tmin, direct, tmax);\n"
-                                   "\n"
-                                   "  while (rayQueryProceedEXT(rayQuery))\n"
-                                   "  {\n"
-                                   "      result_i32 = rayQueryGetIntersectionGeometryIndexEXT(rayQuery, false);\n"
-                                   "\n" +
-                                   std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
-                                                   "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
-                                                   "") +
-                                   std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
-                                                   "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
-                                                   "") +
-                                   "  }\n"
-                                   "\n"
-                                   "  imageStore(result, pos, ivec4(result_i32, 0, 0, 0));\n";
+        const std::string result =
+            "  uint        rayFlags = 0;\n"
+            "  uint        cullMask = 0xFF;\n"
+            "  float       tmin     = 0.0001;\n"
+            "  float       tmax     = 9.0;\n"
+            "  vec3        origin   = vec3((float(pos.x) + 0.5f) / float(size.x), (float(pos.y) "
+            "+ 0.5f) / float(size.y),  0.2);\n"
+            "  vec3        direct   = vec3(0,   0,      -1.0);\n"
+            "  rayQueryEXT rayQuery;\n"
+            "\n"
+            "  int result_i32 = 123456;\n"
+            "\n"
+            "  rayQueryInitializeEXT(rayQuery, rayQueryTopLevelAccelerationStructure, rayFlags, "
+            "cullMask, origin, tmin, direct, tmax);\n"
+            "\n"
+            "  while (rayQueryProceedEXT(rayQuery))\n"
+            "  {\n"
+            "      result_i32 = rayQueryGetIntersectionGeometryIndexEXT(rayQuery, false);\n"
+            "\n" +
+            std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n" :
+                            "") +
+            std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
+                            "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
+                            "") +
+            "  }\n"
+            "\n"
+            "  imageStore(result, pos, ivec4(result_i32, 0, 0, 0));\n";
 
         return result;
     }
@@ -4689,7 +4690,7 @@ const std::string TestConfigurationGetIntersectionGeometryIndex::getShaderBodyTe
             "      intersection_found = true;\n"
             "\n" +
             std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
-                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n" :
                             "") +
             std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
                             "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
@@ -5065,7 +5066,7 @@ const std::string TestConfigurationGetIntersectionInstanceShaderBindingTableReco
             ");\n"
             "\n" +
             std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
-                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n" :
                             "") +
             std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
                             "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
@@ -5108,7 +5109,7 @@ const std::string TestConfigurationGetIntersectionInstanceShaderBindingTableReco
             "      intersection_found = true;\n"
             "\n" +
             std::string((testParams.geomType == GEOM_TYPE_AABBS) ?
-                            "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n" :
+                            "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n" :
                             "") +
             std::string((testParams.geomType == GEOM_TYPE_TRIANGLES) ?
                             "      rayQueryConfirmIntersectionEXT(rayQuery);\n" :
@@ -5460,7 +5461,7 @@ const std::string TestConfigurationGetIntersectionType::getShaderBodyTextCandida
 
         if (testParams.geomType == GEOM_TYPE_AABBS)
         {
-            result += "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n";
+            result += "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n";
         }
         else if (testParams.geomType == GEOM_TYPE_TRIANGLES)
         {
@@ -5502,7 +5503,7 @@ const std::string TestConfigurationGetIntersectionType::getShaderBodyTextCommitt
 
         if (testParams.geomType == GEOM_TYPE_AABBS)
         {
-            result += "      rayQueryGenerateIntersectionEXT(rayQuery, 0.5f);\n";
+            result += "      rayQueryGenerateIntersectionEXT(rayQuery, rayQueryGetRayTMinEXT(rayQuery));\n";
         }
         else if (testParams.geomType == GEOM_TYPE_TRIANGLES)
         {

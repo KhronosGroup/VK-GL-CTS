@@ -179,6 +179,7 @@ enum TestType
     TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES,
     TEST_TYPE_H265_DECODE_SLIST_A,
     TEST_TYPE_H265_DECODE_SLIST_B,
+    TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE,
 
     // VK_KHR_video_maintenance2
     TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS,
@@ -207,6 +208,7 @@ enum TestType
     TEST_TYPE_AV1_DECODE_CDEF_10,
     TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10,
     TEST_TYPE_AV1_DECODE_ARGON_TEST_787,
+    TEST_TYPE_AV1_DECODE_GOLDEN_FRAME,
 
     TEST_TYPE_AV1_DECODE_ARGON_SEQCHANGE_AFFINE_8,
 
@@ -312,6 +314,9 @@ static const char *testTypeToStr(TestType type)
     case TEST_TYPE_H265_DECODE_SLIST_B:
         testName = "slist_b";
         break;
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
+        testName = "long_term_reference";
+        break;
     case TEST_TYPE_AV1_DECODE_BASIC_8:
         testName = "basic_8";
         break;
@@ -365,6 +370,9 @@ static const char *testTypeToStr(TestType type)
         break;
     case TEST_TYPE_AV1_DECODE_CDEF_10:
         testName = "cdef_10";
+        break;
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
+        testName = "golden_frame";
         break;
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
         testName = "argon_filmgrain_10_test1019";
@@ -480,6 +488,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_H265_DECODE_RESOURCES_WITHOUT_PROFILES:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
     case TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS:
     case TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS:
         return TEST_CODEC_H265;
@@ -505,6 +514,7 @@ enum TestCodec getTestCodec(const TestType testType)
     case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
     case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
     case TEST_TYPE_AV1_DECODE_CDEF_10:
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     case TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS:
@@ -611,6 +621,8 @@ struct DecodeTestParam
      {CLIP_H265_DEC_D, ALL_FRAMES, DecoderOption::ResourcesWithoutProfiles}},
     {TEST_TYPE_H265_DECODE_SLIST_A, {CLIP_H265_DEC_ITU_SLIST_A, 28, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_SLIST_B, {CLIP_H265_DEC_ITU_SLIST_B, 28, DecoderOption::Default}},
+    {TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE,
+     {CLIP_H265_DEC_ITU_LTRPSPS_A_QUALCOMM_1, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_H265_DECODE_INLINE_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::UseInlineSessionParams}},
     {TEST_TYPE_H265_DECODE_RELAXED_SESSION_PARAMS, {CLIP_H265_DEC_D, 1, DecoderOption::ResetCodecNoSessionParams}},
 
@@ -635,6 +647,8 @@ struct DecodeTestParam
     {TEST_TYPE_AV1_DECODE_LOSSLESS_10, {CLIP_AV1_DEC_LOSSLESS_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_LOOPFILTER_10, {CLIP_AV1_DEC_LOOPFILTER_10, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_CDEF_10, {CLIP_AV1_DEC_CDEF_10, ALL_FRAMES, DecoderOption::Default}},
+    {TEST_TYPE_AV1_DECODE_GOLDEN_FRAME,
+     {CLIP_AV1_DEC_FRAMES_REFS_SHORT_SIGNALING_GOLDEN, ALL_FRAMES, DecoderOption::Default}},
     {TEST_TYPE_AV1_DECODE_INLINE_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::UseInlineSessionParams}},
     {TEST_TYPE_AV1_DECODE_RELAXED_SESSION_PARAMS, {CLIP_AV1_DEC_BASIC_8, 1, DecoderOption::ResetCodecNoSessionParams}},
 
@@ -1426,7 +1440,7 @@ tcu::TestStatus VideoDecodeTestInstance::iterate()
                                         VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR;
 
         DownloadedFrame downloadedFrame = getDecodedImage(m_deviceContext, downloadedFrameLayout, frame);
-
+        processor->releaseFrame(&frame);
         DownloadedFrame downloadedFrameWithoutFilmGrain;
         if (processorWithoutFilmGrain)
         {
@@ -1773,6 +1787,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_H265_DECODE_QUERY_RESULT_WITH_STATUS:
     case TEST_TYPE_H265_DECODE_SLIST_A:
     case TEST_TYPE_H265_DECODE_SLIST_B:
+    case TEST_TYPE_H265_DECODE_LONG_TERM_REFERENCE:
     {
         context.requireDeviceFunctionality("VK_KHR_video_decode_h265");
         break;
@@ -1813,6 +1828,7 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
     case TEST_TYPE_AV1_DECODE_LOSSLESS_10:
     case TEST_TYPE_AV1_DECODE_LOOPFILTER_10:
     case TEST_TYPE_AV1_DECODE_CDEF_10:
+    case TEST_TYPE_AV1_DECODE_GOLDEN_FRAME:
     case TEST_TYPE_AV1_DECODE_ARGON_FILMGRAIN_10:
     case TEST_TYPE_AV1_DECODE_ARGON_TEST_787:
     {

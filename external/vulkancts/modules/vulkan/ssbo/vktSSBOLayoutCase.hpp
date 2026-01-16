@@ -147,11 +147,11 @@ public:
     }
     void setArraySize(int arraySize);
 
-    int getLastUnsizedArraySize(int instanceNdx) const
+    uint64_t getLastUnsizedArraySize(int instanceNdx) const
     {
         return m_lastUnsizedArraySizes[instanceNdx];
     }
-    void setLastUnsizedArraySize(int instanceNdx, int size)
+    void setLastUnsizedArraySize(int instanceNdx, uint64_t size)
     {
         m_lastUnsizedArraySizes[instanceNdx] = size;
     }
@@ -177,8 +177,9 @@ private:
     std::string m_blockName;
     std::string m_instanceName;
     std::vector<BufferVar> m_variables;
-    int m_arraySize;                          //!< Array size or 0 if not interface block array.
-    std::vector<int> m_lastUnsizedArraySizes; //!< Sizes of last unsized array element, can be different per instance.
+    int m_arraySize; //!< Array size or 0 if not interface block array.
+    std::vector<uint64_t>
+        m_lastUnsizedArraySizes; //!< Sizes of last unsized array element, can be different per instance.
     uint32_t m_flags;
 };
 
@@ -268,10 +269,10 @@ public:
 struct BlockDataPtr
 {
     void *ptr;
-    int size; //!< Redundant, for debugging purposes.
-    int lastUnsizedArraySize;
+    uint64_t size; //!< Redundant, for debugging purposes.
+    uint64_t lastUnsizedArraySize;
 
-    BlockDataPtr(void *ptr_, int size_, int lastUnsizedArraySize_)
+    BlockDataPtr(void *ptr_, uint64_t size_, uint64_t lastUnsizedArraySize_)
         : ptr(ptr_)
         , size(size_)
         , lastUnsizedArraySize(lastUnsizedArraySize_)
@@ -285,7 +286,7 @@ struct BlockDataPtr
 
 struct RefDataStorage
 {
-    std::vector<uint8_t> data;
+    mutable de::SharedPtr<std::vector<uint8_t>> data;
     std::vector<BlockDataPtr> pointers;
 };
 
@@ -301,13 +302,14 @@ public:
     };
 
     SSBOLayoutCase(tcu::TestContext &testCtx, const char *name, BufferMode bufferMode, MatrixLoadFlags matrixLoadFlag,
-                   MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer);
+                   MatrixStoreFlags matrixStoreFlag, bool usePhysStorageBuffer, bool use64BitIndexing);
     virtual ~SSBOLayoutCase(void);
 
-    virtual void delayedInit(void);
-    virtual void initPrograms(vk::SourceCollections &programCollection) const;
-    virtual TestInstance *createInstance(Context &context) const;
-    virtual void checkSupport(Context &context) const;
+    void delayedInit(void) override;
+    void initPrograms(vk::SourceCollections &programCollection) const override;
+    TestInstance *createInstance(Context &context) const override;
+    void checkSupport(Context &context) const override;
+    void deinit(void) override;
 
 protected:
     BufferMode m_bufferMode;
@@ -316,15 +318,18 @@ protected:
     MatrixStoreFlags m_matrixStoreFlag;
     std::string m_computeShaderSrc;
     bool m_usePhysStorageBuffer;
+    bool m_use64BitIndexing;
 
 private:
     SSBOLayoutCase(const SSBOLayoutCase &);
     SSBOLayoutCase &operator=(const SSBOLayoutCase &);
 
     BufferLayout m_refLayout;
-    RefDataStorage m_initialData; // Initial data stored in buffer.
-    RefDataStorage m_writeData;   // Data written by compute shader.
+    mutable RefDataStorage m_initialData; // Initial data stored in buffer.
+    mutable RefDataStorage m_writeData;   // Data written by compute shader.
 };
+
+int computeBaseAlignment(const glu::VarType &type, uint32_t layoutFlags);
 
 } // namespace ssbo
 } // namespace vkt

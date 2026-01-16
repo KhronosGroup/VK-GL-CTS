@@ -65,7 +65,7 @@ void checkSubgroupSupport(Context &context, BuiltinParams params)
 {
     checkDGCComputeSupport(context, params.pipelineToken, false);
 
-    if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
+    if (context.getEquivalentApiVersion() < VK_API_VERSION_1_3)
         TCU_THROW(NotSupportedError, "Vulkan 1.3 not supported");
 
     const auto &vk13Properties = context.getDeviceVulkan13Properties();

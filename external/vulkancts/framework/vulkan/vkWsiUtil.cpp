@@ -65,7 +65,7 @@ namespace wsi
 const char *getName(Type wsiType)
 {
     static const char *const s_names[] = {
-        "xlib", "xcb", "wayland", "android", "win32", "metal", "headless", "direct_drm",
+        "xlib", "xcb", "wayland", "android", "win32", "metal", "headless", "direct_drm", "direct",
     };
     return de::getSizedArrayElement<TYPE_LAST>(s_names, wsiType);
 }
@@ -73,8 +73,9 @@ const char *getName(Type wsiType)
 const char *getExtensionName(Type wsiType)
 {
     static const char *const s_extNames[] = {
-        "VK_KHR_xlib_surface",  "VK_KHR_xcb_surface",   "VK_KHR_wayland_surface",  "VK_KHR_android_surface",
-        "VK_KHR_win32_surface", "VK_EXT_metal_surface", "VK_EXT_headless_surface", "VK_EXT_acquire_drm_display",
+        "VK_KHR_xlib_surface",     "VK_KHR_xcb_surface",         "VK_KHR_wayland_surface",
+        "VK_KHR_android_surface",  "VK_KHR_win32_surface",       "VK_EXT_metal_surface",
+        "VK_EXT_headless_surface", "VK_EXT_acquire_drm_display", "VK_KHR_display",
     };
     return de::getSizedArrayElement<TYPE_LAST>(s_extNames, wsiType);
 }
@@ -139,6 +140,13 @@ const PlatformProperties &getPlatformProperties(Type wsiType)
             noWindowLimit,
         },
         // VK_EXT_acquire_drm_display
+        {
+            0u,
+            PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE,
+            1u,
+            1u,
+        },
+        // VK_KHR_display
         {
             0u,
             PlatformProperties::SWAPCHAIN_EXTENT_MUST_MATCH_WINDOW_SIZE,
@@ -224,7 +232,7 @@ VkResult createSurface(const InstanceInterface &vki, VkInstance instance, Type w
                        const VkAllocationCallbacks *pAllocator, VkSurfaceKHR *pSurface)
 {
     // Update this function if you add more WSI implementations
-    DE_STATIC_ASSERT(TYPE_LAST == 8);
+    DE_STATIC_ASSERT(TYPE_LAST == 9);
 
 #ifdef CTS_USES_VULKANSC
     DE_UNREF(vki);
@@ -321,6 +329,14 @@ VkResult createSurface(const InstanceInterface &vki, VkInstance instance, Type w
         return createDisplaySurface(vki, instance, drmDisplay.getNative(), cmdLine, pAllocator, pSurface);
     }
 
+    case TYPE_DIRECT:
+    {
+        DirectDisplayInterface &directDisplay =
+            dynamic_cast<DirectDisplayInterface &>(const_cast<Display &>(nativeDisplay));
+        directDisplay.initializeDisplay(vki, instance, cmdLine);
+        return createDisplaySurface(vki, instance, directDisplay.getNative(), cmdLine, pAllocator, pSurface);
+    }
+
     default:
         DE_FATAL("Unknown WSI type");
         return VK_ERROR_SURFACE_LOST_KHR;
@@ -398,6 +414,7 @@ VkBool32 getPhysicalDevicePresentationSupport(const InstanceInterface &vki, VkPh
     case TYPE_ANDROID:
     case TYPE_METAL:
     case TYPE_DIRECT_DRM:
+    case TYPE_DIRECT:
     {
         return 1;
     }
@@ -663,11 +680,88 @@ VkBool32 isDisplaySurface(Type wsiType)
     case TYPE_HEADLESS:
         return 0;
     case TYPE_DIRECT_DRM:
+    case TYPE_DIRECT:
         return 1;
     default:
         DE_FATAL("Unknown WSI type");
         return 0;
     }
+}
+
+Move<VkSwapchainKHR> createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                                        const VkSwapchainCreateInfoKHR *pCreateInfo,
+                                        const VkAllocationCallbacks *pAllocator)
+{
+    try
+    {
+        return createSwapchainKHR(vk, device, pCreateInfo, pAllocator);
+    }
+    catch (const vk::Error &error)
+    {
+        switch (wsiType)
+        {
+        case TYPE_XLIB:
+        case TYPE_XCB:
+        case TYPE_WAYLAND:
+        case TYPE_ANDROID:
+        case TYPE_WIN32:
+        case TYPE_METAL:
+        case TYPE_HEADLESS:
+            throw error;
+
+        case TYPE_DIRECT_DRM:
+        case TYPE_DIRECT:
+            // "Swapchain creation may fail if that VkDisplayKHR is not acquired by the application.
+            // In this scenario VK_ERROR_INITIALIZATION_FAILED is returned."
+            if (error.getError() == VK_ERROR_INITIALIZATION_FAILED)
+                TCU_THROW(NotSupportedError,
+                          "Swapchain creation on VkDisplayKHR not acquired by the application is unsupported");
+            throw error;
+
+        default:
+            DE_FATAL("Unknown WSI type");
+            break;
+        }
+    }
+    catch (...)
+    {
+        throw;
+    }
+    DE_FATAL("Unreachable");
+    VkSwapchainKHR object = VK_NULL_HANDLE;
+    return Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vk, device, pAllocator));
+}
+
+VkResult createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                            const VkSwapchainCreateInfoKHR *pCreateInfo, const VkAllocationCallbacks *pAllocator,
+                            VkSwapchainKHR *object)
+{
+    VkResult result = vk.createSwapchainKHR(device, pCreateInfo, pAllocator, object);
+    switch (wsiType)
+    {
+    case TYPE_XLIB:
+    case TYPE_XCB:
+    case TYPE_WAYLAND:
+    case TYPE_ANDROID:
+    case TYPE_WIN32:
+    case TYPE_METAL:
+    case TYPE_HEADLESS:
+        return result;
+
+    case TYPE_DIRECT_DRM:
+    case TYPE_DIRECT:
+        // "Swapchain creation may fail if that VkDisplayKHR is not acquired by the application.
+        // In this scenario VK_ERROR_INITIALIZATION_FAILED is returned."
+        if (result == VK_ERROR_INITIALIZATION_FAILED)
+            TCU_THROW(NotSupportedError,
+                      "Swapchain creation on VkDisplayKHR not acquired by the application is unsupported");
+        return result;
+
+    default:
+        DE_FATAL("Unknown WSI type");
+        break;
+    }
+    return result;
 }
 
 Move<VkRenderPass> WsiTriangleRenderer::createRenderPass(const DeviceInterface &vkd, const VkDevice device,

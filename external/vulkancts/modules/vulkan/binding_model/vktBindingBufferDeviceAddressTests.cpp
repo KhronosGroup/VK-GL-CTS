@@ -1946,6 +1946,7 @@ void FragmentStoreTestCase::initPrograms(SourceCollections &programCollection) c
 
     programCollection.glslSources.add("vert") << glu::VertexSource(vss.str());
 
+    // VUID-StandaloneSpirv-PhysicalStorageBuffer64-06314
     const char *spv_shader_source = R"(
 ; SPIR-V
 ; Version: 1.0

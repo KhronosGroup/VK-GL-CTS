@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveShaderProgramFunc)								(GLuint pipeline, GLuint program);
 typedef GLW_APICALL void			(GLW_APIENTRY* glActiveTextureFunc)										(GLenum texture);
@@ -532,6 +532,7 @@ typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferTextureEXTFunc)					
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferTextureFaceEXTFunc)					(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLenum face);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferTextureLayerFunc)						(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferTextureLayerEXTFunc)					(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer);
+typedef GLW_APICALL void			(GLW_APIENTRY* glNamedFramebufferTextureMultiviewOVRFunc)				(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedProgramLocalParameter4dEXTFunc)					(GLuint program, GLenum target, GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedProgramLocalParameter4dvEXTFunc)					(GLuint program, GLenum target, GLuint index, const GLdouble *params);
 typedef GLW_APICALL void			(GLW_APIENTRY* glNamedProgramLocalParameter4fEXTFunc)					(GLuint program, GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);

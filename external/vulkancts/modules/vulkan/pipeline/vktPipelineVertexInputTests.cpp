@@ -26,6 +26,7 @@
 
 #include "vktPipelineVertexInputTests.hpp"
 #include "vktPipelineLegacyAttrTests.hpp"
+#include "vktPipelineVertexInputSRGBTests.hpp"
 #include "vktTestGroupUtil.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
@@ -2821,6 +2822,7 @@ struct Params
 {
     PipelineConstructionType constructionType;
     bool dynamicInputs;
+    bool integerInput;
 };
 
 void checkSupport(Context &context, Params params)
@@ -2834,16 +2836,17 @@ void checkSupport(Context &context, Params params)
     context.requireDeviceFunctionality("VK_KHR_maintenance9");
 }
 
-void initPrograms(SourceCollections &programCollection, Params)
+void initPrograms(SourceCollections &programCollection, Params params)
 {
     std::ostringstream vert;
     vert << "#version 460\n"
          << "layout (location=0) in vec4 inPos;\n"
-         << "layout (location=1) in vec4 inColor;\n"
+         << "layout (location=1) in " << (params.integerInput ? "i" : "") << "vec4 inColor;\n"
          << "layout (location=0) out vec4 outColor;\n"
          << "void main (void) {\n"
          << "    gl_Position = inPos;\n"
-         << "    outColor = inColor;\n"
+         << "    outColor = " << (params.integerInput ? "vec4(" : "") << "inColor" << (params.integerInput ? ")" : "")
+         << ";\n"
          << "}\n";
     programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
 
@@ -3074,10 +3077,14 @@ void createMiscVertexInputTests(tcu::TestCaseGroup *miscTests, PipelineConstruct
             addFunctionCaseWithPrograms(miscTests, unusedBindingTestName, UnusedBinding::checkSupport,
                                         UnusedBinding::initPrograms, UnusedBinding::runTest, unusedBindingParams);
 #ifndef CTS_USES_VULKANSC
-            const auto unboundInputTestName = std::string("unbound_input") + (dynamic ? "_dynamic" : "");
-            const UnboundInput::Params unboundInputParams{pipelineConstructionType, dynamic};
-            addFunctionCaseWithPrograms(miscTests, unboundInputTestName, UnboundInput::checkSupport,
-                                        UnboundInput::initPrograms, UnboundInput::runTest, unboundInputParams);
+            for (const auto integerInput : {false, true})
+            {
+                const auto unboundInputTestName =
+                    std::string("unbound_input") + (dynamic ? "_dynamic" : "") + (integerInput ? "_integer" : "");
+                const UnboundInput::Params unboundInputParams{pipelineConstructionType, dynamic, integerInput};
+                addFunctionCaseWithPrograms(miscTests, unboundInputTestName, UnboundInput::checkSupport,
+                                            UnboundInput::initPrograms, UnboundInput::runTest, unboundInputParams);
+            }
 #endif
         }
     }
@@ -3089,22 +3096,29 @@ void createVertexInputTests(tcu::TestCaseGroup *vertexInputTests, PipelineConstr
 {
     // Uses one attribute
     addTestGroup(vertexInputTests, "single_attribute", createSingleAttributeTests, pipelineConstructionType);
-    // Uses more than one attribute
-    addTestGroup(vertexInputTests, "multiple_attributes", createMultipleAttributeTests, pipelineConstructionType);
-    // Implementations can use as many vertex input attributes as they advertise
-    addTestGroup(vertexInputTests, "max_attributes", createMaxAttributeTests, pipelineConstructionType);
+    if (!isConstructionTypeShaderObject(pipelineConstructionType))
+    {
+        // Uses more than one attribute
+        addTestGroup(vertexInputTests, "multiple_attributes", createMultipleAttributeTests, pipelineConstructionType);
+        // Implementations can use as many vertex input attributes as they advertise
+        addTestGroup(vertexInputTests, "max_attributes", createMaxAttributeTests, pipelineConstructionType);
+    }
+
     // Uses formats that has more components than shader expects (legal for 64-bit)
     addTestGroup(vertexInputTests, "component_mismatch", createComponentMismatchTests, pipelineConstructionType);
+
     // Miscellaneous tests.
     addTestGroup(vertexInputTests, "misc", createMiscVertexInputTests, pipelineConstructionType);
 
     if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
-        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
-        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
+        pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY)
     {
         addTestGroup(vertexInputTests, "legacy_vertex_attributes", createLegacyVertexAttributesTests,
                      pipelineConstructionType);
     }
+
+    auto &testCtx = vertexInputTests->getTestContext();
+    vertexInputTests->addChild(createVertexInputSRGBTests(testCtx, pipelineConstructionType));
 }
 
 } // namespace pipeline

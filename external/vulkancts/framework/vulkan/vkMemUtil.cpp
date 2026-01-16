@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2024-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -293,9 +294,13 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
     Move<VkDeviceMemory> mem = allocateMemory(m_vk, m_device, &allocInfo);
     MovePtr<HostPtr> hostPtr;
 
-    if (requirement & MemoryRequirement::HostVisible)
+    const bool requestedHostVisible = requirement & MemoryRequirement::HostVisible;
+    const bool isHostVisible        = isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex);
+    DE_UNREF(requestedHostVisible);
+    DE_ASSERT(!requestedHostVisible || isHostVisible);
+
+    if (isHostVisible)
     {
-        DE_ASSERT(isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex));
         hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, memReqs.size, 0u));
     }
 
@@ -750,6 +755,89 @@ de::MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice dev
     VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
     return alloc;
 }
+
+#ifndef CTS_USES_VULKANSC
+MovePtr<Allocation> bindTensor(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                               const VkTensorARM tensor, const MemoryRequirement requirement,
+                               VkDeviceSize *allocationSize)
+{
+    const VkMemoryRequirements tensor_requirements = getTensorMemoryRequirements(vk, device, tensor);
+    MovePtr<Allocation> alloc(allocator.allocate(tensor_requirements, requirement));
+
+    if (allocationSize != nullptr)
+    {
+        *allocationSize = tensor_requirements.size;
+    }
+
+    const VkBindTensorMemoryInfoARM bindInfo = {
+        VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM, nullptr, tensor, alloc->getMemory(), alloc->getOffset(),
+    };
+
+    VK_CHECK(vk.bindTensorMemoryARM(device, 1, &bindInfo));
+
+    return alloc;
+}
+
+std::vector<de::MovePtr<Allocation>> bindDataGraphSession(
+    const DeviceInterface &vk, const VkDevice device, Allocator &allocator, const VkDataGraphPipelineSessionARM session,
+    const std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> &bindPoints,
+    const MemoryRequirement requirement, VkDeviceSize *allocationSize, bool testRequiresTransient)
+{
+    vk::VkDeviceSize _allocationSize = 0;
+
+    std::vector<de::MovePtr<Allocation>> allocations;
+    allocations.resize(bindPoints.size());
+
+    bool transientBindPointPresent = false;
+
+    for (size_t i = 0; i < bindPoints.size(); i++)
+    {
+        VkDataGraphPipelineSessionMemoryRequirementsInfoARM memInfo = {
+            VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SESSION_MEMORY_REQUIREMENTS_INFO_ARM, // VkStructureType                           sType;
+            nullptr,                 // const void*                               pNext;
+            session,                 // VkDataGraphPipelineSessionARM             session;
+            bindPoints[i].bindPoint, // VkDataGraphPipelineSessionBindPointARM    bindPoint;
+            0,                       // uint32_t                                  objectIndex;
+        };
+
+        VkMemoryRequirements2 memReq2;
+        deMemset(&memReq2, 0, sizeof(memReq2));
+        memReq2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+        vk.getDataGraphPipelineSessionMemoryRequirementsARM(device, &memInfo, &memReq2);
+
+        _allocationSize += memReq2.memoryRequirements.size;
+        allocations[i] = allocator.allocate(memReq2.memoryRequirements, requirement);
+
+        if (bindPoints[i].bindPoint == VK_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_TRANSIENT_ARM &&
+            memReq2.memoryRequirements.size > 0)
+        {
+            transientBindPointPresent = true;
+        }
+
+        const VkBindDataGraphPipelineSessionMemoryInfoARM bindInfo = {
+            VK_STRUCTURE_TYPE_BIND_DATA_GRAPH_PIPELINE_SESSION_MEMORY_INFO_ARM, //     VkStructureType                           sType;
+            nullptr,                     //     const void*                               pNext;
+            session,                     //     VkDataGraphPipelineSessionARM             session;
+            bindPoints[i].bindPoint,     //     VkDataGraphPipelineSessionBindPointARM    bindPoint;
+            0,                           //     uint32_t                                  resourceIndex;
+            allocations[i]->getMemory(), //     VkDeviceMemory                            memory;
+            allocations[i]->getOffset(), //     VkDeviceSize                              memoryOffset;
+        };
+
+        VK_CHECK(vk.bindDataGraphPipelineSessionMemoryARM(device, 1, &bindInfo));
+    }
+
+    TCU_CHECK(!testRequiresTransient || transientBindPointPresent);
+
+    if (allocationSize != nullptr)
+    {
+        *allocationSize = _allocationSize;
+    }
+
+    return allocations;
+}
+
+#endif // CTS_USES_VULKANSC
 
 void zeroBuffer(const DeviceInterface &vk, const VkDevice device, const Allocation &alloc, const VkDeviceSize size)
 {

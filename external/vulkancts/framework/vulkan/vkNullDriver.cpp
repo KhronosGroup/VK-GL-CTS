@@ -5,6 +5,7 @@
  * Copyright (c) 2015 Google Inc.
  * Copyright (c) 2023 LunarG, Inc.
  * Copyright (c) 2023 Nintendo
+ * Copyright (c) 2023-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -268,21 +269,14 @@ VK_NULL_DEFINE_DEVICE_OBJ(ShaderModule);
 VK_NULL_DEFINE_DEVICE_OBJ(DescriptorUpdateTemplate);
 VK_NULL_DEFINE_DEVICE_OBJ(PrivateDataSlot);
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkInstance, DebugReportCallback, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuModule, NVX)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CuFunction, NVX)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaModule, NV)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, CudaFunction, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Micromap, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, OpticalFlowSession, NV)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, NV)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, AccelerationStructure, KHR)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, NV)
+VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSession, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, VideoSessionParameters, KHR)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, ValidationCache, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, BufferCollection, FUCHSIA)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Shader, EXT)
-VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectCommandsLayout, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, IndirectExecutionSet, EXT)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, PipelineBinary, KHR)
 VK_NULL_DEFINE_OBJ_WITH_POSTFIX(VkDevice, Tensor, ARM)
@@ -407,9 +401,6 @@ public:
     {
     }
     Pipeline(VkDevice, const VkRayTracingPipelineCreateInfoKHR *)
-    {
-    }
-    Pipeline(VkDevice, const VkExecutionGraphPipelineCreateInfoAMDX *)
     {
     }
     Pipeline(VkDevice, const VkDataGraphPipelineCreateInfoARM *)
@@ -845,16 +836,6 @@ void DescriptorPool::reset(void)
     m_managedSets.clear();
 }
 
-#ifndef CTS_USES_VULKANSC
-class ExternalComputeQueueNV
-{
-public:
-    ExternalComputeQueueNV(VkDevice, const VkExternalComputeQueueCreateInfoNV *)
-    {
-    }
-};
-#endif
-
 // API implementation
 
 extern "C"
@@ -1009,6 +990,40 @@ extern "C"
         {
             for (uint32_t freeNdx = 0; freeNdx < allocNdx; freeNdx++)
                 freeNonDispHandle<ShaderEXT, VkShaderEXT>(pShaders[freeNdx], pAllocator);
+            return err;
+        }
+    }
+
+#endif // CTS_USES_VULKANSC
+
+#ifndef CTS_USES_VULKANSC
+
+    VKAPI_ATTR VkResult VKAPI_CALL createDataGraphPipelinesARM(VkDevice device, VkPipelineCache, uint32_t count,
+                                                               const VkDataGraphPipelineCreateInfoARM *pCreateInfos,
+                                                               const VkAllocationCallbacks *pAllocator,
+                                                               VkPipeline *pPipelines)
+    {
+        uint32_t allocNdx;
+        try
+        {
+            for (allocNdx = 0; allocNdx < count; allocNdx++)
+                pPipelines[allocNdx] =
+                    allocateNonDispHandle<Pipeline, VkPipeline>(device, pCreateInfos + allocNdx, pAllocator);
+
+            return VK_SUCCESS;
+        }
+        catch (const std::bad_alloc &)
+        {
+            for (uint32_t freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+                freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
+            return VK_ERROR_OUT_OF_HOST_MEMORY;
+        }
+        catch (VkResult err)
+        {
+            for (uint32_t freeNdx = 0; freeNdx < allocNdx; freeNdx++)
+                freeNonDispHandle<Pipeline, VkPipeline>(pPipelines[freeNdx], pAllocator);
+
             return err;
         }
     }

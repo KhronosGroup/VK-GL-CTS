@@ -106,6 +106,7 @@ typedef PointerWrapper<VkPipelineBinaryInfoKHR> PipelineBinaryInfoWrapper;
 typedef VkPipelineCreateFlags2KHR PipelineCreateFlags2;
 typedef VkShaderCreateFlagsEXT ShaderCreateFlags;
 typedef PointerWrapper<VkPipelineRobustnessCreateInfoEXT> PipelineRobustnessCreateInfoWrapper;
+typedef PointerWrapper<VkCustomResolveCreateInfoEXT> PipelineCustomResolveCreateInfoWrapper;
 #else
 typedef PointerWrapper<void> PipelineViewportDepthClipControlCreateInfoWrapper;
 typedef PointerWrapper<void> PipelineRenderingCreateInfoWrapper;
@@ -118,6 +119,7 @@ typedef PointerWrapper<void> PipelineBinaryInfoWrapper;
 typedef uint64_t PipelineCreateFlags2;
 typedef uint32_t ShaderCreateFlags;
 typedef PointerWrapper<void> PipelineRobustnessCreateInfoWrapper;
+typedef PointerWrapper<void> PipelineCustomResolveCreateInfoWrapper;
 #endif
 
 PipelineCreateFlags2 translateCreateFlag(VkPipelineCreateFlags flagToTranslate);
@@ -331,7 +333,9 @@ private:
     std::vector<uint32_t> m_viewMasks;
     mutable bool m_secondaryCommandBuffers;
 
-    void clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const;
+    // Returns true if any attachment was cleared.
+    bool clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const;
+
     void updateLayout(VkImage updatedImage, VkImageLayout newLayout) const;
     void transitionLayouts(const DeviceInterface &vk, const VkCommandBuffer commandBuffer, const Subpass &subpass,
                            bool renderPassBegin) const;
@@ -618,7 +622,8 @@ public:
         const VkPipelineCache partPipelineCache                        = VK_NULL_HANDLE,
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
-            RenderingInputAttachmentIndexInfoWrapper());
+            RenderingInputAttachmentIndexInfoWrapper(),
+        PipelineCustomResolveCreateInfoWrapper customResolve = PipelineCustomResolveCreateInfoWrapper());
 
     // Note: VkPipelineShaderStageModuleIdentifierCreateInfoEXT::pIdentifier will not be copied. They need to continue to exist outside this wrapper.
     GraphicsPipelineWrapper &setupFragmentShaderState2(
@@ -633,7 +638,8 @@ public:
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo =
             RenderingInputAttachmentIndexInfoWrapper(),
-        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
+        PipelineBinaryInfoWrapper partBinaries               = PipelineBinaryInfoWrapper(),
+        PipelineCustomResolveCreateInfoWrapper customResolve = PipelineCustomResolveCreateInfoWrapper());
 
     // Setup fragment output state.
     GraphicsPipelineWrapper &setupFragmentOutputState(
@@ -644,7 +650,8 @@ public:
         PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback = PipelineCreationFeedbackCreateInfoWrapper(),
         RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo =
             RenderingAttachmentLocationInfoWrapper(),
-        PipelineBinaryInfoWrapper partBinaries = PipelineBinaryInfoWrapper());
+        PipelineBinaryInfoWrapper partBinaries               = PipelineBinaryInfoWrapper(),
+        PipelineCustomResolveCreateInfoWrapper customResolve = PipelineCustomResolveCreateInfoWrapper());
 
     // Build pipeline object out of provided state.
     void buildPipeline(

@@ -110,6 +110,14 @@ tcu::UVec2 getFullScreenSize(const vk::wsi::Type wsiType, const vk::wsi::Display
 
 VkBool32 isDisplaySurface(Type wsiType);
 
+Move<VkSwapchainKHR> createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                                        const VkSwapchainCreateInfoKHR *pCreateInfo,
+                                        const VkAllocationCallbacks *pAllocator = nullptr);
+
+VkResult createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                            const VkSwapchainCreateInfoKHR *pCreateInfo, const VkAllocationCallbacks *pAllocator,
+                            VkSwapchainKHR *object);
+
 class WsiTriangleRenderer
 {
 public:

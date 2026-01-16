@@ -626,7 +626,15 @@ bool canDoMultiSwapchainPresent(vk::wsi::Type wsiType)
     // This bug has existed since Vulkan 1.0 and is unrelated to
     // VK_EXT_swapchain_maintenance1.  Once that bug is fixed, multi-swapchain
     // present tests can be enabled for this platform.
-    return wsiType != TYPE_ANDROID;
+    //
+    // Issue #6118:
+    // For VK_KHR_display, a VkSurface is created with vkCreateDisplayPlaneSurfaceKHR()
+    // using a tuple of VkDisplay (implicitly through VkDisplayMode) and planeIndex.
+    // It is intended that this tuple is analogous to the "native window"
+    // referred to in the quote above. The current wsi wrapper for direct display
+    // doesn't support different VkDisplays or planeIndex, so will fail tests
+    // trying to create multiple swapchains.
+    return wsiType != TYPE_ANDROID && wsiType != TYPE_DIRECT_DRM && wsiType != TYPE_DIRECT;
 }
 
 uint32_t getIterations(std::vector<VkPresentModeKHR> presentModes,
@@ -865,7 +873,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
             swapchainInfo.back().pNext                 = &compatibleModesCreateInfo;
         }
 
-        swapchains.push_back(createSwapchainKHR(vkd, device, &swapchainInfo.back()));
+        swapchains.push_back(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo.back()));
         swapchainHandles.push_back(*swapchains.back());
 
         if (testParams.bindImageMemory)
@@ -915,7 +923,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
     // VUID-vkAcquireNextImageKHR-surface-07783
-    const uint64_t foreverNs = 1000000000ul;
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -957,7 +965,7 @@ tcu::TestStatus presentFenceTest(Context &context, const PresentFenceTestConfig 
 
                 if (!isSharedPresentMode[j] || i == 0)
                 {
-                    VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], foreverNs, acquireSem.back(),
+                    VK_CHECK(vkd.acquireNextImageKHR(device, *swapchains[j], kAcquireImageTimeout, acquireSem.back(),
                                                      VK_NULL_HANDLE, &imageIndex[j]));
                 }
                 else
@@ -1720,7 +1728,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
     };
     swapchainInfo.pNext = &scalingInfo;
 
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
     std::vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
 
     const Unique<VkCommandPool> commandPool(
@@ -1737,7 +1745,7 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
     // VUID-vkAcquireNextImageKHR-surface-07783
-    const uint64_t foreverNs = 1000000000ul;
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -1802,8 +1810,8 @@ tcu::TestStatus scalingTest(Context &context, const ScalingTestConfig testParams
 
             if (!isSharedPresentMode || i == 0)
             {
-                VK_CHECK(
-                    vkd.acquireNextImageKHR(device, *swapchain, foreverNs, acquireSem, VK_NULL_HANDLE, &imageIndex));
+                VK_CHECK(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout, acquireSem, VK_NULL_HANDLE,
+                                                 &imageIndex));
             }
             else
             {
@@ -2220,7 +2228,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
     };
     swapchainInfo.pNext = &scalingInfo;
 
-    Move<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+    Move<VkSwapchainKHR> swapchain(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
     std::vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
 
     const Unique<VkCommandPool> commandPool(
@@ -2237,7 +2245,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
         allocateCommandBuffers(vkd, device, *commandPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY, iterations));
 
     // VUID-vkAcquireNextImageKHR-surface-7782
-    const uint64_t foreverNs = 1000000000ul;
+    const uint64_t kAcquireImageTimeout = 10000000000ul;
 
     VkImageSubresourceRange range = {
         VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1,
@@ -2287,7 +2295,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             VkResult result = VK_SUCCESS;
             if (!isSharedPresentMode || needSharedPresentAcquire)
             {
-                result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                result = vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
 
@@ -2307,7 +2315,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                 }
 
                 swapchainInfo.oldSwapchain = *swapchain;
-                Move<VkSwapchainKHR> newSwapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+                Move<VkSwapchainKHR> newSwapchain(createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
                 swapchain = std::move(newSwapchain);
 
                 const size_t previousImageCount = swapchainImages.size();
@@ -2316,7 +2324,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     TCU_THROW(InternalError,
                               "Unexpected change in number of swapchain images when recreated during window resize");
 
-                result = vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                result = vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                  presentIndex == 0 ? acquireSem : VK_NULL_HANDLE, **acquireFences[0],
                                                  &acquiredIndices[0]);
                 if (result == VK_SUCCESS)
@@ -2341,7 +2349,7 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
             DE_ASSERT(!isSharedPresentMode || acquireCount == 1);
             for (uint32_t j = 1; j < acquireCount; ++j)
             {
-                VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, foreverNs,
+                VK_CHECK_WSI(vkd.acquireNextImageKHR(device, *swapchain, kAcquireImageTimeout,
                                                      presentIndex == j ? acquireSem : VK_NULL_HANDLE,
                                                      **acquireFences[j], &acquiredIndices[j]));
                 VK_CHECK(vkd.waitForFences(device, 1u, &**acquireFences[j], VK_TRUE, kMaxFenceWaitTimeout));
@@ -2491,7 +2499,8 @@ tcu::TestStatus releaseImagesTest(Context &context, const ReleaseImagesTestConfi
                     }
 
                     swapchainInfo.oldSwapchain = *swapchain;
-                    Move<VkSwapchainKHR> newSwapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+                    Move<VkSwapchainKHR> newSwapchain(
+                        createWsiSwapchain(testParams.wsiType, vkd, device, &swapchainInfo));
 
                     if (!imagesReleased && !testParams.releaseBeforeRetire && imageReleaseSize > 0)
                     {

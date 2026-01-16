@@ -1,6 +1,7 @@
 dEQP-VKSC.compute.pipeline.basic.concurrent_compute
 dEQP-VKSC.compute.pipeline.basic.copy_image_to_ssbo_large
 dEQP-VKSC.compute.pipeline.basic.copy_image_to_ssbo_small
+dEQP-VKSC.compute.pipeline.basic.copy_ssbo_bounds
 dEQP-VKSC.compute.pipeline.basic.copy_ssbo_multiple_groups
 dEQP-VKSC.compute.pipeline.basic.copy_ssbo_multiple_invocations
 dEQP-VKSC.compute.pipeline.basic.copy_ssbo_single_invocation

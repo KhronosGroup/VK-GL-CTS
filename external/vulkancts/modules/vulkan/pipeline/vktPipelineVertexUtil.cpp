@@ -920,19 +920,32 @@ std::vector<Vertex4RGBA> createOverlappingQuads(void)
     return vertices;
 }
 
-std::vector<Vertex4RGBARGBA> createOverlappingQuadsDualSource(void)
+std::vector<Vertex4RGBARGBA> createOverlappingQuadsDualSource(bool forceAlphaOne)
 {
     using tcu::Vec2;
     using tcu::Vec4;
 
     std::vector<Vertex4RGBARGBA> vertices;
 
-    const Vec2 translations[4] = {Vec2(-0.25f, -0.25f), Vec2(-1.0f, -0.25f), Vec2(-1.0f, -1.0f), Vec2(-0.25f, -1.0f)};
+    const Vec2 translations[4] = {
+        // clang-format off
+        Vec2(-0.25f, -0.25f),
+        Vec2(-1.0f,  -0.25f),
+        Vec2(-1.0f,  -1.0f),
+        Vec2(-0.25f, -1.0f),
+        // clang-format on
+    };
 
-    const Vec4 quadColors[4] = {Vec4(1.0f, 0.0f, 0.0f, 1.0), Vec4(0.0f, 1.0f, 0.0f, 1.0), Vec4(0.0f, 0.0f, 1.0f, 1.0),
-                                Vec4(1.0f, 0.0f, 1.0f, 1.0)};
+    const Vec4 quadColors[4] = {
+        // clang-format off
+        Vec4(1.0f, 0.0f, 0.0f, 1.0f),
+        Vec4(0.0f, 1.0f, 0.0f, (forceAlphaOne ? 1.0f : 0.25f)),
+        Vec4(0.0f, 0.0f, 1.0f, (forceAlphaOne ? 1.0f : 0.25f)),
+        Vec4(1.0f, 0.0f, 1.0f, (forceAlphaOne ? 1.0f : 0.75f)),
+        // clang-format on
+    };
 
-    const Vec4 color1 = Vec4(0.0f, 0.5f, 0.5f, 1.0f);
+    const Vec4 color1 = Vec4(0.0f, 0.5f, 0.5f, (forceAlphaOne ? 1.0f : 0.5f));
 
     const float quadSize = 1.25f;
 

@@ -165,29 +165,29 @@ std::string getFormatCaseName(VkFormat format)
 
 std::string getBlendStateName(const VkPipelineColorBlendAttachmentState &blendState)
 {
-    const char *shortBlendFactorNames[] = {
-        "z",     // VK_BLEND_ZERO
-        "o",     // VK_BLEND_ONE
-        "sc",    // VK_BLEND_SRC_COLOR
-        "1msc",  // VK_BLEND_ONE_MINUS_SRC_COLOR
-        "dc",    // VK_BLEND_DEST_COLOR
-        "1mdc",  // VK_BLEND_ONE_MINUS_DEST_COLOR
-        "sa",    // VK_BLEND_SRC_ALPHA
-        "1msa",  // VK_BLEND_ONE_MINUS_SRC_ALPHA
-        "da",    // VK_BLEND_DEST_ALPHA
-        "1mda",  // VK_BLEND_ONE_MINUS_DEST_ALPHA
-        "cc",    // VK_BLEND_CONSTANT_COLOR
-        "1mcc",  // VK_BLEND_ONE_MINUS_CONSTANT_COLOR
-        "ca",    // VK_BLEND_CONSTANT_ALPHA
-        "1mca",  // VK_BLEND_ONE_MINUS_CONSTANT_ALPHA
-        "sas",   // VK_BLEND_SRC_ALPHA_SATURATE
-        "1ms1c", // VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR
-        "1ms1a", // VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA
-        "s1c",   // VK_BLEND_FACTOR_SRC1_COLOR
-        "s1a"    // VK_BLEND_FACTOR_SRC1_ALPHA
+    static const std::vector<std::string> shortBlendFactorNames{
+        "z",     // VK_BLEND_FACTOR_ZERO = 0,
+        "o",     // VK_BLEND_FACTOR_ONE = 1,
+        "sc",    // VK_BLEND_FACTOR_SRC_COLOR = 2,
+        "1msc",  // VK_BLEND_FACTOR_ONE_MINUS_SRC_COLOR = 3,
+        "dc",    // VK_BLEND_FACTOR_DST_COLOR = 4,
+        "1mdc",  // VK_BLEND_FACTOR_ONE_MINUS_DST_COLOR = 5,
+        "sa",    // VK_BLEND_FACTOR_SRC_ALPHA = 6,
+        "1msa",  // VK_BLEND_FACTOR_ONE_MINUS_SRC_ALPHA = 7,
+        "da",    // VK_BLEND_FACTOR_DST_ALPHA = 8,
+        "1mda",  // VK_BLEND_FACTOR_ONE_MINUS_DST_ALPHA = 9,
+        "cc",    // VK_BLEND_FACTOR_CONSTANT_COLOR = 10,
+        "1mcc",  // VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_COLOR = 11,
+        "ca",    // VK_BLEND_FACTOR_CONSTANT_ALPHA = 12,
+        "1mca",  // VK_BLEND_FACTOR_ONE_MINUS_CONSTANT_ALPHA = 13,
+        "sas",   // VK_BLEND_FACTOR_SRC_ALPHA_SATURATE = 14,
+        "s1c",   // VK_BLEND_FACTOR_SRC1_COLOR = 15,
+        "1ms1c", // VK_BLEND_FACTOR_ONE_MINUS_SRC1_COLOR = 16,
+        "s1a",   // VK_BLEND_FACTOR_SRC1_ALPHA = 17,
+        "1ms1a", // VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA = 18,
     };
 
-    const char *blendOpNames[] = {
+    static const std::vector<std::string> blendOpNames{
         "add",  // VK_BLEND_OP_ADD
         "sub",  // VK_BLEND_OP_SUBTRACT
         "rsub", // VK_BLEND_OP_REVERSE_SUBTRACT
@@ -197,10 +197,12 @@ std::string getBlendStateName(const VkPipelineColorBlendAttachmentState &blendSt
 
     std::ostringstream shortName;
 
-    shortName << "color_" << shortBlendFactorNames[blendState.srcColorBlendFactor] << "_"
-              << shortBlendFactorNames[blendState.dstColorBlendFactor] << "_" << blendOpNames[blendState.colorBlendOp];
-    shortName << "_alpha_" << shortBlendFactorNames[blendState.srcAlphaBlendFactor] << "_"
-              << shortBlendFactorNames[blendState.dstAlphaBlendFactor] << "_" << blendOpNames[blendState.alphaBlendOp];
+    shortName << "color_" << shortBlendFactorNames.at(blendState.srcColorBlendFactor) << "_"
+              << shortBlendFactorNames.at(blendState.dstColorBlendFactor) << "_"
+              << blendOpNames.at(blendState.colorBlendOp);
+    shortName << "_alpha_" << shortBlendFactorNames.at(blendState.srcAlphaBlendFactor) << "_"
+              << shortBlendFactorNames.at(blendState.dstAlphaBlendFactor) << "_"
+              << blendOpNames.at(blendState.alphaBlendOp);
 
     return shortName.str();
 }

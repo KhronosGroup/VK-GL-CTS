@@ -138,7 +138,7 @@ deProcess *deProcess_create(void)
 {
     deProcess *process = (deProcess *)deCalloc(sizeof(deProcess));
     if (!process)
-        return false;
+        return NULL;
 
     process->state = PROCESSSTATE_NOT_STARTED;
 

@@ -5298,7 +5298,7 @@ class AdvancedResourcesMax : public ComputeShaderBase
         if (!CheckProgram(m_program))
             return ERROR;
 
-        glGenBuffers(16, m_storage_buffer);
+        glGenBuffers(8, m_storage_buffer);
         glGenBuffers(12, m_uniform_buffer);
         glGenBuffers(8, m_atomic_buffer);
         glGenBuffers(16, m_texture_buffer);
@@ -5319,7 +5319,7 @@ class AdvancedResourcesMax : public ComputeShaderBase
     {
         glUseProgram(0);
         glDeleteProgram(m_program);
-        glDeleteBuffers(16, m_storage_buffer);
+        glDeleteBuffers(8, m_storage_buffer);
         glDeleteBuffers(12, m_uniform_buffer);
         glDeleteBuffers(8, m_atomic_buffer);
         glDeleteBuffers(16, m_texture_buffer);

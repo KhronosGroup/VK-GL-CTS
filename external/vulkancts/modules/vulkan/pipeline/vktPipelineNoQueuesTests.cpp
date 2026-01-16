@@ -260,6 +260,12 @@ void NoQueuesTestCase::checkSupport(Context &context) const
     if (isTessStage(m_data.stage) && !features.tessellationShader)
         TCU_THROW(NotSupportedError, "Tessellation shaders not supported");
 
+    if ((isTessStage(m_data.stage) || m_data.stage == Stage::STAGE_VERTEX) && !features.vertexPipelineStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "SSBO writes not supported in vertex pipeline");
+
+    if (m_data.stage == Stage::STAGE_FRAGMENT && !features.fragmentStoresAndAtomics)
+        TCU_THROW(NotSupportedError, "SSBO writes not supported in fragment shader");
+
     if (m_data.testType == TT_PIPELINE_BINARY)
     {
         context.requireDeviceFunctionality("VK_KHR_pipeline_binary");
@@ -642,20 +648,21 @@ tcu::TestStatus NoQueuesTestInstance::iterate(void)
     // On iter 1, compile again in device with queues and use the pipeline.
     for (uint32_t iter = 0; iter < 2; ++iter)
     {
-        const uint32_t numQueues                      = (iter == 0) ? 0 : 1;
-        const vk::VkDeviceCreateInfo deviceCreateInfo = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
-                                                         &deviceFeatures2,
-                                                         0u,
+        const uint32_t numQueues                         = (iter == 0) ? 0 : 1;
+        const VkDeviceQueueCreateInfo *pQueueCreateInfos = numQueues > 0 ? &queueCreateInfo : nullptr;
+        const vk::VkDeviceCreateInfo deviceCreateInfo    = {vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO,
+                                                            &deviceFeatures2,
+                                                            0u,
 
-                                                         numQueues,
-                                                         &queueCreateInfo,
+                                                            numQueues,
+                                                            pQueueCreateInfos,
 
-                                                         0u,
-                                                         nullptr,
+                                                            0u,
+                                                            nullptr,
 
-                                                         (uint32_t)extensionPtrs.size(),
+                                                            (uint32_t)extensionPtrs.size(),
                                                          extensionPtrs.empty() ? nullptr : &extensionPtrs[0],
-                                                         0u};
+                                                            0u};
 
         Move<VkDevice> deviceNoQueues = createCustomDevice(
             m_context.getTestContext().getCommandLine().isValidationEnabled(), m_context.getPlatformInterface(),

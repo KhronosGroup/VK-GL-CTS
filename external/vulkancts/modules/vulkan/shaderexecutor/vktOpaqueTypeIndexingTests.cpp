@@ -1009,6 +1009,7 @@ public:
     virtual ~SamplerIndexingCase(void);
 
     virtual TestInstance *createInstance(Context &ctx) const;
+    virtual void checkSupport(Context &context) const;
 
 private:
     SamplerIndexingCase(const SamplerIndexingCase &);
@@ -1036,6 +1037,28 @@ SamplerIndexingCase::SamplerIndexingCase(tcu::TestContext &testCtx, const char *
 
 SamplerIndexingCase::~SamplerIndexingCase(void)
 {
+}
+
+void SamplerIndexingCase::checkSupport(Context &context) const
+{
+    OpaqueTypeIndexingCase::checkSupport(context);
+
+    // VUID-VkImageCreateInfo-imageCreateMaxMipLevels-02251
+    if (m_samplerType == glu::TYPE_SAMPLER_1D_SHADOW || m_samplerType == glu::TYPE_SAMPLER_1D_ARRAY_SHADOW)
+    {
+        const vk::InstanceInterface &vki          = context.getInstanceInterface();
+        const vk::VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+        const vk::VkImageUsageFlags usage = vk::VK_IMAGE_USAGE_SAMPLED_BIT | vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+        vk::VkImageFormatProperties imageFormatProperties;
+        const vk::VkResult result = vki.getPhysicalDeviceImageFormatProperties(
+            physicalDevice, vk::VK_FORMAT_D16_UNORM, vk::VK_IMAGE_TYPE_1D, vk::VK_IMAGE_TILING_OPTIMAL, usage,
+            (vk::VkImageCreateFlags)0, &imageFormatProperties);
+
+        if (result == vk::VK_ERROR_FORMAT_NOT_SUPPORTED)
+            TCU_THROW(NotSupportedError, "VK_FORMAT_D16_UNORM with VK_IMAGE_TYPE_1D not supported");
+    }
 }
 
 TestInstance *SamplerIndexingCase::createInstance(Context &ctx) const

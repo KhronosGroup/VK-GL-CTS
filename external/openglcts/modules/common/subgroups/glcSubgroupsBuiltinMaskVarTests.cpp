@@ -203,6 +203,7 @@ void initFrameBufferPrograms(SourceCollections &programCollection, CaseDefinitio
         const string bdy          = subgroupMask(caseDef);
         const string geometryGLSL = "${VERSION_DECL}\n"
                                     "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                                    "${GEOM_EXTENSION}\n"
                                     "layout(points) in;\n"
                                     "layout(points, max_vertices = 1) out;\n"
                                     "layout(location = 0) out float out_color;\n"
@@ -276,6 +277,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
         {
             const string tesc = "${VERSION_DECL}\n"
                                 "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                                "${TESS_EXTENSION}\n"
                                 "layout(vertices=1) out;\n"
                                 "layout(binding = 1, std430) buffer Output1\n"
                                 "{\n"
@@ -299,6 +301,7 @@ void initPrograms(SourceCollections &programCollection, CaseDefinition caseDef)
         {
             const string tese = "${VERSION_DECL}\n"
                                 "#extension GL_KHR_shader_subgroup_ballot: enable\n"
+                                "${TESS_EXTENSION}\n"
                                 "layout(isolines) in;\n"
                                 "layout(binding = 2, std430) buffer Output2\n"
                                 "{\n"

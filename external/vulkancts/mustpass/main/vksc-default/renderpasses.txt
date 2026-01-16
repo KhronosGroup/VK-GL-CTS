@@ -8998,6 +8998,8 @@ dEQP-VKSC.renderpasses.renderpass1.suballocation.attachment_write_mask.attachmen
 dEQP-VKSC.renderpasses.renderpass1.suballocation.attachment_write_mask.attachment_count_8.start_index_5
 dEQP-VKSC.renderpasses.renderpass1.suballocation.attachment_write_mask.attachment_count_8.start_index_6
 dEQP-VKSC.renderpasses.renderpass1.suballocation.attachment_write_mask.attachment_count_8.start_index_7
+dEQP-VKSC.renderpasses.renderpass1.suballocation.clear_some_attachments.clear_only_color
+dEQP-VKSC.renderpasses.renderpass1.suballocation.clear_some_attachments.clear_only_depth
 dEQP-VKSC.renderpasses.renderpass1.suballocation.formats.a2b10g10r10_uint_pack32.clear.clear
 dEQP-VKSC.renderpasses.renderpass1.suballocation.formats.a2b10g10r10_uint_pack32.clear.clear_draw
 dEQP-VKSC.renderpasses.renderpass1.suballocation.formats.a2b10g10r10_uint_pack32.clear.draw
@@ -42636,6 +42638,8 @@ dEQP-VKSC.renderpasses.renderpass2.suballocation.attachment_write_mask.attachmen
 dEQP-VKSC.renderpasses.renderpass2.suballocation.attachment_write_mask.attachment_count_8.start_index_5
 dEQP-VKSC.renderpasses.renderpass2.suballocation.attachment_write_mask.attachment_count_8.start_index_6
 dEQP-VKSC.renderpasses.renderpass2.suballocation.attachment_write_mask.attachment_count_8.start_index_7
+dEQP-VKSC.renderpasses.renderpass2.suballocation.clear_some_attachments.clear_only_color
+dEQP-VKSC.renderpasses.renderpass2.suballocation.clear_some_attachments.clear_only_depth
 dEQP-VKSC.renderpasses.renderpass2.suballocation.formats.a2b10g10r10_uint_pack32.clear.clear
 dEQP-VKSC.renderpasses.renderpass2.suballocation.formats.a2b10g10r10_uint_pack32.clear.clear_draw
 dEQP-VKSC.renderpasses.renderpass2.suballocation.formats.a2b10g10r10_uint_pack32.clear.draw

@@ -400,9 +400,7 @@ tcu::TestStatus FSITestInstance::iterate(void)
         vk, device, allocator,
         makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
                                              VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
-        MemoryRequirement::HostVisible));
-
-    flushAlloc(vk, device, buffer->getAllocation());
+        MemoryRequirement::Local));
 
     const VkQueue queue             = getDeviceQueue(vk, device, m_context.getUniversalQueueFamilyIndex(), 0);
     Move<VkCommandPool> cmdPool     = createCommandPool(vk, device, 0, m_context.getUniversalQueueFamilyIndex());

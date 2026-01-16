@@ -32,6 +32,7 @@
 #include "vktPipelineMultisampleResolveRenderAreaTests.hpp"
 #include "vktPipelineMultisampleShaderFragmentMaskTests.hpp"
 #include "vktPipelineMultisampledRenderToSingleSampledTests.hpp"
+#include "vktPipelineMultisampleResolveMaint10Tests.hpp"
 #include "vktPipelineClearUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
@@ -7647,6 +7648,9 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         // Sampling from a multisampled image texture (texelFetch)
         multisampleTests->addChild(createMultisampleSampledImageTests(testCtx, pipelineConstructionType));
 
+        // Sampling from a multisampled image texture (texelFetch)
+        multisampleTests->addChild(createMultisample3dImageTests(testCtx, pipelineConstructionType));
+
         // Load/store on a multisampled rendered image (different kinds of access: color attachment write, storage image, etc.)
         multisampleTests->addChild(createMultisampleStorageImageTests(testCtx, pipelineConstructionType));
 
@@ -7715,6 +7719,15 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
         }
         multisampleTests->addChild(sampleMaskWithDepthTestGroup.release());
     }
+
+    if ((pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+         pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+         pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV) &&
+        !useFragmentShadingRate)
+    {
+        multisampleTests->addChild(createMultisampleResolveMaint10Tests(testCtx, pipelineConstructionType));
+    }
+
 #endif // CTS_USES_VULKANSC
 
     // Input attachments are not supported with dynamic rendering and shader objects

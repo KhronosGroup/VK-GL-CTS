@@ -602,6 +602,17 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         imageSparseInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
     }
 
+    // Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views
+    if (formatDescription.numPlanes > 1)
+    {
+        imageSparseInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        // EXTENDED_USAGE is required for storage usage on plane-compatible views
+        if (imageSparseInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
+        {
+            imageSparseInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+        }
+    }
+
     checkSupport(imageSparseInfo);
 
     {
@@ -638,6 +649,17 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
     if (m_imageType == IMAGE_TYPE_CUBE || m_imageType == IMAGE_TYPE_CUBE_ARRAY)
     {
         imageTexelsInfo.flags |= VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT;
+    }
+
+    // Multi-planar formats require MUTABLE_FORMAT to create plane-compatible views
+    if (formatDescription.numPlanes > 1)
+    {
+        imageTexelsInfo.flags |= VK_IMAGE_CREATE_MUTABLE_FORMAT_BIT;
+        // EXTENDED_USAGE is required for storage usage on plane-compatible views
+        if (imageTexelsInfo.usage & VK_IMAGE_USAGE_STORAGE_BIT)
+        {
+            imageTexelsInfo.flags |= VK_IMAGE_CREATE_EXTENDED_USAGE_BIT;
+        }
     }
 
     checkImageSupport(instance, physicalDevice, imageTexelsInfo);
@@ -881,6 +903,15 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
     imageResidencyInfo        = imageTexelsInfo;
     imageResidencyInfo.format = mapTextureFormat(m_residencyFormat);
 
+    // For multi-planar sparse formats with single-plane residency format (e.g., R32_UINT),
+    // use array layers to separate per-plane residency data
+    const PlanarFormatDescription residencyFormatDescription = getPlanarFormatDescription(imageResidencyInfo.format);
+    const bool useArrayLayersForPlanes = (formatDescription.numPlanes > 1 && residencyFormatDescription.numPlanes == 1);
+    if (useArrayLayersForPlanes)
+    {
+        imageResidencyInfo.arrayLayers = imageSparseInfo.arrayLayers * formatDescription.numPlanes;
+    }
+
     {
         VkImageFormatProperties imageFormatProperties;
         if (instance.getPhysicalDeviceImageFormatProperties(physicalDevice, imageResidencyInfo.format,
@@ -950,12 +981,13 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         {
             const uint32_t mipLevelSizeinBytes = getImageMipLevelSizeInBytes(
                 imageSparseInfo.extent, imageSparseInfo.arrayLayers, formatDescription, planeNdx, mipmapNdx);
-            const uint32_t bufferOffset = static_cast<uint32_t>(bufferImageSparseCopy[mipmapNdx].bufferOffset);
+            const uint32_t bufferOffset = static_cast<uint32_t>(
+                bufferImageSparseCopy[planeNdx * imageSparseInfo.mipLevels + mipmapNdx].bufferOffset);
 
             if (formatIsR64(m_format) && (m_function == SPARSE_SAMPLE_EXPLICIT_LOD ||
                                           m_function == SPARSE_SAMPLE_IMPLICIT_LOD || m_function == SPARSE_GATHER))
             {
-                for (uint32_t byteNdx = 0u; byteNdx < mipLevelSizeinBytes / 8; byteNdx += 8)
+                for (uint32_t byteNdx = 0u; byteNdx < mipLevelSizeinBytes; byteNdx += 8)
                 {
                     void *prtData                       = &referenceData[bufferOffset + byteNdx];
                     *(static_cast<uint64_t *>(prtData)) = (uint64_t)((mipmapNdx + byteNdx) % 0x0FFFFFFF);
@@ -1024,9 +1056,19 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
                                          *bufferTexels, static_cast<uint32_t>(bufferImageSparseCopy.size()),
                                          bufferImageSparseCopy.data());
 
-    const uint32_t imageResidencySizeInBytes =
-        getImageSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_residencyFormat,
-                            imageSparseInfo.mipLevels, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY);
+    // Calculate residency buffer size accounting for all planes
+    uint32_t imageResidencySizeInBytes = 0;
+    for (uint32_t planeNdx = 0; planeNdx < formatDescription.numPlanes; ++planeNdx)
+    {
+        for (uint32_t mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
+        {
+            // Note: getPlaneExtent already returns the mip-level-specific extent, so pass 0 to avoid double mipmap reduction
+            const VkExtent3D planeExtent =
+                vk::getPlaneExtent(formatDescription, imageSparseInfo.extent, planeNdx, mipmapNdx);
+            imageResidencySizeInBytes += getImageMipLevelSizeInBytes(
+                planeExtent, imageSparseInfo.arrayLayers, m_residencyFormat, 0, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY);
+        }
+    }
 
     const VkBufferCreateInfo bufferResidencyCreateInfo =
         makeBufferCreateInfo(imageResidencySizeInBytes, VK_BUFFER_USAGE_TRANSFER_DST_BIT);
@@ -1041,25 +1083,29 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
         uint32_t bufferOffset = 0u;
         for (uint32_t planeNdx = 0u; planeNdx < formatDescription.numPlanes; ++planeNdx)
         {
-            const VkImageAspectFlags aspect =
-                (formatDescription.numPlanes > 1) ? getPlaneAspect(planeNdx) : VK_IMAGE_ASPECT_COLOR_BIT;
+            // Determine aspect and base layer based on residency format
+            // Single-plane residency formats (like R32_UINT) always use COLOR aspect
+            const VkImageAspectFlags residencyAspect =
+                (residencyFormatDescription.numPlanes == 1) ? VK_IMAGE_ASPECT_COLOR_BIT : getPlaneAspect(planeNdx);
+            const uint32_t residencyBaseLayer = useArrayLayersForPlanes ? (planeNdx * imageSparseInfo.arrayLayers) : 0u;
 
             for (uint32_t mipmapNdx = 0u; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
             {
+                const VkExtent3D planeExtent =
+                    vk::getPlaneExtent(formatDescription, imageSparseInfo.extent, planeNdx, mipmapNdx);
                 bufferImageResidencyCopy[planeNdx * imageSparseInfo.mipLevels + mipmapNdx] = {
                     bufferOffset, // VkDeviceSize bufferOffset;
                     0u,           // uint32_t bufferRowLength;
                     0u,           // uint32_t bufferImageHeight;
                     makeImageSubresourceLayers(
-                        aspect, mipmapNdx, 0u,
+                        residencyAspect, mipmapNdx, residencyBaseLayer,
                         imageSparseInfo.arrayLayers), // VkImageSubresourceLayers imageSubresource;
                     makeOffset3D(0, 0, 0),            // VkOffset3D imageOffset;
-                    vk::getPlaneExtent(formatDescription, imageSparseInfo.extent, planeNdx,
-                                       mipmapNdx) // VkExtent3D imageExtent;
+                    planeExtent                       // VkExtent3D imageExtent;
                 };
-                bufferOffset +=
-                    getImageMipLevelSizeInBytes(imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_residencyFormat,
-                                                mipmapNdx, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY);
+                // Note: getPlaneExtent already returns the mip-level-specific extent, so pass 0 to avoid double mipmap reduction
+                bufferOffset += getImageMipLevelSizeInBytes(planeExtent, imageSparseInfo.arrayLayers, m_residencyFormat,
+                                                            0, BUFFER_IMAGE_COPY_OFFSET_GRANULARITY);
             }
         }
     }
@@ -1103,8 +1149,12 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
     {
         for (uint32_t mipmapNdx = 0; mipmapNdx < imageSparseInfo.mipLevels; ++mipmapNdx)
         {
-            const uint32_t mipLevelSizeInBytes = getImageMipLevelSizeInBytes(
-                imageSparseInfo.extent, imageSparseInfo.arrayLayers, m_residencyFormat, mipmapNdx);
+            // Calculate size using plane-specific extent (residency buffer was created per-plane)
+            // Note: getPlaneExtent already returns the mip-level-specific extent, so pass 0 to avoid double mipmap reduction
+            const VkExtent3D planeExtent =
+                vk::getPlaneExtent(formatDescription, imageSparseInfo.extent, planeNdx, mipmapNdx);
+            const uint32_t mipLevelSizeInBytes =
+                getImageMipLevelSizeInBytes(planeExtent, imageSparseInfo.arrayLayers, m_residencyFormat, 0);
             const uint32_t pixelOffsetAligned =
                 static_cast<uint32_t>(
                     bufferImageResidencyCopy[planeNdx * imageSparseInfo.mipLevels + mipmapNdx].bufferOffset) /
@@ -1112,7 +1162,8 @@ tcu::TestStatus SparseShaderIntrinsicsInstanceBase::iterate(void)
 
             if (deMemCmp(&bufferResidencyData[pixelOffsetAligned], &residencyReferenceData[pixelOffsetNotAligned],
                          mipLevelSizeInBytes) != 0)
-                return tcu::TestStatus::fail("Failed");
+                return tcu::TestStatus::fail("Residency comparison failed for plane=" + de::toString(planeNdx) +
+                                             " mipmap=" + de::toString(mipmapNdx));
 
             pixelOffsetNotAligned += mipLevelSizeInBytes / tcu::getPixelSize(m_residencyFormat);
         }

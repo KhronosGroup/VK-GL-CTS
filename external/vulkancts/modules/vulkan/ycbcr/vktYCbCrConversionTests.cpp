@@ -34,6 +34,7 @@
 #include "vkRefUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkQueryUtil.hpp"
+#include "vkFormatLists.hpp"
 
 #include "tcuInterval.hpp"
 #include "tcuTestLog.hpp"
@@ -1279,7 +1280,7 @@ const vk::VkComponentMapping &getIdentitySwizzle(void)
 
 struct YCbCrConversionTestBuilder
 {
-    const std::vector<vk::VkFormat> noChromaSubsampledFormats = {
+    const std::vector<vk::VkFormat> noChromaSubsampledFormats{
         vk::VK_FORMAT_R4G4B4A4_UNORM_PACK16,
         vk::VK_FORMAT_B4G4R4A4_UNORM_PACK16,
         vk::VK_FORMAT_R5G6B5_UNORM_PACK16,
@@ -1311,35 +1312,7 @@ struct YCbCrConversionTestBuilder
         vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_444_UNORM_3PACK16_EXT,
         vk::VK_FORMAT_G16_B16R16_2PLANE_444_UNORM_EXT,
     };
-    const std::vector<vk::VkFormat> xChromaSubsampledFormats = {
-        vk::VK_FORMAT_G8B8G8R8_422_UNORM,
-        vk::VK_FORMAT_B8G8R8G8_422_UNORM,
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_422_UNORM,
 
-        vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_422_UNORM_3PACK16,
-        vk::VK_FORMAT_G16B16G16R16_422_UNORM,
-        vk::VK_FORMAT_B16G16R16G16_422_UNORM,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_422_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_422_UNORM,
-    };
-    const std::vector<vk::VkFormat> xyChromaSubsampledFormats = {
-        vk::VK_FORMAT_G8_B8_R8_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G8_B8R8_2PLANE_420_UNORM,
-        vk::VK_FORMAT_G10X6_B10X6_R10X6_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G10X6_B10X6R10X6_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4_R12X4_3PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G12X4_B12X4R12X4_2PLANE_420_UNORM_3PACK16,
-        vk::VK_FORMAT_G16_B16_R16_3PLANE_420_UNORM,
-        vk::VK_FORMAT_G16_B16R16_2PLANE_420_UNORM,
-    };
     struct ColorModelStruct
     {
         const char *const name;
@@ -1392,9 +1365,8 @@ struct YCbCrConversionTestBuilder
         de::Random rng(1978765638u);
 
         // Test formats without chroma reconstruction
-        for (size_t formatNdx = 0; formatNdx < noChromaSubsampledFormats.size(); formatNdx++)
+        for (auto format : noChromaSubsampledFormats)
         {
-            const vk::VkFormat format(noChromaSubsampledFormats[formatNdx]);
             const std::string formatName(de::toLower(std::string(getFormatName(format)).substr(10)));
             de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
             const UVec2 srcSize(isXChromaSubsampled(format) ? 12 : 7, isYChromaSubsampled(format) ? 8 : 13);
@@ -1519,9 +1491,8 @@ struct YCbCrConversionTestBuilder
         }
 
         // Test formats with x chroma reconstruction
-        for (size_t formatNdx = 0; formatNdx < xChromaSubsampledFormats.size(); formatNdx++)
+        for (auto format : formats::xChromaSubsampledFormats)
         {
-            const vk::VkFormat format(xChromaSubsampledFormats[formatNdx]);
             const std::string formatName(de::toLower(std::string(getFormatName(format)).substr(10)));
             de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
             const UVec2 srcSize(isXChromaSubsampled(format) ? 12 : 7, isYChromaSubsampled(format) ? 8 : 13);
@@ -1826,9 +1797,8 @@ struct YCbCrConversionTestBuilder
         }
 
         // Test formats with xy chroma reconstruction
-        for (size_t formatNdx = 0; formatNdx < xyChromaSubsampledFormats.size(); formatNdx++)
+        for (auto format : formats::xyChromaSubsampledFormats)
         {
-            const vk::VkFormat format(xyChromaSubsampledFormats[formatNdx]);
             const std::string formatName(de::toLower(std::string(getFormatName(format)).substr(10)));
             de::MovePtr<tcu::TestCaseGroup> formatGroup(new tcu::TestCaseGroup(testCtx, formatName.c_str()));
             const UVec2 srcSize(isXChromaSubsampled(format) ? 12 : 7, isYChromaSubsampled(format) ? 8 : 13);

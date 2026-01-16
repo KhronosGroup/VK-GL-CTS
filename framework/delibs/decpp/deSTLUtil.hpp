@@ -47,6 +47,12 @@ inline bool contains(const C &container, const typename C::key_type &item)
     return (it != container.end());
 }
 
+template <typename T>
+inline bool contains(const std::vector<T> &container, const T &value)
+{
+    return std::find(std::begin(container), std::end(container), value) != std::end(container);
+}
+
 template <typename I, typename K>
 inline bool contains(const I &begin, const I &end, const K &item)
 {

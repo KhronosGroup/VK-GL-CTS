@@ -290,12 +290,14 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
         binaries.get(storageBufferStage == vk::VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT ? "tese2" : "tese");
     const auto &geom = binaries.get(storageBufferStage == vk::VK_SHADER_STAGE_GEOMETRY_BIT ? "geom2" : "geom");
     const auto &frag = binaries.get("frag");
+    const auto &comp = binaries.get("comp2");
 
-    vk::VkShaderEXT vertShader;
-    vk::VkShaderEXT tescShader;
-    vk::VkShaderEXT teseShader;
-    vk::VkShaderEXT geomShader;
-    vk::VkShaderEXT fragShader;
+    vk::VkShaderEXT vertShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT tescShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT teseShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT geomShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT fragShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT compShader = VK_NULL_HANDLE;
 
     std::vector<vk::VkShaderCreateInfoEXT> shaderCreateInfos;
 
@@ -389,6 +391,13 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
         vk.createShadersEXT(device, 1, &fragShaderCreateInfo, nullptr, &fragShader);
     }
 
+    vk::VkShaderCreateInfoEXT compShaderCreateInfo =
+        vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, comp, tessellationSupported, geometrySupported);
+    if (!shaderCreateInfos.empty())
+    {
+        shaderCreateInfos.push_back(compShaderCreateInfo);
+    }
+
     vk::VkPrimitiveTopology primitiveTopology = m_params.shaders.tesellation_control != UNUSED ?
                                                     vk::VK_PRIMITIVE_TOPOLOGY_PATCH_LIST :
                                                     vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
@@ -442,6 +451,7 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
         {
             fragShader = shaders[n++];
         }
+        compShader = shaders[n++];
     }
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
@@ -636,6 +646,9 @@ tcu::TestStatus ShaderObjectLinkInstance::iterate(void)
     if (m_params.shaders.fragment != UNUSED)
         vk.destroyShaderEXT(device, fragShader, nullptr);
 
+    if (compShader != VK_NULL_HANDLE)
+        vk.destroyShaderEXT(device, compShader, nullptr);
+
     tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
         vk::mapVkFormat(colorAttachmentFormat), renderArea.extent.width, renderArea.extent.height, 1,
         (const void *)colorOutputBuffer->getAllocation().getHostPtr());
@@ -738,6 +751,7 @@ void ShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollection
     std::stringstream vert;
     std::stringstream tese;
     std::stringstream geom;
+    std::stringstream comp;
 
     vert << "#version 450\n"
          << "layout (binding = 0) buffer Result { uint result[4]; };\n"
@@ -797,9 +811,15 @@ void ShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollection
          << "    }\n"
          << "}\n";
 
+    comp << "#version 450\n"
+         << "layout(local_size_x=16, local_size_x=16, local_size_x=1) in;\n"
+         << "void main() {\n"
+         << "}\n";
+
     programCollection.glslSources.add("vert2") << glu::VertexSource(vert.str());
     programCollection.glslSources.add("tese2") << glu::TessellationEvaluationSource(tese.str());
     programCollection.glslSources.add("geom2") << glu::GeometrySource(geom.str());
+    programCollection.glslSources.add("comp2") << glu::ComputeSource(comp.str());
 }
 
 class MeshShaderObjectLinkInstance : public vkt::TestInstance
@@ -917,10 +937,12 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
     const auto &task     = binaries.get("task");
     const auto &mesh     = binaries.get("mesh");
     const auto &frag     = binaries.get("frag");
+    const auto &comp     = binaries.get("comp2");
 
-    vk::VkShaderEXT taskShader;
-    vk::VkShaderEXT meshShader;
-    vk::VkShaderEXT fragShader;
+    vk::VkShaderEXT taskShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT meshShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT fragShader = VK_NULL_HANDLE;
+    vk::VkShaderEXT compShader = VK_NULL_HANDLE;
 
     std::vector<vk::VkShaderCreateInfoEXT> shaderCreateInfos;
 
@@ -1007,6 +1029,13 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
         vk.createShadersEXT(device, 1, &fragShaderCreateInfo, nullptr, &fragShader);
     }
 
+    vk::VkShaderCreateInfoEXT compShaderCreateInfo =
+        vk::makeShaderCreateInfo(vk::VK_SHADER_STAGE_COMPUTE_BIT, comp, false, false);
+    if (!shaderCreateInfos.empty())
+    {
+        shaderCreateInfos.push_back(compShaderCreateInfo);
+    }
+
     if (!shaderCreateInfos.empty())
     {
         std::vector<vk::VkShaderEXT> shaders(shaderCreateInfos.size());
@@ -1040,6 +1069,7 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
         {
             fragShader = shaders[n++];
         }
+        compShader = shaders[n++];
     }
 
     const vk::VkCommandPoolCreateInfo cmdPoolInfo = {
@@ -1154,6 +1184,9 @@ tcu::TestStatus MeshShaderObjectLinkInstance::iterate(void)
     if (m_params.shaders.fragment != UNUSED)
         vk.destroyShaderEXT(device, fragShader, nullptr);
 
+    if (compShader != VK_NULL_HANDLE)
+        vk.destroyShaderEXT(device, compShader, nullptr);
+
     if (m_params.shaders.fragment != UNUSED)
     {
         tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
@@ -1226,6 +1259,7 @@ void MeshShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollec
     std::stringstream task;
     std::stringstream mesh;
     std::stringstream frag;
+    std::stringstream comp;
 
     task << "#version 450\n"
          << "#extension GL_EXT_mesh_shader : enable\n"
@@ -1262,6 +1296,11 @@ void MeshShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollec
          << "    outColor = vec4(1.0f);\n"
          << "}\n";
 
+    comp << "#version 450\n"
+         << "layout(local_size_x=16, local_size_x=16, local_size_x=1) in;\n"
+         << "void main() {\n"
+         << "}\n";
+
     programCollection.glslSources.add("task")
         << glu::TaskSource(task.str())
         << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
@@ -1269,6 +1308,7 @@ void MeshShaderObjectLinkCase::initPrograms(vk::SourceCollections &programCollec
         << glu::MeshSource(mesh.str())
         << vk::ShaderBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
     programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    programCollection.glslSources.add("comp2") << glu::ComputeSource(comp.str());
 }
 
 void MeshShaderObjectLinkCase::checkSupport(Context &context) const

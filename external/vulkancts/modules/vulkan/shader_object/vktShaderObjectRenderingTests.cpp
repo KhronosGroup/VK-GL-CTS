@@ -30,6 +30,7 @@
 #include "vkImageUtil.hpp"
 #include "vktShaderObjectCreateUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkFormatLists.hpp"
 #include "deRandom.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkBarrierUtil.hpp"
@@ -322,7 +323,7 @@ public:
 private:
     void chooseDevice();
     void beginRendering(vk::VkCommandBuffer cmdBuffer);
-    void createDummyImage(void);
+    void createDummyImage(vk::VkCommandBuffer cmdBuffer);
     void createDummyRenderPass(void);
     void setColorFormats(const vk::InstanceDriver &vki);
     void generateExpectedImage(const tcu::PixelBufferAccess &outputImage, const uint32_t width, const uint32_t height,
@@ -348,7 +349,7 @@ private:
     vk::Move<vk::VkFramebuffer> m_dummyFramebuffer;
 };
 
-void ShaderObjectRenderingInstance::createDummyImage(void)
+void ShaderObjectRenderingInstance::createDummyImage(vk::VkCommandBuffer cmdBuffer)
 {
     const vk::DeviceInterface &vk    = *m_deviceInterface;
     const vk::VkDevice device        = m_device;
@@ -380,6 +381,13 @@ void ShaderObjectRenderingInstance::createDummyImage(void)
         new vk::ImageWithMemory(vk, device, alloc, createInfo, vk::MemoryRequirement::Any));
     m_dummyImageView =
         vk::makeImageView(vk, device, **m_dummyImage, vk::VK_IMAGE_VIEW_TYPE_2D, format, colorSubresourceRange);
+
+    vk::VkImageMemoryBarrier imageMemoryBarrier = vk::makeImageMemoryBarrier(
+        vk::VK_ACCESS_NONE, vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+        vk::VK_IMAGE_LAYOUT_GENERAL, **m_dummyImage, colorSubresourceRange);
+    vk.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                          vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u,
+                          nullptr, 1u, &imageMemoryBarrier);
 }
 
 void ShaderObjectRenderingInstance::createDummyRenderPass(void)
@@ -857,13 +865,13 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 
     if (m_params.dummyRenderPass == DUMMY_DYNAMIC)
     {
-        createDummyImage();
+        createDummyImage(*cmdBuffer);
         const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
         vk::beginRendering(vk, *cmdBuffer, *m_dummyImageView, m_renderArea, clearValue);
     }
     else if (m_params.dummyRenderPass == DUMMY_STATIC)
     {
-        createDummyImage();
+        createDummyImage(*cmdBuffer);
         createDummyRenderPass();
         const vk::VkClearValue clearValue = vk::makeClearValueColor({0.0f, 0.0f, 0.0f, 1.0f});
         vk::beginRenderPass(vk, *cmdBuffer, *m_dummyRenderPass, *m_dummyFramebuffer, m_renderArea, clearValue);
@@ -971,9 +979,12 @@ tcu::TestStatus ShaderObjectRenderingInstance::iterate(void)
 
     std::vector<tcu::ConstPixelBufferAccess> colorResultBuffers;
     for (uint32_t i = 0; i < colorAttachmentCount; ++i)
+    {
+        invalidateAlloc(vk, device, colorOutputBuffers[i]->getAllocation());
         colorResultBuffers.push_back(tcu::ConstPixelBufferAccess(
             vk::mapVkFormat(m_colorFormats[i]), m_renderArea.extent.width, m_renderArea.extent.height, 1,
             (const void *)colorOutputBuffers[i]->getAllocation().getHostPtr()));
+    }
 
     const uint32_t width   = m_renderArea.extent.width;
     const uint32_t height  = m_renderArea.extent.height;
@@ -1224,11 +1235,6 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                             {2u, BETWEEN, "extra_output_between_2"},
                             {2u, AFTER, "extra_output_after_2"}};
 
-    const vk::VkFormat depthStencilFormats[] = {
-        vk::VK_FORMAT_D16_UNORM,         vk::VK_FORMAT_X8_D24_UNORM_PACK32, vk::VK_FORMAT_D32_SFLOAT,
-        vk::VK_FORMAT_D16_UNORM_S8_UINT, vk::VK_FORMAT_D24_UNORM_S8_UINT,   vk::VK_FORMAT_D32_SFLOAT_S8_UINT,
-    };
-
     const struct
     {
         DummyRenderPass dummyRenderPass;
@@ -1308,9 +1314,8 @@ tcu::TestCaseGroup *createShaderObjectRenderingTests(tcu::TestContext &testCtx)
                                     if (writeGlFragDepth)
                                         continue;
 
-                                    for (uint32_t j = 0; j < DE_LENGTH_OF_ARRAY(depthStencilFormats); ++j)
+                                    for (const auto depthFormat : formats::depthFormats)
                                     {
-                                        const auto depthFormat    = depthStencilFormats[j];
                                         params.useDepthAttachment = true;
                                         params.depthFormat        = depthFormat;
 

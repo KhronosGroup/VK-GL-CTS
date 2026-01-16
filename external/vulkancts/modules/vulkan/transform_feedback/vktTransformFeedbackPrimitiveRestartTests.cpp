@@ -35,6 +35,7 @@
 #include <limits>
 #include <sstream>
 #include <utility>
+#include <cassert>
 
 namespace vkt
 {
@@ -257,33 +258,17 @@ tcu::TestStatus PrimitiveRestartInstance::iterate(void)
         tcu::Vec4(2000.0f, 2000.0f, 2000.0f ,2000.0f),
         tcu::Vec4(3000.0f, 3000.0f, 3000.0f ,3000.0f),
         tcu::Vec4(4000.0f, 4000.0f, 4000.0f ,4000.0f),
-
-        // Padding in case primitives are not restarted properly.
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
-        tcu::Vec4(0.0f, 0.0f, 0.0f, 0.0f),
     };
     // clang-format on
 
-    std::vector<tcu::Vec4> actualResults(expectedResults.size(), {0.0f, 0.0f, 0.0f, 0.0f});
-
-    // Transform feedback buffer.
-    const auto xfbBufferSize   = static_cast<VkDeviceSize>(de::dataSize(actualResults));
+    // Transform feedback buffer. Include some padding in case primitives are not restarted properly
+    const auto xfbBufferSize   = de::dataSize(expectedResults) + 12 * sizeof(tcu::Vec4);
     const auto xfbBufferInfo   = makeBufferCreateInfo(xfbBufferSize, VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
     const auto xfbBufferOffset = static_cast<VkDeviceSize>(0);
     BufferWithMemory xfbBuffer(ctx.vkd, ctx.device, ctx.allocator, xfbBufferInfo, MemoryRequirement::HostVisible);
     {
         auto &alloc = xfbBuffer.getAllocation();
-        memcpy(alloc.getHostPtr(), de::dataOrNull(actualResults), de::dataSize(actualResults));
+        memset(alloc.getHostPtr(), 0, xfbBufferSize);
     }
 
     // Transform feedback counter buffer.
@@ -364,37 +349,66 @@ tcu::TestStatus PrimitiveRestartInstance::iterate(void)
     invalidateAlloc(ctx.vkd, ctx.device, xfbCounterBuffer.getAllocation());
     invalidateAlloc(ctx.vkd, ctx.device, xfbBuffer.getAllocation());
 
-    const uint32_t expectedPositions = 15u; // The first part of expectedResults before the padding.
-    const uint32_t expectedCounter   = expectedPositions * DE_SIZEOF32(tcu::Vec4);
-    uint32_t counter                 = 0u;
+    const size_t expectedPositions = expectedResults.size();
+    const size_t expectedCounter   = expectedPositions * sizeof(tcu::Vec4);
+
+    uint32_t counter = 0u;
     memcpy(&counter, xfbCounterBuffer.getAllocation().getHostPtr(), sizeof(counter));
 
-    if (counter != expectedCounter)
+    // Degenerate triangles may not be written out, so a lower counter could be valid. This will
+    // be checked below, but check the upper bound here so that we can copy data safely.
+    if (counter > expectedCounter)
     {
         std::ostringstream msg;
         msg << "Unexpected value in XFB counter buffer: got " << counter << " and expected " << expectedCounter;
         TCU_FAIL(msg.str());
     }
 
+    std::vector<tcu::Vec4> actualResults(expectedResults.size(), {0.0f, 0.0f, 0.0f, 0.0f});
+    memcpy(actualResults.data(), xfbBuffer.getAllocation().getHostPtr(), de::dataSize(actualResults));
+
     bool fail = false;
     auto &log = m_context.getTestContext().getLog();
 
-    memcpy(de::dataOrNull(actualResults), xfbBuffer.getAllocation().getHostPtr(), de::dataSize(actualResults));
-    for (uint32_t i = 0u; i < expectedPositions; ++i)
-    {
-        const auto &ref = expectedResults.at(i);
-        const auto &res = actualResults.at(i);
+    // Should be a whole number of triangles in the result.
+    assert(expectedPositions % 3 == 0);
 
-        if (ref != res)
+    uint32_t degenSkip = 0;
+    for (uint32_t i = 0u; i < expectedPositions / 3; ++i)
+    {
+        const tcu::Vec4 *ref = &expectedResults[3 * i];
+        const tcu::Vec4 *res = &actualResults[3 * (i - degenSkip)];
+
+        if (ref[0] != res[0] || ref[1] != res[1] || ref[2] != res[2])
         {
+            // Check for degeneracy. If the triangle is degenerate then assume that it
+            // was skipped in the output and skip it here.
+            if (ref[0] == ref[1] || ref[0] == ref[2] || ref[1] == ref[2])
+            {
+                degenSkip++;
+                continue;
+            }
+
             std::ostringstream msg;
             msg << "Unexpected gl_Position value at index " << i << ": expected " << ref << " and got " << res;
             log << tcu::TestLog::Message << msg.str() << tcu::TestLog::EndMessage;
             fail = true;
         }
     }
+
+    if (counter != expectedCounter - degenSkip * 3 * sizeof(tcu::Vec4))
+    {
+        std::ostringstream msg;
+        msg << "Unexpected value in XFB counter buffer: got " << counter << " and expected " << expectedCounter;
+        TCU_FAIL(msg.str());
+    }
+
     if (fail)
         TCU_FAIL("Unexpected results in XFB buffer; check log for details --");
+
+    if (degenSkip != 0)
+        return tcu::TestStatus(QP_TEST_RESULT_QUALITY_WARNING,
+                               "Some degenerate primitives were skipped in the output buffer");
 
     return tcu::TestStatus::pass("Pass");
 }

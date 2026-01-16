@@ -1025,8 +1025,10 @@ RenderPassWrapper RenderPassWrapper::clone() const
 
 #ifndef CTS_USES_VULKANSC
 
-void RenderPassWrapper::clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const
+bool RenderPassWrapper::clearAttachments(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const
 {
+    bool didClear = false;
+
     for (uint32_t i = 0; i < (uint32_t)m_attachments.size() && i < (uint32_t)m_clearValues.size(); ++i)
     {
         const auto tcuFormat  = vk::mapVkFormat(m_attachments[i].format);
@@ -1061,7 +1063,10 @@ void RenderPassWrapper::clearAttachments(const DeviceInterface &vk, const VkComm
 
         vk.cmdBeginRendering(commandBuffer, &renderingInfo);
         vk.cmdEndRendering(commandBuffer);
+        didClear = true;
     }
+
+    return didClear;
 }
 
 void RenderPassWrapper::updateLayout(VkImage updatedImage, VkImageLayout newLayout) const
@@ -1401,7 +1406,21 @@ void RenderPassWrapper::begin(const DeviceInterface &vk, const VkCommandBuffer c
         m_renderingInfo.layerCount = m_layers;
         m_renderingInfo.viewMask   = 0x0;
 
-        clearAttachments(vk, commandBuffer);
+        if (clearAttachments(vk, commandBuffer))
+        {
+            // Make sure clears take place before loads at beginRendering time.
+            const auto srcAccess =
+                (VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT);
+            const auto dstAccess = (VK_ACCESS_COLOR_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT);
+            const auto srcStages =
+                (VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                 VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT);
+            const auto dstStages        = srcStages;
+            const auto clearLoadBarrier = makeMemoryBarrier(srcAccess, dstAccess);
+
+            vk.cmdPipelineBarrier(commandBuffer, srcStages, dstStages, 0u, 1u, &clearLoadBarrier, 0u, nullptr, 0u,
+                                  nullptr);
+        }
 
         beginRendering(vk, commandBuffer);
 #endif
@@ -1519,33 +1538,72 @@ void RenderPassWrapper::end(const DeviceInterface &vk, const VkCommandBuffer com
     }
 }
 
+#ifndef CTS_USES_VULKANSC
+VkRenderingAttachmentFlagsKHR attDescriptionFlags2RenderingAttFlags(VkAttachmentDescriptionFlags flags)
+{
+    VkRenderingAttachmentFlagsKHR resultFlags = 0u;
+
+    if (flags & VK_ATTACHMENT_DESCRIPTION_RESOLVE_ENABLE_TRANSFER_FUNCTION_BIT_KHR)
+        resultFlags |= VK_RENDERING_ATTACHMENT_RESOLVE_ENABLE_TRANSFER_FUNCTION_BIT_KHR;
+
+    if (flags & VK_ATTACHMENT_DESCRIPTION_RESOLVE_SKIP_TRANSFER_FUNCTION_BIT_KHR)
+        resultFlags |= VK_RENDERING_ATTACHMENT_RESOLVE_SKIP_TRANSFER_FUNCTION_BIT_KHR;
+
+    return resultFlags;
+}
+#endif // CTS_USES_VULKANSC
+
 void RenderPassWrapper::beginRendering(const DeviceInterface &vk, const VkCommandBuffer commandBuffer) const
 {
     DE_UNREF(vk);
     DE_UNREF(commandBuffer);
+
 #ifndef CTS_USES_VULKANSC
     const auto &subpass = m_subpasses[m_activeSubpass];
-    std::vector<vk::VkRenderingAttachmentInfo> colorAttachments;
-    for (uint32_t i = 0; i < (uint32_t)subpass.m_colorAttachments.size(); ++i)
+
+    std::vector<vk::VkRenderingAttachmentInfo> colorAttachments(subpass.m_colorAttachments.size());
+    std::vector<vk::VkRenderingAttachmentFlagsInfoKHR> colorAttachmentsFlags(colorAttachments.size());
+
+    for (uint32_t i = 0; i < colorAttachments.size(); ++i)
     {
-        colorAttachments.emplace_back();
-        auto &colorAttachment = colorAttachments.back();
-        colorAttachment       = vk::initVulkanStructure();
+        auto &colorAttachment      = colorAttachments.at(i);
+        auto &colorAttachmentFlags = colorAttachmentsFlags.at(i);
+
+        colorAttachment      = vk::initVulkanStructure();
+        colorAttachmentFlags = vk::initVulkanStructure();
+
         if (subpass.m_colorAttachments[i].index == VK_ATTACHMENT_UNUSED)
             continue;
+
         colorAttachment = subpass.m_colorAttachments[i].attachmentInfo;
         if (m_attachmentFeedbackLoopInfo.sType == VK_STRUCTURE_TYPE_ATTACHMENT_FEEDBACK_LOOP_INFO_EXT)
             colorAttachment.pNext = &m_attachmentFeedbackLoopInfo;
         colorAttachment.loadOp = vk::VK_ATTACHMENT_LOAD_OP_LOAD;
+
         if (!subpass.m_resolveAttachments.empty() && subpass.m_resolveAttachments[i].index != VK_ATTACHMENT_UNUSED)
         {
             if (isUintFormat(subpass.m_resolveAttachments[i].format) ||
                 isIntFormat(subpass.m_resolveAttachments[i].format))
+            {
                 colorAttachment.resolveMode = vk::VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+            }
             else
+            {
                 colorAttachment.resolveMode = vk::VK_RESOLVE_MODE_AVERAGE_BIT;
+            }
             colorAttachment.resolveImageView   = subpass.m_resolveAttachments[i].attachmentInfo.imageView;
             colorAttachment.resolveImageLayout = subpass.m_resolveAttachments[i].attachmentInfo.imageLayout;
+
+            // Translate resolve attachment description flags to rendering attachment flags.
+            const auto &attFlags         = m_attachments[subpass.m_resolveAttachments[i].index].flags;
+            const auto renderingAttFlags = attDescriptionFlags2RenderingAttFlags(attFlags);
+
+            if (renderingAttFlags)
+            {
+                colorAttachmentFlags.flags   = renderingAttFlags;
+                const auto addAttachmentInfo = makeStructChainAdder(&colorAttachment);
+                addAttachmentInfo(&colorAttachmentFlags);
+            }
         }
     }
 
@@ -1932,6 +1990,7 @@ struct GraphicsPipelineWrapper::InternalData
     const VkPipelineDynamicStateCreateInfo *pDynamicState;
     PipelineRepresentativeFragmentTestCreateInfoWrapper pRepresentativeFragmentTestState;
     PipelineRobustnessCreateInfoWrapper pPipelineRobustnessState;
+    PipelineCustomResolveCreateInfoWrapper pPipelineCustomResolve;
 
     TessellationDomainOriginStatePtr pTessellationDomainOrigin;
     bool useViewportState;
@@ -3176,12 +3235,13 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState(
     const ShaderWrapper fragmentShader, const VkPipelineDepthStencilStateCreateInfo *depthStencilState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkSpecializationInfo *specializationInfo,
     const VkPipelineCache partPipelineCache, PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo)
+    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo,
+    PipelineCustomResolveCreateInfoWrapper customResolve)
 {
     return setupFragmentShaderState2(layout, renderPass, subpass, fragmentShader,
                                      PipelineShaderStageModuleIdentifierCreateInfoWrapper(), depthStencilState,
                                      multisampleState, specializationInfo, partPipelineCache, partCreationFeedback,
-                                     renderingInputAttachmentIndexInfo);
+                                     renderingInputAttachmentIndexInfo, PipelineBinaryInfoWrapper(), customResolve);
 }
 
 GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
@@ -3190,7 +3250,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
     const VkPipelineDepthStencilStateCreateInfo *depthStencilState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkSpecializationInfo *specializationInfo,
     const VkPipelineCache partPipelineCache, PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo, PipelineBinaryInfoWrapper partBinaries)
+    RenderingInputAttachmentIndexInfoWrapper renderingInputAttachmentIndexInfo, PipelineBinaryInfoWrapper partBinaries,
+    PipelineCustomResolveCreateInfoWrapper customResolve)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -3210,6 +3271,15 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
 
     m_internalData->setupState |= PSS_FRAGMENT_SHADER;
     m_internalData->pRenderingInputAttachmentIndex.ptr = renderingInputAttachmentIndexInfo.ptr;
+
+    // Custom resolve information is used for both the fragment shader state and the fragment output state. However, the
+    // specification explains that the information for both parts can be different and it has slightly different
+    // semantics. For this reason, we allow passing custom resolve info in both calls separately.
+    //
+    // Custom resolve information passed for the fragment shader state will be used for the fragment shader library. If
+    // a non-null custom resolve pointer is *not* passed to the fragment output state, the information set here will
+    // also be used for the fragment output library, or the monolithic pipeline creation.
+    m_internalData->pPipelineCustomResolve.ptr = customResolve.ptr;
 
     const auto pDepthStencilState =
         depthStencilState ? depthStencilState :
@@ -3280,6 +3350,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentShaderState2(
         addToChain(&firstStructInChain, m_internalData->pRepresentativeFragmentTestState.ptr);
         addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineCustomResolve.ptr);
 
         auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[2];
         auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[2];
@@ -3332,7 +3403,8 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
     const VkRenderPass renderPass, const uint32_t subpass, const VkPipelineColorBlendStateCreateInfo *colorBlendState,
     const VkPipelineMultisampleStateCreateInfo *multisampleState, const VkPipelineCache partPipelineCache,
     PipelineCreationFeedbackCreateInfoWrapper partCreationFeedback,
-    RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo, PipelineBinaryInfoWrapper partBinaries)
+    RenderingAttachmentLocationInfoWrapper renderingAttachmentLocationInfo, PipelineBinaryInfoWrapper partBinaries,
+    PipelineCustomResolveCreateInfoWrapper customResolve)
 {
     // make sure pipeline was not already build
     DE_ASSERT(m_pipelineFinal.get() == VK_NULL_HANDLE);
@@ -3342,6 +3414,11 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
                                  (PSS_VERTEX_INPUT_INTERFACE | PSS_PRE_RASTERIZATION_SHADERS | PSS_FRAGMENT_SHADER)));
     m_internalData->setupState |= PSS_FRAGMENT_OUTPUT_INTERFACE;
     m_internalData->pRenderingAttachmentLocation.ptr = renderingAttachmentLocationInfo.ptr;
+
+    // If we provide a custom resolve pointer in this call, it overwrites the existing one and the new information will
+    // be used for fragment output library creation or monolithic pipeline creation.
+    if (customResolve.ptr)
+        m_internalData->pPipelineCustomResolve.ptr = customResolve.ptr;
 
     // Unreference variables that are not used in Vulkan SC. No need to put this in ifdef.
     DE_UNREF(renderPass);
@@ -3379,6 +3456,7 @@ GraphicsPipelineWrapper &GraphicsPipelineWrapper::setupFragmentOutputState(
         addToChain(&firstStructInChain, partBinaries.ptr);
         addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
         addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
+        addToChain(&firstStructInChain, m_internalData->pPipelineCustomResolve.ptr);
 
         auto &dynamicStates    = m_internalData->pipelinePartDynamicStates[3];
         auto &dynamicStateInfo = m_internalData->pipelinePartDynamicStateCreateInfo[3];
@@ -3546,6 +3624,10 @@ vk::VkShaderCreateInfoEXT GraphicsPipelineWrapper::makeShaderCreateInfo(VkShader
         shaderCreateInfo.pPushConstantRanges    = other.getPipelineLayout()->getPushConstantRanges();
     }
     shaderCreateInfo.pSpecializationInfo = shader.getSpecializationInfo();
+
+    if (stage == VK_SHADER_STAGE_FRAGMENT_BIT && m_internalData->pPipelineCustomResolve.ptr)
+        shaderCreateInfo.pNext = m_internalData->pPipelineCustomResolve.ptr;
+
     return shaderCreateInfo;
 }
 
@@ -4161,6 +4243,7 @@ void GraphicsPipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache,
             addToChain(&firstStructInChain, m_internalData->pRenderingInputAttachmentIndex.ptr);
             addToChain(&firstStructInChain, m_internalData->pRenderingAttachmentLocation.ptr);
             addToChain(&firstStructInChain, m_internalData->pPipelineRobustnessState.ptr);
+            addToChain(&firstStructInChain, m_internalData->pPipelineCustomResolve.ptr);
             addToChain(&firstStructInChain, pNext);
         }
 

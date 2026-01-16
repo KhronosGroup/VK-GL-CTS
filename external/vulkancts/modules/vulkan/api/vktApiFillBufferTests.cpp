@@ -118,7 +118,7 @@ Move<VkDevice> createCustomDevice(Context &context,
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_synchronization2"))
     {
-        if (context.getUsedApiVersion() < VK_API_VERSION_1_3)
+        if (context.getEquivalentApiVersion() < VK_API_VERSION_1_3)
         {
             synchronization2Features.pNext = &deviceFeatures2;
             pNext                          = &synchronization2Features;

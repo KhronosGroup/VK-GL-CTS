@@ -41,6 +41,7 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
     VkPhysicalDeviceMutableDescriptorTypeFeaturesEXT *mutableDescriptorTypeFeatures         = nullptr;
     VkPhysicalDeviceLegacyDitheringFeaturesEXT *legacyDitheringFeatures                     = nullptr;
     VkPhysicalDeviceFaultFeaturesEXT *deviceFaultFeatures                                   = nullptr;
+    VkPhysicalDeviceMultiviewPerViewViewportsFeaturesQCOM *perViewViewportsFeatures         = nullptr;
 #endif // CTS_USES_VULKANSC
 
     m_coreFeatures2    = initVulkanStructure();
@@ -146,6 +147,8 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
                         assignRawStructPtr(&legacyDitheringFeatures, rawStructPtr);
                     else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FAULT_FEATURES_EXT)
                         assignRawStructPtr(&deviceFaultFeatures, rawStructPtr);
+                    else if (structType == VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_MULTIVIEW_PER_VIEW_VIEWPORTS_FEATURES_QCOM)
+                        assignRawStructPtr(&perViewViewportsFeatures, rawStructPtr);
 #endif // CTS_USES_VULKANSC
                     // add to chain
                     *nextPtr = rawStructPtr;
@@ -218,6 +221,12 @@ DeviceFeatures::DeviceFeatures(const InstanceInterface &vki, const uint32_t apiV
         {
             imageRobustnessFeatures->robustImageAccess = false;
         }
+#ifndef CTS_USES_VULKANSC
+        if (perViewViewportsFeatures)
+        {
+            perViewViewportsFeatures->multiviewPerViewViewports = false;
+        }
+#endif // CTS_USES_VULKANSC
         m_coreFeatures2.features.robustBufferAccess = false;
 
 #ifndef CTS_USES_VULKANSC

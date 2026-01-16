@@ -132,6 +132,8 @@ typedef std::variant<
     , VkPhysicalDeviceColorWriteEnableFeaturesEXT
     , VkPhysicalDevicePrimitivesGeneratedQueryFeaturesEXT
     , VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR
+    , VkPhysicalDeviceShaderUntypedPointersFeaturesKHR
+    , VkPhysicalDeviceVideoEncodeRgbConversionFeaturesVALVE
     , VkPhysicalDeviceImageViewMinLodFeaturesEXT
     , VkPhysicalDeviceMultiDrawFeaturesEXT
     , VkPhysicalDeviceImage2DViewOf3DFeaturesEXT
@@ -167,6 +169,7 @@ typedef std::variant<
     , VkPhysicalDeviceExternalFormatResolveFeaturesANDROID
     , VkPhysicalDeviceMaintenance5Features
     , VkPhysicalDeviceAntiLagFeaturesAMD
+    , VkPhysicalDeviceDenseGeometryFormatFeaturesAMDX
     , VkPhysicalDevicePresentId2FeaturesKHR
     , VkPhysicalDevicePresentWait2FeaturesKHR
     , VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR
@@ -238,6 +241,7 @@ typedef std::variant<
     , VkPhysicalDeviceFragmentDensityMapOffsetFeaturesEXT
     , VkPhysicalDeviceZeroInitializeDeviceMemoryFeaturesEXT
     , VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR
+    , VkPhysicalDeviceCustomResolveFeaturesEXT
     , VkPhysicalDevicePipelineCacheIncrementalModeFeaturesSEC
     , VkPhysicalDeviceProtectedMemoryFeatures
     , VkPhysicalDeviceShaderDrawParametersFeatures

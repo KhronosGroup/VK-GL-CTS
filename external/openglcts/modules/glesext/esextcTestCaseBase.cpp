@@ -72,6 +72,10 @@ TestCaseBase::TestCaseBase(Context &context, const ExtParameters &extParam, cons
     , m_is_texture_border_clamp_supported(false)
     , m_is_texture_buffer_supported(false)
     , m_is_viewport_array_supported(false)
+    , m_is_fragment_shading_rate_supported(false)
+    , m_is_fragment_shading_rate_primitive_supported(false)
+    , m_is_fragment_shading_rate_attachment_supported(false)
+    , m_is_multiview_ovr_supported(false)
     , m_is_texture_float_linear_supported(false)
     , seed_value(1)
 {
@@ -109,11 +113,16 @@ void TestCaseBase::initExtensions()
         m_is_shader_image_atomic_supported            = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
         m_is_texture_storage_multisample_2d_array_supported =
             glu::contextSupports(context_type, glu::ApiType::core(4, 3));
-        m_is_framebuffer_no_attachments_supported  = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
-        m_is_program_interface_query_supported     = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
-        m_is_texture_storage_multisample_supported = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
-        m_is_shader_image_load_store_supported     = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
-        m_is_viewport_array_supported              = glu::contextSupports(context_type, glu::ApiType::core(4, 1));
+        m_is_framebuffer_no_attachments_supported      = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
+        m_is_program_interface_query_supported         = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
+        m_is_texture_storage_multisample_supported     = glu::contextSupports(context_type, glu::ApiType::core(4, 3));
+        m_is_shader_image_load_store_supported         = glu::contextSupports(context_type, glu::ApiType::core(4, 2));
+        m_is_viewport_array_supported                  = glu::contextSupports(context_type, glu::ApiType::core(4, 1));
+        m_is_multiview_ovr_supported                   = isExtensionSupported("GL_OVR_multiview");
+        m_is_fragment_shading_rate_supported           = isExtensionSupported("GL_EXT_fragment_shading_rate");
+        m_is_fragment_shading_rate_primitive_supported = isExtensionSupported("GL_EXT_fragment_shading_rate_primitive");
+        m_is_fragment_shading_rate_attachment_supported =
+            isExtensionSupported("GL_EXT_fragment_shading_rate_attachment");
     }
     else if (glu::contextSupports(context_type, glu::ApiType::es(3, 2)))
     {
