@@ -3112,21 +3112,22 @@ tcu::TestStatus HostImageArrayCopyTestInstance::iterate(void)
         (m_params.offset.z > 1 || m_params.copyExtent.depth > 1u) ? vk::VK_IMAGE_TYPE_3D : vk::VK_IMAGE_TYPE_2D;
 
     vk::VkImageCreateInfo createInfo = {
-        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,  // VkStructureType          sType
-        nullptr,                                  // const void*              pNext
-        0u,                                       // VkImageCreateFlags       flags
-        imageType,                                // VkImageType              imageType
-        m_params.format,                          // VkFormat                 format
-        {imageWidth, imageHeight, imageDepth},    // VkExtent3D               extent
-        1u,                                       // uint32_t                 mipLevels
-        maxLayers,                                // uint32_t                 arrayLayers
-        vk::VK_SAMPLE_COUNT_1_BIT,                // VkSampleCountFlagBits    samples
-        m_params.tiling,                          // VkImageTiling            tiling
-        vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT, // VkImageUsageFlags        usage
-        vk::VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode            sharingMode
-        0,                                        // uint32_t                 queueFamilyIndexCount
-        nullptr,                                  // const uint32_t*          pQueueFamilyIndices
-        vk::VK_IMAGE_LAYOUT_UNDEFINED             // VkImageLayout            initialLayout
+        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
+        nullptr,                                 // const void*              pNext
+        0u,                                      // VkImageCreateFlags       flags
+        imageType,                               // VkImageType              imageType
+        m_params.format,                         // VkFormat                 format
+        {imageWidth, imageHeight, imageDepth},   // VkExtent3D               extent
+        1u,                                      // uint32_t                 mipLevels
+        maxLayers,                               // uint32_t                 arrayLayers
+        vk::VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits    samples
+        m_params.tiling,                         // VkImageTiling            tiling
+        vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags        usage
+        vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
+        0,                                       // uint32_t                 queueFamilyIndexCount
+        nullptr,                                 // const uint32_t*          pQueueFamilyIndices
+        vk::VK_IMAGE_LAYOUT_UNDEFINED            // VkImageLayout            initialLayout
     };
 
     const auto srcImage =
