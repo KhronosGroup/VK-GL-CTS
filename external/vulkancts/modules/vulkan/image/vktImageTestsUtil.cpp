@@ -603,6 +603,7 @@ std::string getShaderImageType(const tcu::TextureFormat &format, const ImageType
 
 std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
 {
+    // Non packed types
     if (!isPackedType(mapTextureFormat(format)))
     {
         const char *orderPart;
@@ -611,18 +612,30 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
         switch (format.order)
         {
         case tcu::TextureFormat::R:
+        case tcu::TextureFormat::A:
+        case tcu::TextureFormat::L:
+        case tcu::TextureFormat::I:
+        case tcu::TextureFormat::sR:
             orderPart = "r";
             break;
         case tcu::TextureFormat::RG:
+        case tcu::TextureFormat::RA:
+        case tcu::TextureFormat::LA:
+        case tcu::TextureFormat::sRG:
             orderPart = "rg";
             break;
         case tcu::TextureFormat::RGB:
+        case tcu::TextureFormat::BGR:
+        case tcu::TextureFormat::sRGB:
+        case tcu::TextureFormat::sBGR:
             orderPart = "rgb";
             break;
         case tcu::TextureFormat::RGBA:
-            orderPart = "rgba";
-            break;
+        case tcu::TextureFormat::BGRA:
+        case tcu::TextureFormat::ARGB:
+        case tcu::TextureFormat::ABGR:
         case tcu::TextureFormat::sRGBA:
+        case tcu::TextureFormat::sBGRA:
             orderPart = "rgba";
             break;
 
@@ -698,8 +711,10 @@ std::string getShaderImageFormatQualifier(const tcu::TextureFormat &format)
         case VK_FORMAT_B10G11R11_UFLOAT_PACK32:
             return "r11f_g11f_b10f";
         case VK_FORMAT_A2B10G10R10_UNORM_PACK32:
+        case VK_FORMAT_A2R10G10B10_UNORM_PACK32:
             return "rgb10_a2";
         case VK_FORMAT_A2B10G10R10_UINT_PACK32:
+        case VK_FORMAT_A2R10G10B10_UINT_PACK32:
             return "rgb10_a2ui";
 
         default:
