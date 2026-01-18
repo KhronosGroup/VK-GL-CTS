@@ -29,8 +29,10 @@
 #ifndef CTS_USES_VULKANSC
 #include "vktPipelineSamplerBorderSwizzleTests.hpp"
 #endif // CTS_USES_VULKANSC
+#include "vkComputePipelineConstructionUtil.hpp"
 #include "vktPipelineImageUtil.hpp"
 #include "vktPipelineVertexUtil.hpp"
+#include "../image/vktImageTestsUtil.hpp"
 #include "vktTestCase.hpp"
 
 #include "vkImageUtil.hpp"
@@ -1460,9 +1462,19 @@ MovePtr<tcu::TestCaseGroup> createSamplerAddressModesTests(tcu::TestContext &tes
     return samplerAddressModesTests;
 }
 
+inline vk::VkQueue getQueue(Context &ctx, bool useCompute)
+{
+    return useCompute ? ctx.getComputeQueue() : ctx.getUniversalQueue();
+}
+
+inline uint32_t getQueueNdx(Context &ctx, bool useCompute)
+{
+    return useCompute ? ctx.getComputeQueueFamilyIndex() : ctx.getUniversalQueueFamilyIndex();
+}
+
 // Exact sampling case:
 //    1) Create a texture and a framebuffer image of the same size.
-//    2) Draw a full screen quad with the texture and VK_FILTER_NEAREST.
+//    2) Draw a full screen quad (Graphics) or dispatch grid (Compute) with the texture and VK_FILTER_NEAREST.
 //    3) Verify the rendered image matches the texture exactly.
 class ExactSamplingCase : public vkt::TestCase
 {
@@ -1474,12 +1486,18 @@ public:
         bool unnormalizedCoordinates;
         bool solidColor;
         tcu::Maybe<float> offsetSign; // -1.0 or 1.0
+        bool useCompute;
     };
 
     struct PushConstants
     {
         float texWidth;
         float texHeight;
+        // Additional params for Compute UV's
+        float minU;
+        float minV;
+        float scaleU;
+        float scaleV;
     };
 
     struct VertexData
@@ -1561,39 +1579,6 @@ ExactSamplingCase::ExactSamplingCase(tcu::TestContext &testCtx, const std::strin
 
 void ExactSamplingCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    std::ostringstream vertexShader;
-
-    std::string texCoordX = "inTexCoord.x";
-    std::string texCoordY = "inTexCoord.y";
-
-    if (m_params.unnormalizedCoordinates)
-    {
-        texCoordX += " * pushc.texWidth";
-        texCoordY += " * pushc.texHeight";
-    }
-
-    vertexShader << "#version 450\n"
-                 << "\n"
-                 << "layout(push_constant, std430) uniform PushConstants\n"
-                 << "{\n"
-                 << "    float texWidth;\n"
-                 << "    float texHeight;\n"
-                 << "} pushc;\n"
-                 << "\n"
-                 << "layout(location = 0) in vec2 inPosition;\n"
-                 << "layout(location = 1) in vec2 inTexCoord;\n"
-                 << "\n"
-                 << "layout(location = 0) out vec2 fragTexCoord;\n"
-                 << "\n"
-                 << "void main() {\n"
-                 << "    gl_Position = vec4(inPosition, 0.0, 1.0);\n"
-                 << "    fragTexCoord = vec2(" << texCoordX << ", " << texCoordY << ");\n"
-                 << "}\n";
-
-    programCollection.glslSources.add("vert") << glu::VertexSource{vertexShader.str()};
-
-    std::ostringstream fragmentShader;
-
     std::string typePrefix;
     if (vk::isIntFormat(m_params.format))
         typePrefix = "i";
@@ -1603,28 +1588,111 @@ void ExactSamplingCase::initPrograms(vk::SourceCollections &programCollection) c
     const std::string samplerType = typePrefix + "sampler2D";
     const std::string colorType   = typePrefix + "vec4";
 
-    fragmentShader << "#version 450\n"
-                   << "\n"
-                   << "layout(set = 0, binding = 0) uniform " << samplerType << " texSampler;\n"
-                   << "\n"
-                   << "layout(location = 0) in vec2 fragTexCoord;\n"
-                   << "\n"
-                   << "layout(location = 0) out " << colorType << " outColor;\n"
-                   << "\n"
-                   << "void main() {\n";
-
-    if (m_params.unnormalizedCoordinates)
+    if (!m_params.useCompute)
     {
-        fragmentShader << "    outColor = textureLod(texSampler, fragTexCoord, 0.0f);";
+
+        std::ostringstream vertexShader;
+
+        std::string texCoordX = "inTexCoord.x";
+        std::string texCoordY = "inTexCoord.y";
+
+        if (m_params.unnormalizedCoordinates)
+        {
+            texCoordX += " * pushc.texWidth";
+            texCoordY += " * pushc.texHeight";
+        }
+
+        vertexShader << "#version 450\n"
+                     << "\n"
+                     << "layout(push_constant, std430) uniform PushConstants\n"
+                     << "{\n"
+                     << "    float texWidth;\n"
+                     << "    float texHeight;\n"
+                     << "} pushc;\n"
+                     << "\n"
+                     << "layout(location = 0) in vec2 inPosition;\n"
+                     << "layout(location = 1) in vec2 inTexCoord;\n"
+                     << "\n"
+                     << "layout(location = 0) out vec2 fragTexCoord;\n"
+                     << "\n"
+                     << "void main() {\n"
+                     << "    gl_Position = vec4(inPosition, 0.0, 1.0);\n"
+                     << "    fragTexCoord = vec2(" << texCoordX << ", " << texCoordY << ");\n"
+                     << "}\n";
+
+        programCollection.glslSources.add("vert") << glu::VertexSource{vertexShader.str()};
+
+        std::ostringstream fragmentShader;
+
+        fragmentShader << "#version 450\n"
+                       << "\n"
+                       << "layout(set = 0, binding = 0) uniform " << samplerType << " texSampler;\n"
+                       << "\n"
+                       << "layout(location = 0) in vec2 fragTexCoord;\n"
+                       << "\n"
+                       << "layout(location = 0) out " << colorType << " outColor;\n"
+                       << "\n"
+                       << "void main() {\n";
+
+        if (m_params.unnormalizedCoordinates)
+        {
+            fragmentShader << "    outColor = textureLod(texSampler, fragTexCoord, 0.0f);";
+        }
+        else
+        {
+            fragmentShader << "    outColor = texture(texSampler, fragTexCoord);\n";
+        }
+
+        fragmentShader << "}\n";
+
+        programCollection.glslSources.add("frag") << glu::FragmentSource{fragmentShader.str()};
     }
-    else
+    else // compute
     {
-        fragmentShader << "    outColor = texture(texSampler, fragTexCoord);\n";
+        const std::string imageType  = typePrefix + "image2D";
+        const std::string formatQual = image::getShaderImageFormatQualifier(mapVkFormat(m_params.format));
+
+        std::ostringstream computeShader;
+        computeShader << "#version 450\n"
+                      << "layout(local_size_x = 16, local_size_y = 16) in;\n"
+                      << "\n"
+                      << "layout(set = 0, binding = 0) uniform " << samplerType << " texSampler;\n"
+                      << "layout(set = 0, binding = 1" << (formatQual.empty() ? "" : ", " + formatQual)
+                      << ") uniform writeonly " << imageType << " outImage;\n"
+                      << "\n"
+                      << "layout(push_constant, std430) uniform PushConstants\n"
+                      << "{\n"
+                      << "    float texWidth;\n"
+                      << "    float texHeight;\n"
+                      << "    float minU;\n"
+                      << "    float minV;\n"
+                      << "    float scaleU;\n"
+                      << "    float scaleV;\n"
+                      << "} pushc;\n"
+                      << "\n"
+                      << "void main() {\n"
+                      << "    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
+                      << "    ivec2 size = imageSize(outImage);\n"
+                      << "    if (pos.x >= size.x || pos.y >= size.y) return;\n"
+                      << "\n"
+                      // Interpolate UVs: match Full Screen Quad logic.
+                      // Pixel center at (pos + 0.5) / size.
+                      << "    vec2 normPos = (vec2(pos) + 0.5) / vec2(size);\n"
+                      << "    vec2 uv = vec2(pushc.minU, pushc.minV) + normPos * vec2(pushc.scaleU, pushc.scaleV);\n"
+                      << "\n"
+                      << "    if (" << (m_params.unnormalizedCoordinates ? "true" : "false") << ") {\n"
+                      << "        uv.x *= pushc.texWidth;\n"
+                      << "        uv.y *= pushc.texHeight;\n"
+                      << "        " << colorType << " color = textureLod(texSampler, uv, 0.0f);\n"
+                      << "        imageStore(outImage, pos, color);\n"
+                      << "    } else {\n"
+                      << "        " << colorType << " color = texture(texSampler, uv);\n"
+                      << "        imageStore(outImage, pos, color);\n"
+                      << "    }\n"
+                      << "}\n";
+
+        programCollection.glslSources.add("comp") << glu::ComputeSource{computeShader.str()};
     }
-
-    fragmentShader << "}\n";
-
-    programCollection.glslSources.add("frag") << glu::FragmentSource{fragmentShader.str()};
 }
 
 TestInstance *ExactSamplingCase::createInstance(Context &context) const
@@ -1644,13 +1712,27 @@ void ExactSamplingCase::checkSupport(Context &context) const
     const auto props          = vk::getPhysicalDeviceFormatProperties(vki, physicalDevice, m_params.format);
     const vk::VkFormatFeatureFlags requiredFeatures =
         (vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT | vk::VK_FORMAT_FEATURE_TRANSFER_SRC_BIT |
-         vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT | vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+         vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_BIT |
+         (m_params.useCompute ? vk::VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT : vk::VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT) |
          (m_params.solidColor ? vk::VK_FORMAT_FEATURE_SAMPLED_IMAGE_FILTER_LINEAR_BIT : 0));
 
-    checkPipelineConstructionRequirements(vki, physicalDevice, m_params.pipelineConstructionType);
+    if (m_params.useCompute)
+    {
+        ComputePipelineConstructionType computeType =
+            graphicsToComputeConstructionType(m_params.pipelineConstructionType);
+        checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), computeType);
+    }
+    else
+    {
+        checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                              m_params.pipelineConstructionType);
+    }
 
     if ((props.optimalTilingFeatures & requiredFeatures) != requiredFeatures)
         TCU_THROW(NotSupportedError, "Selected format does not support the required features");
+
+    if (m_params.useCompute && (context.getComputeQueueFamilyIndex() == -1))
+        TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
 }
 
 ExactSamplingInstance::ExactSamplingInstance(Context &context, const Params &params)
@@ -1671,17 +1753,19 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
     const auto physDevice = m_context.getPhysicalDevice();
     const auto device     = m_context.getDevice();
     auto &allocator       = m_context.getDefaultAllocator();
-    const auto queue      = m_context.getUniversalQueue();
-    const auto queueIndex = m_context.getUniversalQueueFamilyIndex();
+    const auto queue      = getQueue(m_context, m_params.useCompute);
+    const auto queueIndex = getQueueNdx(m_context, m_params.useCompute);
 
     const auto tcuFormat  = vk::mapVkFormat(m_params.format);
     const auto formatInfo = tcu::getTextureFormatInfo(tcuFormat);
     const auto texExtent  = getTextureExtent();
     const auto texUsage   = (vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT | vk::VK_IMAGE_USAGE_SAMPLED_BIT);
-    const auto fbUsage    = (vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT | vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
-    const auto descType   = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
-    const auto texLayout  = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
-    const bool &unnorm    = m_params.unnormalizedCoordinates;
+    const auto outUsage =
+        (vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+         (m_params.useCompute ? vk::VK_IMAGE_USAGE_STORAGE_BIT : vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT));
+    const auto descType  = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
+    const auto texLayout = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL;
+    const bool &unnorm   = m_params.unnormalizedCoordinates;
 
     // Some code below depends on this.
     DE_ASSERT(texExtent.depth == 1u);
@@ -1715,7 +1799,7 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
         1u,                                      // uint32_t arrayLayers;
         vk::VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
         vk::VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
-        fbUsage,                                 // VkImageUsageFlags usage;
+        (VkImageUsageFlags)outUsage,             // VkImageUsageFlags usage;
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
         1u,                                      // uint32_t queueFamilyIndexCount;
         &queueIndex,                             // const uint32_t* pQueueFamilyIndices;
@@ -1724,13 +1808,13 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
 
     // Create main and framebuffer images.
     const vk::ImageWithMemory texImage{vkd, device, allocator, texImgCreateInfo, vk::MemoryRequirement::Any};
-    const vk::ImageWithMemory fbImage{vkd, device, allocator, fbImgCreateInfo, vk::MemoryRequirement::Any};
+    const vk::ImageWithMemory outImage{vkd, device, allocator, fbImgCreateInfo, vk::MemoryRequirement::Any};
 
     // Corresponding image views.
     const auto colorSubresourceRange = vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
     const auto texView = vk::makeImageView(vkd, device, texImage.get(), vk::VK_IMAGE_VIEW_TYPE_2D, m_params.format,
                                            colorSubresourceRange);
-    const auto fbView  = vk::makeImageView(vkd, device, fbImage.get(), vk::VK_IMAGE_VIEW_TYPE_2D, m_params.format,
+    const auto outView = vk::makeImageView(vkd, device, outImage.get(), vk::VK_IMAGE_VIEW_TYPE_2D, m_params.format,
                                            colorSubresourceRange);
 
     // Buffers to create the texture and verify results.
@@ -1801,54 +1885,24 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
         maxV += sign * offsetHeight;
     }
 
-    const std::vector<ExactSamplingCase::VertexData> fullScreenQuad = {
-        {
-            {1.f, -1.f},
-            {maxU, minV},
-        },
-        {
-            {-1.f, -1.f},
-            {minU, minV},
-        },
-        {
-            {-1.f, 1.f},
-            {minU, maxV},
-        },
-        {
-            {-1.f, 1.f},
-            {minU, maxV},
-        },
-        {
-            {1.f, -1.f},
-            {maxU, minV},
-        },
-        {
-            {1.f, 1.f},
-            {maxU, maxV},
-        },
-    };
-
-    // Vertex buffer.
-    const vk::VkDeviceSize vertexBufferSize =
-        static_cast<vk::VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
-    const auto vertexBufferInfo = vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    const vk::BufferWithMemory vertexBuffer{vkd, device, allocator, vertexBufferInfo,
-                                            vk::MemoryRequirement::HostVisible};
-
-    // Copy data to vertex buffer.
-    const auto &vertexAlloc  = vertexBuffer.getAllocation();
-    const auto vertexDataPtr = reinterpret_cast<char *>(vertexAlloc.getHostPtr()) + vertexAlloc.getOffset();
-    deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
-    vk::flushAlloc(vkd, device, vertexAlloc);
-
     // Descriptor set layout.
     vk::DescriptorSetLayoutBuilder layoutBuilder;
-    layoutBuilder.addSingleBinding(descType, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+    if (m_params.useCompute)
+    {
+        layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+        layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, vk::VK_SHADER_STAGE_COMPUTE_BIT);
+    }
+    else // graphics
+    {
+        layoutBuilder.addSingleBinding(descType, vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+    }
     const auto descriptorSetLayout = layoutBuilder.build(vkd, device);
 
     // Descriptor pool.
     vk::DescriptorPoolBuilder poolBuilder;
     poolBuilder.addType(descType);
+    if (m_params.useCompute)
+        poolBuilder.addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     const auto descriptorPool =
         poolBuilder.build(vkd, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
@@ -1888,113 +1942,14 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
     const auto descriptorImageInfo = vk::makeDescriptorImageInfo(texSampler.get(), texView.get(), texLayout);
     updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(0u), descType,
                               &descriptorImageInfo);
+    if (m_params.useCompute)
+    {
+        const auto storageImageInfo =
+            vk::makeDescriptorImageInfo(VK_NULL_HANDLE, outView.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
+        updateBuilder.writeSingle(descriptorSet.get(), vk::DescriptorSetUpdateBuilder::Location::binding(1u),
+                                  vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageInfo);
+    }
     updateBuilder.update(vkd, device);
-
-    // Shader modules.
-    const auto vertexModule = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-    const auto fragModule   = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
-
-    // Render pass.
-    const vk::VkAttachmentDescription fbAttachment = {
-        0u,                                           // VkAttachmentDescriptionFlags flags;
-        m_params.format,                              // VkFormat format;
-        vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
-        vk::VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
-        vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
-        vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
-        vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
-        vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
-    };
-
-    const vk::VkAttachmentReference colorRef = {
-        0u,                                           // uint32_t attachment;
-        vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
-    };
-
-    const vk::VkSubpassDescription subpass = {
-        0u,                                  // VkSubpassDescriptionFlags flags;
-        vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
-        0u,                                  // uint32_t inputAttachmentCount;
-        nullptr,                             // const VkAttachmentReference* pInputAttachments;
-        1u,                                  // uint32_t colorAttachmentCount;
-        &colorRef,                           // const VkAttachmentReference* pColorAttachments;
-        0u,                                  // const VkAttachmentReference* pResolveAttachments;
-        nullptr,                             // const VkAttachmentReference* pDepthStencilAttachment;
-        0u,                                  // uint32_t preserveAttachmentCount;
-        nullptr,                             // const uint32_t* pPreserveAttachments;
-    };
-
-    const vk::VkRenderPassCreateInfo renderPassInfo = {
-        vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                       // const void* pNext;
-        0u,                                            // VkRenderPassCreateFlags flags;
-        1u,                                            // uint32_t attachmentCount;
-        &fbAttachment,                                 // const VkAttachmentDescription* pAttachments;
-        1u,                                            // uint32_t subpassCount;
-        &subpass,                                      // const VkSubpassDescription* pSubpasses;
-        0u,                                            // uint32_t dependencyCount;
-        nullptr,                                       // const VkSubpassDependency* pDependencies;
-    };
-    RenderPassWrapper renderPass(m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
-
-    // Framebuffer.
-    std::vector<vk::VkImageView> attachments;
-    attachments.push_back(fbView.get());
-    renderPass.createFramebuffer(vkd, device, 1u, &fbImage.get(), &fbView.get(), texExtent.width, texExtent.height,
-                                 texExtent.depth);
-
-    // Push constant range.
-    const vk::VkPushConstantRange pcRange = {
-        vk::VK_SHADER_STAGE_VERTEX_BIT,                                  // VkShaderStageFlags stageFlags;
-        0u,                                                              // uint32_t offset;
-        static_cast<uint32_t>(sizeof(ExactSamplingCase::PushConstants)), // uint32_t size;
-    };
-
-    // Pipeline layout.
-    const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                           // const void* pNext;
-        0u,                                                // VkPipelineLayoutCreateFlags flags;
-        1u,                                                // uint32_t setLayoutCount;
-        &descriptorSetLayout.get(),                        // const VkDescriptorSetLayout* pSetLayouts;
-        1u,                                                // uint32_t pushConstantRangeCount;
-        &pcRange,                                          // const VkPushConstantRange* pPushConstantRanges;
-    };
-    const vk::PipelineLayoutWrapper pipelineLayout(m_params.pipelineConstructionType, vkd, device, &pipelineLayoutInfo);
-
-    // Graphics pipeline.
-    const std::vector<vk::VkViewport> viewports{vk::makeViewport(texExtent)};
-    const vk::VkRect2D renderArea = vk::makeRect2D(texExtent);
-    const std::vector<vk::VkRect2D> scissors{renderArea};
-
-    const auto vtxBindingDescription    = ExactSamplingCase::VertexData::getBindingDescription();
-    const auto vtxAttributeDescriptions = ExactSamplingCase::VertexData::getAttributeDescriptions();
-
-    const vk::VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
-        nullptr,                // const void*                                 pNext
-        0u,                     // VkPipelineVertexInputStateCreateFlags       flags
-        1u,                     // uint32_t                                    vertexBindingDescriptionCount
-        &vtxBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
-        static_cast<uint32_t>(
-            vtxAttributeDescriptions
-                .size()),                // uint32_t                                    vertexAttributeDescriptionCount
-        vtxAttributeDescriptions.data(), // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
-    };
-
-    GraphicsPipelineWrapper pipeline(vki, vkd, physDevice, device, m_context.getDeviceExtensions(),
-                                     m_params.pipelineConstructionType);
-    pipeline.setDefaultDepthStencilState()
-        .setDefaultRasterizationState()
-        .setDefaultMultisampleState()
-        .setDefaultColorBlendState()
-        .setupVertexInputState(&vertexInputInfo)
-        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertexModule)
-        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
-        .setupFragmentOutputState(*renderPass)
-        .setMonolithicPipelineLayout(pipelineLayout)
-        .buildPipeline();
 
     // Command pool and command buffer.
     const auto cmdPool =
@@ -2003,18 +1958,7 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
         vk::allocateCommandBuffer(vkd, device, cmdPool.get(), vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
     const auto cmdBuffer = cmdBufferPtr.get();
 
-    // Draw quad.
-    const ExactSamplingCase::PushConstants pushConstants = {
-        static_cast<float>(texExtent.width),
-        static_cast<float>(texExtent.height),
-    };
-
-    const tcu::Vec4 clearFbColor(0.0f, 0.0f, 0.0f, 1.0f);
-    const vk::VkDeviceSize vertexBufferOffset = 0ull;
-
-    const auto vertexBufferBarrier =
-        vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
-                                    vertexBuffer.get(), 0ull, vertexBufferSize);
+    // Copy data to texture
     const auto preBufferCopyBarrier = vk::makeBufferMemoryBarrier(
         vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, texBuffer.get(), 0ull, texBufferSize);
     const auto preTexCopyBarrier =
@@ -2028,31 +1972,259 @@ tcu::TestStatus ExactSamplingInstance::iterate(void)
 
     vk::beginCommandBuffer(vkd, cmdBuffer);
 
-    vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u, 0u,
-                           nullptr, 1u, &vertexBufferBarrier, 0u, nullptr);
     vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                            nullptr, 1u, &preBufferCopyBarrier, 0u, nullptr);
     vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 0u,
                            nullptr, 0u, nullptr, 1u, &preTexCopyBarrier);
     vkd.cmdCopyBufferToImage(cmdBuffer, texBuffer.get(), texImage.get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
                              &texImageCopy);
-    vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u,
-                           0u, nullptr, 0u, nullptr, 1u, &postTexCopyBarrier);
 
-    renderPass.begin(vkd, cmdBuffer, renderArea, clearFbColor);
-    pipeline.bind(cmdBuffer);
-    vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
-                              &descriptorSet.get(), 0u, nullptr);
-    vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-    vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), vk::VK_SHADER_STAGE_VERTEX_BIT, 0u,
-                         static_cast<uint32_t>(sizeof(pushConstants)), &pushConstants);
-    vkd.cmdDraw(cmdBuffer, static_cast<uint32_t>(fullScreenQuad.size()), 1u, 0u, 0u);
-    renderPass.end(vkd, cmdBuffer);
+    // Pipeline creation and command buffer recording
+    if (m_params.useCompute)
+    {
+        // Pipeline layout for compute
+        const vk::VkPushConstantRange pcRange                   = {vk::VK_SHADER_STAGE_COMPUTE_BIT, 0u,
+                                                                   sizeof(ExactSamplingCase::PushConstants)};
+        const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo = {vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO,
+                                                                   nullptr,
+                                                                   0u,
+                                                                   1u,
+                                                                   &descriptorSetLayout.get(),
+                                                                   1u,
+                                                                   &pcRange};
+        const vk::PipelineLayoutWrapper pipelineLayout(m_params.pipelineConstructionType, vkd, device,
+                                                       &pipelineLayoutInfo);
 
-    vk::copyImageToBuffer(vkd, cmdBuffer, fbImage.get(), resultsBuffer.get(), iImgSize);
+        // Compute Pipeline
+        const vk::ComputePipelineConstructionType computeConstructionType =
+            vk::graphicsToComputeConstructionType(m_params.pipelineConstructionType);
+        vk::ComputePipelineWrapper pipeline(vkd, device, computeConstructionType,
+                                            m_context.getBinaryCollection().get("comp"));
+        pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+        pipeline.addPushConstantRange(pcRange);
+        pipeline.buildPipeline();
 
-    vk::endCommandBuffer(vkd, cmdBuffer);
-    vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+        // Transition Output to General
+        const auto storageInitBarrier =
+            vk::makeImageMemoryBarrier(0u, vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED,
+                                       vk::VK_IMAGE_LAYOUT_GENERAL, outImage.get(), colorSubresourceRange);
+
+        vk::VkImageMemoryBarrier computeBarriers[] = {postTexCopyBarrier, storageInitBarrier};
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                               0u, 0u, nullptr, 0u, nullptr, 2u, computeBarriers);
+
+        // Dispatch
+        const ExactSamplingCase::PushConstants pushConstants = {static_cast<float>(texExtent.width),
+                                                                static_cast<float>(texExtent.height),
+                                                                minU,
+                                                                minV,
+                                                                (maxU - minU),
+                                                                (maxV - minV)};
+
+        pipeline.bind(cmdBuffer);
+        vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+        vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), vk::VK_SHADER_STAGE_COMPUTE_BIT, 0u,
+                             sizeof(pushConstants), &pushConstants);
+
+        vkd.cmdDispatch(cmdBuffer, (texExtent.width + 15) / 16, (texExtent.height + 15) / 16, 1u);
+
+        // Copy result to host buffer
+        const auto preResultBarrier = vk::makeImageMemoryBarrier(
+            vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_ACCESS_TRANSFER_READ_BIT, vk::VK_IMAGE_LAYOUT_GENERAL,
+            vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, outImage.get(), colorSubresourceRange);
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
+                               0u, 0u, nullptr, 0u, nullptr, 1u, &preResultBarrier);
+
+        vk::copyImageToBuffer(vkd, cmdBuffer, outImage.get(), resultsBuffer.get(), iImgSize,
+                              vk::VK_ACCESS_TRANSFER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL);
+
+        vk::endCommandBuffer(vkd, cmdBuffer);
+        vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    }
+    else // graphics
+    {
+        const std::vector<ExactSamplingCase::VertexData> fullScreenQuad = {
+            {
+                {1.f, -1.f},
+                {maxU, minV},
+            },
+            {
+                {-1.f, -1.f},
+                {minU, minV},
+            },
+            {
+                {-1.f, 1.f},
+                {minU, maxV},
+            },
+            {
+                {-1.f, 1.f},
+                {minU, maxV},
+            },
+            {
+                {1.f, -1.f},
+                {maxU, minV},
+            },
+            {
+                {1.f, 1.f},
+                {maxU, maxV},
+            },
+        };
+
+        // Vertex buffer.
+        const vk::VkDeviceSize vertexBufferSize =
+            static_cast<vk::VkDeviceSize>(fullScreenQuad.size() * sizeof(decltype(fullScreenQuad)::value_type));
+        const auto vertexBufferInfo = vk::makeBufferCreateInfo(vertexBufferSize, vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        const vk::BufferWithMemory vertexBuffer{vkd, device, allocator, vertexBufferInfo,
+                                                vk::MemoryRequirement::HostVisible};
+
+        // Copy data to vertex buffer.
+        const auto &vertexAlloc  = vertexBuffer.getAllocation();
+        const auto vertexDataPtr = reinterpret_cast<char *>(vertexAlloc.getHostPtr()) + vertexAlloc.getOffset();
+        deMemcpy(vertexDataPtr, fullScreenQuad.data(), static_cast<size_t>(vertexBufferSize));
+        vk::flushAlloc(vkd, device, vertexAlloc);
+
+        // Shader modules.
+        const auto vertexModule = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+        const auto fragModule   = vk::ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
+
+        // Render pass.
+        const vk::VkAttachmentDescription fbAttachment = {
+            0u,                                           // VkAttachmentDescriptionFlags flags;
+            m_params.format,                              // VkFormat format;
+            vk::VK_SAMPLE_COUNT_1_BIT,                    // VkSampleCountFlagBits samples;
+            vk::VK_ATTACHMENT_LOAD_OP_CLEAR,              // VkAttachmentLoadOp loadOp;
+            vk::VK_ATTACHMENT_STORE_OP_STORE,             // VkAttachmentStoreOp storeOp;
+            vk::VK_ATTACHMENT_LOAD_OP_DONT_CARE,          // VkAttachmentLoadOp stencilLoadOp;
+            vk::VK_ATTACHMENT_STORE_OP_DONT_CARE,         // VkAttachmentStoreOp stencilStoreOp;
+            vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout initialLayout;
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout finalLayout;
+        };
+
+        const vk::VkAttachmentReference colorRef = {
+            0u,                                           // uint32_t attachment;
+            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout layout;
+        };
+
+        const vk::VkSubpassDescription subpass = {
+            0u,                                  // VkSubpassDescriptionFlags flags;
+            vk::VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
+            0u,                                  // uint32_t inputAttachmentCount;
+            nullptr,                             // const VkAttachmentReference* pInputAttachments;
+            1u,                                  // uint32_t colorAttachmentCount;
+            &colorRef,                           // const VkAttachmentReference* pColorAttachments;
+            0u,                                  // const VkAttachmentReference* pResolveAttachments;
+            nullptr,                             // const VkAttachmentReference* pDepthStencilAttachment;
+            0u,                                  // uint32_t preserveAttachmentCount;
+            nullptr,                             // const uint32_t* pPreserveAttachments;
+        };
+
+        const vk::VkRenderPassCreateInfo renderPassInfo = {
+            vk::VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                       // const void* pNext;
+            0u,                                            // VkRenderPassCreateFlags flags;
+            1u,                                            // uint32_t attachmentCount;
+            &fbAttachment,                                 // const VkAttachmentDescription* pAttachments;
+            1u,                                            // uint32_t subpassCount;
+            &subpass,                                      // const VkSubpassDescription* pSubpasses;
+            0u,                                            // uint32_t dependencyCount;
+            nullptr,                                       // const VkSubpassDependency* pDependencies;
+        };
+        RenderPassWrapper renderPass(m_params.pipelineConstructionType, vkd, device, &renderPassInfo);
+
+        // Framebuffer.
+        std::vector<vk::VkImageView> attachments;
+        attachments.push_back(outView.get());
+        renderPass.createFramebuffer(vkd, device, 1u, &outImage.get(), &outView.get(), texExtent.width,
+                                     texExtent.height, texExtent.depth);
+
+        // Push constant range.
+        const vk::VkPushConstantRange pcRange = {
+            vk::VK_SHADER_STAGE_VERTEX_BIT,                                  // VkShaderStageFlags stageFlags;
+            0u,                                                              // uint32_t offset;
+            static_cast<uint32_t>(sizeof(ExactSamplingCase::PushConstants)), // uint32_t size;
+        };
+
+        // Pipeline layout.
+        const vk::VkPipelineLayoutCreateInfo pipelineLayoutInfo = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                           // const void* pNext;
+            0u,                                                // VkPipelineLayoutCreateFlags flags;
+            1u,                                                // uint32_t setLayoutCount;
+            &descriptorSetLayout.get(),                        // const VkDescriptorSetLayout* pSetLayouts;
+            1u,                                                // uint32_t pushConstantRangeCount;
+            &pcRange,                                          // const VkPushConstantRange* pPushConstantRanges;
+        };
+        const vk::PipelineLayoutWrapper pipelineLayout(m_params.pipelineConstructionType, vkd, device,
+                                                       &pipelineLayoutInfo);
+
+        // Graphics pipeline.
+        const std::vector<vk::VkViewport> viewports{vk::makeViewport(texExtent)};
+        const vk::VkRect2D renderArea = vk::makeRect2D(texExtent);
+        const std::vector<vk::VkRect2D> scissors{renderArea};
+
+        const auto vtxBindingDescription    = ExactSamplingCase::VertexData::getBindingDescription();
+        const auto vtxAttributeDescriptions = ExactSamplingCase::VertexData::getAttributeDescriptions();
+
+        const vk::VkPipelineVertexInputStateCreateInfo vertexInputInfo = {
+            vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType                             sType
+            nullptr,                // const void*                                 pNext
+            0u,                     // VkPipelineVertexInputStateCreateFlags       flags
+            1u,                     // uint32_t                                    vertexBindingDescriptionCount
+            &vtxBindingDescription, // const VkVertexInputBindingDescription*      pVertexBindingDescriptions
+            static_cast<uint32_t>(
+                vtxAttributeDescriptions
+                    .size()), // uint32_t                                    vertexAttributeDescriptionCount
+            vtxAttributeDescriptions.data(), // const VkVertexInputAttributeDescription*    pVertexAttributeDescriptions
+        };
+
+        GraphicsPipelineWrapper pipeline(vki, vkd, physDevice, device, m_context.getDeviceExtensions(),
+                                         m_params.pipelineConstructionType);
+        pipeline.setDefaultDepthStencilState()
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setDefaultColorBlendState()
+            .setupVertexInputState(&vertexInputInfo)
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertexModule)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragModule)
+            .setupFragmentOutputState(*renderPass)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline();
+
+        // Draw quad.
+        const ExactSamplingCase::PushConstants pushConstants = {
+            static_cast<float>(texExtent.width),
+            static_cast<float>(texExtent.height),
+        };
+
+        const tcu::Vec4 clearFbColor(0.0f, 0.0f, 0.0f, 1.0f);
+        const vk::VkDeviceSize vertexBufferOffset = 0ull;
+
+        const auto vertexBufferBarrier =
+            vk::makeBufferMemoryBarrier(vk::VK_ACCESS_HOST_WRITE_BIT, vk::VK_ACCESS_VERTEX_ATTRIBUTE_READ_BIT,
+                                        vertexBuffer.get(), 0ull, vertexBufferSize);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_HOST_BIT, vk::VK_PIPELINE_STAGE_VERTEX_INPUT_BIT, 0u,
+                               0u, nullptr, 1u, &vertexBufferBarrier, 0u, nullptr);
+
+        vkd.cmdPipelineBarrier(cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                               0u, 0u, nullptr, 0u, nullptr, 1u, &postTexCopyBarrier);
+
+        renderPass.begin(vkd, cmdBuffer, renderArea, clearFbColor);
+        pipeline.bind(cmdBuffer);
+        vkd.cmdBindDescriptorSets(cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+        vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        vkd.cmdPushConstants(cmdBuffer, pipelineLayout.get(), vk::VK_SHADER_STAGE_VERTEX_BIT, 0u,
+                             static_cast<uint32_t>(sizeof(pushConstants)), &pushConstants);
+        vkd.cmdDraw(cmdBuffer, static_cast<uint32_t>(fullScreenQuad.size()), 1u, 0u, 0u);
+        renderPass.end(vkd, cmdBuffer);
+
+        vk::copyImageToBuffer(vkd, cmdBuffer, outImage.get(), resultsBuffer.get(), iImgSize);
+
+        vk::endCommandBuffer(vkd, cmdBuffer);
+        vk::submitCommandsAndWait(vkd, device, queue, cmdBuffer);
+    }
 
     // Check results.
     const auto &resultsBufferAlloc = resultsBuffer.getAllocation();
@@ -2148,6 +2320,7 @@ struct MaxSamplerLodBiasParams
 {
     const PipelineConstructionType pipelineConstructionType;
     const LodBiasCase lodBiasCase;
+    bool useCompute;
 };
 
 class MaxSamplerLodBiasCase : public vkt::TestCase
@@ -2190,48 +2363,95 @@ protected:
 
 void MaxSamplerLodBiasCase::checkSupport(Context &context) const
 {
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_params.pipelineConstructionType);
+    if (m_params.useCompute)
+    {
+        ComputePipelineConstructionType computeType =
+            graphicsToComputeConstructionType(m_params.pipelineConstructionType);
+        checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(), computeType);
+    }
+    else
+    {
+        checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                              m_params.pipelineConstructionType);
+    }
 
     if (m_params.lodBiasCase == LodBiasCase::VIEW_MINLOD)
         context.requireDeviceFunctionality("VK_EXT_image_view_min_lod");
+
+    if (m_params.useCompute && (context.getComputeQueueFamilyIndex() == -1))
+        TCU_THROW(NotSupportedError, "Exclusive compute queue not supported.");
 }
 
 void MaxSamplerLodBiasCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    std::ostringstream vert;
-    vert << "#version 460\n"
-         << "layout (location=0) in vec4 inPos;\n"
-         << "void main (void) {\n"
-         << "    gl_Position = inPos;\n"
-         << "}\n";
-    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
-
     std::string sampleStatement;
-    const std::string sampleCoords = "vec2(gl_FragCoord.x / pc.fbWidth, gl_FragCoord.y / pc.fbHeight)";
+    std::string sampleCoords;
+
+    if (m_params.useCompute)
+    {
+        // For compute, we are dispatching 1x1, so we sample at center(0.5, 0.5) of the 1x1 normalized space
+        sampleCoords = "vec2((vec2(gl_GlobalInvocationID.xy) + 0.5) / vec2(pc.fbWidth, pc.fbHeight))";
+    }
+    else // graphics
+    {
+        sampleCoords = "vec2(gl_FragCoord.x / pc.fbWidth, gl_FragCoord.y / pc.fbHeight)";
+    }
 
     if (m_params.lodBiasCase == LodBiasCase::SHADER_LOD)
         sampleStatement = "textureLod(texSampler, " + sampleCoords + ", pc.lodLevel)";
     else if (m_params.lodBiasCase == LodBiasCase::SHADER_BIAS)
-        sampleStatement = "texture(texSampler, " + sampleCoords + ", pc.lodLevel)";
+        // 'texture(sampler, uv, bias)' generates OpImageSampleExplicitLod with Bias operand,
+        // which is invalid in Compute (requires ImplicitLod).
+        // Since base LOD is 0 in compute, 'bias' is equivalent to explicit LOD 'bias'.
+        sampleStatement = m_params.useCompute ? "textureLod(texSampler, " + sampleCoords + ", pc.lodLevel)" :
+                                                "texture(texSampler, " + sampleCoords + ", pc.lodLevel)";
     else
         sampleStatement = "textureLod(texSampler, " + sampleCoords + ", 0.0)";
 
     DE_ASSERT(!sampleStatement.empty());
 
-    std::ostringstream frag;
-    frag << "#version 460\n"
-         << "layout (location=0) out vec4 outColor;\n"
-         << "layout (set=0, binding=0) uniform sampler2D texSampler;\n"
-         << "layout (push_constant, std430) uniform PushConstantBlock {\n"
-         << "    float lodLevel;\n"
-         << "    float fbWidth;\n"
-         << "    float fbHeight;\n"
-         << "} pc;\n"
-         << "void main (void) {\n"
-         << "    outColor = " << sampleStatement << ";\n"
-         << "}\n";
-    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    if (m_params.useCompute)
+    {
+        std::ostringstream comp;
+        comp << "#version 460\n"
+             << "layout(local_size_x = 1, local_size_y = 1) in;\n"
+             << "layout(set = 0, binding = 0) uniform sampler2D texSampler;\n"
+             << "layout(set = 0, binding = 1, rgba8) uniform writeonly image2D outImage;\n"
+             << "layout(push_constant, std430) uniform PushConstantBlock {\n"
+             << "    float lodLevel;\n"
+             << "    float fbWidth;\n"
+             << "    float fbHeight;\n"
+             << "} pc;\n"
+             << "void main (void) {\n"
+             << "    vec4 color = " << sampleStatement << ";\n"
+             << "    imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), color);\n"
+             << "}\n";
+        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    }
+    else // graphics
+    {
+        std::ostringstream vert;
+        vert << "#version 460\n"
+             << "layout (location=0) in vec4 inPos;\n"
+             << "void main (void) {\n"
+             << "    gl_Position = inPos;\n"
+             << "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+        std::ostringstream frag;
+        frag << "#version 460\n"
+             << "layout (location=0) out vec4 outColor;\n"
+             << "layout (set=0, binding=0) uniform sampler2D texSampler;\n"
+             << "layout (push_constant, std430) uniform PushConstantBlock {\n"
+             << "    float lodLevel;\n"
+             << "    float fbWidth;\n"
+             << "    float fbHeight;\n"
+             << "} pc;\n"
+             << "void main (void) {\n"
+             << "    outColor = " << sampleStatement << ";\n"
+             << "}\n";
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    }
 }
 
 TestInstance *MaxSamplerLodBiasCase::createInstance(Context &context) const
@@ -2247,7 +2467,8 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
     const auto imageType         = VK_IMAGE_TYPE_2D;
     const auto tiling            = VK_IMAGE_TILING_OPTIMAL;
     const auto textureUsage      = (VK_IMAGE_USAGE_TRANSFER_DST_BIT | VK_IMAGE_USAGE_SAMPLED_BIT);
-    const auto fbUsage           = (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT);
+    const auto outUsage          = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+                           (m_params.useCompute ? VK_IMAGE_USAGE_STORAGE_BIT : VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT));
     const auto sampleCount       = VK_SAMPLE_COUNT_1_BIT;
     const auto descriptorType    = VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER;
     const auto maxLodBias        = getPhysicalDeviceProperties(ctx.vki, ctx.physicalDevice).limits.maxSamplerLodBias;
@@ -2258,6 +2479,9 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
     const auto fbExtent          = tcu::IVec3(1, 1, 1);
     const auto vkExtent          = makeExtent3D(fbExtent);
     const auto baseSeed          = 1687852938u;
+
+    const auto queue    = getQueue(m_context, m_params.useCompute);
+    const auto queueNdx = getQueueNdx(m_context, m_params.useCompute);
 
     const VkImageCreateInfo textureCreateInfo = {
         VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
@@ -2315,7 +2539,7 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
     const auto textureView = createImageView(ctx.vkd, ctx.device, &viewCreateInfo);
 
     // Output color buffer.
-    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, vkFormat, fbUsage, imageType);
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, vkExtent, vkFormat, outUsage, imageType);
 
     // Texture sampler.
     const float samplerMipLodBias = ((m_params.lodBiasCase == LodBiasCase::SAMPLER_BIAS) ? maxLodBias : 0.0f);
@@ -2342,44 +2566,32 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
     };
     const auto sampler = createSampler(ctx.vkd, ctx.device, &samplerCreateInfo);
 
-    // Vertex buffer.
-    const std::vector<tcu::Vec4> vertices{
-        tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
-        tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f),
-        tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f),
-        tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
-    };
-    const auto vertexBufferSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
-    const auto vertexBufferInfo = makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-    BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo, MemoryRequirement::HostVisible);
-    auto &vertexBufferAlloc       = vertexBuffer.getAllocation();
-    void *vertexBufferDataPtr     = vertexBufferAlloc.getHostPtr();
-    const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
-
-    deMemcpy(vertexBufferDataPtr, de::dataOrNull(vertices), de::dataSize(vertices));
-    flushAlloc(ctx.vkd, ctx.device, vertexBufferAlloc);
-
-    // Render pass and framebuffer.
-    auto renderPass = RenderPassWrapper(m_params.pipelineConstructionType, ctx.vkd, ctx.device, vkFormat);
-    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
-                                 vkExtent.width, vkExtent.height);
-
     // Push constants.
     const std::vector<float> pcValues{maxLodBias, static_cast<float>(vkExtent.width),
                                       static_cast<float>(vkExtent.height)};
     const auto pcSize   = static_cast<uint32_t>(de::dataSize(pcValues));
-    const auto pcStages = VK_SHADER_STAGE_FRAGMENT_BIT;
+    const auto pcStages = m_params.useCompute ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
     const auto pcRange  = makePushConstantRange(pcStages, 0u, pcSize);
 
     // Descriptor pool and set.
     DescriptorSetLayoutBuilder setLayoutBuilder;
-    setLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT);
+    if (m_params.useCompute)
+    {
+        setLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_COMPUTE_BIT);
+        setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
+    }
+    else // graphics
+    {
+        setLayoutBuilder.addSingleBinding(descriptorType, VK_SHADER_STAGE_FRAGMENT_BIT);
+    }
     const auto descriptorSetLayout = setLayoutBuilder.build(ctx.vkd, ctx.device);
     const PipelineLayoutWrapper pipelineLayout(m_params.pipelineConstructionType, ctx.vkd, ctx.device,
                                                *descriptorSetLayout, &pcRange);
 
     DescriptorPoolBuilder descriptorPoolBuilder;
     descriptorPoolBuilder.addType(descriptorType);
+    if (m_params.useCompute)
+        descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     const auto descriptorPool =
         descriptorPoolBuilder.build(ctx.vkd, ctx.device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
     const auto descriptorSet = makeDescriptorSet(ctx.vkd, ctx.device, *descriptorPool, *descriptorSetLayout);
@@ -2389,31 +2601,16 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
         makeDescriptorImageInfo(*sampler, *textureView, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
     setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u), descriptorType,
                                  &samplerDescriptorInfo);
+    if (m_params.useCompute)
+    {
+        const auto storageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, colorBuffer.getImageView(), VK_IMAGE_LAYOUT_GENERAL);
+        setUpdateBuilder.writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(1u),
+                                     VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageInfo);
+    }
     setUpdateBuilder.update(ctx.vkd, ctx.device);
 
-    // Pipeline.
-    const auto &binaries = m_context.getBinaryCollection();
-    const auto vertMod   = ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
-    const auto fragMod   = ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
-
-    const std::vector<VkViewport> viewports(1u, makeViewport(vkExtent));
-    const std::vector<VkRect2D> scissors(1u, makeRect2D(vkExtent));
-
-    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, m_context.getDeviceExtensions(),
-                                     m_params.pipelineConstructionType);
-    pipeline.setDefaultDepthStencilState()
-        .setDefaultRasterizationState()
-        .setDefaultMultisampleState()
-        .setDefaultColorBlendState()
-        .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-        .setupVertexInputState()
-        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertMod)
-        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragMod)
-        .setupFragmentOutputState(*renderPass)
-        .setMonolithicPipelineLayout(pipelineLayout)
-        .buildPipeline();
-
-    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, queueNdx);
     const auto cmdBuffer = *cmd.cmdBuffer;
 
     beginCommandBuffer(ctx.vkd, cmdBuffer);
@@ -2451,27 +2648,109 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
     const auto preReadBarrier = makeImageMemoryBarrier(
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture.get(), textureColorSRR);
-    cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
-                                  VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, &preReadBarrier);
+    cmdPipelineImageMemoryBarrier(
+        ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT,
+        (m_params.useCompute ? VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT),
+        &preReadBarrier);
 
-    const tcu::Vec4 fbClearColor(0.0f, 0.0f, 0.0f, 0.0f);
-    renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), fbClearColor);
-    ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
-    pipeline.bind(cmdBuffer);
-    ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
-                                  &descriptorSet.get(), 0u, nullptr);
-    ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, de::dataOrNull(pcValues));
-    ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
-    renderPass.end(ctx.vkd, cmdBuffer);
+    if (m_params.useCompute)
+    {
+        // Pipeline
+        const vk::ComputePipelineConstructionType computeConstructionType =
+            vk::graphicsToComputeConstructionType(m_params.pipelineConstructionType);
+        vk::ComputePipelineWrapper pipeline(ctx.vkd, ctx.device, computeConstructionType,
+                                            m_context.getBinaryCollection().get("comp"));
+        pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+        pipeline.addPushConstantRange(pcRange);
+        pipeline.buildPipeline();
 
-    // Copy color buffer to verification buffer.
-    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1),
-                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
-                      VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
-                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+        const auto outputSRR       = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+        const auto preWriteBarrier = makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                                                            VK_IMAGE_LAYOUT_GENERAL, colorBuffer.getImage(), outputSRR);
+        cmdPipelineImageMemoryBarrier(ctx.vkd, cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                      VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, &preWriteBarrier);
 
-    endCommandBuffer(ctx.vkd, cmdBuffer);
-    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+        pipeline.bind(cmdBuffer);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u,
+                                      &descriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0u, pcSize,
+                                 de::dataOrNull(pcValues));
+        ctx.vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+
+        // Copy color buffer to verification buffer.
+        copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1),
+                          VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_GENERAL, 1u, VK_IMAGE_ASPECT_COLOR_BIT,
+                          VK_IMAGE_ASPECT_COLOR_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
+
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
+    }
+    else // graphics
+    {
+        // Vertex buffer.
+        const std::vector<tcu::Vec4> vertices{
+            tcu::Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
+            tcu::Vec4(-1.0f, 1.0f, 0.0f, 1.0f),
+            tcu::Vec4(1.0f, -1.0f, 0.0f, 1.0f),
+            tcu::Vec4(1.0f, 1.0f, 0.0f, 1.0f),
+        };
+        const auto vertexBufferSize = static_cast<VkDeviceSize>(de::dataSize(vertices));
+        const auto vertexBufferInfo = makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+        BufferWithMemory vertexBuffer(ctx.vkd, ctx.device, ctx.allocator, vertexBufferInfo,
+                                      MemoryRequirement::HostVisible);
+        auto &vertexBufferAlloc       = vertexBuffer.getAllocation();
+        void *vertexBufferDataPtr     = vertexBufferAlloc.getHostPtr();
+        const auto vertexBufferOffset = static_cast<VkDeviceSize>(0);
+
+        deMemcpy(vertexBufferDataPtr, de::dataOrNull(vertices), de::dataSize(vertices));
+        flushAlloc(ctx.vkd, ctx.device, vertexBufferAlloc);
+
+        // Render pass and framebuffer.
+        auto renderPass = RenderPassWrapper(m_params.pipelineConstructionType, ctx.vkd, ctx.device, vkFormat);
+        renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
+                                     vkExtent.width, vkExtent.height);
+
+        // Pipeline.
+        const auto &binaries = m_context.getBinaryCollection();
+        const auto vertMod   = ShaderWrapper(ctx.vkd, ctx.device, binaries.get("vert"));
+        const auto fragMod   = ShaderWrapper(ctx.vkd, ctx.device, binaries.get("frag"));
+
+        const std::vector<VkViewport> viewports(1u, makeViewport(vkExtent));
+        const std::vector<VkRect2D> scissors(1u, makeRect2D(vkExtent));
+
+        GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device,
+                                         m_context.getDeviceExtensions(), m_params.pipelineConstructionType);
+        pipeline.setDefaultDepthStencilState()
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setDefaultColorBlendState()
+            .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setupVertexInputState()
+            .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, *renderPass, 0u, vertMod)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragMod)
+            .setupFragmentOutputState(*renderPass)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline();
+
+        const tcu::Vec4 fbClearColor(0.0f, 0.0f, 0.0f, 0.0f);
+        renderPass.begin(ctx.vkd, cmdBuffer, scissors.at(0u), fbClearColor);
+        ctx.vkd.cmdBindVertexBuffers(cmdBuffer, 0u, 1u, &vertexBuffer.get(), &vertexBufferOffset);
+        pipeline.bind(cmdBuffer);
+        ctx.vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                      &descriptorSet.get(), 0u, nullptr);
+        ctx.vkd.cmdPushConstants(cmdBuffer, *pipelineLayout, pcStages, 0u, pcSize, de::dataOrNull(pcValues));
+        ctx.vkd.cmdDraw(cmdBuffer, de::sizeU32(vertices), 1u, 0u, 0u);
+        renderPass.end(ctx.vkd, cmdBuffer);
+
+        // Copy color buffer to verification buffer.
+        copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), fbExtent.swizzle(0, 1),
+                          VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, 1u,
+                          VK_IMAGE_ASPECT_COLOR_BIT, VK_IMAGE_ASPECT_COLOR_BIT,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
+
+        endCommandBuffer(ctx.vkd, cmdBuffer);
+        submitCommandsAndWait(ctx.vkd, ctx.device, queue, cmdBuffer);
+    }
 
     // Verify color buffer has the right mip level color.
     const auto &colorBufferAlloc = colorBuffer.getBufferAllocation();
@@ -2486,6 +2765,23 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
         return tcu::TestStatus::fail("Unexpected color found in color buffer -- check log for details");
 
     return tcu::TestStatus::pass("Pass");
+}
+
+bool isStorageCompatible(VkFormat format)
+{
+    const tcu::TextureFormat tcuFormat = vk::mapVkFormat(format);
+    const int numChannels              = tcu::getNumUsedChannels(tcuFormat.order);
+
+    return numChannels != 3;
+}
+
+bool isFormatSwizzle(VkFormat format)
+{
+    const tcu::TextureFormat tcuFormat = vk::mapVkFormat(format);
+
+    // Swizzled formats must be skipped in compute-only mode, as they cause undefined behavior
+    return tcuFormat.order == tcu::TextureFormat::BGRA || tcuFormat.order == tcu::TextureFormat::BGR ||
+           tcuFormat.order == tcu::TextureFormat::A;
 }
 
 } // namespace
@@ -2795,6 +3091,9 @@ tcu::TestCaseGroup *createExactSamplingTests(tcu::TestContext &testCtx,
         {true, "solid_color"},
     };
 
+    const bool genCompute = (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+                             pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
     for (const auto format : formats)
     {
         const std::string formatName = getFormatCaseName(format);
@@ -2812,10 +3111,19 @@ tcu::TestCaseGroup *createExactSamplingTests(tcu::TestContext &testCtx,
 
                 for (int edgeIdx = 0; edgeIdx < DE_LENGTH_OF_ARRAY(testEdges); ++edgeIdx)
                 {
-                    const auto &edges                      = testEdges[edgeIdx];
-                    const ExactSamplingCase::Params params = {pipelineConstructionType, format, unnorm.unnormalized,
-                                                              solid.first, edges.offset};
-                    coordGroup->addChild(new ExactSamplingCase{testCtx, edges.name, params});
+                    const auto &edges                = testEdges[edgeIdx];
+                    ExactSamplingCase::Params params = {
+                        pipelineConstructionType, format, unnorm.unnormalized, solid.first, edges.offset, false};
+                    std::string testName = edges.name;
+                    coordGroup->addChild(new ExactSamplingCase{testCtx, testName, params});
+
+                    // Compute version if compatible
+                    if (isStorageCompatible(format) && !isFormatSwizzle(format) && genCompute)
+                    {
+                        params.useCompute = true;
+                        testName += "_compute";
+                        coordGroup->addChild(new ExactSamplingCase{testCtx, testName, params});
+                    }
                 }
 
                 solidColorGroup->addChild(coordGroup.release());
@@ -2835,11 +3143,14 @@ tcu::TestCaseGroup *createMaxSamplerLodBiasTests(tcu::TestContext &testCtx,
 {
     de::MovePtr<tcu::TestCaseGroup> testGroup(new tcu::TestCaseGroup(testCtx, "max_sampler_lod_bias"));
 
+    const bool genCompute = (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+                             pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV);
+
     for (int caseIdx = 0; caseIdx < static_cast<int>(LodBiasCase::CASE_COUNT); ++caseIdx)
     {
         const auto caseValue = static_cast<LodBiasCase>(caseIdx);
-        const auto testName  = getLodBiasCaseName(caseValue);
-        const MaxSamplerLodBiasParams params{pipelineConstructionType, caseValue};
+        auto testName        = getLodBiasCaseName(caseValue);
+        MaxSamplerLodBiasParams params{pipelineConstructionType, caseValue, false};
 
 #ifdef CTS_USES_VULKANSC
         if (caseValue == LodBiasCase::VIEW_MINLOD)
@@ -2847,6 +3158,14 @@ tcu::TestCaseGroup *createMaxSamplerLodBiasTests(tcu::TestContext &testCtx,
 #endif // CTS_USES_VULKANSC
 
         testGroup->addChild(new MaxSamplerLodBiasCase(testCtx, testName, params));
+
+        // Compute variant
+        if (genCompute)
+        {
+            params.useCompute = true;
+            testName += "_compute";
+            testGroup->addChild(new MaxSamplerLodBiasCase(testCtx, testName, params));
+        }
     }
 
     return testGroup.release();
