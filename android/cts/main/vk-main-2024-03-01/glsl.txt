@@ -721,6 +721,8 @@ dEQP-VK.glsl.helper_invocations.load_from_ssbo
 dEQP-VK.glsl.helper_invocations.load_from_texture
 dEQP-VK.glsl.helper_invocations.load_from_ubo
 dEQP-VK.glsl.helper_invocations.output_variables
+dEQP-VK.glsl.logical_copy.initialized_struct
+dEQP-VK.glsl.logical_copy.undefined_memory
 dEQP-VK.glsl.precise.extended_instructions.cross_highp_highp
 dEQP-VK.glsl.precise.extended_instructions.cross_highp_lowp
 dEQP-VK.glsl.precise.extended_instructions.cross_highp_mediump
