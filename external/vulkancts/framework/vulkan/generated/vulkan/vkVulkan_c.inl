@@ -7,7 +7,7 @@
 #define VULKAN_VIDEO_CODECS_COMMON_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -43,7 +43,7 @@ extern "C" {
 #define VULKAN_VIDEO_CODEC_H264STD_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -355,7 +355,7 @@ typedef struct StdVideoH264PictureParameterSet {
 #define VULKAN_VIDEO_CODEC_H264STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -432,7 +432,7 @@ typedef struct StdVideoDecodeH264ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_H264STD_ENCODE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -579,7 +579,7 @@ typedef struct StdVideoEncodeH264SliceHeader {
 #define VULKAN_VIDEO_CODEC_H265STD_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1025,7 +1025,7 @@ typedef struct StdVideoH265PictureParameterSet {
 #define VULKAN_VIDEO_CODEC_H265STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1092,7 +1092,7 @@ typedef struct StdVideoDecodeH265ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_H265STD_ENCODE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1249,7 +1249,7 @@ typedef struct StdVideoEncodeH265ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_AV1STD_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1643,7 +1643,7 @@ typedef struct StdVideoAV1SequenceHeader {
 #define VULKAN_VIDEO_CODEC_AV1STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1752,7 +1752,7 @@ typedef struct StdVideoDecodeAV1ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_AV1STD_ENCODE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -1895,7 +1895,7 @@ typedef struct StdVideoEncodeAV1ReferenceInfo {
 #define VULKAN_VIDEO_CODEC_VP9STD_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -2046,7 +2046,7 @@ typedef struct StdVideoVP9Segmentation {
 #define VULKAN_VIDEO_CODEC_VP9STD_DECODE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -2114,7 +2114,7 @@ typedef struct StdVideoDecodeVP9PictureInfo {
 #define VULKAN_CORE_H_ 1
 
 /*
-** Copyright 2015-2025 The Khronos Group Inc.
+** Copyright 2015-2026 The Khronos Group Inc.
 **
 ** SPDX-License-Identifier: Apache-2.0
 */
@@ -2178,7 +2178,7 @@ extern "C" {
 //#define VK_API_VERSION VK_MAKE_API_VERSION(0, 1, 0, 0) // Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 336
+#define VK_HEADER_VERSION 338
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -3491,6 +3491,8 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_FLAGS_INFO_KHR = 1000630002,
     VK_STRUCTURE_TYPE_RENDERING_END_INFO_KHR = 1000619003,
     VK_STRUCTURE_TYPE_RESOLVE_IMAGE_MODE_INFO_KHR = 1000630004,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_FEATURES_EXT = 1000635000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_LONG_VECTOR_PROPERTIES_EXT = 1000635001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PIPELINE_CACHE_INCREMENTAL_MODE_FEATURES_SEC = 1000637000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_UNIFORM_BUFFER_UNSIZED_ARRAY_FEATURES_EXT = 1000642000,
     VK_STRUCTURE_TYPE_COMPUTE_OCCUPANCY_PRIORITY_PARAMETERS_NV = 1000645000,
@@ -24655,7 +24657,7 @@ typedef struct VkDataGraphPipelineSessionBindPointRequirementsInfoARM {
 
 typedef struct VkDataGraphPipelineSessionBindPointRequirementARM {
     VkStructureType                               sType;
-    const void*                                   pNext;
+    void*                                         pNext;
     VkDataGraphPipelineSessionBindPointARM        bindPoint;
     VkDataGraphPipelineSessionBindPointTypeARM    bindPointType;
     uint32_t                                      numObjects;
@@ -24687,7 +24689,7 @@ typedef struct VkDataGraphPipelineInfoARM {
 
 typedef struct VkDataGraphPipelinePropertyQueryResultARM {
     VkStructureType                   sType;
-    const void*                       pNext;
+    void*                             pNext;
     VkDataGraphPipelinePropertyARM    property;
     VkBool32                          isText;
     uintptr_t                            dataSize;
@@ -24720,7 +24722,7 @@ typedef struct VkPhysicalDeviceDataGraphOperationSupportARM {
 
 typedef struct VkQueueFamilyDataGraphPropertiesARM {
     VkStructureType                                 sType;
-    const void*                                     pNext;
+    void*                                           pNext;
     VkPhysicalDeviceDataGraphProcessingEngineARM    engine;
     VkPhysicalDeviceDataGraphOperationSupportARM    operation;
 } VkQueueFamilyDataGraphPropertiesARM;
@@ -24741,7 +24743,7 @@ typedef struct VkPhysicalDeviceQueueFamilyDataGraphProcessingEngineInfoARM {
 
 typedef struct VkQueueFamilyDataGraphProcessingEnginePropertiesARM {
     VkStructureType                       sType;
-    const void*                           pNext;
+    void*                                 pNext;
     VkExternalSemaphoreHandleTypeFlags    foreignSemaphoreHandleTypes;
     VkExternalMemoryHandleTypeFlags       foreignMemoryHandleTypes;
 } VkQueueFamilyDataGraphProcessingEnginePropertiesARM;
@@ -26318,6 +26320,24 @@ typedef struct VkPhysicalDeviceDataGraphModelFeaturesQCOM {
     void*              pNext;
     VkBool32           dataGraphModel;
 } VkPhysicalDeviceDataGraphModelFeaturesQCOM;
+
+
+
+// VK_EXT_shader_long_vector is a preprocessor guard. Do not pass it to API calls.
+#define VK_EXT_shader_long_vector 1
+#define VK_EXT_SHADER_LONG_VECTOR_SPEC_VERSION 1
+#define VK_EXT_SHADER_LONG_VECTOR_EXTENSION_NAME "VK_EXT_shader_long_vector"
+typedef struct VkPhysicalDeviceShaderLongVectorFeaturesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           longVector;
+} VkPhysicalDeviceShaderLongVectorFeaturesEXT;
+
+typedef struct VkPhysicalDeviceShaderLongVectorPropertiesEXT {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           maxVectorComponents;
+} VkPhysicalDeviceShaderLongVectorPropertiesEXT;
 
 
 

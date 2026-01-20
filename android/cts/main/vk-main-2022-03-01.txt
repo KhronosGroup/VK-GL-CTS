@@ -35,4 +35,3 @@ vk-main-2022-03-01/synchronization2.txt
 vk-main-2022-03-01/texture.txt
 vk-main-2022-03-01/transform-feedback.txt
 vk-main-2022-03-01/wsi.txt
-vk-main-2022-03-01/ycbcr.txt

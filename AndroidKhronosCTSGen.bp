@@ -1512,6 +1512,7 @@ cc_library_static {
         "external/vulkancts/modules/vulkan/memory/vktMemoryConcurrentAccessTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryDecompressionTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryDeviceMemoryReportTests.cpp",
+        "external/vulkancts/modules/vulkan/memory/vktMemoryExternalDmaHeapTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryExternalMemoryAcquireUnmodifiedTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryExternalMemoryHostTests.cpp",
         "external/vulkancts/modules/vulkan/memory/vktMemoryMappingTests.cpp",

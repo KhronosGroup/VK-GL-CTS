@@ -59,6 +59,7 @@ enum CullMode
     CULLMODE_NONE,
     CULLMODE_BACK,
     CULLMODE_FRONT,
+    CULLMODE_FRONT_AND_BACK,
 
     CULLMODE_LAST
 };
@@ -358,8 +359,9 @@ struct RestartState
 struct RenderState
 {
     explicit RenderState(const ViewportState &viewport_, const int subpixelBits_,
-                         ViewportOrientation viewportOrientation_ = VIEWPORTORIENTATION_LOWER_LEFT)
-        : cullMode(CULLMODE_NONE)
+                         ViewportOrientation viewportOrientation_ = VIEWPORTORIENTATION_LOWER_LEFT,
+                         CullMode cullMode_                       = CULLMODE_NONE)
+        : cullMode(cullMode_)
         , provokingVertexConvention(PROVOKINGVERTEX_LAST)
         , viewport(viewport_)
         , viewportOrientation(viewportOrientation_)

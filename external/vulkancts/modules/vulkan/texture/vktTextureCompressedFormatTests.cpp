@@ -623,18 +623,34 @@ void populateTextureCompressedFormatTests(tcu::TestCaseGroup *compressedTextureT
                 testParameters.programs.push_back(PROGRAM_2D_FLOAT);
                 testParameters.mipmaps    = sizes[sizeNdx].mipmaps;
                 testParameters.voidExtent = false;
+                testParameters.useCompute = false;
 
                 compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(
                     testCtx, (nameBase + "_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(),
                     testParameters));
 
+                // Compute case.
+                std::string computeName =
+                    nameBase + "_2d_compute_" + sizes[sizeNdx].name + backingModes[backingNdx].name + "_compute";
+                testParameters.useCompute = true;
+                compressedTextureTests->addChild(
+                    new TextureTestCase<Compressed2DTestInstance>(testCtx, computeName.c_str(), testParameters));
+
                 if (tcu::isAstcFormat(mapVkCompressedFormat(testParameters.format)))
                 {
                     testParameters.voidExtent = true;
+                    testParameters.useCompute = false;
                     compressedTextureTests->addChild(new TextureTestCase<Compressed2DTestInstance>(
                         testCtx,
                         (nameBase + "_voidextent_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(),
                         testParameters));
+
+                    // Compute case with void extent.
+                    computeName =
+                        nameBase + "_voidextent_2d_" + sizes[sizeNdx].name + backingModes[backingNdx].name + "_compute";
+                    testParameters.useCompute = true;
+                    compressedTextureTests->addChild(
+                        new TextureTestCase<Compressed2DTestInstance>(testCtx, computeName.c_str(), testParameters));
                 }
             }
 }
@@ -661,11 +677,19 @@ void populate3DTextureCompressedFormatTests(tcu::TestCaseGroup *compressedTextur
                 testParameters.magFilter   = tcu::Sampler::NEAREST;
                 testParameters.aspectMask  = VK_IMAGE_ASPECT_COLOR_BIT;
                 testParameters.programs.push_back(PROGRAM_3D_FLOAT);
-                testParameters.mipmaps = sizes[sizeNdx].mipmaps;
+                testParameters.mipmaps    = sizes[sizeNdx].mipmaps;
+                testParameters.useCompute = false;
 
                 compressedTextureTests->addChild(new TextureTestCase<Compressed3DTestInstance>(
                     testCtx, (nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name).c_str(),
                     testParameters));
+
+                // Compute case.
+                std::string computeName =
+                    nameBase + "_3d_" + sizes[sizeNdx].name + backingModes[backingNdx].name + "_compute";
+                testParameters.useCompute = true;
+                compressedTextureTests->addChild(
+                    new TextureTestCase<Compressed3DTestInstance>(testCtx, computeName.c_str(), testParameters));
             }
 
 #ifndef CTS_USES_VULKANSC

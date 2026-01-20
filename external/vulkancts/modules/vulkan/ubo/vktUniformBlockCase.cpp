@@ -2416,25 +2416,6 @@ void UniformBlockCase::initPrograms(vk::SourceCollections &programCollection) co
 
 TestInstance *UniformBlockCase::createInstance(Context &context) const
 {
-    if (!context.get16BitStorageFeatures().uniformAndStorageBuffer16BitAccess && usesBlockLayout(LAYOUT_16BIT_STORAGE))
-        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer16BitAccess not supported");
-    if (!context.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess && usesBlockLayout(LAYOUT_8BIT_STORAGE))
-        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer8BitAccess not supported");
-    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout &&
-        !context.getUniformBufferStandardLayoutFeatures().uniformBufferStandardLayout && usesBlockLayout(LAYOUT_STD430))
-        TCU_THROW(NotSupportedError, "std430 not supported");
-    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesBlockLayout(LAYOUT_SCALAR))
-        TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
-    if (usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING) &&
-        (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing ||
-         !context.getDescriptorIndexingFeatures().runtimeDescriptorArray))
-        TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
-#ifndef CTS_USES_VULKANSC
-    if (hasUnsizedArray(m_interface) &&
-        !context.getShaderUniformBufferUnsizedArrayFeaturesEXT().shaderUniformBufferUnsizedArray)
-        TCU_THROW(NotSupportedError, "shaderUniformBufferUnsizedArray not supported");
-#endif
-
     return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
 }
 
@@ -2475,6 +2456,28 @@ void UniformBlockCase::delayedInit(void)
         generateVertexShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag, m_shuffleUniformMembers);
     m_fragShaderSource = generateFragmentShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag,
                                                 m_shuffleUniformMembers);
+}
+
+void UniformBlockCase::checkSupport(Context &context) const
+{
+    if (!context.get16BitStorageFeatures().uniformAndStorageBuffer16BitAccess && usesBlockLayout(LAYOUT_16BIT_STORAGE))
+        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer16BitAccess not supported");
+    if (!context.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess && usesBlockLayout(LAYOUT_8BIT_STORAGE))
+        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer8BitAccess not supported");
+    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout &&
+        !context.getUniformBufferStandardLayoutFeatures().uniformBufferStandardLayout && usesBlockLayout(LAYOUT_STD430))
+        TCU_THROW(NotSupportedError, "std430 not supported");
+    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesBlockLayout(LAYOUT_SCALAR))
+        TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
+    if (usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING) &&
+        (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing ||
+         !context.getDescriptorIndexingFeatures().runtimeDescriptorArray))
+        TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
+#ifndef CTS_USES_VULKANSC
+    if (hasUnsizedArray(m_interface) &&
+        !context.getShaderUniformBufferUnsizedArrayFeaturesEXT().shaderUniformBufferUnsizedArray)
+        TCU_THROW(NotSupportedError, "shaderUniformBufferUnsizedArray not supported");
+#endif
 }
 
 } // namespace ubo

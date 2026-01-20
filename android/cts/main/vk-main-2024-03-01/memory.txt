@@ -281,6 +281,9 @@ dEQP-VK.memory.decompression.indirect.compression_level_6.count_32_32.decompress
 dEQP-VK.memory.decompression.indirect.compression_level_6.count_32_32.decompressed_size_64k
 dEQP-VK.memory.decompression.indirect.compression_level_6.count_64_64.decompressed_size_17k
 dEQP-VK.memory.decompression.indirect.compression_level_6.count_64_64.decompressed_size_64k
+dEQP-VK.memory.dma_heap_memory.allocate_and_bind
+dEQP-VK.memory.dma_heap_memory.shader_access
+dEQP-VK.memory.dma_heap_memory.shader_access_offset
 dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.b8g8r8a8_unorm
 dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.r16g16b16a16_sfloat
 dEQP-VK.memory.external_memory_acquire_unmodified.android_hardware_buffer.r16g16b16a16_unorm

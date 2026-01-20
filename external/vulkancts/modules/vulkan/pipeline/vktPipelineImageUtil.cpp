@@ -542,7 +542,8 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
                                      VkQueue universalQueue, uint32_t universalQueueFamilyIndex, VkQueue sparseQueue,
                                      Allocator &allocator, std::vector<de::SharedPtr<Allocation>> &allocations,
                                      const TestTexture &srcTexture, const TestTexture *srcStencilTexture,
-                                     tcu::TextureFormat format, VkImage destImage)
+                                     tcu::TextureFormat format, VkImage destImage, vk::VkImageLayout destImageLayout,
+                                     vk::VkPipelineStageFlags destStageFlags)
 {
     uint32_t bufferSize = (srcTexture.isCompressed()) ? srcTexture.getCompressedSize() : srcTexture.getSize();
     const VkImageAspectFlags imageAspectFlags = getImageAspectFlags(format);
@@ -621,7 +622,7 @@ void uploadTestTextureInternalSparse(const DeviceInterface &vk, VkDevice device,
 
     copyBufferToImage(vk, device, universalQueue, universalQueueFamilyIndex, *buffer, bufferSize, copyRegions,
                       &(*imageMemoryBindSemaphore), imageAspectFlags, imageCreateInfo.mipLevels,
-                      imageCreateInfo.arrayLayers, destImage);
+                      imageCreateInfo.arrayLayers, destImage, destImageLayout, destStageFlags);
 }
 
 void uploadTestTexture(const DeviceInterface &vk, VkDevice device, VkQueue queue, uint32_t queueFamilyIndex,
@@ -671,7 +672,8 @@ void uploadTestTextureSparse(const DeviceInterface &vk, VkDevice device, const V
                              const InstanceInterface &instance, const VkImageCreateInfo &imageCreateInfo,
                              VkQueue universalQueue, uint32_t universalQueueFamilyIndex, VkQueue sparseQueue,
                              Allocator &allocator, std::vector<de::SharedPtr<Allocation>> &allocations,
-                             const TestTexture &srcTexture, VkImage destImage)
+                             const TestTexture &srcTexture, VkImage destImage, vk::VkImageLayout destImageLayout,
+                             vk::VkPipelineStageFlags destStageFlags)
 {
     if (tcu::isCombinedDepthStencilType(srcTexture.getTextureFormat().type))
     {
@@ -706,13 +708,14 @@ void uploadTestTextureSparse(const DeviceInterface &vk, VkDevice device, const V
         uploadTestTextureInternalSparse(vk, device, physicalDevice, instance, imageCreateInfo, universalQueue,
                                         universalQueueFamilyIndex, sparseQueue, allocator, allocations,
                                         *srcDepthTexture, srcStencilTexture.get(), srcTexture.getTextureFormat(),
-                                        destImage);
+                                        destImage, destImageLayout, destStageFlags);
     }
     else
     {
         uploadTestTextureInternalSparse(vk, device, physicalDevice, instance, imageCreateInfo, universalQueue,
                                         universalQueueFamilyIndex, sparseQueue, allocator, allocations, srcTexture,
-                                        nullptr, srcTexture.getTextureFormat(), destImage);
+                                        nullptr, srcTexture.getTextureFormat(), destImage, destImageLayout,
+                                        destStageFlags);
     }
 }
 

@@ -563,6 +563,8 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
 
 void VideoTestCase::checkSupport(Context &ctx) const
 {
+    VideoDevice::checkSupport(ctx, m_requirements.codecOperation);
+
     for (const auto &extension : m_requirements.extensions)
     {
         if (!ctx.isDeviceFunctionalitySupported(extension.c_str()))

@@ -3877,9 +3877,9 @@ VideoEncodeTestCase::~VideoEncodeTestCase(void)
 
 void VideoEncodeTestCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_video_queue");
+    VideoDevice::checkSupport(context, m_testDefinition->getCodecOperation());
+
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
-    context.requireDeviceFunctionality("VK_KHR_video_encode_queue");
 
     switch (m_testDefinition->getTestType())
     {

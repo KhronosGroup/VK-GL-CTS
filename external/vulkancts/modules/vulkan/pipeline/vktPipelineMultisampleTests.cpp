@@ -7673,6 +7673,9 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
             createMultisampleResolveRenderpassRenderAreaTests(testCtx, pipelineConstructionType));
 
         // VK_EXT_multisampled_render_to_single_sampled
+        if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+            pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+            pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
         {
             multisampleTests->addChild(createMultisampledRenderToSingleSampledTests(testCtx, pipelineConstructionType));
             // Take advantage of the code for this extension's tests to add some normal multisampling tests

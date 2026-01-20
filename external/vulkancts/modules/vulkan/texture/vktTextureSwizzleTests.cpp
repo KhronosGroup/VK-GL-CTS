@@ -139,7 +139,7 @@ Swizzle2DTestInstance::Swizzle2DTestInstance(Context &context, const ParameterTy
               new pipeline::TestTexture2D(m_compressedFormat, testParameters.width, testParameters.height) :
               new pipeline::TestTexture2D(m_format, testParameters.width, testParameters.height)))
     , m_renderer(context, testParameters.sampleCount, testParameters.width, testParameters.height,
-                 testParameters.componentMapping)
+                 testParameters.componentMapping, false, false, m_testParameters.useCompute)
 {
     m_renderer.add2DTexture(m_texture, testParameters.aspectMask, testParameters.backingMode);
 }
@@ -534,9 +534,15 @@ void populateTextureSwizzleTests(tcu::TestCaseGroup *textureSwizzleTests)
                     testParameters.magFilter        = tcu::Sampler::NEAREST;
                     testParameters.aspectMask       = VK_IMAGE_ASPECT_COLOR_BIT;
                     testParameters.programs.push_back(colorFormats2D[formatNdx].program);
+                    testParameters.useCompute = false;
 
                     groupColor->addChild(
                         new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
+
+                    // Compute case.
+                    testParameters.useCompute = true;
+                    groupColor->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(
+                        testCtx, (caseName + "_compute").c_str(), testParameters));
                 }
     groupCompMap->addChild(groupColor.release());
 
@@ -560,9 +566,15 @@ void populateTextureSwizzleTests(tcu::TestCaseGroup *textureSwizzleTests)
                 testParameters.magFilter        = tcu::Sampler::NEAREST;
                 testParameters.aspectMask       = VK_IMAGE_ASPECT_DEPTH_BIT;
                 testParameters.programs.push_back(depthFormats2D[formatNdx].program);
+                testParameters.useCompute = false;
 
                 groupDepth->addChild(
                     new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
+
+                //Compute case.
+                testParameters.useCompute = true;
+                groupDepth->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(
+                    testCtx, (caseName + "_compute").c_str(), testParameters));
             }
     groupCompMap->addChild(groupDepth.release());
 
@@ -585,9 +597,15 @@ void populateTextureSwizzleTests(tcu::TestCaseGroup *textureSwizzleTests)
                 testParameters.magFilter        = tcu::Sampler::NEAREST;
                 testParameters.aspectMask       = VK_IMAGE_ASPECT_STENCIL_BIT;
                 testParameters.programs.push_back(stencilFormats2D[formatNdx].program);
+                testParameters.useCompute = false;
 
                 groupStencil->addChild(
                     new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
+
+                //Compute case.
+                testParameters.useCompute = true;
+                groupStencil->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(
+                    testCtx, (caseName + "_compute").c_str(), testParameters));
             }
     groupCompMap->addChild(groupStencil.release());
 #endif // CTS_USES_VULKANSC
@@ -615,9 +633,15 @@ void populateTextureSwizzleTests(tcu::TestCaseGroup *textureSwizzleTests)
                     testParameters.magFilter        = tcu::Sampler::NEAREST;
                     testParameters.aspectMask       = VK_IMAGE_ASPECT_COLOR_BIT;
                     testParameters.programs.push_back(colorFormats2D[formatNdx].program);
+                    testParameters.useCompute = false;
 
                     groupTexCoord->addChild(
                         new SwizzleTestCase<Swizzle2DTestInstance>(testCtx, caseName.c_str(), testParameters));
+
+                    // Compute case.
+                    testParameters.useCompute = true;
+                    groupTexCoord->addChild(new SwizzleTestCase<Swizzle2DTestInstance>(
+                        testCtx, (caseName + "_compute").c_str(), testParameters));
                 }
 
     textureSwizzleTests->addChild(groupCompMap.release());

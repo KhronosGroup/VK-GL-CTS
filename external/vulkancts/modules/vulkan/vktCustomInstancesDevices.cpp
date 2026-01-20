@@ -615,6 +615,9 @@ CustomInstanceWrapper::CustomInstanceWrapper(Context &context, const std::vector
 void VideoDevice::checkSupport(Context &context, const VideoCodecOperationFlags videoCodecOperation)
 {
 #ifndef CTS_USES_VULKANSC
+    if (context.getTestContext().getCommandLine().isComputeOnly())
+        TCU_THROW(NotSupportedError, "Video tests are not supported in compute-only mode");
+
     DE_ASSERT(videoCodecOperation != 0 && isVideoOperation(videoCodecOperation));
 
     if (isVideoOperation(videoCodecOperation))

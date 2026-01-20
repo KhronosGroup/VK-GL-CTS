@@ -1881,6 +1881,18 @@ bool check_VK_EXT_shader_image_atomic_int64(const tcu::UVec2& v, const ExtPropVe
 	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
 }
 
+bool check_VK_EXT_shader_long_vector(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_shader_long_vector"))
+		return true;
+
+	// depends attribute in xml: VK_VERSION_1_2
+	return isCompatible(1, 2, v);
+}
+
 bool check_VK_EXT_shader_module_identifier(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4605,6 +4617,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_shader_demote_to_helper_invocation",				&check_VK_EXT_shader_demote_to_helper_invocation),
 	std::make_pair("VK_EXT_shader_float8",									&check_VK_EXT_shader_float8),
 	std::make_pair("VK_EXT_shader_image_atomic_int64",						&check_VK_EXT_shader_image_atomic_int64),
+	std::make_pair("VK_EXT_shader_long_vector",								&check_VK_EXT_shader_long_vector),
 	std::make_pair("VK_EXT_shader_module_identifier",						&check_VK_EXT_shader_module_identifier),
 	std::make_pair("VK_EXT_shader_object",									&check_VK_EXT_shader_object),
 	std::make_pair("VK_EXT_shader_replicated_composites",					&check_VK_EXT_shader_replicated_composites),
@@ -4978,6 +4991,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_EXT_shader_demote_to_helper_invocation"),
 	std::make_tuple(1, 0, "VK_EXT_shader_float8"),
 	std::make_tuple(1, 0, "VK_EXT_shader_image_atomic_int64"),
+	std::make_tuple(1, 2, "VK_EXT_shader_long_vector"),
 	std::make_tuple(1, 0, "VK_EXT_shader_module_identifier"),
 	std::make_tuple(1, 0, "VK_EXT_shader_object"),
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),

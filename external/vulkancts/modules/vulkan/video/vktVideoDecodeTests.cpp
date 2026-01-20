@@ -1744,8 +1744,8 @@ TestInstance *VideoDecodeTestCase::createInstance(Context &context) const
 
 void VideoDecodeTestCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_video_queue");
-    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
+    VideoDevice::checkSupport(context, m_testDefinition->getCodecOperation(0));
+
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
     switch (m_testDefinition->getTestType())
@@ -1930,8 +1930,8 @@ void VideoDecodeTestCase::checkSupport(Context &context) const
 
 void InterleavingDecodeTestCase::checkSupport(Context &context) const
 {
-    context.requireDeviceFunctionality("VK_KHR_video_queue");
-    context.requireDeviceFunctionality("VK_KHR_video_decode_queue");
+    VideoDevice::checkSupport(context, m_testDefinitions[0]->getCodecOperation(0));
+
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
 
 #ifdef DE_DEBUG

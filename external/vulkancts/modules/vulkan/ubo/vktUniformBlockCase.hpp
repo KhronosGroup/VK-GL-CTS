@@ -447,6 +447,7 @@ public:
     ~UniformBlockCase(void);
 
     virtual void delayedInit(void);
+    virtual void checkSupport(Context &context) const;
     virtual void initPrograms(vk::SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
     bool usesBlockLayout(UniformFlags layoutFlag) const

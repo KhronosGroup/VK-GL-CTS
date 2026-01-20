@@ -658,6 +658,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_long_vector")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
@@ -2737,6 +2741,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_long_vector")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		functions.push_back("vkGetShaderModuleIdentifierEXT");
@@ -4731,6 +4739,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_shader_64bit_indexing",
 	"VK_EXT_custom_resolve",
 	"VK_QCOM_data_graph_model",
+	"VK_EXT_shader_long_vector",
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_EXT_shader_uniform_buffer_unsized_array",
 	"VK_NV_compute_occupancy_priority",

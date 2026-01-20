@@ -2145,7 +2145,7 @@ struct VkDataGraphPipelineInfoARM
 struct VkDataGraphPipelinePropertyQueryResultARM
 {
 	VkStructureType					sType;
-	const void*						pNext;
+	void*							pNext;
 	VkDataGraphPipelinePropertyARM	property;
 	VkBool32						isText;
 	size_t							dataSize;
@@ -2174,7 +2174,7 @@ struct VkDataGraphPipelineCreateInfoARM
 struct VkDataGraphPipelineSessionBindPointRequirementARM
 {
 	VkStructureType								sType;
-	const void*									pNext;
+	void*										pNext;
 	VkDataGraphPipelineSessionBindPointARM		bindPoint;
 	VkDataGraphPipelineSessionBindPointTypeARM	bindPointType;
 	uint32_t									numObjects;
@@ -8546,7 +8546,7 @@ struct VkQueryPoolVideoEncodeFeedbackCreateInfoKHR
 struct VkQueueFamilyDataGraphProcessingEnginePropertiesARM
 {
 	VkStructureType						sType;
-	const void*							pNext;
+	void*								pNext;
 	VkExternalSemaphoreHandleTypeFlags	foreignSemaphoreHandleTypes;
 	VkExternalMemoryHandleTypeFlags		foreignMemoryHandleTypes;
 };
@@ -8554,7 +8554,7 @@ struct VkQueueFamilyDataGraphProcessingEnginePropertiesARM
 struct VkQueueFamilyDataGraphPropertiesARM
 {
 	VkStructureType									sType;
-	const void*										pNext;
+	void*											pNext;
 	VkPhysicalDeviceDataGraphProcessingEngineARM	engine;
 	VkPhysicalDeviceDataGraphOperationSupportARM	operation;
 };
