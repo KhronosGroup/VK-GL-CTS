@@ -147,6 +147,11 @@ ComputePipelineWrapper &ComputePipelineWrapper::operator=(ComputePipelineWrapper
     return *this;
 }
 
+void ComputePipelineWrapper::setProgramBinary(const ProgramBinary &programBinary)
+{
+    m_programBinary = &programBinary;
+}
+
 void ComputePipelineWrapper::setDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout)
 {
     m_descriptorSetLayouts = {descriptorSetLayout};

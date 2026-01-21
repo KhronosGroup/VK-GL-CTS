@@ -78,6 +78,7 @@ public:
     ComputePipelineWrapper &operator=(const ComputePipelineWrapper &rhs) noexcept;
     ComputePipelineWrapper &operator=(ComputePipelineWrapper &&rhs) noexcept;
 
+    void setProgramBinary(const ProgramBinary &programBinary);
     void setDescriptorSetLayout(VkDescriptorSetLayout descriptorSetLayout);
     void setDescriptorSetLayouts(uint32_t setLayoutCount, const VkDescriptorSetLayout *descriptorSetLayouts);
     void setSpecializationInfo(VkSpecializationInfo specializationInfo);
