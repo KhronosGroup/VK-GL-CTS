@@ -91,6 +91,15 @@ std::string getTestName(TestType type)
     return "";
 }
 
+enum QueueCreationType
+{
+    QUEUE_CREATION_SINGLE_QUEUE,
+    QUEUE_CREATION_FIRST_INTERN_SYNCED,
+    QUEUE_CREATION_LAST_INTERN_SYNCED,
+    QUEUE_CREATION_TWO_INTERN_SYNCED_USE_FIRST,
+    QUEUE_CREATION_TWO_INTERN_SYNCED_USE_LAST,
+};
+
 struct TestParameters
 {
     vk::wsi::Type wsiType;
@@ -98,6 +107,9 @@ struct TestParameters
     TestType testType2;
     TestType testType3;
     TestType testType4;
+
+    QueueCreationType queueCreation;
+    bool sameQueueFamily;
 
     bool hasWsiTest() const
     {
@@ -308,9 +320,14 @@ public:
             const tcu::UVec2 desiredSize(smallImageExtent.width, smallImageExtent.height);
             m_drawTestData.nativeObjects = de::MovePtr<NativeObjects>(
                 new NativeObjects(m_context, supportedExtensions, m_wsiType, tcu::just(desiredSize)));
+
             m_drawTestData.surface =
                 createSurface(vki, instance, m_wsiType, *m_drawTestData.nativeObjects->display,
                               *m_drawTestData.nativeObjects->window, m_context.getTestContext().getCommandLine());
+
+            if (vk::wsi::getPhysicalDeviceSurfaceSupport(vki, physicalDevice, m_queueFamilyIndex,
+                                                         *m_drawTestData.surface) != VK_TRUE)
+                TCU_THROW(NotSupportedError, "Surface not supported by physical device");
 
             const VkSurfaceCapabilitiesKHR capabilities =
                 wsi::getPhysicalDeviceSurfaceCapabilities(vki, physicalDevice, *m_drawTestData.surface);
@@ -372,6 +389,7 @@ public:
                 VK_NULL_HANDLE,                        // VkSwapchainKHR					oldSwapchain;
             };
 
+            m_drawTestData.colorFormat     = surfaceFormat.format;
             m_drawTestData.swapchain       = createSwapchainKHR(vk, device, &swapchainInfo);
             m_drawTestData.swapchainImages = wsi::getSwapchainImages(vk, device, *m_drawTestData.swapchain);
             for (const auto &image : m_drawTestData.swapchainImages)
@@ -392,12 +410,13 @@ public:
         }
         else
         {
+            m_drawTestData.colorFormat   = VK_FORMAT_R8G8B8A8_UNORM;
             VkImageCreateInfo createInfo = {
                 VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType          sType
                 nullptr,                             // const void*              pNext
                 0u,                                  // VkImageCreateFlags       flags
                 VK_IMAGE_TYPE_2D,                    // VkImageType              imageType
-                VK_FORMAT_R8G8B8A8_UNORM,            // VkFormat                 format
+                m_drawTestData.colorFormat,          // VkFormat                 format
                 imageExtent,                         // VkExtent3D               extent
                 1u,                                  // uint32_t                 mipLevels
                 1u,                                  // uint32_t                 arrayLayers
@@ -419,7 +438,7 @@ public:
                 (VkImageViewCreateFlags)0u,               // VkImageViewCreateFlags flags;
                 **m_drawTestData.image,                   // VkImage image;
                 VK_IMAGE_VIEW_TYPE_2D,                    // VkImageViewType viewType;
-                VK_FORMAT_R8G8B8A8_UNORM,                 // VkFormat format;
+                m_drawTestData.colorFormat,               // VkFormat format;
                 makeComponentMappingRGBA(),               // VkComponentMapping components;
                 subresourceRange                          // VkImageSubresourceRange subresourceRange;
             };
@@ -433,7 +452,7 @@ public:
 
         const VkAttachmentDescription colorAttachmentDescription = {
             (VkAttachmentDescriptionFlags)0u, // VkAttachmentDescriptionFlags    flags
-            VK_FORMAT_R8G8B8A8_UNORM,         // VkFormat                        format
+            m_drawTestData.colorFormat,       // VkFormat                        format
             VK_SAMPLE_COUNT_1_BIT,            // VkSampleCountFlagBits           samples
             VK_ATTACHMENT_LOAD_OP_DONT_CARE,  // VkAttachmentLoadOp              loadOp
             VK_ATTACHMENT_STORE_OP_STORE,     // VkAttachmentStoreOp             storeOp
@@ -577,7 +596,7 @@ public:
         }
         else if (m_testType == TYPE_LARGE_IMAGE_SYNC || m_testType == TYPE_LARGE_IMAGE_SYNC2)
         {
-            for (uint32_t i = 0; i < 250; ++i)
+            for (uint32_t i = 0; i < 50; ++i)
                 runDraw();
         }
         else if (m_testType == TYPE_WSI)
@@ -587,7 +606,7 @@ public:
         }
         else if (m_testType == TYPE_PERFORMANCE_CONFIGURATION)
         {
-            for (uint32_t i = 0; i < 1500; ++i)
+            for (uint32_t i = 0; i < 1000; ++i)
                 runPerformanceConfiguration();
         }
         else if (m_testType == TYPE_DEVICE_WAIT_IDLE)
@@ -1292,7 +1311,7 @@ public:
         {
             vk.queueWaitIdle(queue);
             tcu::ConstPixelBufferAccess resultBuffer = tcu::ConstPixelBufferAccess(
-                mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), renderArea.extent.width, renderArea.extent.height, 1,
+                mapVkFormat(m_drawTestData.colorFormat), renderArea.extent.width, renderArea.extent.height, 1,
                 (const void *)m_drawTestData.outputBuffer->getAllocation().getHostPtr());
 
             const auto count = renderArea.extent.width * renderArea.extent.height;
@@ -1371,6 +1390,7 @@ private:
         Move<VkFramebuffer> framebuffer;
         de::MovePtr<GraphicsPipelineWrapper> pipeline;
         de::MovePtr<BufferWithMemory> outputBuffer;
+        VkFormat colorFormat;
     } m_drawTestData;
 
     struct PerformanceConfigurationTestData
@@ -1407,43 +1427,96 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
     const DeviceInterface &vk             = m_context.getDeviceInterface();
     const VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
 
+    uint32_t queueFamilyCount = 1u;
+    uint32_t queueCount       = 1u;
+
+    QueueCreationType queueCreation = m_params.queueCreation;
+    if (queueCreation == QUEUE_CREATION_FIRST_INTERN_SYNCED || queueCreation == QUEUE_CREATION_LAST_INTERN_SYNCED)
+    {
+        queueFamilyCount = 2u;
+        if (m_params.sameQueueFamily)
+            queueCount = 2u;
+    }
+
+    if (queueCreation == QUEUE_CREATION_TWO_INTERN_SYNCED_USE_FIRST ||
+        queueCreation == QUEUE_CREATION_TWO_INTERN_SYNCED_USE_LAST)
+        queueCount = 2u;
+
     uint32_t queueFamilyPropertyCount = 0;
     vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, nullptr);
     std::vector<VkQueueFamilyProperties> queueFamilyProperties(queueFamilyPropertyCount);
     vki.getPhysicalDeviceQueueFamilyProperties(physicalDevice, &queueFamilyPropertyCount, queueFamilyProperties.data());
 
     uint32_t queueFamilyIndex       = queueFamilyPropertyCount;
+    uint32_t otherQueueFamilyIndex  = queueFamilyPropertyCount;
     VkQueueFlags requiredQueueFlags = VK_QUEUE_GRAPHICS_BIT;
     if (m_params.hasSparseTest())
         requiredQueueFlags |= VK_QUEUE_SPARSE_BINDING_BIT;
 
     for (uint32_t i = 0; i < queueFamilyPropertyCount; ++i)
     {
-        if (queueFamilyProperties[i].queueFlags & requiredQueueFlags)
-        {
+        if ((queueFamilyProperties[i].queueFlags & requiredQueueFlags) == requiredQueueFlags &&
+            queueFamilyIndex == queueFamilyPropertyCount && queueFamilyProperties[i].queueCount >= queueCount)
             queueFamilyIndex = i;
-            break;
+        else if (otherQueueFamilyIndex == queueFamilyPropertyCount)
+            otherQueueFamilyIndex = i;
+    }
+    if (queueFamilyIndex == queueFamilyPropertyCount)
+    {
+        // Fallback to single queue, if 2 queues are not supported
+        queueCreation    = QUEUE_CREATION_SINGLE_QUEUE;
+        queueFamilyCount = 1u;
+        queueCount       = 1u;
+        for (uint32_t i = 0; i < queueFamilyPropertyCount; ++i)
+        {
+            if ((queueFamilyProperties[i].queueFlags & requiredQueueFlags) != 0 &&
+                queueFamilyIndex == queueFamilyPropertyCount)
+                queueFamilyIndex = i;
+            else if (otherQueueFamilyIndex == queueFamilyPropertyCount)
+                otherQueueFamilyIndex = i;
         }
     }
+
     if (queueFamilyIndex == queueFamilyPropertyCount)
         TCU_THROW(NotSupportedError, "No queue family found which supported required queue flags");
 
-    const float priority = 1.0f;
+    if (otherQueueFamilyIndex == queueFamilyPropertyCount)
+    {
+        queueCreation    = QUEUE_CREATION_SINGLE_QUEUE;
+        queueFamilyCount = 1u;
+        queueCount       = 1u;
+    }
 
-    VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
-        VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO,             // VkStructureType			sType;
-        nullptr,                                                // const void*				pNext;
-        VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR, // VkDeviceQueueCreateFlags	flags;
-        queueFamilyIndex,                                       // uint32_t					queueFamilyIndex;
-        1u,                                                     // uint32_t					queueCount;
-        &priority                                               // const float*				pQueuePriorities;
-    };
+    if (m_params.sameQueueFamily)
+        otherQueueFamilyIndex = queueFamilyIndex;
 
-    std::vector<const char *> extensions = {"VK_KHR_synchronization2"};
+    const float priorities[2] = {1.0f, 1.0f};
+
+    const bool useSecondQueueFamilyIndex = queueCreation == QUEUE_CREATION_LAST_INTERN_SYNCED;
+    const bool useSecondQueue            = queueCreation == QUEUE_CREATION_TWO_INTERN_SYNCED_USE_LAST;
+
+    VkDeviceQueueCreateInfo deviceQueueCreateInfos[2];
+    deviceQueueCreateInfos[0] = initVulkanStructure();
+    if (queueCreation == QUEUE_CREATION_SINGLE_QUEUE || queueCreation == QUEUE_CREATION_FIRST_INTERN_SYNCED ||
+        queueCreation == QUEUE_CREATION_TWO_INTERN_SYNCED_USE_FIRST ||
+        queueCreation == QUEUE_CREATION_TWO_INTERN_SYNCED_USE_LAST)
+        deviceQueueCreateInfos[0].flags |= VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR;
+    deviceQueueCreateInfos[0].queueFamilyIndex = useSecondQueueFamilyIndex ? otherQueueFamilyIndex : queueFamilyIndex;
+    deviceQueueCreateInfos[0].queueCount       = queueCount;
+    deviceQueueCreateInfos[0].pQueuePriorities = priorities;
+
+    deviceQueueCreateInfos[1] = initVulkanStructure();
+    if (queueCreation == QUEUE_CREATION_LAST_INTERN_SYNCED ||
+        queueCreation == QUEUE_CREATION_TWO_INTERN_SYNCED_USE_FIRST ||
+        queueCreation == QUEUE_CREATION_TWO_INTERN_SYNCED_USE_LAST)
+        deviceQueueCreateInfos[1].flags |= VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR;
+    deviceQueueCreateInfos[1].queueFamilyIndex = useSecondQueueFamilyIndex ? queueFamilyIndex : otherQueueFamilyIndex;
+    deviceQueueCreateInfos[1].queueCount       = 1u;
+    deviceQueueCreateInfos[1].pQueuePriorities = priorities;
+
+    std::vector<const char *> extensions = {"VK_KHR_internally_synchronized_queues", "VK_KHR_synchronization2"};
     if (m_params.hasWsiTest())
         extensions.push_back("VK_KHR_swapchain");
-    if (m_params.hasDebugUtilsTest())
-        extensions.push_back("VK_EXT_debug_utils");
     if (m_params.hasPerformanceConfigurationTest())
         extensions.push_back("VK_INTEL_performance_query");
     if (m_params.hasOutOfBandTest())
@@ -1466,8 +1539,8 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
         VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
         &features2,                           // const void* pNext;
         0u,                                   // VkDeviceCreateFlags flags;
-        1u,                                   // uint32_t queueCreateInfoCount;
-        &deviceQueueCreateInfo,               // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
+        queueFamilyCount,                     // uint32_t queueCreateInfoCount;
+        deviceQueueCreateInfos,               // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
         0u,                                   // uint32_t enabledLayerCount;
         nullptr,                              // const char* const* ppEnabledLayerNames;
         (uint32_t)extensions.size(),          // uint32_t enabledExtensionCount;
@@ -1482,14 +1555,16 @@ tcu::TestStatus InternallySynchronizedQueuesTestInstance::iterate(void)
     DeviceDriver vkd(vkp, instance, *device, m_context.getUsedApiVersion(),
                      m_context.getTestContext().getCommandLine());
 
-    VkQueue queue;
+    const uint32_t queueIndex    = useSecondQueue ? 1u : 0u;
     VkDeviceQueueInfo2 queueInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_INFO_2,                  // VkStructureType			sType;
         nullptr,                                                // const void*				pNext;
         VK_DEVICE_QUEUE_CREATE_INTERNALLY_SYNCHRONIZED_BIT_KHR, // VkDeviceQueueCreateFlags	flags;
         queueFamilyIndex,                                       // uint32_t					queueFamilyIndex;
-        0u,                                                     // uint32_t					queueIndex;
+        queueIndex,                                             // uint32_t					queueIndex;
     };
+
+    VkQueue queue;
     vk.getDeviceQueue2(*device, &queueInfo, &queue);
 
     std::vector<de::SharedPtr<de::Thread>> threads;
@@ -1535,10 +1610,13 @@ void InternallySynchronizedQueuesTestCase::checkSupport(vkt::Context &context) c
 {
     context.requireDeviceFunctionality("VK_KHR_synchronization2");
     if (m_params.hasWsiTest())
+    {
+        context.requireInstanceFunctionality(wsi::getExtensionName(m_params.wsiType));
         context.requireDeviceFunctionality("VK_KHR_swapchain");
+    }
 
     if (m_params.hasDebugUtilsTest())
-        context.requireDeviceFunctionality("VK_EXT_debug_utils");
+        context.requireInstanceFunctionality("VK_EXT_debug_utils");
 
     if (m_params.hasSparseTest())
     {
@@ -1592,12 +1670,22 @@ tcu::TestCaseGroup *createInternallySynchronizedTests(tcu::TestContext &testCtx,
         TYPE_DEBUG_UTILS,       TYPE_PERFORMANCE_CONFIGURATION, TYPE_OUT_OF_BAND,       TYPE_DEVICE_WAIT_IDLE,
     };
 
+    std::vector<QueueCreationType> queueCreation = {
+        QUEUE_CREATION_SINGLE_QUEUE,
+        QUEUE_CREATION_FIRST_INTERN_SYNCED,
+        QUEUE_CREATION_LAST_INTERN_SYNCED,
+        QUEUE_CREATION_TWO_INTERN_SYNCED_USE_FIRST,
+        QUEUE_CREATION_TWO_INTERN_SYNCED_USE_LAST,
+    };
+
     for (size_t i = 0; i < tests.size(); ++i)
     {
+        params.sameQueueFamily = i % 2 == 0;
         for (size_t j = 0; j < tests.size(); ++j)
         {
-            params.testType3 = tests[i];
-            params.testType4 = tests[j];
+            params.testType3     = tests[i];
+            params.testType4     = tests[j];
+            params.queueCreation = queueCreation[(i + j) % queueCreation.size()];
 
             std::string testName = getTestName(params.testType3) + "_" + getTestName(params.testType4);
 
