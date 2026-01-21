@@ -119,6 +119,7 @@ vector<string> filterExtensions(const vector<string> &extensionNames)
         "VK_NV_linear_color_attachment",
         "VK_NV_cooperative_matrix2",
         "VK_NV_cooperative_vector",
+        "VK_NV_low_latency2",
         "VK_QCOM_fragment_density_map_offset",
         "VK_QCOM_image_processing",
         "VK_ARM_performance_counters_by_region",
