@@ -956,6 +956,7 @@ dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_dr
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_param_count_instanced.no_first_instance.triangle_list
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_param_count_instanced.no_first_instance.triangle_list_multi_draw
 dEQP-VKSC.draw.renderpass.indirect_draw.sequential_data_from_compute.indirect_draw_param_count_instanced.no_first_instance.triangle_strip
+dEQP-VKSC.draw.renderpass.indirect_instanced.1
 dEQP-VKSC.draw.renderpass.indirect_instanced.16
 dEQP-VKSC.draw.renderpass.indirect_instanced.2
 dEQP-VKSC.draw.renderpass.indirect_instanced.4
