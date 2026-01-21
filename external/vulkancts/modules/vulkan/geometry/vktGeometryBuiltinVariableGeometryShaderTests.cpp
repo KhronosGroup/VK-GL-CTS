@@ -41,6 +41,7 @@
 #include "vkMemUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "tcuTextureUtil.hpp"
 #include "tcuImageCompare.hpp"
 
@@ -423,6 +424,263 @@ TestInstance *BuiltinVariableRenderTest::createInstance(Context &context) const
     return new BuiltinVariableRenderTestInstance(context, getName(), m_test, m_flag);
 }
 
+class BuiltinVariableMatchingPrimitiveIDTestInstance : public TestInstance
+{
+public:
+    BuiltinVariableMatchingPrimitiveIDTestInstance(Context &context) : TestInstance(context)
+    {
+    }
+    tcu::TestStatus iterate(void);
+};
+
+tcu::TestStatus BuiltinVariableMatchingPrimitiveIDTestInstance::iterate(void)
+{
+    const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
+    const vk::VkDevice device       = m_context.getDevice();
+    const vk::VkQueue queue         = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    auto &alloc                     = m_context.getDefaultAllocator();
+    tcu::TestLog &log               = m_context.getTestContext().getLog();
+
+    const tcu::IVec2 resolution = tcu::IVec2(32u, 32u);
+    const VkFormat colorFormat  = VK_FORMAT_R8G8B8A8_UNORM;
+
+    const vk::VkDeviceSize colorOutputBufferSize =
+        resolution.x() * resolution.y() * tcu::getPixelSize(vk::mapVkFormat(colorFormat));
+    vk::BufferWithMemory colorOutputBuffer = vk::BufferWithMemory(
+        vk, device, alloc, makeBufferCreateInfo(colorOutputBufferSize, vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT),
+        vk::MemoryRequirement::HostVisible);
+
+    const vk::Move<vk::VkCommandPool> cmdPool(createCommandPool(vk, device, 0u, queueFamilyIndex));
+    const vk::Move<vk::VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    const ImageWithMemory colorAttachmentImage(
+        vk, device, alloc,
+        makeImageCreateInfo(resolution, colorFormat,
+                            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT),
+        MemoryRequirement::Any);
+    const VkImageSubresourceRange colorSubRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    const Unique<VkImageView> colorAttachmentView(
+        makeImageView(vk, device, *colorAttachmentImage, VK_IMAGE_VIEW_TYPE_2D, colorFormat, colorSubRange));
+    const Unique<VkRenderPass> renderPass(makeRenderPass(vk, device, colorFormat));
+    const Unique<VkFramebuffer> framebuffer(
+        makeFramebuffer(vk, device, *renderPass, *colorAttachmentView, resolution.x(), resolution.y(), 1u));
+
+    const auto pipelineLayout = makePipelineLayout(vk, device);
+
+    const Unique<VkPipeline> pipeline(
+        GraphicsPipelineBuilder()
+            .setRenderSize(resolution)
+            .setShader(vk, device, VK_SHADER_STAGE_VERTEX_BIT, m_context.getBinaryCollection().get("vert"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_EVALUATION_BIT,
+                       m_context.getBinaryCollection().get("tese"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_TESSELLATION_CONTROL_BIT,
+                       m_context.getBinaryCollection().get("tesc"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_GEOMETRY_BIT, m_context.getBinaryCollection().get("geom"), nullptr)
+            .setShader(vk, device, VK_SHADER_STAGE_FRAGMENT_BIT, m_context.getBinaryCollection().get("frag"), nullptr)
+            .setPrimitiveTopology(VK_PRIMITIVE_TOPOLOGY_PATCH_LIST)
+            .setPatchControlPoints(4u)
+            .build(vk, device, *pipelineLayout, *renderPass));
+
+    beginCommandBuffer(vk, *cmdBuffer, 0u);
+    const VkRect2D renderArea = {
+        makeOffset2D(0, 0),
+        makeExtent2D(resolution.x(), resolution.y()),
+    };
+    const tcu::Vec4 clearColor(1.0f, 1.0f, 1.0f, 1.0f);
+    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, renderArea, clearColor);
+    vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+    vk.cmdDraw(*cmdBuffer, 16u, 1u, 0u, 0u);
+    endRenderPass(vk, *cmdBuffer);
+
+    vk::VkImageMemoryBarrier imageBarrier = makeImageMemoryBarrier(
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
+        VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *colorAttachmentImage, makeDefaultImageSubresourceRange());
+    vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT,
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, (vk::VkDependencyFlags)0u, 0u, nullptr, 0u, nullptr, 1u,
+                          &imageBarrier);
+
+    const auto copyRegion = makeBufferImageCopy(0u, makeDefaultImageSubresourceLayers(), {0, 0, 0},
+                                                {(uint32_t)resolution.x(), (uint32_t)resolution.y(), 1u});
+    vk.cmdCopyImageToBuffer(*cmdBuffer, *colorAttachmentImage, vk::VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                            *colorOutputBuffer, 1u, &copyRegion);
+    endCommandBuffer(vk, *cmdBuffer);
+
+    submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+
+    const vk::Allocation &outputBufferAllocation = colorOutputBuffer.getAllocation();
+    invalidateAlloc(vk, device, outputBufferAllocation);
+
+    bool allZero             = true;
+    const uint8_t *bufferPtr = static_cast<uint8_t *>(outputBufferAllocation.getHostPtr());
+    for (int y = 0; y < resolution.y(); ++y)
+    {
+        for (int x = 0; x < resolution.x(); ++x)
+        {
+            const uint32_t pixelIndex = y * resolution.x() + x;
+            const uint8_t *pixelPtr   = &bufferPtr[pixelIndex * 4];
+
+            uint32_t tescPrimitiveID = (uint32_t)pixelPtr[0];
+            uint32_t tesePrimitiveID = (uint32_t)pixelPtr[1];
+            uint32_t geomPrimitiveID = (uint32_t)pixelPtr[2];
+            uint32_t alpha           = (uint32_t)pixelPtr[3];
+
+            if (tescPrimitiveID != tesePrimitiveID)
+            {
+                log << tcu::TestLog::Message << "At (" << x << ", " << y
+                    << ") gl_PrimitiveID in tessellation control shader was  " << tescPrimitiveID
+                    << ", but gl_PrimitiveID in tessellation evaluation shader was " << tesePrimitiveID
+                    << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+            else if (tesePrimitiveID != geomPrimitiveID)
+            {
+                log << tcu::TestLog::Message << "At (" << x << ", " << y
+                    << ") gl_PrimitiveID in tessellation evaluation shader was  " << tesePrimitiveID
+                    << ", but gl_PrimitiveID in geometry shader was " << geomPrimitiveID << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+            else if (alpha != 255)
+            {
+                log << tcu::TestLog::Message << "At (" << x << ", " << y
+                    << ") expected alpha value was 255, but actual value was " << alpha << tcu::TestLog::EndMessage;
+                return tcu::TestStatus::fail("Fail");
+            }
+
+            allZero = allZero && (tescPrimitiveID == 0);
+        }
+    }
+    if (allZero)
+    {
+        log << tcu::TestLog::Message << "All gl_PrimitiveID values were zero." << tcu::TestLog::EndMessage;
+        return tcu::TestStatus::fail("Fail");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class BuiltinVariableMatchingPrimitiveIDTest : public TestCase
+{
+public:
+    BuiltinVariableMatchingPrimitiveIDTest(TestContext &testCtx, const char *name) : TestCase(testCtx, name)
+    {
+    }
+    void initPrograms(SourceCollections &sourceCollections) const;
+    virtual TestInstance *createInstance(Context &context) const;
+    virtual void checkSupport(Context &context) const;
+};
+
+void BuiltinVariableMatchingPrimitiveIDTest::initPrograms(SourceCollections &sourceCollections) const
+{
+    std::stringstream vert;
+    vert << "#version 450\n"
+         << "void main() {\n"
+         << "    vec2 pos = vec2(float(gl_VertexIndex & 1), float((gl_VertexIndex >> 1) & 1));\n"
+         << "    vec2 offset = vec2(float((gl_VertexIndex / 4) & 1), float(((gl_VertexIndex / 4) >> 1) & 1));\n"
+         << "    gl_Position = vec4(pos - 1.0f + offset, 0.0f, 1.0f);\n"
+         << "}\n";
+
+    std::stringstream tesc;
+    tesc << "#version 450\n"
+         << "\n"
+         << "layout(vertices = 4) out;\n"
+         << "layout(location = 0) flat out uint tesc_primitive_id[];\n"
+         << "\n"
+         << "void main (void)\n"
+         << "{\n"
+         << "    if (gl_InvocationID == 0) {\n"
+         << "        gl_TessLevelInner[0] = 2.0f;\n"
+         << "        gl_TessLevelInner[1] = 2.0f;\n"
+         << "        gl_TessLevelOuter[0] = 2.0f;\n"
+         << "        gl_TessLevelOuter[1] = 2.0f;\n"
+         << "        gl_TessLevelOuter[2] = 2.0f;\n"
+         << "        gl_TessLevelOuter[3] = 2.0f;\n"
+         << "    }\n"
+         << "    gl_out[gl_InvocationID].gl_Position = gl_in[gl_InvocationID].gl_Position;\n"
+         << "    tesc_primitive_id[gl_InvocationID] = gl_PrimitiveID;\n"
+         << "}\n";
+    std::stringstream tese;
+    tese << "#version 450\n"
+         << "\n"
+         << "layout(quads, equal_spacing) in;\n"
+         << "layout(location = 0) flat  in uint tesc_primitive_id[];\n"
+         << "layout(location = 0) flat out uint out_tesc_primitive_id;\n"
+         << "layout(location = 1) flat out uint tese_primitive_id;\n"
+         << "\n"
+         << "void main (void)\n"
+         << "{\n"
+         << "    float u = gl_TessCoord.x;\n"
+         << "    float v = gl_TessCoord.y;\n"
+         << "    float omu = 1.0f - u;\n"
+         << "    float omv = 1.0f - v;\n"
+         << "    gl_Position = omu * omv * gl_in[0].gl_Position + u * omv * gl_in[2].gl_Position + u * v * "
+            "gl_in[3].gl_Position + omu * v * gl_in[1].gl_Position;\n"
+         << "    out_tesc_primitive_id = tesc_primitive_id[0];\n"
+         << "    tese_primitive_id = gl_PrimitiveID;\n"
+         << "}\n";
+
+    std::stringstream geom;
+    geom << "#version 450\n"
+         << "layout(triangles) in;\n"
+         << "layout(triangle_strip, max_vertices = 4) out;\n"
+         << "layout(location = 0) flat in uint tesc_primitive_id[];\n"
+         << "layout(location = 1) flat in uint tese_primitive_id[];\n"
+         << "layout(location = 0) flat out uint out_tesc_primitive_id;\n"
+         << "layout(location = 1) flat out uint out_tese_primitive_id;\n"
+         << "layout(location = 2) flat out uint out_geom_primitive_id;\n"
+         << "\n"
+         << "void main(void)\n"
+         << "{\n"
+         << "    out_tesc_primitive_id = tesc_primitive_id[0];\n"
+         << "    out_tese_primitive_id = tese_primitive_id[0];\n"
+         << "    gl_PrimitiveID = gl_PrimitiveIDIn;\n"
+         << "    out_geom_primitive_id = gl_PrimitiveID;\n"
+         << "    gl_Position = gl_in[0].gl_Position;\n"
+         << "    EmitVertex();\n"
+         << "    out_tesc_primitive_id = tesc_primitive_id[1];\n"
+         << "    out_tese_primitive_id = tese_primitive_id[1];\n"
+         << "    gl_Position = gl_in[1].gl_Position;\n"
+         << "    EmitVertex();\n"
+         << "    out_tesc_primitive_id = tesc_primitive_id[2];\n"
+         << "    out_tese_primitive_id = tese_primitive_id[2];\n"
+         << "    gl_Position = gl_in[2].gl_Position;\n"
+         << "    EmitVertex();\n"
+         << "    EndPrimitive();\n"
+         << "}\n";
+    std::stringstream frag;
+    frag << "#version 450\n"
+         << "layout(location = 0) flat in uint tesc_primitive_id;\n"
+         << "layout(location = 1) flat in uint tese_primitive_id;\n"
+         << "layout(location = 2) flat in uint geom_primitive_id;\n"
+         << "layout (location = 0) out vec4 outColor;\n"
+         << "void main() {\n"
+         << "    outColor = vec4(\n"
+         << "                    float(tesc_primitive_id) / 255.0f,\n"
+         << "                    float(tese_primitive_id) / 255.0f,\n"
+         << "                    float(geom_primitive_id) / 255.0f,\n"
+         << "                    1.0f\n"
+         << "                    );\n"
+         << "}\n";
+
+    sourceCollections.glslSources.add("vert") << glu::VertexSource(vert.str());
+    sourceCollections.glslSources.add("tesc") << glu::TessellationControlSource(tesc.str());
+    sourceCollections.glslSources.add("tese") << glu::TessellationEvaluationSource(tese.str());
+    sourceCollections.glslSources.add("geom") << glu::GeometrySource(geom.str());
+    sourceCollections.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+TestInstance *BuiltinVariableMatchingPrimitiveIDTest::createInstance(Context &context) const
+{
+    return new BuiltinVariableMatchingPrimitiveIDTestInstance(context);
+}
+
+void BuiltinVariableMatchingPrimitiveIDTest::checkSupport(Context &context) const
+{
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_GEOMETRY_SHADER);
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_TESSELLATION_SHADER);
+}
+
 } // namespace
 
 TestCaseGroup *createBuiltinVariableGeometryShaderTests(TestContext &testCtx)
@@ -430,6 +688,7 @@ TestCaseGroup *createBuiltinVariableGeometryShaderTests(TestContext &testCtx)
     MovePtr<TestCaseGroup> basicGroup(new tcu::TestCaseGroup(testCtx, "builtin_variable"));
     MovePtr<TestCaseGroup> in_block(new tcu::TestCaseGroup(testCtx, "in_block"));
     MovePtr<TestCaseGroup> outside_block(new tcu::TestCaseGroup(testCtx, "outside_block"));
+    MovePtr<TestCaseGroup> primitive_id(new tcu::TestCaseGroup(testCtx, "primitive_id"));
 
     // test gl_PointSize
     in_block->addChild(new BuiltinVariableRenderTest(testCtx, "point_size", TEST_POINT_SIZE));
@@ -442,8 +701,12 @@ TestCaseGroup *createBuiltinVariableGeometryShaderTests(TestContext &testCtx)
     // test gl_Position
     outside_block->addChild(new BuiltinVariableRenderTest(testCtx, "position", TEST_POSITION));
 
+    // test gl_PrimitiveID matching between different stages
+    primitive_id->addChild(new BuiltinVariableMatchingPrimitiveIDTest(testCtx, "matching"));
+
     basicGroup->addChild(in_block.release());
     basicGroup->addChild(outside_block.release());
+    basicGroup->addChild(primitive_id.release());
 
     return basicGroup.release();
 }
