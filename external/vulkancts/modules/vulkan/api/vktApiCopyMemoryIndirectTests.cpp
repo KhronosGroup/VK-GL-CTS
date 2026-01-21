@@ -349,20 +349,22 @@ CopyMemoryToImageIndirect::CopyMemoryToImageIndirect(Context &context, TestParam
 
     // Create source buffer
     {
+        const auto memReq = MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress;
+        const auto usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
         const VkBufferCreateInfo sourceBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_bufferSize,                         // VkDeviceSize size;
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
+            usage,                                // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
             (const uint32_t *)nullptr,            // const uint32_t* pQueueFamilyIndices;
         };
 
-        m_source            = createBuffer(vk, m_device, &sourceBufferParams);
-        m_sourceBufferAlloc = allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::HostVisible,
-                                             *m_allocator, m_params.allocationKind);
+        m_source = createBuffer(vk, m_device, &sourceBufferParams);
+        m_sourceBufferAlloc =
+            allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, memReq, *m_allocator, m_params.allocationKind);
         VK_CHECK(vk.bindBufferMemory(m_device, *m_source, m_sourceBufferAlloc->getMemory(),
                                      m_sourceBufferAlloc->getOffset()));
     }
@@ -626,10 +628,10 @@ tcu::TestStatus CopyMemoryToImageIndirect::iterate(void)
         uint32_t dummyparam2;
     };
 
+    const auto usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
     const VkDeviceSize indirectBufferSize = de::max(m_params.regions.size(), (size_t)1) * sizeof(IndirectImageParams);
-    const BufferWithMemory indirectBuffer(
-        vk, vkDevice, memAlloc, makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
-        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const BufferWithMemory indirectBuffer(vk, vkDevice, memAlloc, makeBufferCreateInfo(indirectBufferSize, usage),
+                                          MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
     // indirectBuffer Address
     VkBufferDeviceAddressInfo indirectBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
@@ -658,11 +660,12 @@ tcu::TestStatus CopyMemoryToImageIndirect::iterate(void)
     std::vector<VkImageSubresourceLayers> imageSubresourceLayers;
     for (const auto &region : m_params.regions)
     {
+        auto &imageSubresource                     = region.bufferImageCopy.imageSubresource;
         VkImageSubresourceLayers subresourceLayers = {};
-        subresourceLayers.aspectMask               = region.bufferImageCopy.imageSubresource.aspectMask;
-        subresourceLayers.mipLevel                 = region.bufferImageCopy.imageSubresource.mipLevel;
-        subresourceLayers.baseArrayLayer           = region.bufferImageCopy.imageSubresource.baseArrayLayer;
-        subresourceLayers.layerCount               = region.bufferImageCopy.imageSubresource.layerCount;
+        subresourceLayers.aspectMask               = imageSubresource.aspectMask;
+        subresourceLayers.mipLevel                 = imageSubresource.mipLevel;
+        subresourceLayers.baseArrayLayer           = imageSubresource.baseArrayLayer;
+        subresourceLayers.layerCount               = imageSubresource.layerCount;
         imageSubresourceLayers.push_back(subresourceLayers);
     }
 
@@ -2020,27 +2023,27 @@ private:
                                             vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress;
 
         // Buffers
-        const BufferWithMemory srcBuffer(
+        VkBufferCreateFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        const BufferWithMemory srcBuffer(vkd, device, allocator,
+                                         makeBufferCreateInfo(bufferSize,
+                                                              usage, // Buffer usage flag
+                                                              std::vector<uint32_t>(),
+                                                              bufferCreateFlags), // Buffer create flag
+                                         memReqs);
+
+        const BufferWithMemory dstBuffer(
             vkd, device, allocator,
-            makeBufferCreateInfo(bufferSize,
-                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, // Buffer usage flag
+            makeBufferCreateInfo(std::max(m_copyParams.copyCount, (uint32_t)1) * bufferSize, usage,
                                  std::vector<uint32_t>(),
                                  bufferCreateFlags), // Buffer create flag
             memReqs);
 
-        const BufferWithMemory dstBuffer(
-            vkd, device, allocator,
-            makeBufferCreateInfo(std::max(m_copyParams.copyCount, (uint32_t)1) * bufferSize,
-                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, std::vector<uint32_t>(),
-                                 bufferCreateFlags), // Buffer create flag
-            memReqs);
-
+        usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
         const VkDeviceSize indirectBufferSize = std::max(m_copyParams.copyCount, 1U) * m_copyParams.stride;
-        const BufferWithMemory indirectBuffer(
-            vkd, device, allocator,
-            makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, std::vector<uint32_t>(),
-                                 bufferCreateFlags), // Buffer create flag
-            memReqs);
+        const BufferWithMemory indirectBuffer(vkd, device, allocator,
+                                              makeBufferCreateInfo(indirectBufferSize, usage, std::vector<uint32_t>(),
+                                                                   bufferCreateFlags), // Buffer create flag
+                                              memReqs);
 
         // Buffer Information
         VkBufferDeviceAddressInfo srcBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,

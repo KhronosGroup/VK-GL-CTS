@@ -416,6 +416,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
     const VkDevice vkDevice          = m_device;
     Allocator &memAlloc              = *m_allocator;
     const ImageParms &srcImageParams = m_params.src.image;
+    const bool useIndirectCopy       = (m_params.extensionFlags & INDIRECT_COPY);
 
     VkQueue queue                               = VK_NULL_HANDLE;
     VkCommandBuffer commandBuffer               = VK_NULL_HANDLE;
@@ -451,9 +452,13 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
     // FIXME: This could be a utility.
     //    pipeline::uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, m_source->get(), vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL);
     // Does not allow using an external command pool, the utilities there could fruitfully be generalised.
+    VkBufferUsageFlags usage = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    if (useIndirectCopy)
+        usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    auto memReq    = useIndirectCopy ? (vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress) :
+                                       vk::MemoryRequirement::HostVisible;
     m_sourceBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
-        vk, vkDevice, memAlloc, makeBufferCreateInfo(m_texture->getCompressedSize(), VK_BUFFER_USAGE_TRANSFER_SRC_BIT),
-        vk::MemoryRequirement::HostVisible));
+        vk, vkDevice, memAlloc, makeBufferCreateInfo(m_texture->getCompressedSize(), usage), memReq));
     m_texture->write(reinterpret_cast<uint8_t *>(m_sourceBuffer->getAllocation().getHostPtr()));
     flushAlloc(vk, vkDevice, m_sourceBuffer->getAllocation());
     std::vector<VkBufferImageCopy> copyRegions = m_texture->getBufferCopyRegions();
@@ -461,7 +466,7 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
     const VkImageLayout initialLayout =
         m_params.useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL;
 #ifndef CTS_USES_VULKANSC
-    if (m_params.extensionFlags & INDIRECT_COPY)
+    if (useIndirectCopy)
     {
 
         if (m_params.src.image.imageType == VK_IMAGE_TYPE_3D)

@@ -5002,7 +5002,7 @@ void copyBufferToImageIndirect(const DeviceInterface &vk, const InstanceInterfac
         0u,                                   // VkBufferCreateFlags flags
         indirectBufferSize,                   // VkDeviceSize size
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT |    // VkBufferUsageFlags usage
-            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
         VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode
         0u,                        // uint32_t queueFamilyIndexCount
         nullptr                    // const uint32_t* pQueueFamilyIndices

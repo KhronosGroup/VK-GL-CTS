@@ -109,6 +109,7 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     Allocator &memAlloc                 = context.getDefaultAllocator();
     const bool hasDepth                 = tcu::hasDepthComponent(mapVkFormat(m_params.dst.image.format).order);
     const bool hasStencil               = tcu::hasStencilComponent(mapVkFormat(m_params.dst.image.format).order);
+    const bool useIndirectCopy          = m_params.extensionFlags & INDIRECT_COPY;
 
     if (!isSupportedDepthStencilFormat(vki, vkPhysDevice, testParams.dst.image.format))
     {
@@ -116,7 +117,7 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     }
 
 #ifndef CTS_USES_VULKANSC
-    if (m_params.extensionFlags & INDIRECT_COPY)
+    if (useIndirectCopy)
     {
         const auto &copyMemoryIndirectFeatures = m_context.getCopyMemoryIndirectFeatures();
         if (!copyMemoryIndirectFeatures.indirectMemoryToImageCopy)
@@ -182,8 +183,12 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
     // Create source buffer, this is where the depth & stencil data will go that's used by test's regions.
     {
         VkBufferUsageFlags usageFlags = VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
-        if (m_params.extensionFlags & INDIRECT_COPY)
+        if (useIndirectCopy)
             usageFlags |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
+        MemoryRequirement memReq = useIndirectCopy ?
+                                       (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress) :
+                                       MemoryRequirement::HostVisible;
 
         const VkBufferCreateInfo sourceBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
@@ -196,9 +201,9 @@ CopyBufferToDepthStencil::CopyBufferToDepthStencil(Context &context, TestParams 
             nullptr,                              // const uint32_t* pQueueFamilyIndices;
         };
 
-        m_source            = createBuffer(vk, vkDevice, &sourceBufferParams);
-        m_sourceBufferAlloc = allocateBuffer(vki, vk, vkPhysDevice, vkDevice, *m_source, MemoryRequirement::HostVisible,
-                                             memAlloc, m_params.allocationKind);
+        m_source = createBuffer(vk, vkDevice, &sourceBufferParams);
+        m_sourceBufferAlloc =
+            allocateBuffer(vki, vk, vkPhysDevice, vkDevice, *m_source, memReq, memAlloc, m_params.allocationKind);
         VK_CHECK(vk.bindBufferMemory(vkDevice, *m_source, m_sourceBufferAlloc->getMemory(),
                                      m_sourceBufferAlloc->getOffset()));
     }
@@ -301,7 +306,9 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
         de::max(m_params.regions.size(), (size_t)1) * sizeof(VkCopyMemoryToImageIndirectCommandKHR);
     Allocator &memAlloc = m_context.getDefaultAllocator();
     const BufferWithMemory indirectBuffer(
-        vk, vkDevice, memAlloc, makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
+        vk, vkDevice, memAlloc,
+        makeBufferCreateInfo(indirectBufferSize,
+                             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
         MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
     if (m_params.extensionFlags & INDIRECT_COPY)
@@ -464,6 +471,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
         else
         {
             // Issue a a copy command per region defined by the test.
+            const VkDeviceSize indirectCommandSize = sizeof(VkCopyMemoryToImageIndirectCommandKHR);
             for (uint32_t i = 0; i < memoryImageCopiesKHR.size(); i++)
             {
                 if (i > 0)
@@ -471,9 +479,8 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
                                           VK_PIPELINE_STAGE_TRANSFER_BIT, (VkDependencyFlags)0, 0, nullptr, 0, nullptr,
                                           1, &imageBarrier);
 
-                VkDeviceSize stride                         = sizeof(VkCopyMemoryToImageIndirectCommandKHR);
-                VkStridedDeviceAddressRangeKHR addressRange = {indirectBufferAddress + i * stride, indirectBufferSize,
-                                                               stride};
+                VkStridedDeviceAddressRangeKHR addressRange = {indirectBufferAddress + i * indirectCommandSize,
+                                                               indirectCommandSize, indirectCommandSize};
                 VkCopyMemoryToImageIndirectInfoKHR memToImageIndirectInfoKHR = {};
                 memToImageIndirectInfoKHR.sType              = VK_STRUCTURE_TYPE_COPY_MEMORY_TO_IMAGE_INDIRECT_INFO_KHR;
                 memToImageIndirectInfoKHR.pNext              = nullptr;
