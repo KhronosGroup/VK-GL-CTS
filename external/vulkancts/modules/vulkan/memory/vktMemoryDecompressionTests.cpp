@@ -235,25 +235,29 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
     DE_ASSERT(m_decompressionParams.decompressionCount >= m_decompressionParams.executedDecompressionCount);
 
     const uint32_t stride                  = m_decompressionParams.stride;
-    const size_t compressedSize            = static_cast<VkDeviceSize>(m_compressedSize);
+    const VkDeviceSize compressedSize      = static_cast<VkDeviceSize>(m_compressedSize);
     const size_t decompressedSizeAligned64 = 64 * ((m_decompressedSize + 63) / 64);
-    const size_t totalDecompressedSize =
+    const VkDeviceSize totalDecompressedSize =
         static_cast<VkDeviceSize>(m_decompressionParams.decompressionCount * decompressedSizeAligned64);
 
     // Create buffers for compression/decompression/copy
     VkBufferUsageFlags2CreateInfoKHR bufferUsageFlags2 = vk::initVulkanStructure();
 
-    bufferUsageFlags2.usage          = VK_BUFFER_USAGE_2_MEMORY_DECOMPRESSION_BIT_EXT;
+    bufferUsageFlags2.usage =
+        VK_BUFFER_USAGE_2_MEMORY_DECOMPRESSION_BIT_EXT | VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT;
     VkBufferCreateInfo srcBufferInfo = vk::initVulkanStructure();
     srcBufferInfo.pNext              = &bufferUsageFlags2;
     srcBufferInfo.size               = compressedSize;
-    const BufferWithMemory srcBuffer(vkd, device, allocator, srcBufferInfo, MemoryRequirement::HostVisible);
+    const BufferWithMemory srcBuffer(vkd, device, allocator, srcBufferInfo,
+                                     MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
-    bufferUsageFlags2.usage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR | VK_BUFFER_USAGE_2_MEMORY_DECOMPRESSION_BIT_EXT;
+    bufferUsageFlags2.usage = VK_BUFFER_USAGE_2_TRANSFER_SRC_BIT_KHR | VK_BUFFER_USAGE_2_MEMORY_DECOMPRESSION_BIT_EXT |
+                              VK_BUFFER_USAGE_2_SHADER_DEVICE_ADDRESS_BIT;
     VkBufferCreateInfo decompressBufferInfo = vk::initVulkanStructure();
     decompressBufferInfo.pNext              = &bufferUsageFlags2;
     decompressBufferInfo.size               = totalDecompressedSize;
-    const BufferWithMemory decompressBuffer(vkd, device, allocator, decompressBufferInfo, MemoryRequirement::Any);
+    const BufferWithMemory decompressBuffer(vkd, device, allocator, decompressBufferInfo,
+                                            MemoryRequirement::DeviceAddress);
 
     bufferUsageFlags2.usage          = VK_BUFFER_USAGE_2_TRANSFER_DST_BIT_KHR;
     VkBufferCreateInfo dstBufferInfo = vk::initVulkanStructure();
@@ -263,12 +267,15 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
 
     const BufferWithMemory indirectBuffer(
         vkd, device, allocator,
-        makeBufferCreateInfo(m_decompressionParams.decompressionCount * stride, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
-        MemoryRequirement::HostVisible);
+        makeBufferCreateInfo(m_decompressionParams.decompressionCount * stride,
+                             VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
+        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
-    const BufferWithMemory countBuffer(vkd, device, allocator,
-                                       makeBufferCreateInfo(sizeof(uint32_t), VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT),
-                                       MemoryRequirement::HostVisible);
+    const BufferWithMemory countBuffer(
+        vkd, device, allocator,
+        makeBufferCreateInfo(sizeof(uint32_t),
+                             VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
+        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
     VkBufferDeviceAddressInfo srcBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
                                                    srcBuffer.get()};
@@ -299,13 +306,13 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
     {
         const Allocation &bufferAllocation = srcBuffer.getAllocation();
         invalidateAlloc(vkd, device, bufferAllocation);
-        deMemcpy(bufferAllocation.getHostPtr(), m_compressedData, compressedSize);
+        deMemcpy(bufferAllocation.getHostPtr(), m_compressedData, m_compressedSize);
     }
 
     {
         const Allocation &bufferAllocation = dstBuffer.getAllocation();
         invalidateAlloc(vkd, device, bufferAllocation);
-        deMemset(bufferAllocation.getHostPtr(), 0xFF, totalDecompressedSize);
+        deMemset(bufferAllocation.getHostPtr(), 0xFF, static_cast<size_t>(totalDecompressedSize));
     }
 
     {
@@ -352,7 +359,7 @@ tcu::TestStatus MemoryDecompressionTestInstance::iterate(void)
                                         NULL,
                                         VK_PIPELINE_STAGE_2_MEMORY_DECOMPRESSION_BIT_EXT,
                                         VK_ACCESS_2_MEMORY_DECOMPRESSION_WRITE_BIT_EXT,
-                                        VK_PIPELINE_STAGE_TRANSFER_BIT,
+                                        VK_PIPELINE_STAGE_2_MEMORY_DECOMPRESSION_BIT_EXT,
                                         VK_ACCESS_2_MEMORY_DECOMPRESSION_READ_BIT_EXT};
         VkDependencyInfoKHR dep_info = {
             VK_STRUCTURE_TYPE_DEPENDENCY_INFO_KHR, // VkStructureType sType;

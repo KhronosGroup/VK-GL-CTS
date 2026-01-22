@@ -37,13 +37,12 @@
 
 #include "vkRayTracingUtil.hpp"
 
+#include "tcuStringTemplate.hpp"
 #include "tcuCommandLine.hpp"
 
 #include "deClock.h"
 
-namespace vkt
-{
-namespace RayTracing
+namespace vkt::RayTracing
 {
 namespace
 {
@@ -236,7 +235,7 @@ class RayTracingBuildTestInstance : public TestInstance
 {
 public:
     RayTracingBuildTestInstance(Context &context, const CaseDef &data);
-    ~RayTracingBuildTestInstance(void);
+    ~RayTracingBuildTestInstance(void) = default;
     tcu::TestStatus iterate(void);
 
 protected:
@@ -250,10 +249,6 @@ private:
 RayTracingBuildTestInstance::RayTracingBuildTestInstance(Context &context, const CaseDef &data)
     : vkt::TestInstance(context)
     , m_data(data)
-{
-}
-
-RayTracingBuildTestInstance::~RayTracingBuildTestInstance(void)
 {
 }
 
@@ -562,6 +557,201 @@ tcu::TestStatus RayTracingBuildTestInstance::iterate(void)
         return tcu::TestStatus::fail("failures=" + de::toString(failures));
 }
 
+class RayTracingDescriptorTestInstance : public TestInstance
+{
+public:
+    RayTracingDescriptorTestInstance(Context &context);
+    ~RayTracingDescriptorTestInstance(void) = default;
+
+    tcu::TestStatus iterate(void) final;
+};
+
+RayTracingDescriptorTestInstance::RayTracingDescriptorTestInstance(Context &context) : vkt::TestInstance(context)
+{
+}
+
+tcu::TestStatus RayTracingDescriptorTestInstance::iterate(void)
+{
+    // verify that binding a different pipeline type (compute -> ray tracing and back)
+    // does not corrupt or lose descriptor state that pipelines rely on
+
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    Allocator &memAlloc       = m_context.getDefaultAllocator();
+
+    const VkShaderStageFlags stages = VK_SHADER_STAGE_RAYGEN_BIT_KHR | VK_SHADER_STAGE_COMPUTE_BIT;
+    const VkDescriptorType descType = VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
+    const Unique<VkDescriptorPool> descriptorPool(
+        DescriptorPoolBuilder()
+            .addType(descType, 2)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u));
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder().addSingleBinding(descType, stages).build(vk, device));
+
+    Move<VkPipelineLayout> pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
+
+    auto &bc = m_context.getBinaryCollection();
+    auto rgenModule(createShaderModule(vk, device, bc.get("rgen")));
+    auto computeModule(createShaderModule(vk, device, bc.get("comp")));
+
+    // get ray tracing properties
+    const auto &rtProperties       = m_context.getRayTracingPipelineProperties();
+    const uint32_t sgHandleSize    = rtProperties.shaderGroupHandleSize;
+    const uint32_t sgBaseAlignment = rtProperties.shaderGroupBaseAlignment;
+
+    // create ray tracing pipeline
+    RayTracingPipeline rtPipelineWrapper;
+    rtPipelineWrapper.addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR, rgenModule, 0);
+    Move<VkPipeline> rtPipeline = rtPipelineWrapper.createPipeline(vk, device, *pipelineLayout);
+
+    de::MovePtr<BufferWithMemory> rgenShaderBT = rtPipelineWrapper.createShaderBindingTable(
+        vk, device, *rtPipeline, memAlloc, sgHandleSize, sgBaseAlignment, 0, 1);
+    const auto rgenSBTR  = makeStridedDeviceAddressRegionKHR(getBufferDeviceAddress(vk, device, **rgenShaderBT, 0),
+                                                             sgHandleSize, sgHandleSize);
+    const auto emptySBTR = makeStridedDeviceAddressRegionKHR(0, 0, 0);
+
+    // create compute pipeline
+    VkComputePipelineCreateInfo pipelineCreateInfo = initVulkanStructure();
+    pipelineCreateInfo.stage                       = initVulkanStructure();
+    pipelineCreateInfo.stage.stage                 = VK_SHADER_STAGE_COMPUTE_BIT;
+    pipelineCreateInfo.stage.pName                 = "main";
+    pipelineCreateInfo.stage.module                = *computeModule;
+    pipelineCreateInfo.layout                      = *pipelineLayout;
+    Move<VkPipeline> computePipeline = createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
+
+    // create storage buffer that will hold compute and ray tracing output;
+    // note that value of singleDispatchCount is also used in shaders to calculate written values
+    const uint32_t singleDispatchCount = 16;
+    const VkDeviceSize bufferSize      = 4u * singleDispatchCount * sizeof(uint32_t);
+    auto bufferCreateInfo =
+        makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                                             VK_BUFFER_USAGE_TRANSFER_SRC_BIT);
+    BufferWithMemory bufferWithMemory(vk, device, memAlloc, bufferCreateInfo, MemoryRequirement::HostVisible);
+
+    auto bufferHalfSize       = bufferCreateInfo.size / 2u;
+    auto bufferDescriptorInfo = makeDescriptorBufferInfo(*bufferWithMemory, 0ull, bufferHalfSize);
+    Move<VkDescriptorSet> descriptorSets[2];
+
+    // create two descriptor sets with same layout, first one for ray tracing, second for compute
+    for (std::size_t i = 0; i < 2; ++i)
+    {
+        bufferDescriptorInfo.offset = i * bufferHalfSize;
+        descriptorSets[i]           = makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout);
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSets[i], DescriptorSetUpdateBuilder::Location::binding(0u), descType,
+                         &bufferDescriptorInfo)
+            .update(vk, device);
+    }
+
+    const auto pbpRayt = VK_PIPELINE_BIND_POINT_RAY_TRACING_KHR;
+    const auto pbpComp = VK_PIPELINE_BIND_POINT_COMPUTE;
+    auto cmdPool       = makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
+    auto cmdBuffer     = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    vk.cmdBindPipeline(*cmdBuffer, pbpComp, *computePipeline);
+    vk.cmdBindPipeline(*cmdBuffer, pbpRayt, *rtPipeline);
+
+    // bind descriptor sets for both pipelines
+    vk.cmdBindDescriptorSets(*cmdBuffer, pbpRayt, *pipelineLayout, 0u, 1u, &*descriptorSets[0], 0u, 0);
+    vk.cmdBindDescriptorSets(*cmdBuffer, pbpComp, *pipelineLayout, 0u, 1u, &*descriptorSets[1], 0u, 0);
+
+    // mixed compute/ray tracing dispatches
+    vk.cmdTraceRaysKHR(*cmdBuffer, &rgenSBTR, &emptySBTR, &emptySBTR, &emptySBTR, 1, singleDispatchCount, 1);
+    vk.cmdDispatch(*cmdBuffer, 1, singleDispatchCount, 1);
+    // width/groupCountX is set to 2, we use this to identify second dispatch in the shaders
+    // and to write to different part of the buffer
+    vk.cmdTraceRaysKHR(*cmdBuffer, &rgenSBTR, &emptySBTR, &emptySBTR, &emptySBTR, 2, singleDispatchCount, 1);
+    vk.cmdDispatch(*cmdBuffer, 2, singleDispatchCount, 1);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+    auto &allocation = bufferWithMemory.getAllocation();
+    invalidateAlloc(vk, device, allocation);
+    uint32_t *bufferPtr = static_cast<uint32_t *>(allocation.getHostPtr());
+
+    // verify four sections of the buffer at the same time;
+    // each section was written by different dispatches/traceRays call
+    for (std::size_t i = 0; i < singleDispatchCount; ++i)
+    {
+        if (bufferPtr[i] != i + 57)
+            return tcu::TestStatus::fail("First trace rays result has wrong value");
+        if (bufferPtr[i + singleDispatchCount] != i + 557 + singleDispatchCount)
+            return tcu::TestStatus::fail("Second trace rays result has wrong value");
+        if (bufferPtr[i + singleDispatchCount * 2] != i)
+            return tcu::TestStatus::fail("First dispatch result has wrong value");
+        if (bufferPtr[i + singleDispatchCount * 3] != i + 100 + singleDispatchCount)
+            return tcu::TestStatus::fail("Second dispatch result has wrong value");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
+class RayTracingDescriptorTestCase : public TestCase
+{
+public:
+    RayTracingDescriptorTestCase(tcu::TestContext &context, const char *name);
+    ~RayTracingDescriptorTestCase(void) = default;
+
+    void checkSupport(Context &context) const final;
+    void initPrograms(SourceCollections &programCollection) const final;
+    TestInstance *createInstance(Context &context) const final;
+};
+
+RayTracingDescriptorTestCase::RayTracingDescriptorTestCase(tcu::TestContext &context, const char *name)
+    : vkt::TestCase(context, name)
+{
+}
+
+void RayTracingDescriptorTestCase::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_acceleration_structure");
+    context.requireDeviceFunctionality("VK_KHR_ray_tracing_pipeline");
+}
+
+void RayTracingDescriptorTestCase::initPrograms(SourceCollections &programCollection) const
+{
+    // note: singleDispatchCount is also used for buffer size calculation in the test instance
+    const std::string singleDispatchCount("16");
+    std::map<std::string, std::string> specializationMap{{"fdc", singleDispatchCount}};
+    const vk::ShaderBuildOptions glslBuildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4, 0u, true);
+
+    std::string rgenShader =
+        R"(#version 460 core
+           #extension GL_EXT_ray_tracing : require
+           layout(std430, binding = 0) buffer Data { uint v[]; } data;
+           void main() {
+               uint secondTraceRays = uint(gl_LaunchSizeEXT.x > 1);
+               if (gl_LaunchIDEXT.x > 0)
+                   return;
+               uint i = secondTraceRays * ${fdc} + gl_LaunchIDEXT.y;
+               data.v[i] = i + 57 + secondTraceRays * 500;
+           })";
+    rgenShader = tcu::StringTemplate(rgenShader).specialize(specializationMap);
+    programCollection.glslSources.add("rgen") << glu::RaygenSource(rgenShader) << glslBuildOptions;
+
+    std::string compShader =
+        R"(#version 460 core
+           layout(local_size_x = 1u) in;
+           layout(std430, binding = 0) buffer Data { uint v[]; } data;
+           void main() {
+               uint secondDispatch = uint(gl_NumWorkGroups.x > 1);
+               if (gl_GlobalInvocationID.x > 0)
+                   return;
+               uint i = secondDispatch * ${fdc} + gl_GlobalInvocationID.y;
+               data.v[i] = i + secondDispatch * 100;
+           })";
+    compShader = tcu::StringTemplate(compShader).specialize(specializationMap);
+    programCollection.glslSources.add("comp") << glu::ComputeSource(compShader);
+}
+
+TestInstance *RayTracingDescriptorTestCase::createInstance(Context &context) const
+{
+    return new RayTracingDescriptorTestInstance(context);
+}
+
 } // namespace
 
 tcu::TestCaseGroup *createNullAccelerationStructureTests(tcu::TestContext &testCtx)
@@ -574,9 +764,9 @@ tcu::TestCaseGroup *createNullAccelerationStructureTests(tcu::TestContext &testC
         8, //  uint32_t height;
     };
     group->addChild(new RayTracingTestCase(testCtx, "test", caseDef));
+    group->addChild(new RayTracingDescriptorTestCase(testCtx, "mixed_dispatches"));
 
     return group.release();
 }
 
-} // namespace RayTracing
-} // namespace vkt
+} // namespace vkt::RayTracing

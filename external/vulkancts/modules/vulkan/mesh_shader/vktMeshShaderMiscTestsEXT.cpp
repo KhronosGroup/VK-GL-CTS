@@ -1742,18 +1742,27 @@ enum class MemoryBarrierType
     GROUP
 };
 
+enum class PayloadType
+{
+    STRUCT,
+    FLOAT,
+    VECTOR,
+    ARRAY,
+    UINT64
+};
+
 struct MemoryBarrierParams : public MiscTestParams
 {
     MemoryBarrierParams(const tcu::Maybe<tcu::UVec3> &taskCount_, const tcu::UVec3 &meshCount_, uint32_t width_,
-                        uint32_t height_, MemoryBarrierType memBarrierType_, bool usePrimitiveTypePayload_)
+                        uint32_t height_, MemoryBarrierType memBarrierType_, PayloadType payloadType_)
         : MiscTestParams(taskCount_, meshCount_, width_, height_)
         , memBarrierType(memBarrierType_)
-        , usePrimitiveTypePayload(usePrimitiveTypePayload_)
+        , payloadType(payloadType_)
     {
     }
 
     MemoryBarrierType memBarrierType;
-    bool usePrimitiveTypePayload = false;
+    PayloadType payloadType;
 
     std::string glslFunc() const
     {
@@ -1856,14 +1865,38 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
 
     const bool taskShader = params->needsTaskShader();
 
-    const std::string taskDataDecl = params->usePrimitiveTypePayload ?
-                                         "taskPayloadSharedEXT float blue;\n\n" :
-                                         "struct TaskData { float blue; }; taskPayloadSharedEXT TaskData td;\n\n";
-    const auto barrierFunc         = params->glslFunc();
+    std::string taskDataDecl;
+    if (params->payloadType == PayloadType::STRUCT)
+        taskDataDecl = "struct TaskData { float blue; }; taskPayloadSharedEXT TaskData td;\n\n";
+    else if (params->payloadType == PayloadType::FLOAT)
+        taskDataDecl = "taskPayloadSharedEXT float blue;\n\n";
+    else if (params->payloadType == PayloadType::VECTOR)
+        taskDataDecl = "taskPayloadSharedEXT vec4 blue;\n\n";
+    else if (params->payloadType == PayloadType::ARRAY)
+        taskDataDecl = "taskPayloadSharedEXT float blue[4];\n\n";
+    else if (params->payloadType == PayloadType::UINT64)
+        taskDataDecl = "taskPayloadSharedEXT uint64_t blue;\n\n";
+    else
+        DE_ASSERT(false);
 
-    const std::string taskAction = params->usePrimitiveTypePayload ?
-                                       "blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n" :
-                                       "td.blue = float(iterations % 2u);\nworkGroupSize = uvec3(1u, 1u, 1u);\n";
+    const auto barrierFunc = params->glslFunc();
+
+    std::string taskAction;
+    if (params->payloadType == PayloadType::STRUCT)
+        taskAction = "td.blue = float(iterations % 2u);\n";
+    else if (params->payloadType == PayloadType::FLOAT)
+        taskAction = "blue = float(iterations % 2u);\n";
+    else if (params->payloadType == PayloadType::VECTOR)
+        taskAction = "blue = vec4(7.0f, float(iterations % 2u), 7.0f, 7.0f);\n";
+    else if (params->payloadType == PayloadType::ARRAY)
+        taskAction = "blue[0] = 7.0f;\nblue[1] = 7.0f;\nblue[2] = float(iterations % 2u);\nblue[3]=7.0f;\n";
+    else if (params->payloadType == PayloadType::UINT64)
+        taskAction = "blue = uint64_t(iterations % 2u) << 24;\n";
+    else
+        DE_ASSERT(false);
+
+    taskAction += "workGroupSize = uvec3(1u, 1u, 1u);\n";
+
     const std::string meshAction = "vertPrim = uvec2(1u, 1u);\n";
     const std::string action     = (taskShader ? taskAction : meshAction);
 
@@ -1886,8 +1919,10 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
     // The mesh shader is very similar in both cases, so we use a template.
     std::ostringstream meshTemplateStr;
     meshTemplateStr << "#version 450\n"
-                    << "#extension GL_EXT_mesh_shader : enable\n"
-                    << "\n"
+                    << "#extension GL_EXT_mesh_shader : enable\n";
+    if (params->payloadType == PayloadType::UINT64)
+        meshTemplateStr << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n";
+    meshTemplateStr << "\n"
                     << "layout (local_size_x=${LOCAL_SIZE}) in;\n"
                     << "layout (points) out;\n"
                     << "layout (max_vertices=1, max_primitives=1) out;\n"
@@ -1913,8 +1948,10 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
     {
         std::ostringstream task;
         task << "#version 450\n"
-             << "#extension GL_EXT_mesh_shader : enable\n"
-             << "\n"
+             << "#extension GL_EXT_mesh_shader : enable\n";
+        if (params->payloadType == PayloadType::UINT64)
+            task << "#extension GL_EXT_shader_explicit_arithmetic_types_int64 : enable\n";
+        task << "\n"
              << "layout (local_size_x=" << kLocalInvocations << ") in;\n"
              << "\n"
              << sharedDecl << taskDataDecl << "void main ()\n"
@@ -1927,7 +1964,17 @@ void MemoryBarrierCase::initPrograms(vk::SourceCollections &programCollection) c
         replacements["LOCAL_SIZE"] = "1";
         replacements["BODY"]       = meshAction;
         replacements["GLOBALS"]    = taskDataDecl;
-        replacements["BLUE"]       = params->usePrimitiveTypePayload ? "blue" : "td.blue";
+
+        if (params->payloadType == PayloadType::STRUCT)
+            replacements["BLUE"] = "td.blue";
+        else if (params->payloadType == PayloadType::FLOAT)
+            replacements["BLUE"] = "blue";
+        else if (params->payloadType == PayloadType::VECTOR)
+            replacements["BLUE"] = "blue.y";
+        else if (params->payloadType == PayloadType::ARRAY)
+            replacements["BLUE"] = "blue[2]";
+        else if (params->payloadType == PayloadType::UINT64)
+            replacements["BLUE"] = "float(blue >> 24)";
 
         const auto meshStr = meshTemplate.specialize(replacements);
 
@@ -6197,7 +6244,7 @@ tcu::TestStatus workGroupOrderingRun(Context &context)
         {
             geomHostBuffer.reset(new BufferWithMemory(ctx.vkd, ctx.device, ctx.allocator, geomHostBufferInfo, memReq));
         }
-        catch (tcu::NotSupportedError &err)
+        catch (tcu::NotSupportedError &)
         {
             continue;
         }
@@ -6632,37 +6679,37 @@ tcu::TestCaseGroup *createMeshShaderMiscTestsEXT(tcu::TestContext &testCtx)
             {MemoryBarrierType::GROUP, "group_memory_barrier"},
         };
 
+        const struct
+        {
+            PayloadType payloadType;
+            std::string caseName;
+        } payloadTypes[] = {{PayloadType::STRUCT, "struct"},
+                            {PayloadType::FLOAT, "float"},
+                            {PayloadType::VECTOR, "vector"},
+                            {PayloadType::ARRAY, "array"},
+                            {PayloadType::UINT64, "uint64"}};
+
         for (const auto &barrierCase : barrierTypes)
         {
             for (int i = 0; i < 2; ++i)
             {
                 const bool useTaskShader = (i == 0);
 
-                std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
-                    /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
-                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                    /*width*/ 1u,
-                    /*height*/ 1u,
-                    /*memBarrierType*/ barrierCase.memBarrierType,
-                    /*usePrimitiveTypePayload*/ false));
+                for (const auto &payloadCase : payloadTypes)
+                {
+                    std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
+                        /*taskCount*/ (useTaskShader ? tcu::just(tcu::UVec3(1u, 1u, 1u)) : tcu::Nothing),
+                        /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
+                        /*width*/ 1u,
+                        /*height*/ 1u,
+                        /*memBarrierType*/ barrierCase.memBarrierType,
+                        /*usePrimitiveTypePayload*/ payloadCase.payloadType));
 
-                const std::string shader = (useTaskShader ? "task" : "mesh");
-                const std::string name   = barrierCase.caseName + "_in_" + shader;
+                    const std::string shader = (useTaskShader ? "task" : "mesh");
+                    const std::string name   = barrierCase.caseName + "_in_" + shader + "_" + payloadCase.caseName;
 
-                miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
-            }
-            {
-                std::unique_ptr<MemoryBarrierParams> paramsPtr(new MemoryBarrierParams(
-                    /*taskCount*/ tcu::just(tcu::UVec3(1u, 1u, 1u)),
-                    /*meshCount*/ tcu::UVec3(1u, 1u, 1u),
-                    /*width*/ 1u,
-                    /*height*/ 1u,
-                    /*memBarrierType*/ barrierCase.memBarrierType,
-                    /*usePrimitiveTypePayload*/ true));
-
-                const std::string name = barrierCase.caseName + "_in_task_primitive_payload";
-
-                miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
+                    miscTests->addChild(new MemoryBarrierCase(testCtx, name, std::move(paramsPtr)));
+                }
             }
         }
     }

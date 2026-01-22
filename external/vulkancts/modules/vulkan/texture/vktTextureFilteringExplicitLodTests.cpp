@@ -287,11 +287,23 @@ string genLookupCode(const ImageViewParameters &imParams, const SamplerParameter
     return code;
 }
 
-void initializeImage(Context &ctx, VkImage im, const ConstPixelBufferAccess *pba, ImageViewParameters imParams)
+inline vk::VkQueue getQueue(Context &ctx, bool isGraphics = true)
+{
+    return isGraphics ? ctx.getUniversalQueue() : ctx.getComputeQueue();
+}
+
+inline uint32_t getQueueNdx(Context &ctx, bool isGraphics = true)
+{
+    return isGraphics ? ctx.getUniversalQueueFamilyIndex() : ctx.getComputeQueueFamilyIndex();
+}
+
+void initializeImage(Context &ctx, VkImage im, const ConstPixelBufferAccess *pba, ImageViewParameters imParams,
+                     bool useGraphics)
 {
     const DeviceInterface &vkd = ctx.getDeviceInterface();
     const VkDevice dev         = ctx.getDevice();
-    const uint32_t uqfi        = ctx.getUniversalQueueFamilyIndex();
+    const uint32_t qfi         = getQueueNdx(ctx, useGraphics);
+    VkQueue queue              = getQueue(ctx, useGraphics);
 
     const VkDeviceSize bufSize = getPixelSize(mapVkFormat(imParams.format)) * imParams.arrayLayers * imParams.size[0] *
                                  imParams.size[1] * imParams.size[2] * 2;
@@ -304,7 +316,7 @@ void initializeImage(Context &ctx, VkImage im, const ConstPixelBufferAccess *pba
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // usage
         VK_SHARING_MODE_EXCLUSIVE,            // sharingMode
         1,                                    // queueFamilyIndexCount
-        &uqfi                                 // pQueueFamilyIndices
+        &qfi                                  // pQueueFamilyIndices
     };
 
     Unique<VkBuffer> buf(createBuffer(vkd, dev, &bufCreateInfo));
@@ -347,8 +359,9 @@ void initializeImage(Context &ctx, VkImage im, const ConstPixelBufferAccess *pba
 
     flushAlloc(vkd, dev, *bufMem);
 
-    copyBufferToImage(vkd, dev, ctx.getUniversalQueue(), ctx.getUniversalQueueFamilyIndex(), buf.get(), bufSize,
-                      copyRegions, nullptr, VK_IMAGE_ASPECT_COLOR_BIT, imParams.levels, imParams.arrayLayers, im);
+    copyBufferToImage(vkd, dev, queue, qfi, buf.get(), bufSize, copyRegions, nullptr, VK_IMAGE_ASPECT_COLOR_BIT,
+                      imParams.levels, imParams.arrayLayers, im, VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                      VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 }
 
 struct TestCaseData
@@ -496,7 +509,7 @@ class TextureFilteringTestInstance : public TestInstance
 {
 public:
     TextureFilteringTestInstance(Context &ctx, const TestCaseData &testCaseData, const ShaderSpec &shaderSpec,
-                                 de::MovePtr<DataGenerator> gen);
+                                 de::MovePtr<DataGenerator> gen, bool useGraphics = true);
 
     virtual TestStatus iterate(void)
     {
@@ -537,10 +550,13 @@ protected:
 
     std::vector<Vec4> m_resultSamples;
     std::vector<Vec4> m_resultCoords;
+
+    const bool m_useGraphics;
 };
 
 TextureFilteringTestInstance::TextureFilteringTestInstance(Context &ctx, const TestCaseData &testCaseData,
-                                                           const ShaderSpec &shaderSpec, de::MovePtr<DataGenerator> gen)
+                                                           const ShaderSpec &shaderSpec, de::MovePtr<DataGenerator> gen,
+                                                           bool useGraphics)
     : TestInstance(ctx)
     , m_shaderType(testCaseData.shaderType)
     , m_shaderSpec(shaderSpec)
@@ -550,6 +566,7 @@ TextureFilteringTestInstance::TextureFilteringTestInstance(Context &ctx, const T
     , m_numSamples(0)
     , m_levels(testCaseData.pba)
     , m_gen(gen.release())
+    , m_useGraphics(useGraphics)
 {
     for (uint8_t compNdx = 0; compNdx < 3; ++compNdx)
         DE_ASSERT(m_imParams.size[compNdx] > 0);
@@ -567,7 +584,7 @@ TestStatus TextureFilteringTestInstance::runTest(void)
     m_numSamples      = (uint32_t)m_sampleArguments.size();
 
     createResources();
-    initializeImage(m_context, m_im.get(), &m_levels[0], m_imParams);
+    initializeImage(m_context, m_im.get(), &m_levels[0], m_imParams, m_useGraphics);
 
     uint64_t startTime, endTime;
 
@@ -722,7 +739,8 @@ void TextureFilteringTestInstance::createResources(void)
     const DeviceInterface &vkd = m_context.getDeviceInterface();
     const VkDevice device      = m_context.getDevice();
 
-    const uint32_t queueFamily             = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue                    = getQueue(m_context, m_useGraphics);
+    const uint32_t queueFamily             = getQueueNdx(m_context, m_useGraphics);
     const VkImageCreateFlags imCreateFlags = (m_imParams.dim == IMG_DIM_CUBE) ? VK_IMAGE_CREATE_CUBE_COMPATIBLE_BIT : 0;
 
     const VkImageCreateInfo imCreateInfo = {VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,
@@ -847,8 +865,10 @@ void TextureFilteringTestInstance::createResources(void)
         vkd.updateDescriptorSets(device, 1u, &descriptorWrite, 0u, nullptr);
     }
 
-    m_executor =
-        de::MovePtr<ShaderExecutor>(createExecutor(m_context, m_shaderType, m_shaderSpec, *m_extraResourcesLayout));
+    // Create executor
+    UserQueue userQueue = {queue, queueFamily};
+    m_executor          = de::MovePtr<ShaderExecutor>(
+        createExecutor(m_context, m_shaderType, m_shaderSpec, *m_extraResourcesLayout, userQueue));
 }
 
 VkFormatFeatureFlags getRequiredFormatFeatures(const SamplerParameters &samplerParams)
@@ -885,7 +905,9 @@ bool TextureFilteringTestInstance::isSupported(void)
 class TextureFilteringTestCase : public TestCase
 {
 public:
-    TextureFilteringTestCase(tcu::TestContext &testCtx, const char *name) : TestCase(testCtx, name)
+    TextureFilteringTestCase(tcu::TestContext &testCtx, const char *name, bool useGraphics)
+        : TestCase(testCtx, name)
+        , m_useGraphics(useGraphics)
     {
     }
 
@@ -905,13 +927,14 @@ public:
 
     virtual TestInstance *createInstance(Context &ctx) const
     {
-        return new TextureFilteringTestInstance(ctx, m_testCaseData, m_shaderSpec, createGenerator());
+        return new TextureFilteringTestInstance(ctx, m_testCaseData, m_shaderSpec, createGenerator(), m_useGraphics);
     }
 
 protected:
     de::MovePtr<ShaderExecutor> m_executor;
     TestCaseData m_testCaseData;
     ShaderSpec m_shaderSpec;
+    const bool m_useGraphics;
 };
 
 void TextureFilteringTestCase::initSpec(void)
@@ -940,9 +963,9 @@ class Texture2DGradientTestCase : public TextureFilteringTestCase
 public:
     Texture2DGradientTestCase(TestContext &testCtx, const char *name, TextureFormat format, IVec3 dimensions,
                               VkFilter magFilter, VkFilter minFilter, VkSamplerMipmapMode mipmapFilter,
-                              VkSamplerAddressMode wrappingMode, bool useDerivatives)
+                              VkSamplerAddressMode wrappingMode, bool useDerivatives, bool useGraphics = true)
 
-        : TextureFilteringTestCase(testCtx, name)
+        : TextureFilteringTestCase(testCtx, name, useGraphics)
         , m_format(format)
         , m_dimensions(dimensions)
         , m_magFilter(magFilter)
@@ -990,7 +1013,8 @@ protected:
         };
 
         const TestCaseData data = {std::vector<ConstPixelBufferAccess>(), imParameters, samplerParameters,
-                                   sampleLookupSettings, glu::SHADERTYPE_FRAGMENT};
+                                   sampleLookupSettings,
+                                   m_useGraphics ? glu::SHADERTYPE_FRAGMENT : glu::SHADERTYPE_COMPUTE};
 
         return data;
     }
@@ -1159,6 +1183,18 @@ TestCaseGroup *create2DFormatTests(TestContext &testCtx)
             VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, false);
 
         tests->addChild(testCaseLinear);
+
+        Texture2DGradientTestCase *testCaseNearestCompute = new Texture2DGradientTestCase(
+            testCtx, (prefix + "_nearest_compute").c_str(), mapVkFormat(formats[formatNdx]), size, VK_FILTER_NEAREST,
+            VK_FILTER_NEAREST, VK_SAMPLER_MIPMAP_MODE_NEAREST, VK_SAMPLER_ADDRESS_MODE_REPEAT, false, false);
+
+        tests->addChild(testCaseNearestCompute);
+
+        Texture2DGradientTestCase *testCaseLinearCompute = new Texture2DGradientTestCase(
+            testCtx, (prefix + "_linear_compute").c_str(), mapVkFormat(formats[formatNdx]), size, VK_FILTER_LINEAR,
+            VK_FILTER_LINEAR, VK_SAMPLER_MIPMAP_MODE_LINEAR, VK_SAMPLER_ADDRESS_MODE_REPEAT, false, false);
+
+        tests->addChild(testCaseLinearCompute);
     }
 
     return tests.release();
@@ -1179,63 +1215,71 @@ TestCaseGroup *create2DDerivTests(TestContext &testCtx)
         VK_SAMPLER_MIPMAP_MODE_LINEAR,
     };
 
-    for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(filters); ++magFilterNdx)
+    for (int pipelineType = 0; pipelineType < 2; ++pipelineType)
     {
-        for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(filters); ++minFilterNdx)
+        const bool useGraphics   = (pipelineType == 0);
+        const std::string suffix = useGraphics ? "" : "_compute";
+
+        for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(filters); ++magFilterNdx)
         {
-            for (int mipmapFilterNdx = 0; mipmapFilterNdx < DE_LENGTH_OF_ARRAY(mipmapFilters); ++mipmapFilterNdx)
+            for (int minFilterNdx = 0; minFilterNdx < DE_LENGTH_OF_ARRAY(filters); ++minFilterNdx)
             {
-                std::ostringstream caseName;
-
-                switch (filters[magFilterNdx])
+                for (int mipmapFilterNdx = 0; mipmapFilterNdx < DE_LENGTH_OF_ARRAY(mipmapFilters); ++mipmapFilterNdx)
                 {
-                case VK_FILTER_NEAREST:
-                    caseName << "nearest";
-                    break;
+                    std::ostringstream caseName;
 
-                case VK_FILTER_LINEAR:
-                    caseName << "linear";
-                    break;
+                    switch (filters[magFilterNdx])
+                    {
+                    case VK_FILTER_NEAREST:
+                        caseName << "nearest";
+                        break;
 
-                default:
-                    break;
+                    case VK_FILTER_LINEAR:
+                        caseName << "linear";
+                        break;
+
+                    default:
+                        break;
+                    }
+
+                    switch (filters[minFilterNdx])
+                    {
+                    case VK_FILTER_NEAREST:
+                        caseName << "_nearest";
+                        break;
+
+                    case VK_FILTER_LINEAR:
+                        caseName << "_linear";
+                        break;
+
+                    default:
+                        break;
+                    }
+
+                    caseName << "_mipmap";
+
+                    switch (mipmapFilters[mipmapFilterNdx])
+                    {
+                    case VK_SAMPLER_MIPMAP_MODE_NEAREST:
+                        caseName << "_nearest";
+                        break;
+
+                    case VK_SAMPLER_MIPMAP_MODE_LINEAR:
+                        caseName << "_linear";
+                        break;
+
+                    default:
+                        break;
+                    }
+
+                    caseName << suffix;
+
+                    Texture2DGradientTestCase *testCase = new Texture2DGradientTestCase(
+                        testCtx, caseName.str().c_str(), mapVkFormat(format), size, filters[magFilterNdx],
+                        filters[minFilterNdx], mipmapFilters[mipmapFilterNdx], wrappingMode, true, useGraphics);
+
+                    tests->addChild(testCase);
                 }
-
-                switch (filters[minFilterNdx])
-                {
-                case VK_FILTER_NEAREST:
-                    caseName << "_nearest";
-                    break;
-
-                case VK_FILTER_LINEAR:
-                    caseName << "_linear";
-                    break;
-
-                default:
-                    break;
-                }
-
-                caseName << "_mipmap";
-
-                switch (mipmapFilters[mipmapFilterNdx])
-                {
-                case VK_SAMPLER_MIPMAP_MODE_NEAREST:
-                    caseName << "_nearest";
-                    break;
-
-                case VK_SAMPLER_MIPMAP_MODE_LINEAR:
-                    caseName << "_linear";
-                    break;
-
-                default:
-                    break;
-                }
-
-                Texture2DGradientTestCase *testCase = new Texture2DGradientTestCase(
-                    testCtx, caseName.str().c_str(), mapVkFormat(format), size, filters[magFilterNdx],
-                    filters[minFilterNdx], mipmapFilters[mipmapFilterNdx], wrappingMode, true);
-
-                tests->addChild(testCase);
             }
         }
     }
@@ -1260,80 +1304,88 @@ TestCaseGroup *create2DSizeTests(TestContext &testCtx)
 
     for (uint32_t sizeNdx = 0; sizeNdx < DE_LENGTH_OF_ARRAY(sizes); ++sizeNdx)
     {
-        for (uint32_t magFilterNdx = 0; magFilterNdx < 2; ++magFilterNdx)
+        for (int pipelineType = 0; pipelineType < 2; ++pipelineType)
         {
-            for (uint32_t minFilterNdx = 0; minFilterNdx < 2; ++minFilterNdx)
+            const bool useGraphics   = (pipelineType == 0);
+            const std::string suffix = useGraphics ? "" : "_compute";
+
+            for (uint32_t magFilterNdx = 0; magFilterNdx < 2; ++magFilterNdx)
             {
-                for (uint32_t mipmapFilterNdx = 0; mipmapFilterNdx < 2; ++mipmapFilterNdx)
+                for (uint32_t minFilterNdx = 0; minFilterNdx < 2; ++minFilterNdx)
                 {
-                    for (uint32_t wrappingModeNdx = 0; wrappingModeNdx < 2; ++wrappingModeNdx)
+                    for (uint32_t mipmapFilterNdx = 0; mipmapFilterNdx < 2; ++mipmapFilterNdx)
                     {
-                        std::ostringstream caseName;
-
-                        caseName << sizes[sizeNdx][0] << "x" << sizes[sizeNdx][1];
-
-                        switch (filters[magFilterNdx])
+                        for (uint32_t wrappingModeNdx = 0; wrappingModeNdx < 2; ++wrappingModeNdx)
                         {
-                        case VK_FILTER_NEAREST:
-                            caseName << "_nearest";
-                            break;
+                            std::ostringstream caseName;
 
-                        case VK_FILTER_LINEAR:
-                            caseName << "_linear";
-                            break;
+                            caseName << sizes[sizeNdx][0] << "x" << sizes[sizeNdx][1];
 
-                        default:
-                            break;
+                            switch (filters[magFilterNdx])
+                            {
+                            case VK_FILTER_NEAREST:
+                                caseName << "_nearest";
+                                break;
+
+                            case VK_FILTER_LINEAR:
+                                caseName << "_linear";
+                                break;
+
+                            default:
+                                break;
+                            }
+
+                            switch (filters[minFilterNdx])
+                            {
+                            case VK_FILTER_NEAREST:
+                                caseName << "_nearest";
+                                break;
+
+                            case VK_FILTER_LINEAR:
+                                caseName << "_linear";
+                                break;
+
+                            default:
+                                break;
+                            }
+
+                            switch (mipmapFilters[mipmapFilterNdx])
+                            {
+                            case VK_SAMPLER_MIPMAP_MODE_NEAREST:
+                                caseName << "_mipmap_nearest";
+                                break;
+
+                            case VK_SAMPLER_MIPMAP_MODE_LINEAR:
+                                caseName << "_mipmap_linear";
+                                break;
+
+                            default:
+                                break;
+                            }
+
+                            switch (wrappingModes[wrappingModeNdx])
+                            {
+                            case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
+                                caseName << "_clamp";
+                                break;
+
+                            case VK_SAMPLER_ADDRESS_MODE_REPEAT:
+                                caseName << "_repeat";
+                                break;
+
+                            default:
+                                break;
+                            }
+
+                            caseName << suffix;
+
+                            Texture2DGradientTestCase *testCase = new Texture2DGradientTestCase(
+                                testCtx, caseName.str().c_str(), mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), sizes[sizeNdx],
+                                filters[magFilterNdx], filters[minFilterNdx], mipmapFilters[mipmapFilterNdx],
+                                wrappingModes[wrappingModeNdx], false, useGraphics);
+
+                            tests->addChild(testCase);
                         }
-
-                        switch (filters[minFilterNdx])
-                        {
-                        case VK_FILTER_NEAREST:
-                            caseName << "_nearest";
-                            break;
-
-                        case VK_FILTER_LINEAR:
-                            caseName << "_linear";
-                            break;
-
-                        default:
-                            break;
-                        }
-
-                        switch (mipmapFilters[mipmapFilterNdx])
-                        {
-                        case VK_SAMPLER_MIPMAP_MODE_NEAREST:
-                            caseName << "_mipmap_nearest";
-                            break;
-
-                        case VK_SAMPLER_MIPMAP_MODE_LINEAR:
-                            caseName << "_mipmap_linear";
-                            break;
-
-                        default:
-                            break;
-                        }
-
-                        switch (wrappingModes[wrappingModeNdx])
-                        {
-                        case VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE:
-                            caseName << "_clamp";
-                            break;
-
-                        case VK_SAMPLER_ADDRESS_MODE_REPEAT:
-                            caseName << "_repeat";
-                            break;
-
-                        default:
-                            break;
-                        }
-
-                        Texture2DGradientTestCase *testCase = new Texture2DGradientTestCase(
-                            testCtx, caseName.str().c_str(), mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), sizes[sizeNdx],
-                            filters[magFilterNdx], filters[minFilterNdx], mipmapFilters[mipmapFilterNdx],
-                            wrappingModes[wrappingModeNdx], false);
-
-                        tests->addChild(testCase);
                     }
                 }
             }

@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 
 void glwActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -4234,6 +4234,14 @@ void glwNamedFramebufferTextureLayerEXT (GLuint framebuffer, GLenum attachment, 
     if (!gl)
         return;
     gl->namedFramebufferTextureLayerEXT(framebuffer, attachment, texture, level, layer);
+}
+
+void glwNamedFramebufferTextureMultiviewOVR (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews)
+{
+    const glw::Functions* gl = glw::getCurrentThreadFunctions();
+    if (!gl)
+        return;
+    gl->namedFramebufferTextureMultiviewOVR(framebuffer, attachment, texture, level, baseViewIndex, numViews);
 }
 
 void glwNamedProgramLocalParameter4dEXT (GLuint program, GLenum target, GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w)

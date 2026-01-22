@@ -821,30 +821,29 @@ void addTest(tcu::TestCaseGroup *group, const Parameters &p)
             gen.AddDeclaration('%' + outputType + " = OpTypeVector %" + scalarOutputType + ' ' +
                                to_string(p.outputComponents) + '\n');
     }
-    gen.AddDeclaration("%_ptr_Storage_" + outputType + " = OpTypePointer StorageBuffer %" + outputType + '\n');
+    if (p.physicalBuffers)
+    {
+        gen.AddDeclaration("%_ptr_Storage_" + outputType + " = OpTypePointer PhysicalStorageBuffer %" + outputType +
+                           '\n');
+    }
+    else
+    {
+        gen.AddDeclaration("%_ptr_Storage_" + outputType + " = OpTypePointer StorageBuffer %" + outputType + '\n');
+    }
 
     int inputAlignment  = p.inputAlignment;
     int outputAlignment = p.outputAlignment;
 
-    // Remove explicit alignment when it is naturally aligned.
-    if (inputAlignment == p.inputSize * p.inputComponents)
-        inputAlignment = 0;
-    if (outputAlignment == p.outputSize * p.outputComponents)
-        outputAlignment = 0;
-
-    // When using physical buffers, always specify an alignment.
-    if (p.physicalBuffers)
-    {
-        if (inputAlignment == 0)
-            inputAlignment = p.inputSize;
-        if (outputAlignment == 0)
-            outputAlignment = p.outputSize;
-    }
+    // If the alignment is not specified, use the size.
+    if (inputAlignment == 0)
+        inputAlignment = p.inputSize;
+    if (outputAlignment == 0)
+        outputAlignment = p.outputSize;
 
     const string inputStrideText     = gen.Uint32(inputComponentStride);
     const string outputStrideText    = gen.Uint32(outputComponentStride);
-    const string inputAlignmentText  = inputAlignment != 0 ? (" Aligned " + to_string(inputAlignment)) : "";
-    const string outputAlignmentText = outputAlignment != 0 ? (" Aligned " + to_string(outputAlignment)) : "";
+    const string inputAlignmentText  = " Aligned " + to_string(inputAlignment);
+    const string outputAlignmentText = " Aligned " + to_string(outputAlignment);
 
     const char *const inputRobustness  = GetRobustnessOperand(p.inputBoundsCheck);
     const char *const outputRobustness = GetRobustnessOperand(p.outputBoundsCheck);

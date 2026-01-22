@@ -1052,6 +1052,11 @@ public:
         bufferFrames(framesToCheck);
         m_decoder->decodeFramesOutOfOrder();
     }
+    void releaseFrame(DecodedFrame *pFrame)
+    {
+        m_decoder->ReleaseDisplayedFrame(pFrame);
+    }
+
     std::shared_ptr<VideoBaseDecoder> m_decoder{};
     VkVideoParser m_parser{};
     std::shared_ptr<Demuxer> m_demuxer{};

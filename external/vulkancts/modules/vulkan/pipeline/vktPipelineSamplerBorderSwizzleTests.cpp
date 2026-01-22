@@ -887,8 +887,12 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
     const auto imageAspect    = (isDSFormat ? (hasStencil ? VK_IMAGE_ASPECT_STENCIL_BIT : VK_IMAGE_ASPECT_DEPTH_BIT) :
                                               VK_IMAGE_ASPECT_COLOR_BIT);
     const auto imageSubresourceRange = makeImageSubresourceRange(imageAspect, 0u, 1u, 0u, 1u);
-    const auto colorAttachmentFormat = getColorAttachmentFormat(m_params.textureFormat, hasStencil);
-    const auto colorSubresourceRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    VkImageAspectFlags barrierAspect = (VkImageAspectFlags)imageAspect;
+    if (mapVkFormat(m_params.textureFormat).order == tcu::TextureFormat::DS)
+        barrierAspect = VK_IMAGE_ASPECT_DEPTH_BIT | VK_IMAGE_ASPECT_STENCIL_BIT;
+    const auto barrierSubresourceRange = makeImageSubresourceRange(barrierAspect, 0u, 1u, 0u, 1u);
+    const auto colorAttachmentFormat   = getColorAttachmentFormat(m_params.textureFormat, hasStencil);
+    const auto colorSubresourceRange   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
 
     // Texture.
     const VkImageCreateInfo textureCreateInfo = {
@@ -1110,11 +1114,11 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
     // Texture barriers to fill it before using it.
     const auto preClearBarrier =
         makeImageMemoryBarrier(0u, VK_ACCESS_TRANSFER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
-                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture.get(), imageSubresourceRange);
+                               VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, texture.get(), barrierSubresourceRange);
 
     const auto postClearBarrier = makeImageMemoryBarrier(
         VK_ACCESS_TRANSFER_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture.get(), imageSubresourceRange);
+        VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, texture.get(), barrierSubresourceRange);
 
     // Record and submit.
     beginCommandBuffer(vkd, cmdBuffer);

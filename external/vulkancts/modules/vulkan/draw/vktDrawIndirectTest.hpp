@@ -35,7 +35,7 @@ class IndirectDrawTests : public tcu::TestCaseGroup
 {
 public:
     IndirectDrawTests(tcu::TestContext &testCtx, const SharedGroupParams groupParams);
-    ~IndirectDrawTests(void);
+    ~IndirectDrawTests(void) = default;
     void init(void);
 
 private:

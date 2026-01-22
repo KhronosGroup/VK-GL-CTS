@@ -3573,6 +3573,13 @@ void BaseTestCase::checkSupport(Context &context) const
 
     if (m_parameters.endRendering2)
         context.requireDeviceFunctionality("VK_KHR_maintenance10");
+
+    // VUID-vkCmdDraw-dynamicRenderingUnusedAttachments-08914
+    if (m_parameters.testType == TEST_TYPE_PARTIAL_BINDING_DEPTH_STENCIL)
+    {
+        if (!context.requireDeviceFunctionality("VK_EXT_dynamic_rendering_unused_attachments"))
+            TCU_THROW(NotSupportedError, "VK_EXT_dynamic_rendering_unused_attachments not supported");
+    }
 }
 
 void BaseTestCase::initPrograms(SourceCollections &programCollection) const

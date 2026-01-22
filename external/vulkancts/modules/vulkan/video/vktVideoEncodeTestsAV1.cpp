@@ -34,6 +34,7 @@
 #include <string>
 #include <algorithm>
 #include <filesystem>
+#include <numeric>
 #include <chrono>
 
 #ifdef DE_BUILD_VIDEO
@@ -46,6 +47,11 @@ namespace vkt
 {
 namespace video
 {
+
+#ifdef DE_BUILD_VIDEO
+static uint32_t getMaxFrameCount();
+#endif
+
 namespace
 {
 using namespace vk;
@@ -525,7 +531,7 @@ TestInstance *VideoTestCase::createInstance(Context &ctx) const
     if (!checkClipFileExists(inputClipName))
     {
 #ifdef DE_BUILD_VIDEO
-        vkt::video::util::generateYCbCrFile(inputClipName, m_definition.gop.frameCount, m_definition.frameSize.width,
+        vkt::video::util::generateYCbCrFile(inputClipName, getMaxFrameCount(), m_definition.frameSize.width,
                                             m_definition.frameSize.height, m_definition.subsampling.subsampling,
                                             m_definition.bitDepth.depth);
 #endif
@@ -1255,6 +1261,17 @@ static const std::vector<GOPDef> gopTests = {
     {2, GOP_I_P, false, 2, 0, "i_p_empty_region"}, // Special GOP for empty-region tests
     {7, GOP_I_P, false, 2, 0, "i_p_midway"},       // Special GOP for midway tests (1 IDR + 6 P frames)
 };
+
+#ifdef DE_BUILD_VIDEO
+// Finds the max frameCount from gopTests.
+// TODO: When we update to C++20 this can be made constexpr.
+static uint32_t getMaxFrameCount()
+{
+    return std::transform_reduce(
+        gopTests.begin(), gopTests.end(), 1, [](uint32_t a, uint32_t b) { return std::max(a, b); },
+        [](const GOPDef &gop) { return gop.frameCount; });
+}
+#endif
 
 static const std::vector<OrderingDef> orderingTests = {
     {ORDERED, ""},

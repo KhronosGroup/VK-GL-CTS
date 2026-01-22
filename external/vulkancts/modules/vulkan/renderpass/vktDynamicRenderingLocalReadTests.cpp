@@ -2612,7 +2612,7 @@ class NullAttachmentLocationsTestInstance : public TestInstance
 public:
     NullAttachmentLocationsTestInstance(Context &ctx, const bool commandMode, const bool nullAfterRemap,
                                         const bool nullBeforeIdentity);
-    virtual ~NullAttachmentLocationsTestInstance(void);
+    virtual ~NullAttachmentLocationsTestInstance(void) = default;
     tcu::TestStatus iterate(void);
 
 private:
@@ -2631,16 +2631,12 @@ NullAttachmentLocationsTestInstance::NullAttachmentLocationsTestInstance(Context
 {
 }
 
-NullAttachmentLocationsTestInstance::~NullAttachmentLocationsTestInstance(void)
-{
-}
-
 class NullAttachmentLocationsTestCase : public TestCase
 {
 public:
     NullAttachmentLocationsTestCase(tcu::TestContext &ctx, const std::string &name, const bool commandMode,
                                     const bool nullAfterRemap, const bool nullBeforeIdentity);
-    virtual ~NullAttachmentLocationsTestCase(void);
+    virtual ~NullAttachmentLocationsTestCase(void) = default;
     virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
@@ -2658,10 +2654,6 @@ NullAttachmentLocationsTestCase::NullAttachmentLocationsTestCase(tcu::TestContex
     , m_commandMode(commandMode)
     , m_nullAfterRemap(nullAfterRemap)
     , m_nullBeforeIdentity(nullBeforeIdentity)
-{
-}
-
-NullAttachmentLocationsTestCase::~NullAttachmentLocationsTestCase(void)
 {
 }
 

@@ -2063,9 +2063,12 @@ void CooperativeMatrixTestCase::initProgramsGLSL(SourceCollections &programColle
 
             if (isTensorLayoutClipTest(m_data.testType))
             {
-                // clip the double-size matrix to the requested size
-                css << "   v = setTensorViewClipNV(v, 1, " << GetTensorLayoutMatrixSizes(dim, i)[0] << ", 1, "
-                    << GetTensorLayoutMatrixSizes(dim, i)[1] << ");\n";
+                int32_t dim0 = GetTensorLayoutMatrixSizes(dim, i)[0];
+                int32_t dim1 = GetTensorLayoutMatrixSizes(dim, i)[1];
+                // clip the double-size matrix to the requested size. The clip region runs
+                // one past the end.
+                css << "   v = setTensorViewClipNV(v, " << dim0 << " + 1, " << dim0 << ", " << dim1 << " + 1, " << dim1
+                    << ");\n";
             }
 
             css << "   t = setTensorLayoutDimensionNV(t";
@@ -4171,6 +4174,24 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                                 inStoreRect = false;
                                             }
                                         }
+                                        if (inStoreRect && isTensorLayoutClipTest(m_data.testType))
+                                        {
+                                            // Convert to linear span index and back to matrix coord.
+                                            // Verify that the view clips the outermost edges.
+                                            int spanindex = 0;
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                spanindex = spanindex * GetTensorLayoutSpan(dim, r)[k] +
+                                                            (tensorCoord[k] - GetTensorLayoutStoreOffsets(dim, r)[k]);
+                                            }
+                                            int matrixcoord[2] = {spanindex / GetTensorLayoutMatrixSizes(dim, r)[1],
+                                                                  spanindex % GetTensorLayoutMatrixSizes(dim, r)[1]};
+                                            if (matrixcoord[0] == GetTensorLayoutMatrixSizes(dim, r)[0] - 1 ||
+                                                matrixcoord[1] == GetTensorLayoutMatrixSizes(dim, r)[1] - 1)
+                                            {
+                                                inStoreRect = false;
+                                            }
+                                        }
 
                                         if (inStoreRect)
                                         {
@@ -4953,6 +4974,24 @@ tcu::TestStatus CooperativeMatrixTestInstance::iterate(void)
                                             if ((int32_t)tensorCoord[k] < GetTensorLayoutStoreOffsets(dim, r)[k] ||
                                                 (int32_t)tensorCoord[k] >= GetTensorLayoutStoreOffsets(dim, r)[k] +
                                                                                GetTensorLayoutSpan(dim, r)[k])
+                                            {
+                                                inStoreRect = false;
+                                            }
+                                        }
+                                        if (inStoreRect && isTensorLayoutClipTest(m_data.testType))
+                                        {
+                                            // Convert to linear span index and back to matrix coord.
+                                            // Verify that the view clips the outermost edges.
+                                            int spanindex = 0;
+                                            for (uint32_t k = 0; k < dim; ++k)
+                                            {
+                                                spanindex = spanindex * GetTensorLayoutSpan(dim, r)[k] +
+                                                            (tensorCoord[k] - GetTensorLayoutStoreOffsets(dim, r)[k]);
+                                            }
+                                            int matrixcoord[2] = {spanindex / GetTensorLayoutMatrixSizes(dim, r)[1],
+                                                                  spanindex % GetTensorLayoutMatrixSizes(dim, r)[1]};
+                                            if (matrixcoord[0] == GetTensorLayoutMatrixSizes(dim, r)[0] - 1 ||
+                                                matrixcoord[1] == GetTensorLayoutMatrixSizes(dim, r)[1] - 1)
                                             {
                                                 inStoreRect = false;
                                             }
@@ -6242,153 +6281,161 @@ tcu::TestStatus CoopMat64bTestInstance::iterate(void)
     const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     Allocator &allocator            = m_context.getDefaultAllocator();
 
-    // Create an input/output buffer
-
-    const VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * m_numValues;
-    const BufferWithMemory buffer(vk, device, allocator,
-                                  makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
-                                  MemoryRequirement::HostVisible | MemoryRequirement::Cached);
-
-    auto const InputValue = [](uint32_t x) { return x ^ 0x82ce7f; };
-
-    // Fill the buffer with data
-
+    try
     {
-        const Allocation &bufferAllocation = buffer.getAllocation();
-        uint32_t *bufferPtr                = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
-        for (uint32_t i = 0; i < m_numValues; ++i)
-            *bufferPtr++ = InputValue(i);
+        // Create an input/output buffer
 
-        flushAlloc(vk, device, bufferAllocation);
-    }
+        const VkDeviceSize bufferSizeBytes = sizeof(uint32_t) * m_numValues;
+        const BufferWithMemory buffer(vk, device, allocator,
+                                      makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT),
+                                      MemoryRequirement::HostVisible | MemoryRequirement::Cached);
 
-    // Create descriptor set
+        auto const InputValue = [](uint32_t x) { return x ^ 0x82ce7f; };
 
-    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
-        DescriptorSetLayoutBuilder()
-            .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
-            .build(vk, device));
+        // Fill the buffer with data
 
-    const Unique<VkDescriptorPool> descriptorPool(
-        DescriptorPoolBuilder()
-            .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
-            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
-
-    const Unique<VkDescriptorSet> descriptorSet(makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
-
-    const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
-    DescriptorSetUpdateBuilder()
-        .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
-                     VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
-        .update(vk, device);
-
-    // m_offset is in bytes, but indexing the pointer is in uints.
-    uint32_t offsetDiv4 = (uint32_t)(m_offset / sizeof(uint32_t));
-
-    // Perform the computation
-    const uint32_t M      = 16;
-    const uint32_t N      = 16;
-    const uint32_t stride = ((m_numValues - offsetDiv4) / M) & ~15;
-    const uint32_t height = m_numValues / stride;
-    DE_ASSERT(offsetDiv4 + stride * (M - 1) + N < m_numValues);
-
-    const uint32_t specializationData[] = {
-        m_context.getSubgroupProperties().subgroupSize,
-        M,
-        N,
-    };
-    const vk::VkSpecializationMapEntry specializationMaps[] = {
-        {0, (uint32_t)(sizeof(uint32_t) * 0), sizeof(uint32_t)},
-        {1, (uint32_t)(sizeof(uint32_t) * 1), sizeof(uint32_t)},
-        {2, (uint32_t)(sizeof(uint32_t) * 2), sizeof(uint32_t)},
-    };
-    const VkSpecializationInfo specializationInfo = {
-        3u,                                                 // uint32_t mapEntryCount;
-        specializationMaps,                                 // const VkSpecializationMapEntry* pMapEntries;
-        static_cast<uintptr_t>(sizeof(specializationData)), // uintptr_t dataSize;
-        specializationData,                                 // const void* pData;
-    };
-
-    struct PushConst
-    {
-        uint64_t offset;
-        uint32_t stride;
-        uint32_t height;
-    };
-
-    // For tensor layout, the stride is in units of matrix elements. For rowmajor, it's in buffer elements
-    uint32_t pcstride = m_tensorLayout ? stride : (uint32_t)(stride * sizeof(uint32_t));
-    PushConst pushconsts{m_offset, pcstride, height};
-
-    const auto pcStages = VK_SHADER_STAGE_COMPUTE_BIT;
-    const auto pcRange  = makePushConstantRange(pcStages, 0u, sizeof(pushconsts));
-
-    ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
-                                    m_context.getBinaryCollection().get("comp"));
-    pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
-    pipeline.setSpecializationInfo(specializationInfo);
-    pipeline.addPushConstantRange(pcRange);
-    pipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT);
-    pipeline.buildPipeline();
-
-    const VkBufferMemoryBarrier hostWriteBarrier =
-        makeBufferMemoryBarrier(VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
-
-    const VkBufferMemoryBarrier shaderWriteBarrier =
-        makeBufferMemoryBarrier(VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
-
-    const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
-    const Unique<VkCommandBuffer> cmdBuffer(
-        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
-
-    // Start recording commands
-
-    beginCommandBuffer(vk, *cmdBuffer);
-
-    pipeline.bind(*cmdBuffer);
-
-    vk.cmdPushConstants(*cmdBuffer, pipeline.getPipelineLayout(), pcStages, 0u, sizeof(pushconsts), &pushconsts);
-
-    vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
-                             &descriptorSet.get(), 0u, nullptr);
-
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
-                          (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
-    vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
-    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
-                          (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
-
-    endCommandBuffer(vk, *cmdBuffer);
-
-    // Wait for completion
-
-    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
-
-    // Validate the results
-
-    const Allocation &bufferAllocation = buffer.getAllocation();
-    invalidateAlloc(vk, device, bufferAllocation);
-
-    const uint32_t *bufferPtr = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
-
-    for (uint32_t ndx = 0; ndx < m_numValues; ++ndx)
-    {
-        uint32_t coordx = (ndx - offsetDiv4) % stride;
-        uint32_t coordy = (ndx - offsetDiv4) / stride;
-        bool inmatrix   = coordy < M && coordx < N;
-
-        const uint32_t res   = bufferPtr[ndx];
-        const uint32_t input = InputValue(ndx);
-        const uint32_t ref   = inmatrix ? ~input : input;
-
-        if (res != ref)
         {
-            std::ostringstream msg;
-            msg << "Comparison failed for InOut.values[" << ndx << "]";
-            return tcu::TestStatus::fail(msg.str());
+            const Allocation &bufferAllocation = buffer.getAllocation();
+            uint32_t *bufferPtr                = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
+            for (uint32_t i = 0; i < m_numValues; ++i)
+                *bufferPtr++ = InputValue(i);
+
+            flushAlloc(vk, device, bufferAllocation);
         }
+
+        // Create descriptor set
+
+        const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+            DescriptorSetLayoutBuilder()
+                .addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, VK_SHADER_STAGE_COMPUTE_BIT)
+                .build(vk, device));
+
+        const Unique<VkDescriptorPool> descriptorPool(
+            DescriptorPoolBuilder()
+                .addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u));
+
+        const Unique<VkDescriptorSet> descriptorSet(
+            makeDescriptorSet(vk, device, *descriptorPool, *descriptorSetLayout));
+
+        const VkDescriptorBufferInfo bufferDescriptorInfo = makeDescriptorBufferInfo(*buffer, 0ull, bufferSizeBytes);
+        DescriptorSetUpdateBuilder()
+            .writeSingle(*descriptorSet, DescriptorSetUpdateBuilder::Location::binding(0u),
+                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferDescriptorInfo)
+            .update(vk, device);
+
+        // m_offset is in bytes, but indexing the pointer is in uints.
+        uint32_t offsetDiv4 = (uint32_t)(m_offset / sizeof(uint32_t));
+
+        // Perform the computation
+        const uint32_t M      = 16;
+        const uint32_t N      = 16;
+        const uint32_t stride = ((m_numValues - offsetDiv4) / M) & ~15;
+        const uint32_t height = m_numValues / stride;
+        DE_ASSERT(offsetDiv4 + stride * (M - 1) + N < m_numValues);
+
+        const uint32_t specializationData[] = {
+            m_context.getSubgroupProperties().subgroupSize,
+            M,
+            N,
+        };
+        const vk::VkSpecializationMapEntry specializationMaps[] = {
+            {0, (uint32_t)(sizeof(uint32_t) * 0), sizeof(uint32_t)},
+            {1, (uint32_t)(sizeof(uint32_t) * 1), sizeof(uint32_t)},
+            {2, (uint32_t)(sizeof(uint32_t) * 2), sizeof(uint32_t)},
+        };
+        const VkSpecializationInfo specializationInfo = {
+            3u,                                                 // uint32_t mapEntryCount;
+            specializationMaps,                                 // const VkSpecializationMapEntry* pMapEntries;
+            static_cast<uintptr_t>(sizeof(specializationData)), // uintptr_t dataSize;
+            specializationData,                                 // const void* pData;
+        };
+
+        struct PushConst
+        {
+            uint64_t offset;
+            uint32_t stride;
+            uint32_t height;
+        };
+
+        // For tensor layout, the stride is in units of matrix elements. For rowmajor, it's in buffer elements
+        uint32_t pcstride = m_tensorLayout ? stride : (uint32_t)(stride * sizeof(uint32_t));
+        PushConst pushconsts{m_offset, pcstride, height};
+
+        const auto pcStages = VK_SHADER_STAGE_COMPUTE_BIT;
+        const auto pcRange  = makePushConstantRange(pcStages, 0u, sizeof(pushconsts));
+
+        ComputePipelineWrapper pipeline(vk, device, m_computePipelineConstructionType,
+                                        m_context.getBinaryCollection().get("comp"));
+        pipeline.setDescriptorSetLayout(descriptorSetLayout.get());
+        pipeline.setSpecializationInfo(specializationInfo);
+        pipeline.addPushConstantRange(pcRange);
+        pipeline.setPipelineCreateFlags2(VK_PIPELINE_CREATE_2_64_BIT_INDEXING_BIT_EXT);
+        pipeline.buildPipeline();
+
+        const VkBufferMemoryBarrier hostWriteBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_HOST_WRITE_BIT, VK_ACCESS_SHADER_READ_BIT, *buffer, 0ull, bufferSizeBytes);
+
+        const VkBufferMemoryBarrier shaderWriteBarrier = makeBufferMemoryBarrier(
+            VK_ACCESS_SHADER_WRITE_BIT, VK_ACCESS_HOST_READ_BIT, *buffer, 0ull, bufferSizeBytes);
+
+        const Unique<VkCommandPool> cmdPool(makeCommandPool(vk, device, queueFamilyIndex));
+        const Unique<VkCommandBuffer> cmdBuffer(
+            allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+        // Start recording commands
+
+        beginCommandBuffer(vk, *cmdBuffer);
+
+        pipeline.bind(*cmdBuffer);
+
+        vk.cmdPushConstants(*cmdBuffer, pipeline.getPipelineLayout(), pcStages, 0u, sizeof(pushconsts), &pushconsts);
+
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipeline.getPipelineLayout(), 0u, 1u,
+                                 &descriptorSet.get(), 0u, nullptr);
+
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_HOST_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 1, &hostWriteBarrier, 0, nullptr);
+        vk.cmdDispatch(*cmdBuffer, 1, 1, 1);
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, VK_PIPELINE_STAGE_HOST_BIT,
+                              (VkDependencyFlags)0, 0, nullptr, 1, &shaderWriteBarrier, 0, nullptr);
+
+        endCommandBuffer(vk, *cmdBuffer);
+
+        // Wait for completion
+
+        submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+        // Validate the results
+
+        const Allocation &bufferAllocation = buffer.getAllocation();
+        invalidateAlloc(vk, device, bufferAllocation);
+
+        const uint32_t *bufferPtr = static_cast<uint32_t *>(bufferAllocation.getHostPtr());
+
+        for (uint32_t ndx = 0; ndx < m_numValues; ++ndx)
+        {
+            uint32_t coordx = (ndx - offsetDiv4) % stride;
+            uint32_t coordy = (ndx - offsetDiv4) / stride;
+            bool inmatrix   = coordy < M && coordx < N;
+
+            const uint32_t res   = bufferPtr[ndx];
+            const uint32_t input = InputValue(ndx);
+            const uint32_t ref   = inmatrix ? ~input : input;
+
+            if (res != ref)
+            {
+                std::ostringstream msg;
+                msg << "Comparison failed for InOut.values[" << ndx << "]";
+                return tcu::TestStatus::fail(msg.str());
+            }
+        }
+        return tcu::TestStatus::pass("Compute succeeded");
     }
-    return tcu::TestStatus::pass("Compute succeeded");
+    catch (const vk::OutOfMemoryError &)
+    {
+        TCU_THROW(NotSupportedError, "Out of memory");
+    }
 }
 
 #endif

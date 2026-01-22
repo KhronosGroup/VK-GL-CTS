@@ -1349,6 +1349,7 @@ enum class MiscTestMode
     COMMON_FRAG_LIBRARY,
     VIEW_INDEX_FROM_DEVICE_INDEX,
     UNUSUAL_MULTISAMPLE_STATE,
+    TRANSFORM_FEEDBACK_WITH_FAST_LINK,
     DESTROY_RESOURCES_BEFORE_LINK
 };
 
@@ -4136,6 +4137,255 @@ tcu::TestStatus CreateUnusualMultisampleStatesInstance::iterate()
                                  std::to_string(imageSize * imageSize * colorSamples));
 }
 
+class TransformFeedbackWithFastLinkInstance : public vkt::TestInstance
+{
+public:
+    TransformFeedbackWithFastLinkInstance(Context &context);
+    virtual ~TransformFeedbackWithFastLinkInstance(void) = default;
+
+    tcu::TestStatus iterate(void) override;
+
+protected:
+    GraphicsPipelineWrapper createGrapghicsPipeline(PipelineLayoutWrapper &pipelineLayoutWrapper,
+                                                    PipelineConstructionType pipelineConstructionType);
+
+protected:
+    const uint32_t m_vertexCount = 16u;
+    const uint32_t m_imageSize   = 32u;
+    const VkFormat m_colorFormat = VK_FORMAT_R8G8B8A8_UNORM;
+    const VkExtent3D m_extent    = makeExtent3D(m_imageSize, m_imageSize, 1u);
+
+    const std::vector<VkViewport> m_viewports{makeViewport(m_extent)};
+    const std::vector<VkRect2D> m_scissors{makeRect2D(m_extent)};
+
+    Move<VkRenderPass> m_renderPass;
+    ShaderWrapper m_vertShader;
+    ShaderWrapper m_fragShader;
+
+    VkVertexInputBindingDescription m_vertexBindingDescriptions;
+    VkVertexInputAttributeDescription m_vertexAttributeDescriptions[8];
+    VkPipelineVertexInputStateCreateInfo m_vertexInputStateCreateInfo;
+};
+
+TransformFeedbackWithFastLinkInstance::TransformFeedbackWithFastLinkInstance(Context &context)
+    : vkt::TestInstance(context)
+{
+    const auto &vk    = m_context.getDeviceInterface();
+    const auto device = m_context.getDevice();
+
+    m_renderPass = makeRenderPass(vk, device, m_colorFormat);
+
+    // create shaders
+    auto &bc(m_context.getBinaryCollection());
+    m_vertShader = ShaderWrapper(vk, device, bc.get("vert"));
+    m_fragShader = ShaderWrapper(vk, device, bc.get("frag"));
+
+    // define vertex attributes
+    const auto perVertexSize         = sizeof(Vec4) + 7u * sizeof(int32_t);
+    m_vertexBindingDescriptions      = {0, perVertexSize, VK_VERTEX_INPUT_RATE_VERTEX};
+    m_vertexAttributeDescriptions[0] = {0u, 0u, vk::VK_FORMAT_R32G32B32A32_SFLOAT, 0u};
+    for (uint32_t i = 1; i < 8u; i++)
+        m_vertexAttributeDescriptions[i] = {i, 0u, vk::VK_FORMAT_R32_SINT,
+                                            (uint32_t)(sizeof(Vec4) + (i - 1) * sizeof(int32_t))};
+
+    // define vertex input state - shared between pipelines
+    m_vertexInputStateCreateInfo                                 = initVulkanStructure();
+    m_vertexInputStateCreateInfo.vertexBindingDescriptionCount   = 1u;
+    m_vertexInputStateCreateInfo.pVertexBindingDescriptions      = &m_vertexBindingDescriptions;
+    m_vertexInputStateCreateInfo.vertexAttributeDescriptionCount = (uint32_t)std::size(m_vertexAttributeDescriptions);
+    m_vertexInputStateCreateInfo.pVertexAttributeDescriptions    = m_vertexAttributeDescriptions;
+}
+
+GraphicsPipelineWrapper TransformFeedbackWithFastLinkInstance::createGrapghicsPipeline(
+    PipelineLayoutWrapper &pipelineLayoutWrapper, PipelineConstructionType pipelineConstructionType)
+{
+    const auto &vk            = m_context.getDeviceInterface();
+    const auto &vki           = m_context.getInstanceInterface();
+    const auto device         = m_context.getDevice();
+    const auto physicalDevice = m_context.getPhysicalDevice();
+    const auto &extensions    = m_context.getDeviceExtensions();
+
+    GraphicsPipelineWrapper gpw(vki, vk, physicalDevice, device, extensions, pipelineConstructionType);
+    gpw.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_LINE_LIST)
+        .setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDefaultColorBlendState()
+        .setMonolithicPipelineLayout(pipelineLayoutWrapper)
+        .setupVertexInputState(&m_vertexInputStateCreateInfo)
+        .setupPreRasterizationShaderState(m_viewports, m_scissors, pipelineLayoutWrapper, *m_renderPass, 0u,
+                                          m_vertShader)
+        .setupFragmentShaderState(pipelineLayoutWrapper, *m_renderPass, 0u, m_fragShader)
+        .setupFragmentOutputState(*m_renderPass, 0u)
+        .buildPipeline();
+    return gpw;
+}
+
+tcu::TestStatus TransformFeedbackWithFastLinkInstance::iterate()
+{
+    const auto &vk            = m_context.getDeviceInterface();
+    const auto device         = m_context.getDevice();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+    uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+
+    // generate vertex input data
+    struct PerVertexData
+    {
+        Vec4 pos;
+        int32_t var[7]; // used to verify transform feedback and for color
+    };
+    std::vector<PerVertexData> inputDataVect(m_vertexCount);
+    de::Random rnd(1254);
+    for (auto &inData : inputDataVect)
+    {
+        inData.pos = Vec4(rnd.getFloat(-1.2f, 1.2f), rnd.getFloat(-1.2f, 1.2f), 0.1f, 1.0f);
+        for (auto &v : inData.var)
+            v = rnd.getInt(-255, 255);
+    }
+    const auto varCount = std::size(inputDataVect[0].var);
+
+    // create color attachment that will be used for rendering with transform feedback
+    const auto imageSubresRange = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+    auto imageInfo              = makeColorImageCreateInfo(m_colorFormat, m_imageSize, m_imageSize);
+    imageInfo.usage             = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    ImageWithMemory imgWithMemoryA(vk, device, allocator, imageInfo, MemoryRequirement::Local);
+    auto imgViewA = makeImageView(vk, device, *imgWithMemoryA, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, imageSubresRange);
+
+    // create second color attachment that will be used for rendering without transform feedback
+    ImageWithMemory imgWithMemoryB(vk, device, allocator, imageInfo, MemoryRequirement::Local);
+    auto imgViewB = makeImageView(vk, device, *imgWithMemoryB, VK_IMAGE_VIEW_TYPE_2D, m_colorFormat, imageSubresRange);
+
+    // create buffer that will hold result of transform feedback
+    const auto mrhv = MemoryRequirement::HostVisible;
+    VkBufferUsageFlags bufferUsage(VK_BUFFER_USAGE_TRANSFER_SRC_BIT |
+                                   VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+    const auto tfBufferInfo = makeBufferCreateInfo(m_vertexCount * 4 * varCount, bufferUsage);
+    BufferWithMemory tfBufferWithMemory(vk, device, allocator, tfBufferInfo, mrhv);
+
+    // create buffer that will store data of both rendered images
+    const auto imageDataSize    = m_imageSize * m_imageSize * 4u;
+    bufferUsage                 = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_TRANSFER_SRC_BIT;
+    const auto resultBufferInfo = makeBufferCreateInfo(imageDataSize * 2u, bufferUsage);
+    BufferWithMemory resultBufferWithMemory(vk, device, allocator, resultBufferInfo, mrhv);
+
+    // create buffer that will hold vertex data
+    const auto perVertexSize    = sizeof(PerVertexData);
+    bufferUsage                 = VK_BUFFER_USAGE_TRANSFER_DST_BIT | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+    const auto vertexBufferInfo = makeBufferCreateInfo(m_vertexCount * perVertexSize, bufferUsage);
+    BufferWithMemory vertexBufferWithMemory(vk, device, allocator, vertexBufferInfo, mrhv);
+
+    // uplad vertex data
+    const auto &vertexBufferAllocation = vertexBufferWithMemory.getAllocation();
+    invalidateAlloc(vk, device, vertexBufferAllocation);
+    auto *vertexBufferPtr = static_cast<PerVertexData *>(vertexBufferAllocation.getHostPtr());
+    std::memcpy(vertexBufferPtr, inputDataVect.data(), std::size(inputDataVect) * perVertexSize);
+
+    // create two framebuffers
+    auto framebufferCreateInfo = makeFramebufferCreateInfo(*m_renderPass, 1u, &*imgViewA, m_imageSize, m_imageSize);
+    const auto framebufferA    = createFramebuffer(vk, device, &framebufferCreateInfo);
+    framebufferCreateInfo.pAttachments = &*imgViewB;
+    const auto framebufferB            = createFramebuffer(vk, device, &framebufferCreateInfo);
+
+    // create pipeline layout and pipeline for first draw with transform feedback
+    auto pipelineConstructionType = PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY;
+    PipelineLayoutWrapper pipelineLayoutA(pipelineConstructionType, vk, device);
+    GraphicsPipelineWrapper pipelineA = createGrapghicsPipeline(pipelineLayoutA, pipelineConstructionType);
+
+    // create pipeline layout and pipeline for second draw without transform feedback (for verification)
+    pipelineConstructionType = PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC;
+    PipelineLayoutWrapper pipelineLayoutB(pipelineConstructionType, vk, device);
+    GraphicsPipelineWrapper pipelineB = createGrapghicsPipeline(pipelineLayoutB, pipelineConstructionType);
+
+    const VkDeviceSize vertexBufferOffset = 0;
+    VkPipelineBindPoint bindPoint         = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    const auto poolCreateFlags            = VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT;
+    VkDeviceSize tfBufferOffset           = 0;
+    VkDeviceSize tfBufferSize             = VK_WHOLE_SIZE;
+
+    const auto clearValue(makeClearValueColor(tcu::Vec4(0.2f, 0.2f, 0.2f, 1.0f)));
+    const auto srl(makeImageSubresourceLayers(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 0u, 1u));
+    const auto copyRegionA(makeBufferImageCopy(m_extent, srl));
+    auto copyRegionB         = copyRegionA;
+    copyRegionB.bufferOffset = imageDataSize;
+
+    const auto beforeCopyMemoryBarrier(
+        makeMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT));
+    const VkImageMemoryBarrier beforeCopyImageBarriers[]{
+        makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               *imgWithMemoryA, imageSubresRange),
+        makeImageMemoryBarrier(VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                               VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                               *imgWithMemoryB, imageSubresRange),
+    };
+
+    const auto cmdPool(createCommandPool(vk, device, poolCreateFlags, queueFamilyIndex));
+    const auto cmdBuffer(allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    // render with transform feedback using pipeline constructed with fast linking
+    beginRenderPass(vk, *cmdBuffer, *m_renderPass, *framebufferA, m_scissors[0], 1, &clearValue);
+    vk.cmdBindPipeline(*cmdBuffer, bindPoint, pipelineA.getPipeline());
+    vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBufferWithMemory.get(), &vertexBufferOffset);
+    vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, 1, &*tfBufferWithMemory, &tfBufferOffset, &tfBufferSize);
+    vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, nullptr, nullptr);
+    vk.cmdDraw(*cmdBuffer, m_vertexCount, 1u, 0u, 0u);
+    vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, nullptr, nullptr);
+    endRenderPass(vk, *cmdBuffer);
+
+    // render again without transform feedback and using monothlic pipeline for verification
+    beginRenderPass(vk, *cmdBuffer, *m_renderPass, *framebufferB, m_scissors[0], 1, &clearValue);
+    vk.cmdBindPipeline(*cmdBuffer, bindPoint, pipelineB.getPipeline());
+    vk.cmdBindVertexBuffers(*cmdBuffer, 0, 1, &vertexBufferWithMemory.get(), &vertexBufferOffset);
+    vk.cmdDraw(*cmdBuffer, m_vertexCount, 1u, 0u, 0u);
+    endRenderPass(vk, *cmdBuffer);
+
+    // wait for rendering to finish and transition images to transfer src
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u, 1,
+                          &beforeCopyMemoryBarrier, 0, 0, 2, beforeCopyImageBarriers);
+
+    // copy both images to different parts of same buffer for verification
+    vk.cmdCopyImageToBuffer(*cmdBuffer, *imgWithMemoryA, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resultBufferWithMemory,
+                            1u, &copyRegionA);
+    vk.cmdCopyImageToBuffer(*cmdBuffer, *imgWithMemoryB, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL, *resultBufferWithMemory,
+                            1u, &copyRegionB);
+
+    endCommandBuffer(vk, *cmdBuffer);
+
+    const VkQueue queue = getDeviceQueue(vk, device, queueFamilyIndex, 0);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    const auto &tfBufferAllocation = tfBufferWithMemory.getAllocation();
+    invalidateAlloc(vk, device, tfBufferAllocation);
+    auto *tfBufferPtr = static_cast<int32_t *>(tfBufferAllocation.getHostPtr());
+
+    // verify transform feedback result
+    auto varByteCount = varCount * (size_t)sizeof(int32_t);
+    for (size_t index = 0; index < inputDataVect.size(); ++index)
+    {
+        auto &inData  = inputDataVect[index];
+        auto *outData = tfBufferPtr + (index * 7u);
+        if (std::memcmp(inData.var, outData, varByteCount))
+            return tcu::TestStatus::fail(std::string("Invalid TF result at index: ") + std::to_string(index));
+    }
+
+    const auto &resultBufferAllocation = resultBufferWithMemory.getAllocation();
+    invalidateAlloc(vk, device, resultBufferAllocation);
+    auto *resultBufferPtr = static_cast<std::uint8_t *>(resultBufferAllocation.getHostPtr());
+
+    // compare two renderred images
+    if (std::memcmp(resultBufferPtr, resultBufferPtr + imageDataSize, imageDataSize) == 0)
+        return tcu::TestStatus::pass("Pass");
+
+    // log image
+    tcu::PixelBufferAccess resultAccess(mapVkFormat(VK_FORMAT_R8G8B8A8_UNORM), m_imageSize, m_imageSize, 1,
+                                        resultBufferPtr);
+    m_context.getTestContext().getLog() << tcu::LogImage("image", "", resultAccess);
+
+    return tcu::TestStatus::fail("Rendered images are not the same");
+}
+
 class PipelineLibraryMiscTestCase : public TestCase
 {
 public:
@@ -4205,6 +4455,9 @@ void PipelineLibraryMiscTestCase::checkSupport(Context &context) const
         else
             context.requireDeviceFunctionality("VK_KHR_multiview");
     }
+
+    if (m_testParams.mode == MiscTestMode::TRANSFORM_FEEDBACK_WITH_FAST_LINK)
+        context.requireDeviceFunctionality("VK_EXT_transform_feedback");
 
     if (m_testParams.mode == MiscTestMode::DESTROY_RESOURCES_BEFORE_LINK)
     {
@@ -4713,6 +4966,48 @@ void PipelineLibraryMiscTestCase::initPrograms(SourceCollections &programCollect
         }
         programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
     }
+    else if (m_testParams.mode == MiscTestMode::TRANSFORM_FEEDBACK_WITH_FAST_LINK)
+    {
+        // shaders are based on: dEQP-GLES3.functional.transform_feedback.array.interleaved.lines.lowp_int
+        std::string vert(R"(
+            #version 460
+            layout(location = 0) in vec4 a_position;
+            layout(location = 1) in int a_varA_e0;
+            layout(location = 2) in int a_varA_e1;
+            layout(location = 3) in int a_varA_e2;
+            layout(location = 4) in int a_varB_e0;
+            layout(location = 5) in int a_varB_e1;
+            layout(location = 6) in int a_varB_e2;
+            layout(location = 7) in int a_varB_e3;
+            layout(location = 0, xfb_buffer=0, xfb_offset=0, xfb_stride=28) flat out int v_varA[3];
+            layout(location = 3, xfb_buffer=0, xfb_offset=12, xfb_stride=28) flat out int v_varB[4];
+            void main(void)
+            {
+                gl_Position = a_position;
+                v_varA[0]   = a_varA_e0;
+                v_varA[1]   = a_varA_e1;
+                v_varA[2]   = a_varA_e2;
+                v_varB[0]   = a_varB_e0;
+                v_varB[1]   = a_varB_e1;
+                v_varB[2]   = a_varB_e2;
+                v_varB[3]   = a_varB_e3;
+            })");
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert);
+        std::string frag(R"(
+            #version 460
+            layout(location = 0) out vec4 color;
+            layout(location = 0) flat in int v_varA[3];
+            layout(location = 3) flat in int v_varB[4];
+            void main (void)
+            {
+                color.r = (v_varA[0] + v_varB[0]) % 255;
+                color.g = (v_varA[1] + v_varB[1]) % 255;
+                color.b = (v_varA[2] + v_varB[2]) % 255;
+                color.a = v_varB[3];
+                color = abs(color) / 256.0;
+            })");
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag);
+    }
     else
     {
         DE_ASSERT(false);
@@ -4739,6 +5034,9 @@ TestInstance *PipelineLibraryMiscTestCase::createInstance(Context &context) cons
 
     if (m_testParams.mode == MiscTestMode::UNUSUAL_MULTISAMPLE_STATE)
         return new CreateUnusualMultisampleStatesInstance(context);
+
+    if (m_testParams.mode == MiscTestMode::TRANSFORM_FEEDBACK_WITH_FAST_LINK)
+        return new TransformFeedbackWithFastLinkInstance(context);
 
     return new PipelineLibraryMiscTestInstance(context, m_testParams);
 }
@@ -5448,6 +5746,8 @@ tcu::TestCaseGroup *createPipelineLibraryTests(tcu::TestContext &testCtx)
 
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "unusual_multisample_state",
                                                              {MiscTestMode::UNUSUAL_MULTISAMPLE_STATE, 0u, 0u}));
+        otherTests->addChild(new PipelineLibraryMiscTestCase(
+            testCtx, "transform_feedback_with_fast_link", {MiscTestMode::TRANSFORM_FEEDBACK_WITH_FAST_LINK, 0u, 0u}));
 
         otherTests->addChild(new PipelineLibraryMiscTestCase(testCtx, "destroy_resources_before_link_samplers_2",
                                                              {MiscTestMode::DESTROY_RESOURCES_BEFORE_LINK, 2u}));

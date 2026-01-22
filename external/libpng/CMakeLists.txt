@@ -54,6 +54,7 @@ if (DE_CPU_IS_ARM_64 OR (DE_CPU_IS_ARM AND DE_CPU_IS_ARM_NEON))
 		${PNG_ABS_PATH}/arm/arm_init.c
 		${PNG_ABS_PATH}/arm/filter_neon_intrinsics.c
 		${PNG_ABS_PATH}/arm/filter_neon.S
+		${PNG_ABS_PATH}/arm/palette_neon_intrinsics.c
 		)
 else ()
     message(STATUS "Disabling ARM NEON optimizations.")

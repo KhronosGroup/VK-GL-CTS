@@ -240,6 +240,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_custom_resolve")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_debug_marker")
 	{
 		return;
@@ -284,6 +288,11 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	}
 	if (extName == "VK_EXT_descriptor_buffer")
 	{
+		return;
+	}
+	if (extName == "VK_EXT_descriptor_heap")
+	{
+		functions.push_back("vkGetPhysicalDeviceDescriptorSizeEXT");
 		return;
 	}
 	if (extName == "VK_EXT_descriptor_indexing")
@@ -573,6 +582,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_present_timing")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_primitive_topology_list_restart")
 	{
 		return;
@@ -594,6 +607,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_rasterization_order_attachment_access")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_ray_tracing_invocation_reorder")
 	{
 		return;
 	}
@@ -646,6 +663,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_long_vector")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_module_identifier")
 	{
 		return;
@@ -663,6 +684,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_shader_subgroup_ballot")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_subgroup_partitioned")
 	{
 		return;
 	}
@@ -703,6 +728,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_EXT_texel_buffer_alignment")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_texture_compression_astc_3d")
 	{
 		return;
 	}
@@ -1513,6 +1542,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_compute_occupancy_priority")
+	{
+		return;
+	}
 	if (extName == "VK_NV_compute_shader_derivatives")
 	{
 		return;
@@ -1752,10 +1785,6 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 		return;
 	}
 	if (extName == "VK_OHOS_external_memory")
-	{
-		return;
-	}
-	if (extName == "VK_OHOS_native_buffer")
 	{
 		return;
 	}
@@ -2119,6 +2148,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_custom_resolve")
+	{
+		// Dependencies: VK_KHR_dynamic_rendering,VK_VERSION_1_3
+		if ((extensionIsSupported(vDEP, "VK_KHR_dynamic_rendering") || checkVersion(1, 3, apiVersion))) {
+			functions.push_back("vkCmdBeginCustomResolveEXT");
+		}
+		return;
+	}
 	if (extName == "VK_EXT_debug_marker")
 	{
 		functions.push_back("vkDebugMarkerSetObjectTagEXT");
@@ -2185,6 +2222,25 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		// Dependencies: VK_KHR_acceleration_structure,VK_NV_ray_tracing
 		if ((extensionIsSupported(vDEP, "VK_KHR_acceleration_structure") || extensionIsSupported(vDEP, "VK_NV_ray_tracing"))) {
 			functions.push_back("vkGetAccelerationStructureOpaqueCaptureDescriptorDataEXT");
+		}
+		return;
+	}
+	if (extName == "VK_EXT_descriptor_heap")
+	{
+		functions.push_back("vkWriteSamplerDescriptorsEXT");
+		functions.push_back("vkWriteResourceDescriptorsEXT");
+		functions.push_back("vkCmdBindSamplerHeapEXT");
+		functions.push_back("vkCmdBindResourceHeapEXT");
+		functions.push_back("vkCmdPushDataEXT");
+		functions.push_back("vkGetImageOpaqueCaptureDataEXT");
+		// Dependencies: VK_EXT_custom_border_color
+		if (extensionIsSupported(vDEP, "VK_EXT_custom_border_color")) {
+			functions.push_back("vkRegisterCustomBorderColorEXT");
+			functions.push_back("vkUnregisterCustomBorderColorEXT");
+		}
+		// Dependencies: VK_ARM_tensors
+		if (extensionIsSupported(vDEP, "VK_ARM_tensors")) {
+			functions.push_back("vkGetTensorOpaqueCaptureDataARM");
 		}
 		return;
 	}
@@ -2628,6 +2684,14 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_present_timing")
+	{
+		functions.push_back("vkSetSwapchainPresentTimingQueueSizeEXT");
+		functions.push_back("vkGetSwapchainTimingPropertiesEXT");
+		functions.push_back("vkGetSwapchainTimeDomainPropertiesEXT");
+		functions.push_back("vkGetPastPresentationTimingEXT");
+		return;
+	}
 	if (extName == "VK_EXT_primitive_topology_list_restart")
 	{
 		return;
@@ -2653,6 +2717,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_rasterization_order_attachment_access")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_ray_tracing_invocation_reorder")
 	{
 		return;
 	}
@@ -2702,6 +2770,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_shader_image_atomic_int64")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_shader_long_vector")
 	{
 		return;
 	}
@@ -2829,6 +2901,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_EXT_shader_subgroup_partitioned")
+	{
+		return;
+	}
 	if (extName == "VK_EXT_shader_subgroup_vote")
 	{
 		return;
@@ -2867,6 +2943,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_EXT_texel_buffer_alignment")
+	{
+		return;
+	}
+	if (extName == "VK_EXT_texture_compression_astc_3d")
 	{
 		return;
 	}
@@ -3841,6 +3921,11 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_NV_compute_occupancy_priority")
+	{
+		functions.push_back("vkCmdSetComputeOccupancyPriorityNV");
+		return;
+	}
 	if (extName == "VK_NV_compute_shader_derivatives")
 	{
 		return;
@@ -4144,13 +4229,6 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		functions.push_back("vkGetNativeBufferPropertiesOHOS");
 		functions.push_back("vkGetMemoryNativeBufferOHOS");
-		return;
-	}
-	if (extName == "VK_OHOS_native_buffer")
-	{
-		functions.push_back("vkGetSwapchainGrallocUsageOHOS");
-		functions.push_back("vkAcquireImageOHOS");
-		functions.push_back("vkQueueSignalReleaseImageOHOS");
 		return;
 	}
 	if (extName == "VK_OHOS_surface")
@@ -4482,6 +4560,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_sampler_filter_minmax",
 	"VK_AMD_gpu_shader_int16",
 	"VK_AMDX_shader_enqueue",
+	"VK_EXT_descriptor_heap",
 	"VK_AMD_mixed_attachment_samples",
 	"VK_AMD_shader_fragment_mask",
 	"VK_EXT_inline_uniform_block",
@@ -4519,6 +4598,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_shader_image_footprint",
 	"VK_NV_scissor_exclusive",
 	"VK_NV_device_diagnostic_checkpoints",
+	"VK_EXT_present_timing",
 	"VK_INTEL_shader_integer_functions2",
 	"VK_INTEL_performance_query",
 	"VK_EXT_pci_bus_info",
@@ -4561,6 +4641,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_device_memory_report",
 	"VK_EXT_robustness2",
 	"VK_EXT_custom_border_color",
+	"VK_EXT_texture_compression_astc_3d",
 	"VK_GOOGLE_user_type",
 	"VK_NV_present_barrier",
 	"VK_EXT_private_data",
@@ -4684,8 +4765,8 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_partitioned_acceleration_structure",
 	"VK_EXT_device_generated_commands",
 	"VK_MESA_image_alignment_control",
+	"VK_EXT_ray_tracing_invocation_reorder",
 	"VK_EXT_depth_clamp_control",
-	"VK_OHOS_native_buffer",
 	"VK_HUAWEI_hdr_vivid",
 	"VK_NV_cooperative_matrix2",
 	"VK_ARM_pipeline_opacity_micromap",
@@ -4698,9 +4779,13 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_EXT_fragment_density_map_offset",
 	"VK_EXT_zero_initialize_device_memory",
 	"VK_EXT_shader_64bit_indexing",
+	"VK_EXT_custom_resolve",
 	"VK_QCOM_data_graph_model",
+	"VK_EXT_shader_long_vector",
 	"VK_SEC_pipeline_cache_incremental_mode",
 	"VK_EXT_shader_uniform_buffer_unsized_array",
+	"VK_NV_compute_occupancy_priority",
+	"VK_EXT_shader_subgroup_partitioned",
 	"VK_KHR_acceleration_structure",
 	"VK_KHR_ray_tracing_pipeline",
 	"VK_KHR_ray_query",

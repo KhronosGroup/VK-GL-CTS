@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2018 The Khronos Group Inc.
  * Copyright (c) 2018 Google Inc.
+ * Copyright (c) 2023-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -26,6 +27,27 @@
 
 namespace vk
 {
+
+#ifndef CTS_USES_VULKANSC
+VkTensorMemoryBarrierARM makeTensorMemoryBarrier(const VkPipelineStageFlags2 srcStageMask,
+                                                 const VkAccessFlags2 srcAccessMask,
+                                                 const VkPipelineStageFlags2 dstStageMask,
+                                                 const VkAccessFlags2 dstAccessMask, const uint32_t srcQueueFamilyIndex,
+                                                 const uint32_t dstQueueFamilyIndex, const VkTensorARM tensor)
+{
+    return {
+        VK_STRUCTURE_TYPE_TENSOR_MEMORY_BARRIER_ARM, // VkStructureType sType;
+        nullptr,                                     // const void* pNext;
+        srcStageMask,                                // VkPipelineStageFlags2 srcStageMask;
+        srcAccessMask,                               // VkAccessFlags2 srcAccessMask;
+        dstStageMask,                                // VkPipelineStageFlags2 dstStageMask;
+        dstAccessMask,                               // VkAccessFlags2 dstAccessMask;
+        srcQueueFamilyIndex,                         // uint32_t srcQueueFamilyIndex;
+        dstQueueFamilyIndex,                         // uint32_t destQueueFamilyIndex;
+        tensor,                                      // VkTensorARM tensor;
+    };
+}
+#endif // CTS_USES_VULKANSC
 
 VkBufferMemoryBarrier makeBufferMemoryBarrier(const VkAccessFlags srcAccessMask, const VkAccessFlags dstAccessMask,
                                               const VkBuffer buffer, const VkDeviceSize offset,

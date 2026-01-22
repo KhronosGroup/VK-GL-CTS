@@ -143,6 +143,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBeginConditionalRenderingEXT",
 		"vkCmdEndConditionalRenderingEXT",
 
+		// "VK_EXT_custom_resolve
+		"vkCmdBeginCustomResolveEXT",
+
 		// "VK_EXT_debug_marker
 		"vkCmdDebugMarkerBeginEXT",
 		"vkCmdDebugMarkerEndEXT",
@@ -186,6 +189,18 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkGetImageOpaqueCaptureDescriptorDataEXT",
 		"vkGetImageViewOpaqueCaptureDescriptorDataEXT",
 		"vkGetSamplerOpaqueCaptureDescriptorDataEXT",
+
+		// "VK_EXT_descriptor_heap
+		"vkCmdBindResourceHeapEXT",
+		"vkCmdBindSamplerHeapEXT",
+		"vkCmdPushDataEXT",
+		"vkGetImageOpaqueCaptureDataEXT",
+		"vkGetPhysicalDeviceDescriptorSizeEXT",
+		"vkGetTensorOpaqueCaptureDataARM",
+		"vkRegisterCustomBorderColorEXT",
+		"vkUnregisterCustomBorderColorEXT",
+		"vkWriteResourceDescriptorsEXT",
+		"vkWriteSamplerDescriptorsEXT",
 
 		// "VK_EXT_device_fault
 		"vkGetDeviceFaultInfoEXT",
@@ -357,6 +372,12 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 
 		// "VK_EXT_pipeline_properties
 		"vkGetPipelinePropertiesEXT",
+
+		// "VK_EXT_present_timing
+		"vkGetPastPresentationTimingEXT",
+		"vkGetSwapchainTimeDomainPropertiesEXT",
+		"vkGetSwapchainTimingPropertiesEXT",
+		"vkSetSwapchainPresentTimingQueueSizeEXT",
 
 		// "VK_EXT_private_data
 		"vkCreatePrivateDataSlotEXT",
@@ -849,6 +870,9 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCmdBuildClusterAccelerationStructureIndirectNV",
 		"vkGetClusterAccelerationStructureBuildSizesNV",
 
+		// "VK_NV_compute_occupancy_priority
+		"vkCmdSetComputeOccupancyPriorityNV",
+
 		// "VK_NV_cooperative_matrix
 		"vkGetPhysicalDeviceCooperativeMatrixPropertiesNV",
 
@@ -963,11 +987,6 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		// "VK_OHOS_external_memory
 		"vkGetMemoryNativeBufferOHOS",
 		"vkGetNativeBufferPropertiesOHOS",
-
-		// "VK_OHOS_native_buffer
-		"vkAcquireImageOHOS",
-		"vkGetSwapchainGrallocUsageOHOS",
-		"vkQueueSignalReleaseImageOHOS",
 
 		// "VK_OHOS_surface
 		"vkCreateSurfaceOHOS",

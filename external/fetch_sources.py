@@ -324,8 +324,8 @@ PACKAGES = [
         "b3a24de97a8fdbc835b9833169501030b8977031bcb54b3b3ac13740f846ab30",
         "zlib"),
     SourcePackage(
-        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.33.tar.gz",
-        "0b0681ed912f8f6b0175fc4ebe4b05367dfbfcd4a6f23b8f2498db42eca998d4",
+        "https://github.com/pnggroup/libpng/archive/refs/tags/v1.6.50.tar.gz",
+        "71158e53cfdf2877bc99bcab33641d78df3f48e6e0daad030afe9cb8c031aa46",
         "libpng",
         postExtract = postExtractLibpng),
     SourceFile(
@@ -336,23 +336,23 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Tools.git",
         "git@github.com:KhronosGroup/SPIRV-Tools.git",
-        "e78655a0d996ffc3c91f51ae10214ec784225d7f",
+        "65b2ace21293057714b7fa1e87bd764d3dcef305",
         "spirv-tools"),
     GitRepo(
         "https://github.com/KhronosGroup/glslang.git",
         "git@github.com:KhronosGroup/glslang.git",
-        "b58249a96fce25cce5d440b265b58fead80d1377",
+        "7881226269b1596feb604515743f528f02041375",
         "glslang",
         removeTags = ["main-tot", "master-tot"]),
     GitRepo(
         "https://github.com/KhronosGroup/SPIRV-Headers.git",
         "git@github.com:KhronosGroup/SPIRV-Headers.git",
-        "0ff65315141cf745c1ac286084943409edbe6504",
+        "babee77020ff82b571d723ce2c0262e2ec0ee3f1",
         "spirv-headers"),
     GitRepo(
         "https://gitlab.khronos.org/vulkan/vulkan.git",
         "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "0d4b1ba2d69aa3955d7e7545e0b96acfd59af478",
+        "13c9ec426f476ee7f44a6f5a8afb79ee85f40d78",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
@@ -363,7 +363,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/google/amber.git",
         "git@github.com:google/amber.git",
-        "9482448393f3f1f75067cc6ba8ad77fda48691c6",
+        "83c140b6f67f45220956b1971e83a53588b4c426",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
@@ -373,7 +373,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "v0.3.5",
+        "v0.3.7",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(

@@ -227,10 +227,9 @@ public:
             }
             else
             {
-                const BufferSp &expectedOutput = expectedOutputs[i].getBuffer();
                 std::vector<uint8_t> expectedBytes;
 
-                expectedOutput->getBytes(expectedBytes);
+                expectedOutputs[i].getBytes(expectedBytes);
 
                 if (deMemCmp(&expectedBytes.front(), values, expectedBytes.size()))
                 {

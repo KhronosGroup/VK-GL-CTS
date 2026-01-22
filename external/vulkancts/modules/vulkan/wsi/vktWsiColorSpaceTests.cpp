@@ -465,7 +465,7 @@ tcu::TestStatus colorspaceCompareTest(Context &context, TestParams params)
         const VkSwapchainCreateInfoKHR swapchainInfo =
             getBasicSwapchainParameters(params.wsiType, instHelper.vki, devHelper.physicalDevice, *surface,
                                         surfaceFormat, desiredSize, 2, supportedColorSpaces[colorspaceNdx]);
-        const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+        const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(params.wsiType, vkd, device, &swapchainInfo));
         const vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
         const vector<VkExtensionProperties> deviceExtensions(
             enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));
@@ -569,7 +569,7 @@ tcu::TestStatus surfaceFormatRenderTest(Context &context, Type wsiType, const In
 
     const VkSwapchainCreateInfoKHR swapchainInfo =
         getBasicSwapchainParameters(wsiType, instHelper.vki, devHelper.physicalDevice, surface, curFmt, desiredSize, 2);
-    const Unique<VkSwapchainKHR> swapchain(createSwapchainKHR(vkd, device, &swapchainInfo));
+    const Unique<VkSwapchainKHR> swapchain(createWsiSwapchain(wsiType, vkd, device, &swapchainInfo));
     const vector<VkImage> swapchainImages = getSwapchainImages(vkd, device, *swapchain);
     const vector<VkExtensionProperties> deviceExtensions(
         enumerateDeviceExtensionProperties(instHelper.vki, devHelper.physicalDevice, nullptr));

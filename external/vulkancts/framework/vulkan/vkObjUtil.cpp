@@ -3,6 +3,7 @@
  * --------------------
  *
  * Copyright (c) 2018 Google Inc.
+ * Copyright (c) 2023-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -36,6 +37,29 @@
 
 namespace vk
 {
+
+#ifndef CTS_USES_VULKANSC
+
+Move<VkPipeline> makeDataGraphPipeline(const DeviceInterface &vk, const VkDevice device,
+                                       const VkPipelineLayout pipelineLayout,
+                                       const VkPipelineCreateFlags2KHR pipelineFlags, const void *pipelinePNext,
+                                       const VkPipelineCache pipelineCache,
+                                       const VkDataGraphPipelineResourceInfoARM *resourceInfos,
+                                       uint32_t resourceInfoCount)
+{
+    const VkDataGraphPipelineCreateInfoARM pipelineCreateInfo = {
+        VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_CREATE_INFO_ARM, // VkStructureType                              sType;
+        pipelinePNext,                                         // const void*                                  pNext;
+        pipelineFlags,                                         // VkPipelineCreateFlags2KHR                    flags;
+        pipelineLayout,                                        // VkPipelineLayout                             layout;
+        resourceInfoCount, // uint32_t                                     resourceInfoCount;
+        resourceInfos,     // const VkDataGraphPipelineResourceInfoARM*    pResourceInfos;
+    };
+
+    return createDataGraphPipelineARM(vk, device, VK_NULL_HANDLE, pipelineCache, &pipelineCreateInfo, nullptr);
+}
+
+#endif // ifndef CTS_USES_VULKANSC
 
 Move<VkPipeline> makeComputePipeline(const DeviceInterface &vk, const VkDevice device,
                                      const VkPipelineLayout pipelineLayout, const VkPipelineCreateFlags pipelineFlags,
@@ -705,6 +729,22 @@ Move<VkBufferView> makeBufferView(const DeviceInterface &vk, const VkDevice vkDe
     return createBufferView(vk, vkDevice, &bufferViewParams);
 }
 
+#ifndef CTS_USES_VULKANSC
+Move<VkTensorViewARM> makeTensorView(const DeviceInterface &vk, const VkDevice vkDevice, const VkTensorARM tensor,
+                                     const VkFormat format)
+{
+    const VkTensorViewCreateInfoARM tensorViewParams = {
+        VK_STRUCTURE_TYPE_TENSOR_VIEW_CREATE_INFO_ARM, // VkStructureType sType;
+        nullptr,                                       // const void* pNext;
+        0u,                                            // VkTensorViewCreateFlagsARM flags;
+        tensor,                                        // VkTensorARM tensor;
+        format,                                        // VkFormat format;
+    };
+
+    return createTensorViewARM(vk, vkDevice, &tensorViewParams);
+}
+#endif //CTS_USES_VULKANSC
+
 Move<VkDescriptorSet> makeDescriptorSet(const DeviceInterface &vk, const VkDevice device,
                                         const VkDescriptorPool descriptorPool, const VkDescriptorSetLayout setLayout,
                                         const void *pNext)
@@ -804,6 +844,48 @@ Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDev
 
     return createPipelineLayout(vk, device, &pipelineLayoutParams);
 }
+
+#ifndef CTS_USES_VULKANSC
+
+VkTensorDescriptionARM makeTensorDescription(const VkTensorTilingARM tiling, const VkFormat format,
+                                             const std::vector<int64_t> &dimensions,
+                                             const std::vector<int64_t> &strides, const VkTensorUsageFlagsARM usage)
+{
+    VkTensorDescriptionARM tensorDesc = {
+        VK_STRUCTURE_TYPE_TENSOR_DESCRIPTION_ARM, // VkStructureType sType;
+        nullptr,                                  // const void* pNext;
+        tiling,                                   // VkTensorTilingARM tiling;
+        format,                                   // VkFormat format;
+        static_cast<uint32_t>(dimensions.size()), // uint32_t dimensionCount;
+        dimensions.data(),                        // const uint64_t* pDimensions;
+        de::dataOrNull(strides),                  // const int64_t* pStrides;
+        usage,                                    // VkTensorUsageFlagsARM usage;
+    };
+
+    return tensorDesc;
+}
+
+VkTensorCreateInfoARM makeTensorCreateInfo(const VkTensorDescriptionARM *tensorDesc,
+                                           const VkTensorCreateFlagsARM createFlags,
+                                           const std::vector<uint32_t> &queueFamilyIndices)
+{
+    const uint32_t queueFamilyIndexCount = static_cast<uint32_t>(queueFamilyIndices.size());
+    const uint32_t *pQueueFamilyIndices  = de::dataOrNull(queueFamilyIndices);
+
+    const VkTensorCreateInfoARM tensorCreateInfo = {
+        VK_STRUCTURE_TYPE_TENSOR_CREATE_INFO_ARM, // VkStructureType sType;
+        nullptr,                                  // const void* pNext;
+        createFlags,                              // VkTensorCreateFlagsARM flags;
+        tensorDesc,                               // const VkTensorDescriptionARM* Description;
+        {},                                       // VkSharingMode sharingMode;
+        queueFamilyIndexCount,                    // uint32_t queueFamilyIndexCount;
+        pQueueFamilyIndices,                      // const uint32_t* pQueueFamilyIndices;
+    };
+
+    return tensorCreateInfo;
+}
+
+#endif //CTS_USES_VULKANSC
 
 Move<VkPipelineLayout> makePipelineLayout(const DeviceInterface &vk, const VkDevice device,
                                           const uint32_t setLayoutCount,

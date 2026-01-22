@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 #define			glActiveShaderProgram								glwActiveShaderProgram
 #define			glActiveTexture										glwActiveTexture
@@ -532,6 +532,7 @@
 #define			glNamedFramebufferTextureFaceEXT					glwNamedFramebufferTextureFaceEXT
 #define			glNamedFramebufferTextureLayer						glwNamedFramebufferTextureLayer
 #define			glNamedFramebufferTextureLayerEXT					glwNamedFramebufferTextureLayerEXT
+#define			glNamedFramebufferTextureMultiviewOVR				glwNamedFramebufferTextureMultiviewOVR
 #define			glNamedProgramLocalParameter4dEXT					glwNamedProgramLocalParameter4dEXT
 #define			glNamedProgramLocalParameter4dvEXT					glwNamedProgramLocalParameter4dvEXT
 #define			glNamedProgramLocalParameter4fEXT					glwNamedProgramLocalParameter4fEXT
@@ -1442,6 +1443,7 @@ void			glwNamedFramebufferTextureEXT						(GLuint framebuffer, GLenum attachment
 void			glwNamedFramebufferTextureFaceEXT					(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLenum face);
 void			glwNamedFramebufferTextureLayer						(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer);
 void			glwNamedFramebufferTextureLayerEXT					(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint layer);
+void			glwNamedFramebufferTextureMultiviewOVR				(GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews);
 void			glwNamedProgramLocalParameter4dEXT					(GLuint program, GLenum target, GLuint index, GLdouble x, GLdouble y, GLdouble z, GLdouble w);
 void			glwNamedProgramLocalParameter4dvEXT					(GLuint program, GLenum target, GLuint index, const GLdouble *params);
 void			glwNamedProgramLocalParameter4fEXT					(GLuint program, GLenum target, GLuint index, GLfloat x, GLfloat y, GLfloat z, GLfloat w);

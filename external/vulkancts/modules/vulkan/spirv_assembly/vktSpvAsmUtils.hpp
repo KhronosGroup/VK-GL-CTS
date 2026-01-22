@@ -184,13 +184,13 @@ public:
     {
     }
 
-    virtual const BufferSp &getBuffer() const
-    {
-        return buffer;
-    }
     virtual void getBytes(std::vector<uint8_t> &bytes) const
     {
         buffer->getBytes(bytes);
+    }
+    virtual void getPackedBytes(std::vector<uint8_t> &bytes) const
+    {
+        buffer->getPackedBytes(bytes);
     }
     virtual size_t getByteSize(void) const
     {

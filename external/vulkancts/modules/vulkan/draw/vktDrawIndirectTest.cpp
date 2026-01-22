@@ -101,6 +101,7 @@ struct DrawTypedTestSpec : public TestSpecBase
     DrawTypedTestSpec(const SharedGroupParams groupParams_)
         : TestSpecBase{{}, vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, groupParams_}
         , drawType(DRAWTYPE_LAST)
+        , requireIndirectFirstInstance(false)
         , testFirstInstanceNdx(false)
         , testIndirectCountExt(IndirectCountType::NONE)
         , dataFromCompute(false)
@@ -120,6 +121,7 @@ struct DrawTypedTestSpec : public TestSpecBase
     }
 
     DrawType drawType;
+    bool requireIndirectFirstInstance;
     bool testFirstInstanceNdx;
     IndirectCountType testIndirectCountExt;
     bool dataFromCompute;
@@ -215,10 +217,6 @@ struct FirstInstanceSupported
     {
         return 2;
     }
-    static bool isTestSupported(const vk::VkPhysicalDeviceFeatures &features)
-    {
-        return features.drawIndirectFirstInstance == VK_TRUE;
-    }
 };
 
 struct FirstInstanceNotSupported
@@ -226,10 +224,6 @@ struct FirstInstanceNotSupported
     static uint32_t getFirstInstance(void)
     {
         return 0;
-    }
-    static bool isTestSupported(const vk::VkPhysicalDeviceFeatures &)
-    {
-        return true;
     }
 };
 
@@ -331,11 +325,6 @@ void IndirectDraw::setVertexBuffer(void)
 
 void IndirectDraw::setFirstInstanceVertexBuffer(void)
 {
-    if (m_context.getDeviceFeatures().drawIndirectFirstInstance != VK_TRUE)
-    {
-        TCU_THROW(NotSupportedError, "Required 'drawIndirectFirstInstance' feature is not supported");
-    }
-
     if (m_drawType == DRAW_TYPE_INDEXED)
     {
         for (int unusedIdx = 0; unusedIdx < VERTEX_OFFSET; unusedIdx++)
@@ -1100,10 +1089,6 @@ template <class FirstInstanceSupport>
 IndirectDrawInstanced<FirstInstanceSupport>::IndirectDrawInstanced(Context &context, TestSpec testSpec)
     : IndirectDraw(context, testSpec)
 {
-    if (!FirstInstanceSupport::isTestSupported(m_context.getDeviceFeatures()))
-    {
-        throw tcu::NotSupportedError("Required 'drawIndirectFirstInstance' feature is not supported");
-    }
 }
 
 template <class FirstInstanceSupport>
@@ -1873,6 +1858,11 @@ void checkSupport(Context &context, IndirectDraw::TestSpec testSpec)
         if (!features.multiview)
             TCU_THROW(NotSupportedError, "multiview not supported");
     }
+
+    if (testSpec.requireIndirectFirstInstance && (context.getDeviceFeatures().drawIndirectFirstInstance != VK_TRUE))
+    {
+        TCU_THROW(NotSupportedError, "Required 'drawIndirectFirstInstance' feature is not supported");
+    }
 }
 
 } // namespace
@@ -1882,10 +1872,6 @@ IndirectDrawTests::IndirectDrawTests(tcu::TestContext &testCtx, const SharedGrou
     , m_groupParams(groupParams)
 {
     /* Left blank on purpose */
-}
-
-IndirectDrawTests::~IndirectDrawTests(void)
-{
 }
 
 void IndirectDrawTests::init(void)
@@ -2074,6 +2060,7 @@ void IndirectDrawTests::init(void)
                                 new tcu::TestCaseGroup(m_testCtx, "indirect_draw_param_count_first_instance");
                             {
                                 IndirectDraw::TestSpec testSpec(m_groupParams);
+                                testSpec.requireIndirectFirstInstance    = true;
                                 testSpec.testFirstInstanceNdx            = true;
                                 testSpec.drawType                        = static_cast<DrawType>(drawTypeIdx);
                                 testSpec.dataFromCompute                 = dataFromCompute;
@@ -2239,10 +2226,11 @@ void IndirectDrawTests::init(void)
                                 typedef IndirectDrawInstanced<FirstInstanceSupported> IDFirstInstanceSupported;
 
                                 IDFirstInstanceSupported::TestSpec testSpec(m_groupParams);
-                                testSpec.drawType               = static_cast<DrawType>(drawTypeIdx);
-                                testSpec.dataFromCompute        = dataFromCompute;
-                                testSpec.bindIndexBufferOffset  = bindIndexBufferOffset;
-                                testSpec.indexBufferAllocOffset = indexBufferAllocOffset;
+                                testSpec.requireIndirectFirstInstance = true;
+                                testSpec.drawType                     = static_cast<DrawType>(drawTypeIdx);
+                                testSpec.dataFromCompute              = dataFromCompute;
+                                testSpec.bindIndexBufferOffset        = bindIndexBufferOffset;
+                                testSpec.indexBufferAllocOffset       = indexBufferAllocOffset;
 
                                 testSpec.shaders[glu::SHADERTYPE_VERTEX] =
                                     "vulkan/draw/VertexFetchInstancedFirstInstance.vert";

@@ -4,7 +4,6 @@
  */
 
 m_vk.acquireDrmDisplayEXT = (AcquireDrmDisplayEXTFunc) GET_PROC_ADDR("vkAcquireDrmDisplayEXT");
-m_vk.acquireWinrtDisplayNV = (AcquireWinrtDisplayNVFunc) GET_PROC_ADDR("vkAcquireWinrtDisplayNV");
 m_vk.acquireXlibDisplayEXT = (AcquireXlibDisplayEXTFunc) GET_PROC_ADDR("vkAcquireXlibDisplayEXT");
 m_vk.createAndroidSurfaceKHR = (CreateAndroidSurfaceKHRFunc) GET_PROC_ADDR("vkCreateAndroidSurfaceKHR");
 m_vk.createDebugReportCallbackEXT = (CreateDebugReportCallbackEXTFunc) GET_PROC_ADDR("vkCreateDebugReportCallbackEXT");
@@ -94,7 +93,6 @@ if (!m_vk.getPhysicalDeviceMemoryProperties2)
     m_vk.getPhysicalDeviceMemoryProperties2 = (GetPhysicalDeviceMemoryProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2KHR");
 m_vk.getPhysicalDeviceMemoryProperties2KHR = (GetPhysicalDeviceMemoryProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceMemoryProperties2KHR");
 m_vk.getPhysicalDeviceMultisamplePropertiesEXT = (GetPhysicalDeviceMultisamplePropertiesEXTFunc) GET_PROC_ADDR("vkGetPhysicalDeviceMultisamplePropertiesEXT");
-m_vk.getPhysicalDeviceOpticalFlowImageFormatsNV = (GetPhysicalDeviceOpticalFlowImageFormatsNVFunc) GET_PROC_ADDR("vkGetPhysicalDeviceOpticalFlowImageFormatsNV");
 m_vk.getPhysicalDevicePresentRectanglesKHR = (GetPhysicalDevicePresentRectanglesKHRFunc) GET_PROC_ADDR("vkGetPhysicalDevicePresentRectanglesKHR");
 m_vk.getPhysicalDeviceProperties = (GetPhysicalDevicePropertiesFunc) GET_PROC_ADDR("vkGetPhysicalDeviceProperties");
 m_vk.getPhysicalDeviceProperties2 = (GetPhysicalDeviceProperties2Func) GET_PROC_ADDR("vkGetPhysicalDeviceProperties2");
@@ -136,6 +134,5 @@ m_vk.getPhysicalDeviceWin32PresentationSupportKHR = (GetPhysicalDeviceWin32Prese
 m_vk.getPhysicalDeviceXcbPresentationSupportKHR = (GetPhysicalDeviceXcbPresentationSupportKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceXcbPresentationSupportKHR");
 m_vk.getPhysicalDeviceXlibPresentationSupportKHR = (GetPhysicalDeviceXlibPresentationSupportKHRFunc) GET_PROC_ADDR("vkGetPhysicalDeviceXlibPresentationSupportKHR");
 m_vk.getRandROutputDisplayEXT = (GetRandROutputDisplayEXTFunc) GET_PROC_ADDR("vkGetRandROutputDisplayEXT");
-m_vk.getWinrtDisplayNV = (GetWinrtDisplayNVFunc) GET_PROC_ADDR("vkGetWinrtDisplayNV");
 m_vk.releaseDisplayEXT = (ReleaseDisplayEXTFunc) GET_PROC_ADDR("vkReleaseDisplayEXT");
 m_vk.submitDebugUtilsMessageEXT = (SubmitDebugUtilsMessageEXTFunc) GET_PROC_ADDR("vkSubmitDebugUtilsMessageEXT");

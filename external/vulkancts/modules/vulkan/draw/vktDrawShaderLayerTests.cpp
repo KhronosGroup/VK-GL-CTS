@@ -74,6 +74,7 @@ enum Constants
 struct TestParams
 {
     int numLayers;
+    bool requireTessellationShader;
     const SharedGroupParams groupParams;
 };
 
@@ -867,6 +868,9 @@ void checkRequirements(Context &context, const TestParams params)
     if (params.groupParams->useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
 
+    if (params.requireTessellationShader && !context.getDeviceFeatures().tessellationShader)
+        TCU_THROW(NotSupportedError, "Required feature is not supported: tessellationShader");
+
     const VkPhysicalDeviceLimits limits = context.getDeviceProperties().limits;
 
     if (limits.maxFramebufferLayers < MIN_MAX_FRAMEBUFFER_LAYERS)
@@ -943,10 +947,6 @@ tcu::TestStatus testVertexShader(Context &context, const TestParams params)
 
 tcu::TestStatus testTessellationShader(Context &context, const TestParams params)
 {
-    const VkPhysicalDeviceFeatures &features = context.getDeviceFeatures();
-    if (!features.tessellationShader)
-        TCU_THROW(NotSupportedError, "Required feature is not supported: tessellationShader");
-
     const DeviceInterface &vk = context.getDeviceInterface();
     const VkDevice device     = context.getDevice();
     Allocator &allocator      = context.getDefaultAllocator();
@@ -1016,11 +1016,11 @@ tcu::TestCaseGroup *createShaderLayerTests(tcu::TestContext &testCtx, const Shar
 {
     MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "shader_layer"));
 
-    int numLayersToTest[] = {
+    int numLayersToTest[]{
         1, 2, 3, 4, 5, 6, 7, 8, MIN_MAX_FRAMEBUFFER_LAYERS,
     };
 
-    TestParams parmas{1, groupParams};
+    TestParams params{1, false, groupParams};
 
     for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
     {
@@ -1028,21 +1028,22 @@ tcu::TestCaseGroup *createShaderLayerTests(tcu::TestContext &testCtx, const Shar
         if (groupParams->useSecondaryCmdBuffer && (i % 2))
             continue;
 
-        parmas.numLayers = numLayersToTest[i];
-        addFunctionCaseWithPrograms<TestParams>(group.get(), "vertex_shader_" + de::toString(parmas.numLayers),
-                                                checkRequirements, initVertexTestPrograms, testVertexShader, parmas);
+        params.numLayers = numLayersToTest[i];
+        addFunctionCaseWithPrograms<TestParams>(group.get(), "vertex_shader_" + de::toString(params.numLayers),
+                                                checkRequirements, initVertexTestPrograms, testVertexShader, params);
     }
 
+    params.requireTessellationShader = true;
     for (int i = 0; i < DE_LENGTH_OF_ARRAY(numLayersToTest); ++i)
     {
         // reduce number of tests for dynamic rendering cases where secondary command buffer is used
         if (groupParams->useSecondaryCmdBuffer && (i % 2))
             continue;
 
-        parmas.numLayers = numLayersToTest[i];
-        addFunctionCaseWithPrograms<TestParams>(group.get(), "tessellation_shader_" + de::toString(parmas.numLayers),
+        params.numLayers = numLayersToTest[i];
+        addFunctionCaseWithPrograms<TestParams>(group.get(), "tessellation_shader_" + de::toString(params.numLayers),
                                                 checkRequirements, initTessellationTestPrograms, testTessellationShader,
-                                                parmas);
+                                                params);
     }
 
     return group.release();

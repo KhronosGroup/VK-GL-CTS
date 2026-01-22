@@ -497,26 +497,14 @@ vk::VkResult queueSubmit(ProtectedContext &context, ProtectionMode protectionMod
 
 vk::Move<vk::VkSampler> makeSampler(const vk::DeviceInterface &vk, const vk::VkDevice &device)
 {
-    const vk::VkSamplerCreateInfo createInfo = {vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO,
-                                                nullptr,
-                                                0u,
+    const vk::VkSamplerCreateInfo createInfo = {
+        vk::VK_STRUCTURE_TYPE_SAMPLER_CREATE_INFO, nullptr, 0u,
 
-                                                vk::VK_FILTER_NEAREST,
-                                                vk::VK_FILTER_NEAREST,
-
-                                                vk::VK_SAMPLER_MIPMAP_MODE_LINEAR,
-                                                vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                                                vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                                                vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
-                                                0.0f,
-                                                VK_FALSE,
-                                                1.0f,
-                                                VK_FALSE,
-                                                vk::VK_COMPARE_OP_ALWAYS,
-                                                0.0f,
-                                                0.0f,
-                                                vk::VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK,
-                                                VK_FALSE};
+        vk::VK_FILTER_NEAREST, vk::VK_FILTER_NEAREST,
+        // VUID-vkCmdDispatch-mipmapMode-04770
+        vk::VK_SAMPLER_MIPMAP_MODE_NEAREST, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE,
+        vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, vk::VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_EDGE, 0.0f, VK_FALSE, 1.0f,
+        VK_FALSE, vk::VK_COMPARE_OP_ALWAYS, 0.0f, 0.0f, vk::VK_BORDER_COLOR_FLOAT_TRANSPARENT_BLACK, VK_FALSE};
 
     return vk::createSampler(vk, device, &createInfo);
 }

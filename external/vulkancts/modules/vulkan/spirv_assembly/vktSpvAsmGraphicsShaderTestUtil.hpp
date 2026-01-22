@@ -566,6 +566,8 @@ inline void createTestsForAllStages(const std::string &name, const tcu::RGBA (&i
                             failMessageTemplate);
 }
 
+void defaultCheckSupport(Context &context, InstanceContext instance);
+
 // Sets up and runs a Vulkan pipeline, then spot-checks the resulting image.
 // Feeds the pipeline a set of colored triangles, which then must occur in the
 // rendered image.  The surface is cleared before executing the pipeline, so

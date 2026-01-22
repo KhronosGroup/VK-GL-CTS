@@ -2364,7 +2364,7 @@ tcu::TestNode::IterateResult GeometryShaderTransformFeedbackVertexAndGeometrySha
         "layout (points)                   in;\n"
         "layout (points, max_vertices = 1) out;\n"
         "\n"
-        "in int vertexID;\n"
+        "flat in int vertexID[];\n"
         "out vec4 out_gs_1;\n"
         "\n"
         "void main()\n"
@@ -2419,7 +2419,7 @@ tcu::TestNode::IterateResult GeometryShaderTransformFeedbackVertexAndGeometrySha
     const char *fs_code_specialized_raw = fs_code_specialized.c_str();
 
     std::string gs_code_specialized     = specializeShader(1, &gs_code);
-    const char *gs_code_specialized_raw = fs_code_specialized.c_str();
+    const char *gs_code_specialized_raw = gs_code_specialized.c_str();
 
     std::string vs_code_specialized     = specializeShader(1, &vs_code);
     const char *vs_code_specialized_raw = vs_code_specialized.c_str();

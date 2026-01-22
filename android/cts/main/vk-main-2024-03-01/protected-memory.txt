@@ -1,5 +1,16 @@
 dEQP-VK.protected_memory.image.access.misc.maintenance5_no_protected_access
 dEQP-VK.protected_memory.image.access.misc.maintenance5_protected_access
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.clipped
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.composite_alpha
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.image_array_layers
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.image_extent
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.image_format
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.image_sharing_mode
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.image_usage
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.min_image_count
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.pre_transform
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.create.present_mode
+dEQP-VK.protected_memory.interaction.wsi.direct.swapchain.render.basic
 dEQP-VK.protected_memory.interaction.ycbcr.a1b5g5r5_unorm_pack16.compute.rgb_identity.itu_full.tiling_optimal_cosited
 dEQP-VK.protected_memory.interaction.ycbcr.a1b5g5r5_unorm_pack16.compute.rgb_identity.itu_full.tiling_optimal_cosited_disjoint
 dEQP-VK.protected_memory.interaction.ycbcr.a1b5g5r5_unorm_pack16.compute.rgb_identity.itu_full.tiling_optimal_midpoint

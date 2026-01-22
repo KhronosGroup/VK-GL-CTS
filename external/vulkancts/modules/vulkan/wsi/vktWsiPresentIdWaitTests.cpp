@@ -450,7 +450,7 @@ tcu::TestStatus PresentIdWaitInstance::iterate(void)
                                   getPhysicalDeviceMemoryProperties(instHelper.vki, devHelper.physicalDevice));
     const vk::VkSwapchainCreateInfoKHR swapchainInfo = getBasicSwapchainParameters(
         m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, *surface, desiredSize, 2);
-    const vk::Unique<vk::VkSwapchainKHR> swapchain(vk::createSwapchainKHR(vkd, device, &swapchainInfo));
+    const vk::Unique<vk::VkSwapchainKHR> swapchain(createWsiSwapchain(m_wsiType, vkd, device, &swapchainInfo));
     const vector<vk::VkImage> swapchainImages = vk::wsi::getSwapchainImages(vkd, device, *swapchain);
     const vk::Unique<vk::VkCommandPool> commandPool(createCommandPool(
         vkd, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, devHelper.queueFamilyIndex));
@@ -1189,8 +1189,8 @@ tcu::TestStatus PresentWaitDualInstance::iterate(void)
         m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, surface1.get(), desiredSize, 2);
     const vk::VkSwapchainCreateInfoKHR swapchainInfo2 = getBasicSwapchainParameters(
         m_wsiType, m_ver, instHelper.vki, devHelper.physicalDevice, surface2.get(), desiredSize, 2);
-    const vk::Unique<vk::VkSwapchainKHR> swapchain1(vk::createSwapchainKHR(vkd, device, &swapchainInfo1));
-    const vk::Unique<vk::VkSwapchainKHR> swapchain2(vk::createSwapchainKHR(vkd, device, &swapchainInfo2));
+    const vk::Unique<vk::VkSwapchainKHR> swapchain1(createWsiSwapchain(m_wsiType, vkd, device, &swapchainInfo1));
+    const vk::Unique<vk::VkSwapchainKHR> swapchain2(createWsiSwapchain(m_wsiType, vkd, device, &swapchainInfo2));
     const vector<vk::VkImage> swapchainImages1 = vk::wsi::getSwapchainImages(vkd, device, swapchain1.get());
     const vector<vk::VkImage> swapchainImages2 = vk::wsi::getSwapchainImages(vkd, device, swapchain2.get());
     const vk::Unique<vk::VkCommandPool> commandPool(createCommandPool(
