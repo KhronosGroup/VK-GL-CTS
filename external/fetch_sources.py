@@ -321,9 +321,9 @@ PACKAGES = [
         "4c7e1fa5c3d988cca0e626d359d30b117b9c2822",
         "spirv-tools"),
     GitRepo(
-        "https://github.com/KhronosGroup/glslang.git",
-        "git@github.com:KhronosGroup/glslang.git",
-        "2b19bf7e1bc0b60cf2fe9d33e5ba6b37dfc1cc83",
+        "https://github.com/rg3igalia/glslang.git",
+        "git@github.com:rg3igalia/glslang.git",
+        "dcad8b13bbe20908136e06e0ce7c33fde5855546",
         "glslang",
         removeTags = ["main-tot"]),
     GitRepo(
@@ -342,9 +342,9 @@ PACKAGES = [
         "f589bc456545fbab97caf49380b102b8aafe1f40",
         "vulkan-validationlayers"),
     GitRepo(
-        "https://github.com/google/amber.git",
-        "git@github.com:google/amber.git",
-        "0f003c2785489f59cd01bb2440fcf303149100f2",
+        "https://github.com/rg3igalia/amber.git",
+        "git@github.com:rg3igalia/amber.git",
+        "df18684f3e88ff15aae2a17bacd2e22f2f46ef2f",
         "amber"),
     GitRepo(
         "https://github.com/open-source-parsers/jsoncpp.git",
