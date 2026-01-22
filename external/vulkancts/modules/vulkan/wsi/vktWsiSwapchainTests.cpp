@@ -1358,9 +1358,9 @@ tcu::TestStatus testImageSwapchainCreateInfo(Context &context, ImageSwapchainCre
         formats[0].format,      // format
         {
             // extent
-            desiredSize.x(), //   width
-            desiredSize.y(), //   height
-            1u               //   depth
+            swapchainInfo.imageExtent.width,  // width
+            swapchainInfo.imageExtent.height, // height
+            1u                                // depth
         },
         1u,                                  // mipLevels
         1u,                                  // arrayLayers
