@@ -115,6 +115,7 @@ void TestNode::addChild(TestNode *node)
 #if defined(DEQP_LOG_NODE_SOURCE)
     static const char *kHelperNames[] = {
         "addFunctionCase",
+        "addInstanceTestCaseWithPrograms",
     };
 
     auto currentStacktrace = std::stacktrace::current();
