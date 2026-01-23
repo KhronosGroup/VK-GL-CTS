@@ -47,6 +47,13 @@ namespace vk
 
 #ifndef CTS_USES_VULKANSC
 
+namespace
+{
+// Use to initialize memory to non-zero values.
+constexpr int kPoisonValue       = 0xaa;
+constexpr uint8_t kPoisonValueU8 = uint8_t{kPoisonValue};
+}; // namespace
+
 static const uint32_t WATCHDOG_INTERVAL = 16384; // Touch watchDog every N iterations.
 
 static constexpr uint32_t geometryVertexAlign = 16;
@@ -1239,7 +1246,6 @@ protected:
     bool m_useArrayOfPointers;
     bool m_useMaintenance5;
     Move<VkBuffer> m_accelerationStructureBuffer;
-    de::MovePtr<BufferWithMemory> m_accelerationStructureCopyBuffer;
     de::MovePtr<BufferWithMemory> m_copyBuffer;
     de::MovePtr<Allocation> m_accelerationStructureAlloc;
     de::MovePtr<BufferWithMemory> m_vertexBuffer;
@@ -1579,6 +1585,13 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
             bindBuffer(vk, device, bufferProps.props.queue, *m_accelerationStructureBuffer,
                        m_accelerationStructureAlloc->getMemory(), bufferMemReqs.size, bufferProps.props.residency,
                        m_accelerationStructureAlloc->getOffset());
+
+            if (bufferProps.props.residency == ResourceResidency::TRADITIONAL)
+            {
+                memset(m_accelerationStructureAlloc->getHostPtr(), kPoisonValue,
+                       static_cast<size_t>(bufferMemReqs.size));
+                // Note we do not need to flush in this case because of MemoryRequirement::Coherent.
+            }
         }
     }
 
@@ -1613,6 +1626,10 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
                 vk, device, allocator, bufferCreateInfo,
                 MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
 
+            memset(m_copyBuffer->getAllocation().getHostPtr(), kPoisonValue,
+                   static_cast<size_t>(bufferCreateInfo.size));
+            // No need to flush due to MemoryRequirement::Coherent.
+
             // Update acceleration structure create info to use the copy buffer
             accelerationStructureCreateInfoKHR.buffer = m_copyBuffer.get()->get();
 
@@ -1642,10 +1659,13 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
             m_deviceScratchBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
                 vk, device, allocator, bufferCreateInfo,
                 MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+            memset(m_deviceScratchBuffer->getAllocation().getHostPtr(), kPoisonValue,
+                   static_cast<size_t>(bufferCreateInfo.size));
+            // No need to flush due to MemoryRequirement::Coherent.
         }
         else
         {
-            m_hostScratchBuffer->resize(static_cast<size_t>(scratch_size));
+            m_hostScratchBuffer->resize(static_cast<size_t>(scratch_size), kPoisonValueU8);
         }
     }
 
@@ -1679,8 +1699,13 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
 
         bufferCreateInfo.size = getTransformBufferSize(m_geometriesData);
         if (bufferCreateInfo.size)
+        {
             m_transformBuffer = de::MovePtr<BufferWithMemory>(
                 new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+            memset(m_transformBuffer->getAllocation().getHostPtr(), kPoisonValue,
+                   static_cast<size_t>(bufferCreateInfo.size));
+            // No need to flush due to MemoryRequirement::Coherent.
+        }
         else
             m_transformBuffer = de::MovePtr<BufferWithMemory>(nullptr);
 
@@ -1691,6 +1716,9 @@ void BottomLevelAccelerationStructureKHR::create(const DeviceInterface &vk, cons
             {
                 m_radiusBuffer = de::MovePtr<BufferWithMemory>(
                     new BufferWithMemory(vk, device, allocator, bufferCreateInfo, memoryRequirement));
+                memset(m_radiusBuffer->getAllocation().getHostPtr(), kPoisonValue,
+                       static_cast<size_t>(bufferCreateInfo.size));
+                // No need to flush due to MemoryRequirement::Coherent.
             }
             else
             {
@@ -2744,6 +2772,7 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
                                                  VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
 
         if (m_tryCachedMemory)
+        {
             try
             {
                 res = new BufferWithMemory(vkd, device, allocator, bci,
@@ -2754,11 +2783,19 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
             {
                 res = nullptr;
             }
+        }
 
-        return (nullptr != res) ? res :
-                                  (new BufferWithMemory(vkd, device, allocator, bci,
-                                                        MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
-                                                            MemoryRequirement::DeviceAddress));
+        if (!res)
+        {
+            res = new BufferWithMemory(vkd, device, allocator, bci,
+                                       MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
+                                           MemoryRequirement::DeviceAddress);
+        }
+
+        memset(res->getAllocation().getHostPtr(), kPoisonValue, static_cast<size_t>(bci.size));
+        // Flush not needed due to MemoryRequirement::Coherent.
+
+        return res;
     };
 
     auto createDeviceScratchBuffer = [&](VkDeviceSize bufferSize) -> de::SharedPtr<BufferWithMemory>
@@ -2771,6 +2808,13 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
         const VkBufferCreateInfo bci = makeBufferCreateInfo(bufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT |
                                                                             VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
         BufferWithMemory *p          = new BufferWithMemory(vkd, device, allocator, bci, memReqs);
+
+        if (scratchIsHostVisible)
+        {
+            memset(p->getAllocation().getHostPtr(), kPoisonValue, static_cast<size_t>(bci.size));
+            // Flush not needed due to MemoryRequirement::Coherent.
+        }
+
         return de::SharedPtr<BufferWithMemory>(p);
     };
 
@@ -2952,7 +2996,7 @@ void BottomLevelAccelerationStructurePool::batchCreateAdjust(const DeviceInterfa
     if (maxBuildScratchSize)
     {
         if (hostStructCount)
-            m_impl->m_hostScratchBuffer->resize(static_cast<size_t>(maxBuildScratchSize));
+            m_impl->m_hostScratchBuffer->resize(static_cast<size_t>(maxBuildScratchSize), kPoisonValueU8);
         if (deviceStructCount)
             m_impl->m_deviceScratchBuffer = createDeviceScratchBuffer(maxBuildScratchSize);
 
@@ -3216,6 +3260,7 @@ BufferWithMemory *createInstanceBuffer(
         makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
     if (tryCachedMemory)
+    {
         try
         {
             result = new BufferWithMemory(vk, device, allocator, bufferCreateInfo,
@@ -3226,10 +3271,19 @@ BufferWithMemory *createInstanceBuffer(
         {
             result = nullptr;
         }
-    return result ? result :
-                    new BufferWithMemory(vk, device, allocator, bufferCreateInfo,
-                                         MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
-                                             MemoryRequirement::DeviceAddress);
+    }
+
+    if (!result)
+    {
+        result = new BufferWithMemory(vk, device, allocator, bufferCreateInfo,
+                                      MemoryRequirement::HostVisible | MemoryRequirement::Coherent |
+                                          MemoryRequirement::DeviceAddress);
+    }
+
+    memset(result->getAllocation().getHostPtr(), kPoisonValue, static_cast<size_t>(bufferCreateInfo.size));
+    // No flushing needed due to MemoryRequirement::Coherent.
+
+    return result;
 }
 
 void updateSingleInstance(const DeviceInterface &vk, const VkDevice device,
@@ -3383,7 +3437,6 @@ protected:
     uint32_t m_workerThreadCount;
     bool m_useArrayOfPointers;
     Move<VkBuffer> m_accelerationStructureBuffer;
-    de::MovePtr<BufferWithMemory> m_accelerationStructureCopyBuffer;
     de::MovePtr<Allocation> m_accelerationStructureAlloc;
     de::MovePtr<BufferWithMemory> m_instanceBuffer;
     de::MovePtr<BufferWithMemory> m_instanceAddressBuffer;
@@ -3391,7 +3444,6 @@ protected:
     std::vector<uint8_t> m_hostScratchBuffer;
     Move<VkAccelerationStructureKHR> m_accelerationStructureKHR;
     Move<VkAccelerationStructureKHR> m_accelerationStructureCopyKHR;
-    de::MovePtr<BufferWithMemory> m_copyBuffer;
     VkBuffer m_indirectBuffer;
     VkDeviceSize m_indirectBufferOffset;
     uint32_t m_indirectBufferStride;
@@ -3435,7 +3487,6 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR()
     , m_workerThreadCount(0)
     , m_useArrayOfPointers(false)
     , m_accelerationStructureBuffer()
-    , m_accelerationStructureCopyBuffer()
     , m_instanceBuffer(nullptr)
     , m_instanceAddressBuffer(nullptr)
     , m_deviceScratchBuffer(nullptr)
@@ -3708,6 +3759,12 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
 
         m_accelerationStructureAlloc = allocator.allocate(bufferMemReqs, memoryRequirement, memoryOpaqueCaptureAddr);
 
+        if (bufferProps.props.residency == ResourceResidency::TRADITIONAL)
+        {
+            memset(m_accelerationStructureAlloc->getHostPtr(), kPoisonValue, static_cast<size_t>(bufferMemReqs.size));
+            // No need to flush due to MemoryRequirement::Coherent.
+        }
+
         if (!m_creationBufferUnbounded)
         {
             bindBuffer(vk, device, bufferProps.props.queue, *m_accelerationStructureBuffer,
@@ -3766,10 +3823,14 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
             m_deviceScratchBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
                 vk, device, allocator, bufferCreateInfo,
                 MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+
+            memset(m_deviceScratchBuffer->getAllocation().getHostPtr(), kPoisonValue,
+                   static_cast<size_t>(bufferCreateInfo.size));
+            // Flushing not needed due to MemoryRequirement::Coherent.
         }
         else
         {
-            m_hostScratchBuffer.resize(static_cast<size_t>(scratch_size));
+            m_hostScratchBuffer.resize(static_cast<size_t>(scratch_size), kPoisonValueU8);
         }
     }
 
@@ -3785,6 +3846,10 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
         m_instanceAddressBuffer = de::MovePtr<BufferWithMemory>(new BufferWithMemory(
             vk, device, allocator, bufferCreateInfo,
             MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
+
+        memset(m_instanceAddressBuffer->getAllocation().getHostPtr(), kPoisonValue,
+               static_cast<size_t>(bufferCreateInfo.size));
+        // Flushing not needed due to MemoryRequirement::Coherent.
     }
 
     size_t instanceSize = m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV ?
@@ -3792,8 +3857,10 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
                               sizeof(VkAccelerationStructureInstanceKHR);
 
     if (!m_bottomLevelInstances.empty())
+    {
         m_instanceBuffer = de::MovePtr<BufferWithMemory>(createInstanceBuffer(
             vk, device, allocator, m_bottomLevelInstances, m_instanceData, m_tryCachedMemory, instanceSize));
+    }
 }
 
 void TopLevelAccelerationStructureKHR::updateInstanceMatrix(const DeviceInterface &vk, const VkDevice device,
