@@ -48,6 +48,7 @@ dEQP-VK.query_pool.maintenance7.query_32b_wrap_notrequired
 dEQP-VK.query_pool.maintenance7.query_32b_wrap_required
 dEQP-VK.query_pool.occlusion_query.basic_conservative
 dEQP-VK.query_pool.occlusion_query.basic_precise
+dEQP-VK.query_pool.occlusion_query.blit
 dEQP-VK.query_pool.occlusion_query.clear_attachments_only
 dEQP-VK.query_pool.occlusion_query.clear_attachments_with_draw
 dEQP-VK.query_pool.occlusion_query.copy_reset_results_conservative_size_32_wait_query_with_availability_draw_points
@@ -476,6 +477,7 @@ dEQP-VK.query_pool.occlusion_query.get_results_size_64_stride_8_without_availabi
 dEQP-VK.query_pool.occlusion_query.get_results_size_64_stride_8_without_availability_dstoffset
 dEQP-VK.query_pool.occlusion_query.no_attachments_multisample
 dEQP-VK.query_pool.occlusion_query.no_attachments_single_sample
+dEQP-VK.query_pool.occlusion_query.resolve
 dEQP-VK.query_pool.occlusion_query.stride_max
 dEQP-VK.query_pool.occlusion_query.stride_zero
 dEQP-VK.query_pool.performance_query.enumerate_and_validate_compute
