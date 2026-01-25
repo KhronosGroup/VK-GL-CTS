@@ -51,4 +51,7 @@
 	<instrumentation android:label="dEQP-PlatformCapabilityQueryInstrumentation"
 					 android:name="com.drawelements.deqp.platformutil.DeqpPlatformCapabilityQueryInstrumentation"
 					 android:targetPackage="com.drawelements.deqp" />
+	<instrumentation android:label="dEQP-PlatformRequestPixelCopy"
+					 android:name="com.drawelements.deqp.platformutil.DeqpPlatformRequestPixelCopy"
+					 android:targetPackage="com.drawelements.deqp" />
 </manifest>

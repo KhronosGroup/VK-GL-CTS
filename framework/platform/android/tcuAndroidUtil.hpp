@@ -45,10 +45,31 @@ enum ScreenOrientation
     SCREEN_ORIENTATION_REVERSE_PORTRAIT  = 0x00000009
 };
 
+struct CustomOrientation
+{
+    bool enabled = false;
+    void set(bool enable)
+    {
+        enabled = enable;
+    }
+    bool isEnabled() const
+    {
+        return enabled;
+    }
+
+    static CustomOrientation &instance()
+    {
+        static CustomOrientation instance;
+        return instance;
+    }
+};
+
 std::string getIntentStringExtra(ANativeActivity *activity, const char *name);
 void setRequestedOrientation(ANativeActivity *activity, ScreenOrientation orientation);
 
 ScreenOrientation mapScreenRotation(ScreenRotation rotation);
+
+void PixelCopy(ANativeActivity *activity, const char *path);
 
 void describePlatform(ANativeActivity *activity, std::ostream &dst);
 

@@ -812,6 +812,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/wsi/vktWsiFullScreenExclusiveTests.cpp",
         "external/vulkancts/modules/vulkan/wsi/vktWsiIncrementalPresentTests.cpp",
         "external/vulkancts/modules/vulkan/wsi/vktWsiMaintenance1Tests.cpp",
+        "external/vulkancts/modules/vulkan/wsi/vktWsiPreTransformTests.cpp",
         "external/vulkancts/modules/vulkan/wsi/vktWsiPresentIdWaitTests.cpp",
         "external/vulkancts/modules/vulkan/wsi/vktWsiPresentTimingTests.cpp",
         "external/vulkancts/modules/vulkan/wsi/vktWsiSharedPresentableImageTests.cpp",

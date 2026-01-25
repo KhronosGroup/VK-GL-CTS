@@ -138,8 +138,11 @@ void TestActivity::onConfigurationChanged(void)
 {
     RenderActivity::onConfigurationChanged();
 
-    // Update rotation.
-    setRequestedOrientation(getNativeActivity(), mapScreenRotation(m_cmdLine.getScreenRotation()));
+    // Update rotation if custom orientation is not enabled.
+    if (!CustomOrientation::instance().isEnabled())
+    {
+        setRequestedOrientation(getNativeActivity(), mapScreenRotation(m_cmdLine.getScreenRotation()));
+    }
 }
 
 } // namespace Android

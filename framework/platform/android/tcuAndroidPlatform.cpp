@@ -646,6 +646,22 @@ bool Platform::hasDisplay(vk::wsi::Type wsiType) const
     return false;
 }
 
+void Platform::setCustomScreenOrientation(bool enable) const
+{
+    CustomOrientation::instance().set(enable);
+}
+
+void Platform::requestPixelCopy(const char *filename) const
+{
+    PixelCopy(m_activity.getNativeActivity(), filename);
+}
+
+void Platform::rotateScreen(int rotation) const
+{
+    ANativeActivity *activity = m_activity.getNativeActivity();
+    setRequestedOrientation(activity, tcu::Android::mapScreenRotation((tcu::ScreenRotation)rotation));
+}
+
 } // namespace Android
 } // namespace tcu
 

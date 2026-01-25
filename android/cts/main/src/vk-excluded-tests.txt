@@ -534,3 +534,6 @@ dEQP-VK.glsl.texture_functions.textureprojoffset_pcoffset.mirrored_repeat.usampl
 
 # VK-GL-CTS 4090
 dEQP-VK.shader_object.performance.*
+
+# VK-GL-CTS 6296
+dEQP-VK.wsi.android.pre_transform.*

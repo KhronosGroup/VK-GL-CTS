@@ -38,6 +38,7 @@
 #include "vktWsiPresentIdWaitTests.hpp"
 #include "vktWsiMaintenance1Tests.hpp"
 #include "vktWsiPresentTimingTests.hpp"
+#include "vktWsiPreTransformTests.hpp"
 
 namespace vkt
 {
@@ -71,6 +72,11 @@ void createTypeSpecificTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiTyp
     addTestGroup(testGroup, "maintenance1", createMaintenance1Tests, wsiType);
     // VK_EXT_present_timing tests
     addTestGroup(testGroup, "present_timing", createPresentTimingTests, wsiType);
+    // preTransform tests
+    if (wsiType == vk::wsi::TYPE_ANDROID)
+    {
+        addTestGroup(testGroup, "pre_transform", createPreTransformTests, wsiType);
+    }
 }
 
 void createWsiTests(tcu::TestCaseGroup *apiTests)

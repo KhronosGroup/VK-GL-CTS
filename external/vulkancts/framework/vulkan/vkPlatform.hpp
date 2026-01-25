@@ -352,6 +352,9 @@ public:
     virtual wsi::Display *createWsiDisplay(wsi::Type wsiType) const;
     virtual bool hasDisplay(wsi::Type wsiType) const;
     virtual void describePlatform(std::ostream &dst) const;
+    virtual void setCustomScreenOrientation(bool enable) const;
+    virtual void requestPixelCopy(const char *filename) const;
+    virtual void rotateScreen(int rotation) const;
 };
 
 } // namespace vk

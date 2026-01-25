@@ -942,4 +942,19 @@ void Platform::describePlatform(std::ostream &dst) const
     dst << "vk::Platform::describePlatform() not implemented";
 }
 
+void Platform::setCustomScreenOrientation(bool) const
+{
+    TCU_THROW(NotSupportedError, "Screen rotation not supported");
+}
+
+void Platform::requestPixelCopy(const char *) const
+{
+    TCU_THROW(NotSupportedError, "Pixel copy not supported");
+}
+
+void Platform::rotateScreen(int) const
+{
+    TCU_THROW(NotSupportedError, "Screen rotation not supported");
+}
+
 } // namespace vk
