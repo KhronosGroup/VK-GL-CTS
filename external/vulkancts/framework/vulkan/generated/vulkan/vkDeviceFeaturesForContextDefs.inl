@@ -130,6 +130,7 @@ const vk::VkPhysicalDeviceRayQueryFeaturesKHR&								Context::getRayQueryFeatur
 const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&			Context::getRayTracingInvocationReorderFeaturesEXT			(void) const { return m_device->getRayTracingInvocationReorderFeaturesEXT();		}
 const vk::VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&			Context::getRayTracingLinearSweptSpheresFeaturesNV			(void) const { return m_device->getRayTracingLinearSweptSpheresFeaturesNV();		}
 const vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				Context::getRayTracingMaintenance1Features					(void) const { return m_device->getRayTracingMaintenance1Features();				}
+const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&					Context::getRayTracingMotionBlurFeatures					(void) const { return m_device->getRayTracingMotionBlurFeatures();					}
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&					Context::getRayTracingPipelineFeatures						(void) const { return m_device->getRayTracingPipelineFeatures();					}
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				Context::getRayTracingPositionFetchFeatures					(void) const { return m_device->getRayTracingPositionFetchFeatures();				}
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&				Context::getRepresentativeFragmentTestFeatures				(void) const { return m_device->getRepresentativeFragmentTestFeatures();			}

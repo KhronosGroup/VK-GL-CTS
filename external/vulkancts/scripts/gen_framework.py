@@ -268,6 +268,7 @@ VK_NV_mesh_shader
 VK_NV_raw_access_chains
 VK_NV_ray_tracing
 VK_NV_ray_tracing_linear_swept_spheres
+VK_NV_ray_tracing_motion_blur
 VK_NV_representative_fragment_test
 VK_NV_scissor_exclusive
 VK_NV_shader_atomic_float16_vector

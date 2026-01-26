@@ -131,6 +131,7 @@ auto fRayQueryFeatures                                  = m_context.getRayQueryF
 auto fRayTracingInvocationReorderFeaturesEXT            = m_context.getRayTracingInvocationReorderFeaturesEXT();
 auto fRayTracingLinearSweptSpheresFeaturesNV            = m_context.getRayTracingLinearSweptSpheresFeaturesNV();
 auto fRayTracingMaintenance1Features                    = m_context.getRayTracingMaintenance1Features();
+auto fRayTracingMotionBlurFeatures                      = m_context.getRayTracingMotionBlurFeatures();
 auto fRayTracingPipelineFeatures                        = m_context.getRayTracingPipelineFeatures();
 auto fRayTracingPositionFetchFeatures                   = m_context.getRayTracingPositionFetchFeatures();
 auto fRepresentativeFragmentTestFeatures                = m_context.getRepresentativeFragmentTestFeatures();
@@ -324,6 +325,7 @@ std::vector<void *> pNextFeatures = {
 	&fRayTracingInvocationReorderFeaturesEXT,
 	&fRayTracingLinearSweptSpheresFeaturesNV,
 	&fRayTracingMaintenance1Features,
+	&fRayTracingMotionBlurFeatures,
 	&fRayTracingPipelineFeatures,
 	&fRayTracingPositionFetchFeatures,
 	&fRepresentativeFragmentTestFeatures,

@@ -53,6 +53,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureGeometryLinea
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_LINEAR_SWEPT_SPHERES_DATA_NV;
 }
 
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMotionTrianglesDataNV> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometrySpheresDataNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_SPHERES_DATA_NV;
@@ -71,6 +76,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureInfoNV> (void
 template<> VkStructureType getStructureType<VkAccelerationStructureMemoryRequirementsInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureMotionInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesDisplacementMicromapNV> (void)
@@ -2671,6 +2681,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingLinearSwep
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingPipelineFeaturesKHR> (void)

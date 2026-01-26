@@ -641,6 +641,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_tracing_maintenance1"))
 		addFeatures(&physicalDeviceRayTracingMaintenance1FeaturesKHR);
 
+	// VkPhysicalDeviceRayTracingMotionBlurFeaturesNV for ext [VK_NV_ray_tracing_motion_blur]
+	vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV physicalDeviceRayTracingMotionBlurFeaturesNV = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_ray_tracing_motion_blur"))
+		addFeatures(&physicalDeviceRayTracingMotionBlurFeaturesNV);
+
 	// VkPhysicalDeviceRayTracingPipelineFeaturesKHR for ext [VK_KHR_ray_tracing_pipeline]
 	vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR physicalDeviceRayTracingPipelineFeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_tracing_pipeline"))
@@ -1971,6 +1976,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceFragmentShadingRateEnumsFeaturesNV.fragmentShadingRateEnums == VK_FALSE )
 			failMesages.push_back("fragmentShadingRateEnums");
+	}
+
+	// VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_ray_tracing_motion_blur")) )
+	{
+		if ( physicalDeviceRayTracingMotionBlurFeaturesNV.rayTracingMotionBlur == VK_FALSE )
+			failMesages.push_back("rayTracingMotionBlur");
 	}
 
 	// VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT

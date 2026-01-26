@@ -1349,6 +1349,14 @@ struct VkAccelerationStructureMemoryRequirementsInfoNV
 	VkAccelerationStructureNV						accelerationStructure;
 };
 
+struct VkAccelerationStructureMotionInfoNV
+{
+	VkStructureType								sType;
+	const void*									pNext;
+	uint32_t									maxInstances;
+	VkAccelerationStructureMotionInfoFlagsNV	flags;
+};
+
 struct VkAccelerationStructureVersionInfoKHR
 {
 	VkStructureType	sType;
@@ -2676,6 +2684,13 @@ struct VkAccelerationStructureGeometryLinearSweptSpheresDataNV
 	VkDeviceSize							indexStride;
 	VkRayTracingLssIndexingModeNV			indexingMode;
 	VkRayTracingLssPrimitiveEndCapsModeNV	endCapsMode;
+};
+
+struct VkAccelerationStructureGeometryMotionTrianglesDataNV
+{
+	VkStructureType					sType;
+	const void*						pNext;
+	VkDeviceOrHostAddressConstKHR	vertexData;
 };
 
 struct VkAccelerationStructureGeometrySpheresDataNV
@@ -6766,6 +6781,14 @@ struct VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR
 	VkBool32		rayTracingPipelineTraceRaysIndirect2;
 };
 
+struct VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		rayTracingMotionBlur;
+	VkBool32		rayTracingMotionBlurPipelineTraceRaysIndirect;
+};
+
 struct VkPhysicalDeviceRayTracingPipelineFeaturesKHR
 {
 	VkStructureType	sType;
@@ -8942,6 +8965,37 @@ struct VkResolveImageModeInfoKHR
 	VkResolveModeFlagBits	stencilResolveMode;
 };
 
+struct VkSRTDataNV
+{
+	float	sx;
+	float	a;
+	float	b;
+	float	pvx;
+	float	sy;
+	float	c;
+	float	pvy;
+	float	sz;
+	float	pvz;
+	float	qx;
+	float	qy;
+	float	qz;
+	float	qw;
+	float	tx;
+	float	ty;
+	float	tz;
+};
+
+struct VkAccelerationStructureSRTMotionInstanceNV
+{
+	VkSRTDataNV					transformT0;
+	VkSRTDataNV					transformT1;
+	uint32_t					instanceCustomIndex : 24;
+	uint32_t					mask : 8;
+	uint32_t					instanceShaderBindingTableRecordOffset : 24;
+	VkGeometryInstanceFlagsKHR	flags : 8;
+	uint64_t					accelerationStructureReference;
+};
+
 struct VkSampleLocationEXT
 {
 	float	x;
@@ -10040,6 +10094,17 @@ struct VkAccelerationStructureInstanceKHR
 	uint64_t					accelerationStructureReference;
 };
 
+struct VkAccelerationStructureMatrixMotionInstanceNV
+{
+	VkTransformMatrixKHR		transformT0;
+	VkTransformMatrixKHR		transformT1;
+	uint32_t					instanceCustomIndex : 24;
+	uint32_t					mask : 8;
+	uint32_t					instanceShaderBindingTableRecordOffset : 24;
+	VkGeometryInstanceFlagsKHR	flags : 8;
+	uint64_t					accelerationStructureReference;
+};
+
 struct VkValidationFeaturesEXT
 {
 	VkStructureType							sType;
@@ -10050,12 +10115,26 @@ struct VkValidationFeaturesEXT
 	const VkValidationFeatureDisableEXT*	pDisabledValidationFeatures;
 };
 
+union VkAccelerationStructureMotionInstanceDataNV
+{
+	VkAccelerationStructureInstanceKHR				staticInstance;
+	VkAccelerationStructureMatrixMotionInstanceNV	matrixMotionInstance;
+	VkAccelerationStructureSRTMotionInstanceNV		srtMotionInstance;
+};
+
 struct VkValidationFlagsEXT
 {
 	VkStructureType				sType;
 	const void*					pNext;
 	uint32_t					disabledValidationCheckCount;
 	const VkValidationCheckEXT*	pDisabledValidationChecks;
+};
+
+struct VkAccelerationStructureMotionInstanceNV
+{
+	VkAccelerationStructureMotionInstanceTypeNV		type;
+	VkAccelerationStructureMotionInstanceFlagsNV	flags;
+	VkAccelerationStructureMotionInstanceDataNV		data;
 };
 
 struct VkVertexInputAttributeDescription

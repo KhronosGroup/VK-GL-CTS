@@ -465,7 +465,8 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     vk::SpirVAsmBuildOptions defaultSpirvAsmBuildOptions(usedVulkanVersion, baselineSpirvVersion);
     vk::SourceCollections sourceProgs(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions,
                                       defaultSpirvAsmBuildOptions);
-    const tcu::CommandLine &commandLine = m_contextManager->getCommandLine();
+
+    const tcu::CommandLine &commandLine = m_context->getTestContext().getCommandLine();
     const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
     // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
