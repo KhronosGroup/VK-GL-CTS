@@ -34,6 +34,7 @@
 #include "vkObjUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkStrUtil.hpp"
 
 #include <algorithm>
 #include <cmath>
@@ -66,7 +67,7 @@ enum class Matrices : uint32_t
     R
 };
 
-static const std::set<VkComponentTypeKHR> PossiobleTypes{
+static const std::set<VkComponentTypeKHR> PossibleTypes{
     VK_COMPONENT_TYPE_FLOAT16_KHR,     VK_COMPONENT_TYPE_FLOAT32_KHR,     VK_COMPONENT_TYPE_FLOAT64_KHR,
     VK_COMPONENT_TYPE_SINT8_KHR,       VK_COMPONENT_TYPE_SINT16_KHR,      VK_COMPONENT_TYPE_SINT32_KHR,
     VK_COMPONENT_TYPE_SINT64_KHR,      VK_COMPONENT_TYPE_UINT8_KHR,       VK_COMPONENT_TYPE_UINT16_KHR,
@@ -74,15 +75,34 @@ static const std::set<VkComponentTypeKHR> PossiobleTypes{
     VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT, VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT,
 };
 
+static bool isFloatType(VkComponentTypeKHR t)
+{
+    return t == VK_COMPONENT_TYPE_FLOAT16_KHR || t == VK_COMPONENT_TYPE_FLOAT32_KHR ||
+           t == VK_COMPONENT_TYPE_FLOAT64_KHR || t == VK_COMPONENT_TYPE_BFLOAT16_KHR ||
+           t == VK_COMPONENT_TYPE_FLOAT8_E4M3_EXT || t == VK_COMPONENT_TYPE_FLOAT8_E5M2_EXT;
+}
+
+bool isIntType(VkComponentTypeKHR t)
+{
+    return !isFloatType(t);
+}
+
 bool inPossibleTypes(VkComponentTypeKHR type)
 {
-    return PossiobleTypes.find(type) != PossiobleTypes.end();
+    return PossibleTypes.find(type) != PossibleTypes.end();
 }
 
 bool isPossibleConfiguration(const VkCooperativeMatrixPropertiesKHR &p)
 {
     return inPossibleTypes(p.AType) && inPossibleTypes(p.BType) && inPossibleTypes(p.CType) &&
            inPossibleTypes(p.ResultType) && p.scope == VK_SCOPE_SUBGROUP_KHR;
+}
+
+bool areSameConfigurations(const VkCooperativeMatrixPropertiesKHR &a, const VkCooperativeMatrixPropertiesKHR &b)
+{
+    return a.MSize == b.MSize && a.NSize == b.NSize && a.KSize == b.KSize && a.AType == b.AType && a.BType == b.BType &&
+           a.CType == b.CType && a.ResultType == b.ResultType && a.saturatingAccumulation == b.saturatingAccumulation &&
+           a.scope == b.scope;
 }
 
 bool anyComponentOf(const VkCooperativeMatrixPropertiesKHR &p, std::initializer_list<VkComponentTypeKHR> components)
@@ -127,23 +147,6 @@ bool hasBFloat16Types(const std::vector<VkCooperativeMatrixPropertiesKHR> &p)
     return anyComponentOf(p, {VK_COMPONENT_TYPE_BFLOAT16_KHR});
 }
 
-std::vector<VkCooperativeMatrixPropertiesKHR> getPossibleConfigurations(const InstanceInterface &vki,
-                                                                        VkPhysicalDevice device)
-{
-    uint32_t propertyCount                      = 0u;
-    const VkCooperativeMatrixPropertiesKHR temp = initVulkanStructure();
-    std::vector<VkCooperativeMatrixPropertiesKHR> available, possible;
-    VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &propertyCount, nullptr));
-    available.resize(propertyCount, temp);
-    VK_CHECK(vki.getPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &propertyCount, available.data()));
-    for (const VkCooperativeMatrixPropertiesKHR &p : available)
-    {
-        if (isPossibleConfiguration(p))
-            possible.push_back(p);
-    }
-    return possible;
-}
-
 struct Params
 {
     ComputePipelineConstructionType pipelineConstructionType;
@@ -153,6 +156,7 @@ struct Params
 class CoopMtxOpConstantNullInstance : public TestInstance
 {
     const Params m_params;
+    const bool m_allowDynamicConfigurations;
     uint32_t m_iteration;
     uint32_t m_failCount;
 
@@ -190,9 +194,10 @@ public:
     };
 
 public:
-    CoopMtxOpConstantNullInstance(Context &context, const Params &params)
+    CoopMtxOpConstantNullInstance(Context &context, const Params &params, bool allowDynamicConfigurations)
         : TestInstance(context)
         , m_params(params)
+        , m_allowDynamicConfigurations(allowDynamicConfigurations)
         , m_iteration(0u)
         , m_failCount(0u)
     {
@@ -205,32 +210,58 @@ public:
 class CoopMtxOpConstantNullCase : public TestCase
 {
     const Params m_params;
-    inline static std::mutex m_configurationsMutex;
-    inline static std::vector<VkCooperativeMatrixPropertiesKHR> m_configurations;
+
+    // This flag indicates whether the currently executing test
+    // uses a dynamic or static configuration list. The dynamic
+    // list depends on the implementation the test is running on,
+    // while the static list is generated in the code and it is
+    // generally much larger because there's no way to know what
+    // configurations the implementation can handle. By default,
+    // this flag is set to false but has been left for experimental
+    // purposes.
+    const bool m_allowDynamicConfigurations;
 
 public:
     CoopMtxOpConstantNullCase(tcu::TestContext &testCtx, const std::string &name, const Params &params)
         : TestCase(testCtx, name)
         , m_params(params)
+        , m_allowDynamicConfigurations(false)
     {
     }
     virtual TestInstance *createInstance(Context &context) const override
     {
         Params params(m_params);
-        return new CoopMtxOpConstantNullInstance(context, params);
+        return new CoopMtxOpConstantNullInstance(context, params, m_allowDynamicConfigurations);
     }
-    virtual std::string getRequiredCapabilitiesId() const override
-    {
-        return std::type_index(typeid(this)).name();
-    }
-    static std::vector<VkCooperativeMatrixPropertiesKHR> &getConfigurations()
-    {
-        return m_configurations;
-    }
-    virtual void initDeviceCapabilities(DevCaps &caps) override;
     virtual void delayedInit() override;
     virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
+
+    using Confs     = std::vector<VkCooperativeMatrixPropertiesKHR>;
+    using ConfsCRef = std::add_lvalue_reference_t<std::add_const_t<Confs>>;
+    static auto getPossibleConfigurationsStatic() -> ConfsCRef;
+    static auto getPossibleConfigurationsDynamic(const InstanceInterface *pIntf, VkPhysicalDevice device) -> ConfsCRef;
+    static auto getConfigurations(bool allowDynamicConfigurations, const InstanceInterface *pIntf,
+                                  VkPhysicalDevice device) -> ConfsCRef;
+    static uint32_t containsConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, ConfsCRef confs);
+    static uint32_t getViableConfigurationCount(bool allowDynamicConfigurations, const InstanceInterface &vki,
+                                                VkPhysicalDevice device);
+
+    class ViableConfIter
+    {
+        ConfsCRef m_available;
+        ConfsCRef m_viable;
+        uint32_t &m_index;
+
+    public:
+        ViableConfIter(uint32_t &index, ConfsCRef available, ConfsCRef viable)
+            : m_available(available)
+            , m_viable(viable)
+            , m_index(index)
+        {
+        }
+        uint32_t next(VkCooperativeMatrixPropertiesKHR &conf);
+    };
 };
 
 template <VkComponentTypeKHR>
@@ -255,7 +286,7 @@ VKCOMPONENTTOTYPEIMPL(VK_COMPONENT_TYPE_SINT64_KHR, int64_t);
 VKCOMPONENTTOTYPEIMPL(VK_COMPONENT_TYPE_UINT8_KHR, uint8_t);
 VKCOMPONENTTOTYPEIMPL(VK_COMPONENT_TYPE_UINT16_KHR, uint16_t);
 VKCOMPONENTTOTYPEIMPL(VK_COMPONENT_TYPE_UINT32_KHR, uint32_t);
-VKCOMPONENTTOTYPEIMPL(VK_COMPONENT_TYPE_UINT64_KHR, uint32_t);
+VKCOMPONENTTOTYPEIMPL(VK_COMPONENT_TYPE_UINT64_KHR, uint64_t);
 
 template <VkComponentTypeKHR comp_>
 using vK_component_type_to_ctype = typename vK_component_type_to_ctype_impl<comp_>::type;
@@ -495,6 +526,10 @@ struct Value
         case VK_COMPONENT_TYPE_FLOAT16_KHR:
             caps.push_back("Float16");
             caps.push_back("StorageBuffer16BitAccess");
+            break;
+        case VK_COMPONENT_TYPE_FLOAT64_KHR:
+            caps.push_back("Float64");
+            break;
         default:
             break;
         }
@@ -653,7 +688,7 @@ std::string genShaderName(const VkCooperativeMatrixPropertiesKHR &p)
     int i = 0;
     std::ostringstream os;
     std::map<VkComponentTypeKHR, int> m;
-    for (VkComponentTypeKHR c : PossiobleTypes)
+    for (VkComponentTypeKHR c : PossibleTypes)
         m.insert(std::make_pair(c, i++));
     os << m[p.AType];
     os << '-' << m[p.BType];
@@ -1068,90 +1103,224 @@ ${Extensions}
 
 void CoopMtxOpConstantNullCase::delayedInit()
 {
-    auto cm = getContextManager();
-    if (cm)
+    if (m_allowDynamicConfigurations)
     {
-        std::lock_guard<std::mutex> lock(m_configurationsMutex);
-        if (m_configurations.empty())
-            m_configurations = getPossibleConfigurations(cm->getInstanceInterface(), cm->getPhysicalDevice());
+        auto cm = getContextManager();
+        if (cm && cm->getDeviceFeaturesAndProperties().getCooperativeMatrixFeatures().cooperativeMatrix)
+        {
+            getPossibleConfigurationsDynamic(&cm->getInstanceInterface(), cm->getPhysicalDevice());
+        }
     }
-}
-
-void CoopMtxOpConstantNullCase::initDeviceCapabilities(DevCaps &caps)
-{
-    if (!(caps.addFeature(&VkPhysicalDeviceCooperativeMatrixFeaturesKHR::cooperativeMatrix)))
-        TCU_THROW(NotSupportedError, "cooperativeMatrix is not supported");
-    caps.addExtension(VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME);
-
-    const uint32_t configurationCount = uint32_t(m_configurations.size());
-    if (0u == configurationCount)
-        TCU_THROW(NotSupportedError, "No configurations to perform test");
-
-    if (!(caps.addFeature(&VkPhysicalDeviceVulkan12Features::vulkanMemoryModel)))
-        TCU_THROW(NotSupportedError, "vulkanMemoryModel is not supported");
-
-    if (has16BitTypes(m_configurations))
-    {
-        if (!caps.addFeature(&VkPhysicalDevice16BitStorageFeatures::storageBuffer16BitAccess))
-            TCU_THROW(NotSupportedError, "storageBuffer16BitAccess not supported");
-
-        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::shaderFloat16))
-            TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
-    }
-
-    if (hasInt8BitTypes(m_configurations))
-    {
-        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::shaderInt8))
-            TCU_THROW(NotSupportedError, "shaderInt8 not supported");
-
-        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::storageBuffer8BitAccess))
-            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
-    }
-
-    if (hasFloat8BitTypes(m_configurations))
-    {
-        if (!caps.addFeature(&VkPhysicalDeviceShaderFloat8FeaturesEXT::shaderFloat8CooperativeMatrix))
-            TCU_THROW(NotSupportedError, "shaderFloat8CooperativeMatrix not supported");
-
-        if (!caps.addFeature(&VkPhysicalDeviceShaderFloat8FeaturesEXT::shaderFloat8))
-            TCU_THROW(NotSupportedError, "shaderFloat8 not supported");
-
-        if (!caps.addFeature(&VkPhysicalDeviceVulkan12Features::storageBuffer8BitAccess))
-            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
-
-        caps.addExtension("VK_EXT_shader_float8");
-    }
-
-    if (hasBFloat16Types(m_configurations))
-    {
-        if (!caps.addFeature(&VkPhysicalDeviceShaderBfloat16FeaturesKHR::shaderBFloat16CooperativeMatrix))
-            TCU_THROW(NotSupportedError, "shaderBFloat16CooperativeMatrix not supported");
-
-        if (!caps.addFeature(&VkPhysicalDeviceShaderBfloat16FeaturesKHR::shaderBFloat16Type))
-            TCU_THROW(NotSupportedError, "shaderBFloat16Type not supported");
-
-        caps.addExtension(VK_KHR_SHADER_BFLOAT16_EXTENSION_NAME);
-    }
-
-    caps.addExtension(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
-    caps.addFeature(&VkPhysicalDeviceShaderObjectFeaturesEXT::shaderObject);
 }
 
 void CoopMtxOpConstantNullCase::checkSupport(Context &context) const
 {
+    if (context.getCooperativeMatrixFeatures().cooperativeMatrix)
+    {
+        const uint32_t configurationCount = getViableConfigurationCount(
+            m_allowDynamicConfigurations, context.getInstanceInterface(), context.getPhysicalDevice());
+        if (0u == configurationCount)
+        {
+            TCU_THROW(NotSupportedError, "No configurations to perform test");
+        }
+    }
+    else
+    {
+        TCU_THROW(NotSupportedError, "cooperativeMatrix is not supported");
+    }
+
     if (m_params.pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV ||
         m_params.pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY)
     {
         context.requireDeviceFunctionality(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
     }
+
+    ConfsCRef viableConfs = getConfigurations(true, &context.getInstanceInterface(), context.getPhysicalDevice());
+
+    if (has16BitTypes(viableConfs))
+    {
+        if (!context.get16BitStorageFeatures().storageBuffer16BitAccess)
+            TCU_THROW(NotSupportedError, "storageBuffer16BitAccess not supported");
+
+        if (!context.getDeviceVulkan12Features().shaderFloat16)
+            TCU_THROW(NotSupportedError, "shaderFloat16 not supported");
+    }
+
+    if (hasInt8BitTypes(viableConfs))
+    {
+        if (!context.getDeviceVulkan12Features().shaderInt8)
+            TCU_THROW(NotSupportedError, "shaderInt8 not supported");
+
+        if (!context.getDeviceVulkan12Features().storageBuffer8BitAccess)
+            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
+    }
+
+    if (hasFloat8BitTypes(viableConfs))
+    {
+        if (!context.getShaderFloat8FeaturesEXT().shaderFloat8CooperativeMatrix)
+            TCU_THROW(NotSupportedError, "shaderFloat8CooperativeMatrix not supported");
+
+        if (!context.getShaderFloat8FeaturesEXT().shaderFloat8)
+            TCU_THROW(NotSupportedError, "shaderFloat8 not supported");
+
+        if (!context.getDeviceVulkan12Features().storageBuffer8BitAccess)
+            TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
+    }
+
+    if (hasBFloat16Types(viableConfs))
+    {
+        if (!context.getShaderBfloat16Features().shaderBFloat16CooperativeMatrix)
+            TCU_THROW(NotSupportedError, "shaderBFloat16CooperativeMatrix not supported");
+
+        if (!context.getShaderBfloat16Features().shaderBFloat16Type)
+            TCU_THROW(NotSupportedError, "shaderBFloat16Type not supported");
+    }
+}
+
+auto computePossibleConfigurationsDynamic(const InstanceInterface *pIntf, VkPhysicalDevice device)
+    -> CoopMtxOpConstantNullCase::Confs
+{
+    DE_ASSERT(pIntf);
+    uint32_t propertyCount                      = 0u;
+    const VkCooperativeMatrixPropertiesKHR temp = initVulkanStructure();
+    std::vector<VkCooperativeMatrixPropertiesKHR> available, possible;
+    VK_CHECK(pIntf->getPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &propertyCount, nullptr));
+    available.resize(propertyCount, temp);
+    VK_CHECK(pIntf->getPhysicalDeviceCooperativeMatrixPropertiesKHR(device, &propertyCount, available.data()));
+    for (const VkCooperativeMatrixPropertiesKHR &p : available)
+    {
+        if (isPossibleConfiguration(p))
+            possible.push_back(p);
+    }
+    return possible;
+}
+
+auto CoopMtxOpConstantNullCase::getPossibleConfigurationsDynamic(const InstanceInterface *pIntf,
+                                                                 VkPhysicalDevice device) -> ConfsCRef
+{
+    static auto confs = computePossibleConfigurationsDynamic(pIntf, device);
+    return confs;
+}
+
+auto computePossibleConfigurationsStatic() -> CoopMtxOpConstantNullCase::Confs
+{
+    std::vector<VkCooperativeMatrixPropertiesKHR> confs;
+
+    uint32_t const PossibleSizes[]{8, 16, 32};
+
+    auto isValidOperand = [&](VkComponentTypeKHR t)
+    {
+        // FP32/FP64 cannot be A/B
+        if (t == VK_COMPONENT_TYPE_FLOAT32_KHR || t == VK_COMPONENT_TYPE_FLOAT64_KHR)
+            return false;
+        return true;
+    };
+
+    for (auto AType : PossibleTypes)
+        for (auto BType : PossibleTypes)
+            for (auto CRType : PossibleTypes)
+                for (auto MSize : PossibleSizes)
+                    for (auto NSize : PossibleSizes)
+                        for (auto KSize : PossibleSizes)
+                        {
+                            // RULE 1: A/B must be valid operand types
+                            if (!isValidOperand(AType) || !isValidOperand(BType))
+                                continue;
+
+                            // RULE 2: A/B must be both float or both int
+                            if (isFloatType(AType) != isFloatType(BType))
+                                continue;
+
+                            // RULE 3: CType must be compatible with A/B
+                            if (isFloatType(AType))
+                            {
+                                // float accumulation must be float
+                                if (!isFloatType(CRType))
+                                    continue;
+                            }
+                            else
+                            {
+                                // int accumulation must be int
+                                if (!isIntType(CRType))
+                                    continue;
+                            }
+
+                            // RULE 4: sizes must be multiples of 4
+                            if ((MSize % 4) || (NSize % 4) || (KSize % 4))
+                                continue;
+
+                            VkCooperativeMatrixPropertiesKHR p{};
+                            p.sType      = VK_STRUCTURE_TYPE_COOPERATIVE_MATRIX_PROPERTIES_KHR;
+                            p.AType      = AType;
+                            p.BType      = BType;
+                            p.CType      = CRType;
+                            p.ResultType = CRType;
+                            p.MSize      = MSize;
+                            p.NSize      = NSize;
+                            p.KSize      = KSize;
+                            p.scope      = VK_SCOPE_SUBGROUP_KHR; // default
+
+                            confs.push_back(p);
+                        }
+    return confs;
+}
+
+auto CoopMtxOpConstantNullCase::getPossibleConfigurationsStatic() -> ConfsCRef
+{
+    static auto confs = computePossibleConfigurationsStatic();
+    return confs;
+}
+
+auto CoopMtxOpConstantNullCase::getConfigurations(bool allowDynamicConfigurations, const InstanceInterface *pIntf,
+                                                  VkPhysicalDevice device) -> ConfsCRef
+{
+    return allowDynamicConfigurations ? getPossibleConfigurationsDynamic(pIntf, device) :
+                                        getPossibleConfigurationsStatic();
+}
+
+uint32_t CoopMtxOpConstantNullCase::containsConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, ConfsCRef confs)
+{
+    auto found =
+        std::find_if(confs.begin(), confs.end(),
+                     [&](const VkCooperativeMatrixPropertiesKHR &x) { return areSameConfigurations(conf, x); });
+    return uint32_t(std::distance(confs.begin(), found));
+}
+
+uint32_t CoopMtxOpConstantNullCase::getViableConfigurationCount(bool allowDynamicConfigurations,
+                                                                const InstanceInterface &vki, VkPhysicalDevice device)
+{
+    ConfsCRef dynamicConfs   = getPossibleConfigurationsDynamic(&vki, device);
+    ConfsCRef availableConfs = getConfigurations(allowDynamicConfigurations, &vki, device);
+    const auto count         = std::count_if(dynamicConfs.begin(), dynamicConfs.end(),
+                                             [&](const VkCooperativeMatrixPropertiesKHR &c)
+                                             { return containsConfiguration(c, availableConfs) < availableConfs.size(); });
+    return static_cast<uint32_t>(count);
+}
+
+uint32_t CoopMtxOpConstantNullCase::ViableConfIter::next(VkCooperativeMatrixPropertiesKHR &conf)
+{
+    for (uint32_t i = m_index; i < m_viable.size(); ++i)
+    {
+        if (const uint32_t k = containsConfiguration(m_viable[i], m_available); k < m_available.size())
+        {
+            conf = m_viable[i];
+            return 1u + m_index;
+        }
+    }
+    return uint32_t(m_viable.size());
 }
 
 void CoopMtxOpConstantNullCase::initPrograms(SourceCollections &programCollection) const
 {
     std::vector<std::string> shaderNames;
-    const SpirVAsmBuildOptions buildOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
+    SpirVAsmBuildOptions tmpOptions(programCollection.usedVulkanVersion, SPIRV_VERSION_1_3);
+    SpirvValidatorOptions validatorOptions = tmpOptions.getSpirvValidatorOptions();
+    validatorOptions.blockLayout           = SpirvValidatorOptions::BlockLayoutRules::kScalarBlockLayout;
+    const auto buildOptions                = tmpOptions << validatorOptions;
 
-    for (const VkCooperativeMatrixPropertiesKHR &conf : CoopMtxOpConstantNullCase::m_configurations)
+    ConfsCRef confs = getConfigurations(m_allowDynamicConfigurations, nullptr, VK_NULL_HANDLE);
+
+    for (const VkCooperativeMatrixPropertiesKHR &conf : confs)
     {
         const std::string shaderName = genShaderName(conf);
         if (auto exists = std::find(shaderNames.begin(), shaderNames.end(), shaderName); exists != shaderNames.end())
@@ -1162,12 +1331,15 @@ void CoopMtxOpConstantNullCase::initPrograms(SourceCollections &programCollectio
         programCollection.spirvAsmSources.add(shaderName) << genShaderCode(conf) << buildOptions;
     }
 
-    const std::string code(R"glsl(
+    if (m_allowDynamicConfigurations)
+    {
+        const std::string code(R"glsl(
     #version 450
     layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;
     void main() {
     })glsl");
-    programCollection.glslSources.add("test") << glu::ComputeSource(code);
+        programCollection.glslSources.add("test") << glu::ComputeSource(code);
+    }
 }
 
 void CoopMtxOpConstantNullInstance::logConfiguration(const VkCooperativeMatrixPropertiesKHR &conf, uint32_t number,
@@ -1556,10 +1728,18 @@ bool CoopMtxOpConstantNullInstance::verifyResult(const Executor &executor, Matri
 
 tcu::TestStatus CoopMtxOpConstantNullInstance::iterate()
 {
-    tcu::TestLog &log = m_context.getTestContext().getLog();
+    tcu::TestLog &log            = m_context.getTestContext().getLog();
+    const InstanceInterface &vki = m_context.getInstanceInterface();
+    const VkPhysicalDevice dev   = m_context.getPhysicalDevice();
 
-    const VkCooperativeMatrixPropertiesKHR configuration =
-        CoopMtxOpConstantNullCase::getConfigurations().at(m_iteration);
+    CoopMtxOpConstantNullCase::ConfsCRef viableConfs = CoopMtxOpConstantNullCase::getConfigurations(true, &vki, dev);
+    CoopMtxOpConstantNullCase::ConfsCRef availableConfs =
+        CoopMtxOpConstantNullCase::getConfigurations(m_allowDynamicConfigurations, &vki, dev);
+    CoopMtxOpConstantNullCase::ViableConfIter viableConfIter(m_iteration, availableConfs, viableConfs);
+
+    VkCooperativeMatrixPropertiesKHR configuration{};
+    const uint32_t nextIteration = viableConfIter.next(configuration);
+
     logConfiguration(configuration, m_iteration, log);
 
     std::string errorMessage;
@@ -1601,18 +1781,24 @@ tcu::TestStatus CoopMtxOpConstantNullInstance::iterate()
         }
     }
 
-    const auto availableCount = CoopMtxOpConstantNullCase::getConfigurations().size();
-    if (++m_iteration >= availableCount)
+    const auto viableCount = viableConfs.size();
+    if (m_iteration = nextIteration; nextIteration >= viableCount)
     {
+        const auto availableCount = availableConfs.size();
+        if (availableCount > viableCount)
+        {
+            log << tcu::TestLog::Message << "Skipped: " << (availableCount - viableCount) << tcu::TestLog::EndMessage;
+        }
+
         std::ostringstream finalMessage;
         if (m_failCount)
         {
-            finalMessage << m_failCount << " from " << availableCount;
+            finalMessage << m_failCount << " from " << viableCount;
             finalMessage.flush();
             return tcu::TestStatus::fail(finalMessage.str());
         }
 
-        finalMessage << m_iteration << " from " << availableCount;
+        finalMessage << m_iteration << " from " << viableCount;
         finalMessage.flush();
         return tcu::TestStatus::pass(finalMessage.str());
     }
