@@ -2731,7 +2731,6 @@ tcu::TestStatus enumerateInstanceExtensions(Context &context)
         const ScopedLogSection section(log, "Global", "Global Extensions");
         const vector<VkExtensionProperties> properties =
             enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
-        const vector<VkExtensionProperties> unused;
         vector<string> extensionNames;
 
         for (size_t ndx = 0; ndx < properties.size(); ndx++)
@@ -2743,20 +2742,6 @@ tcu::TestStatus enumerateInstanceExtensions(Context &context)
 
         checkInstanceExtensions(results, extensionNames);
         CheckEnumerateInstanceExtensionPropertiesIncompleteResult()(context, results, properties.size());
-
-#ifndef CTS_USES_VULKANSC
-        for (const auto &version : releasedApiVersions)
-        {
-            uint32_t apiVariant, versionMajor, versionMinor;
-            std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
-            if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
-            {
-                checkExtensionDependencies(results, instanceExtensionDependencies, versionMajor, versionMinor,
-                                           properties, unused);
-                break;
-            }
-        }
-#endif // CTS_USES_VULKANSC
     }
 
     {
@@ -2784,6 +2769,32 @@ tcu::TestStatus enumerateInstanceExtensions(Context &context)
 
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
+
+#ifndef CTS_USES_VULKANSC
+tcu::TestStatus validateInstanceExtensionDependencies(Context &context)
+{
+    TestLog &log = context.getTestContext().getLog();
+    tcu::ResultCollector results(log);
+
+    const vector<VkExtensionProperties> properties =
+        enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
+    const vector<VkExtensionProperties> unused;
+
+    for (const auto &version : releasedApiVersions)
+    {
+        uint32_t apiVariant, versionMajor, versionMinor;
+        std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
+        if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
+        {
+            checkExtensionDependencies(results, instanceExtensionDependencies, versionMajor, versionMinor, properties,
+                                       unused);
+            break;
+        }
+    }
+
+    return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+#endif
 
 tcu::TestStatus validateDeviceLevelEntryPointsFromInstanceExtensions(Context &context)
 {
@@ -2882,8 +2893,6 @@ tcu::TestStatus enumerateDeviceExtensions(Context &context)
 
     {
         const ScopedLogSection section(log, "Global", "Global Extensions");
-        const vector<VkExtensionProperties> instanceExtensionProperties =
-            enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
         const vector<VkExtensionProperties> deviceExtensionProperties =
             enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), nullptr);
         vector<string> deviceExtensionNames;
@@ -2897,20 +2906,6 @@ tcu::TestStatus enumerateDeviceExtensions(Context &context)
 
         checkDeviceExtensions(results, deviceExtensionNames);
         CheckEnumerateDeviceExtensionPropertiesIncompleteResult()(context, results, deviceExtensionProperties.size());
-
-#ifndef CTS_USES_VULKANSC
-        for (const auto &version : releasedApiVersions)
-        {
-            uint32_t apiVariant, versionMajor, versionMinor;
-            std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
-            if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
-            {
-                checkExtensionDependencies(results, deviceExtensionDependencies, versionMajor, versionMinor,
-                                           instanceExtensionProperties, deviceExtensionProperties);
-                break;
-            }
-        }
-#endif // CTS_USES_VULKANSC
     }
 
     {
@@ -2939,6 +2934,33 @@ tcu::TestStatus enumerateDeviceExtensions(Context &context)
 
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
+
+#ifndef CTS_USES_VULKANSC
+tcu::TestStatus validateDeviceExtensionDependencies(Context &context)
+{
+    TestLog &log = context.getTestContext().getLog();
+    tcu::ResultCollector results(log);
+
+    const vector<VkExtensionProperties> instanceExtensionProperties =
+        enumerateInstanceExtensionProperties(context.getPlatformInterface(), nullptr);
+    const vector<VkExtensionProperties> deviceExtensionProperties =
+        enumerateDeviceExtensionProperties(context.getInstanceInterface(), context.getPhysicalDevice(), nullptr);
+
+    for (const auto &version : releasedApiVersions)
+    {
+        uint32_t apiVariant, versionMajor, versionMinor;
+        std::tie(std::ignore, apiVariant, versionMajor, versionMinor) = version;
+        if (context.contextSupports(vk::ApiVersion(apiVariant, versionMajor, versionMinor, 0)))
+        {
+            checkExtensionDependencies(results, deviceExtensionDependencies, versionMajor, versionMinor,
+                                       instanceExtensionProperties, deviceExtensionProperties);
+            break;
+        }
+    }
+
+    return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+#endif // CTS_USES_VULKANSC
 
 tcu::TestStatus extensionCoreVersions(Context &context)
 {
@@ -8850,6 +8872,9 @@ void createFeatureInfoInstanceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase<CustomInstanceTest<E071>>(testGroup, "physical_device_groups", enumeratePhysicalDeviceGroups);
     addFunctionCase(testGroup, "instance_layers", enumerateInstanceLayers);
     addFunctionCase(testGroup, "instance_extensions", enumerateInstanceExtensions);
+#ifndef CTS_USES_VULKANSC
+    addFunctionCase(testGroup, "instance_extension_dependencies", validateInstanceExtensionDependencies);
+#endif
     addFunctionCase(testGroup, "instance_extension_device_functions",
                     validateDeviceLevelEntryPointsFromInstanceExtensions);
 }
@@ -8862,6 +8887,9 @@ void createFeatureInfoDeviceTests(tcu::TestCaseGroup *testGroup)
     addFunctionCase(testGroup, "device_memory_properties", deviceMemoryProperties);
     addFunctionCase(testGroup, "device_layers", enumerateDeviceLayers);
     addFunctionCase(testGroup, "device_extensions", enumerateDeviceExtensions);
+#ifndef CTS_USES_VULKANSC
+    addFunctionCase(testGroup, "device_extension_dependencies", validateDeviceExtensionDependencies);
+#endif
     addFunctionCase(testGroup, "device_no_khx_extensions", testNoKhxExtensions);
     addFunctionCase(testGroup, "device_memory_budget", deviceMemoryBudgetProperties);
     addFunctionCase(testGroup, "device_mandatory_features", deviceMandatoryFeatures);
