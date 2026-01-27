@@ -511,7 +511,7 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     m_context =
         m_contextManager->findContext(m_contextManager, vktCase, m_context, m_progCollection, onBeforeCreateDevice);
 
-    const tcu::CommandLine &commandLine = m_context->getTestContext().getCommandLine();
+    const tcu::CommandLine &commandLine = testCase->getTestContext().getCommandLine();
     const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
     for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin();

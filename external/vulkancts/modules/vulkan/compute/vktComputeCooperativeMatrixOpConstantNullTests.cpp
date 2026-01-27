@@ -228,6 +228,7 @@ public:
         return m_configurations;
     }
     virtual void initDeviceCapabilities(DevCaps &caps) override;
+    virtual void delayedInit() override;
     virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(SourceCollections &programCollection) const override;
 };
@@ -1065,21 +1066,24 @@ ${Extensions}
     return code.specialize(variables);
 }
 
+void CoopMtxOpConstantNullCase::delayedInit()
+{
+    auto cm = getContextManager();
+    if (cm)
+    {
+        std::lock_guard<std::mutex> lock(m_configurationsMutex);
+        if (m_configurations.empty())
+            m_configurations = getPossibleConfigurations(cm->getInstanceInterface(), cm->getPhysicalDevice());
+    }
+}
+
 void CoopMtxOpConstantNullCase::initDeviceCapabilities(DevCaps &caps)
 {
     if (!(caps.addFeature(&VkPhysicalDeviceCooperativeMatrixFeaturesKHR::cooperativeMatrix)))
         TCU_THROW(NotSupportedError, "cooperativeMatrix is not supported");
     caps.addExtension(VK_KHR_COOPERATIVE_MATRIX_EXTENSION_NAME);
 
-    uint32_t configurationCount = 0u;
-    {
-        std::lock_guard<std::mutex> lock(m_configurationsMutex);
-        if (m_configurations.empty())
-            m_configurations = getPossibleConfigurations(caps.getContextManager().getInstanceInterface(),
-                                                         caps.getContextManager().getPhysicalDevice());
-        configurationCount = uint32_t(m_configurations.size());
-    }
-
+    const uint32_t configurationCount = uint32_t(m_configurations.size());
     if (0u == configurationCount)
         TCU_THROW(NotSupportedError, "No configurations to perform test");
 
