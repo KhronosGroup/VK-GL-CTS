@@ -466,9 +466,6 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     vk::SourceCollections sourceProgs(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions,
                                       defaultSpirvAsmBuildOptions);
 
-    const tcu::CommandLine &commandLine = m_context->getTestContext().getCommandLine();
-    const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
-
     // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
     // the function that creates a new device, may throw an exception. All messages, including
     // logging, are disabled while the test is being processed by the SC in the main process,
@@ -513,6 +510,9 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
 
     m_context =
         m_contextManager->findContext(m_contextManager, vktCase, m_context, m_progCollection, onBeforeCreateDevice);
+
+    const tcu::CommandLine &commandLine = m_context->getTestContext().getCommandLine();
+    const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
     for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin();
          progIter != sourceProgs.glslSources.end(); ++progIter)
