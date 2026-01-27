@@ -7164,6 +7164,13 @@ struct VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures
 	VkBool32		shaderSubgroupExtendedTypes;
 };
 
+struct VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderSubgroupPartitioned;
+};
+
 struct VkPhysicalDeviceShaderSubgroupRotateFeatures
 {
 	VkStructureType	sType;

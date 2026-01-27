@@ -8518,6 +8518,26 @@ tcu::TestStatus FormatPropsTest::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+#ifndef CTS_USES_VULKANSC
+tcu::TestStatus validateSubgroupFeatures(Context &context)
+{
+    const auto vk11Properties = context.getDeviceVulkan11Properties();
+
+    const InstanceInterface &vki                                                     = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice                                            = context.getPhysicalDevice();
+    VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT subgroupPartitionedFeatures = initVulkanStructure();
+    VkPhysicalDeviceFeatures2 features2 = initVulkanStructure(&subgroupPartitionedFeatures);
+
+    vki.getPhysicalDeviceFeatures2(physicalDevice, &features2);
+
+    if (subgroupPartitionedFeatures.shaderSubgroupPartitioned &&
+        (vk11Properties.subgroupSupportedOperations & VK_SUBGROUP_FEATURE_PARTITIONED_BIT_EXT) == 0)
+        TCU_FAIL("VK_SUBGROUP_FEATURE_PARTITIONED_BIT_EXT not supported");
+
+    return tcu::TestStatus::pass("pass");
+}
+#endif
+
 } // namespace
 
 static inline void addFunctionCaseInNewSubgroup(tcu::TestContext &testCtx, tcu::TestCaseGroup *group,
@@ -8810,6 +8830,16 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
 
         infoTests->addChild(androidTests.release());
     }
+
+#ifndef CTS_USES_VULKANSC
+    {
+        de::MovePtr<tcu::TestCaseGroup> subgroupTests(new tcu::TestCaseGroup(testCtx, "subgroup_features"));
+
+        addFunctionCase(subgroupTests.get(), "flags", checkApiVersionSupport<1, 4>, validateSubgroupFeatures);
+
+        infoTests->addChild(subgroupTests.release());
+    }
+#endif // CTS_USES_VULKANSC
 
     return infoTests.release();
 }

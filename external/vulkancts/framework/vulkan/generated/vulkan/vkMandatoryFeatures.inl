@@ -806,6 +806,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_extended_types"))
 		addFeatures(&physicalDeviceShaderSubgroupExtendedTypesFeatures);
 
+	// VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT for ext [VK_EXT_shader_subgroup_partitioned]
+	vk::VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT physicalDeviceShaderSubgroupPartitionedFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_subgroup_partitioned"))
+		addFeatures(&physicalDeviceShaderSubgroupPartitionedFeaturesEXT);
+
 	// VkPhysicalDeviceShaderSubgroupRotateFeatures, VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR for ext [VK_KHR_shader_subgroup_rotate]
 	vk::VkPhysicalDeviceShaderSubgroupRotateFeatures physicalDeviceShaderSubgroupRotateFeatures = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_rotate"))
@@ -2555,6 +2560,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT.shaderUniformBufferUnsizedArray == VK_FALSE )
 			failMesages.push_back("shaderUniformBufferUnsizedArray");
+	}
+
+	// VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_subgroup_partitioned")) )
+	{
+		if ( physicalDeviceShaderSubgroupPartitionedFeaturesEXT.shaderSubgroupPartitioned == VK_FALSE )
+			failMesages.push_back("shaderSubgroupPartitioned");
 	}
 
 	// VkPhysicalDeviceAccelerationStructureFeaturesKHR

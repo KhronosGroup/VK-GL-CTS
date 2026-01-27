@@ -14813,6 +14813,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupE
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderSubgroupPartitioned = " << value.shaderSubgroupPartitioned << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupRotateFeatures& value)
 {
 	s << "VkPhysicalDeviceShaderSubgroupRotateFeatures = {\n";
