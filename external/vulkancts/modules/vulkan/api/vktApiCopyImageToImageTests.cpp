@@ -210,6 +210,7 @@ tcu::TestStatus CopyImageToImage::iterate(void)
         {
             const uint32_t blockWidth  = getBlockWidth(m_params.src.image.format);
             const uint32_t blockHeight = getBlockHeight(m_params.src.image.format);
+            const uint32_t blockDepth  = getBlockDepth(m_params.src.image.format);
 
             imageCopy.srcOffset.x *= blockWidth;
             imageCopy.extent.width *= blockWidth;
@@ -220,12 +221,18 @@ tcu::TestStatus CopyImageToImage::iterate(void)
                 imageCopy.srcOffset.y *= blockHeight;
                 imageCopy.extent.height *= blockHeight;
             }
+            if (m_params.src.image.imageType == vk::VK_IMAGE_TYPE_3D)
+            {
+                imageCopy.srcOffset.z *= blockDepth;
+                imageCopy.extent.depth *= blockDepth;
+            }
         }
 
         if (dstCompressed)
         {
             const uint32_t blockWidth  = getBlockWidth(m_params.dst.image.format);
             const uint32_t blockHeight = getBlockHeight(m_params.dst.image.format);
+            const uint32_t blockDepth  = getBlockDepth(m_params.dst.image.format);
 
             imageCopy.dstOffset.x *= blockWidth;
 
@@ -233,6 +240,10 @@ tcu::TestStatus CopyImageToImage::iterate(void)
             if (m_params.dst.image.imageType != vk::VK_IMAGE_TYPE_1D)
             {
                 imageCopy.dstOffset.y *= blockHeight;
+            }
+            if (m_params.dst.image.imageType == vk::VK_IMAGE_TYPE_3D)
+            {
+                imageCopy.dstOffset.z *= blockDepth;
             }
         }
 
@@ -1478,6 +1489,13 @@ void addImageToImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, Cop
         if (!isSupportedByFramework(dstFormat) && !isCompressedFormat(dstFormat))
             continue;
 
+#ifndef CTS_USES_VULKANSC
+        if ((testParams.params.dst.image.imageType != VK_IMAGE_TYPE_3D ||
+             testParams.params.src.image.imageType != VK_IMAGE_TYPE_3D) &&
+            isAstc3DFormat(dstFormat))
+            continue;
+#endif // CTS_USES_VULKANSC
+
         if (!isAllowedImageToImageAllFormatsColorSrcFormatTests(testParams))
             continue;
 
@@ -1495,6 +1513,8 @@ void addImageToImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, Cop
 
 #ifndef CTS_USES_VULKANSC
 const std::vector<VkFormat> compatibleFormats8BitA{VK_FORMAT_A8_UNORM_KHR};
+const std::vector<VkFormat> compatibleFormats128BitAstc{VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT,
+                                                        VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT};
 #endif // CTS_USES_VULKANSC
 
 const std::vector<std::vector<VkFormat>> colorImageFormatsToTest{
@@ -1503,8 +1523,11 @@ const std::vector<std::vector<VkFormat>> colorImageFormatsToTest{
 #endif // CTS_USES_VULKANSC
     formats::compatibleFormats8Bit,   formats::compatibleFormats16Bit,  formats::compatibleFormats24Bit,
     formats::compatibleFormats32Bit,  formats::compatibleFormats48Bit,  formats::compatibleFormats64Bit,
-    formats::compatibleFormats96Bit,  formats::compatibleFormats128Bit, formats::compatibleFormats192Bit,
-    formats::compatibleFormats256Bit,
+    formats::compatibleFormats96Bit,  formats::compatibleFormats128Bit,
+#ifndef CTS_USES_VULKANSC
+    compatibleFormats128BitAstc,
+#endif // CTS_USES_VULKANSC
+    formats::compatibleFormats192Bit, formats::compatibleFormats256Bit,
 };
 
 const VkFormat dedicatedAllocationImageToImageFormatsToTest[] = {
@@ -1602,6 +1625,11 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
 
+#ifndef CTS_USES_VULKANSC
+                if (isAstc3DFormat(params.src.image.format))
+                    continue;
+#endif // CTS_USES_VULKANSC
+
                 CopyColorTestParams testParams;
                 testParams.params            = params;
                 testParams.compatibleFormats = nullptr;
@@ -1655,7 +1683,10 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
-
+#ifndef CTS_USES_VULKANSC
+                if (isAstc3DFormat(params.src.image.format))
+                    continue;
+#endif // CTS_USES_VULKANSC
                 CopyColorTestParams testParams;
                 testParams.params            = params;
                 testParams.compatibleFormats = nullptr;
@@ -1712,7 +1743,10 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
-
+#ifndef CTS_USES_VULKANSC
+                if (isAstc3DFormat(params.src.image.format))
+                    continue;
+#endif // CTS_USES_VULKANSC
                 CopyColorTestParams testParams;
                 testParams.params            = params;
                 testParams.compatibleFormats = nullptr;
@@ -1766,7 +1800,10 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
-
+#ifndef CTS_USES_VULKANSC
+                if (isAstc3DFormat(params.src.image.format))
+                    continue;
+#endif // CTS_USES_VULKANSC
                 CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
@@ -1816,7 +1853,10 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
-
+#ifndef CTS_USES_VULKANSC
+                if (isAstc3DFormat(params.src.image.format))
+                    continue;
+#endif // CTS_USES_VULKANSC
                 CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);
@@ -1867,7 +1907,10 @@ void addImageToImageAllFormatsColorTests(tcu::TestCaseGroup *group, TestGroupPar
                 params.src.image.format = format;
                 if (!isSupportedByFramework(params.src.image.format) && !isCompressedFormat(params.src.image.format))
                     continue;
-
+#ifndef CTS_USES_VULKANSC
+                if (isAstc3DFormat(params.src.image.format))
+                    continue;
+#endif // CTS_USES_VULKANSC
                 CopyColorTestParams testParams{params, &formatArray};
                 const std::string testName = getFormatCaseName(params.src.image.format);
                 addTestGroup(subGroup.get(), testName, addImageToImageAllFormatsColorSrcFormatTests, testParams);

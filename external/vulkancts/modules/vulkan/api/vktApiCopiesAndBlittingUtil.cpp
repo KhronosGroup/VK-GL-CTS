@@ -295,6 +295,7 @@ VkExtent3D getExtent3D(const ImageParms &parms, uint32_t mipLevel)
     const bool isCompressed    = isCompressedFormat(parms.format);
     const uint32_t blockWidth  = (isCompressed) ? getBlockWidth(parms.format) : 1u;
     const uint32_t blockHeight = (isCompressed) ? getBlockHeight(parms.format) : 1u;
+    const uint32_t blockDepth  = (isCompressed) ? getBlockDepth(parms.format) : 1u;
 
     if (isCompressed && mipLevel != 0u)
         DE_FATAL("Not implemented");
@@ -302,7 +303,7 @@ VkExtent3D getExtent3D(const ImageParms &parms, uint32_t mipLevel)
     const VkExtent3D extent = {
         (parms.extent.width >> mipLevel) * blockWidth,
         (parms.imageType != VK_IMAGE_TYPE_1D) ? ((parms.extent.height >> mipLevel) * blockHeight) : 1u,
-        (parms.imageType == VK_IMAGE_TYPE_3D) ? parms.extent.depth : 1u,
+        (parms.imageType == VK_IMAGE_TYPE_3D) ? ((parms.extent.depth >> mipLevel) * blockDepth) : 1u,
     };
     return extent;
 }
@@ -666,6 +667,38 @@ tcu::Vec4 getCompressedFormatThreshold(const tcu::CompressedTexFormat &format)
     case tcu::COMPRESSEDTEXFORMAT_ASTC_10x10_SRGB8_ALPHA8:
     case tcu::COMPRESSEDTEXFORMAT_ASTC_12x10_SRGB8_ALPHA8:
     case tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8:
+#ifndef CTS_USES_VULKANSC
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
+#endif // CTS_USES_VULKANSC
         bitDepth = {8, 8, 8, 8};
         break;
 

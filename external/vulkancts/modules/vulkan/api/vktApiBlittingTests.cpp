@@ -69,8 +69,14 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
     if (tcu::isAstcFormat(srcFormat))
     {
         // comparison doesn't currently handle invalid blocks correctly so we use only valid blocks
-        tcu::astc::generateRandomValidBlocks(compressedData, compressedDataSize / tcu::astc::BLOCK_SIZE_BYTES,
-                                             srcFormat, tcu::TexDecompressionParams::ASTCMODE_LDR, random.getUint32());
+        if (tcu::isAstcSFLOATFormat(srcFormat))
+            tcu::astc::generateRandomValidBlocks(compressedData, compressedDataSize / tcu::astc::BLOCK_SIZE_BYTES,
+                                                 srcFormat, tcu::TexDecompressionParams::ASTCMODE_HDR,
+                                                 random.getUint32());
+        else
+            tcu::astc::generateRandomValidBlocks(compressedData, compressedDataSize / tcu::astc::BLOCK_SIZE_BYTES,
+                                                 srcFormat, tcu::TexDecompressionParams::ASTCMODE_LDR,
+                                                 random.getUint32());
     }
     else if ((srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_UFLOAT_BLOCK) ||
              (srcFormat == tcu::COMPRESSEDTEXFORMAT_BC6H_SFLOAT_BLOCK))
@@ -128,8 +134,12 @@ CompressedTextureForBlit::CompressedTextureForBlit(const tcu::CompressedTexForma
         tcu::PixelBufferAccess(decompressedSrcFormat, width, height, depth, m_decompressedData.getPtr());
 
     // store decompressed data
-    m_compressedTexture.decompress(m_decompressedAccess,
-                                   tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR));
+    if (tcu::isAstcSFLOATFormat(srcFormat))
+        m_compressedTexture.decompress(m_decompressedAccess,
+                                       tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_HDR));
+    else
+        m_compressedTexture.decompress(m_decompressedAccess,
+                                       tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR));
 }
 
 tcu::PixelBufferAccess CompressedTextureForBlit::getDecompressedAccess() const
@@ -348,10 +358,13 @@ tcu::TestStatus BlittingImages::iterate(void)
     // generate source image
     if (isCompressedFormat(srcImageParams.format))
     {
+        const uint32_t blockWidth  = getBlockWidth(srcImageParams.format);
+        const uint32_t blockHeight = getBlockHeight(srcImageParams.format);
+        const uint32_t blockDepth  = getBlockDepth(srcImageParams.format);
         // for compressed images srcImageParams.fillMode is not used - we are using random data
         tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(srcImageParams.format);
-        m_sourceCompressedTexture =
-            CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth));
+        m_sourceCompressedTexture                 = CompressedTextureForBlitSp(new CompressedTextureForBlit(
+            compressedFormat, srcWidth * blockWidth, srcHeight * blockHeight, srcDepth * blockDepth));
         uploadCompressedImage(m_source.get(), srcImageParams);
     }
     else
@@ -367,10 +380,14 @@ tcu::TestStatus BlittingImages::iterate(void)
     // generate destination image
     if (isCompressedFormat(dstImageParams.format))
     {
+        const uint32_t blockWidth  = getBlockWidth(dstImageParams.format);
+        const uint32_t blockHeight = getBlockHeight(dstImageParams.format);
+        const uint32_t blockDepth  = getBlockDepth(dstImageParams.format);
+
         // compressed images are filled with random data
         tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(dstImageParams.format);
-        m_destinationCompressedTexture =
-            CompressedTextureForBlitSp(new CompressedTextureForBlit(compressedFormat, srcWidth, srcHeight, srcDepth));
+        m_destinationCompressedTexture            = CompressedTextureForBlitSp(new CompressedTextureForBlit(
+            compressedFormat, srcWidth * blockWidth, srcHeight * blockHeight, srcDepth * blockDepth));
         uploadCompressedImage(m_destination.get(), dstImageParams);
     }
     else
@@ -954,7 +971,29 @@ tcu::TestStatus BlittingImages::checkTestResult(tcu::ConstPixelBufferAccess resu
             const tcu::CompressedTexture &compressedLevel   = m_sourceCompressedTexture->getCompressedTexture();
             const tcu::PixelBufferAccess &decompressedLevel = m_sourceCompressedTexture->getDecompressedAccess();
 
-            if (!checkCompressedNearestFilteredResult(result, decompressedLevel, compressedLevel.getFormat()))
+            // Using blit operations to clamp decompressed values to match the target format.
+            de::MovePtr<tcu::TextureLevel> clampedDecompressedLevel = de::MovePtr<tcu::TextureLevel>(
+                new tcu::TextureLevel(result.getFormat(), compressedLevel.getWidth(), compressedLevel.getHeight(),
+                                      compressedLevel.getDepth()));
+            tcu::copy(clampedDecompressedLevel->getAccess(), decompressedLevel);
+
+            const VkImageBlit imageBlit = {
+                defaultSourceLayer, // VkImageSubresourceLayers srcSubresource;
+                {{0, 0, 0},
+                 {compressedLevel.getWidth(), compressedLevel.getHeight(),
+                  compressedLevel.getDepth()}}, // VkOffset3D srcOffsets[2];
+
+                defaultSourceLayer, // VkImageSubresourceLayers dstSubresource;
+                {{0, 0, 0},
+                 {compressedLevel.getWidth(), compressedLevel.getHeight(),
+                  compressedLevel.getDepth()}} // VkOffset3D dstOffset[2];
+            };
+
+            CopyRegion region;
+            region.imageBlit = imageBlit;
+            copyRegionToTextureLevel(decompressedLevel, clampedDecompressedLevel->getAccess(), region);
+            if (!checkCompressedNearestFilteredResult(result, clampedDecompressedLevel->getAccess(),
+                                                      compressedLevel.getFormat()))
                 return tcu::TestStatus::fail(failMessage);
         }
         else if (!checkNearestFilteredResult(result, m_sourceTextureLevel->getAccess()))
@@ -1196,7 +1235,13 @@ void BlittingImages::uploadCompressedImage(const VkImage &image, const ImageParm
                                                     arraySize,                 // uint32_t arraySize;
                                                 }};
 
-    const VkExtent3D copyExtent{imageExtent.width, imageExtent.height, imageExtent.depth};
+    const bool isCompressed    = isCompressedFormat(parms.format);
+    const uint32_t blockWidth  = isCompressed ? getBlockWidth(parms.format) : 1u;
+    const uint32_t blockHeight = isCompressed ? getBlockHeight(parms.format) : 1u;
+    const uint32_t blockDepth  = isCompressed ? getBlockDepth(parms.format) : 1u;
+
+    const VkExtent3D copyExtent{imageExtent.width * blockWidth, imageExtent.height * blockHeight,
+                                imageExtent.depth * blockDepth};
 
     VkBufferImageCopy copyRegion{
         0u,                // VkDeviceSize bufferOffset;
@@ -1254,6 +1299,9 @@ public:
             m_params.src.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR ||
             m_params.dst.image.format == VK_FORMAT_A1B5G5R5_UNORM_PACK16_KHR)
             context.requireDeviceFunctionality("VK_KHR_maintenance5");
+
+        if (isAstc3DFormat(m_params.src.image.format) || isAstc3DFormat(m_params.dst.image.format))
+            context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
 #endif // CTS_USES_VULKANSC
 
         VkImageFormatProperties properties;
@@ -2989,16 +3037,26 @@ void addBlittingImageAllFormatsColorSrcFormatTests(tcu::TestCaseGroup *group, Bl
                          testParams);
         }
     }
-
-    // If testParams.compatibleFormats is nullptr, the destination format will be copied from the source format
-    // When testParams.compatibleFormats is not nullptr but format is compressed we also need to add that format
-    // as it is not on compatibleFormats list
-    if (!testParams.compatibleFormats || isCompressedFormat(srcFormat))
+#ifndef CTS_USES_VULKANSC
+    if (isAstc3DFormat(srcFormat))
     {
-        testParams.params.dst.image.format = srcFormat;
+        testParams.params.dst.image.format = VK_FORMAT_R8G8B8A8_UNORM;
+        addTestGroup(group, getFormatCaseName(VK_FORMAT_R8G8B8A8_UNORM),
+                     addBlittingImageAllFormatsColorSrcFormatDstFormatTests, testParams);
+    }
+    else
+#endif // CTS_USES_VULKANSC
+    {
+        // If testParams.compatibleFormats is nullptr, the destination format will be copied from the source format
+        // When testParams.compatibleFormats is not nullptr but format is compressed we also need to add that format
+        // as it is not on compatibleFormats list
+        if (!testParams.compatibleFormats || isCompressedFormat(srcFormat))
+        {
+            testParams.params.dst.image.format = srcFormat;
 
-        addTestGroup(group, getFormatCaseName(srcFormat), addBlittingImageAllFormatsColorSrcFormatDstFormatTests,
-                     testParams);
+            addTestGroup(group, getFormatCaseName(srcFormat), addBlittingImageAllFormatsColorSrcFormatDstFormatTests,
+                         testParams);
+        }
     }
 }
 
@@ -3025,7 +3083,7 @@ const FormatSet onlyNearestAndLinearFormatsToTest = {VK_FORMAT_A8B8G8R8_USCALED_
                                                      VK_FORMAT_A8B8G8R8_SSCALED_PACK32, VK_FORMAT_A8B8G8R8_UINT_PACK32,
                                                      VK_FORMAT_A8B8G8R8_SINT_PACK32};
 
-// astc formats have diferent block sizes and thus require diferent resolutions for images
+// astc formats have diferent block sizes and thus require different resolutions for images
 enum class AstcImageSizeType
 {
     SIZE_64_64 = 0,
@@ -3063,6 +3121,21 @@ const std::map<VkFormat, AstcImageSizeType> astcSizes{
     {VK_FORMAT_ASTC_12x10_UNORM_BLOCK, AstcImageSizeType::SIZE_60_60},
     {VK_FORMAT_ASTC_12x12_SRGB_BLOCK, AstcImageSizeType::SIZE_60_60},
     {VK_FORMAT_ASTC_12x12_UNORM_BLOCK, AstcImageSizeType::SIZE_60_60}};
+
+#ifndef CTS_USES_VULKANSC
+const VkFormat astc3DFormats[] = {
+    VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT,
+    VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT, VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT, VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT,
+};
+#endif // CTS_USES_VULKANSC
 
 std::vector<CopyRegion> create2DCopyRegions(int32_t srcWidth, int32_t srcHeight, int32_t dstWidth, int32_t dstHeight)
 {
@@ -3320,6 +3393,20 @@ void addBlittingImageAllFormatsColorTests(tcu::TestCaseGroup *group, AllocationK
                              addBlittingImageAllFormatsColorSrcFormatTests, testParams);
             }
         }
+#ifndef CTS_USES_VULKANSC
+        for (int srcFormatIndex = 0; srcFormatIndex < DE_LENGTH_OF_ARRAY(astc3DFormats); ++srcFormatIndex)
+        {
+            params.src.image.format = astc3DFormats[srcFormatIndex];
+
+            // Cubic filtering can only be used with 2D images.
+            const bool onlyNearestAndLinear = true;
+
+            BlitColorTestParams testParams{params, nullptr, makeFilterMask(false, onlyNearestAndLinear)};
+
+            addTestGroup(subGroup.get(), getFormatCaseName(params.src.image.format),
+                         addBlittingImageAllFormatsColorSrcFormatTests, testParams);
+        }
+#endif // CTS_USES_VULKANSC
 
         group->addChild(subGroup.release());
     }

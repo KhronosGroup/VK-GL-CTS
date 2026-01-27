@@ -322,6 +322,11 @@ ImageSamplingInstanceParams SamplerTest::getImageSamplingInstanceParams(SamplerV
 
 void SamplerTest::checkSupport(Context &context) const
 {
+#ifndef CTS_USES_VULKANSC
+    if (isAstc3DFormat(m_imageFormat))
+        checkSupportAstcFormat(context, mapVkCompressedFormat(m_imageFormat));
+#endif // CTS_USES_VULKANSC
+
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
 #ifndef CTS_USES_VULKANSC
@@ -2413,6 +2418,38 @@ tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
         VK_FORMAT_ASTC_10x8_SRGB_BLOCK,
         VK_FORMAT_ASTC_12x10_UNORM_BLOCK,
         VK_FORMAT_ASTC_12x12_SRGB_BLOCK,
+#ifndef CTS_USES_VULKANSC
+        VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT,
+#endif // CTS_USES_VULKANSC
 
         // Depth formats required for testing VK_EXT_sampler_filter_minmax
         VK_FORMAT_D16_UNORM,
@@ -2443,6 +2480,12 @@ tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
                 // Do not use compressed formats with 1D and 1D array textures.
                 if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
                     break;
+
+#ifndef CTS_USES_VULKANSC
+                // Only use ASTC 3D formats with 3D texture.
+                if (isAstc3DFormat(format) && viewType != VK_IMAGE_VIEW_TYPE_3D)
+                    continue;
+#endif // CTS_USES_VULKANSC
             }
 
             if (separateStencilUsage && !isDepthStencil)

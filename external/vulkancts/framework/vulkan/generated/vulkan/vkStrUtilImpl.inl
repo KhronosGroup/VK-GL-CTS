@@ -15074,6 +15074,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTexelBufferAlig
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttextureCompressionASTC_3D = " << value.textureCompressionASTC_3D << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTextureCompressionASTCHDRFeatures& value)
 {
 	s << "VkPhysicalDeviceTextureCompressionASTCHDRFeatures = {\n";

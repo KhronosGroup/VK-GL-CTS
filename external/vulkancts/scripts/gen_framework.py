@@ -144,6 +144,7 @@ VK_EXT_shader_tile_image
 VK_EXT_shader_uniform_buffer_unsized_array
 VK_EXT_subpass_merge_feedback
 VK_EXT_swapchain_maintenance1
+VK_EXT_texture_compression_astc_3d
 VK_EXT_transform_feedback
 VK_EXT_uniform_buffer_unsized_array
 VK_EXT_vertex_attribute_divisor
@@ -581,7 +582,7 @@ def getFunctionType(command):
 
 
 def camelToSnake(name):
-    name = re.sub('([a-z])([23])D([A-Z])', r'\1_\2d\3', name)
+    name = re.sub('([A-Za-z])([23])D([A-Z])', r'\1_\2d\3', name)
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 

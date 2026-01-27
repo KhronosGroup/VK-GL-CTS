@@ -42,8 +42,11 @@ namespace
 
 enum
 {
-    MAX_BLOCK_WIDTH  = 12,
-    MAX_BLOCK_HEIGHT = 12
+    MAX_BLOCK_WIDTH     = 12,
+    MAX_BLOCK_HEIGHT    = 12,
+    MAX_BLOCK_WIDTH_3D  = 6,
+    MAX_BLOCK_HEIGHT_3D = 6,
+    MAX_BLOCK_DEPTH_3D  = 6,
 };
 
 inline uint32_t getBit(uint32_t src, int ndx)
@@ -316,6 +319,7 @@ struct ASTCBlockMode
     bool isDualPlane;
     int weightGridWidth;
     int weightGridHeight;
+    int weightGridDepth;
     ISEParams weightISEParams;
 
     ASTCBlockMode(void)
@@ -324,6 +328,7 @@ struct ASTCBlockMode
         , isDualPlane(true)
         , weightGridWidth(-1)
         , weightGridHeight(-1)
+        , weightGridDepth(-1)
         , weightISEParams(ISEMODE_LAST, -1)
     {
     }
@@ -331,7 +336,7 @@ struct ASTCBlockMode
 
 inline int computeNumWeights(const ASTCBlockMode &mode)
 {
-    return mode.weightGridWidth * mode.weightGridHeight * (mode.isDualPlane ? 2 : 1);
+    return mode.weightGridWidth * mode.weightGridHeight * mode.weightGridDepth * (mode.isDualPlane ? 2 : 1);
 }
 
 struct ColorEndpointPair
@@ -348,7 +353,8 @@ struct TexelWeightPair
 ASTCBlockMode getASTCBlockMode(uint32_t blockModeData)
 {
     ASTCBlockMode blockMode;
-    blockMode.isError = true; // \note Set to false later, if not error.
+    blockMode.weightGridDepth = 1;
+    blockMode.isError         = true; // \note Set to false later, if not error.
 
     blockMode.isVoidExtent = getBits(blockModeData, 0, 8) == 0x1fc;
 
@@ -512,13 +518,158 @@ ASTCBlockMode getASTCBlockMode(uint32_t blockModeData)
     return blockMode;
 }
 
-inline void setASTCErrorColorBlock(void *dst, int blockWidth, int blockHeight, bool isSRGB)
+ASTCBlockMode getASTCBlockMode3D(uint32_t blockModeData)
+{
+    ASTCBlockMode blockMode;
+    blockMode.isError = true; // \note Set to false later, if not error.
+
+    blockMode.isVoidExtent = getBits(blockModeData, 0, 8) == 0x1fc;
+
+    if (!blockMode.isVoidExtent)
+    {
+        if ((getBits(blockModeData, 0, 1) == 0 && getBits(blockModeData, 5, 8) == 7) ||
+            getBits(blockModeData, 0, 3) == 0)
+            return blockMode; // Invalid ("reserved").
+
+        uint32_t r = (uint32_t)-1; // \note Set in the following branches.
+
+        if (getBits(blockModeData, 0, 1) == 0)
+        {
+            const uint32_t r0  = getBit(blockModeData, 4);
+            const uint32_t r1  = getBit(blockModeData, 2);
+            const uint32_t r2  = getBit(blockModeData, 3);
+            const uint32_t i78 = getBits(blockModeData, 7, 8);
+
+            r = (r2 << 2) | (r1 << 1) | (r0 << 0);
+
+            if (i78 == 3)
+            {
+                const bool i5              = isBitSet(blockModeData, 5);
+                const bool i6              = isBitSet(blockModeData, 6);
+                blockMode.weightGridWidth  = i5 ? 2 : i6 ? 2 : 6;
+                blockMode.weightGridHeight = i5 ? 6 : i6 ? 2 : 2;
+                blockMode.weightGridDepth  = i5 ? 2 : i6 ? 6 : 2;
+            }
+            else
+            {
+                const uint32_t a = getBits(blockModeData, 9, 10);
+                const uint32_t b = getBits(blockModeData, 5, 6);
+                switch (i78)
+                {
+                case 0:
+                    blockMode.weightGridWidth  = 6;
+                    blockMode.weightGridHeight = a + 2;
+                    blockMode.weightGridDepth  = b + 2;
+                    break;
+                case 1:
+                    blockMode.weightGridWidth  = b + 2;
+                    blockMode.weightGridHeight = 6;
+                    blockMode.weightGridDepth  = a + 2;
+                    break;
+                case 2:
+                    blockMode.weightGridWidth  = b + 2;
+                    blockMode.weightGridHeight = a + 2;
+                    blockMode.weightGridDepth  = 6;
+                    break;
+                default:
+                    DE_ASSERT(false);
+                }
+            }
+        }
+        else
+        {
+            const uint32_t r0 = getBit(blockModeData, 4);
+            const uint32_t r1 = getBit(blockModeData, 0);
+            const uint32_t r2 = getBit(blockModeData, 1);
+
+            r = (r2 << 2) | (r1 << 1) | (r0 << 0);
+
+            blockMode.weightGridWidth  = getBits(blockModeData, 5, 6) + 2;
+            blockMode.weightGridHeight = getBits(blockModeData, 7, 8) + 2;
+            blockMode.weightGridDepth  = getBits(blockModeData, 2, 3) + 2;
+        }
+
+        const bool zeroDH     = getBits(blockModeData, 0, 1) == 0 && getBits(blockModeData, 7, 8) != 3;
+        const bool h          = zeroDH ? 0 : isBitSet(blockModeData, 9);
+        blockMode.isDualPlane = zeroDH ? 0 : isBitSet(blockModeData, 10);
+
+        {
+            ISEMode &m = blockMode.weightISEParams.mode;
+            int &b     = blockMode.weightISEParams.numBits;
+            m          = ISEMODE_PLAIN_BIT;
+            b          = 0;
+
+            if (h)
+            {
+                switch (r)
+                {
+                case 2:
+                    m = ISEMODE_QUINT;
+                    b = 1;
+                    break;
+                case 3:
+                    m = ISEMODE_TRIT;
+                    b = 2;
+                    break;
+                case 4:
+                    b = 4;
+                    break;
+                case 5:
+                    m = ISEMODE_QUINT;
+                    b = 2;
+                    break;
+                case 6:
+                    m = ISEMODE_TRIT;
+                    b = 3;
+                    break;
+                case 7:
+                    b = 5;
+                    break;
+                default:
+                    DE_ASSERT(false);
+                }
+            }
+            else
+            {
+                switch (r)
+                {
+                case 2:
+                    b = 1;
+                    break;
+                case 3:
+                    m = ISEMODE_TRIT;
+                    break;
+                case 4:
+                    b = 2;
+                    break;
+                case 5:
+                    m = ISEMODE_QUINT;
+                    break;
+                case 6:
+                    m = ISEMODE_TRIT;
+                    b = 1;
+                    break;
+                case 7:
+                    b = 3;
+                    break;
+                default:
+                    DE_ASSERT(false);
+                }
+            }
+        }
+    }
+
+    blockMode.isError = false;
+    return blockMode;
+}
+
+inline void setASTCErrorColorBlock(void *dst, int blockWidth, int blockHeight, int blockDepth, bool isSRGB)
 {
     if (isSRGB)
     {
         uint8_t *const dstU = (uint8_t *)dst;
 
-        for (int i = 0; i < blockWidth * blockHeight; i++)
+        for (int i = 0; i < blockWidth * blockHeight * blockDepth; i++)
         {
             dstU[4 * i + 0] = 0xff;
             dstU[4 * i + 1] = 0;
@@ -530,7 +681,7 @@ inline void setASTCErrorColorBlock(void *dst, int blockWidth, int blockHeight, b
     {
         float *const dstF = (float *)dst;
 
-        for (int i = 0; i < blockWidth * blockHeight; i++)
+        for (int i = 0; i < blockWidth * blockHeight * blockDepth; i++)
         {
             dstF[4 * i + 0] = 1.0f;
             dstF[4 * i + 1] = 0.0f;
@@ -541,7 +692,7 @@ inline void setASTCErrorColorBlock(void *dst, int blockWidth, int blockHeight, b
 }
 
 DecompressResult decodeVoidExtentBlock(void *dst, const Block128 &blockData, int blockWidth, int blockHeight,
-                                       bool isSRGB, bool isLDRMode)
+                                       int blockDepth, bool isSRGB, bool isLDRMode)
 {
     const uint32_t minSExtent = blockData.getBits(12, 24);
     const uint32_t maxSExtent = blockData.getBits(25, 37);
@@ -553,7 +704,7 @@ DecompressResult decodeVoidExtentBlock(void *dst, const Block128 &blockData, int
 
     if ((isLDRMode && isHDRBlock) || (!allExtentsAllOnes && (minSExtent >= maxSExtent || minTExtent >= maxTExtent)))
     {
-        setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+        setASTCErrorColorBlock(dst, blockWidth, blockHeight, blockDepth, isSRGB);
         return DECOMPRESS_RESULT_ERROR;
     }
 
@@ -563,7 +714,7 @@ DecompressResult decodeVoidExtentBlock(void *dst, const Block128 &blockData, int
     if (isSRGB)
     {
         uint8_t *const dstU = (uint8_t *)dst;
-        for (int i = 0; i < blockWidth * blockHeight; i++)
+        for (int i = 0; i < blockWidth * blockHeight * blockDepth; i++)
             for (int c = 0; c < 4; c++)
                 dstU[i * 4 + c] = (uint8_t)((rgba[c] & 0xff00) >> 8);
     }
@@ -580,13 +731,13 @@ DecompressResult decodeVoidExtentBlock(void *dst, const Block128 &blockData, int
                                         "(behavior undefined by ASTC specification)");
             }
 
-            for (int i = 0; i < blockWidth * blockHeight; i++)
+            for (int i = 0; i < blockWidth * blockHeight * blockDepth; i++)
                 for (int c = 0; c < 4; c++)
                     dstF[i * 4 + c] = deFloat16To32((deFloat16)rgba[c]);
         }
         else
         {
-            for (int i = 0; i < blockWidth * blockHeight; i++)
+            for (int i = 0; i < blockWidth * blockHeight * blockDepth; i++)
                 for (int c = 0; c < 4; c++)
                     dstF[i * 4 + c] = rgba[c] == 65535 ? 1.0f : (float)rgba[c] / 65536.0f;
         }
@@ -1437,8 +1588,125 @@ void interpolateWeights(TexelWeightPair *dst, const uint32_t (&unquantizedWeight
     }
 }
 
+void interpolateWeights3D(TexelWeightPair *dst, const uint32_t (&unquantizedWeights)[64], int blockWidth,
+                          int blockHeight, int blockDepth, const ASTCBlockMode &blockMode)
+{
+    const int numWeightsPerTexel = blockMode.isDualPlane ? 2 : 1;
+    const uint32_t scaleX        = (1024 + blockWidth / 2) / (blockWidth - 1);
+    const uint32_t scaleY        = (1024 + blockHeight / 2) / (blockHeight - 1);
+    const uint32_t scaleZ        = (1024 + blockDepth / 2) / (blockDepth - 1);
+
+    DE_ASSERT(blockMode.weightGridWidth * blockMode.weightGridHeight * blockMode.weightGridDepth * numWeightsPerTexel <=
+              DE_LENGTH_OF_ARRAY(unquantizedWeights));
+
+    for (int texelZ = 0; texelZ < blockDepth; texelZ++)
+    {
+        for (int texelY = 0; texelY < blockHeight; texelY++)
+        {
+            for (int texelX = 0; texelX < blockWidth; texelX++)
+            {
+                const uint32_t gX = (scaleX * texelX * (blockMode.weightGridWidth - 1) + 32) >> 6;
+                const uint32_t gY = (scaleY * texelY * (blockMode.weightGridHeight - 1) + 32) >> 6;
+                const uint32_t gZ = (scaleZ * texelZ * (blockMode.weightGridDepth - 1) + 32) >> 6;
+                const uint32_t jX = gX >> 4;
+                const uint32_t jY = gY >> 4;
+                const uint32_t jZ = gZ >> 4;
+                const uint32_t fX = gX & 0xf;
+                const uint32_t fY = gY & 0xf;
+                const uint32_t fZ = gZ & 0xf;
+
+                int qweight[4];
+                qweight[0] = (jZ * blockMode.weightGridHeight + jY) * blockMode.weightGridWidth + jX;
+                qweight[3] = ((jZ + 1) * blockMode.weightGridHeight + (jY + 1)) * blockMode.weightGridWidth + (jX + 1);
+
+                // simplex interpolation
+
+                int cas = ((fX > fY) << 2) + ((fY > fZ) << 1) + ((fX > fZ));
+                int N   = blockMode.weightGridWidth;
+                int NM  = blockMode.weightGridWidth * blockMode.weightGridHeight;
+
+                int s1, s2, w0, w1, w2, w3;
+                switch (cas)
+                {
+                case 7:
+                    s1 = 1;
+                    s2 = N;
+                    w0 = 16 - fX;
+                    w1 = fX - fY;
+                    w2 = fY - fZ;
+                    w3 = fZ;
+                    break;
+                case 3:
+                    s1 = N;
+                    s2 = 1;
+                    w0 = 16 - fY;
+                    w1 = fY - fX;
+                    w2 = fX - fZ;
+                    w3 = fZ;
+                    break;
+                case 5:
+                    s1 = 1;
+                    s2 = NM;
+                    w0 = 16 - fX;
+                    w1 = fX - fZ;
+                    w2 = fZ - fY;
+                    w3 = fY;
+                    break;
+                case 4:
+                    s1 = NM;
+                    s2 = 1;
+                    w0 = 16 - fZ;
+                    w1 = fZ - fX;
+                    w2 = fX - fY;
+                    w3 = fY;
+                    break;
+                case 2:
+                    s1 = N;
+                    s2 = NM;
+                    w0 = 16 - fY;
+                    w1 = fY - fZ;
+                    w2 = fZ - fX;
+                    w3 = fX;
+                    break;
+                case 0:
+                    s1 = NM;
+                    s2 = N;
+                    w0 = 16 - fZ;
+                    w1 = fZ - fY;
+                    w2 = fY - fX;
+                    w3 = fX;
+                    break;
+                default:
+                    s1 = NM;
+                    s2 = N;
+                    w0 = 16 - fZ;
+                    w1 = fZ - fY;
+                    w2 = fY - fX;
+                    w3 = fX;
+                    break;
+                }
+
+                qweight[1] = qweight[0] + s1;
+                qweight[2] = qweight[1] + s2;
+
+                for (int texelWeightNdx = 0; texelWeightNdx < numWeightsPerTexel; texelWeightNdx++)
+                {
+                    // & 0x3f clamps address to bounds of unquantizedWeights
+                    const uint32_t p00 = unquantizedWeights[(qweight[0] * numWeightsPerTexel + texelWeightNdx) & 0x3f];
+                    const uint32_t p01 = unquantizedWeights[(qweight[1] * numWeightsPerTexel + texelWeightNdx) & 0x3f];
+                    const uint32_t p10 = unquantizedWeights[(qweight[2] * numWeightsPerTexel + texelWeightNdx) & 0x3f];
+                    const uint32_t p11 = unquantizedWeights[(qweight[3] * numWeightsPerTexel + texelWeightNdx) & 0x3f];
+
+                    dst[texelZ * blockHeight * blockWidth + texelY * blockWidth + texelX].w[texelWeightNdx] =
+                        (p00 * w0 + p01 * w1 + p10 * w2 + p11 * w3 + 8) >> 4;
+                }
+            }
+        }
+    }
+}
+
 void computeTexelWeights(TexelWeightPair *dst, const Block128 &blockData, int blockWidth, int blockHeight,
-                         const ASTCBlockMode &blockMode)
+                         int blockDepth, const ASTCBlockMode &blockMode)
 {
     ISEDecodedResult weightGrid[64];
 
@@ -1451,7 +1719,14 @@ void computeTexelWeights(TexelWeightPair *dst, const Block128 &blockData, int bl
     {
         uint32_t unquantizedWeights[64];
         unquantizeWeights(&unquantizedWeights[0], &weightGrid[0], blockMode);
-        interpolateWeights(dst, unquantizedWeights, blockWidth, blockHeight, blockMode);
+        if (blockDepth > 1)
+        {
+            interpolateWeights3D(dst, unquantizedWeights, blockWidth, blockHeight, blockDepth, blockMode);
+        }
+        else
+        {
+            interpolateWeights(dst, unquantizedWeights, blockWidth, blockHeight, blockMode);
+        }
     }
 }
 
@@ -1473,7 +1748,6 @@ inline uint32_t hash52(uint32_t v)
 
 int computeTexelPartition(uint32_t seedIn, uint32_t xIn, uint32_t yIn, uint32_t zIn, int numPartitions, bool smallBlock)
 {
-    DE_ASSERT(zIn == 0);
     const uint32_t x    = smallBlock ? xIn << 1 : xIn;
     const uint32_t y    = smallBlock ? yIn << 1 : yIn;
     const uint32_t z    = smallBlock ? zIn << 1 : zIn;
@@ -1534,106 +1808,110 @@ int computeTexelPartition(uint32_t seedIn, uint32_t xIn, uint32_t yIn, uint32_t 
 
 DecompressResult setTexelColors(void *dst, ColorEndpointPair *colorEndpoints, TexelWeightPair *texelWeights, int ccs,
                                 uint32_t partitionIndexSeed, int numPartitions, int blockWidth, int blockHeight,
-                                bool isSRGB, bool isLDRMode, const uint32_t *colorEndpointModes)
+                                int blockDepth, bool isSRGB, bool isLDRMode, const uint32_t *colorEndpointModes)
 {
-    const bool smallBlock   = blockWidth * blockHeight < 31;
+    const bool smallBlock   = blockWidth * blockHeight * blockDepth < 31;
     DecompressResult result = DECOMPRESS_RESULT_VALID_BLOCK;
     bool isHDREndpoint[4];
 
     for (int i = 0; i < numPartitions; i++)
         isHDREndpoint[i] = isColorEndpointModeHDR(colorEndpointModes[i]);
 
-    for (int texelY = 0; texelY < blockHeight; texelY++)
-        for (int texelX = 0; texelX < blockWidth; texelX++)
-        {
-            const int texelNdx         = texelY * blockWidth + texelX;
-            const int colorEndpointNdx = numPartitions == 1 ? 0 :
-                                                              computeTexelPartition(partitionIndexSeed, texelX, texelY,
-                                                                                    0, numPartitions, smallBlock);
-            DE_ASSERT(colorEndpointNdx < numPartitions);
-            const UVec4 &e0               = colorEndpoints[colorEndpointNdx].e0;
-            const UVec4 &e1               = colorEndpoints[colorEndpointNdx].e1;
-            const TexelWeightPair &weight = texelWeights[texelNdx];
-
-            if (isLDRMode && isHDREndpoint[colorEndpointNdx])
+    for (int texelZ = 0; texelZ < blockDepth; texelZ++)
+        for (int texelY = 0; texelY < blockHeight; texelY++)
+            for (int texelX = 0; texelX < blockWidth; texelX++)
             {
-                if (isSRGB)
-                {
-                    ((uint8_t *)dst)[texelNdx * 4 + 0] = 0xff;
-                    ((uint8_t *)dst)[texelNdx * 4 + 1] = 0;
-                    ((uint8_t *)dst)[texelNdx * 4 + 2] = 0xff;
-                    ((uint8_t *)dst)[texelNdx * 4 + 3] = 0xff;
-                }
-                else
-                {
-                    ((float *)dst)[texelNdx * 4 + 0] = 1.0f;
-                    ((float *)dst)[texelNdx * 4 + 1] = 0;
-                    ((float *)dst)[texelNdx * 4 + 2] = 1.0f;
-                    ((float *)dst)[texelNdx * 4 + 3] = 1.0f;
-                }
+                const int texelNdx = texelZ * blockWidth * blockHeight + texelY * blockWidth + texelX;
+                const int colorEndpointNdx =
+                    numPartitions == 1 ?
+                        0 :
+                        computeTexelPartition(partitionIndexSeed, texelX, texelY, texelZ, numPartitions, smallBlock);
+                DE_ASSERT(colorEndpointNdx < numPartitions);
+                const UVec4 &e0               = colorEndpoints[colorEndpointNdx].e0;
+                const UVec4 &e1               = colorEndpoints[colorEndpointNdx].e1;
+                const TexelWeightPair &weight = texelWeights[texelNdx];
 
-                result = DECOMPRESS_RESULT_ERROR;
-            }
-            else
-            {
-                for (int channelNdx = 0; channelNdx < 4; channelNdx++)
+                if (isLDRMode && isHDREndpoint[colorEndpointNdx])
                 {
-                    if (!isHDREndpoint[colorEndpointNdx] ||
-                        (channelNdx == 3 && colorEndpointModes[colorEndpointNdx] ==
-                                                14)) // \note Alpha for mode 14 is treated the same as LDR.
+                    if (isSRGB)
                     {
-                        const uint32_t c0 = (e0[channelNdx] << 8) | (isSRGB ? 0x80 : e0[channelNdx]);
-                        const uint32_t c1 = (e1[channelNdx] << 8) | (isSRGB ? 0x80 : e1[channelNdx]);
-                        const uint32_t w  = weight.w[ccs == channelNdx ? 1 : 0];
-                        const uint32_t c  = (c0 * (64 - w) + c1 * w + 32) / 64;
-
-                        if (isSRGB)
-                            ((uint8_t *)dst)[texelNdx * 4 + channelNdx] = (uint8_t)((c & 0xff00) >> 8);
-                        else
-                            ((float *)dst)[texelNdx * 4 + channelNdx] = c == 65535 ? 1.0f : (float)c / 65536.0f;
+                        ((uint8_t *)dst)[texelNdx * 4 + 0] = 0xff;
+                        ((uint8_t *)dst)[texelNdx * 4 + 1] = 0;
+                        ((uint8_t *)dst)[texelNdx * 4 + 2] = 0xff;
+                        ((uint8_t *)dst)[texelNdx * 4 + 3] = 0xff;
                     }
                     else
                     {
-                        DE_STATIC_ASSERT((de::meta::TypesSame<deFloat16, uint16_t>::Value));
-                        const uint32_t c0  = e0[channelNdx] << 4;
-                        const uint32_t c1  = e1[channelNdx] << 4;
-                        const uint32_t w   = weight.w[ccs == channelNdx ? 1 : 0];
-                        const uint32_t c   = (c0 * (64 - w) + c1 * w + 32) / 64;
-                        const uint32_t e   = getBits(c, 11, 15);
-                        const uint32_t m   = getBits(c, 0, 10);
-                        const uint32_t mt  = m < 512 ? 3 * m : m >= 1536 ? 5 * m - 2048 : 4 * m - 512;
-                        const deFloat16 cf = (deFloat16)((e << 10) + (mt >> 3));
+                        ((float *)dst)[texelNdx * 4 + 0] = 1.0f;
+                        ((float *)dst)[texelNdx * 4 + 1] = 0;
+                        ((float *)dst)[texelNdx * 4 + 2] = 1.0f;
+                        ((float *)dst)[texelNdx * 4 + 3] = 1.0f;
+                    }
 
-                        ((float *)dst)[texelNdx * 4 + channelNdx] = deFloat16To32(isFloat16InfOrNan(cf) ? 0x7bff : cf);
+                    result = DECOMPRESS_RESULT_ERROR;
+                }
+                else
+                {
+                    for (int channelNdx = 0; channelNdx < 4; channelNdx++)
+                    {
+                        if (!isHDREndpoint[colorEndpointNdx] ||
+                            (channelNdx == 3 && colorEndpointModes[colorEndpointNdx] ==
+                                                    14)) // \note Alpha for mode 14 is treated the same as LDR.
+                        {
+                            const uint32_t c0 = (e0[channelNdx] << 8) | (isSRGB ? 0x80 : e0[channelNdx]);
+                            const uint32_t c1 = (e1[channelNdx] << 8) | (isSRGB ? 0x80 : e1[channelNdx]);
+                            const uint32_t w  = weight.w[ccs == channelNdx ? 1 : 0];
+                            const uint32_t c  = (c0 * (64 - w) + c1 * w + 32) / 64;
+
+                            if (isSRGB)
+                                ((uint8_t *)dst)[texelNdx * 4 + channelNdx] = (uint8_t)((c & 0xff00) >> 8);
+                            else
+                                ((float *)dst)[texelNdx * 4 + channelNdx] = c == 65535 ? 1.0f : (float)c / 65536.0f;
+                        }
+                        else
+                        {
+                            DE_STATIC_ASSERT((de::meta::TypesSame<deFloat16, uint16_t>::Value));
+                            const uint32_t c0  = e0[channelNdx] << 4;
+                            const uint32_t c1  = e1[channelNdx] << 4;
+                            const uint32_t w   = weight.w[ccs == channelNdx ? 1 : 0];
+                            const uint32_t c   = (c0 * (64 - w) + c1 * w + 32) / 64;
+                            const uint32_t e   = getBits(c, 11, 15);
+                            const uint32_t m   = getBits(c, 0, 10);
+                            const uint32_t mt  = m < 512 ? 3 * m : m >= 1536 ? 5 * m - 2048 : 4 * m - 512;
+                            const deFloat16 cf = (deFloat16)((e << 10) + (mt >> 3));
+
+                            ((float *)dst)[texelNdx * 4 + channelNdx] =
+                                deFloat16To32(isFloat16InfOrNan(cf) ? 0x7bff : cf);
+                        }
                     }
                 }
             }
-        }
 
     return result;
 }
 
-DecompressResult decompressBlock(void *dst, const Block128 &blockData, int blockWidth, int blockHeight, bool isSRGB,
-                                 bool isLDR)
+DecompressResult decompressBlock(void *dst, const Block128 &blockData, int blockWidth, int blockHeight, int blockDepth,
+                                 bool isSRGB, bool isLDR)
 {
     DE_ASSERT(isLDR || !isSRGB);
 
     // Decode block mode.
 
-    const ASTCBlockMode blockMode = getASTCBlockMode(blockData.getBits(0, 10));
+    const ASTCBlockMode blockMode =
+        blockDepth > 1 ? getASTCBlockMode3D(blockData.getBits(0, 10)) : getASTCBlockMode(blockData.getBits(0, 10));
 
     // Check for block mode errors.
 
     if (blockMode.isError)
     {
-        setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+        setASTCErrorColorBlock(dst, blockWidth, blockHeight, blockDepth, isSRGB);
         return DECOMPRESS_RESULT_ERROR;
     }
 
     // Separate path for void-extent.
 
     if (blockMode.isVoidExtent)
-        return decodeVoidExtentBlock(dst, blockData, blockWidth, blockHeight, isSRGB, isLDR);
+        return decodeVoidExtentBlock(dst, blockData, blockWidth, blockHeight, blockDepth, isSRGB, isLDR);
 
     // Compute weight grid values.
 
@@ -1644,9 +1922,10 @@ DecompressResult decompressBlock(void *dst, const Block128 &blockData, int block
     // Check for errors in weight grid, partition and dual-plane parameters.
 
     if (numWeights > 64 || numWeightDataBits > 96 || numWeightDataBits < 24 || blockMode.weightGridWidth > blockWidth ||
-        blockMode.weightGridHeight > blockHeight || (numPartitions == 4 && blockMode.isDualPlane))
+        blockMode.weightGridDepth > blockDepth || blockMode.weightGridHeight > blockHeight ||
+        (numPartitions == 4 && blockMode.isDualPlane))
     {
-        setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+        setASTCErrorColorBlock(dst, blockWidth, blockHeight, blockDepth, isSRGB);
         return DECOMPRESS_RESULT_ERROR;
     }
 
@@ -1675,7 +1954,7 @@ DecompressResult decompressBlock(void *dst, const Block128 &blockData, int block
 
     if (numColorEndpointValues > 18 || numBitsForColorEndpoints < deDivRoundUp32(13 * numColorEndpointValues, 5))
     {
-        setASTCErrorColorBlock(dst, blockWidth, blockHeight, isSRGB);
+        setASTCErrorColorBlock(dst, blockWidth, blockHeight, blockDepth, isSRGB);
         return DECOMPRESS_RESULT_ERROR;
     }
 
@@ -1687,9 +1966,9 @@ DecompressResult decompressBlock(void *dst, const Block128 &blockData, int block
                           numBitsForColorEndpoints);
 
     // Compute texel weights.
-
-    TexelWeightPair texelWeights[MAX_BLOCK_WIDTH * MAX_BLOCK_HEIGHT];
-    computeTexelWeights(&texelWeights[0], blockData, blockWidth, blockHeight, blockMode);
+    // 3D has larger size than 2D. Use 3D size to be more compatible.
+    TexelWeightPair texelWeights[MAX_BLOCK_WIDTH_3D * MAX_BLOCK_HEIGHT_3D * MAX_BLOCK_DEPTH_3D];
+    computeTexelWeights(&texelWeights[0], blockData, blockWidth, blockHeight, blockDepth, blockMode);
 
     // Set texel colors.
 
@@ -1697,7 +1976,7 @@ DecompressResult decompressBlock(void *dst, const Block128 &blockData, int block
     const uint32_t partitionIndexSeed = numPartitions > 1 ? blockData.getBits(13, 22) : (uint32_t)-1;
 
     return setTexelColors(dst, &colorEndpoints[0], &texelWeights[0], ccs, partitionIndexSeed, numPartitions, blockWidth,
-                          blockHeight, isSRGB, isLDR, &colorEndpointModes[0]);
+                          blockHeight, blockDepth, isSRGB, isLDR, &colorEndpointModes[0]);
 }
 
 void decompress(const PixelBufferAccess &dst, const uint8_t *data, bool isSRGB, bool isLDR)
@@ -1715,7 +1994,7 @@ void decompress(const PixelBufferAccess &dst, const uint8_t *data, bool isSRGB, 
 
     const Block128 blockData(data);
     decompressBlock(isSRGB ? (void *)&decompressedBuffer.sRGB[0] : (void *)&decompressedBuffer.linear[0], blockData,
-                    dst.getWidth(), dst.getHeight(), isSRGB, isLDR);
+                    dst.getWidth(), dst.getHeight(), dst.getDepth(), isSRGB, isLDR);
 
     if (isSRGB)
     {
@@ -1726,7 +2005,7 @@ void decompress(const PixelBufferAccess &dst, const uint8_t *data, bool isSRGB, 
                                    decompressedBuffer.sRGB[(i * blockWidth + j) * 4 + 1],
                                    decompressedBuffer.sRGB[(i * blockWidth + j) * 4 + 2],
                                    decompressedBuffer.sRGB[(i * blockWidth + j) * 4 + 3]),
-                             j, i);
+                             j, i, 0);
             }
     }
     else
@@ -1738,8 +2017,56 @@ void decompress(const PixelBufferAccess &dst, const uint8_t *data, bool isSRGB, 
                                   decompressedBuffer.linear[(i * blockWidth + j) * 4 + 1],
                                   decompressedBuffer.linear[(i * blockWidth + j) * 4 + 2],
                                   decompressedBuffer.linear[(i * blockWidth + j) * 4 + 3]),
-                             j, i);
+                             j, i, 0);
             }
+    }
+}
+
+void decompress3D(const PixelBufferAccess &dst, const uint8_t *data, bool isSRGB, bool isLDR)
+{
+    DE_ASSERT(isLDR || !isSRGB);
+
+    const int blockWidth  = dst.getWidth();
+    const int blockHeight = dst.getHeight();
+    const int blockDepth  = dst.getDepth();
+
+    union
+    {
+        uint8_t sRGB[MAX_BLOCK_WIDTH_3D * MAX_BLOCK_HEIGHT_3D * MAX_BLOCK_DEPTH_3D * 4];
+        float linear[MAX_BLOCK_WIDTH_3D * MAX_BLOCK_HEIGHT_3D * MAX_BLOCK_DEPTH_3D * 4];
+    } decompressedBuffer3D;
+
+    const Block128 blockData(data);
+    decompressBlock(isSRGB ? (void *)&decompressedBuffer3D.sRGB[0] : (void *)&decompressedBuffer3D.linear[0], blockData,
+                    dst.getWidth(), dst.getHeight(), dst.getDepth(), isSRGB, isLDR);
+
+    if (isSRGB)
+    {
+        for (int z = 0; z < blockDepth; z++)
+            for (int i = 0; i < blockHeight; i++)
+                for (int j = 0; j < blockWidth; j++)
+                {
+                    dst.setPixel(
+                        IVec4(decompressedBuffer3D.sRGB[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 0],
+                              decompressedBuffer3D.sRGB[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 1],
+                              decompressedBuffer3D.sRGB[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 2],
+                              decompressedBuffer3D.sRGB[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 3]),
+                        j, i, z);
+                }
+    }
+    else
+    {
+        for (int z = 0; z < blockDepth; z++)
+            for (int i = 0; i < blockHeight; i++)
+                for (int j = 0; j < blockWidth; j++)
+                {
+                    dst.setPixel(
+                        Vec4(decompressedBuffer3D.linear[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 0],
+                             decompressedBuffer3D.linear[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 1],
+                             decompressedBuffer3D.linear[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 2],
+                             decompressedBuffer3D.linear[(z * blockHeight * blockWidth + i * blockWidth + j) * 4 + 3]),
+                        j, i, z);
+                }
     }
 }
 
@@ -1959,6 +2286,7 @@ struct NormalBlockParams
 {
     int weightGridWidth;
     int weightGridHeight;
+    int weightGridDepth;
     ISEParams weightISEParams;
     bool isDualPlane;
     uint32_t ccs; //! \note Irrelevant if !isDualPlane.
@@ -1971,6 +2299,7 @@ struct NormalBlockParams
     NormalBlockParams(void)
         : weightGridWidth(-1)
         , weightGridHeight(-1)
+        , weightGridDepth(-1)
         , weightISEParams(ISEMODE_LAST, -1)
         , isDualPlane(true)
         , ccs((uint32_t)-1)
@@ -1997,7 +2326,7 @@ struct NormalBlockISEInputs
 
 static inline int computeNumWeights(const NormalBlockParams &params)
 {
-    return params.weightGridWidth * params.weightGridHeight * (params.isDualPlane ? 2 : 1);
+    return params.weightGridWidth * params.weightGridHeight * params.weightGridDepth * (params.isDualPlane ? 2 : 1);
 }
 
 static inline int computeNumBitsForColorEndpoints(const NormalBlockParams &params)
@@ -2025,7 +2354,7 @@ static inline int computeNumColorEndpointValues(const uint32_t *endpointModes, i
     }
 }
 
-static inline bool isValidBlockParams(const NormalBlockParams &params, int blockWidth, int blockHeight)
+static inline bool isValidBlockParams(const NormalBlockParams &params, int blockWidth, int blockHeight, int blockDepth)
 {
     const int numWeights             = computeNumWeights(params);
     const int numWeightBits          = computeNumRequiredBits(params.weightISEParams, numWeights);
@@ -2034,12 +2363,13 @@ static inline bool isValidBlockParams(const NormalBlockParams &params, int block
     const int numBitsForColorEndpoints = computeNumBitsForColorEndpoints(params);
 
     return numWeights <= 64 && de::inRange(numWeightBits, 24, 96) && params.weightGridWidth <= blockWidth &&
-           params.weightGridHeight <= blockHeight && !(params.numPartitions == 4 && params.isDualPlane) &&
-           numColorEndpointValues <= 18 && numBitsForColorEndpoints >= deDivRoundUp32(13 * numColorEndpointValues, 5);
+           params.weightGridDepth <= blockDepth && params.weightGridHeight <= blockHeight &&
+           !(params.numPartitions == 4 && params.isDualPlane) && numColorEndpointValues <= 18 &&
+           numBitsForColorEndpoints >= deDivRoundUp32(13 * numColorEndpointValues, 5);
 }
 
 // Write bits 0 to 10 of an ASTC block.
-static void writeBlockMode(AssignBlock128 &dst, const NormalBlockParams &blockParams)
+static void writeBlockMode(AssignBlock128 &dst, const NormalBlockParams &blockParams, bool isAstc3D)
 {
     const uint32_t d = blockParams.isDualPlane != 0;
     // r and h initialized in switch below.
@@ -2048,6 +2378,7 @@ static void writeBlockMode(AssignBlock128 &dst, const NormalBlockParams &blockPa
     // a, b and blockModeLayoutNdx initialized in block mode layout index detecting loop below.
     uint32_t a = (uint32_t)-1;
     uint32_t b = (uint32_t)-1;
+    uint32_t c = (uint32_t)-1;
     int blockModeLayoutNdx;
 
     // Find the values of r and h (ISE range).
@@ -2110,7 +2441,24 @@ static void writeBlockMode(AssignBlock128 &dst, const NormalBlockParams &blockPa
     }
 
     // Find block mode layout index, i.e. appropriate row in the "2d block mode layout" table in ASTC spec.
+#define SB(NDX, VAL) dst.setBit((NDX), (VAL))
+#define ASSIGN_BITS(B10, B9, B8, B7, B6, B5, B4, B3, B2, B1, B0) \
+    do                                                           \
+    {                                                            \
+        SB(10, (B10));                                           \
+        SB(9, (B9));                                             \
+        SB(8, (B8));                                             \
+        SB(7, (B7));                                             \
+        SB(6, (B6));                                             \
+        SB(5, (B5));                                             \
+        SB(4, (B4));                                             \
+        SB(3, (B3));                                             \
+        SB(2, (B2));                                             \
+        SB(1, (B1));                                             \
+        SB(0, (B0));                                             \
+    } while (false)
 
+    if (!isAstc3D)
     {
         enum BlockModeLayoutABVariable
         {
@@ -2162,70 +2510,164 @@ static void writeBlockMode(AssignBlock128 &dst, const NormalBlockParams &blockPa
                 break;
             }
         }
+
+        // Set block mode bits.
+
+        const uint32_t a0 = getBit(a, 0);
+        const uint32_t a1 = getBit(a, 1);
+        const uint32_t b0 = getBit(b, 0);
+        const uint32_t b1 = getBit(b, 1);
+        const uint32_t r0 = getBit(r, 0);
+        const uint32_t r1 = getBit(r, 1);
+        const uint32_t r2 = getBit(r, 2);
+
+        switch (blockModeLayoutNdx)
+        {
+        case 0:
+            ASSIGN_BITS(d, h, b1, b0, a1, a0, r0, 0, 0, r2, r1);
+            break;
+        case 1:
+            ASSIGN_BITS(d, h, b1, b0, a1, a0, r0, 0, 1, r2, r1);
+            break;
+        case 2:
+            ASSIGN_BITS(d, h, b1, b0, a1, a0, r0, 1, 0, r2, r1);
+            break;
+        case 3:
+            ASSIGN_BITS(d, h, 0, b, a1, a0, r0, 1, 1, r2, r1);
+            break;
+        case 4:
+            ASSIGN_BITS(d, h, 1, b, a1, a0, r0, 1, 1, r2, r1);
+            break;
+        case 5:
+            ASSIGN_BITS(d, h, 0, 0, a1, a0, r0, r2, r1, 0, 0);
+            break;
+        case 6:
+            ASSIGN_BITS(d, h, 0, 1, a1, a0, r0, r2, r1, 0, 0);
+            break;
+        case 7:
+            ASSIGN_BITS(d, h, 1, 1, 0, 0, r0, r2, r1, 0, 0);
+            break;
+        case 8:
+            ASSIGN_BITS(d, h, 1, 1, 0, 1, r0, r2, r1, 0, 0);
+            break;
+        case 9:
+            ASSIGN_BITS(b1, b0, 1, 0, a1, a0, r0, r2, r1, 0, 0);
+            DE_ASSERT(d == 0 && h == 0);
+            break;
+        default:
+            DE_ASSERT(false);
+        }
     }
-
-    // Set block mode bits.
-
-    const uint32_t a0 = getBit(a, 0);
-    const uint32_t a1 = getBit(a, 1);
-    const uint32_t b0 = getBit(b, 0);
-    const uint32_t b1 = getBit(b, 1);
-    const uint32_t r0 = getBit(r, 0);
-    const uint32_t r1 = getBit(r, 1);
-    const uint32_t r2 = getBit(r, 2);
-
-#define SB(NDX, VAL) dst.setBit((NDX), (VAL))
-#define ASSIGN_BITS(B10, B9, B8, B7, B6, B5, B4, B3, B2, B1, B0) \
-    do                                                           \
-    {                                                            \
-        SB(10, (B10));                                           \
-        SB(9, (B9));                                             \
-        SB(8, (B8));                                             \
-        SB(7, (B7));                                             \
-        SB(6, (B6));                                             \
-        SB(5, (B5));                                             \
-        SB(4, (B4));                                             \
-        SB(3, (B3));                                             \
-        SB(2, (B2));                                             \
-        SB(1, (B1));                                             \
-        SB(0, (B0));                                             \
-    } while (false)
-
-    switch (blockModeLayoutNdx)
+    else
     {
-    case 0:
-        ASSIGN_BITS(d, h, b1, b0, a1, a0, r0, 0, 0, r2, r1);
-        break;
-    case 1:
-        ASSIGN_BITS(d, h, b1, b0, a1, a0, r0, 0, 1, r2, r1);
-        break;
-    case 2:
-        ASSIGN_BITS(d, h, b1, b0, a1, a0, r0, 1, 0, r2, r1);
-        break;
-    case 3:
-        ASSIGN_BITS(d, h, 0, b, a1, a0, r0, 1, 1, r2, r1);
-        break;
-    case 4:
-        ASSIGN_BITS(d, h, 1, b, a1, a0, r0, 1, 1, r2, r1);
-        break;
-    case 5:
-        ASSIGN_BITS(d, h, 0, 0, a1, a0, r0, r2, r1, 0, 0);
-        break;
-    case 6:
-        ASSIGN_BITS(d, h, 0, 1, a1, a0, r0, r2, r1, 0, 0);
-        break;
-    case 7:
-        ASSIGN_BITS(d, h, 1, 1, 0, 0, r0, r2, r1, 0, 0);
-        break;
-    case 8:
-        ASSIGN_BITS(d, h, 1, 1, 0, 1, r0, r2, r1, 0, 0);
-        break;
-    case 9:
-        ASSIGN_BITS(b1, b0, 1, 0, a1, a0, r0, r2, r1, 0, 0);
-        DE_ASSERT(d == 0 && h == 0);
-        break;
-    default:
-        DE_ASSERT(false);
+        {
+            enum BlockModeLayoutABVariable
+            {
+                Z = 0,
+                A = 1,
+                B = 2,
+                C = 3
+            };
+
+            static const struct BlockModeLayout
+            {
+                int aNumBits;
+                int bNumBits;
+                int cNumBits;
+                BlockModeLayoutABVariable gridWidthVariableTerm;
+                int gridWidthConstantTerm;
+                BlockModeLayoutABVariable gridHeightVariableTerm;
+                int gridHeightConstantTerm;
+                BlockModeLayoutABVariable gridDepthVariableTerm;
+                int gridDepthConstantTerm;
+            } blockModeLayouts[] = {{2, 2, 2, B, 2, C, 2, A, 2}, {0, 0, 0, Z, 6, Z, 2, Z, 2},
+                                    {0, 0, 0, Z, 2, Z, 6, Z, 2}, {0, 0, 0, Z, 2, Z, 2, Z, 6},
+                                    {2, 0, 2, Z, 6, C, 2, A, 2}, {2, 0, 2, A, 2, Z, 6, C, 2},
+                                    {2, 0, 2, A, 2, C, 2, Z, 6}};
+
+            for (blockModeLayoutNdx = 0; blockModeLayoutNdx < DE_LENGTH_OF_ARRAY(blockModeLayouts);
+                 blockModeLayoutNdx++)
+            {
+                const BlockModeLayout &layout   = blockModeLayouts[blockModeLayoutNdx];
+                const int aMax                  = (1 << layout.aNumBits) - 1;
+                const int bMax                  = (1 << layout.bNumBits) - 1;
+                const int cMax                  = (1 << layout.cNumBits) - 1;
+                const int variableOffsetsMax[4] = {0, aMax, bMax, cMax};
+                const int widthMin              = layout.gridWidthConstantTerm;
+                const int heightMin             = layout.gridHeightConstantTerm;
+                const int depthMin              = layout.gridDepthConstantTerm;
+                const int widthMax              = widthMin + variableOffsetsMax[layout.gridWidthVariableTerm];
+                const int heightMax             = heightMin + variableOffsetsMax[layout.gridHeightVariableTerm];
+                const int depthMax              = depthMin + variableOffsetsMax[layout.gridDepthVariableTerm];
+
+                if (de::inRange(blockParams.weightGridWidth, widthMin, widthMax) &&
+                    de::inRange(blockParams.weightGridHeight, heightMin, heightMax) &&
+                    de::inRange(blockParams.weightGridDepth, depthMin, depthMax))
+                {
+                    uint32_t defaultvalue    = 0;
+                    uint32_t &widthVariable  = layout.gridWidthVariableTerm == A ? a :
+                                               layout.gridWidthVariableTerm == B ? b :
+                                               layout.gridWidthVariableTerm == C ? c :
+                                                                                   defaultvalue;
+                    uint32_t &heightVariable = layout.gridHeightVariableTerm == A ? a :
+                                               layout.gridHeightVariableTerm == B ? b :
+                                               layout.gridHeightVariableTerm == C ? c :
+                                                                                    defaultvalue;
+                    uint32_t &depthVariable  = layout.gridDepthVariableTerm == A ? a :
+                                               layout.gridDepthVariableTerm == B ? b :
+                                               layout.gridDepthVariableTerm == C ? c :
+                                                                                   defaultvalue;
+
+                    widthVariable  = blockParams.weightGridWidth - layout.gridWidthConstantTerm;
+                    heightVariable = blockParams.weightGridHeight - layout.gridHeightConstantTerm;
+                    depthVariable  = blockParams.weightGridDepth - layout.gridDepthConstantTerm;
+
+                    break;
+                }
+            }
+        }
+
+        // Set block mode bits.
+
+        const uint32_t a0 = getBit(a, 0);
+        const uint32_t a1 = getBit(a, 1);
+        const uint32_t b0 = getBit(b, 0);
+        const uint32_t b1 = getBit(b, 1);
+        const uint32_t c0 = getBit(c, 0);
+        const uint32_t c1 = getBit(c, 1);
+        const uint32_t r0 = getBit(r, 0);
+        const uint32_t r1 = getBit(r, 1);
+        const uint32_t r2 = getBit(r, 2);
+
+        switch (blockModeLayoutNdx)
+        {
+        case 0:
+            ASSIGN_BITS(d, h, c1, c0, b1, b0, r0, a1, a0, r2, r1);
+            break;
+        case 1:
+            ASSIGN_BITS(d, h, 1, 1, 0, 0, r0, r2, r1, 0, 0);
+            break;
+        case 2:
+            ASSIGN_BITS(d, h, 1, 1, 0, 1, r0, r2, r1, 0, 0);
+            break;
+        case 3:
+            ASSIGN_BITS(d, h, 1, 1, 1, 0, r0, r2, r1, 0, 0);
+            break;
+        case 4:
+            ASSIGN_BITS(c1, c0, 0, 0, b1, b0, r0, r2, r1, 0, 0);
+            DE_ASSERT(d == 0 && h == 0);
+            break;
+        case 5:
+            ASSIGN_BITS(c1, c0, 0, 1, b1, b0, r0, r2, r1, 0, 0);
+            DE_ASSERT(d == 0 && h == 0);
+            break;
+        case 6:
+            ASSIGN_BITS(c1, c0, 1, 0, b1, b0, r0, r2, r1, 0, 0);
+            DE_ASSERT(d == 0 && h == 0);
+            break;
+        default:
+            DE_ASSERT(false);
+        }
     }
 
 #undef ASSIGN_BITS
@@ -2472,17 +2914,18 @@ static void writeColorEndpointData(AssignBlock128 &dst, const ISEParams &isePara
 }
 
 static AssignBlock128 generateNormalBlock(const NormalBlockParams &blockParams, int blockWidth, int blockHeight,
-                                          const NormalBlockISEInputs &iseInputs)
+                                          int blockDepth, const NormalBlockISEInputs &iseInputs)
 {
-    DE_ASSERT(isValidBlockParams(blockParams, blockWidth, blockHeight));
+    DE_ASSERT(isValidBlockParams(blockParams, blockWidth, blockHeight, blockDepth));
     DE_UNREF(blockWidth);  // \note For non-debug builds.
     DE_UNREF(blockHeight); // \note For non-debug builds.
+    DE_UNREF(blockDepth);  // \note For non-debug builds.
 
     AssignBlock128 block;
     const int numWeights    = computeNumWeights(blockParams);
     const int numWeightBits = computeNumRequiredBits(blockParams.weightISEParams, numWeights);
 
-    writeBlockMode(block, blockParams);
+    writeBlockMode(block, blockParams, blockDepth > 1);
 
     block.setBits(11, 12, blockParams.numPartitions - 1);
     if (blockParams.numPartitions > 1)
@@ -2573,8 +3016,6 @@ static const ISEParams s_weightISEParamsCandidates[] = {
 
 void generateRandomBlock(uint8_t *dst, const IVec3 &blockSize, de::Random &rnd)
 {
-    DE_ASSERT(blockSize.z() == 1);
-
     if (rnd.getFloat() < 0.1f)
     {
         // Void extent block.
@@ -2597,6 +3038,7 @@ void generateRandomBlock(uint8_t *dst, const IVec3 &blockSize, de::Random &rnd)
         {
             blockParams.weightGridWidth  = rnd.getInt(2, blockSize.x());
             blockParams.weightGridHeight = rnd.getInt(2, blockSize.y());
+            blockParams.weightGridDepth  = blockSize.z() > 1 ? rnd.getInt(2, blockSize.z()) : 1;
             blockParams.weightISEParams =
                 s_weightISEParamsCandidates[rnd.getInt(0, DE_LENGTH_OF_ARRAY(s_weightISEParamsCandidates) - 1)];
             blockParams.numPartitions            = rnd.getInt(1, 4);
@@ -2620,7 +3062,7 @@ void generateRandomBlock(uint8_t *dst, const IVec3 &blockSize, de::Random &rnd)
                                                              cemDiff == 1  ? rnd.getInt(0, 1) :
                                                                              0);
             }
-        } while (!isValidBlockParams(blockParams, blockSize.x(), blockSize.y()));
+        } while (!isValidBlockParams(blockParams, blockSize.x(), blockSize.y(), blockSize.z()));
 
         // Generate ISE inputs for both weight and endpoint data.
 
@@ -2664,7 +3106,7 @@ void generateRandomBlock(uint8_t *dst, const IVec3 &blockSize, de::Random &rnd)
             }
         }
 
-        generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), iseInputs).assignToMemory(dst);
+        generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(), iseInputs).assignToMemory(dst);
     }
 }
 
@@ -2675,9 +3117,9 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
 {
     DE_ASSERT(isAstcFormat(format));
     DE_ASSERT(!(isAstcSRGBFormat(format) && isBlockTestTypeHDROnly(testType)));
+    const bool isAstc3D = isAstc3DFormat(format);
 
     const IVec3 blockSize = getBlockPixelSize(format);
-    DE_ASSERT(blockSize.z() == 1);
 
     switch (testType)
     {
@@ -2738,25 +3180,28 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
             for (int isDualPlane = 0; isDualPlane <= 1; isDualPlane++)
                 for (int iseParamsNdx = 0; iseParamsNdx < DE_LENGTH_OF_ARRAY(s_weightISEParamsCandidates);
                      iseParamsNdx++)
-                    for (int weightGridWidth = 2; weightGridWidth <= 12; weightGridWidth++)
-                        for (int weightGridHeight = 2; weightGridHeight <= 12; weightGridHeight++)
-                        {
-                            NormalBlockParams blockParams;
-                            NormalBlockISEInputs iseInputs;
+                    for (int weightGridDepth = (isAstc3D ? 2 : 1); weightGridDepth <= (isAstc3D ? 6 : 1);
+                         weightGridDepth++)
+                        for (int weightGridWidth = 2; weightGridWidth <= 12; weightGridWidth++)
+                            for (int weightGridHeight = 2; weightGridHeight <= 12; weightGridHeight++)
+                            {
+                                NormalBlockParams blockParams;
+                                NormalBlockISEInputs iseInputs;
 
-                            blockParams.weightGridWidth       = weightGridWidth;
-                            blockParams.weightGridHeight      = weightGridHeight;
-                            blockParams.isDualPlane           = isDualPlane != 0;
-                            blockParams.weightISEParams       = s_weightISEParamsCandidates[iseParamsNdx];
-                            blockParams.ccs                   = 0;
-                            blockParams.numPartitions         = 1;
-                            blockParams.colorEndpointModes[0] = 0;
+                                blockParams.weightGridWidth       = weightGridWidth;
+                                blockParams.weightGridHeight      = weightGridHeight;
+                                blockParams.weightGridDepth       = weightGridDepth;
+                                blockParams.isDualPlane           = isDualPlane != 0;
+                                blockParams.weightISEParams       = s_weightISEParamsCandidates[iseParamsNdx];
+                                blockParams.ccs                   = 0;
+                                blockParams.numPartitions         = 1;
+                                blockParams.colorEndpointModes[0] = 0;
 
-                            if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y()))
-                                generateNormalBlock(blockParams, blockSize.x(), blockSize.y(),
-                                                    generateDefaultISEInputs(blockParams))
-                                    .pushBytesToVector(dst);
-                        }
+                                if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y(), blockSize.z()))
+                                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(),
+                                                        generateDefaultISEInputs(blockParams))
+                                        .pushBytesToVector(dst);
+                            }
 
             break;
         }
@@ -2773,6 +3218,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
 
                 blockParams.weightGridWidth  = 4;
                 blockParams.weightGridHeight = 4;
+                blockParams.weightGridDepth  = isAstc3D ? 4 : 1;
                 blockParams.weightISEParams  = iseParams;
                 blockParams.numPartitions    = 1;
                 blockParams.isDualPlane =
@@ -2780,10 +3226,12 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                 blockParams.ccs                   = 0;
                 blockParams.colorEndpointModes[0] = 0;
 
-                while (!isValidBlockParams(blockParams, blockSize.x(), blockSize.y()))
+                while (!isValidBlockParams(blockParams, blockSize.x(), blockSize.y(), blockSize.z()))
                 {
                     blockParams.weightGridWidth--;
                     blockParams.weightGridHeight--;
+                    if (isAstc3D)
+                        blockParams.weightGridDepth--;
                 }
 
                 const int numValuesInISEBlock = iseParams.mode == ISEMODE_TRIT  ? 5 :
@@ -2804,7 +3252,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                                 iseInputs.weight.value.plain[weightNdx] =
                                     (blockNdx * numWeights + weightNdx + offset) % numWeightValues;
 
-                            generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), iseInputs)
+                            generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(), iseInputs)
                                 .pushBytesToVector(dst);
                         }
                 }
@@ -2829,7 +3277,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                                     (blockNdx * numISEBlocksPerBlock + iseBlockNdx + offset) % numTQValues;
                             }
 
-                            generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), iseInputs)
+                            generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(), iseInputs)
                                 .pushBytesToVector(dst);
                         }
                 }
@@ -2852,6 +3300,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                             NormalBlockParams blockParams;
                             blockParams.weightGridWidth          = 4;
                             blockParams.weightGridHeight         = 4;
+                            blockParams.weightGridDepth          = isAstc3D ? 4 : 1;
                             blockParams.isDualPlane              = isDualPlane != 0;
                             blockParams.ccs                      = 0;
                             blockParams.numPartitions            = numPartitions;
@@ -2863,9 +3312,9 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                                  iseParamsNdx++)
                             {
                                 blockParams.weightISEParams = s_weightISEParamsCandidates[iseParamsNdx];
-                                if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y()))
+                                if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y(), blockSize.z()))
                                 {
-                                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(),
+                                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(),
                                                         generateDefaultISEInputs(blockParams))
                                         .pushBytesToVector(dst);
                                     break;
@@ -2883,6 +3332,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                                     NormalBlockParams blockParams;
                                     blockParams.weightGridWidth          = 4;
                                     blockParams.weightGridHeight         = 4;
+                                    blockParams.weightGridDepth          = isAstc3D ? 4 : 1;
                                     blockParams.isDualPlane              = isDualPlane != 0;
                                     blockParams.ccs                      = 0;
                                     blockParams.numPartitions            = numPartitions;
@@ -2911,10 +3361,11 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                                          iseParamsNdx < DE_LENGTH_OF_ARRAY(s_weightISEParamsCandidates); iseParamsNdx++)
                                     {
                                         blockParams.weightISEParams = s_weightISEParamsCandidates[iseParamsNdx];
-                                        if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y()))
+                                        if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y(),
+                                                               blockSize.z()))
                                         {
                                             generateNormalBlock(blockParams, blockSize.x(), blockSize.y(),
-                                                                generateDefaultISEInputs(blockParams))
+                                                                blockSize.z(), generateDefaultISEInputs(blockParams))
                                                 .pushBytesToVector(dst);
                                             break;
                                         }
@@ -2934,6 +3385,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                     NormalBlockParams blockParams;
                     blockParams.weightGridWidth          = 4;
                     blockParams.weightGridHeight         = 4;
+                    blockParams.weightGridDepth          = isAstc3D ? 4 : 1;
                     blockParams.weightISEParams          = ISEParams(ISEMODE_PLAIN_BIT, 2);
                     blockParams.isDualPlane              = false;
                     blockParams.numPartitions            = numPartitions;
@@ -2941,7 +3393,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                     blockParams.colorEndpointModes[0]    = 0;
                     blockParams.partitionSeed            = partitionSeed;
 
-                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(),
+                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(),
                                         generateDefaultISEInputs(blockParams))
                         .pushBytesToVector(dst);
                 }
@@ -2998,7 +3450,8 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                                     iseInputs.endpoint.value.plain[endpointPartNdx0] = endpointValue0;
                                     iseInputs.endpoint.value.plain[endpointPartNdx1] = endpointValue1;
 
-                                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), iseInputs)
+                                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(),
+                                                        iseInputs)
                                         .pushBytesToVector(dst);
                                 }
                         }
@@ -3024,100 +3477,108 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                              !validCaseGenerated &&
                              weightISEParamsNdx < DE_LENGTH_OF_ARRAY(s_weightISEParamsCandidates);
                              weightISEParamsNdx++)
-                            for (int weightGridWidth = 2; !validCaseGenerated && weightGridWidth <= 12;
-                                 weightGridWidth++)
-                                for (int weightGridHeight = 2; !validCaseGenerated && weightGridHeight <= 12;
-                                     weightGridHeight++)
-                                {
-                                    NormalBlockParams blockParams;
-                                    blockParams.weightGridWidth  = weightGridWidth;
-                                    blockParams.weightGridHeight = weightGridHeight;
-                                    blockParams.weightISEParams  = s_weightISEParamsCandidates[weightISEParamsNdx];
-                                    blockParams.isDualPlane      = isDual != 0;
-                                    blockParams.ccs              = 0;
-                                    blockParams.numPartitions    = numPartitions;
-                                    blockParams.isMultiPartSingleCemMode = true;
-                                    blockParams.colorEndpointModes[0]    = 12;
-                                    blockParams.partitionSeed            = 634;
-
-                                    if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y()))
+                            for (int weightGridDepth = (isAstc3D ? 2 : 1);
+                                 !validCaseGenerated && weightGridDepth <= (isAstc3D ? 6 : 1); weightGridDepth++)
+                                for (int weightGridWidth = 2; !validCaseGenerated && weightGridWidth <= 12;
+                                     weightGridWidth++)
+                                    for (int weightGridHeight = 2; !validCaseGenerated && weightGridHeight <= 12;
+                                         weightGridHeight++)
                                     {
-                                        const ISEParams endpointISEParams = computeMaximumRangeISEParams(
-                                            computeNumBitsForColorEndpoints(blockParams),
-                                            computeNumColorEndpointValues(&blockParams.colorEndpointModes[0],
-                                                                          numPartitions, true));
+                                        NormalBlockParams blockParams;
+                                        blockParams.weightGridWidth  = weightGridWidth;
+                                        blockParams.weightGridHeight = weightGridHeight;
+                                        blockParams.weightGridDepth  = weightGridDepth;
+                                        blockParams.weightISEParams  = s_weightISEParamsCandidates[weightISEParamsNdx];
+                                        blockParams.isDualPlane      = isDual != 0;
+                                        blockParams.ccs              = 0;
+                                        blockParams.numPartitions    = numPartitions;
+                                        blockParams.isMultiPartSingleCemMode = true;
+                                        blockParams.colorEndpointModes[0]    = 12;
+                                        blockParams.partitionSeed            = 634;
 
-                                        if (computeISERangeMax(endpointISEParams) ==
-                                            endpointRangeMaximums[endpointRangeNdx])
+                                        if (isValidBlockParams(blockParams, blockSize.x(), blockSize.y(),
+                                                               blockSize.z()))
                                         {
-                                            validCaseGenerated = true;
+                                            const ISEParams endpointISEParams = computeMaximumRangeISEParams(
+                                                computeNumBitsForColorEndpoints(blockParams),
+                                                computeNumColorEndpointValues(&blockParams.colorEndpointModes[0],
+                                                                              numPartitions, true));
 
-                                            const int numColorEndpoints = computeNumColorEndpointValues(
-                                                &blockParams.colorEndpointModes[0], numPartitions,
-                                                blockParams.isMultiPartSingleCemMode);
-                                            const int numValuesInISEBlock = endpointISEParams.mode == ISEMODE_TRIT ? 5 :
-                                                                            endpointISEParams.mode == ISEMODE_QUINT ?
-                                                                                                                     3 :
-                                                                                                                     1;
-
+                                            if (computeISERangeMax(endpointISEParams) ==
+                                                endpointRangeMaximums[endpointRangeNdx])
                                             {
-                                                const int numColorEndpointValues =
-                                                    (int)computeISERangeMax(endpointISEParams) + 1;
-                                                const int numBlocks =
-                                                    deDivRoundUp32(numColorEndpointValues, numColorEndpoints);
-                                                NormalBlockISEInputs iseInputs = generateDefaultISEInputs(blockParams);
-                                                iseInputs.endpoint.isGivenInBlockForm = false;
+                                                validCaseGenerated = true;
 
-                                                for (int offset = 0; offset < numValuesInISEBlock; offset++)
-                                                    for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-                                                    {
-                                                        for (int endpointNdx = 0; endpointNdx < numColorEndpoints;
-                                                             endpointNdx++)
-                                                            iseInputs.endpoint.value.plain[endpointNdx] =
-                                                                (blockNdx * numColorEndpoints + endpointNdx + offset) %
-                                                                numColorEndpointValues;
+                                                const int numColorEndpoints = computeNumColorEndpointValues(
+                                                    &blockParams.colorEndpointModes[0], numPartitions,
+                                                    blockParams.isMultiPartSingleCemMode);
+                                                const int numValuesInISEBlock =
+                                                    endpointISEParams.mode == ISEMODE_TRIT  ? 5 :
+                                                    endpointISEParams.mode == ISEMODE_QUINT ? 3 :
+                                                                                              1;
 
-                                                        generateNormalBlock(blockParams, blockSize.x(), blockSize.y(),
-                                                                            iseInputs)
-                                                            .pushBytesToVector(dst);
-                                                    }
-                                            }
+                                                {
+                                                    const int numColorEndpointValues =
+                                                        (int)computeISERangeMax(endpointISEParams) + 1;
+                                                    const int numBlocks =
+                                                        deDivRoundUp32(numColorEndpointValues, numColorEndpoints);
+                                                    NormalBlockISEInputs iseInputs =
+                                                        generateDefaultISEInputs(blockParams);
+                                                    iseInputs.endpoint.isGivenInBlockForm = false;
 
-                                            if (endpointISEParams.mode == ISEMODE_TRIT ||
-                                                endpointISEParams.mode == ISEMODE_QUINT)
-                                            {
-                                                NormalBlockISEInputs iseInputs = generateDefaultISEInputs(blockParams);
-                                                iseInputs.endpoint.isGivenInBlockForm = true;
-
-                                                const int numTQValues =
-                                                    1 << (endpointISEParams.mode == ISEMODE_TRIT ? 8 : 7);
-                                                const int numISEBlocksPerBlock =
-                                                    deDivRoundUp32(numColorEndpoints, numValuesInISEBlock);
-                                                const int numBlocks = deDivRoundUp32(numTQValues, numISEBlocksPerBlock);
-
-                                                for (int offset = 0; offset < numValuesInISEBlock; offset++)
-                                                    for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
-                                                    {
-                                                        for (int iseBlockNdx = 0; iseBlockNdx < numISEBlocksPerBlock;
-                                                             iseBlockNdx++)
+                                                    for (int offset = 0; offset < numValuesInISEBlock; offset++)
+                                                        for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
                                                         {
-                                                            for (int i = 0; i < numValuesInISEBlock; i++)
-                                                                iseInputs.endpoint.value.block[iseBlockNdx]
-                                                                    .bitValues[i] = 0;
-                                                            iseInputs.endpoint.value.block[iseBlockNdx].tOrQValue =
-                                                                (blockNdx * numISEBlocksPerBlock + iseBlockNdx +
-                                                                 offset) %
-                                                                numTQValues;
-                                                        }
+                                                            for (int endpointNdx = 0; endpointNdx < numColorEndpoints;
+                                                                 endpointNdx++)
+                                                                iseInputs.endpoint.value.plain[endpointNdx] =
+                                                                    (blockNdx * numColorEndpoints + endpointNdx +
+                                                                     offset) %
+                                                                    numColorEndpointValues;
 
-                                                        generateNormalBlock(blockParams, blockSize.x(), blockSize.y(),
-                                                                            iseInputs)
-                                                            .pushBytesToVector(dst);
-                                                    }
+                                                            generateNormalBlock(blockParams, blockSize.x(),
+                                                                                blockSize.y(), blockSize.z(), iseInputs)
+                                                                .pushBytesToVector(dst);
+                                                        }
+                                                }
+
+                                                if (endpointISEParams.mode == ISEMODE_TRIT ||
+                                                    endpointISEParams.mode == ISEMODE_QUINT)
+                                                {
+                                                    NormalBlockISEInputs iseInputs =
+                                                        generateDefaultISEInputs(blockParams);
+                                                    iseInputs.endpoint.isGivenInBlockForm = true;
+
+                                                    const int numTQValues =
+                                                        1 << (endpointISEParams.mode == ISEMODE_TRIT ? 8 : 7);
+                                                    const int numISEBlocksPerBlock =
+                                                        deDivRoundUp32(numColorEndpoints, numValuesInISEBlock);
+                                                    const int numBlocks =
+                                                        deDivRoundUp32(numTQValues, numISEBlocksPerBlock);
+
+                                                    for (int offset = 0; offset < numValuesInISEBlock; offset++)
+                                                        for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+                                                        {
+                                                            for (int iseBlockNdx = 0;
+                                                                 iseBlockNdx < numISEBlocksPerBlock; iseBlockNdx++)
+                                                            {
+                                                                for (int i = 0; i < numValuesInISEBlock; i++)
+                                                                    iseInputs.endpoint.value.block[iseBlockNdx]
+                                                                        .bitValues[i] = 0;
+                                                                iseInputs.endpoint.value.block[iseBlockNdx].tOrQValue =
+                                                                    (blockNdx * numISEBlocksPerBlock + iseBlockNdx +
+                                                                     offset) %
+                                                                    numTQValues;
+                                                            }
+
+                                                            generateNormalBlock(blockParams, blockSize.x(),
+                                                                                blockSize.y(), blockSize.z(), iseInputs)
+                                                                .pushBytesToVector(dst);
+                                                        }
+                                                }
                                             }
                                         }
                                     }
-                                }
 
                 DE_ASSERT(validCaseGenerated);
             }
@@ -3134,6 +3595,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                     NormalBlockParams blockParams;
                     blockParams.weightGridWidth          = 3;
                     blockParams.weightGridHeight         = 3;
+                    blockParams.weightGridDepth          = isAstc3D ? 3 : 1;
                     blockParams.weightISEParams          = ISEParams(ISEMODE_PLAIN_BIT, 2);
                     blockParams.isDualPlane              = true;
                     blockParams.ccs                      = ccs;
@@ -3142,7 +3604,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                     blockParams.colorEndpointModes[0]    = 8;
                     blockParams.partitionSeed            = 634;
 
-                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(),
+                    generateNormalBlock(blockParams, blockSize.x(), blockSize.y(), blockSize.z(),
                                         generateDefaultISEInputs(blockParams))
                         .pushBytesToVector(dst);
                 }
@@ -3193,7 +3655,6 @@ void generateRandomValidBlocks(uint8_t *dst, size_t numBlocks, CompressedTexForm
     size_t numBlocksGenerated = 0;
 
     DE_ASSERT(isAstcFormat(format));
-    DE_ASSERT(blockSize.z() == 1);
 
     for (numBlocksGenerated = 0; numBlocksGenerated < numBlocks; numBlocksGenerated++)
     {
@@ -3214,12 +3675,13 @@ void generateDefaultVoidExtentBlocks(uint8_t *dst, size_t numBlocks)
         block.assignToMemory(&dst[ndx * BLOCK_SIZE_BYTES]);
 }
 
-void generateDefaultNormalBlocks(uint8_t *dst, size_t numBlocks, int blockWidth, int blockHeight)
+void generateDefaultNormalBlocks(uint8_t *dst, size_t numBlocks, int blockWidth, int blockHeight, int blockDepth)
 {
     NormalBlockParams blockParams;
 
     blockParams.weightGridWidth       = 3;
     blockParams.weightGridHeight      = 3;
+    blockParams.weightGridHeight      = blockDepth > 1 ? 3 : 1;
     blockParams.weightISEParams       = ISEParams(ISEMODE_PLAIN_BIT, 5);
     blockParams.isDualPlane           = false;
     blockParams.numPartitions         = 1;
@@ -3237,7 +3699,7 @@ void generateDefaultNormalBlocks(uint8_t *dst, size_t numBlocks, int blockWidth,
             iseInputs.weight.value.plain[weightNdx] =
                 (uint32_t)((blockNdx * numWeights + weightNdx) * weightRangeMax / (numBlocks * numWeights - 1));
 
-        generateNormalBlock(blockParams, blockWidth, blockHeight, iseInputs)
+        generateNormalBlock(blockParams, blockWidth, blockHeight, blockDepth, iseInputs)
             .assignToMemory(dst + blockNdx * BLOCK_SIZE_BYTES);
     }
 }
@@ -3247,19 +3709,34 @@ bool isValidBlock(const uint8_t *data, CompressedTexFormat format, TexDecompress
     const tcu::IVec3 blockPixelSize = getBlockPixelSize(format);
     const bool isSRGB               = isAstcSRGBFormat(format);
     const bool isLDR                = isSRGB || mode == TexDecompressionParams::ASTCMODE_LDR;
+    const bool is3D                 = isAstc3DFormat(format);
 
     // sRGB is not supported in HDR mode
     DE_ASSERT(!(mode == TexDecompressionParams::ASTCMODE_HDR && isSRGB));
 
-    union
+    DecompressResult result;
+    if (!is3D)
     {
-        uint8_t sRGB[MAX_BLOCK_WIDTH * MAX_BLOCK_HEIGHT * 4];
-        float linear[MAX_BLOCK_WIDTH * MAX_BLOCK_HEIGHT * 4];
-    } tmpBuffer;
-    const Block128 blockData(data);
-    const DecompressResult result =
-        decompressBlock((isSRGB ? (void *)&tmpBuffer.sRGB[0] : (void *)&tmpBuffer.linear[0]), blockData,
-                        blockPixelSize.x(), blockPixelSize.y(), isSRGB, isLDR);
+        union
+        {
+            uint8_t sRGB[MAX_BLOCK_WIDTH * MAX_BLOCK_HEIGHT * 4];
+            float linear[MAX_BLOCK_WIDTH * MAX_BLOCK_HEIGHT * 4];
+        } tmpBuffer;
+        const Block128 blockData(data);
+        result = decompressBlock((isSRGB ? (void *)&tmpBuffer.sRGB[0] : (void *)&tmpBuffer.linear[0]), blockData,
+                                 blockPixelSize.x(), blockPixelSize.y(), blockPixelSize.z(), isSRGB, isLDR);
+    }
+    else
+    {
+        union
+        {
+            uint8_t sRGB[MAX_BLOCK_WIDTH_3D * MAX_BLOCK_HEIGHT_3D * MAX_BLOCK_DEPTH_3D * 4];
+            float linear[MAX_BLOCK_WIDTH_3D * MAX_BLOCK_HEIGHT_3D * MAX_BLOCK_DEPTH_3D * 4];
+        } tmpBuffer;
+        const Block128 blockData(data);
+        result = decompressBlock((isSRGB ? (void *)&tmpBuffer.sRGB[0] : (void *)&tmpBuffer.linear[0]), blockData,
+                                 blockPixelSize.x(), blockPixelSize.y(), blockPixelSize.z(), isSRGB, isLDR);
+    }
 
     return result == DECOMPRESS_RESULT_VALID_BLOCK;
 }
@@ -3272,8 +3749,8 @@ void decompress(const PixelBufferAccess &dst, const uint8_t *data, CompressedTex
 #if defined(DE_DEBUG)
     const tcu::IVec3 blockPixelSize = getBlockPixelSize(format);
 
-    DE_ASSERT(dst.getWidth() == blockPixelSize.x() && dst.getHeight() == blockPixelSize.y() &&
-              dst.getDepth() == blockPixelSize.z());
+    DE_ASSERT(dst.getWidth() == blockPixelSize.x() && dst.getHeight() == blockPixelSize.y());
+    DE_ASSERT(blockPixelSize.z() == 1);
     DE_ASSERT(mode == TexDecompressionParams::ASTCMODE_LDR || mode == TexDecompressionParams::ASTCMODE_HDR);
 #endif
 
@@ -3281,6 +3758,27 @@ void decompress(const PixelBufferAccess &dst, const uint8_t *data, CompressedTex
     DE_ASSERT(!(mode == TexDecompressionParams::ASTCMODE_HDR && isSRGBFormat));
 
     decompress(dst, data, isSRGBFormat, isSRGBFormat || mode == TexDecompressionParams::ASTCMODE_LDR);
+}
+
+void decompress3D(const PixelBufferAccess &dst, const uint8_t *data, CompressedTexFormat format,
+                  TexDecompressionParams::AstcMode mode)
+{
+    const bool isSRGBFormat = isAstcSRGBFormat(format);
+#if defined(DE_DEBUG)
+    const tcu::IVec3 blockPixelSize = getBlockPixelSize(format);
+
+    DE_ASSERT(dst.getWidth() == blockPixelSize.x() && dst.getHeight() == blockPixelSize.y() &&
+              dst.getDepth() == blockPixelSize.z());
+    DE_ASSERT(blockPixelSize.z() != 1);
+    DE_ASSERT(mode == TexDecompressionParams::ASTCMODE_LDR || mode == TexDecompressionParams::ASTCMODE_HDR);
+#endif
+
+    // sRGB is not supported in HDR mode
+    DE_ASSERT(!(mode == TexDecompressionParams::ASTCMODE_HDR && isSRGBFormat));
+    // SFLOAT is not supported in LDR mode
+    DE_ASSERT(!(mode == TexDecompressionParams::ASTCMODE_LDR && isAstcSFLOATFormat(format)));
+
+    decompress3D(dst, data, isSRGBFormat, isSRGBFormat || mode == TexDecompressionParams::ASTCMODE_LDR);
 }
 
 const char *getBlockTestTypeName(BlockTestType testType)

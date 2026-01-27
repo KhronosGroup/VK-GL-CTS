@@ -176,6 +176,7 @@ const vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR&					Context::getSwap
 const vk::VkPhysicalDeviceSynchronization2Features&							Context::getSynchronization2Features						(void) const { return m_device->getSynchronization2Features();						}
 const vk::VkPhysicalDeviceTensorFeaturesARM&								Context::getTensorFeaturesARM								(void) const { return m_device->getTensorFeaturesARM();								}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					Context::getTexelBufferAlignmentFeaturesEXT					(void) const { return m_device->getTexelBufferAlignmentFeaturesEXT();				}
+const vk::VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT&				Context::getTextureCompressionASTC3DFeaturesEXT				(void) const { return m_device->getTextureCompressionASTC3DFeaturesEXT();			}
 const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeatures&				Context::getTextureCompressionASTCHDRFeatures				(void) const { return m_device->getTextureCompressionASTCHDRFeatures();				}
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&						Context::getTimelineSemaphoreFeatures						(void) const { return m_device->getTimelineSemaphoreFeatures();						}
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&						Context::getTransformFeedbackFeaturesEXT					(void) const { return m_device->getTransformFeedbackFeaturesEXT();					}

@@ -871,6 +871,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_texel_buffer_alignment"))
 		addFeatures(&physicalDeviceTexelBufferAlignmentFeaturesEXT);
 
+	// VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT for ext [VK_EXT_texture_compression_astc_3d]
+	vk::VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT physicalDeviceTextureCompressionASTC3DFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_texture_compression_astc_3d"))
+		addFeatures(&physicalDeviceTextureCompressionASTC3DFeaturesEXT);
+
 	// VkPhysicalDeviceTextureCompressionASTCHDRFeatures, VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT for ext [VK_EXT_texture_compression_astc_hdr]
 	vk::VkPhysicalDeviceTextureCompressionASTCHDRFeatures physicalDeviceTextureCompressionASTCHDRFeatures = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_texture_compression_astc_hdr"))
@@ -1934,6 +1939,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceCustomBorderColorFeaturesEXT.customBorderColors == VK_FALSE )
 			failMesages.push_back("customBorderColors");
+	}
+
+	// VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_texture_compression_astc_3d")) )
+	{
+		if ( physicalDeviceTextureCompressionASTC3DFeaturesEXT.textureCompressionASTC_3D == VK_FALSE )
+			failMesages.push_back("textureCompressionASTC_3D");
 	}
 
 	// VkPhysicalDevicePrivateDataFeaturesEXT

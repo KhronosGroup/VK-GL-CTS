@@ -186,6 +186,36 @@ static MovePtr<TestTexture> createTestTexture(const TcuFormatType format, VkImag
 
 } // namespace
 
+#ifndef CTS_USES_VULKANSC
+bool checkAstc3DfeatureSupport(Context &context)
+{
+    // check  whether all of the ASTC HDR compressed texture formats are supported
+    VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT astc_3d_features;
+    deMemset(&astc_3d_features, 0, sizeof(astc_3d_features));
+    astc_3d_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
+    astc_3d_features.pNext = nullptr;
+    astc_3d_features.textureCompressionASTC_3D = VK_FALSE;
+
+    VkPhysicalDeviceFeatures2 features2;
+    deMemset(&features2, 0, sizeof(features2));
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.pNext = &astc_3d_features;
+    context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+    if (astc_3d_features.textureCompressionASTC_3D != VK_TRUE)
+        return false;
+    return true;
+}
+
+void checkSupportAstcFormat(Context &context, tcu::CompressedTexFormat compressedFormat)
+{
+    context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
+
+    if (!checkAstc3DfeatureSupport(context))
+        throw tcu::NotSupportedError(std::string("Unsupported format for sampling: ") +
+                                     getFormatName(mapCompressedTextureFormat(compressedFormat)));
+}
+#endif // CTS_USES_VULKANSC
+
 void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstanceParams params)
 {
 

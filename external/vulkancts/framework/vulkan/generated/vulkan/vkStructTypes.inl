@@ -7386,6 +7386,13 @@ struct VkPhysicalDeviceTexelBufferAlignmentProperties
 	VkBool32		uniformTexelBufferOffsetSingleTexelAlignment;
 };
 
+struct VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		textureCompressionASTC_3D;
+};
+
 struct VkPhysicalDeviceTextureCompressionASTCHDRFeatures
 {
 	VkStructureType	sType;

@@ -176,6 +176,7 @@ auto fSwapchainMaintenance1Features                     = m_context.getSwapchain
 auto fSynchronization2Features                          = m_context.getSynchronization2Features();
 auto fTensorFeaturesARM                                 = m_context.getTensorFeaturesARM();
 auto fTexelBufferAlignmentFeaturesEXT                   = m_context.getTexelBufferAlignmentFeaturesEXT();
+auto fTextureCompressionASTC3DFeaturesEXT               = m_context.getTextureCompressionASTC3DFeaturesEXT();
 auto fTextureCompressionASTCHDRFeatures                 = m_context.getTextureCompressionASTCHDRFeatures();
 auto fTimelineSemaphoreFeatures                         = m_context.getTimelineSemaphoreFeatures();
 auto fTransformFeedbackFeaturesEXT                      = m_context.getTransformFeedbackFeaturesEXT();
@@ -370,6 +371,7 @@ std::vector<void *> pNextFeatures = {
 	&fSynchronization2Features,
 	&fTensorFeaturesARM,
 	&fTexelBufferAlignmentFeaturesEXT,
+	&fTextureCompressionASTC3DFeaturesEXT,
 	&fTextureCompressionASTCHDRFeatures,
 	&fTimelineSemaphoreFeatures,
 	&fTransformFeedbackFeaturesEXT,
