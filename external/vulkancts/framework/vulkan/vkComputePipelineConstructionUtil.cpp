@@ -188,7 +188,7 @@ void ComputePipelineWrapper::addPushConstantRange(const VkPushConstantRange &ran
     m_pushConstantRanges.push_back(range);
 }
 
-void ComputePipelineWrapper::buildPipeline(void)
+void ComputePipelineWrapper::buildPipeline(const VkPipelineCache pipelineCache)
 {
     const auto &vk     = m_internalData->vk;
     const auto &device = m_internalData->device;
@@ -215,7 +215,7 @@ void ComputePipelineWrapper::buildPipeline(void)
 #endif
 
         m_pipeline = vk::makeComputePipeline(vk, device, *m_pipelineLayout, m_pipelineCreateFlags, pNext, *shaderModule,
-                                             0u, specializationInfo, VK_NULL_HANDLE, m_subgroupSize);
+                                             0u, specializationInfo, pipelineCache, m_subgroupSize);
     }
     else
     {
@@ -272,7 +272,7 @@ void ComputePipelineWrapper::buildPipeline(void)
     }
 }
 
-void ComputePipelineWrapper::bind(VkCommandBuffer commandBuffer)
+void ComputePipelineWrapper::bind(VkCommandBuffer commandBuffer) const
 {
     if (m_internalData->pipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_PIPELINE)
     {

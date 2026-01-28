@@ -86,8 +86,8 @@ public:
     void setPipelineCreatePNext(void *pipelineCreatePNext);
     void setSubgroupSize(uint32_t subgroupSize);
     void addPushConstantRange(const VkPushConstantRange &range);
-    void buildPipeline(void);
-    void bind(VkCommandBuffer commandBuffer);
+    void buildPipeline(const VkPipelineCache pipelineCache = VK_NULL_HANDLE);
+    void bind(VkCommandBuffer commandBuffer) const;
 
     void setPipelineLayout(Move<VkPipelineLayout> pipelineLayout);
     VkPipelineLayout getPipelineLayout(void);
