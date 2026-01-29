@@ -25,6 +25,7 @@
 #include "vktTestGroupUtil.hpp"
 #include "vktTestCase.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "shader_object/vktShaderObjectCreateUtil.hpp"
 
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
@@ -111,6 +112,7 @@ enum TestType
     TEST_TYPE_HOLES_VERTEX,
     TEST_TYPE_HOLES_GEOMETRY,
     TEST_TYPE_MAX_OUTPUT_COMPONENTS,
+    TEST_TYPE_SHADER_OBJECT_REBIND,
     TEST_TYPE_LAST
 };
 
@@ -4089,6 +4091,127 @@ tcu::TestStatus TransformFeedbackMaxOutputComponentsInstance::iterate(void)
     return tcu::TestStatus::pass("Pass");
 }
 
+// A test that binds multiple XFB buffers and then writes to each of them with a
+// different vertex shader in sequence. This is a reproduction for a specific
+// bug in honeykrisp, which implements XFB in terms of GS and needs to bind
+// a passthrough GS in the driver when the application does not bind it's own
+// GS. The bug is triggered by binding a new VS with VK_EXT_shader_object, which
+// causes the driver to fail to update the passthrough GS.
+
+class TransformFeedbackShaderObjectRebindTestInstance : public TransformFeedbackTestInstance
+{
+public:
+    TransformFeedbackShaderObjectRebindTestInstance(Context &context, const TestParameters &parameters);
+
+protected:
+    tcu::TestStatus iterate(void);
+};
+
+TransformFeedbackShaderObjectRebindTestInstance::TransformFeedbackShaderObjectRebindTestInstance(
+    Context &context, const TestParameters &parameters)
+    : TransformFeedbackTestInstance(context, parameters)
+{
+}
+
+tcu::TestStatus TransformFeedbackShaderObjectRebindTestInstance::iterate(void)
+{
+    const auto &deviceHelper        = getDeviceHelper(m_context, m_parameters);
+    const DeviceInterface &vk       = deviceHelper.getDeviceInterface();
+    const VkDevice device           = deviceHelper.getDevice();
+    const uint32_t queueFamilyIndex = deviceHelper.getQueueFamilyIndex();
+    const VkQueue queue             = deviceHelper.getQueue();
+    Allocator &allocator            = deviceHelper.getAllocator();
+
+    const auto deviceExtensions = removeUnsupportedShaderObjectExtensions(
+        m_context.getInstanceInterface(), m_context.getPhysicalDevice(), m_context.getDeviceExtensions());
+    const bool taskSupported = m_context.getMeshShaderFeaturesEXT().taskShader;
+    const bool meshSupported = m_context.getMeshShaderFeaturesEXT().meshShader;
+
+    RenderPassWrapper renderPass(PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, vk, device,
+                                 VK_FORMAT_UNDEFINED);
+    renderPass.createFramebuffer(vk, device, 0u, nullptr, nullptr, m_imageExtent2D.width, m_imageExtent2D.height);
+
+    const auto pipelineLayout(
+        TransformFeedback::makePipelineLayout(PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV, vk, device));
+
+    std::vector<Move<VkShaderEXT>> vertexShaders;
+    vertexShaders.reserve(m_parameters.partCount);
+    for (uint32_t i = 0; i < m_parameters.partCount; ++i)
+    {
+        std::string name                 = "vert" + std::to_string(i);
+        auto binary                      = m_context.getBinaryCollection().get(name);
+        VkShaderCreateInfoEXT createInfo = makeShaderCreateInfo(VK_SHADER_STAGE_VERTEX_BIT, binary, false, false);
+
+        createInfo.pushConstantRangeCount = pipelineLayout->getPushConstantRangeCount();
+        createInfo.pPushConstantRanges    = pipelineLayout->getPushConstantRanges();
+
+        vertexShaders.push_back(createShader(vk, device, createInfo));
+    }
+
+    const Unique<VkCommandPool> cmdPool(
+        createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));
+    const Unique<VkCommandBuffer> cmdBuffer(
+        allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY));
+
+    const VkBufferCreateInfo tfBufCreateInfo = makeBufferCreateInfo(
+        m_parameters.bufferSize, VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT);
+    const Move<VkBuffer> tfBuf = createBuffer(vk, device, &tfBufCreateInfo);
+    const MovePtr<Allocation> tfBufAllocation =
+        allocator.allocate(getBufferMemoryRequirements(vk, device, *tfBuf), MemoryRequirement::HostVisible);
+    const VkMemoryBarrier tfMemoryBarrier =
+        makeMemoryBarrier(VK_ACCESS_TRANSFORM_FEEDBACK_WRITE_BIT_EXT, VK_ACCESS_HOST_READ_BIT);
+    const std::vector<VkDeviceSize> tfBufBindingSizes =
+        generateSizesList(m_parameters.bufferSize, m_parameters.partCount);
+    const std::vector<VkDeviceSize> tfBufBindingOffsets = generateOffsetsList(tfBufBindingSizes);
+
+    VK_CHECK(vk.bindBufferMemory(device, *tfBuf, tfBufAllocation->getMemory(), tfBufAllocation->getOffset()));
+
+    std::vector<VkBuffer> tfBufs(m_parameters.partCount, *tfBuf);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+    {
+        renderPass.begin(vk, *cmdBuffer, makeRect2D(m_imageExtent2D));
+        {
+            setDefaultShaderObjectDynamicStates(vk, *cmdBuffer, deviceExtensions, VK_PRIMITIVE_TOPOLOGY_POINT_LIST,
+                                                false);
+            bindGraphicsShaders(vk, *cmdBuffer, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                                VK_NULL_HANDLE, taskSupported, meshSupported);
+
+            vk.cmdBindTransformFeedbackBuffersEXT(*cmdBuffer, 0, m_parameters.partCount, tfBufs.data(),
+                                                  tfBufBindingOffsets.data(), tfBufBindingSizes.data());
+
+            for (uint32_t drawNdx = 0; drawNdx < m_parameters.partCount; ++drawNdx)
+            {
+                const uint32_t startValue = static_cast<uint32_t>(tfBufBindingOffsets[drawNdx] / sizeof(uint32_t));
+                const uint32_t numPoints  = static_cast<uint32_t>(tfBufBindingSizes[drawNdx] / sizeof(uint32_t));
+
+                const VkShaderStageFlagBits vertexStage = VK_SHADER_STAGE_VERTEX_BIT;
+                VkShaderEXT vertexShader                = vertexShaders[drawNdx].get();
+                vk.cmdBindShadersEXT(*cmdBuffer, 1, &vertexStage, &vertexShader);
+
+                vk.cmdPushConstants(*cmdBuffer, pipelineLayout->get(), VK_SHADER_STAGE_VERTEX_BIT, 0u,
+                                    sizeof(startValue), &startValue);
+
+                vk.cmdBeginTransformFeedbackEXT(*cmdBuffer, 0, 0, nullptr, nullptr);
+                {
+                    vk.cmdDraw(*cmdBuffer, numPoints, 1u, 0u, 0u);
+                }
+                vk.cmdEndTransformFeedbackEXT(*cmdBuffer, 0, 0, nullptr, nullptr);
+            }
+        }
+        renderPass.end(vk, *cmdBuffer);
+
+        vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TRANSFORM_FEEDBACK_BIT_EXT, VK_PIPELINE_STAGE_HOST_BIT, 0u,
+                              1u, &tfMemoryBarrier, 0u, nullptr, 0u, nullptr);
+    }
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, queue, *cmdBuffer);
+
+    verifyTransformFeedbackBuffer(deviceHelper, tfBufAllocation, m_parameters.bufferSize);
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 class TransformFeedbackTestCase : public vkt::TestCase
 {
 public:
@@ -4215,6 +4338,9 @@ vkt::TestInstance *TransformFeedbackTestCase::createInstance(vkt::Context &conte
     if (m_parameters.testType == TEST_TYPE_MAX_OUTPUT_COMPONENTS)
         return new TransformFeedbackMaxOutputComponentsInstance(context, m_parameters);
 
+    if (m_parameters.testType == TEST_TYPE_SHADER_OBJECT_REBIND)
+        return new TransformFeedbackShaderObjectRebindTestInstance(context, m_parameters);
+
     TCU_THROW(InternalError, "Specified test type not found");
 }
 
@@ -4331,6 +4457,16 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
 
         if (perVertexSize > xfbProperties.maxTransformFeedbackBufferDataStride)
             TCU_THROW(NotSupportedError, messagePrefix + "maxTransformFeedbackBufferDataStride");
+    }
+
+    if (m_parameters.testType == TEST_TYPE_SHADER_OBJECT_REBIND)
+    {
+        context.requireDeviceFunctionality("VK_EXT_shader_object");
+
+        if (m_parameters.partCount > xfbProperties.maxTransformFeedbackBuffers)
+            TCU_THROW(NotSupportedError, "Required transform feedback buffer count " +
+                                             std::to_string(m_parameters.partCount) + " greater than " +
+                                             "maxTransformFeedbackBuffers");
     }
 }
 
@@ -4527,6 +4663,36 @@ void TransformFeedbackTestCase::initPrograms(SourceCollections &programCollectio
                 << "    gl_Position = p0 + p1 + p2;\n"
                 << (pointSizeWanted ? "    gl_PointSize = " + pointSizeStr + ".0;\n" : "") << "}\n";
             programCollection.glslSources.add("tese") << glu::TessellationEvaluationSource(src.str());
+        }
+
+        return;
+    }
+
+    if (m_parameters.testType == TEST_TYPE_SHADER_OBJECT_REBIND)
+    {
+        // Separate vertex shader for each XFB buffer
+        for (uint32_t bufferIdx = 0; bufferIdx < m_parameters.partCount; ++bufferIdx)
+        {
+            {
+                std::ostringstream src;
+                src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+                    << "\n"
+                    << "layout(push_constant) uniform pushConstants\n"
+                    << "{\n"
+                    << "    uint start;\n"
+                    << "} uInput;\n"
+                    << "\n"
+                    << "layout(xfb_buffer = " << bufferIdx
+                    << ", xfb_offset = 0, xfb_stride = 4, location = 0) out uint idx_out;\n"
+                    << "\n"
+                    << "void main(void)\n"
+                    << "{\n"
+                    << "    idx_out = uInput.start + gl_VertexIndex;\n"
+                    << (pointSizeWanted ? "    gl_PointSize = " + pointSizeStr + ".0;\n" : "") << "}\n";
+
+                std::string name = "vert" + std::to_string(bufferIdx);
+                programCollection.glslSources.add(name) << glu::VertexSource(src.str());
+            }
         }
 
         return;
@@ -6549,6 +6715,30 @@ void createTransformFeedbackSimpleTests(tcu::TestCaseGroup *group, vk::PipelineC
             false                                 //  bool                queryResultWithAvailability
         };
         group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "basic_triangles", parameters));
+    }
+
+    // This test ignores the construction type, and we only need one of it, so
+    // drop it for all of the non-monolithic groups.
+    if (constructionType == PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
+        const TestParameters parameters{
+            constructionType,
+            TEST_TYPE_SHADER_OBJECT_REBIND,   //  TestType testType;
+            256u,                             //  uint32_t bufferSize;
+            4u,                               //  uint32_t partCount;
+            0u,                               //  uint32_t streamId;
+            0u,                               //  uint32_t pointSize;
+            0u,                               //  uint32_t vertexStride;
+            STREAM_ID_0_NORMAL,               //  StreamId0Mode streamId0Mode;
+            false,                            //  bool query64bits;
+            false,                            //  bool noOffsetArray;
+            false,                            //  bool requireRastStreamSelect;
+            false,                            //  bool omitShaderWrite;
+            false,                            //  bool useMaintenance5;
+            VK_PRIMITIVE_TOPOLOGY_POINT_LIST, //  VkPrimitiveTopology primTopology;
+            false                             //  bool                queryResultWithAvailability
+        };
+        group->addChild(new TransformFeedbackTestCase(group->getTestContext(), "shader_object_rebind", parameters));
     }
 }
 
