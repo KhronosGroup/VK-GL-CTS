@@ -313,19 +313,19 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
 
         // If there are views left that are not written by any future subpasses,
         // there should be a external dependency.
-        if (viewMask)
+        if (viewMask && subpassNdx < subpassCount - 1)
         {
             const SubpassDep
                 subpassDependency //  VkSubpassDependency                                            ||  VkSubpassDependency2KHR
                 (
                     //  || VkStructureType sType;
-                    nullptr,             //   || const void* pNext;
-                    subpassNdx,          //  uint32_t srcSubpass; || uint32_t srcSubpass;
-                    VK_SUBPASS_EXTERNAL, //  uint32_t dstSubpass; || uint32_t dstSubpass;
-                    srcStageMask,        //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
-                    dstStageMask,        //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
-                    srcAccessMask,       //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
-                    dstAccessMask,       //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
+                    nullptr,        //   || const void* pNext;
+                    subpassNdx,     //  uint32_t srcSubpass; || uint32_t srcSubpass;
+                    subpassNdx + 1, //  uint32_t dstSubpass; || uint32_t dstSubpass;
+                    srcStageMask,   //  VkPipelineStageFlags srcStageMask; || VkPipelineStageFlags srcStageMask;
+                    dstStageMask,   //  VkPipelineStageFlags dstStageMask; || VkPipelineStageFlags dstStageMask;
+                    srcAccessMask,  //  VkAccessFlags srcAccessMask; || VkAccessFlags srcAccessMask;
+                    dstAccessMask,  //  VkAccessFlags dstAccessMask; || VkAccessFlags dstAccessMask;
                     VK_DEPENDENCY_BY_REGION_BIT |
                         VK_DEPENDENCY_VIEW_LOCAL_BIT, //  VkDependencyFlags dependencyFlags; || VkDependencyFlags dependencyFlags;
                     0                                 //    || int32_t viewOffset;
@@ -345,12 +345,12 @@ Move<VkRenderPass> makeRenderPass(const DeviceInterface &vk, const VkDevice devi
                 attachmentDescriptions), //  const VkAttachmentDescription* pAttachments; ||  const VkAttachmentDescription2KHR* pAttachments;
             subpassCount, //  uint32_t subpassCount; ||  uint32_t subpassCount;
             &subpassDescriptions
-                [0],      //  const VkSubpassDescription* pSubpasses; ||  const VkSubpassDescription2KHR* pSubpasses;
-            subpassCount, //  uint32_t dependencyCount; ||  uint32_t dependencyCount;
-            &subpassDependencies
-                [0], //  const VkSubpassDependency* pDependencies; ||  const VkSubpassDependency2KHR* pDependencies;
-            0u,      //   ||  uint32_t correlatedViewMaskCount;
-            nullptr  //  ||  const uint32_t* pCorrelatedViewMasks;
+                [0], //  const VkSubpassDescription* pSubpasses; ||  const VkSubpassDescription2KHR* pSubpasses;
+            (uint32_t)subpassDependencies.size(), //  uint32_t dependencyCount; ||  uint32_t dependencyCount;
+            de::dataOrNull(
+                subpassDependencies), //  const VkSubpassDependency* pDependencies; ||  const VkSubpassDependency2KHR* pDependencies;
+            0u,                       //   ||  uint32_t correlatedViewMaskCount;
+            nullptr                   //  ||  const uint32_t* pCorrelatedViewMasks;
         );
 
     return renderPassInfo.createRenderPass(vk, device);
