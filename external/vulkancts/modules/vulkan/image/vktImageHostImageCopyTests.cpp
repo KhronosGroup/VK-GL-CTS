@@ -1393,6 +1393,49 @@ private:
     const uint32_t m_offset;
 };
 
+static VkImageUsageFlags GetUsage(VkImageLayout srcLayout, VkImageLayout dstLayout)
+{
+    vk::VkImageUsageFlags usage = vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    if (srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL || dstLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+    if (srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
+        srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
+        srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
+        srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL ||
+        srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_OPTIMAL ||
+        srcLayout == vk::VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_STENCIL_ATTACHMENT_OPTIMAL ||
+        srcLayout == vk::VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_STENCIL_READ_ONLY_OPTIMAL)
+        usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
+    if (srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT ||
+        dstLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
+    {
+        usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
+        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
+    }
+    if (srcLayout == vk::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL || dstLayout == vk::VK_IMAGE_LAYOUT_READ_ONLY_OPTIMAL)
+        usage |= VK_IMAGE_USAGE_SAMPLED_BIT;
+    if (srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL || dstLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL)
+    {
+        if ((usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT)) == 0)
+            usage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    }
+    return usage;
+}
+
 tcu::TestStatus PreinitializedTestInstance::iterate(void)
 {
     vk::InstanceDriver instanceDriver(m_context.getPlatformInterface(), m_context.getInstance());
@@ -1438,6 +1481,8 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
     drmCreateInfo.drmFormatModifierCount                        = 1;
     drmCreateInfo.pDrmFormatModifiers                           = &modifier;
 
+    const VkImageUsageFlags usage = GetUsage(m_srcLayout, m_dstLayout);
+
     vk::VkImageCreateInfo createInfo = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
         m_tiling == vk::VK_IMAGE_TILING_DRM_FORMAT_MODIFIER_EXT ? &drmCreateInfo : nullptr,
@@ -1450,7 +1495,7 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         m_arrayLayers,             // uint32_t                    arrayLayers
         vk::VK_SAMPLE_COUNT_1_BIT, // VkSampleCountFlagBits    samples
         m_tiling,                  // VkImageTiling            tiling
-        vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT,
+        usage,                     // VkImageUsageFlags         usage
         // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE,     // VkSharingMode            sharingMode
         0,                                 // uint32_t                    queueFamilyIndexCount
@@ -1458,26 +1503,9 @@ tcu::TestStatus PreinitializedTestInstance::iterate(void)
         vk::VK_IMAGE_LAYOUT_PREINITIALIZED // VkImageLayout            initialLayout
     };
 
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-        createInfo.usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
-        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
-        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
-        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
-        createInfo.usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
-    {
-        createInfo.usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
-        createInfo.usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        createInfo.usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    }
-
     de::MovePtr<ImageWithMemory> image = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::HostVisible));
+
     de::MovePtr<ImageWithMemory> copyImage = de::MovePtr<ImageWithMemory>(
         new ImageWithMemory(vk, device, *allocatorWithOffset, createInfo, vk::MemoryRequirement::Any));
     const vk::VkImage endImage                 = m_imageToImageCopy ? **copyImage : **image;
@@ -1800,24 +1828,7 @@ void PreinitializedTestCase::checkSupport(vkt::Context &context) const
         nullptr // const uint32_t* pQueueFamilyIndices;
     };
 
-    vk::VkImageUsageFlags usage = vk::VK_IMAGE_USAGE_HOST_TRANSFER_BIT_EXT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL)
-        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL)
-        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL)
-        usage |= vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL ||
-        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL ||
-        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_READ_ONLY_STENCIL_ATTACHMENT_OPTIMAL ||
-        m_srcLayout == vk::VK_IMAGE_LAYOUT_DEPTH_ATTACHMENT_STENCIL_READ_ONLY_OPTIMAL)
-        usage |= vk::VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT;
-    if (m_srcLayout == vk::VK_IMAGE_LAYOUT_ATTACHMENT_FEEDBACK_LOOP_OPTIMAL_EXT)
-    {
-        usage |= vk::VK_IMAGE_USAGE_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT;
-        usage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
-        usage |= vk::VK_IMAGE_USAGE_SAMPLED_BIT;
-    }
+    const VkImageUsageFlags usage = GetUsage(m_srcLayout, m_dstLayout);
 
     vk::VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
         vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,                         // VkStructureType sType;
