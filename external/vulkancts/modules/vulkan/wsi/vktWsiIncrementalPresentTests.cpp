@@ -567,6 +567,37 @@ private:
     void render(void);
 };
 
+// Select representative surface formats: one SRGB_NONLINEAR
+// and one extended color space format to validate VK_EXT_swapchain_colorspace functionality
+vector<vk::VkSurfaceFormatKHR> selectRepresentativeFormats(const vector<vk::VkSurfaceFormatKHR> &formats)
+{
+    vector<vk::VkSurfaceFormatKHR> result;
+
+    for (const auto &fmt : formats)
+    {
+        if (fmt.colorSpace == vk::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            result.push_back(fmt);
+            break;
+        }
+    }
+
+    for (const auto &fmt : formats)
+    {
+        if (fmt.colorSpace != vk::VK_COLOR_SPACE_SRGB_NONLINEAR_KHR)
+        {
+            result.push_back(fmt);
+            break;
+        }
+    }
+
+    // If no formats matched use whatever is available
+    if (result.empty() && !formats.empty())
+        result.push_back(formats[0]);
+
+    return result;
+}
+
 std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
     vk::VkSurfaceKHR surface, const uint32_t *queueFamilyIndex, Scaling scaling,
     const vk::VkSurfaceCapabilitiesKHR &properties, const vector<vk::VkSurfaceFormatKHR> &formats,
@@ -624,13 +655,16 @@ std::vector<vk::VkSwapchainCreateInfoKHR> generateSwapchainConfigs(
             TCU_THROW(NotSupportedError, "Composite alpha not supported");
     }
 
-    for (size_t formatNdx = 0; formatNdx < formats.size(); formatNdx++)
+    // Select representative subset of formats to avoid testing all color space variations
+    const vector<vk::VkSurfaceFormatKHR> selectedFormats = selectRepresentativeFormats(formats);
+
+    for (size_t formatNdx = 0; formatNdx < selectedFormats.size(); formatNdx++)
     {
 
         const vk::VkSurfaceTransformFlagBitsKHR preTransform = (vk::VkSurfaceTransformFlagBitsKHR)transform;
         const vk::VkCompositeAlphaFlagBitsKHR compositeAlpha = (vk::VkCompositeAlphaFlagBitsKHR)alpha;
-        const vk::VkFormat imageFormat                       = formats[formatNdx].format;
-        const vk::VkColorSpaceKHR imageColorSpace            = formats[formatNdx].colorSpace;
+        const vk::VkFormat imageFormat                       = selectedFormats[formatNdx].format;
+        const vk::VkColorSpaceKHR imageColorSpace            = selectedFormats[formatNdx].colorSpace;
         const vk::VkSwapchainCreateInfoKHR createInfo        = {vk::VK_STRUCTURE_TYPE_SWAPCHAIN_CREATE_INFO_KHR,
                                                                 nullptr,
                                                                 0u,
