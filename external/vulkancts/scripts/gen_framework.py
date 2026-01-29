@@ -3444,6 +3444,7 @@ class FormatListsGenerator(CTSGenerator):
             if f.className.endswith("-bit"):
                 bitClassesDict[int(f.className.split('-')[0])] = f.className
 
+        astc3dFormatsCheckFun = lambda f: f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1
         for bitValue, bitClass in bitClassesDict.items():
             arraySubName = bitClass.replace('-b','B')
             def compatibleFormatsCheckFun(f):
@@ -3454,7 +3455,7 @@ class FormatListsGenerator(CTSGenerator):
                     return True
                 if bitValue >= 64:
                     # skip ASTC 3d formats
-                    if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                    if astc3dFormatsCheckFun(f):
                         return False
                     # add selected compressed formats to 64-bit+ formats
                     return f.compressed is not None and f.blockSize == (bitValue / 8)
@@ -3495,7 +3496,7 @@ class FormatListsGenerator(CTSGenerator):
                 if 'ASTC' in f.name and 'SFLOAT' in f.name:
                     return False
                 # skip ASTC 3d formats
-                if len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+                if astc3dFormatsCheckFun(f):
                     return False
                 # skip vendor extension formats
                 return not self.isPartOfVendorExtension(f.name)
@@ -3507,10 +3508,15 @@ class FormatListsGenerator(CTSGenerator):
 
         def compressedFormatsSrgbCheckFun(f):
             # skip ASTC 3d formats
-            if f.compressed is not None and len(f.blockExtent) > 2 and int(f.blockExtent[2]) > 1:
+            if astc3dFormatsCheckFun(f):
                 return False
             return not self.isPartOfVendorExtension(f.name) and f.compressed is not None and 'SRGB' in f.name
         self.writeList(f'compressedFormatsSrgb', compressedFormatsSrgbCheckFun)
+
+        astcHDRFormatsCheckFun = lambda f: 'ASTC' in f.name and 'SFLOAT' in f.name and not astc3dFormatsCheckFun(f)
+        self.writeList(f'astcHDRFormats', astcHDRFormatsCheckFun)
+
+        self.writeList(f'astc3dFormats', astc3dFormatsCheckFun)
 
         stencilFormatsCheckFun = lambda f: 'S8' in f.className
         self.writeList(f'stencilFormats', stencilFormatsCheckFun)

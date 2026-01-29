@@ -78,14 +78,21 @@ bool isSupportedSamplableFormat(const InstanceInterface &instanceInterface, VkPh
 {
     if (isCompressedFormat(format))
     {
-        VkPhysicalDeviceFeatures physicalFeatures;
-        const tcu::CompressedTexFormat compressedFormat = mapVkCompressedFormat(format);
+        const tcu::CompressedTexFormat compressedFormat                              = mapVkCompressedFormat(format);
+        VkPhysicalDeviceTextureCompressionASTCHDRFeatures compressionASTCHDRFeatures = initVulkanStructure();
+        VkPhysicalDeviceFeatures2 physicalFeatures2 = initVulkanStructure(&compressionASTCHDRFeatures);
+        auto &physicalFeatures                      = physicalFeatures2.features;
 
-        instanceInterface.getPhysicalDeviceFeatures(device, &physicalFeatures);
+        instanceInterface.getPhysicalDeviceFeatures2(device, &physicalFeatures2);
 
         if (tcu::isAstcFormat(compressedFormat))
         {
-            if (!physicalFeatures.textureCompressionASTC_LDR)
+            if (tcu::isAstcHdrFormat(compressedFormat))
+            {
+                if (!compressionASTCHDRFeatures.textureCompressionASTC_HDR)
+                    return false;
+            }
+            else if (!physicalFeatures.textureCompressionASTC_LDR)
                 return false;
         }
         else if (tcu::isEtcFormat(compressedFormat))

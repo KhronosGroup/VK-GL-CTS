@@ -26,7 +26,6 @@
 
 #include "tcuDefs.hpp"
 #include "vkDefs.hpp"
-#include "vkDefs.hpp"
 #include "vkPlatform.hpp"
 #include "vkMemUtil.hpp"
 #include "vkRef.hpp"

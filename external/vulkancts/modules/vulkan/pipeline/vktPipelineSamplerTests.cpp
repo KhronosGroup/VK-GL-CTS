@@ -2312,9 +2312,9 @@ tcu::TestStatus MaxSamplerLodBiasInstance::iterate(void)
 
 } // namespace
 
-tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
-                                                 PipelineConstructionType pipelineConstructionType,
-                                                 bool separateStencilUsage = false)
+tcu::TestCaseGroup *createFormatsSamplerTests(tcu::TestContext &testCtx,
+                                              PipelineConstructionType pipelineConstructionType,
+                                              bool separateStencilUsage = false)
 {
     const struct
     {
@@ -2330,6 +2330,7 @@ tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
                           {VK_IMAGE_VIEW_TYPE_CUBE, "cube"},
                           {VK_IMAGE_VIEW_TYPE_CUBE_ARRAY, "cube_array"}};
 
+    // this list does not contain all formats, only those relevant for sampler testing
     const VkFormat formats[] = {
         // Packed formats
         VK_FORMAT_R4G4_UNORM_PACK8,
@@ -2451,6 +2452,22 @@ tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
         VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT,
 #endif // CTS_USES_VULKANSC
 
+        // ASTC HDR formats (VK_EXT_texture_compression_astc_hdr)
+        VK_FORMAT_ASTC_4x4_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_5x4_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_5x5_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_6x5_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_6x6_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_8x5_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_8x6_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_8x8_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_10x5_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_10x6_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_10x8_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_10x10_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_12x10_SFLOAT_BLOCK,
+        VK_FORMAT_ASTC_12x12_SFLOAT_BLOCK,
+
         // Depth formats required for testing VK_EXT_sampler_filter_minmax
         VK_FORMAT_D16_UNORM,
         VK_FORMAT_X8_D24_UNORM_PACK32,
@@ -2481,6 +2498,10 @@ tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
                 if (viewType == VK_IMAGE_VIEW_TYPE_1D || viewType == VK_IMAGE_VIEW_TYPE_1D_ARRAY)
                     break;
 
+                // limit number of repeated tests for astc hdr formats
+                if (isAstcHdrFormat(format) && (viewType != VK_IMAGE_VIEW_TYPE_2D))
+                    continue;
+
 #ifndef CTS_USES_VULKANSC
                 // Only use ASTC 3D formats with 3D texture.
                 if (isAstc3DFormat(format) && viewType != VK_IMAGE_VIEW_TYPE_3D)
@@ -2506,11 +2527,15 @@ tcu::TestCaseGroup *createAllFormatsSamplerTests(tcu::TestContext &testCtx,
                 formatGroup->addChild(minReduceFilterTests.release());
             }
 
-            de::MovePtr<tcu::TestCaseGroup> magFilterTests =
-                createSamplerMagFilterTests(testCtx, pipelineConstructionType, viewType, format, separateStencilUsage);
-            formatGroup->addChild(magFilterTests.release());
+            // limit number of repeated tests for astc hdr formats
+            if (!isAstcHdrFormat(format) || (viewType != VK_IMAGE_VIEW_TYPE_2D))
+            {
+                de::MovePtr<tcu::TestCaseGroup> magFilterTests = createSamplerMagFilterTests(
+                    testCtx, pipelineConstructionType, viewType, format, separateStencilUsage);
+                formatGroup->addChild(magFilterTests.release());
+            }
 
-            if (viewType.isNormalized())
+            if (viewType.isNormalized() && (!isAstcHdrFormat(format) || (viewType != VK_IMAGE_VIEW_TYPE_2D)))
             {
                 de::MovePtr<tcu::TestCaseGroup> magReduceFilterTests = createSamplerMagReduceFilterTests(
                     testCtx, pipelineConstructionType, viewType, format, separateStencilUsage);
@@ -2657,7 +2682,7 @@ tcu::TestCaseGroup *createSamplerTests(tcu::TestContext &testCtx, PipelineConstr
     de::MovePtr<tcu::TestCaseGroup> samplerTests(new tcu::TestCaseGroup(testCtx, "sampler"));
     {
         if (genAllTests)
-            samplerTests->addChild(createAllFormatsSamplerTests(testCtx, pipelineConstructionType));
+            samplerTests->addChild(createFormatsSamplerTests(testCtx, pipelineConstructionType));
         samplerTests->addChild(createExactSamplingTests(testCtx, pipelineConstructionType));
     }
 
@@ -2665,8 +2690,7 @@ tcu::TestCaseGroup *createSamplerTests(tcu::TestContext &testCtx, PipelineConstr
     de::MovePtr<tcu::TestCaseGroup> separateStencilUsageSamplerTests(
         new tcu::TestCaseGroup(testCtx, "separate_stencil_usage"));
     {
-        separateStencilUsageSamplerTests->addChild(
-            createAllFormatsSamplerTests(testCtx, pipelineConstructionType, true));
+        separateStencilUsageSamplerTests->addChild(createFormatsSamplerTests(testCtx, pipelineConstructionType, true));
         samplerTests->addChild(separateStencilUsageSamplerTests.release());
     }
 

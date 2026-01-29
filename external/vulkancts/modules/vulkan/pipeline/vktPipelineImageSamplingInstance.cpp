@@ -425,7 +425,8 @@ ImageSamplingInstance::ImageSamplingInstance(Context &context, ImageSamplingInst
     , m_samplerParams(params.samplerParams)
     , m_samplerLod(params.samplerLod)
     , m_renderSize(params.renderSize)
-    , m_colorFormat(VK_FORMAT_R8G8B8A8_UNORM)
+    // in order to preserve the precision for astc hdr formats we need to use float16 for color attachment
+    , m_colorFormat(isAstcHdrFormat(params.imageFormat) ? VK_FORMAT_R16G16B16A16_SFLOAT : VK_FORMAT_R8G8B8A8_UNORM)
     , m_vertices(params.vertices)
     , m_graphicsPipeline(context.getInstanceInterface(), context.getDeviceInterface(), context.getPhysicalDevice(),
                          context.getDevice(), m_context.getDeviceExtensions(), params.pipelineConstructionType,
