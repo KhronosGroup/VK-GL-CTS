@@ -139,6 +139,7 @@ Move<VkDevice> createDeviceWithPushDescriptor(const Context &context, const Plat
         vulkan14Features.maintenance5            = params.useMaintenance5;
         dynamicRenderingFeaturesKHR.pNext        = &vulkan14Features;
         graphicsPipelineLibraryFeaturesEXT.pNext = &vulkan14Features;
+        features2.pNext                          = &vulkan14Features;
     }
     else
     {
