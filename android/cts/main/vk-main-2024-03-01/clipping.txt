@@ -1,1 +1,4 @@
+dEQP-VK.clipping.clip_volume.clipped.large_points
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_axis_aligned
+dEQP-VK.clipping.clip_volume.clipped.wide_lines_diagonal
 dEQP-VK.clipping.misc.negative_and_non_negative_cull_distance

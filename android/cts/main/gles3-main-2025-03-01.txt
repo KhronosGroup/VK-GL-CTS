@@ -1,0 +1,8 @@
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image1DArrayShadow_fragment
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image1DArrayShadow_vertex
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image1DShadow_fragment
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image1DShadow_vertex
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image2DArrayShadow_fragment
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image2DArrayShadow_vertex
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image2DShadow_fragment
+dEQP-GLES3.functional.shaders.keywords.allowed_keywords.image2DShadow_vertex

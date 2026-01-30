@@ -1,0 +1,3 @@
+dEQP-VK.memory_model.shared.16bit.nested_structs.0
+dEQP-VK.memory_model.shared.16bit.nested_structs.2
+dEQP-VK.memory_model.shared.16bit.nested_structs_arrays.2
