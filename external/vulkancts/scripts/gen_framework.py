@@ -902,7 +902,7 @@ class BasicTypesGenerator(CTSGenerator):
         yield "enum %s" % enum.name
         yield "{"
         lines = []
-        fields = sorted(enum.fields, key=lambda item: item.value)
+        fields = sorted(enum.fields, key=lambda item: (item.value is None, item.value if item.value is not None else 0))
         for ed in fields:
             if ed.valueStr is not None:
                 lines.append(f"\t{ed.name}\t= {ed.valueStr},")
