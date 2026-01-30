@@ -1622,14 +1622,15 @@ bool DualSourceBlendMAInstance::compareBuffers(const BufferWithMemory &received,
     invalidateAlloc(m_vkd, *m_device, received.getAllocation());
     invalidateAlloc(m_vkd, *m_device, expected.getAllocation());
 
-    tcu::ConstPixelBufferAccess R(mapVkFormat(m_params.format), (int)m_renderWidth, (int)m_renderHeight, 1,
+    tcu::TextureFormat format = mapVkFormat(m_params.format);
+    tcu::ConstPixelBufferAccess R(format, (int)m_renderWidth, (int)m_renderHeight, 1,
                                   received.getAllocation().getHostPtr());
-    tcu::ConstPixelBufferAccess E(mapVkFormat(m_params.format), (int)m_renderWidth, (int)m_renderHeight, 1,
+    tcu::ConstPixelBufferAccess E(format, (int)m_renderWidth, (int)m_renderHeight, 1,
                                   expected.getAllocation().getHostPtr());
+    tcu::Vec4 threshold = getFormatThreshold(format, 1);
 
     tcu::Vec4 r, e;
-    bool result       = true;
-    const float delta = 1.0e-4f;
+    bool result = true;
 
     for (int y = 0; result && y < int(m_renderHeight); ++y)
         for (int x = 0u; result && x < int(m_renderWidth); ++x)
@@ -1637,8 +1638,8 @@ bool DualSourceBlendMAInstance::compareBuffers(const BufferWithMemory &received,
             r = R.getPixel(x, y);
             e = E.getPixel(x, y);
 
-            const bool cmp = std::fabs(r.x() - e.x()) < delta && std::fabs(r.y() - e.y()) < delta &&
-                             std::fabs(r.z() - e.z()) < delta && std::fabs(r.w() - e.w()) < delta;
+            const bool cmp = std::fabs(r.x() - e.x()) < threshold.x() && std::fabs(r.y() - e.y()) < threshold.y() &&
+                             std::fabs(r.z() - e.z()) < threshold.z() && std::fabs(r.w() - e.w()) < threshold.w();
 
             result = eq ? cmp : !cmp;
         }

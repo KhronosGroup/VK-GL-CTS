@@ -260,11 +260,24 @@ void DRLRFeedbackLoopCase::checkSupport(Context &context) const
 
     const auto testAspects = m_params.getTestAspects();
     const auto testStencil = static_cast<bool>(testAspects & VK_IMAGE_ASPECT_STENCIL_BIT);
+    const auto testDepth   = static_cast<bool>(testAspects & VK_IMAGE_ASPECT_DEPTH_BIT);
     if (testStencil)
         context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
 
+    bool drlrDepthStencil = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+                            context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments;
+
+    if ((testDepth || testStencil) && !drlrDepthStencil)
+        TCU_THROW(NotSupportedError, "Reading depth/stencil input attachments in dynamic rendering not supported");
+
+    bool drlrMultisampled = (context.getUsedApiVersion() < VK_MAKE_API_VERSION(0, 1, 4, 0)) ||
+                            context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments;
+
     if (m_params.isMultiSample())
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
+    if (m_params.isMultiSample() && !drlrMultisampled)
+        TCU_THROW(NotSupportedError, "Reading multisampled input attachments in dynamic rendering not supported");
 
     const auto ctx             = context.getContextCommonData();
     const auto imageCreateInfo = m_params.getImageCreateInfo();

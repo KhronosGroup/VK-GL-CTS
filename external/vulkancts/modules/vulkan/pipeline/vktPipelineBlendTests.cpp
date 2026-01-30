@@ -828,111 +828,6 @@ tcu::TestStatus BlendTestInstance::iterate(void)
     return verifyImage();
 }
 
-float getNormChannelThreshold(const tcu::TextureFormat &format, int numBits)
-{
-    switch (tcu::getTextureChannelClass(format.type))
-    {
-    case tcu::TEXTURECHANNELCLASS_UNSIGNED_FIXED_POINT:
-        return static_cast<float>(BlendTest::QUAD_COUNT) / static_cast<float>((1 << numBits) - 1);
-    case tcu::TEXTURECHANNELCLASS_SIGNED_FIXED_POINT:
-        return static_cast<float>(BlendTest::QUAD_COUNT) / static_cast<float>((1 << (numBits - 1)) - 1);
-    default:
-        break;
-    }
-
-    DE_ASSERT(false);
-    return 0.0f;
-}
-
-tcu::Vec4 getFormatThreshold(const tcu::TextureFormat &format)
-{
-    using tcu::TextureFormat;
-    using tcu::Vec4;
-
-    Vec4 threshold(0.01f);
-
-    switch (format.type)
-    {
-    case TextureFormat::UNORM_BYTE_44:
-        threshold = Vec4(getNormChannelThreshold(format, 4), getNormChannelThreshold(format, 4), 1.0f, 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_565:
-        threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 6),
-                         getNormChannelThreshold(format, 5), 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_555:
-        threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5),
-                         getNormChannelThreshold(format, 5), 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_4444:
-        threshold = Vec4(getNormChannelThreshold(format, 4));
-        break;
-
-    case TextureFormat::UNORM_SHORT_5551:
-        threshold = Vec4(getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5),
-                         getNormChannelThreshold(format, 5), 0.1f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_10:
-        threshold = Vec4(getNormChannelThreshold(format, 10));
-        break;
-
-    case TextureFormat::UNORM_INT_1010102_REV:
-    case TextureFormat::SNORM_INT_1010102_REV:
-        threshold = Vec4(getNormChannelThreshold(format, 10), getNormChannelThreshold(format, 10),
-                         getNormChannelThreshold(format, 10), 0.34f);
-        break;
-
-    case TextureFormat::UNORM_INT8:
-    case TextureFormat::SNORM_INT8:
-        threshold = Vec4(getNormChannelThreshold(format, 8));
-        break;
-
-    case TextureFormat::UNORM_INT16:
-    case TextureFormat::SNORM_INT16:
-        threshold = Vec4(getNormChannelThreshold(format, 16));
-        break;
-
-    case TextureFormat::UNORM_INT32:
-    case TextureFormat::SNORM_INT32:
-        threshold = Vec4(getNormChannelThreshold(format, 32));
-        break;
-
-    case TextureFormat::HALF_FLOAT:
-        threshold = Vec4(0.005f);
-        break;
-
-    case TextureFormat::FLOAT:
-        threshold = Vec4(0.00001f);
-        break;
-
-    case TextureFormat::UNSIGNED_INT_11F_11F_10F_REV:
-        threshold = Vec4(0.02f, 0.02f, 0.0625f, 1.0f);
-        break;
-
-    case TextureFormat::UNSIGNED_INT_999_E5_REV:
-        threshold = Vec4(0.05f, 0.05f, 0.05f, 1.0f);
-        break;
-
-    case TextureFormat::UNORM_SHORT_1555:
-        threshold = Vec4(0.1f, getNormChannelThreshold(format, 5), getNormChannelThreshold(format, 5),
-                         getNormChannelThreshold(format, 5));
-        break;
-
-    default:
-        DE_ASSERT(false);
-    }
-
-    // Return value matching the channel order specified by the format
-    if (format.order == tcu::TextureFormat::BGR || format.order == tcu::TextureFormat::BGRA)
-        return threshold.swizzle(2, 1, 0, 3);
-    else
-        return threshold;
-}
-
 bool isLegalExpandableFormat(tcu::TextureFormat::ChannelType channeltype)
 {
     using tcu::TextureFormat;
@@ -1096,7 +991,7 @@ tcu::TestStatus BlendTestInstance::verifyImage(void)
         de::UniquePtr<tcu::TextureLevel> result(readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator,
                                                                     *m_colorImage, m_colorFormat, m_renderSize)
                                                     .release());
-        const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat));
+        const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat, BlendTest::QUAD_COUNT));
         tcu::TextureLevel refLevel;
 
         refLevel.setStorage(tcuColorFormat, m_renderSize.x(), m_renderSize.y(), 1);
@@ -1533,7 +1428,7 @@ tcu::TestStatus DualSourceBlendTestInstance::verifyImage(void)
         de::UniquePtr<tcu::TextureLevel> result(readColorAttachment(vk, vkDevice, queue, queueFamilyIndex, allocator,
                                                                     *m_colorImage, m_colorFormat, m_renderSize)
                                                     .release());
-        tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat));
+        tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat, BlendTest::QUAD_COUNT));
         tcu::TextureLevel refLevel;
 
         // For SRGB formats there is an extra precision loss due to doing
@@ -1929,7 +1824,7 @@ tcu::TestStatus ClampTestInstance::iterate(void)
     de::UniquePtr<tcu::TextureLevel> result(readColorAttachment(vkd, device, queue, queueFamilyIndex, allocator,
                                                                 colorImage.get(), m_params.colorFormat, renderSizeUV2)
                                                 .release());
-    const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat));
+    const tcu::Vec4 threshold(getFormatThreshold(tcuColorFormat, BlendTest::QUAD_COUNT));
     const tcu::ConstPixelBufferAccess pixelBufferAccess = result->getAccess();
 
     const bool compareOk = tcu::floatThresholdCompare(m_context.getTestContext().getLog(), "BlendClampCompare",
