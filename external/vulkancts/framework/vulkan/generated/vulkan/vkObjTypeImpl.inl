@@ -46,6 +46,7 @@ template<> inline VkObjectType	getObjectType<VkDebugReportCallbackEXT>			(void) 
 template<> inline VkObjectType	getObjectType<VkCuModuleNVX>					(void) { return VK_OBJECT_TYPE_CU_MODULE_NVX;					}
 template<> inline VkObjectType	getObjectType<VkCuFunctionNVX>					(void) { return VK_OBJECT_TYPE_CU_FUNCTION_NVX;					}
 template<> inline VkObjectType	getObjectType<VkDebugUtilsMessengerEXT>			(void) { return VK_OBJECT_TYPE_DEBUG_UTILS_MESSENGER_EXT;		}
+template<> inline VkObjectType	getObjectType<VkTensorARM>						(void) { return VK_OBJECT_TYPE_TENSOR_ARM;						}
 template<> inline VkObjectType	getObjectType<VkValidationCacheEXT>				(void) { return VK_OBJECT_TYPE_VALIDATION_CACHE_EXT;			}
 template<> inline VkObjectType	getObjectType<VkAccelerationStructureNV>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_NV;		}
 template<> inline VkObjectType	getObjectType<VkPerformanceConfigurationINTEL>	(void) { return VK_OBJECT_TYPE_PERFORMANCE_CONFIGURATION_INTEL;	}
@@ -55,7 +56,6 @@ template<> inline VkObjectType	getObjectType<VkCudaFunctionNV>					(void) { retu
 template<> inline VkObjectType	getObjectType<VkAccelerationStructureKHR>		(void) { return VK_OBJECT_TYPE_ACCELERATION_STRUCTURE_KHR;		}
 template<> inline VkObjectType	getObjectType<VkBufferCollectionFUCHSIA>		(void) { return VK_OBJECT_TYPE_BUFFER_COLLECTION_FUCHSIA;		}
 template<> inline VkObjectType	getObjectType<VkMicromapEXT>					(void) { return VK_OBJECT_TYPE_MICROMAP_EXT;					}
-template<> inline VkObjectType	getObjectType<VkTensorARM>						(void) { return VK_OBJECT_TYPE_TENSOR_ARM;						}
 template<> inline VkObjectType	getObjectType<VkTensorViewARM>					(void) { return VK_OBJECT_TYPE_TENSOR_VIEW_ARM;					}
 template<> inline VkObjectType	getObjectType<VkOpticalFlowSessionNV>			(void) { return VK_OBJECT_TYPE_OPTICAL_FLOW_SESSION_NV;			}
 template<> inline VkObjectType	getObjectType<VkShaderEXT>						(void) { return VK_OBJECT_TYPE_SHADER_EXT;						}

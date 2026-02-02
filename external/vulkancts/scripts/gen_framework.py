@@ -3057,25 +3057,26 @@ class ProfileTestsGenerator(BaseGenerator):
                         if "features" in capabilityDefinition:
                             featureStructList = capabilityDefinition["features"]
                             # skip adding comment for empty requirements
-                            if len(featureStructList) == 1 and not list(featureStructList.values())[0]:
-                                continue
-                            featureTableItems.append(f"\t\t// {capabilityName}");
-                            # iterate over required features
-                            for featureStruct in featureStructList:
-                                structName = featureStruct[vkpdLen:]
-                                self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
-                                for feature in featureStructList[featureStruct]:
-                                    featureTableItems.append(f"vk{structName}, {feature}")
-                                featureTableItems.append("\n")
+                            if len(featureStructList) > 0 and list(featureStructList.values())[0]:
+                                featureTableItems.append(f"\t\t// {capabilityName}");
+                                # iterate over required features
+                                for featureStruct in featureStructList:
+                                    structName = featureStruct[vkpdLen:]
+                                    self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
+                                    for feature in featureStructList[featureStruct]:
+                                        featureTableItems.append(f"vk{structName}, {feature}")
+                                    featureTableItems.append("\n")
                         if "properties" in capabilityDefinition:
                             propertyStructList = capabilityDefinition["properties"]
-                            propertyTableItems.append(f"\t\t// {capabilityName}");
-                            for propertyStruct in propertyStructList:
-                                structName = propertyStruct[vkpdLen:]
-                                self.constructStruct(structName, propertyStructInitNamesList, propertyStructInitList)
-                                for propName, propLimit in propertyStructList[propertyStruct].items():
-                                    self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
-                                propertyTableItems.append("\n")
+                            # skip adding comment for empty requirements
+                            if len(propertyStructList) > 0 and list(propertyStructList.values())[0]:
+                                propertyTableItems.append(f"\t\t// {capabilityName}");
+                                for propertyStruct in propertyStructList:
+                                    structName = propertyStruct[vkpdLen:]
+                                    self.constructStruct(structName, propertyStructInitNamesList, propertyStructInitList)
+                                    for propName, propLimit in propertyStructList[propertyStruct].items():
+                                        self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
+                                    propertyTableItems.append("\n")
                         if "extensions" in capabilityDefinition:
                             extensionList = [n for n in capabilityDefinition["extensions"]]
                         if "formats" in capabilityDefinition:
@@ -3093,9 +3094,10 @@ class ProfileTestsGenerator(BaseGenerator):
 
                 # template used to get both device features and device properties
                 structGetterTemplate = "\n"\
-                "\tVkPhysicalDevice{0}2 vk{0}2 = initVulkanStructure(&vk{2});\n"\
+                "\tVkPhysicalDevice{0}2 vk{0}2 = initVulkanStructure({2});\n"\
                 "\tauto& vk{0} = vk{0}2.{1};\n"\
-                "\tvki.getPhysicalDevice{0}2(pd, &vk{0}2);\n"
+                "\tvki.getPhysicalDevice{0}2(pd, &vk{0}2);\n"\
+                "\tDE_UNREF(vk{0});\n"
 
                 # construct function that will validate profile
                 stream.append(f"tcu::TestStatus validate_{profileName}(Context& context)")
@@ -3108,9 +3110,11 @@ class ProfileTestsGenerator(BaseGenerator):
                 "\tTestLog& log = context.getTestContext().getLog();\n")
 
                 stream.extend(featureStructInitList)
-                stream.append(structGetterTemplate.format("Features", "features", featureStructInitNamesList[-1]))
+                lastFeatureStructName = '&vk' + featureStructInitNamesList[-1] if len(featureStructInitNamesList) > 2 else ''
+                stream.append(structGetterTemplate.format("Features", "features", lastFeatureStructName))
                 stream.extend(propertyStructInitList)
-                stream.append(structGetterTemplate.format("Properties", "properties", propertyStructInitNamesList[-1]))
+                lastPropertyStructName = '&vk' + propertyStructInitNamesList[-1] if len(propertyStructInitNamesList) > 2 else ''
+                stream.append(structGetterTemplate.format("Properties", "properties", lastPropertyStructName))
                 if len(featureTableItems):
                     stream.append("\tconst std::vector<FeatureEntry> featureTable {")
                     stream.extend(["\t\tROADMAP_FEATURE_ITEM(" + f + ")," if ("," in f) else f for f in featureTableItems])

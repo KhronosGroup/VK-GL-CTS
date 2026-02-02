@@ -228,6 +228,11 @@ VkResult InstanceDriver::getPhysicalDeviceCooperativeVectorPropertiesNV (VkPhysi
     return m_vk.getPhysicalDeviceCooperativeVectorPropertiesNV(physicalDevice, pPropertyCount, pProperties);
 }
 
+VkDeviceSize InstanceDriver::getPhysicalDeviceDescriptorSizeEXT (VkPhysicalDevice physicalDevice, VkDescriptorType descriptorType) const
+{
+    return m_vk.getPhysicalDeviceDescriptorSizeEXT(physicalDevice, descriptorType);
+}
+
 VkBool32 InstanceDriver::getPhysicalDeviceDirectFBPresentationSupportEXT (VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::IDirectFB* dfb) const
 {
     return m_vk.getPhysicalDeviceDirectFBPresentationSupportEXT(physicalDevice, queueFamilyIndex, dfb);

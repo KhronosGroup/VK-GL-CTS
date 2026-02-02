@@ -19,6 +19,8 @@ const vk::VkPhysicalDeviceDepthStencilResolveProperties&				Context::getDepthSte
 const vk::VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&		Context::getDescriptorBufferDensityMapPropertiesEXT			(void) const { return m_device->getDescriptorBufferDensityMapPropertiesEXT();		}
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&				Context::getDescriptorBufferPropertiesEXT					(void) const { return m_device->getDescriptorBufferPropertiesEXT();					}
 const vk::VkPhysicalDeviceDescriptorBufferTensorPropertiesARM&			Context::getDescriptorBufferTensorPropertiesARM				(void) const { return m_device->getDescriptorBufferTensorPropertiesARM();			}
+const vk::VkPhysicalDeviceDescriptorHeapPropertiesEXT&					Context::getDescriptorHeapPropertiesEXT						(void) const { return m_device->getDescriptorHeapPropertiesEXT();					}
+const vk::VkPhysicalDeviceDescriptorHeapTensorPropertiesARM&			Context::getDescriptorHeapTensorPropertiesARM				(void) const { return m_device->getDescriptorHeapTensorPropertiesARM();				}
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&					Context::getDescriptorIndexingProperties					(void) const { return m_device->getDescriptorIndexingProperties();					}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			Context::getDeviceGeneratedCommandsPropertiesEXT			(void) const { return m_device->getDeviceGeneratedCommandsPropertiesEXT();			}
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&			Context::getDeviceGeneratedCommandsProperties				(void) const { return m_device->getDeviceGeneratedCommandsProperties();				}
@@ -75,10 +77,11 @@ const vk::VkPhysicalDevicePipelineBinaryPropertiesKHR&					Context::getPipelineB
 const vk::VkPhysicalDevicePipelineRobustnessProperties&					Context::getPipelineRobustnessProperties					(void) const { return m_device->getPipelineRobustnessProperties();					}
 const vk::VkPhysicalDevicePointClippingProperties&						Context::getPointClippingProperties							(void) const { return m_device->getPointClippingProperties();						}
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&				Context::getPortabilitySubsetProperties						(void) const { return m_device->getPortabilitySubsetProperties();					}
-const vk::VkPhysicalDevicePresentationPropertiesOHOS&					Context::getPresentationPropertiesOHOS						(void) const { return m_device->getPresentationPropertiesOHOS();					}
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					Context::getProtectedMemoryProperties						(void) const { return m_device->getProtectedMemoryProperties();						}
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&					Context::getProvokingVertexPropertiesEXT					(void) const { return m_device->getProvokingVertexPropertiesEXT();					}
+const vk::VkPhysicalDevicePushConstantBankPropertiesNV&					Context::getPushConstantBankPropertiesNV					(void) const { return m_device->getPushConstantBankPropertiesNV();					}
 const vk::VkPhysicalDevicePushDescriptorProperties&						Context::getPushDescriptorProperties						(void) const { return m_device->getPushDescriptorProperties();						}
+const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT&		Context::getRayTracingInvocationReorderPropertiesEXT		(void) const { return m_device->getRayTracingInvocationReorderPropertiesEXT();		}
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&		Context::getRayTracingInvocationReorderProperties			(void) const { return m_device->getRayTracingInvocationReorderProperties();			}
 const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&				Context::getRayTracingPipelineProperties					(void) const { return m_device->getRayTracingPipelineProperties();					}
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&						Context::getRayTracingProperties							(void) const { return m_device->getRayTracingProperties();							}
@@ -93,6 +96,7 @@ const vk::VkPhysicalDeviceShaderCorePropertiesAMD&						Context::getShaderCorePr
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&						Context::getShaderCorePropertiesARM							(void) const { return m_device->getShaderCorePropertiesARM();						}
 const vk::VkPhysicalDeviceShaderEnqueuePropertiesAMDX&					Context::getShaderEnqueuePropertiesAMDX						(void) const { return m_device->getShaderEnqueuePropertiesAMDX();					}
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&			Context::getShaderIntegerDotProductProperties				(void) const { return m_device->getShaderIntegerDotProductProperties();				}
+const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&				Context::getShaderLongVectorPropertiesEXT					(void) const { return m_device->getShaderLongVectorPropertiesEXT();					}
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&			Context::getShaderModuleIdentifierPropertiesEXT				(void) const { return m_device->getShaderModuleIdentifierPropertiesEXT();			}
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&					Context::getShaderObjectPropertiesEXT						(void) const { return m_device->getShaderObjectPropertiesEXT();						}
 const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&					Context::getShaderSMBuiltinsProperties						(void) const { return m_device->getShaderSMBuiltinsProperties();					}

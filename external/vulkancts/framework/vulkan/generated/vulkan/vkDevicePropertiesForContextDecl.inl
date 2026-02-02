@@ -19,6 +19,8 @@ const vk::VkPhysicalDeviceDepthStencilResolveProperties&				getDepthStencilResol
 const vk::VkPhysicalDeviceDescriptorBufferDensityMapPropertiesEXT&		getDescriptorBufferDensityMapPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferPropertiesEXT&				getDescriptorBufferPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceDescriptorBufferTensorPropertiesARM&			getDescriptorBufferTensorPropertiesARM			(void) const;
+const vk::VkPhysicalDeviceDescriptorHeapPropertiesEXT&					getDescriptorHeapPropertiesEXT					(void) const;
+const vk::VkPhysicalDeviceDescriptorHeapTensorPropertiesARM&			getDescriptorHeapTensorPropertiesARM			(void) const;
 const vk::VkPhysicalDeviceDescriptorIndexingProperties&					getDescriptorIndexingProperties					(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesEXT&			getDeviceGeneratedCommandsPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceDeviceGeneratedCommandsPropertiesNV&			getDeviceGeneratedCommandsProperties			(void) const;
@@ -75,10 +77,11 @@ const vk::VkPhysicalDevicePipelineBinaryPropertiesKHR&					getPipelineBinaryProp
 const vk::VkPhysicalDevicePipelineRobustnessProperties&					getPipelineRobustnessProperties					(void) const;
 const vk::VkPhysicalDevicePointClippingProperties&						getPointClippingProperties						(void) const;
 const vk::VkPhysicalDevicePortabilitySubsetPropertiesKHR&				getPortabilitySubsetProperties					(void) const;
-const vk::VkPhysicalDevicePresentationPropertiesOHOS&					getPresentationPropertiesOHOS					(void) const;
 const vk::VkPhysicalDeviceProtectedMemoryProperties&					getProtectedMemoryProperties					(void) const;
 const vk::VkPhysicalDeviceProvokingVertexPropertiesEXT&					getProvokingVertexPropertiesEXT					(void) const;
+const vk::VkPhysicalDevicePushConstantBankPropertiesNV&					getPushConstantBankPropertiesNV					(void) const;
 const vk::VkPhysicalDevicePushDescriptorProperties&						getPushDescriptorProperties						(void) const;
+const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesEXT&		getRayTracingInvocationReorderPropertiesEXT		(void) const;
 const vk::VkPhysicalDeviceRayTracingInvocationReorderPropertiesNV&		getRayTracingInvocationReorderProperties		(void) const;
 const vk::VkPhysicalDeviceRayTracingPipelinePropertiesKHR&				getRayTracingPipelineProperties					(void) const;
 const vk::VkPhysicalDeviceRayTracingPropertiesNV&						getRayTracingProperties							(void) const;
@@ -93,6 +96,7 @@ const vk::VkPhysicalDeviceShaderCorePropertiesAMD&						getShaderCorePropertiesA
 const vk::VkPhysicalDeviceShaderCorePropertiesARM&						getShaderCorePropertiesARM						(void) const;
 const vk::VkPhysicalDeviceShaderEnqueuePropertiesAMDX&					getShaderEnqueuePropertiesAMDX					(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductProperties&			getShaderIntegerDotProductProperties			(void) const;
+const vk::VkPhysicalDeviceShaderLongVectorPropertiesEXT&				getShaderLongVectorPropertiesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT&			getShaderModuleIdentifierPropertiesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderObjectPropertiesEXT&					getShaderObjectPropertiesEXT					(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsPropertiesNV&					getShaderSMBuiltinsProperties					(void) const;

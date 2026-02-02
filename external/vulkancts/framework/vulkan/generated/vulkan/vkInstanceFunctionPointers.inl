@@ -50,6 +50,7 @@ GetPhysicalDeviceCooperativeMatrixFlexibleDimensionsPropertiesNVFunc	getPhysical
 GetPhysicalDeviceCooperativeMatrixPropertiesKHRFunc						getPhysicalDeviceCooperativeMatrixPropertiesKHR;
 GetPhysicalDeviceCooperativeMatrixPropertiesNVFunc						getPhysicalDeviceCooperativeMatrixPropertiesNV;
 GetPhysicalDeviceCooperativeVectorPropertiesNVFunc						getPhysicalDeviceCooperativeVectorPropertiesNV;
+GetPhysicalDeviceDescriptorSizeEXTFunc									getPhysicalDeviceDescriptorSizeEXT;
 GetPhysicalDeviceDirectFBPresentationSupportEXTFunc						getPhysicalDeviceDirectFBPresentationSupportEXT;
 GetPhysicalDeviceDisplayPlaneProperties2KHRFunc							getPhysicalDeviceDisplayPlaneProperties2KHR;
 GetPhysicalDeviceDisplayPlanePropertiesKHRFunc							getPhysicalDeviceDisplayPlanePropertiesKHR;

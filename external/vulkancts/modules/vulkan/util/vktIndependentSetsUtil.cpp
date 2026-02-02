@@ -1279,7 +1279,11 @@ tcu::TestStatus Instance::iterate()
     const VkPipelineLayoutCreateFlags indSetsPipelineLayoutFlags = VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT;
     VkPipelineLayoutCreateFlags unionPipelineLayoutFlags         = 0u;
     if (isESO && !m_params.avoidMaintenance11)
+    {
         unionPipelineLayoutFlags |= indSetsPipelineLayoutFlags;
+        if (m_params.hasStage(VK_SHADER_STAGE_MESH_BIT_EXT) && !m_params.hasStage(VK_SHADER_STAGE_TASK_BIT_EXT))
+            unionPipelineLayoutFlags |= VK_PIPELINE_LAYOUT_CREATE_NO_TASK_SHADER_BIT_KHR;
+    }
     if (isFastLib)
         unionPipelineLayoutFlags |= indSetsPipelineLayoutFlags;
     PipelineLayoutWrapper unionPipelineLayout(m_params.constructionType, ctx.vkd, ctx.device,
