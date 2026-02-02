@@ -727,6 +727,7 @@ cc_defaults {
         "external/vulkancts/modules/vulkan/util/vktDrawUtil.cpp",
         "external/vulkancts/modules/vulkan/util/vktExternalMemoryAndroidHardwareBufferUtil.cpp",
         "external/vulkancts/modules/vulkan/util/vktExternalMemoryUtil.cpp",
+        "external/vulkancts/modules/vulkan/util/vktIndependentSetsUtil.cpp",
         "external/vulkancts/modules/vulkan/util/vktShaderObjectUtil.cpp",
         "external/vulkancts/modules/vulkan/util/vktTypeComparisonUtil.cpp",
         "external/vulkancts/modules/vulkan/vktContextManager.cpp",

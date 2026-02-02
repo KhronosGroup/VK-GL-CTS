@@ -1,5 +1,6 @@
 include_directories(
 	..
+	../util
 	${DEQP_INL_DIR}
 )
 
