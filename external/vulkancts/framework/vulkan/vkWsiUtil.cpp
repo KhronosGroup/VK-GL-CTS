@@ -182,11 +182,11 @@ static VkResult createDisplaySurface(const InstanceInterface &vki, VkInstance in
 
         supportedDisplays.resize(supportedDisplayCount);
         VK_CHECK_SUPPORTED(
-            vki.getDisplayPlaneSupportedDisplaysKHR(physDevice, i, &supportedDisplayCount, &supportedDisplays[0]));
+            vki.getDisplayPlaneSupportedDisplaysKHR(physDevice, i, &supportedDisplayCount, supportedDisplays.data()));
 
         for (uint32_t j = 0; j < supportedDisplayCount; ++j)
         {
-            if (display == supportedDisplays[i])
+            if (display == supportedDisplays[j])
             {
                 planeIndex = i;
                 planeFound = true;
