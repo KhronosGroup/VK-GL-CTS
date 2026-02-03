@@ -124,9 +124,11 @@ const glw::GLchar* gl3cts::TransformFeedbackBaseTestCase::m_shader_vert =
 const glw::GLchar* gl3cts::TransformFeedbackBaseTestCase::m_shader_frag =
     R"(${VERSION}
 
+    out vec4 FragColor;
+
     void main (void)
     {
-        gl_FragColor = vec4(0.0, 0.0, 0.0, 1.0);
+        FragColor = vec4(0.0, 0.0, 0.0, 1.0);
     }
     )";
 // clang-format on
@@ -145,21 +147,33 @@ void TransformFeedbackBaseTestCase::init()
 
     auto contextType = m_context.getRenderContext().getType();
     /* This test should only be executed if we're running a GL>=3.0 context */
-    m_testSupported = (glu::contextSupports(contextType, glu::ApiType::core(3, 0)) &&
+    m_testSupported = ((glu::contextSupports(contextType, glu::ApiType::core(3, 0)) ||
+                        glu::contextSupports(contextType, glu::ApiType::core(3, 1)) ||
+                        glu::contextSupports(contextType, glu::ApiType::core(3, 2)) ||
+                        glu::contextSupports(contextType, glu::ApiType::core(3, 3))) &&
                        m_context.getContextInfo().isExtensionSupported("GL_ARB_transform_feedback3")) ||
-                      glu::contextSupports(contextType, glu::ApiType::core(4, 0));
+                      glu::contextSupports(contextType, glu::ApiType::core(4, 0)) ||
+                      glu::contextSupports(contextType, glu::ApiType::core(4, 1)) ||
+                      glu::contextSupports(contextType, glu::ApiType::core(4, 2)) ||
+                      glu::contextSupports(contextType, glu::ApiType::core(4, 3)) ||
+                      glu::contextSupports(contextType, glu::ApiType::core(4, 4)) ||
+                      glu::contextSupports(contextType, glu::ApiType::core(4, 5)) ||
+                      glu::contextSupports(contextType, glu::ApiType::core(4, 6));
 
-    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
-    GLint value              = 0;
-    gl.getIntegerv(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS, &value);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+    if (m_testSupported)
+    {
+        const glw::Functions &gl = m_context.getRenderContext().getFunctions();
+        GLint value              = 0;
+        gl.getIntegerv(GL_MAX_TRANSFORM_FEEDBACK_BUFFERS, &value);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
-    m_testSupported = m_testSupported && (value >= 4);
+        m_testSupported = m_testSupported && (value >= 4);
 
-    gl.getIntegerv(GL_MAX_VERTEX_STREAMS, &value);
-    GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
+        gl.getIntegerv(GL_MAX_VERTEX_STREAMS, &value);
+        GLU_EXPECT_NO_ERROR(gl.getError(), "getIntegerv");
 
-    m_testSupported = m_testSupported && (value >= 1);
+        m_testSupported = m_testSupported && (value >= 1);
+    }
 }
 
 /* creates transform feedback buffer at certain index. leaves buffer bound */
