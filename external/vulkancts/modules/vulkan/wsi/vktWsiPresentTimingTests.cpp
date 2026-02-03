@@ -1903,6 +1903,12 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     const Unique<vk::VkCommandPool> commandPool(createCommandPool(vkd, device, 0, devHelper.queueFamilyIndex));
     FrameStreamObjects frameStreamObjects(vkd, device, *commandPool, frameCount);
 
+    const vk::VkPresentTimingSurfaceCapabilitiesEXT surfaceCaps =
+        getSurfacePresentTimingCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
+
+    if (!surfaceCaps.presentTimingSupported)
+        TCU_THROW(NotSupportedError, "Present Timing is not supported");
+
     // Set present timing queue size to fit data for all the presents
     const uint32_t presentQueueSize = frameCount;
     vk::VkResult result             = vkd.setSwapchainPresentTimingQueueSizeEXT(device, *swapchain, presentQueueSize);
@@ -1912,8 +1918,6 @@ tcu::TestStatus timeDomainCalibrationTest(Context &context, CalibrationTestConfi
     VkPresentStageFlagsEXT supportedPresentStageQueries{};
     if (config.timeDomain == VK_TIME_DOMAIN_PRESENT_STAGE_LOCAL_EXT)
     {
-        vk::VkPresentTimingSurfaceCapabilitiesEXT surfaceCaps =
-            getSurfacePresentTimingCapabilities(instHelper.vki, devHelper.physicalDevice, *surface);
         if ((surfaceCaps.presentStageQueries & VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT) == 0)
             TCU_FAIL("VK_PRESENT_STAGE_QUEUE_OPERATIONS_END_BIT_EXT must be supported");
 
