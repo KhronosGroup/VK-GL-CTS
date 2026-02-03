@@ -918,6 +918,7 @@ void commonCheckSupport(Context &context, VkFormat colorFormat, VkSampleCountFla
     }
 }
 
+#ifndef CTS_USES_VULKANSC
 void checkSupport(Context &context, MultisampleTestParams params)
 {
     commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_2_BIT, params.backingMode,
@@ -926,6 +927,7 @@ void checkSupport(Context &context, MultisampleTestParams params)
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           params.pipelineConstructionType);
 }
+#endif // CTS_USES_VULKANSC
 
 class CompatibleRenderPassTestInstance : public vkt::TestInstance
 {
