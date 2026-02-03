@@ -1018,6 +1018,11 @@ template<> VkStructureType getStructureType<VkFormatProperties3> (void)
 	return VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
 }
 
+template<> VkStructureType getStructureType<VkFormatProperties4KHR> (void)
+{
+	return VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_4_KHR;
+}
+
 template<> VkStructureType getStructureType<VkFragmentShadingRateAttachmentInfoKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR;
@@ -1168,6 +1173,11 @@ template<> VkStructureType getStructureType<VkImageCopy2> (void)
 	return VK_STRUCTURE_TYPE_IMAGE_COPY_2;
 }
 
+template<> VkStructureType getStructureType<VkImageCreateFlags2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR;
+}
+
 template<> VkStructureType getStructureType<VkImageCreateInfo> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO;
@@ -1251,6 +1261,11 @@ template<> VkStructureType getStructureType<VkImageSwapchainCreateInfoKHR> (void
 template<> VkStructureType getStructureType<VkImageToMemoryCopy> (void)
 {
 	return VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY;
+}
+
+template<> VkStructureType getStructureType<VkImageUsageFlags2CreateInfoKHR> (void)
+{
+	return VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR;
 }
 
 template<> VkStructureType getStructureType<VkImageViewASTCDecodeModeEXT> (void)

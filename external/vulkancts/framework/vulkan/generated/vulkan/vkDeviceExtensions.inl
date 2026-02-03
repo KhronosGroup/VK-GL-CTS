@@ -27,6 +27,7 @@ static const char* s_allowedDeviceKhrExtensions[] =
 	"VK_KHR_driver_properties",
 	"VK_KHR_dynamic_rendering",
 	"VK_KHR_dynamic_rendering_local_read",
+	"VK_KHR_extended_flags",
 	"VK_KHR_external_fence",
 	"VK_KHR_external_fence_fd",
 	"VK_KHR_external_fence_win32",

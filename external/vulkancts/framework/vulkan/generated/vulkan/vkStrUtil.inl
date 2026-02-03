@@ -470,6 +470,7 @@ tcu::Format::Bitfield<32>	getFenceCreateFlagsStr							(VkFenceCreateFlags value
 tcu::Format::Bitfield<32>	getFenceImportFlagsStr							(VkFenceImportFlags value);
 tcu::Format::Bitfield<32>	getFormatFeatureFlagsStr						(VkFormatFeatureFlags value);
 tcu::Format::Bitfield<64>	getFormatFeatureFlags2Str						(VkFormatFeatureFlags2 value);
+tcu::Format::Bitfield<64>	getFormatFeatureFlags4KHRStr					(VkFormatFeatureFlags4KHR value);
 tcu::Format::Bitfield<32>	getFrameBoundaryFlagsEXTStr						(VkFrameBoundaryFlagsEXT value);
 tcu::Format::Bitfield<32>	getFramebufferCreateFlagsStr					(VkFramebufferCreateFlags value);
 tcu::Format::Bitfield<32>	getGeometryFlagsKHRStr							(VkGeometryFlagsKHR value);
@@ -480,7 +481,9 @@ tcu::Format::Bitfield<32>	getImageAspectFlagsStr							(VkImageAspectFlags value
 tcu::Format::Bitfield<32>	getImageCompressionFixedRateFlagsEXTStr			(VkImageCompressionFixedRateFlagsEXT value);
 tcu::Format::Bitfield<32>	getImageCompressionFlagsEXTStr					(VkImageCompressionFlagsEXT value);
 tcu::Format::Bitfield<32>	getImageCreateFlagsStr							(VkImageCreateFlags value);
+tcu::Format::Bitfield<64>	getImageCreateFlags2KHRStr						(VkImageCreateFlags2KHR value);
 tcu::Format::Bitfield<32>	getImageUsageFlagsStr							(VkImageUsageFlags value);
+tcu::Format::Bitfield<64>	getImageUsageFlags2KHRStr						(VkImageUsageFlags2KHR value);
 tcu::Format::Bitfield<32>	getImageViewCreateFlagsStr						(VkImageViewCreateFlags value);
 tcu::Format::Bitfield<32>	getIndirectCommandsInputModeFlagsEXTStr			(VkIndirectCommandsInputModeFlagsEXT value);
 tcu::Format::Bitfield<32>	getIndirectCommandsLayoutUsageFlagsEXTStr		(VkIndirectCommandsLayoutUsageFlagsEXT value);
@@ -841,6 +844,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkFilterCubicImageViewImageForm
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties2& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties3& value);
+std::ostream&	operator<<	(std::ostream& s, const VkFormatProperties4KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFragmentShadingRateAttachmentInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFrameBoundaryEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkFrameBoundaryTensorsARM& value);
@@ -874,6 +878,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageCompressionControlEXT& v
 std::ostream&	operator<<	(std::ostream& s, const VkImageCompressionPropertiesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCopy& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCopy2& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageCreateFlags2CreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageCreateInfo& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageDrmFormatModifierExplicitCreateInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageDrmFormatModifierListCreateInfoEXT& value);
@@ -896,6 +901,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkImageSubresourceLayers& value
 std::ostream&	operator<<	(std::ostream& s, const VkImageSubresourceRange& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageSwapchainCreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageToMemoryCopy& value);
+std::ostream&	operator<<	(std::ostream& s, const VkImageUsageFlags2CreateInfoKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewASTCDecodeModeEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewCaptureDescriptorDataInfoEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkImageViewCreateInfo& value);

@@ -163,6 +163,7 @@ VK_KHR_deferred_host_operations
 VK_KHR_depth_clamp_zero_one
 VK_KHR_display
 VK_KHR_display_swapchain
+VK_KHR_extended_flags
 VK_KHR_external_fence_fd
 VK_KHR_external_fence_win32
 VK_KHR_external_memory_fd

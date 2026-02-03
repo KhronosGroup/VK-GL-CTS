@@ -2178,7 +2178,7 @@ extern "C" {
 //#define VK_API_VERSION VK_MAKE_API_VERSION(0, 1, 0, 0) // Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 341
+#define VK_HEADER_VERSION 342
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -2850,6 +2850,7 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PIPELINE_REPRESENTATIVE_FRAGMENT_TEST_STATE_CREATE_INFO_NV = 1000166001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_VIEW_IMAGE_FORMAT_INFO_EXT = 1000170000,
     VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT = 1000170001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_CONVERSION_FEATURES_QCOM = 1000172000,
     VK_STRUCTURE_TYPE_IMPORT_MEMORY_HOST_POINTER_INFO_EXT = 1000178000,
     VK_STRUCTURE_TYPE_MEMORY_HOST_POINTER_PROPERTIES_EXT = 1000178001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_EXTERNAL_MEMORY_HOST_PROPERTIES_EXT = 1000178002,
@@ -3517,6 +3518,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_COMPUTE_OCCUPANCY_PRIORITY_PARAMETERS_NV = 1000645000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COMPUTE_OCCUPANCY_PRIORITY_FEATURES_NV = 1000645001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_PARTITIONED_FEATURES_EXT = 1000662000,
+    VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_4_KHR = 1000668000,
+    VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR = 1000668001,
+    VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR = 1000668002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VARIABLE_POINTERS_FEATURES,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETER_FEATURES = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_DRAW_PARAMETERS_FEATURES,
   // VK_STRUCTURE_TYPE_DEBUG_REPORT_CREATE_INFO_EXT is a legacy alias
@@ -16183,6 +16187,92 @@ VKAPI_ATTR void VKAPI_CALL vkCmdEndRendering2KHR(
 #endif
 
 
+// VK_KHR_extended_flags is a preprocessor guard. Do not pass it to API calls.
+#define VK_KHR_extended_flags 1
+#define VK_KHR_EXTENDED_FLAGS_SPEC_VERSION 1
+#define VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME "VK_KHR_extended_flags"
+typedef VkFlags64 VkFormatFeatureFlags4KHR;
+
+// Flag bits for VkFormatFeatureFlagBits4KHR
+typedef VkFlags64 VkFormatFeatureFlagBits4KHR;
+
+typedef VkFlags64 VkImageUsageFlags2KHR;
+
+// Flag bits for VkImageUsageFlagBits2KHR
+typedef VkFlags64 VkImageUsageFlagBits2KHR;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_TRANSFER_SRC_BIT_KHR = 0x00000001ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR = 0x00000002ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR = 0x00000004ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_STORAGE_BIT_KHR = 0x00000008ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR = 0x00000010ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR = 0x00000020ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR = 0x00000040ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR = 0x00000080ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR = 0x00000100ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT = 0x00000200ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR = 0x00000400ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR = 0x00000800ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR = 0x00001000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_ENCODE_DST_BIT_KHR = 0x00002000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR = 0x00004000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR = 0x00008000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_INVOCATION_MASK_BIT_HUAWEI = 0x00040000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT = 0x00080000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM = 0x00100000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM = 0x00200000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_HOST_TRANSFER_BIT_KHR = 0x00400000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_TENSOR_ALIASING_BIT_ARM = 0x00800000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR = 0x02000000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR = 0x04000000ULL;
+static const VkImageUsageFlagBits2KHR VK_IMAGE_USAGE_2_TILE_MEMORY_BIT_QCOM = 0x08000000ULL;
+
+typedef VkFlags64 VkImageCreateFlags2KHR;
+
+// Flag bits for VkImageCreateFlagBits2KHR
+typedef VkFlags64 VkImageCreateFlagBits2KHR;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_SPARSE_BINDING_BIT_KHR = 0x00000001ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_SPARSE_RESIDENCY_BIT_KHR = 0x00000002ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_SPARSE_ALIASED_BIT_KHR = 0x00000004ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_MUTABLE_FORMAT_BIT_KHR = 0x00000008ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_CUBE_COMPATIBLE_BIT_KHR = 0x00000010ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_2D_ARRAY_COMPATIBLE_BIT_KHR = 0x00000020ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR = 0x00000040ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR = 0x00000080ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_EXTENDED_USAGE_BIT_KHR = 0x00000100ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_DISJOINT_BIT_KHR = 0x00000200ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_ALIAS_BIT_KHR = 0x00000400ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_PROTECTED_BIT_KHR = 0x00000800ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT = 0x00001000ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_CORNER_SAMPLED_BIT_NV = 0x00002000ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_SUBSAMPLED_BIT_EXT = 0x00004000ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT = 0x00008000ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT = 0x00010000ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_2D_VIEW_COMPATIBLE_BIT_EXT = 0x00020000ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT = 0x00040000ULL;
+static const VkImageCreateFlagBits2KHR VK_IMAGE_CREATE_2_VIDEO_PROFILE_INDEPENDENT_BIT_KHR = 0x00100000ULL;
+
+typedef struct VkFormatProperties4KHR {
+    VkStructureType             sType;
+    void*                       pNext;
+    VkFormatFeatureFlags4KHR    linearTilingFeatures;
+    VkFormatFeatureFlags4KHR    optimalTilingFeatures;
+    VkFormatFeatureFlags4KHR    bufferFeatures;
+} VkFormatProperties4KHR;
+
+typedef struct VkImageUsageFlags2CreateInfoKHR {
+    VkStructureType          sType;
+    const void*              pNext;
+    VkImageUsageFlags2KHR    usage;
+} VkImageUsageFlags2CreateInfoKHR;
+
+typedef struct VkImageCreateFlags2CreateInfoKHR {
+    VkStructureType           sType;
+    const void*               pNext;
+    VkImageCreateFlags2KHR    flags;
+} VkImageCreateFlags2CreateInfoKHR;
+
+
+
 // VK_EXT_debug_report is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_debug_report 1
 VK_DEFINE_NON_DISPATCHABLE_HANDLE(VkDebugReportCallbackEXT)
@@ -18995,6 +19085,18 @@ typedef struct VkFilterCubicImageViewImageFormatPropertiesEXT {
 #define VK_QCOM_render_pass_shader_resolve 1
 #define VK_QCOM_RENDER_PASS_SHADER_RESOLVE_SPEC_VERSION 4
 #define VK_QCOM_RENDER_PASS_SHADER_RESOLVE_EXTENSION_NAME "VK_QCOM_render_pass_shader_resolve"
+
+
+// VK_QCOM_cooperative_matrix_conversion is a preprocessor guard. Do not pass it to API calls.
+#define VK_QCOM_cooperative_matrix_conversion 1
+#define VK_QCOM_COOPERATIVE_MATRIX_CONVERSION_SPEC_VERSION 1
+#define VK_QCOM_COOPERATIVE_MATRIX_CONVERSION_EXTENSION_NAME "VK_QCOM_cooperative_matrix_conversion"
+typedef struct VkPhysicalDeviceCooperativeMatrixConversionFeaturesQCOM {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           cooperativeMatrixConversion;
+} VkPhysicalDeviceCooperativeMatrixConversionFeaturesQCOM;
+
 
 
 // VK_EXT_global_priority is a preprocessor guard. Do not pass it to API calls.

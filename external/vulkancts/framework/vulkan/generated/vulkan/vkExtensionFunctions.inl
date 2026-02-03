@@ -982,6 +982,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_KHR_extended_flags")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_external_fence")
 	{
 		return;
@@ -1795,6 +1799,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	if (extName == "VK_OHOS_surface")
 	{
 		functions.push_back("vkCreateSurfaceOHOS");
+		return;
+	}
+	if (extName == "VK_QCOM_cooperative_matrix_conversion")
+	{
 		return;
 	}
 	if (extName == "VK_QCOM_data_graph_model")
@@ -3292,6 +3300,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkCmdSetRenderingInputAttachmentIndicesKHR");
 		return;
 	}
+	if (extName == "VK_KHR_extended_flags")
+	{
+		return;
+	}
 	if (extName == "VK_KHR_external_fence")
 	{
 		return;
@@ -4244,6 +4256,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	{
 		return;
 	}
+	if (extName == "VK_QCOM_cooperative_matrix_conversion")
+	{
+		return;
+	}
 	if (extName == "VK_QCOM_data_graph_model")
 	{
 		return;
@@ -4520,6 +4536,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_KHR_robustness2",
 	"VK_KHR_present_mode_fifo_latest_ready",
 	"VK_KHR_maintenance10",
+	"VK_KHR_extended_flags",
 	"VK_NV_glsl_shader",
 	"VK_EXT_depth_range_unrestricted",
 	"VK_IMG_filter_cubic",
@@ -4590,6 +4607,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_representative_fragment_test",
 	"VK_EXT_filter_cubic",
 	"VK_QCOM_render_pass_shader_resolve",
+	"VK_QCOM_cooperative_matrix_conversion",
 	"VK_EXT_global_priority",
 	"VK_EXT_external_memory_host",
 	"VK_AMD_buffer_marker",

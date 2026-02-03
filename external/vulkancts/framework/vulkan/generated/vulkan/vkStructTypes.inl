@@ -3276,6 +3276,15 @@ struct VkFormatProperties3
 	VkFormatFeatureFlags2	bufferFeatures;
 };
 
+struct VkFormatProperties4KHR
+{
+	VkStructureType				sType;
+	void*						pNext;
+	VkFormatFeatureFlags4KHR	linearTilingFeatures;
+	VkFormatFeatureFlags4KHR	optimalTilingFeatures;
+	VkFormatFeatureFlags4KHR	bufferFeatures;
+};
+
 struct VkFragmentShadingRateAttachmentInfoKHR
 {
 	VkStructureType					sType;
@@ -3517,6 +3526,13 @@ struct VkImageCompressionPropertiesEXT
 	VkImageCompressionFixedRateFlagsEXT	imageCompressionFixedRateFlags;
 };
 
+struct VkImageCreateFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageCreateFlags2KHR	flags;
+};
+
 struct VkImageCreateInfo
 {
 	VkStructureType			sType;
@@ -3711,6 +3727,13 @@ struct VkImageSwapchainCreateInfoKHR
 	VkStructureType	sType;
 	const void*		pNext;
 	VkSwapchainKHR	swapchain;
+};
+
+struct VkImageUsageFlags2CreateInfoKHR
+{
+	VkStructureType			sType;
+	const void*				pNext;
+	VkImageUsageFlags2KHR	usage;
 };
 
 struct VkImageViewASTCDecodeModeEXT

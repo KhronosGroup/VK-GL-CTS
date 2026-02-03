@@ -3108,6 +3108,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT:						return "VK_STRUCTURE_TYPE_FILTER_CUBIC_IMAGE_VIEW_IMAGE_FORMAT_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2:														return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2";
 		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3:														return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3";
+		case VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_4_KHR:													return "VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_4_KHR";
 		case VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR:								return "VK_STRUCTURE_TYPE_FRAGMENT_SHADING_RATE_ATTACHMENT_INFO_KHR";
 		case VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO:										return "VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENTS_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO:										return "VK_STRUCTURE_TYPE_FRAMEBUFFER_ATTACHMENT_IMAGE_INFO";
@@ -3142,6 +3143,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT:										return "VK_STRUCTURE_TYPE_IMAGE_COMPRESSION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_CONSTRAINTS_INFO_FUCHSIA:											return "VK_STRUCTURE_TYPE_IMAGE_CONSTRAINTS_INFO_FUCHSIA";
 		case VK_STRUCTURE_TYPE_IMAGE_COPY_2:															return "VK_STRUCTURE_TYPE_IMAGE_COPY_2";
+		case VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR:									return "VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO:														return "VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT:												return "VK_STRUCTURE_TYPE_IMAGE_DESCRIPTOR_INFO_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT:						return "VK_STRUCTURE_TYPE_IMAGE_DRM_FORMAT_MODIFIER_EXPLICIT_CREATE_INFO_EXT";
@@ -3160,6 +3162,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2:														return "VK_STRUCTURE_TYPE_IMAGE_SUBRESOURCE_2";
 		case VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR:											return "VK_STRUCTURE_TYPE_IMAGE_SWAPCHAIN_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY:													return "VK_STRUCTURE_TYPE_IMAGE_TO_MEMORY_COPY";
+		case VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR:										return "VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX:										return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ADDRESS_PROPERTIES_NVX";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT:											return "VK_STRUCTURE_TYPE_IMAGE_VIEW_ASTC_DECODE_MODE_EXT";
 		case VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT:								return "VK_STRUCTURE_TYPE_IMAGE_VIEW_CAPTURE_DESCRIPTOR_DATA_INFO_EXT";
@@ -3305,6 +3308,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CONSERVATIVE_RASTERIZATION_PROPERTIES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_2_PROPERTIES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_CONVERSION_FEATURES_QCOM:				return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_CONVERSION_FEATURES_QCOM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_KHR";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_FEATURES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_COOPERATIVE_MATRIX_PROPERTIES_KHR";
@@ -5008,6 +5012,16 @@ tcu::Format::Bitfield<64> getFormatFeatureFlags2Str (VkFormatFeatureFlags2 value
 }
 
 
+tcu::Format::Bitfield<64> getFormatFeatureFlags4KHRStr (VkFormatFeatureFlags4KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(0, "0")
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getFrameBoundaryFlagsEXTStr (VkFrameBoundaryFlagsEXT value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5174,6 +5188,35 @@ tcu::Format::Bitfield<32> getImageCreateFlagsStr (VkImageCreateFlags value)
 }
 
 
+tcu::Format::Bitfield<64> getImageCreateFlags2KHRStr (VkImageCreateFlags2KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_2D_ARRAY_COMPATIBLE_BIT_KHR,						"VK_IMAGE_CREATE_2_2D_ARRAY_COMPATIBLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_2D_VIEW_COMPATIBLE_BIT_EXT,						"VK_IMAGE_CREATE_2_2D_VIEW_COMPATIBLE_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_ALIAS_BIT_KHR,									"VK_IMAGE_CREATE_2_ALIAS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR,				"VK_IMAGE_CREATE_2_BLOCK_TEXEL_VIEW_COMPATIBLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_CORNER_SAMPLED_BIT_NV,							"VK_IMAGE_CREATE_2_CORNER_SAMPLED_BIT_NV"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_CUBE_COMPATIBLE_BIT_KHR,							"VK_IMAGE_CREATE_2_CUBE_COMPATIBLE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT,		"VK_IMAGE_CREATE_2_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_DISJOINT_BIT_KHR,								"VK_IMAGE_CREATE_2_DISJOINT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_EXTENDED_USAGE_BIT_KHR,							"VK_IMAGE_CREATE_2_EXTENDED_USAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT,				"VK_IMAGE_CREATE_2_FRAGMENT_DENSITY_MAP_OFFSET_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT,	"VK_IMAGE_CREATE_2_MULTISAMPLED_RENDER_TO_SINGLE_SAMPLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_MUTABLE_FORMAT_BIT_KHR,							"VK_IMAGE_CREATE_2_MUTABLE_FORMAT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_PROTECTED_BIT_KHR,								"VK_IMAGE_CREATE_2_PROTECTED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT,		"VK_IMAGE_CREATE_2_SAMPLE_LOCATIONS_COMPATIBLE_DEPTH_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPARSE_ALIASED_BIT_KHR,							"VK_IMAGE_CREATE_2_SPARSE_ALIASED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPARSE_BINDING_BIT_KHR,							"VK_IMAGE_CREATE_2_SPARSE_BINDING_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPARSE_RESIDENCY_BIT_KHR,						"VK_IMAGE_CREATE_2_SPARSE_RESIDENCY_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR,				"VK_IMAGE_CREATE_2_SPLIT_INSTANCE_BIND_REGIONS_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_SUBSAMPLED_BIT_EXT,								"VK_IMAGE_CREATE_2_SUBSAMPLED_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_CREATE_2_VIDEO_PROFILE_INDEPENDENT_BIT_KHR,				"VK_IMAGE_CREATE_2_VIDEO_PROFILE_INDEPENDENT_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
 tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 {
 	static const tcu::Format::BitDesc s_desc[] =
@@ -5205,6 +5248,40 @@ tcu::Format::Bitfield<32> getImageUsageFlagsStr (VkImageUsageFlags value)
 		tcu::Format::BitDesc(VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_VIDEO_ENCODE_SRC_BIT_KHR"),
 	};
 	return tcu::Format::Bitfield<32>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
+}
+
+
+tcu::Format::Bitfield<64> getImageUsageFlags2KHRStr (VkImageUsageFlags2KHR value)
+{
+	static const tcu::Format::BitDesc s_desc[] =
+	{
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT,				"VK_IMAGE_USAGE_2_ATTACHMENT_FEEDBACK_LOOP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR,						"VK_IMAGE_USAGE_2_COLOR_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR,				"VK_IMAGE_USAGE_2_DEPTH_STENCIL_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT,					"VK_IMAGE_USAGE_2_FRAGMENT_DENSITY_MAP_BIT_EXT"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR,		"VK_IMAGE_USAGE_2_FRAGMENT_SHADING_RATE_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_HOST_TRANSFER_BIT_KHR,						"VK_IMAGE_USAGE_2_HOST_TRANSFER_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR,						"VK_IMAGE_USAGE_2_INPUT_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_INVOCATION_MASK_BIT_HUAWEI,					"VK_IMAGE_USAGE_2_INVOCATION_MASK_BIT_HUAWEI"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR,								"VK_IMAGE_USAGE_2_SAMPLED_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM,					"VK_IMAGE_USAGE_2_SAMPLE_BLOCK_MATCH_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM,						"VK_IMAGE_USAGE_2_SAMPLE_WEIGHT_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_STORAGE_BIT_KHR,								"VK_IMAGE_USAGE_2_STORAGE_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TENSOR_ALIASING_BIT_ARM,						"VK_IMAGE_USAGE_2_TENSOR_ALIASING_BIT_ARM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TILE_MEMORY_BIT_QCOM,							"VK_IMAGE_USAGE_2_TILE_MEMORY_BIT_QCOM"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR,							"VK_IMAGE_USAGE_2_TRANSFER_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TRANSFER_SRC_BIT_KHR,							"VK_IMAGE_USAGE_2_TRANSFER_SRC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR,					"VK_IMAGE_USAGE_2_TRANSIENT_ATTACHMENT_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_DECODE_DPB_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_DECODE_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_DECODE_SRC_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_ENCODE_DPB_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_DST_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_ENCODE_DST_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR,			"VK_IMAGE_USAGE_2_VIDEO_ENCODE_EMPHASIS_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR,	"VK_IMAGE_USAGE_2_VIDEO_ENCODE_QUANTIZATION_DELTA_MAP_BIT_KHR"),
+		tcu::Format::BitDesc(VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR,						"VK_IMAGE_USAGE_2_VIDEO_ENCODE_SRC_BIT_KHR"),
+	};
+	return tcu::Format::Bitfield<64>(value, DE_ARRAY_BEGIN(s_desc), DE_ARRAY_END(s_desc));
 }
 
 
@@ -9747,6 +9824,18 @@ std::ostream& operator<< (std::ostream& s, const VkFormatProperties3& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkFormatProperties4KHR& value)
+{
+	s << "VkFormatProperties4KHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tlinearTilingFeatures = " << getFormatFeatureFlags4KHRStr(value.linearTilingFeatures) << '\n';
+	s << "\toptimalTilingFeatures = " << getFormatFeatureFlags4KHRStr(value.optimalTilingFeatures) << '\n';
+	s << "\tbufferFeatures = " << getFormatFeatureFlags4KHRStr(value.bufferFeatures) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkFragmentShadingRateAttachmentInfoKHR& value)
 {
 	s << "VkFragmentShadingRateAttachmentInfoKHR = {\n";
@@ -10192,6 +10281,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageCopy2& value)
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkImageCreateFlags2CreateInfoKHR& value)
+{
+	s << "VkImageCreateFlags2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tflags = " << getImageCreateFlags2KHRStr(value.flags) << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkImageCreateInfo& value)
 {
 	s << "VkImageCreateInfo = {\n";
@@ -10457,6 +10556,16 @@ std::ostream& operator<< (std::ostream& s, const VkImageToMemoryCopy& value)
 	s << "\timageSubresource = " << value.imageSubresource << '\n';
 	s << "\timageOffset = " << value.imageOffset << '\n';
 	s << "\timageExtent = " << value.imageExtent << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkImageUsageFlags2CreateInfoKHR& value)
+{
+	s << "VkImageUsageFlags2CreateInfoKHR = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tusage = " << getImageUsageFlags2KHRStr(value.usage) << '\n';
 	s << '}';
 	return s;
 }
