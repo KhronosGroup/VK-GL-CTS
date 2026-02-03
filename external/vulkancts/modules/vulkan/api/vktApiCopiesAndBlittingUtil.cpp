@@ -22,6 +22,8 @@
  *//*--------------------------------------------------------------------*/
 
 #include "vktApiCopiesAndBlittingUtil.hpp"
+#include "vkFormatLists.hpp"
+#include "deSTLUtil.hpp"
 
 namespace vkt
 {
@@ -1064,6 +1066,7 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
     const tcu::Vec4 blueColor(0.0, 0.0, maxValue.z(), maxValue.w());
     const tcu::Vec4 whiteColor(maxValue.x(), maxValue.y(), maxValue.z(), maxValue.w());
     const tcu::Vec4 blackColor(0.0f, 0.0f, 0.0f, 0.0f);
+    const auto pixelSize(tcu::getPixelSize(buffer.getFormat()));
 
     for (int z = 0; z < depth; ++z)
         for (int y = 0; y < height; ++y)
@@ -1106,11 +1109,33 @@ void CopiesAndBlittingTestInstance::generateBuffer(tcu::PixelBufferAccess buffer
 
                 case FILL_MODE_RANDOM_GRAY:
                 {
-                    // generate random gray color but multiply it by 0.95 to not generate
-                    // value that can be interpreted as NaNs when copied to float formats
-                    tcu::Vec4 randomGrayColor(randomGen.getFloat() * 0.95f);
-                    randomGrayColor.w() = maxValue.w();
-                    buffer.setPixel(randomGrayColor, x, y, z);
+                    if (de::contains(formats::signedAndUnsignedFloatFormats, m_params.src.image.format) ||
+                        de::contains(formats::signedAndUnsignedFloatFormats, m_params.dst.image.format))
+                    {
+                        // generate color from predefined set of values to avoid generating
+                        // value that can be interpreted as NaNs when copied to float formats
+                        const uint8_t validBytes[]{0b10001000, 0b10101010};
+                        const uint8_t validCount = std::size(validBytes);
+
+                        // use single random number to select color and alpha
+                        uint32_t selectedCombination = randomGen.getUint32() % (2 * validCount);
+                        uint8_t color                = validBytes[selectedCombination % validCount];
+                        uint8_t alpha                = validBytes[selectedCombination / validCount];
+
+                        // select bit shift for color to generate more shades of gray
+                        color >>= (randomGen.getUint32() % 7);
+
+                        // assign value to processed pixel in buffer
+                        auto *pixelPtr = reinterpret_cast<uint8_t *>(buffer.getPixelPtr(x, y, z));
+                        std::memset(pixelPtr, color, pixelSize - 1);
+                        pixelPtr[pixelSize - 1] = alpha;
+                    }
+                    else
+                    {
+                        tcu::Vec4 randomGrayColor(randomGen.getFloat());
+                        randomGrayColor.w() = maxValue.w();
+                        buffer.setPixel(randomGrayColor, x, y, z);
+                    }
                     break;
                 }
 

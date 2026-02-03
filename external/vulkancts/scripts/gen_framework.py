@@ -3481,6 +3481,11 @@ class FormatListsGenerator(CTSGenerator):
             return False
         self.writeList(f'compatibleFormatsFloats', compatibleFormatsFloatsCheckFun)
 
+        suFloatVariants = ['SFLOAT', 'UFLOAT']
+        def suFloatFormatsCheckFun(f):
+            return any(sub in f.name for sub in suFloatVariants)
+        self.writeList(f'signedAndUnsignedFloatFormats', suFloatFormatsCheckFun)
+
         def compressedFormatsFloatsCheckFun(f):
             if f.compressed is not None and any(sub in f.name for sub in floatVariants):
                 # skip formats added by VK_EXT_texture_compression_astc_hdr to
