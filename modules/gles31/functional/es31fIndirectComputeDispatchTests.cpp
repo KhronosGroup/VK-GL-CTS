@@ -213,6 +213,7 @@ void IndirectDispatchCase::createCmdBufferUpload(uint32_t buffer) const
 
 void IndirectDispatchCase::createCmdBufferCompute(uint32_t buffer) const
 {
+    const glw::Functions &gl = m_context.getRenderContext().getFunctions();
     std::ostringstream src;
 
     // Header
@@ -222,29 +223,31 @@ void IndirectDispatchCase::createCmdBufferCompute(uint32_t buffer) const
            "{\n"
            "    highp uint data[];\n"
            "};\n"
-           "void writeCmd (uint offset, uvec3 numWorkGroups)\n"
+           "void writeCmd (highp uint offset, uvec3 numWorkGroups)\n"
            "{\n"
            "    data[offset+0u] = numWorkGroups.x;\n"
            "    data[offset+1u] = numWorkGroups.y;\n"
            "    data[offset+2u] = numWorkGroups.z;\n"
-           "}\n"
-           "void main (void)\n"
-           "{\n";
+           "}\n";
 
     // Commands
-    for (vector<DispatchCommand>::const_iterator cmdIter = m_commands.begin(); cmdIter != m_commands.end(); ++cmdIter)
+    for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
     {
-        const uint32_t offs = (uint32_t)(cmdIter->offset / 4);
-        DE_ASSERT((intptr_t)offs * 4 == cmdIter->offset);
+        src << "layout(location = " << cmdNdx << ") uniform highp uint u_offset" << cmdNdx << ";\n";
+    }
 
-        src << "\twriteCmd(" << offs << "u, uvec3(" << cmdIter->numWorkGroups.x() << "u, " << cmdIter->numWorkGroups.y()
-            << "u, " << cmdIter->numWorkGroups.z() << "u));\n";
+    src << "void main (void)\n"
+           "{\n";
+
+    for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+    {
+        src << "\twriteCmd(u_offset" << cmdNdx << ", uvec3(" << m_commands[cmdNdx].numWorkGroups.x() << "u, "
+            << m_commands[cmdNdx].numWorkGroups.y() << "u, " << m_commands[cmdNdx].numWorkGroups.z() << "u));\n";
     }
 
     src << "}\n";
 
     {
-        const glw::Functions &gl = m_context.getRenderContext().getFunctions();
         glu::ShaderProgram program(m_context.getRenderContext(), glu::ProgramSources()
                                                                      << glu::ComputeSource(src.str()));
 
@@ -253,6 +256,14 @@ void IndirectDispatchCase::createCmdBufferCompute(uint32_t buffer) const
             TCU_FAIL("Compile failed");
 
         gl.useProgram(program.getProgram());
+
+        for (size_t cmdNdx = 0; cmdNdx < m_commands.size(); cmdNdx++)
+        {
+            const uint32_t offs = (uint32_t)(m_commands[cmdNdx].offset / 4);
+            DE_ASSERT((intptr_t)offs * 4 == m_commands[cmdNdx].offset);
+            gl.uniform1ui((glw::GLint)cmdNdx, offs);
+        }
+        GLU_EXPECT_NO_ERROR(gl.getError(), "Setting offset uniforms failed");
 
         gl.bindBuffer(GL_DISPATCH_INDIRECT_BUFFER, buffer);
         gl.bufferData(GL_DISPATCH_INDIRECT_BUFFER, (glw::GLsizeiptr)m_bufferSize, nullptr, GL_STATIC_DRAW);
