@@ -272,8 +272,16 @@ public:
 class VulkanDisplayDirectDrm : public vk::wsi::DirectDrmDisplayInterface
 {
 public:
-    VulkanDisplayDirectDrm(void)
+    VulkanDisplayDirectDrm(void) : m_vki(nullptr), m_physDevice(VK_NULL_HANDLE), m_initialized(false)
     {
+    }
+
+    ~VulkanDisplayDirectDrm(void)
+    {
+        if (m_initialized && m_vki != nullptr && m_native != VK_NULL_HANDLE)
+        {
+            m_vki->releaseDisplayEXT(m_physDevice, m_native);
+        }
     }
 
     vk::wsi::Window *createWindow(const Maybe<UVec2> &) const override
@@ -349,12 +357,23 @@ public:
         if (m_native == VK_NULL_HANDLE)
             TCU_THROW(NotSupportedError, "vkGetDrmDisplayEXT did not set display.");
 
-        VK_CHECK_SUPPORTED(vki.acquireDrmDisplayEXT(physDevice, fd, m_native));
+        vk::VkResult result = vki.acquireDrmDisplayEXT(physDevice, fd, m_native);
+        if (result != vk::VK_SUCCESS)
+        {
+            m_vki->releaseDisplayEXT(m_physDevice, m_native);
+            TCU_THROW(NotSupportedError, "vkAcquireDrmDisplayEXT failed.");
+        }
+
+        m_vki         = &vki;
+        m_physDevice  = physDevice;
         m_initialized = true;
     }
 
+private:
+    const vk::InstanceInterface *m_vki;
+    vk::VkPhysicalDevice m_physDevice;
     MovePtr<LibDrm::FdPtr::element_type, LibDrm::FdPtr::deleter_type> m_fdPtr;
-    bool m_initialized = false;
+    bool m_initialized;
 };
 #endif // DEQP_SUPPORT_DRM
 struct VulkanWindowDirect : public vk::wsi::Window
