@@ -67,6 +67,7 @@ struct TestParameters
 
     VkFormat testedFormat;
     bool testedIsUnorm;
+    bool testedIsSfloat;
     VkFormat testedDecodeMode;
     VkImageUsageFlags testedImageUsage;
 
@@ -175,7 +176,7 @@ TestStatus BasicComputeTestInstance::iterate(void)
         makeImageView(vk, device, referenceImage.get(), imageViewType, m_parameters.testedFormat, subresourceRange);
     Move<VkImageView> resultView =
         makeImageView(vk, device, resultImage.get(), imageViewType, m_parameters.resultFormat,
-                      makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, resultImageInfo.extent.depth, 0u,
+                      makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, resultImageInfo.mipLevels, 0u,
                                                 resultImageInfo.arrayLayers));
 
     Move<VkDescriptorSetLayout> descriptorSetLayout =
@@ -425,28 +426,48 @@ void AstcDecodeModeCase::initPrograms(vk::SourceCollections &programCollection) 
 {
     DE_ASSERT(m_parameters.imageSize.x() > 0);
     DE_ASSERT(m_parameters.imageSize.y() > 0);
+    tcu::TextureFormat format = (isCompressedFormat(m_parameters.testedFormat)) ?
+                                    tcu::getUncompressedFormat(mapVkCompressedFormat(m_parameters.testedFormat)) :
+                                    mapVkFormat(m_parameters.testedFormat);
 
     const string formatQualifierStr = getShaderImageFormatQualifier(mapVkFormat(m_parameters.resultFormat));
-    const string imageTypeStr = getShaderImageType(mapVkFormat(m_parameters.resultFormat), m_parameters.imageType);
+    const string imageTypeStr   = getShaderImageType(mapVkFormat(m_parameters.resultFormat), m_parameters.imageType);
+    const string samplerTypeStr = getGlslSamplerType(format, mapImageViewType(m_parameters.imageType));
 
     std::ostringstream src;
     src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
         << "layout (local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n\n"
-        << "layout (binding = 0) uniform sampler2D compressed_tested;\n"
-        << "layout (binding = 1) uniform sampler2D compressed_reference;\n"
+        << "layout (binding = 0) uniform " << samplerTypeStr << " compressed_tested;\n"
+        << "layout (binding = 1) uniform " << samplerTypeStr << " compressed_reference;\n"
         << "layout (binding = 2, " << formatQualifierStr << ") writeonly uniform " << imageTypeStr << " result;\n"
         << "void main (void)\n"
-        << "{\n"
-        << "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.xy);\n"
-        << "    const vec2 cord = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
-        << "    const ivec2 pos = ivec2(gl_GlobalInvocationID.xy); \n"
-        << "    vec4 tested = texture(compressed_tested, cord);\n"
-        << "    vec4 reference = texture(compressed_reference, cord);\n";
+        << "{\n";
+
+    if (m_parameters.imageSize.z() > 1)
+        src << "    const vec3 pixels_resolution = vec3(gl_NumWorkGroups.xyz);\n"
+            << "    const vec3 cord = vec3(gl_GlobalInvocationID.xyz) / vec3(pixels_resolution);\n"
+            << "    const ivec3 pos = ivec3(gl_GlobalInvocationID.xyz); \n"
+            << "    vec4 tested = texture(compressed_tested, cord);\n"
+            << "    vec4 reference = texture(compressed_reference, cord);\n";
+    else
+        src << "    const vec2 pixels_resolution = vec2(gl_NumWorkGroups.xy);\n"
+            << "    const vec2 cord = vec2(gl_GlobalInvocationID.xy) / vec2(pixels_resolution);\n"
+            << "    const ivec2 pos = ivec2(gl_GlobalInvocationID.xy); \n"
+            << "    vec4 tested = texture(compressed_tested, cord);\n"
+            << "    vec4 reference = texture(compressed_reference, cord);\n";
 
     // special case for e5b9g9r9 decode mode that was set on unorm astc formats
     // here negative values are clamped to zero and alpha is set to 1
     if (m_parameters.testedIsUnorm && (m_parameters.testedDecodeMode == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32))
         src << "    reference = max(vec4(0,0,0,1), reference);\n"
+               "    float result_color = 0.5 * float(distance(tested, reference) < 0.01);\n";
+
+    // another special case for e5b9g9r9 decode mode that was set on sfloat astc formats
+    // here negative values are clamped to zero and alpha is set 1
+    // values exceeding the maximum representable fp16 value are clamped to that maximum
+    else if (m_parameters.testedIsSfloat && (m_parameters.testedDecodeMode == VK_FORMAT_E5B9G9R9_UFLOAT_PACK32))
+        src << "    reference = max(vec4(0,0,0,1), reference);\n"
+               "   tested = min(vec4(65504, 65504, 65504, 65504), tested);\n"
                "    float result_color = 0.5 * float(distance(tested, reference) < 0.01);\n";
     else
         src << "    float result_color = 0.5 * float(distance(tested, reference) < 0.01);\n";
@@ -471,23 +492,72 @@ tcu::TestCaseGroup *createImageAstcDecodeModeTests(tcu::TestContext &testCtx)
         VkFormat format;
         std::string name;
         bool isUnorm;
+        bool isSfloat;
     };
     const FormatData astcFormats[] = {
-        {VK_FORMAT_ASTC_4x4_UNORM_BLOCK, "4x4_unorm", true},     {VK_FORMAT_ASTC_4x4_SRGB_BLOCK, "4x4_srgb", false},
-        {VK_FORMAT_ASTC_5x4_UNORM_BLOCK, "5x4_unorm", true},     {VK_FORMAT_ASTC_5x4_SRGB_BLOCK, "5x4_srgb", false},
-        {VK_FORMAT_ASTC_5x5_UNORM_BLOCK, "5x5_unorm", true},     {VK_FORMAT_ASTC_5x5_SRGB_BLOCK, "5x5_srgb", false},
-        {VK_FORMAT_ASTC_6x5_UNORM_BLOCK, "6x5_unorm", true},     {VK_FORMAT_ASTC_6x5_SRGB_BLOCK, "6x5_srgb", false},
-        {VK_FORMAT_ASTC_6x6_UNORM_BLOCK, "6x6_unorm", true},     {VK_FORMAT_ASTC_6x6_SRGB_BLOCK, "6x6_srgb", false},
-        {VK_FORMAT_ASTC_8x5_UNORM_BLOCK, "8x5_unorm", true},     {VK_FORMAT_ASTC_8x5_SRGB_BLOCK, "8x5_srgb", false},
-        {VK_FORMAT_ASTC_8x6_UNORM_BLOCK, "8x6_unorm", true},     {VK_FORMAT_ASTC_8x6_SRGB_BLOCK, "8x6_srgb", false},
-        {VK_FORMAT_ASTC_8x8_UNORM_BLOCK, "8x8_unorm", true},     {VK_FORMAT_ASTC_8x8_SRGB_BLOCK, "8x8_srgb", false},
-        {VK_FORMAT_ASTC_10x5_UNORM_BLOCK, "10x5_unorm", true},   {VK_FORMAT_ASTC_10x5_SRGB_BLOCK, "10x5_srgb", false},
-        {VK_FORMAT_ASTC_10x6_UNORM_BLOCK, "10x6_unorm", true},   {VK_FORMAT_ASTC_10x6_SRGB_BLOCK, "10x6_srgb", false},
-        {VK_FORMAT_ASTC_10x8_UNORM_BLOCK, "10x8_unorm", true},   {VK_FORMAT_ASTC_10x8_SRGB_BLOCK, "10x8_srgb", false},
-        {VK_FORMAT_ASTC_10x10_UNORM_BLOCK, "10x10_unorm", true}, {VK_FORMAT_ASTC_10x10_SRGB_BLOCK, "10x10_srgb", false},
-        {VK_FORMAT_ASTC_12x10_UNORM_BLOCK, "12x10_unorm", true}, {VK_FORMAT_ASTC_12x10_SRGB_BLOCK, "12x10_srgb", false},
-        {VK_FORMAT_ASTC_12x12_UNORM_BLOCK, "12x12_unorm", true}, {VK_FORMAT_ASTC_12x12_SRGB_BLOCK, "12x12_srgb", false},
+        {VK_FORMAT_ASTC_4x4_UNORM_BLOCK, "4x4_unorm", true, false},
+        {VK_FORMAT_ASTC_4x4_SRGB_BLOCK, "4x4_srgb", false, false},
+        {VK_FORMAT_ASTC_5x4_UNORM_BLOCK, "5x4_unorm", true, false},
+        {VK_FORMAT_ASTC_5x4_SRGB_BLOCK, "5x4_srgb", false, false},
+        {VK_FORMAT_ASTC_5x5_UNORM_BLOCK, "5x5_unorm", true, false},
+        {VK_FORMAT_ASTC_5x5_SRGB_BLOCK, "5x5_srgb", false, false},
+        {VK_FORMAT_ASTC_6x5_UNORM_BLOCK, "6x5_unorm", true, false},
+        {VK_FORMAT_ASTC_6x5_SRGB_BLOCK, "6x5_srgb", false, false},
+        {VK_FORMAT_ASTC_6x6_UNORM_BLOCK, "6x6_unorm", true, false},
+        {VK_FORMAT_ASTC_6x6_SRGB_BLOCK, "6x6_srgb", false, false},
+        {VK_FORMAT_ASTC_8x5_UNORM_BLOCK, "8x5_unorm", true, false},
+        {VK_FORMAT_ASTC_8x5_SRGB_BLOCK, "8x5_srgb", false, false},
+        {VK_FORMAT_ASTC_8x6_UNORM_BLOCK, "8x6_unorm", true, false},
+        {VK_FORMAT_ASTC_8x6_SRGB_BLOCK, "8x6_srgb", false, false},
+        {VK_FORMAT_ASTC_8x8_UNORM_BLOCK, "8x8_unorm", true, false},
+        {VK_FORMAT_ASTC_8x8_SRGB_BLOCK, "8x8_srgb", false, false},
+        {VK_FORMAT_ASTC_10x5_UNORM_BLOCK, "10x5_unorm", true, false},
+        {VK_FORMAT_ASTC_10x5_SRGB_BLOCK, "10x5_srgb", false, false},
+        {VK_FORMAT_ASTC_10x6_UNORM_BLOCK, "10x6_unorm", true, false},
+        {VK_FORMAT_ASTC_10x6_SRGB_BLOCK, "10x6_srgb", false, false},
+        {VK_FORMAT_ASTC_10x8_UNORM_BLOCK, "10x8_unorm", true, false},
+        {VK_FORMAT_ASTC_10x8_SRGB_BLOCK, "10x8_srgb", false, false},
+        {VK_FORMAT_ASTC_10x10_UNORM_BLOCK, "10x10_unorm", true, false},
+        {VK_FORMAT_ASTC_10x10_SRGB_BLOCK, "10x10_srgb", false, false},
+        {VK_FORMAT_ASTC_12x10_UNORM_BLOCK, "12x10_unorm", true, false},
+        {VK_FORMAT_ASTC_12x10_SRGB_BLOCK, "12x10_srgb", false, false},
+        {VK_FORMAT_ASTC_12x12_UNORM_BLOCK, "12x12_unorm", true, false},
+        {VK_FORMAT_ASTC_12x12_SRGB_BLOCK, "12x12_srgb", false, false},
     };
+#ifndef CTS_USES_VULKANSC
+    const FormatData astc3DFormats[] = {
+        {VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT, "3x3x3_unorm", true, false},
+        {VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT, "3x3x3_srgb", false, false},
+        {VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT, "3x3x3_sfloat", true, true},
+        {VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT, "4x3x3_unorm", true, false},
+        {VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT, "4x3x3_srgb", false, false},
+        {VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT, "4x3x3_sfloat", false, true},
+        {VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT, "4x4x3_unorm", true, false},
+        {VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT, "4x4x3_srgb", false, false},
+        {VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT, "4x4x3_sfloat", false, true},
+        {VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT, "4x4x4_unorm", true, false},
+        {VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT, "4x4x4_srgb", false, false},
+        {VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT, "4x4x4_sfloat", false, true},
+        {VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT, "5x4x4_unorm", true, false},
+        {VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT, "5x4x4_srgb", false, false},
+        {VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT, "5x4x4_sfloat", false, true},
+        {VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT, "5x5x4_unorm", true, false},
+        {VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT, "5x5x4_srgb", false, false},
+        {VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT, "5x5x4_sfloat", false, true},
+        {VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT, "5x5x5_unorm", true, false},
+        {VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT, "5x5x5_srgb", false, false},
+        {VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT, "5x5x5_sfloat", false, true},
+        {VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT, "6x5x5_unorm", true, false},
+        {VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT, "6x5x5_srgb", false, false},
+        {VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT, "6x5x5_sfloat", false, true},
+        {VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT, "6x6x5_unorm", true, false},
+        {VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT, "6x6x5_srgb", false, false},
+        {VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT, "6x6x5_sfloat", false, true},
+        {VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT, "6x6x6_unorm", true, false},
+        {VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT, "6x6x6_srgb", false, false},
+        {VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT, "6x6x6_sfloat", false, true},
+    };
+#endif // CTS_USES_VULKANSC
 
     struct DecodeModeData
     {
@@ -508,6 +578,7 @@ tcu::TestCaseGroup *createImageAstcDecodeModeTests(tcu::TestContext &testCtx)
                                                UVec3(64u, 64u, 1u),
                                                format.format,
                                                format.isUnorm,
+                                               format.isSfloat,
                                                mode.mode,
                                                VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
                                                    VK_IMAGE_USAGE_SAMPLED_BIT,
@@ -518,6 +589,30 @@ tcu::TestCaseGroup *createImageAstcDecodeModeTests(tcu::TestContext &testCtx)
             astcDecodeModeTests->addChild(new AstcDecodeModeCase(testCtx, name, parameters));
         }
     }
+#ifndef CTS_USES_VULKANSC
+    for (const FormatData &format : astc3DFormats)
+    {
+        for (const DecodeModeData &mode : decodeModes)
+        {
+            // Skip invalid combination
+            if (format.isSfloat && (mode.mode == VK_FORMAT_R8G8B8A8_UNORM))
+                continue;
+            const TestParameters parameters = {IMAGE_TYPE_3D,
+                                               UVec3(64u, 64u, 3u),
+                                               format.format,
+                                               format.isUnorm,
+                                               format.isSfloat,
+                                               mode.mode,
+                                               VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT |
+                                                   VK_IMAGE_USAGE_SAMPLED_BIT,
+                                               VK_FORMAT_R8G8B8A8_UNORM,
+                                               VK_IMAGE_USAGE_STORAGE_BIT};
+
+            std::string name = format.name + "_to_" + mode.name;
+            astcDecodeModeTests->addChild(new AstcDecodeModeCase(testCtx, name, parameters));
+        }
+    }
+#endif // CTS_USES_VULKANSC
 
     return astcDecodeModeTests.release();
 }

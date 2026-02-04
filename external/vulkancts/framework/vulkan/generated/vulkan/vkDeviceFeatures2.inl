@@ -5277,6 +5277,45 @@ tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures (Co
     return tcu::TestStatus::pass("Querying succeeded");
 }
 
+tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupPartitionedFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT deviceShaderSubgroupPartitionedFeaturesEXT[count];
+    const bool                                           isShaderSubgroupPartitionedFeaturesEXT = checkExtension(properties, "VK_EXT_shader_subgroup_partitioned");
+
+    if (!isShaderSubgroupPartitionedFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceShaderSubgroupPartitionedFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT));
+        deviceShaderSubgroupPartitionedFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_PARTITIONED_FEATURES_EXT;
+        deviceShaderSubgroupPartitionedFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceShaderSubgroupPartitionedFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceShaderSubgroupPartitionedFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceShaderSubgroupPartitionedFeaturesEXT[0].shaderSubgroupPartitioned != deviceShaderSubgroupPartitionedFeaturesEXT[1].shaderSubgroupPartitioned)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
 tcu::TestStatus testPhysicalDeviceFeatureShaderSubgroupRotateFeatures (Context& context)
 {
     const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
@@ -5706,6 +5745,45 @@ tcu::TestStatus testPhysicalDeviceFeatureTexelBufferAlignmentFeaturesEXT (Contex
         deviceTexelBufferAlignmentFeaturesEXT[0].texelBufferAlignment != deviceTexelBufferAlignmentFeaturesEXT[1].texelBufferAlignment)
     {
         TCU_FAIL("Mismatch between VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT");
+    }
+    return tcu::TestStatus::pass("Querying succeeded");
+}
+
+tcu::TestStatus testPhysicalDeviceFeatureTextureCompressionASTC3DFeaturesEXT (Context& context)
+{
+    const VkPhysicalDevice        physicalDevice = context.getPhysicalDevice();
+    const CustomInstance          instance(createCustomInstanceWithExtension(context, "VK_KHR_get_physical_device_properties2"));
+    const InstanceDriver&         vki(instance.getDriver());
+    const int                     count = 2u;
+    TestLog&                      log = context.getTestContext().getLog();
+    VkPhysicalDeviceFeatures2     extFeatures;
+    vector<VkExtensionProperties> properties = enumerateDeviceExtensionProperties(vki, physicalDevice, nullptr);
+
+    VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT deviceTextureCompressionASTC3DFeaturesEXT[count];
+    const bool                                          isTextureCompressionASTC3DFeaturesEXT = checkExtension(properties, "VK_EXT_texture_compression_astc_3d");
+
+    if (!isTextureCompressionASTC3DFeaturesEXT)
+        return tcu::TestStatus::pass("Querying not supported");
+
+    for (int ndx = 0; ndx < count; ++ndx)
+    {
+        deMemset(&deviceTextureCompressionASTC3DFeaturesEXT[ndx], 0xFF * ndx, sizeof(VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT));
+        deviceTextureCompressionASTC3DFeaturesEXT[ndx].sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
+        deviceTextureCompressionASTC3DFeaturesEXT[ndx].pNext = nullptr;
+
+        deMemset(&extFeatures.features, 0xcd, sizeof(extFeatures.features));
+        extFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        extFeatures.pNext = &deviceTextureCompressionASTC3DFeaturesEXT[ndx];
+
+        vki.getPhysicalDeviceFeatures2(physicalDevice, &extFeatures);
+    }
+
+    log << TestLog::Message << deviceTextureCompressionASTC3DFeaturesEXT[0] << TestLog::EndMessage;
+
+    if (
+        deviceTextureCompressionASTC3DFeaturesEXT[0].textureCompressionASTC_3D != deviceTextureCompressionASTC3DFeaturesEXT[1].textureCompressionASTC_3D)
+    {
+        TCU_FAIL("Mismatch between VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT");
     }
     return tcu::TestStatus::pass("Querying succeeded");
 }
@@ -7175,6 +7253,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "shader_relaxed_extended_instruction_features_khr", testPhysicalDeviceFeatureShaderRelaxedExtendedInstructionFeaturesKHR);
 	addFunctionCase(testGroup, "shader_replicated_composites_features_ext", testPhysicalDeviceFeatureShaderReplicatedCompositesFeaturesEXT);
 	addFunctionCase(testGroup, "shader_subgroup_extended_types_features", testPhysicalDeviceFeatureShaderSubgroupExtendedTypesFeatures);
+	addFunctionCase(testGroup, "shader_subgroup_partitioned_features_ext", testPhysicalDeviceFeatureShaderSubgroupPartitionedFeaturesEXT);
 	addFunctionCase(testGroup, "shader_subgroup_rotate_features", testPhysicalDeviceFeatureShaderSubgroupRotateFeatures);
 	addFunctionCase(testGroup, "shader_subgroup_uniform_control_flow_features_khr", testPhysicalDeviceFeatureShaderSubgroupUniformControlFlowFeaturesKHR);
 	addFunctionCase(testGroup, "shader_terminate_invocation_features", testPhysicalDeviceFeatureShaderTerminateInvocationFeatures);
@@ -7186,6 +7265,7 @@ void addSeparateFeatureTests (tcu::TestCaseGroup* testGroup)
 	addFunctionCase(testGroup, "swapchain_maintenance1_features_khr", testPhysicalDeviceFeatureSwapchainMaintenance1FeaturesKHR);
 	addFunctionCase(testGroup, "synchronization2_features", testPhysicalDeviceFeatureSynchronization2Features);
 	addFunctionCase(testGroup, "texel_buffer_alignment_features_ext", testPhysicalDeviceFeatureTexelBufferAlignmentFeaturesEXT);
+	addFunctionCase(testGroup, "texture_compression_astc_3d_features_ext", testPhysicalDeviceFeatureTextureCompressionASTC3DFeaturesEXT);
 	addFunctionCase(testGroup, "texture_compression_astchdr_features", testPhysicalDeviceFeatureTextureCompressionASTCHDRFeatures);
 	addFunctionCase(testGroup, "timeline_semaphore_features", testPhysicalDeviceFeatureTimelineSemaphoreFeatures);
 	addFunctionCase(testGroup, "transform_feedback_features_ext", testPhysicalDeviceFeatureTransformFeedbackFeaturesEXT);

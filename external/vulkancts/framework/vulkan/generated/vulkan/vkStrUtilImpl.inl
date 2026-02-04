@@ -772,6 +772,18 @@ const char* getAccelerationStructureMemoryRequirementsTypeNVName (VkAcceleration
 }
 
 
+const char* getAccelerationStructureMotionInstanceTypeNVName (VkAccelerationStructureMotionInstanceTypeNV value)
+{
+	switch (value)
+	{
+		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MATRIX_MOTION_NV:	return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_MATRIX_MOTION_NV";
+		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV:		return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_SRT_MOTION_NV";
+		case VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_STATIC_NV:			return "VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_STATIC_NV";
+		default:																return nullptr;
+	}
+}
+
+
 const char* getAccelerationStructureTypeKHRName (VkAccelerationStructureTypeKHR value)
 {
 	switch (value)
@@ -3597,6 +3609,8 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROTECTED_MEMORY_PROPERTIES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_FEATURES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_FEATURES_EXT";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_PROPERTIES_EXT:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROVOKING_VERTEX_PROPERTIES_EXT";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_FEATURES_NV:							return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_FEATURES_NV";
+		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_PROPERTIES_NV:						return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_PROPERTIES_NV";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES:								return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_DESCRIPTOR_PROPERTIES";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_QUEUE_FAMILY_DATA_GRAPH_PROCESSING_ENGINE_INFO_ARM:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_QUEUE_FAMILY_DATA_GRAPH_PROCESSING_ENGINE_INFO_ARM";
 		case VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT:		return "VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RASTERIZATION_ORDER_ATTACHMENT_ACCESS_FEATURES_EXT";
@@ -3809,6 +3823,7 @@ const char* getStructureTypeName (VkStructureType value)
 		case VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO:											return "VK_STRUCTURE_TYPE_PRIVATE_DATA_SLOT_CREATE_INFO";
 		case VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO:													return "VK_STRUCTURE_TYPE_PROTECTED_SUBMIT_INFO";
 		case VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO:														return "VK_STRUCTURE_TYPE_PUSH_CONSTANTS_INFO";
+		case VK_STRUCTURE_TYPE_PUSH_CONSTANT_BANK_INFO_NV:												return "VK_STRUCTURE_TYPE_PUSH_CONSTANT_BANK_INFO_NV";
 		case VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT:														return "VK_STRUCTURE_TYPE_PUSH_DATA_INFO_EXT";
 		case VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO:												return "VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_INFO";
 		case VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO:									return "VK_STRUCTURE_TYPE_PUSH_DESCRIPTOR_SET_WITH_TEMPLATE_INFO";
@@ -6766,6 +6781,16 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometry
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometryMotionTrianglesDataNV& value)
+{
+	s << "VkAccelerationStructureGeometryMotionTrianglesDataNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tvertexData = " << value.vertexData << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureGeometrySpheresDataNV& value)
 {
 	s << "VkAccelerationStructureGeometrySpheresDataNV = {\n";
@@ -6827,6 +6852,20 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureInstance
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMatrixMotionInstanceNV& value)
+{
+	s << "VkAccelerationStructureMatrixMotionInstanceNV = {\n";
+	s << "\ttransformT0 = " << value.transformT0 << '\n';
+	s << "\ttransformT1 = " << value.transformT1 << '\n';
+	s << "\tinstanceCustomIndex = " << value.instanceCustomIndex << '\n';
+	s << "\tmask = " << value.mask << '\n';
+	s << "\tinstanceShaderBindingTableRecordOffset = " << value.instanceShaderBindingTableRecordOffset << '\n';
+	s << "\tflags = " << getGeometryInstanceFlagsKHRStr(value.flags) << '\n';
+	s << "\taccelerationStructureReference = " << value.accelerationStructureReference << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMemoryRequirementsInfoNV& value)
 {
 	s << "VkAccelerationStructureMemoryRequirementsInfoNV = {\n";
@@ -6834,6 +6873,51 @@ std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMemoryRe
 	s << "\tpNext = " << value.pNext << '\n';
 	s << "\ttype = " << value.type << '\n';
 	s << "\taccelerationStructure = " << value.accelerationStructure << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMotionInfoNV& value)
+{
+	s << "VkAccelerationStructureMotionInfoNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tmaxInstances = " << value.maxInstances << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMotionInstanceDataNV& value)
+{
+	s << "VkAccelerationStructureMotionInstanceDataNV = {\n";
+	s << "\tstaticInstance = " << value.staticInstance << '\n';
+	s << "\tmatrixMotionInstance = " << value.matrixMotionInstance << '\n';
+	s << "\tsrtMotionInstance = " << value.srtMotionInstance << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureMotionInstanceNV& value)
+{
+	s << "VkAccelerationStructureMotionInstanceNV = {\n";
+	s << "\ttype = " << value.type << '\n';
+	s << "\tflags = " << value.flags << '\n';
+	s << "\tdata = " << value.data << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkAccelerationStructureSRTMotionInstanceNV& value)
+{
+	s << "VkAccelerationStructureSRTMotionInstanceNV = {\n";
+	s << "\ttransformT0 = " << value.transformT0 << '\n';
+	s << "\ttransformT1 = " << value.transformT1 << '\n';
+	s << "\tinstanceCustomIndex = " << value.instanceCustomIndex << '\n';
+	s << "\tmask = " << value.mask << '\n';
+	s << "\tinstanceShaderBindingTableRecordOffset = " << value.instanceShaderBindingTableRecordOffset << '\n';
+	s << "\tflags = " << getGeometryInstanceFlagsKHRStr(value.flags) << '\n';
+	s << "\taccelerationStructureReference = " << value.accelerationStructureReference << '\n';
 	s << '}';
 	return s;
 }
@@ -14480,6 +14564,17 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingMaint
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingMotionBlurFeaturesNV& value)
+{
+	s << "VkPhysicalDeviceRayTracingMotionBlurFeaturesNV = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\trayTracingMotionBlur = " << value.rayTracingMotionBlur << '\n';
+	s << "\trayTracingMotionBlurPipelineTraceRaysIndirect = " << value.rayTracingMotionBlurPipelineTraceRaysIndirect << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceRayTracingPipelineFeaturesKHR& value)
 {
 	s << "VkPhysicalDeviceRayTracingPipelineFeaturesKHR = {\n";
@@ -14978,6 +15073,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupE
 	return s;
 }
 
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\tshaderSubgroupPartitioned = " << value.shaderSubgroupPartitioned << '\n';
+	s << '}';
+	return s;
+}
+
 std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceShaderSubgroupRotateFeatures& value)
 {
 	s << "VkPhysicalDeviceShaderSubgroupRotateFeatures = {\n";
@@ -15235,6 +15340,16 @@ std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTexelBufferAlig
 	s << "\tstorageTexelBufferOffsetSingleTexelAlignment = " << value.storageTexelBufferOffsetSingleTexelAlignment << '\n';
 	s << "\tuniformTexelBufferOffsetAlignmentBytes = " << value.uniformTexelBufferOffsetAlignmentBytes << '\n';
 	s << "\tuniformTexelBufferOffsetSingleTexelAlignment = " << value.uniformTexelBufferOffsetSingleTexelAlignment << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT& value)
+{
+	s << "VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT = {\n";
+	s << "\tsType = " << value.sType << '\n';
+	s << "\tpNext = " << value.pNext << '\n';
+	s << "\ttextureCompressionASTC_3D = " << value.textureCompressionASTC_3D << '\n';
 	s << '}';
 	return s;
 }
@@ -17369,6 +17484,29 @@ std::ostream& operator<< (std::ostream& s, const VkResolveImageModeInfoKHR& valu
 	s << "\tflags = " << getResolveImageFlagsKHRStr(value.flags) << '\n';
 	s << "\tresolveMode = " << value.resolveMode << '\n';
 	s << "\tstencilResolveMode = " << value.stencilResolveMode << '\n';
+	s << '}';
+	return s;
+}
+
+std::ostream& operator<< (std::ostream& s, const VkSRTDataNV& value)
+{
+	s << "VkSRTDataNV = {\n";
+	s << "\tsx = " << value.sx << '\n';
+	s << "\ta = " << value.a << '\n';
+	s << "\tb = " << value.b << '\n';
+	s << "\tpvx = " << value.pvx << '\n';
+	s << "\tsy = " << value.sy << '\n';
+	s << "\tc = " << value.c << '\n';
+	s << "\tpvy = " << value.pvy << '\n';
+	s << "\tsz = " << value.sz << '\n';
+	s << "\tpvz = " << value.pvz << '\n';
+	s << "\tqx = " << value.qx << '\n';
+	s << "\tqy = " << value.qy << '\n';
+	s << "\tqz = " << value.qz << '\n';
+	s << "\tqw = " << value.qw << '\n';
+	s << "\ttx = " << value.tx << '\n';
+	s << "\tty = " << value.ty << '\n';
+	s << "\ttz = " << value.tz << '\n';
 	s << '}';
 	return s;
 }

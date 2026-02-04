@@ -346,6 +346,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceRayQueryFeaturesKHR>(VkPhysi
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT>(VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>(VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>(VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(VkPhysicalDeviceRayTracingPipelineFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR>(VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>(VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&, const AllFeaturesBlobs&) {}
@@ -367,6 +368,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceShaderQuadControlFeaturesKHR
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR>(VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT>(VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV>(VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT>(VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR>(VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderTileImageFeaturesEXT>(VkPhysicalDeviceShaderTileImageFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT>(VkPhysicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -376,6 +378,7 @@ template<> void initFeatureFromBlob<VkPhysicalDeviceSubpassMergeFeedbackFeatures
 template<> void initFeatureFromBlob<VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR>(VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceTensorFeaturesARM>(VkPhysicalDeviceTensorFeaturesARM&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>(VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&, const AllFeaturesBlobs&) {}
+template<> void initFeatureFromBlob<VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT>(VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceTransformFeedbackFeaturesEXT>(VkPhysicalDeviceTransformFeedbackFeaturesEXT&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR>(VkPhysicalDeviceUnifiedImageLayoutsFeaturesKHR&, const AllFeaturesBlobs&) {}
 template<> void initFeatureFromBlob<VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT>(VkPhysicalDeviceVertexAttributeRobustnessFeaturesEXT&, const AllFeaturesBlobs&) {}
@@ -520,6 +523,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayQueryFeaturesKHR>(void
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT, VK_EXT_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_LINEAR_SWEPT_SPHERES_FEATURES_NV, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR, VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV, VK_NV_RAY_TRACING_MOTION_BLUR_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_POSITION_FETCH_FEATURES_KHR, VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_REPRESENTATIVE_FRAGMENT_TEST_FEATURES_NV, VK_NV_REPRESENTATIVE_FRAGMENT_TEST_EXTENSION_NAME}; }
@@ -552,6 +556,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderRelaxedExtendedInst
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_REPLICATED_COMPOSITES_FEATURES_EXT, VK_EXT_SHADER_REPLICATED_COMPOSITES_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SM_BUILTINS_FEATURES_NV, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES, VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_PARTITIONED_FEATURES_EXT, VK_EXT_SHADER_SUBGROUP_PARTITIONED_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderSubgroupRotateFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES, VK_KHR_SHADER_SUBGROUP_ROTATE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_FEATURES_KHR, VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceShaderTerminateInvocationFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_TERMINATE_INVOCATION_FEATURES, VK_KHR_SHADER_TERMINATE_INVOCATION_EXTENSION_NAME}; }
@@ -565,6 +570,7 @@ template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSwapchainMaintenance1Feat
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceSynchronization2Features>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SYNCHRONIZATION_2_FEATURES, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTensorFeaturesARM>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TENSOR_FEATURES_ARM, VK_ARM_TENSORS_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_FEATURES_EXT, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME}; }
+template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT, VK_EXT_TEXTURE_COMPRESSION_ASTC_3D_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTextureCompressionASTCHDRFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_HDR_FEATURES, VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTimelineSemaphoreFeatures>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TIMELINE_SEMAPHORE_FEATURES, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME}; }
 template<> FeatureDesc makeFeatureDesc<VkPhysicalDeviceTransformFeedbackFeaturesEXT>(void) { return FeatureDesc{VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TRANSFORM_FEEDBACK_FEATURES_EXT, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME}; }
@@ -718,6 +724,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT>, VK_EXT_RAY_TRACING_INVOCATION_REORDER_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV>, VK_NV_RAY_TRACING_LINEAR_SWEPT_SPHERES_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR>, VK_KHR_RAY_TRACING_MAINTENANCE_1_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV>, VK_NV_RAY_TRACING_MOTION_BLUR_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingPipelineFeaturesKHR>, VK_KHR_RAY_TRACING_PIPELINE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR>, VK_KHR_RAY_TRACING_POSITION_FETCH_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV>, VK_NV_REPRESENTATIVE_FRAGMENT_TEST_EXTENSION_NAME },
@@ -750,6 +757,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT>, VK_EXT_SHADER_REPLICATED_COMPOSITES_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderSMBuiltinsFeaturesNV>, VK_NV_SHADER_SM_BUILTINS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures>, VK_KHR_SHADER_SUBGROUP_EXTENDED_TYPES_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT>, VK_EXT_SHADER_SUBGROUP_PARTITIONED_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderSubgroupRotateFeatures>, VK_KHR_SHADER_SUBGROUP_ROTATE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR>, VK_KHR_SHADER_SUBGROUP_UNIFORM_CONTROL_FLOW_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceShaderTerminateInvocationFeatures>, VK_KHR_SHADER_TERMINATE_INVOCATION_EXTENSION_NAME },
@@ -763,6 +771,7 @@ static const FeatureStructCreationData featureStructCreationArray[]
 	{ createFeatureStructWrapper<VkPhysicalDeviceSynchronization2Features>, VK_KHR_SYNCHRONIZATION_2_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceTensorFeaturesARM>, VK_ARM_TENSORS_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT>, VK_EXT_TEXEL_BUFFER_ALIGNMENT_EXTENSION_NAME },
+	{ createFeatureStructWrapper<VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT>, VK_EXT_TEXTURE_COMPRESSION_ASTC_3D_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceTextureCompressionASTCHDRFeatures>, VK_EXT_TEXTURE_COMPRESSION_ASTC_HDR_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceTimelineSemaphoreFeatures>, VK_KHR_TIMELINE_SEMAPHORE_EXTENSION_NAME },
 	{ createFeatureStructWrapper<VkPhysicalDeviceTransformFeedbackFeaturesEXT>, VK_EXT_TRANSFORM_FEEDBACK_EXTENSION_NAME },

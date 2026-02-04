@@ -646,6 +646,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_tracing_maintenance1"))
 		addFeatures(&physicalDeviceRayTracingMaintenance1FeaturesKHR);
 
+	// VkPhysicalDeviceRayTracingMotionBlurFeaturesNV for ext [VK_NV_ray_tracing_motion_blur]
+	vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV physicalDeviceRayTracingMotionBlurFeaturesNV = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_NV_ray_tracing_motion_blur"))
+		addFeatures(&physicalDeviceRayTracingMotionBlurFeaturesNV);
+
 	// VkPhysicalDeviceRayTracingPipelineFeaturesKHR for ext [VK_KHR_ray_tracing_pipeline]
 	vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR physicalDeviceRayTracingPipelineFeaturesKHR = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_ray_tracing_pipeline"))
@@ -806,6 +811,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_extended_types"))
 		addFeatures(&physicalDeviceShaderSubgroupExtendedTypesFeatures);
 
+	// VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT for ext [VK_EXT_shader_subgroup_partitioned]
+	vk::VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT physicalDeviceShaderSubgroupPartitionedFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_shader_subgroup_partitioned"))
+		addFeatures(&physicalDeviceShaderSubgroupPartitionedFeaturesEXT);
+
 	// VkPhysicalDeviceShaderSubgroupRotateFeatures, VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR for ext [VK_KHR_shader_subgroup_rotate]
 	vk::VkPhysicalDeviceShaderSubgroupRotateFeatures physicalDeviceShaderSubgroupRotateFeatures = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_KHR_shader_subgroup_rotate"))
@@ -870,6 +880,11 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT physicalDeviceTexelBufferAlignmentFeaturesEXT = initVulkanStructure();
 	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_texel_buffer_alignment"))
 		addFeatures(&physicalDeviceTexelBufferAlignmentFeaturesEXT);
+
+	// VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT for ext [VK_EXT_texture_compression_astc_3d]
+	vk::VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT physicalDeviceTextureCompressionASTC3DFeaturesEXT = initVulkanStructure();
+	if (canUseFeaturesStruct(deviceExtensions, usedApiVersion, "VK_EXT_texture_compression_astc_3d"))
+		addFeatures(&physicalDeviceTextureCompressionASTC3DFeaturesEXT);
 
 	// VkPhysicalDeviceTextureCompressionASTCHDRFeatures, VkPhysicalDeviceTextureCompressionASTCHDRFeaturesEXT for ext [VK_EXT_texture_compression_astc_hdr]
 	vk::VkPhysicalDeviceTextureCompressionASTCHDRFeatures physicalDeviceTextureCompressionASTCHDRFeatures = initVulkanStructure();
@@ -1943,6 +1958,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 			failMesages.push_back("customBorderColors");
 	}
 
+	// VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_texture_compression_astc_3d")) )
+	{
+		if ( physicalDeviceTextureCompressionASTC3DFeaturesEXT.textureCompressionASTC_3D == VK_FALSE )
+			failMesages.push_back("textureCompressionASTC_3D");
+	}
+
 	// VkPhysicalDevicePrivateDataFeaturesEXT
 	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_private_data")) )
 	{
@@ -1983,6 +2005,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceFragmentShadingRateEnumsFeaturesNV.fragmentShadingRateEnums == VK_FALSE )
 			failMesages.push_back("fragmentShadingRateEnums");
+	}
+
+	// VkPhysicalDeviceRayTracingMotionBlurFeaturesNV
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_NV_ray_tracing_motion_blur")) )
+	{
+		if ( physicalDeviceRayTracingMotionBlurFeaturesNV.rayTracingMotionBlur == VK_FALSE )
+			failMesages.push_back("rayTracingMotionBlur");
 	}
 
 	// VkPhysicalDeviceYcbcr2Plane444FormatsFeaturesEXT
@@ -2543,6 +2572,13 @@ void checkBasicMandatoryFeatures(const vkt::Context& context, std::vector<std::s
 	{
 		if ( physicalDeviceShaderUniformBufferUnsizedArrayFeaturesEXT.shaderUniformBufferUnsizedArray == VK_FALSE )
 			failMesages.push_back("shaderUniformBufferUnsizedArray");
+	}
+
+	// VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT
+	if ( isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_EXT_shader_subgroup_partitioned")) )
+	{
+		if ( physicalDeviceShaderSubgroupPartitionedFeaturesEXT.shaderSubgroupPartitioned == VK_FALSE )
+			failMesages.push_back("shaderSubgroupPartitioned");
 	}
 
 	// VkPhysicalDeviceAccelerationStructureFeaturesKHR

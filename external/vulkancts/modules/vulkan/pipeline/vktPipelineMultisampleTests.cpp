@@ -183,9 +183,8 @@ public:
                              PipelineConstructionType pipelineConstructionType,
                              VkSampleCountFlagBits rasterizationSamples, GeometryType geometryType, float pointSize,
                              ImageBackingMode backingMode, TestModeFlags modeFlags, const bool useFragmentShadingRate);
-    virtual ~RasterizationSamplesTest(void)
-    {
-    }
+    virtual ~RasterizationSamplesTest(void) = default;
+    virtual void checkSupport(Context &context) const;
 
 protected:
     virtual TestInstance *createMultisampleTestInstance(
@@ -208,9 +207,7 @@ public:
                          VkSampleCountFlagBits rasterizationSamples, float minSampleShading, GeometryType geometryType,
                          float pointSize, ImageBackingMode backingMode, const bool minSampleShadingEnabled,
                          const bool useFragmentShadingRate);
-    virtual ~MinSampleShadingTest(void)
-    {
-    }
+    virtual ~MinSampleShadingTest(void) = default;
 
 protected:
     virtual void initPrograms(SourceCollections &programCollection) const;
@@ -236,9 +233,8 @@ public:
                    const std::vector<VkSampleMask> &sampleMask, GeometryType geometryType, float pointSize,
                    ImageBackingMode backingMode, const bool useFragmentShadingRate);
 
-    virtual ~SampleMaskTest(void)
-    {
-    }
+    virtual ~SampleMaskTest(void) = default;
+    virtual void checkSupport(Context &context) const;
 
 protected:
     virtual TestInstance *createMultisampleTestInstance(
@@ -259,9 +255,7 @@ public:
                    const PipelineConstructionType pipelineConstructionType, VkSampleCountFlagBits rasterizationSamples,
                    ImageBackingMode backingMode, const bool useFragmentShadingRate);
 
-    virtual ~AlphaToOneTest(void)
-    {
-    }
+    virtual ~AlphaToOneTest(void) = default;
 
 protected:
     virtual void checkSupport(Context &context) const;
@@ -284,9 +278,8 @@ public:
                         VkSampleCountFlagBits rasterizationSamples, GeometryType geometryType,
                         ImageBackingMode backingMode, const bool useFragmentShadingRate, const bool checkDepthBuffer);
 
-    virtual ~AlphaToCoverageTest(void)
-    {
-    }
+    virtual ~AlphaToCoverageTest(void) = default;
+    void checkSupport(Context &context) const override;
     void initPrograms(SourceCollections &programCollection) const override;
 
 protected:
@@ -311,9 +304,8 @@ public:
                                          VkSampleCountFlagBits rasterizationSamples, GeometryType geometryType,
                                          ImageBackingMode backingMode, const bool useFragmentShadingRate);
 
-    virtual ~AlphaToCoverageNoColorAttachmentTest(void)
-    {
-    }
+    virtual ~AlphaToCoverageNoColorAttachmentTest(void) = default;
+    void checkSupport(Context &context) const;
 
 protected:
     virtual TestInstance *createMultisampleTestInstance(
@@ -335,9 +327,8 @@ public:
                                              VkSampleCountFlagBits rasterizationSamples, GeometryType geometryType,
                                              ImageBackingMode backingMode, const bool useFragmentShadingRate);
 
-    virtual ~AlphaToCoverageColorUnusedAttachmentTest(void)
-    {
-    }
+    virtual ~AlphaToCoverageColorUnusedAttachmentTest(void) = default;
+    void checkSupport(Context &context) const;
 
 protected:
     virtual void initPrograms(SourceCollections &programCollection) const;
@@ -393,9 +384,7 @@ public:
                                 const VkSampleCountFlagBits rasterizationSamples, const bool enablePostDepthCoverage,
                                 const bool useFragmentShadingRate);
 
-    ~SampleMaskWithDepthTestTest(void)
-    {
-    }
+    ~SampleMaskWithDepthTestTest(void) = default;
 
     void initPrograms(SourceCollections &programCollection) const;
     TestInstance *createInstance(Context &context) const;
@@ -458,7 +447,7 @@ public:
                         const RenderType renderType, const ImageBackingMode backingMode,
                         const float depthClearValue = 1.0f);
 
-    virtual ~MultisampleRenderer(void);
+    virtual ~MultisampleRenderer(void) = default;
 
     de::MovePtr<tcu::TextureLevel> render(void);
     de::MovePtr<tcu::TextureLevel> getSingleSampledImage(uint32_t sampleId);
@@ -868,15 +857,75 @@ protected:
     std::map<VkSampleCountFlagBits, SampleCoverage> m_refCoverageAfterDepthTest;
     const bool m_useFragmentShadingRate;
 };
+#endif // CTS_USES_VULKANSC
 
 // Helper functions
 
+void commonCheckSupport(Context &context, VkFormat colorFormat, VkSampleCountFlagBits rasterizationSamples,
+                        ImageBackingMode backingMode, RenderType renderType)
+{
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
+    if (!isSupportedSampleCount(vki, physicalDevice, rasterizationSamples))
+        TCU_THROW(NotSupportedError, "Unsupported number of rasterization samples");
+
+    if (backingMode == IMAGE_BACKING_MODE_SPARSE)
+    {
+        const auto &features        = context.getDeviceFeatures();
+        bool sparseSamplesSupported = false;
+        switch (rasterizationSamples)
+        {
+        case VK_SAMPLE_COUNT_1_BIT:
+            sparseSamplesSupported = features.sparseResidencyImage2D;
+            break;
+        case VK_SAMPLE_COUNT_2_BIT:
+            sparseSamplesSupported = features.sparseResidency2Samples;
+            break;
+        case VK_SAMPLE_COUNT_4_BIT:
+            sparseSamplesSupported = features.sparseResidency4Samples;
+            break;
+        case VK_SAMPLE_COUNT_8_BIT:
+            sparseSamplesSupported = features.sparseResidency8Samples;
+            break;
+        case VK_SAMPLE_COUNT_16_BIT:
+            sparseSamplesSupported = features.sparseResidency16Samples;
+            break;
+        default:
+            break;
+        }
+
+        if (!sparseSamplesSupported)
+            TCU_THROW(NotSupportedError, "Unsupported number of rasterization samples for sparse residency");
+
+        if (!context.getDeviceFeatures().sparseBinding)
+            TCU_THROW(NotSupportedError, "No sparseBinding support");
+
+#ifndef CTS_USES_VULKANSC
+        VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        if (renderType == RENDER_TYPE_COPY_SAMPLES)
+            imageUsageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+
+        const auto propVec = getPhysicalDeviceSparseImageFormatProperties(vki, physicalDevice, colorFormat,
+                                                                          VK_IMAGE_TYPE_2D, rasterizationSamples,
+                                                                          imageUsageFlags, VK_IMAGE_TILING_OPTIMAL);
+        if (propVec.empty())
+            TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
+#else
+        DE_UNREF(colorFormat);
+        DE_UNREF(renderType);
+#endif // CTS_USES_VULKANSC
+    }
+}
+
 void checkSupport(Context &context, MultisampleTestParams params)
 {
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, VK_SAMPLE_COUNT_2_BIT, params.backingMode,
+                       RENDER_TYPE_RESOLVE);
+
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           params.pipelineConstructionType);
 }
-#endif // CTS_USES_VULKANSC
 
 class CompatibleRenderPassTestInstance : public vkt::TestInstance
 {
@@ -1330,21 +1379,18 @@ RasterizationSamplesTest::RasterizationSamplesTest(tcu::TestContext &testContext
 {
 }
 
+void RasterizationSamplesTest::checkSupport(Context &context) const
+{
+    MultisampleTest::checkSupport(context);
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_multisampleStateParams.rasterizationSamples, m_backingMode,
+                       RENDER_TYPE_RESOLVE);
+}
+
 VkPipelineMultisampleStateCreateInfo RasterizationSamplesTest::getRasterizationSamplesStateParams(
     VkSampleCountFlagBits rasterizationSamples)
 {
-    const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                  // const void* pNext;
-        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
-        rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
-        false,                                                    // VkBool32 sampleShadingEnable;
-        0.0f,                                                     // float minSampleShading;
-        nullptr,                                                  // const VkSampleMask* pSampleMask;
-        false,                                                    // VkBool32 alphaToCoverageEnable;
-        false                                                     // VkBool32 alphaToOneEnable;
-    };
-
+    VkPipelineMultisampleStateCreateInfo multisampleStateParams = initVulkanStructure();
+    multisampleStateParams.rasterizationSamples                 = rasterizationSamples;
     return multisampleStateParams;
 }
 
@@ -1380,6 +1426,9 @@ void MinSampleShadingTest::checkSupport(Context &context) const
     MultisampleTest::checkSupport(context);
 
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_multisampleStateParams.rasterizationSamples, m_backingMode,
+                       RENDER_TYPE_COPY_SAMPLES);
 }
 
 void MinSampleShadingTest::initPrograms(SourceCollections &programCollection) const
@@ -1436,6 +1485,13 @@ SampleMaskTest::SampleMaskTest(tcu::TestContext &testContext, const std::string 
 {
 }
 
+void SampleMaskTest::checkSupport(Context &context) const
+{
+    MultisampleTest::checkSupport(context);
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_multisampleStateParams.rasterizationSamples, m_backingMode,
+                       RENDER_TYPE_RESOLVE);
+}
+
 TestInstance *SampleMaskTest::createMultisampleTestInstance(
     Context &context, VkPrimitiveTopology topology, float pointSize, const std::vector<Vertex4RGBA> &vertices,
     const VkPipelineMultisampleStateCreateInfo &multisampleStateParams,
@@ -1481,6 +1537,9 @@ void AlphaToOneTest::checkSupport(Context &context) const
     MultisampleTest::checkSupport(context);
 
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_ALPHA_TO_ONE);
+
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_multisampleStateParams.rasterizationSamples, m_backingMode,
+                       RENDER_TYPE_RESOLVE);
 }
 
 TestInstance *AlphaToOneTest::createMultisampleTestInstance(
@@ -1545,6 +1604,13 @@ AlphaToCoverageTest::AlphaToCoverageTest(tcu::TestContext &testContext, const st
         DE_ASSERT(geometryType == GEOMETRY_TYPE_INVISIBLE_QUAD);
 }
 
+void AlphaToCoverageTest::checkSupport(Context &context) const
+{
+    MultisampleTest::checkSupport(context);
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_multisampleStateParams.rasterizationSamples, m_backingMode,
+                       RENDER_TYPE_RESOLVE);
+}
+
 void AlphaToCoverageTest::initPrograms(SourceCollections &programCollection) const
 {
     MultisampleTest::initPrograms(programCollection);
@@ -1582,18 +1648,9 @@ TestInstance *AlphaToCoverageTest::createMultisampleTestInstance(
 VkPipelineMultisampleStateCreateInfo AlphaToCoverageTest::getAlphaToCoverageStateParams(
     VkSampleCountFlagBits rasterizationSamples)
 {
-    const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                  // const void* pNext;
-        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
-        rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
-        false,                                                    // VkBool32 sampleShadingEnable;
-        0.0f,                                                     // float minSampleShading;
-        nullptr,                                                  // const VkSampleMask* pSampleMask;
-        true,                                                     // VkBool32 alphaToCoverageEnable;
-        false                                                     // VkBool32 alphaToOneEnable;
-    };
-
+    VkPipelineMultisampleStateCreateInfo multisampleStateParams = initVulkanStructure();
+    multisampleStateParams.rasterizationSamples                 = rasterizationSamples;
+    multisampleStateParams.alphaToCoverageEnable                = true;
     return multisampleStateParams;
 }
 
@@ -1610,6 +1667,13 @@ AlphaToCoverageNoColorAttachmentTest::AlphaToCoverageNoColorAttachmentTest(
 {
 }
 
+void AlphaToCoverageNoColorAttachmentTest::checkSupport(Context &context) const
+{
+    MultisampleTest::checkSupport(context);
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_multisampleStateParams.rasterizationSamples, m_backingMode,
+                       RENDER_TYPE_DEPTHSTENCIL_ONLY);
+}
+
 TestInstance *AlphaToCoverageNoColorAttachmentTest::createMultisampleTestInstance(
     Context &context, VkPrimitiveTopology topology, float pointSize, const std::vector<Vertex4RGBA> &vertices,
     const VkPipelineMultisampleStateCreateInfo &multisampleStateParams,
@@ -1624,18 +1688,9 @@ TestInstance *AlphaToCoverageNoColorAttachmentTest::createMultisampleTestInstanc
 VkPipelineMultisampleStateCreateInfo AlphaToCoverageNoColorAttachmentTest::getStateParams(
     VkSampleCountFlagBits rasterizationSamples)
 {
-    const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                  // const void* pNext;
-        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
-        rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
-        false,                                                    // VkBool32 sampleShadingEnable;
-        0.0f,                                                     // float minSampleShading;
-        nullptr,                                                  // const VkSampleMask* pSampleMask;
-        true,                                                     // VkBool32 alphaToCoverageEnable;
-        false                                                     // VkBool32 alphaToOneEnable;
-    };
-
+    VkPipelineMultisampleStateCreateInfo multisampleStateParams = initVulkanStructure();
+    multisampleStateParams.rasterizationSamples                 = rasterizationSamples;
+    multisampleStateParams.alphaToCoverageEnable                = true;
     return multisampleStateParams;
 }
 
@@ -1650,6 +1705,13 @@ AlphaToCoverageColorUnusedAttachmentTest::AlphaToCoverageColorUnusedAttachmentTe
     , m_geometryType(geometryType)
     , m_backingMode(backingMode)
 {
+}
+
+void AlphaToCoverageColorUnusedAttachmentTest::checkSupport(Context &context) const
+{
+    MultisampleTest::checkSupport(context);
+    commonCheckSupport(context, VK_FORMAT_R5G6B5_UNORM_PACK16, m_multisampleStateParams.rasterizationSamples,
+                       m_backingMode, RENDER_TYPE_UNUSED_ATTACHMENT);
 }
 
 void AlphaToCoverageColorUnusedAttachmentTest::initPrograms(SourceCollections &programCollection) const
@@ -1671,18 +1733,9 @@ TestInstance *AlphaToCoverageColorUnusedAttachmentTest::createMultisampleTestIns
 VkPipelineMultisampleStateCreateInfo AlphaToCoverageColorUnusedAttachmentTest::getStateParams(
     VkSampleCountFlagBits rasterizationSamples)
 {
-    const VkPipelineMultisampleStateCreateInfo multisampleStateParams = {
-        VK_STRUCTURE_TYPE_PIPELINE_MULTISAMPLE_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                  // const void* pNext;
-        0u,                                                       // VkPipelineMultisampleStateCreateFlags flags;
-        rasterizationSamples,                                     // VkSampleCountFlagBits rasterizationSamples;
-        false,                                                    // VkBool32 sampleShadingEnable;
-        0.0f,                                                     // float minSampleShading;
-        nullptr,                                                  // const VkSampleMask* pSampleMask;
-        true,                                                     // VkBool32 alphaToCoverageEnable;
-        false                                                     // VkBool32 alphaToOneEnable;
-    };
-
+    VkPipelineMultisampleStateCreateInfo multisampleStateParams = initVulkanStructure();
+    multisampleStateParams.rasterizationSamples                 = rasterizationSamples;
+    multisampleStateParams.alphaToCoverageEnable                = true;
     return multisampleStateParams;
 }
 
@@ -2093,6 +2146,9 @@ void SampleMaskWithConservativeTest::checkSupport(Context &context) const
 
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
+
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_rasterizationSamples, IMAGE_BACKING_MODE_REGULAR,
+                       RENDER_TYPE_COPY_SAMPLES);
 }
 
 void SampleMaskWithConservativeTest::initPrograms(SourceCollections &programCollection) const
@@ -2220,6 +2276,9 @@ void SampleMaskWithDepthTestTest::checkSupport(Context &context) const
         if (!checkFragmentShadingRateRequirements(context, m_rasterizationSamples))
             TCU_THROW(NotSupportedError, "Required FragmentShadingRate not supported");
     }
+
+    commonCheckSupport(context, VK_FORMAT_R8G8B8A8_UNORM, m_rasterizationSamples, IMAGE_BACKING_MODE_REGULAR,
+                       RENDER_TYPE_RESOLVE);
 }
 
 void SampleMaskWithDepthTestTest::initPrograms(SourceCollections &programCollection) const
@@ -4025,15 +4084,10 @@ MultisampleRenderer::MultisampleRenderer(
 void MultisampleRenderer::initialize(Context &context, const uint32_t numTopologies,
                                      const VkPrimitiveTopology *pTopology, const std::vector<Vertex4RGBA> *pVertices)
 {
-    if (!isSupportedSampleCount(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                m_multisampleStateParams.rasterizationSamples))
-        throw tcu::NotSupportedError("Unsupported number of rasterization samples");
-
-    const InstanceInterface &vki            = context.getInstanceInterface();
-    const DeviceInterface &vk               = context.getDeviceInterface();
-    const VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
-    const VkDevice vkDevice                 = context.getDevice();
-    const VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const DeviceInterface &vk             = context.getDeviceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkDevice vkDevice               = context.getDevice();
     const uint32_t queueFamilyIndices[] = {context.getUniversalQueueFamilyIndex(), context.getSparseQueueFamilyIndex()};
     const bool sparse                   = m_backingMode == IMAGE_BACKING_MODE_SPARSE;
     const VkComponentMapping componentMappingRGBA = {VK_COMPONENT_SWIZZLE_R, VK_COMPONENT_SWIZZLE_G,
@@ -4049,44 +4103,14 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
                                   m_renderType == RENDER_TYPE_DEPTHSTENCIL_ONLY ||
                                   m_renderType == RENDER_TYPE_UNUSED_ATTACHMENT;
 
-    if (sparse)
-    {
-        bool sparseSamplesSupported = false;
-        switch (m_multisampleStateParams.rasterizationSamples)
-        {
-        case VK_SAMPLE_COUNT_1_BIT:
-            sparseSamplesSupported = features.sparseResidencyImage2D;
-            break;
-        case VK_SAMPLE_COUNT_2_BIT:
-            sparseSamplesSupported = features.sparseResidency2Samples;
-            break;
-        case VK_SAMPLE_COUNT_4_BIT:
-            sparseSamplesSupported = features.sparseResidency4Samples;
-            break;
-        case VK_SAMPLE_COUNT_8_BIT:
-            sparseSamplesSupported = features.sparseResidency8Samples;
-            break;
-        case VK_SAMPLE_COUNT_16_BIT:
-            sparseSamplesSupported = features.sparseResidency16Samples;
-            break;
-        default:
-            break;
-        }
-
-        if (!sparseSamplesSupported)
-            throw tcu::NotSupportedError("Unsupported number of rasterization samples for sparse residency");
-    }
-
-    if (sparse && !context.getDeviceFeatures().sparseBinding)
-        throw tcu::NotSupportedError("No sparseBinding support");
-
     // Create color image
     {
         const VkImageUsageFlags imageUsageFlags =
             VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
             (m_renderType == RENDER_TYPE_COPY_SAMPLES ? VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT : (VkImageUsageFlagBits)0u);
 
-        const VkImageCreateInfo colorImageParams = {
+        // note: when appying changes to colorImageParams update also commonCheckSupport function
+        const VkImageCreateInfo colorImageParams{
             VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType sType;
             nullptr,                                                      // const void* pNext;
             imageCreateFlags,                                             // VkImageCreateFlags flags;
@@ -4103,12 +4127,6 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
             queueFamilyIndices,                                           // const uint32_t* pQueueFamilyIndices;
             VK_IMAGE_LAYOUT_UNDEFINED,                                    // VkImageLayout initialLayout;
         };
-
-#ifndef CTS_USES_VULKANSC
-        if (sparse && !checkSparseImageFormatSupport(context.getPhysicalDevice(), context.getInstanceInterface(),
-                                                     colorImageParams))
-            TCU_THROW(NotSupportedError, "The image format does not support sparse operations.");
-#endif // CTS_USES_VULKANSC
 
         m_colorImage = createImage(vk, vkDevice, &colorImageParams);
 
@@ -5149,10 +5167,6 @@ void MultisampleRenderer::initialize(Context &context, const uint32_t numTopolog
 
         endCommandBuffer(vk, *m_cmdBuffer);
     }
-}
-
-MultisampleRenderer::~MultisampleRenderer(void)
-{
 }
 
 de::MovePtr<tcu::TextureLevel> MultisampleRenderer::render(void)
@@ -7673,6 +7687,9 @@ tcu::TestCaseGroup *createMultisampleTests(tcu::TestContext &testCtx, PipelineCo
             createMultisampleResolveRenderpassRenderAreaTests(testCtx, pipelineConstructionType));
 
         // VK_EXT_multisampled_render_to_single_sampled
+        if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC ||
+            pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_FAST_LINKED_LIBRARY ||
+            pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_UNLINKED_SPIRV)
         {
             multisampleTests->addChild(createMultisampledRenderToSingleSampledTests(testCtx, pipelineConstructionType));
             // Take advantage of the code for this extension's tests to add some normal multisampling tests

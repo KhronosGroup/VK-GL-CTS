@@ -1741,6 +1741,11 @@ VideoCapabilitiesQueryTestCase::~VideoCapabilitiesQueryTestCase(void)
 
 void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
 {
+#ifndef DE_BUILD_VIDEO
+    DE_UNREF(context);
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif
+
     context.requireDeviceFunctionality("VK_KHR_video_queue");
 
     if (context.isDeviceFunctionalitySupported("VK_KHR_video_maintenance2"))
@@ -2118,6 +2123,12 @@ MaybeFormatProperties getVideoFormatProperties(const InstanceInterface &vki, VkP
 
 void checkSupport(Context &context, de::SharedPtr<TestParams> params)
 {
+#ifndef DE_BUILD_VIDEO
+    DE_UNREF(context);
+    DE_UNREF(params);
+    TCU_THROW(NotSupportedError, "Video tests are disabled via DEQP_DISABLE_VK_VIDEO_TESTS");
+#endif
+
     context.requireDeviceFunctionality("VK_KHR_video_queue");
 
     switch (params->coreProfile.GetCodecType())

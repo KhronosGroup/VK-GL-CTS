@@ -16,6 +16,7 @@ vk-main-2024-03-01/fragment-shading-rate.txt
 vk-main-2024-03-01/geometry.txt
 vk-main-2024-03-01/glsl.txt
 vk-main-2024-03-01/image/2d-array-compatible.txt
+vk-main-2024-03-01/image/astc-decode-mode.txt
 vk-main-2024-03-01/image/atomic-operations.txt
 vk-main-2024-03-01/image/concurrent-copy.txt
 vk-main-2024-03-01/image/depth-stencil-separate-access.txt

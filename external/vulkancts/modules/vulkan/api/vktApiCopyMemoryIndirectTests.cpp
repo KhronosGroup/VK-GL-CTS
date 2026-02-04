@@ -349,20 +349,22 @@ CopyMemoryToImageIndirect::CopyMemoryToImageIndirect(Context &context, TestParam
 
     // Create source buffer
     {
+        const auto memReq = MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress;
+        const auto usage  = VK_BUFFER_USAGE_TRANSFER_SRC_BIT | VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
         const VkBufferCreateInfo sourceBufferParams = {
             VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
             nullptr,                              // const void* pNext;
             0u,                                   // VkBufferCreateFlags flags;
             m_bufferSize,                         // VkDeviceSize size;
-            VK_BUFFER_USAGE_TRANSFER_SRC_BIT,     // VkBufferUsageFlags usage;
+            usage,                                // VkBufferUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
             0u,                                   // uint32_t queueFamilyIndexCount;
             (const uint32_t *)nullptr,            // const uint32_t* pQueueFamilyIndices;
         };
 
-        m_source            = createBuffer(vk, m_device, &sourceBufferParams);
-        m_sourceBufferAlloc = allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, MemoryRequirement::HostVisible,
-                                             *m_allocator, m_params.allocationKind);
+        m_source = createBuffer(vk, m_device, &sourceBufferParams);
+        m_sourceBufferAlloc =
+            allocateBuffer(vki, vk, vkPhysDevice, m_device, *m_source, memReq, *m_allocator, m_params.allocationKind);
         VK_CHECK(vk.bindBufferMemory(m_device, *m_source, m_sourceBufferAlloc->getMemory(),
                                      m_sourceBufferAlloc->getOffset()));
     }
@@ -626,10 +628,10 @@ tcu::TestStatus CopyMemoryToImageIndirect::iterate(void)
         uint32_t dummyparam2;
     };
 
+    const auto usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
     const VkDeviceSize indirectBufferSize = de::max(m_params.regions.size(), (size_t)1) * sizeof(IndirectImageParams);
-    const BufferWithMemory indirectBuffer(
-        vk, vkDevice, memAlloc, makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT),
-        MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+    const BufferWithMemory indirectBuffer(vk, vkDevice, memAlloc, makeBufferCreateInfo(indirectBufferSize, usage),
+                                          MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
 
     // indirectBuffer Address
     VkBufferDeviceAddressInfo indirectBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
@@ -658,11 +660,12 @@ tcu::TestStatus CopyMemoryToImageIndirect::iterate(void)
     std::vector<VkImageSubresourceLayers> imageSubresourceLayers;
     for (const auto &region : m_params.regions)
     {
+        auto &imageSubresource                     = region.bufferImageCopy.imageSubresource;
         VkImageSubresourceLayers subresourceLayers = {};
-        subresourceLayers.aspectMask               = region.bufferImageCopy.imageSubresource.aspectMask;
-        subresourceLayers.mipLevel                 = region.bufferImageCopy.imageSubresource.mipLevel;
-        subresourceLayers.baseArrayLayer           = region.bufferImageCopy.imageSubresource.baseArrayLayer;
-        subresourceLayers.layerCount               = region.bufferImageCopy.imageSubresource.layerCount;
+        subresourceLayers.aspectMask               = imageSubresource.aspectMask;
+        subresourceLayers.mipLevel                 = imageSubresource.mipLevel;
+        subresourceLayers.baseArrayLayer           = imageSubresource.baseArrayLayer;
+        subresourceLayers.layerCount               = imageSubresource.layerCount;
         imageSubresourceLayers.push_back(subresourceLayers);
     }
 
@@ -2020,27 +2023,27 @@ private:
                                             vk::MemoryRequirement::HostVisible | vk::MemoryRequirement::DeviceAddress;
 
         // Buffers
-        const BufferWithMemory srcBuffer(
+        VkBufferCreateFlags usage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        const BufferWithMemory srcBuffer(vkd, device, allocator,
+                                         makeBufferCreateInfo(bufferSize,
+                                                              usage, // Buffer usage flag
+                                                              std::vector<uint32_t>(),
+                                                              bufferCreateFlags), // Buffer create flag
+                                         memReqs);
+
+        const BufferWithMemory dstBuffer(
             vkd, device, allocator,
-            makeBufferCreateInfo(bufferSize,
-                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, // Buffer usage flag
+            makeBufferCreateInfo(std::max(m_copyParams.copyCount, (uint32_t)1) * bufferSize, usage,
                                  std::vector<uint32_t>(),
                                  bufferCreateFlags), // Buffer create flag
             memReqs);
 
-        const BufferWithMemory dstBuffer(
-            vkd, device, allocator,
-            makeBufferCreateInfo(std::max(m_copyParams.copyCount, (uint32_t)1) * bufferSize,
-                                 VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, std::vector<uint32_t>(),
-                                 bufferCreateFlags), // Buffer create flag
-            memReqs);
-
+        usage |= VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT;
         const VkDeviceSize indirectBufferSize = std::max(m_copyParams.copyCount, 1U) * m_copyParams.stride;
-        const BufferWithMemory indirectBuffer(
-            vkd, device, allocator,
-            makeBufferCreateInfo(indirectBufferSize, VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT, std::vector<uint32_t>(),
-                                 bufferCreateFlags), // Buffer create flag
-            memReqs);
+        const BufferWithMemory indirectBuffer(vkd, device, allocator,
+                                              makeBufferCreateInfo(indirectBufferSize, usage, std::vector<uint32_t>(),
+                                                                   bufferCreateFlags), // Buffer create flag
+                                              memReqs);
 
         // Buffer Information
         VkBufferDeviceAddressInfo srcBufferAddressInfo{VK_STRUCTURE_TYPE_BUFFER_DEVICE_ADDRESS_INFO, nullptr,
@@ -2204,6 +2207,93 @@ private:
     CopyParams m_copyParams;
 };
 
+namespace MandatoryFormats
+{
+
+void checkIndirectCopyMandatoryFormatSupport(Context &context)
+{
+    context.requireDeviceFunctionality("VK_KHR_copy_memory_indirect");
+    context.requireDeviceFunctionality("VK_KHR_format_feature_flags2");
+
+    if (context.getCopyMemoryIndirectFeatures().indirectMemoryToImageCopy == VK_FALSE)
+        TCU_THROW(NotSupportedError, "indirectMemoryToImageCopy feature not supported");
+}
+
+tcu::TestStatus addIndirectCopyMandatoryFormatSupportTests(Context &context)
+{
+    tcu::TestLog &log = context.getTestContext().getLog();
+
+    const VkFormat mandatoryFormats[] = {
+        VK_FORMAT_R8_UNORM,
+        VK_FORMAT_R8_SNORM,
+        VK_FORMAT_R8_UINT,
+        VK_FORMAT_R8_SINT,
+        VK_FORMAT_R8G8_UNORM,
+        VK_FORMAT_R8G8_SNORM,
+        VK_FORMAT_R8G8_UINT,
+        VK_FORMAT_R8G8_SINT,
+        VK_FORMAT_R8G8B8A8_UNORM,
+        VK_FORMAT_R8G8B8A8_SNORM,
+        VK_FORMAT_R8G8B8A8_UINT,
+        VK_FORMAT_R8G8B8A8_SINT,
+        VK_FORMAT_A2B10G10R10_UNORM_PACK32,
+        VK_FORMAT_A2B10G10R10_UINT_PACK32,
+        VK_FORMAT_R16_UNORM,
+        VK_FORMAT_R16_SNORM,
+        VK_FORMAT_R16_UINT,
+        VK_FORMAT_R16_SINT,
+        VK_FORMAT_R16_SFLOAT,
+        VK_FORMAT_R16G16_UNORM,
+        VK_FORMAT_R16G16_SNORM,
+        VK_FORMAT_R16G16_UINT,
+        VK_FORMAT_R16G16_SINT,
+        VK_FORMAT_R16G16_SFLOAT,
+        VK_FORMAT_R16G16B16A16_UNORM,
+        VK_FORMAT_R16G16B16A16_SNORM,
+        VK_FORMAT_R16G16B16A16_UINT,
+        VK_FORMAT_R16G16B16A16_SINT,
+        VK_FORMAT_R16G16B16A16_SFLOAT,
+        VK_FORMAT_R32_UINT,
+        VK_FORMAT_R32_SINT,
+        VK_FORMAT_R32_SFLOAT,
+        VK_FORMAT_R32G32_UINT,
+        VK_FORMAT_R32G32_SINT,
+        VK_FORMAT_R32G32_SFLOAT,
+        VK_FORMAT_R32G32B32A32_UINT,
+        VK_FORMAT_R32G32B32A32_SINT,
+        VK_FORMAT_R32G32B32A32_SFLOAT,
+        VK_FORMAT_B10G11R11_UFLOAT_PACK32,
+    };
+
+    bool passed = true;
+    for (const auto &format : mandatoryFormats)
+    {
+        VkFormatProperties3 formatProps3;
+        formatProps3.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+        formatProps3.pNext = nullptr;
+
+        VkFormatProperties2 formatProps2;
+        formatProps2.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+        formatProps2.pNext = &formatProps3;
+
+        context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), format,
+                                                                          &formatProps2);
+
+        if ((formatProps3.optimalTilingFeatures & VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR) == 0)
+        {
+            log << tcu::TestLog::Message << "Format " << format
+                << " missing VK_FORMAT_FEATURE_2_COPY_IMAGE_INDIRECT_DST_BIT_KHR in optimalTilingFeatures"
+                << tcu::TestLog::EndMessage;
+            passed = false;
+        }
+    }
+
+    return passed ? tcu::TestStatus::pass("All mandatory formats support indirect copy DST bit") :
+                    tcu::TestStatus::fail("One or more formats missing mandatory indirect copy feature bit");
+}
+
+} // namespace MandatoryFormats
+
 #endif
 
 } // namespace
@@ -2324,6 +2414,13 @@ tcu::TestCaseGroup *createCopyMemoryIndirectTests(tcu::TestContext &testCtx)
 
     protectedGroup->addChild(new CopyMemoryIndirectTestCase(testCtx, "graphics", protectedParams));
     group->addChild(protectedGroup.release());
+
+    // Create test that checks if all mandatory formats support indirect copy
+    de::MovePtr<tcu::TestCaseGroup> mandatoryFormats(new tcu::TestCaseGroup(testCtx, "mandatory_formats"));
+    addFunctionCase(mandatoryFormats.get(), "memory_to_image",
+                    MandatoryFormats::checkIndirectCopyMandatoryFormatSupport,
+                    MandatoryFormats::addIndirectCopyMandatoryFormatSupportTests);
+    group->addChild(mandatoryFormats.release());
 
     return group.release();
 }

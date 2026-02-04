@@ -236,6 +236,46 @@ bool isCompressedFormat(VkFormat format)
     // update this mapping if VkFormat changes
     DE_STATIC_ASSERT(VK_CORE_FORMAT_LAST == 185);
 
+#ifndef CTS_USES_VULKANSC
+    switch (format)
+    {
+    case VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
+        return true;
+
+    default:
+        break;
+    }
+#endif // CTS_USES_VULKANSC
+
     // skip formats not supported by vkImageUtil
     if (format > VK_CORE_FORMAT_LAST)
         return false;
@@ -368,6 +408,51 @@ bool isPvrtcFormat(VkFormat format)
     case VK_FORMAT_PVRTC1_4BPP_SRGB_BLOCK_IMG:
     case VK_FORMAT_PVRTC2_2BPP_SRGB_BLOCK_IMG:
     case VK_FORMAT_PVRTC2_4BPP_SRGB_BLOCK_IMG:
+        return true;
+    default:
+        return false;
+    }
+#else
+    DE_UNREF(format);
+#endif
+    return false;
+}
+
+bool isAstc3DFormat(VkFormat format)
+{
+#ifndef CTS_USES_VULKANSC
+    switch (format)
+    {
+    case VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
         return true;
     default:
         return false;
@@ -3047,7 +3132,8 @@ VkFormat mapCompressedTextureFormat(const tcu::CompressedTexFormat format)
 {
     // update this mapping if CompressedTexFormat changes
     // 55 needed for Vulkan and 2 for AHB that won't have mapping here
-    DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST == 57);
+    // 30 for ASTC 3D formats which do not support VulkanSC
+    DE_STATIC_ASSERT(tcu::COMPRESSEDTEXFORMAT_LAST_VULKAN == 87);
 
     switch (format)
     {
@@ -3129,7 +3215,68 @@ VkFormat mapCompressedTextureFormat(const tcu::CompressedTexFormat format)
         return VK_FORMAT_ASTC_12x12_UNORM_BLOCK;
     case tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8:
         return VK_FORMAT_ASTC_12x12_SRGB_BLOCK;
-
+#ifndef CTS_USES_VULKANSC
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT;
+    case tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
+        return VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT;
+#endif // CTS_USES_VULKANSC
     case tcu::COMPRESSEDTEXFORMAT_BC1_RGB_UNORM_BLOCK:
         return VK_FORMAT_BC1_RGB_UNORM_BLOCK;
     case tcu::COMPRESSEDTEXFORMAT_BC1_RGB_SRGB_BLOCK:
@@ -3587,7 +3734,68 @@ tcu::CompressedTexFormat mapVkCompressedFormat(VkFormat format)
         return tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_RGBA;
     case VK_FORMAT_ASTC_12x12_SRGB_BLOCK:
         return tcu::COMPRESSEDTEXFORMAT_ASTC_12x12_SRGB8_ALPHA8;
-
+#ifndef CTS_USES_VULKANSC
+    case VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT;
+    case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
+        return tcu::COMPRESSEDTEXFORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT;
+#endif // CTS_USES_VULKANSC
     case VK_FORMAT_BC1_RGB_UNORM_BLOCK:
         return tcu::COMPRESSEDTEXFORMAT_BC1_RGB_UNORM_BLOCK;
     case VK_FORMAT_BC1_RGB_SRGB_BLOCK:
@@ -3623,7 +3831,7 @@ tcu::CompressedTexFormat mapVkCompressedFormat(VkFormat format)
 
     default:
         TCU_THROW(InternalError, "Unknown image format");
-        return tcu::COMPRESSEDTEXFORMAT_LAST;
+        return tcu::COMPRESSEDTEXFORMAT_LAST_VULKAN;
     }
 }
 
@@ -3871,63 +4079,84 @@ struct CompressedFormatParameters
     uint32_t blockBytes;
     uint32_t blockWidth;
     uint32_t blockHeight;
+    uint32_t blockDepth;
 };
 
 CompressedFormatParameters compressedFormatParameters[VK_FORMAT_ASTC_12x12_SRGB_BLOCK - VK_FORMAT_BC1_RGB_UNORM_BLOCK +
-                                                      1] = {{VK_FORMAT_BC1_RGB_UNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_BC1_RGB_SRGB_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_BC1_RGBA_UNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_BC1_RGBA_SRGB_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_BC2_UNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC2_SRGB_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC3_UNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC3_SRGB_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC4_UNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_BC4_SNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_BC5_UNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC5_SNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC6H_UFLOAT_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC6H_SFLOAT_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC7_UNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_BC7_SRGB_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_EAC_R11_UNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_EAC_R11_SNORM_BLOCK, 8, 4, 4},
-                                                            {VK_FORMAT_EAC_R11G11_UNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_EAC_R11G11_SNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_ASTC_4x4_UNORM_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_ASTC_4x4_SRGB_BLOCK, 16, 4, 4},
-                                                            {VK_FORMAT_ASTC_5x4_UNORM_BLOCK, 16, 5, 4},
-                                                            {VK_FORMAT_ASTC_5x4_SRGB_BLOCK, 16, 5, 4},
-                                                            {VK_FORMAT_ASTC_5x5_UNORM_BLOCK, 16, 5, 5},
-                                                            {VK_FORMAT_ASTC_5x5_SRGB_BLOCK, 16, 5, 5},
-                                                            {VK_FORMAT_ASTC_6x5_UNORM_BLOCK, 16, 6, 5},
-                                                            {VK_FORMAT_ASTC_6x5_SRGB_BLOCK, 16, 6, 5},
-                                                            {VK_FORMAT_ASTC_6x6_UNORM_BLOCK, 16, 6, 6},
-                                                            {VK_FORMAT_ASTC_6x6_SRGB_BLOCK, 16, 6, 6},
-                                                            {VK_FORMAT_ASTC_8x5_UNORM_BLOCK, 16, 8, 5},
-                                                            {VK_FORMAT_ASTC_8x5_SRGB_BLOCK, 16, 8, 5},
-                                                            {VK_FORMAT_ASTC_8x6_UNORM_BLOCK, 16, 8, 6},
-                                                            {VK_FORMAT_ASTC_8x6_SRGB_BLOCK, 16, 8, 6},
-                                                            {VK_FORMAT_ASTC_8x8_UNORM_BLOCK, 16, 8, 8},
-                                                            {VK_FORMAT_ASTC_8x8_SRGB_BLOCK, 16, 8, 8},
-                                                            {VK_FORMAT_ASTC_10x5_UNORM_BLOCK, 16, 10, 5},
-                                                            {VK_FORMAT_ASTC_10x5_SRGB_BLOCK, 16, 10, 5},
-                                                            {VK_FORMAT_ASTC_10x6_UNORM_BLOCK, 16, 10, 6},
-                                                            {VK_FORMAT_ASTC_10x6_SRGB_BLOCK, 16, 10, 6},
-                                                            {VK_FORMAT_ASTC_10x8_UNORM_BLOCK, 16, 10, 8},
-                                                            {VK_FORMAT_ASTC_10x8_SRGB_BLOCK, 16, 10, 8},
-                                                            {VK_FORMAT_ASTC_10x10_UNORM_BLOCK, 16, 10, 10},
-                                                            {VK_FORMAT_ASTC_10x10_SRGB_BLOCK, 16, 10, 10},
-                                                            {VK_FORMAT_ASTC_12x10_UNORM_BLOCK, 16, 12, 10},
-                                                            {VK_FORMAT_ASTC_12x10_SRGB_BLOCK, 16, 12, 10},
-                                                            {VK_FORMAT_ASTC_12x12_UNORM_BLOCK, 16, 12, 12},
-                                                            {VK_FORMAT_ASTC_12x12_SRGB_BLOCK, 16, 12, 12}};
+                                                      1] = {{VK_FORMAT_BC1_RGB_UNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_BC1_RGB_SRGB_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_BC1_RGBA_UNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_BC1_RGBA_SRGB_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_BC2_UNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC2_SRGB_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC3_UNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC3_SRGB_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC4_UNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_BC4_SNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_BC5_UNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC5_SNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC6H_UFLOAT_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC6H_SFLOAT_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC7_UNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_BC7_SRGB_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_ETC2_R8G8B8_UNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_ETC2_R8G8B8_SRGB_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_ETC2_R8G8B8A1_UNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_ETC2_R8G8B8A1_SRGB_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_ETC2_R8G8B8A8_UNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_ETC2_R8G8B8A8_SRGB_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_EAC_R11_UNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_EAC_R11_SNORM_BLOCK, 8, 4, 4, 1},
+                                                            {VK_FORMAT_EAC_R11G11_UNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_EAC_R11G11_SNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_ASTC_4x4_UNORM_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_ASTC_4x4_SRGB_BLOCK, 16, 4, 4, 1},
+                                                            {VK_FORMAT_ASTC_5x4_UNORM_BLOCK, 16, 5, 4, 1},
+                                                            {VK_FORMAT_ASTC_5x4_SRGB_BLOCK, 16, 5, 4, 1},
+                                                            {VK_FORMAT_ASTC_5x5_UNORM_BLOCK, 16, 5, 5, 1},
+                                                            {VK_FORMAT_ASTC_5x5_SRGB_BLOCK, 16, 5, 5, 1},
+                                                            {VK_FORMAT_ASTC_6x5_UNORM_BLOCK, 16, 6, 5, 1},
+                                                            {VK_FORMAT_ASTC_6x5_SRGB_BLOCK, 16, 6, 5, 1},
+                                                            {VK_FORMAT_ASTC_6x6_UNORM_BLOCK, 16, 6, 6, 1},
+                                                            {VK_FORMAT_ASTC_6x6_SRGB_BLOCK, 16, 6, 6, 1},
+                                                            {VK_FORMAT_ASTC_8x5_UNORM_BLOCK, 16, 8, 5, 1},
+                                                            {VK_FORMAT_ASTC_8x5_SRGB_BLOCK, 16, 8, 5, 1},
+                                                            {VK_FORMAT_ASTC_8x6_UNORM_BLOCK, 16, 8, 6, 1},
+                                                            {VK_FORMAT_ASTC_8x6_SRGB_BLOCK, 16, 8, 6, 1},
+                                                            {VK_FORMAT_ASTC_8x8_UNORM_BLOCK, 16, 8, 8, 1},
+                                                            {VK_FORMAT_ASTC_8x8_SRGB_BLOCK, 16, 8, 8, 1},
+                                                            {VK_FORMAT_ASTC_10x5_UNORM_BLOCK, 16, 10, 5, 1},
+                                                            {VK_FORMAT_ASTC_10x5_SRGB_BLOCK, 16, 10, 5, 1},
+                                                            {VK_FORMAT_ASTC_10x6_UNORM_BLOCK, 16, 10, 6, 1},
+                                                            {VK_FORMAT_ASTC_10x6_SRGB_BLOCK, 16, 10, 6, 1},
+                                                            {VK_FORMAT_ASTC_10x8_UNORM_BLOCK, 16, 10, 8, 1},
+                                                            {VK_FORMAT_ASTC_10x8_SRGB_BLOCK, 16, 10, 8, 1},
+                                                            {VK_FORMAT_ASTC_10x10_UNORM_BLOCK, 16, 10, 10, 1},
+                                                            {VK_FORMAT_ASTC_10x10_SRGB_BLOCK, 16, 10, 10, 1},
+                                                            {VK_FORMAT_ASTC_12x10_UNORM_BLOCK, 16, 12, 10, 1},
+                                                            {VK_FORMAT_ASTC_12x10_SRGB_BLOCK, 16, 12, 10, 1},
+                                                            {VK_FORMAT_ASTC_12x12_UNORM_BLOCK, 16, 12, 12, 1},
+                                                            {VK_FORMAT_ASTC_12x12_SRGB_BLOCK, 16, 12, 12, 1}};
+#ifndef CTS_USES_VULKANSC
+CompressedFormatParameters
+    compressed3DFormatParameters[VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT - VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT + 1] = {
+        {VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT, 16, 3, 3, 3},  {VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT, 16, 3, 3, 3},
+        {VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT, 16, 3, 3, 3}, {VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT, 16, 4, 3, 3},
+        {VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT, 16, 4, 3, 3},   {VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT, 16, 4, 3, 3},
+        {VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT, 16, 4, 4, 3},  {VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT, 16, 4, 4, 3},
+        {VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT, 16, 4, 4, 3}, {VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT, 16, 4, 4, 4},
+        {VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT, 16, 4, 4, 4},   {VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT, 16, 4, 4, 4},
+        {VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT, 16, 5, 4, 4},  {VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT, 16, 5, 4, 4},
+        {VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT, 16, 5, 4, 4}, {VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT, 16, 5, 5, 4},
+        {VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT, 16, 5, 5, 4},   {VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT, 16, 5, 5, 4},
+        {VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT, 16, 5, 5, 5},  {VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT, 16, 5, 5, 5},
+        {VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT, 16, 5, 5, 5}, {VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT, 16, 6, 5, 5},
+        {VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT, 16, 6, 5, 5},   {VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT, 16, 6, 5, 5},
+        {VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT, 16, 6, 6, 5},  {VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT, 16, 6, 6, 5},
+        {VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT, 16, 6, 6, 5}, {VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT, 16, 6, 6, 6},
+        {VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT, 16, 6, 6, 6},   {VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT, 16, 6, 6, 6},
+};
+#endif // CTS_USES_VULKANSC
 
 uint32_t getFormatComponentWidth(const VkFormat format, const uint32_t componentNdx)
 {
@@ -4024,34 +4253,44 @@ float getRepresentableDiffSnorm(const VkFormat format, const uint32_t componentN
     return 1.0f / float((1 << (size - 1)) - 1);
 }
 
-uint32_t getBlockSizeInBytes(const VkFormat compressedFormat)
+static CompressedFormatParameters *getCompressedFormats(const VkFormat compressedFormat)
 {
     uint32_t formatNdx = static_cast<uint32_t>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
-
+#ifdef CTS_USES_VULKANSC
     DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
     DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
+    return &compressedFormatParameters[formatNdx];
+#else
+    if (deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)))
+    {
+        DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
+        return &compressedFormatParameters[formatNdx];
+    }
+    formatNdx = static_cast<uint32_t>(compressedFormat - VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT);
+    DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressed3DFormatParameters)));
+    DE_ASSERT(compressed3DFormatParameters[formatNdx].format == compressedFormat);
+    return &compressed3DFormatParameters[formatNdx];
+#endif // CTS_USES_VULKANSC
+}
 
-    return compressedFormatParameters[formatNdx].blockBytes;
+uint32_t getBlockSizeInBytes(const VkFormat compressedFormat)
+{
+    return getCompressedFormats(compressedFormat)->blockBytes;
 }
 
 uint32_t getBlockWidth(const VkFormat compressedFormat)
 {
-    uint32_t formatNdx = static_cast<uint32_t>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
-
-    DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
-    DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
-
-    return compressedFormatParameters[formatNdx].blockWidth;
+    return getCompressedFormats(compressedFormat)->blockWidth;
 }
 
 uint32_t getBlockHeight(const VkFormat compressedFormat)
 {
-    uint32_t formatNdx = static_cast<uint32_t>(compressedFormat - VK_FORMAT_BC1_RGB_UNORM_BLOCK);
+    return getCompressedFormats(compressedFormat)->blockHeight;
+}
 
-    DE_ASSERT(deInRange32(formatNdx, 0, DE_LENGTH_OF_ARRAY(compressedFormatParameters)));
-    DE_ASSERT(compressedFormatParameters[formatNdx].format == compressedFormat);
-
-    return compressedFormatParameters[formatNdx].blockHeight;
+uint32_t getBlockDepth(const VkFormat compressedFormat)
+{
+    return getCompressedFormats(compressedFormat)->blockDepth;
 }
 
 VkFilter mapFilterMode(tcu::Sampler::FilterMode filterMode)
@@ -4763,7 +5002,7 @@ void copyBufferToImageIndirect(const DeviceInterface &vk, const InstanceInterfac
         0u,                                   // VkBufferCreateFlags flags
         indirectBufferSize,                   // VkDeviceSize size
         VK_BUFFER_USAGE_TRANSFER_SRC_BIT |    // VkBufferUsageFlags usage
-            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT,
+            VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT,
         VK_SHARING_MODE_EXCLUSIVE, // VkSharingMode sharingMode
         0u,                        // uint32_t queueFamilyIndexCount
         nullptr                    // const uint32_t* pQueueFamilyIndices

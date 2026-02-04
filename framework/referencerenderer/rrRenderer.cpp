@@ -1129,7 +1129,7 @@ void rasterizePrimitive(const RenderState &state, const RenderTarget &renderTarg
     // Culling
     const FaceType visibleFace = rasterizer.getVisibleFace();
     if ((state.cullMode == CULLMODE_FRONT && visibleFace == FACETYPE_FRONT) ||
-        (state.cullMode == CULLMODE_BACK && visibleFace == FACETYPE_BACK))
+        (state.cullMode == CULLMODE_BACK && visibleFace == FACETYPE_BACK) || state.cullMode == CULLMODE_FRONT_AND_BACK)
         return;
 
     // Shading context

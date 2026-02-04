@@ -350,9 +350,9 @@ PACKAGES = [
         "babee77020ff82b571d723ce2c0262e2ec0ee3f1",
         "spirv-headers"),
     GitRepo(
-        "https://gitlab.khronos.org/vulkan/vulkan.git",
-        "git@gitlab.khronos.org:vulkan/vulkan.git",
-        "13c9ec426f476ee7f44a6f5a8afb79ee85f40d78",
+        "https://github.com/KhronosGroup/Vulkan-Docs.git",
+        "git@github.com:KhronosGroup/Vulkan-Docs.git",
+        "ac8223b312d40a6bc1733fb3490bdcdb5a389d50",
         "vulkan-docs"),
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-ValidationLayers.git",
@@ -373,7 +373,7 @@ PACKAGES = [
     GitRepo(
         "https://github.com/KhronosGroup/Vulkan-Video-Samples.git",
         "git@github.com:KhronosGroup/Vulkan-Video-Samples.git",
-        "v0.3.7",
+        "v0.3.9",
         "vulkan-video-samples"),
     # NOTE: Temporary video generator repo .
     GitRepo(

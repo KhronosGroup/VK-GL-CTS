@@ -28,6 +28,8 @@
 #include "vkBufferWithMemory.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkObjUtil.hpp"
+#include "tcuResource.hpp"
+#include "deUniquePtr.hpp"
 
 using std::vector;
 using tcu::TestLog;
@@ -89,7 +91,7 @@ public:
 
 private:
     void init(void);
-    uint8_t *loadDataFromFile(const char *filename, size_t *size);
+    uint8_t *loadDataFromFile(const char *filename, size_t *size, const tcu::Archive &archive);
     virtual tcu::TestStatus iterate(void);
     void replaceCRLFInPlace(uint8_t *data, size_t *size);
 
@@ -145,50 +147,22 @@ void MemoryDecompressionTestInstance::replaceCRLFInPlace(uint8_t *buffer, size_t
     *size = write;
 }
 
-uint8_t *MemoryDecompressionTestInstance::loadDataFromFile(const char *filename, size_t *size)
+uint8_t *MemoryDecompressionTestInstance::loadDataFromFile(const char *filename, size_t *size,
+                                                           const tcu::Archive &archive)
 {
-    FILE *fp = fopen(filename, "rb");
-    if (fp == NULL)
-    {
-        TCU_THROW(TestError, "Error opening file");
-        return NULL;
-    }
-    // Seek to the end of the file to get the size
-    if (fseek(fp, 0, SEEK_END) != 0)
-    {
-        TCU_THROW(TestError, "Error opening file");
-        fclose(fp);
-        return NULL;
-    }
-    size_t file_size = ftell(fp);
-    if (file_size == 0)
-    {
-        TCU_THROW(TestError, "Error: Empty file or error getting file size");
-        fclose(fp);
-        return NULL;
-    }
-    *size = file_size;
-    // Rewind the file pointer to the beginning
-    if (fseek(fp, 0, SEEK_SET) != 0)
-    {
-        TCU_THROW(TestError, "Error rewinding file");
-        fclose(fp);
-        return NULL;
-    }
-    uint8_t *data = new uint8_t[file_size];
+    de::UniquePtr<tcu::Resource> resource(archive.getResource(filename));
+
+    size_t file_size = resource->getSize();
+    uint8_t *data    = new uint8_t[file_size];
     if (data == NULL)
     {
         TCU_THROW(TestError, "Memory allocation failed");
-        fclose(fp);
         return NULL;
     }
 
-    size_t bytes_read = fread(data, sizeof(uint8_t), file_size, fp);
-    if (bytes_read != file_size)
-    {
-        TCU_THROW(TestError, "Error reading file data");
-    }
-    fclose(fp);
+    *size = file_size;
+    resource->read(data, static_cast<int>(file_size));
+
     return data;
 }
 
@@ -211,11 +185,13 @@ void MemoryDecompressionTestInstance::init(void)
 
     char compressedFile[64];
     char decompressedFile[64];
-    snprintf(compressedFile, 64, "./vulkan/data/gdeflate/compressed_%s_level_%u.gdef", m_decompressedFilename,
+    snprintf(compressedFile, 64, "vulkan/data/gdeflate/compressed_%s_level_%u.gdef", m_decompressedFilename,
              m_compressionLevel);
-    snprintf(decompressedFile, 64, "./vulkan/data/gdeflate/decompressed_%s.gdef", m_decompressedFilename);
-    m_compressedData   = loadDataFromFile(compressedFile, &m_compressedSize);
-    m_decompressedData = loadDataFromFile(decompressedFile, &m_decompressedSize);
+    snprintf(decompressedFile, 64, "vulkan/data/gdeflate/decompressed_%s.gdef", m_decompressedFilename);
+
+    m_compressedData = loadDataFromFile(compressedFile, &m_compressedSize, m_context.getTestContext().getArchive());
+    m_decompressedData =
+        loadDataFromFile(decompressedFile, &m_decompressedSize, m_context.getTestContext().getArchive());
 
     replaceCRLFInPlace(m_decompressedData, &m_decompressedSize);
 

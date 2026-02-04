@@ -1716,6 +1716,10 @@ void getInstanceExtensionFunctions (uint32_t apiVersion, const std::vector<std::
 	{
 		return;
 	}
+	if (extName == "VK_NV_push_constant_bank")
+	{
+		return;
+	}
 	if (extName == "VK_NV_raw_access_chains")
 	{
 		return;
@@ -3896,6 +3900,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		functions.push_back("vkGetImageViewHandleNVX");
 		functions.push_back("vkGetImageViewHandle64NVX");
 		functions.push_back("vkGetImageViewAddressNVX");
+		functions.push_back("vkGetDeviceCombinedImageSamplerIndexNVX");
 		return;
 	}
 	if (extName == "VK_NVX_multiview_per_view_attributes")
@@ -4137,6 +4142,10 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 		return;
 	}
 	if (extName == "VK_NV_present_metering")
+	{
+		return;
+	}
+	if (extName == "VK_NV_push_constant_bank")
 	{
 		return;
 	}
@@ -4765,6 +4774,7 @@ void getDeviceExtensionFunctions (uint32_t apiVersion, const std::vector<std::st
 	"VK_NV_partitioned_acceleration_structure",
 	"VK_EXT_device_generated_commands",
 	"VK_MESA_image_alignment_control",
+	"VK_NV_push_constant_bank",
 	"VK_EXT_ray_tracing_invocation_reorder",
 	"VK_EXT_depth_clamp_control",
 	"VK_HUAWEI_hdr_vivid",

@@ -131,6 +131,7 @@ const vk::VkPhysicalDeviceRayQueryFeaturesKHR&								Context::getRayQueryFeatur
 const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&			Context::getRayTracingInvocationReorderFeaturesEXT			(void) const { return m_device->getRayTracingInvocationReorderFeaturesEXT();		}
 const vk::VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&			Context::getRayTracingLinearSweptSpheresFeaturesNV			(void) const { return m_device->getRayTracingLinearSweptSpheresFeaturesNV();		}
 const vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				Context::getRayTracingMaintenance1Features					(void) const { return m_device->getRayTracingMaintenance1Features();				}
+const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&					Context::getRayTracingMotionBlurFeatures					(void) const { return m_device->getRayTracingMotionBlurFeatures();					}
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&					Context::getRayTracingPipelineFeatures						(void) const { return m_device->getRayTracingPipelineFeatures();					}
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				Context::getRayTracingPositionFetchFeatures					(void) const { return m_device->getRayTracingPositionFetchFeatures();				}
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&				Context::getRepresentativeFragmentTestFeatures				(void) const { return m_device->getRepresentativeFragmentTestFeatures();			}
@@ -163,6 +164,7 @@ const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		Context:
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			Context::getShaderReplicatedCompositesFeaturesEXT			(void) const { return m_device->getShaderReplicatedCompositesFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&						Context::getShaderSMBuiltinsFeatures						(void) const { return m_device->getShaderSMBuiltinsFeatures();						}
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&				Context::getShaderSubgroupExtendedTypesFeatures				(void) const { return m_device->getShaderSubgroupExtendedTypesFeatures();			}
+const vk::VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT&				Context::getShaderSubgroupPartitionedFeaturesEXT			(void) const { return m_device->getShaderSubgroupPartitionedFeaturesEXT();			}
 const vk::VkPhysicalDeviceShaderSubgroupRotateFeatures&						Context::getShaderSubgroupRotateFeatures					(void) const { return m_device->getShaderSubgroupRotateFeatures();					}
 const vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR&		Context::getShaderSubgroupUniformControlFlowFeatures		(void) const { return m_device->getShaderSubgroupUniformControlFlowFeatures();		}
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeatures&				Context::getShaderTerminateInvocationFeatures				(void) const { return m_device->getShaderTerminateInvocationFeatures();				}
@@ -176,6 +178,7 @@ const vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR&					Context::getSwap
 const vk::VkPhysicalDeviceSynchronization2Features&							Context::getSynchronization2Features						(void) const { return m_device->getSynchronization2Features();						}
 const vk::VkPhysicalDeviceTensorFeaturesARM&								Context::getTensorFeaturesARM								(void) const { return m_device->getTensorFeaturesARM();								}
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					Context::getTexelBufferAlignmentFeaturesEXT					(void) const { return m_device->getTexelBufferAlignmentFeaturesEXT();				}
+const vk::VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT&				Context::getTextureCompressionASTC3DFeaturesEXT				(void) const { return m_device->getTextureCompressionASTC3DFeaturesEXT();			}
 const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeatures&				Context::getTextureCompressionASTCHDRFeatures				(void) const { return m_device->getTextureCompressionASTCHDRFeatures();				}
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&						Context::getTimelineSemaphoreFeatures						(void) const { return m_device->getTimelineSemaphoreFeatures();						}
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&						Context::getTransformFeedbackFeaturesEXT					(void) const { return m_device->getTransformFeedbackFeaturesEXT();					}

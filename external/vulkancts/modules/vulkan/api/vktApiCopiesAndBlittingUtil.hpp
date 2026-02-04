@@ -309,6 +309,7 @@ struct TestParams
         dst.image.extent        = defaultExtent;
         dst.buffer.size         = defaultSize;
         clearDestinationWithRed = false;
+        filter                  = VK_FILTER_NEAREST;
         samples                 = VK_SAMPLE_COUNT_1_BIT;
         imageOffset             = false;
         useSecondaryCmdBuffer   = false;

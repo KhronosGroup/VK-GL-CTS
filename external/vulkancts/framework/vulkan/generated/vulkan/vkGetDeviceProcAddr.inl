@@ -855,6 +855,7 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkDestroyCuModuleNVX",
 
 		// "VK_NVX_image_view_handle
+		"vkGetDeviceCombinedImageSamplerIndexNVX",
 		"vkGetImageViewAddressNVX",
 		"vkGetImageViewHandle64NVX",
 		"vkGetImageViewHandleNVX",

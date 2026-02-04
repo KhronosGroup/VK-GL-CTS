@@ -91,11 +91,15 @@ void createBlockBasicTypeCases(tcu::TestCaseGroup &group, tcu::TestContext &test
         new BlockBasicTypeCase(testCtx, "vertex", type, layoutFlags | DECLARE_VERTEX, numInstances, LOAD_FULL_MATRIX));
     typeGroup->addChild(new BlockBasicTypeCase(testCtx, "fragment", type, layoutFlags | DECLARE_FRAGMENT, numInstances,
                                                LOAD_FULL_MATRIX));
+    typeGroup->addChild(new BlockBasicTypeCase(testCtx, "compute", type, layoutFlags | DECLARE_COMPUTE, numInstances,
+                                               LOAD_FULL_MATRIX));
     typeGroup->addChild(new BlockBasicTypeCase(testCtx, "both", type, layoutFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
                                                numInstances, LOAD_FULL_MATRIX));
     typeGroup->addChild(new BlockBasicTypeCase(testCtx, "vertex_comp_access", type, layoutFlags | DECLARE_VERTEX,
                                                numInstances, LOAD_MATRIX_COMPONENTS));
     typeGroup->addChild(new BlockBasicTypeCase(testCtx, "fragment_comp_access", type, layoutFlags | DECLARE_FRAGMENT,
+                                               numInstances, LOAD_MATRIX_COMPONENTS));
+    typeGroup->addChild(new BlockBasicTypeCase(testCtx, "compute_comp_access", type, layoutFlags | DECLARE_COMPUTE,
                                                numInstances, LOAD_MATRIX_COMPONENTS));
     typeGroup->addChild(new BlockBasicTypeCase(testCtx, "both_comp_access", type,
                                                layoutFlags | DECLARE_VERTEX | DECLARE_FRAGMENT, numInstances,
@@ -151,6 +155,9 @@ void createUnsizedArrayTestCases(tcu::TestCaseGroup &group, tcu::TestContext &te
 
     group.addChild(new BlockBasicUnsizedArrayCase(testCtx, name + "_fragment" + suffix, type, arraySize,
                                                   layoutFlags | DECLARE_FRAGMENT, matrixLoadFlag));
+
+    group.addChild(new BlockBasicUnsizedArrayCase(testCtx, name + "_compute" + suffix, type, arraySize,
+                                                  layoutFlags | DECLARE_COMPUTE, matrixLoadFlag));
 
     group.addChild(new BlockBasicUnsizedArrayCase(testCtx, name + "_both" + suffix, type, arraySize,
                                                   layoutFlags | DECLARE_VERTEX | DECLARE_FRAGMENT, matrixLoadFlag));
@@ -756,6 +763,9 @@ void UniformBlockTests::init(void)
                     modeGroup->addChild(
                         new BlockSingleStructCase(m_testCtx, baseName + "_fragment", baseFlags | DECLARE_FRAGMENT,
                                                   bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
+                    modeGroup->addChild(
+                        new BlockSingleStructCase(m_testCtx, baseName + "_compute", baseFlags | DECLARE_COMPUTE,
+                                                  bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
                     modeGroup->addChild(new BlockSingleStructCase(
                         m_testCtx, baseName + "_both", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
@@ -764,6 +774,9 @@ void UniformBlockTests::init(void)
                                                                   isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleStructCase(
                         m_testCtx, baseName + "_fragment_comp_access", baseFlags | DECLARE_FRAGMENT,
+                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
+                    modeGroup->addChild(new BlockSingleStructCase(
+                        m_testCtx, baseName + "_compute_comp_access", baseFlags | DECLARE_COMPUTE,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleStructCase(
                         m_testCtx, baseName + "_both_comp_access", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
@@ -802,6 +815,9 @@ void UniformBlockTests::init(void)
                     modeGroup->addChild(
                         new BlockSingleStructArrayCase(m_testCtx, baseName + "_fragment", baseFlags | DECLARE_FRAGMENT,
                                                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
+                    modeGroup->addChild(
+                        new BlockSingleStructArrayCase(m_testCtx, baseName + "_compute", baseFlags | DECLARE_COMPUTE,
+                                                       bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
                     modeGroup->addChild(new BlockSingleStructArrayCase(
                         m_testCtx, baseName + "_both", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
@@ -810,6 +826,9 @@ void UniformBlockTests::init(void)
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleStructArrayCase(
                         m_testCtx, baseName + "_fragment_comp_access", baseFlags | DECLARE_FRAGMENT,
+                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
+                    modeGroup->addChild(new BlockSingleStructArrayCase(
+                        m_testCtx, baseName + "_compute_comp_access", baseFlags | DECLARE_COMPUTE,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleStructArrayCase(
                         m_testCtx, baseName + "_both_comp_access", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
@@ -848,6 +867,9 @@ void UniformBlockTests::init(void)
                     modeGroup->addChild(
                         new BlockSingleNestedStructCase(m_testCtx, baseName + "_fragment", baseFlags | DECLARE_FRAGMENT,
                                                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
+                    modeGroup->addChild(
+                        new BlockSingleNestedStructCase(m_testCtx, baseName + "_compute", baseFlags | DECLARE_COMPUTE,
+                                                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
                     modeGroup->addChild(new BlockSingleNestedStructCase(
                         m_testCtx, baseName + "_both", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
@@ -856,6 +878,9 @@ void UniformBlockTests::init(void)
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleNestedStructCase(
                         m_testCtx, baseName + "_fragment_comp_access", baseFlags | DECLARE_FRAGMENT,
+                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
+                    modeGroup->addChild(new BlockSingleNestedStructCase(
+                        m_testCtx, baseName + "_compute_comp_access", baseFlags | DECLARE_COMPUTE,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleNestedStructCase(
                         m_testCtx, baseName + "_both_comp_access", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
@@ -896,6 +921,9 @@ void UniformBlockTests::init(void)
                         m_testCtx, baseName + "_fragment", baseFlags | DECLARE_FRAGMENT, bufferModes[modeNdx].mode,
                         isArray ? 3 : 0, LOAD_FULL_MATRIX));
                     modeGroup->addChild(new BlockSingleNestedStructArrayCase(
+                        m_testCtx, baseName + "_compute", baseFlags | DECLARE_COMPUTE, bufferModes[modeNdx].mode,
+                        isArray ? 3 : 0, LOAD_FULL_MATRIX));
+                    modeGroup->addChild(new BlockSingleNestedStructArrayCase(
                         m_testCtx, baseName + "_both", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
                     modeGroup->addChild(new BlockSingleNestedStructArrayCase(
@@ -903,6 +931,9 @@ void UniformBlockTests::init(void)
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleNestedStructArrayCase(
                         m_testCtx, baseName + "_fragment_comp_access", baseFlags | DECLARE_FRAGMENT,
+                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
+                    modeGroup->addChild(new BlockSingleNestedStructArrayCase(
+                        m_testCtx, baseName + "_compute_comp_access", baseFlags | DECLARE_COMPUTE,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockSingleNestedStructArrayCase(
                         m_testCtx, baseName + "_both_comp_access", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
@@ -973,6 +1004,9 @@ void UniformBlockTests::init(void)
                         m_testCtx, baseName + "_fragment", baseFlags | DECLARE_FRAGMENT, baseFlags | DECLARE_FRAGMENT,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
                     modeGroup->addChild(new BlockMultiBasicTypesCase(
+                        m_testCtx, baseName + "_compute", baseFlags | DECLARE_COMPUTE, baseFlags | DECLARE_COMPUTE,
+                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
+                    modeGroup->addChild(new BlockMultiBasicTypesCase(
                         m_testCtx, baseName + "_both", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
                         baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT, bufferModes[modeNdx].mode, isArray ? 3 : 0,
                         LOAD_FULL_MATRIX));
@@ -986,6 +1020,10 @@ void UniformBlockTests::init(void)
                     modeGroup->addChild(new BlockMultiBasicTypesCase(
                         m_testCtx, baseName + "_fragment_comp_access", baseFlags | DECLARE_FRAGMENT,
                         baseFlags | DECLARE_FRAGMENT, bufferModes[modeNdx].mode, isArray ? 3 : 0,
+                        LOAD_MATRIX_COMPONENTS));
+                    modeGroup->addChild(new BlockMultiBasicTypesCase(
+                        m_testCtx, baseName + "_compute_comp_access", baseFlags | DECLARE_COMPUTE,
+                        baseFlags | DECLARE_COMPUTE, bufferModes[modeNdx].mode, isArray ? 3 : 0,
                         LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockMultiBasicTypesCase(
                         m_testCtx, baseName + "_both_comp_access", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
@@ -1027,6 +1065,9 @@ void UniformBlockTests::init(void)
                         m_testCtx, baseName + "_fragment", baseFlags | DECLARE_FRAGMENT, baseFlags | DECLARE_FRAGMENT,
                         bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
                     modeGroup->addChild(new BlockMultiNestedStructCase(
+                        m_testCtx, baseName + "_compute", baseFlags | DECLARE_COMPUTE, baseFlags | DECLARE_COMPUTE,
+                        bufferModes[modeNdx].mode, isArray ? 3 : 0, LOAD_FULL_MATRIX));
+                    modeGroup->addChild(new BlockMultiNestedStructCase(
                         m_testCtx, baseName + "_both", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
                         baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT, bufferModes[modeNdx].mode, isArray ? 3 : 0,
                         LOAD_FULL_MATRIX));
@@ -1040,6 +1081,10 @@ void UniformBlockTests::init(void)
                     modeGroup->addChild(new BlockMultiNestedStructCase(
                         m_testCtx, baseName + "_fragment_comp_access", baseFlags | DECLARE_FRAGMENT,
                         baseFlags | DECLARE_FRAGMENT, bufferModes[modeNdx].mode, isArray ? 3 : 0,
+                        LOAD_MATRIX_COMPONENTS));
+                    modeGroup->addChild(new BlockMultiNestedStructCase(
+                        m_testCtx, baseName + "_compute_comp_access", baseFlags | DECLARE_COMPUTE,
+                        baseFlags | DECLARE_COMPUTE, bufferModes[modeNdx].mode, isArray ? 3 : 0,
                         LOAD_MATRIX_COMPONENTS));
                     modeGroup->addChild(new BlockMultiNestedStructCase(
                         m_testCtx, baseName + "_both_comp_access", baseFlags | DECLARE_VERTEX | DECLARE_FRAGMENT,
@@ -1071,12 +1116,13 @@ void UniformBlockTests::init(void)
 
     // ubo.random
     {
-        const uint32_t allShaders    = FEATURE_VERTEX_BLOCKS | FEATURE_FRAGMENT_BLOCKS | FEATURE_SHARED_BLOCKS;
-        const uint32_t allLayouts    = FEATURE_STD140_LAYOUT;
-        const uint32_t allBasicTypes = FEATURE_VECTORS | FEATURE_MATRICES;
-        const uint32_t unused        = FEATURE_UNUSED_MEMBERS | FEATURE_UNUSED_UNIFORMS;
-        const uint32_t matFlags      = FEATURE_MATRIX_LAYOUT;
-        const uint32_t allFeatures   = ~FEATURE_OUT_OF_ORDER_OFFSETS & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE &
+        const uint32_t allGraphicsShaders = FEATURE_VERTEX_BLOCKS | FEATURE_FRAGMENT_BLOCKS | FEATURE_SHARED_BLOCKS;
+        const uint32_t allShaders         = allGraphicsShaders | FEATURE_COMPUTE_BLOCKS;
+        const uint32_t allLayouts         = FEATURE_STD140_LAYOUT;
+        const uint32_t allBasicTypes      = FEATURE_VECTORS | FEATURE_MATRICES;
+        const uint32_t unused             = FEATURE_UNUSED_MEMBERS | FEATURE_UNUSED_UNIFORMS;
+        const uint32_t matFlags           = FEATURE_MATRIX_LAYOUT;
+        const uint32_t allFeatures = ~FEATURE_OUT_OF_ORDER_OFFSETS & ~FEATURE_16BIT_STORAGE & ~FEATURE_8BIT_STORAGE &
                                      ~FEATURE_STD430_LAYOUT & ~FEATURE_SCALAR_LAYOUT &
                                      ~FEATURE_DESCRIPTOR_INDEXING; // OOO offsets handled in a dedicated case group
         const uint32_t allScalar =
@@ -1108,44 +1154,81 @@ void UniformBlockTests::init(void)
             // Basic types.
             // Scalar types only, per-block buffers
             createRandomCaseGroup(group, m_testCtx, "scalar_types", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused, 25, 0);
+            createRandomCaseGroup(group, m_testCtx, "scalar_types_compute", UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused, 25, 0);
             // Scalar and vector types only, per-block buffers
-            createRandomCaseGroup(group, m_testCtx, "vector_types", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+            createRandomCaseGroup(
+                group, m_testCtx, "vector_types", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused | FEATURE_VECTORS, 25, 25);
+            createRandomCaseGroup(group, m_testCtx, "vector_types_compute", UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | FEATURE_VECTORS,
                                   25, 25);
             // All basic types, per-block buffers
+            createRandomCaseGroup(group, m_testCtx, "basic_types", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused |
+                                      allBasicTypes | matFlags,
+                                  25, 50);
             createRandomCaseGroup(
-                group, m_testCtx, "basic_types", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                group, m_testCtx, "basic_types_compute", UniformBlockCase::BUFFERMODE_PER_BLOCK,
                 use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | allBasicTypes | matFlags, 25, 50);
             // Arrays, per-block buffers
             createRandomCaseGroup(group, m_testCtx, "basic_arrays", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused |
+                                      allBasicTypes | matFlags | FEATURE_ARRAYS,
+                                  25, 50);
+            createRandomCaseGroup(group, m_testCtx, "basic_arrays_compute", UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | allBasicTypes |
                                       matFlags | FEATURE_ARRAYS,
                                   25, 50);
 
             // Basic instance arrays, per-block buffers
             createRandomCaseGroup(group, m_testCtx, "basic_instance_arrays", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused |
+                                      allBasicTypes | matFlags | FEATURE_INSTANCE_ARRAYS,
+                                  25, 75);
+            createRandomCaseGroup(group, m_testCtx, "basic_instance_arrays_compute",
+                                  UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | allBasicTypes |
                                       matFlags | FEATURE_INSTANCE_ARRAYS,
                                   25, 75);
             // Nested structs, per-block buffers
             createRandomCaseGroup(group, m_testCtx, "nested_structs", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused |
+                                      allBasicTypes | matFlags | FEATURE_STRUCTS,
+                                  25, 100);
+            createRandomCaseGroup(group, m_testCtx, "nested_structs_compute", UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | allBasicTypes |
                                       matFlags | FEATURE_STRUCTS,
                                   25, 100);
             // Nested structs, arrays, per-block buffers
             createRandomCaseGroup(group, m_testCtx, "nested_structs_arrays", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused |
+                                      allBasicTypes | matFlags | FEATURE_STRUCTS | FEATURE_ARRAYS,
+                                  25, 150);
+            createRandomCaseGroup(group, m_testCtx, "nested_structs_arrays_compute",
+                                  UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | allBasicTypes |
                                       matFlags | FEATURE_STRUCTS | FEATURE_ARRAYS,
                                   25, 150);
             // Nested structs, instance arrays, per-block buffers
             createRandomCaseGroup(group, m_testCtx, "nested_structs_instance_arrays",
                                   UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                                  use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused |
+                                      allBasicTypes | matFlags | FEATURE_STRUCTS | FEATURE_INSTANCE_ARRAYS,
+                                  25, 125);
+            createRandomCaseGroup(group, m_testCtx, "nested_structs_instance_arrays_compute",
+                                  UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | allBasicTypes |
                                       matFlags | FEATURE_STRUCTS | FEATURE_INSTANCE_ARRAYS,
                                   25, 125);
             // Nested structs, instance arrays, per-block buffers
-            createRandomCaseGroup(group, m_testCtx, "nested_structs_arrays_instance_arrays",
+            createRandomCaseGroup(
+                group, m_testCtx, "nested_structs_arrays_instance_arrays", UniformBlockCase::BUFFERMODE_PER_BLOCK,
+                use8BitStorage | use16BitStorage | allGraphicsShaders | allLayouts | unused | allBasicTypes | matFlags |
+                    FEATURE_STRUCTS | FEATURE_ARRAYS | FEATURE_INSTANCE_ARRAYS,
+                25, 175);
+            createRandomCaseGroup(group, m_testCtx, "nested_structs_arrays_instance_arrays_compute",
                                   UniformBlockCase::BUFFERMODE_PER_BLOCK,
                                   use8BitStorage | use16BitStorage | allShaders | allLayouts | unused | allBasicTypes |
                                       matFlags | FEATURE_STRUCTS | FEATURE_ARRAYS | FEATURE_INSTANCE_ARRAYS,

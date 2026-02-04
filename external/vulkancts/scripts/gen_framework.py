@@ -139,11 +139,13 @@ VK_EXT_shader_float8
 VK_EXT_shader_image_atomic_int64
 VK_EXT_shader_module_identifier
 VK_EXT_shader_object
+VK_EXT_shader_subgroup_partitioned
 VK_EXT_shader_replicated_composites
 VK_EXT_shader_tile_image
 VK_EXT_shader_uniform_buffer_unsized_array
 VK_EXT_subpass_merge_feedback
 VK_EXT_swapchain_maintenance1
+VK_EXT_texture_compression_astc_3d
 VK_EXT_transform_feedback
 VK_EXT_uniform_buffer_unsized_array
 VK_EXT_vertex_attribute_divisor
@@ -271,6 +273,7 @@ VK_NV_mesh_shader
 VK_NV_raw_access_chains
 VK_NV_ray_tracing
 VK_NV_ray_tracing_linear_swept_spheres
+VK_NV_ray_tracing_motion_blur
 VK_NV_representative_fragment_test
 VK_NV_scissor_exclusive
 VK_NV_shader_atomic_float16_vector
@@ -583,7 +586,7 @@ def getFunctionType(command):
 
 
 def camelToSnake(name):
-    name = re.sub('([a-z])([23])D([A-Z])', r'\1_\2d\3', name)
+    name = re.sub('([A-Za-z])([23])D([A-Z])', r'\1_\2d\3', name)
     name = re.sub('(.)([A-Z][a-z]+)', r'\1_\2', name)
     return re.sub('([a-z0-9])([A-Z])', r'\1_\2', name).lower()
 
@@ -2473,36 +2476,37 @@ class FeaturesOrPropertiesGenericGenerator(CTSGenerator):
         stream.append('} // vk')
         self.write(combineLines(stream, INL_HEADER))
 
+UNSUFFIXED_STRUCTURES = [
+    "CornerSampledImage",
+    "ShaderSMBuiltins",
+    "ShadingRateImage",
+    "RayTracing",
+    "RepresentativeFragmentTest",
+    "ComputeShaderDerivatives",
+    "MeshShader",
+    "ShaderImageFootprint",
+    "ExclusiveScissor",
+    "DedicatedAllocationImageAliasing",
+    "CoverageReductionMode",
+    "DeviceGeneratedCommands",
+    "InheritedViewportScissor",
+    "PresentBarrier",
+    "DiagnosticsConfig",
+    "FragmentShadingRateEnums",
+    "RayTracingMotionBlur",
+    "ExternalMemoryRDMA",
+    "MemoryDecompression",
+    "LinearColorAttachment",
+    "OpticalFlow",
+    "RayTracingInvocationReorder",
+    "DisplacementMicromap"]
+
 class FeaturesOrPropertiesMethodsGenerator(CTSGenerator):
     def __init__(self, ctsLists, params):
         CTSGenerator.__init__(self, ctsLists)
         self.featureStructs, self.pattern = params
 
     def generate(self):
-        UNSUFFIXED_STRUCTURES = [
-            "CornerSampledImage",
-            "ShaderSMBuiltins",
-            "ShadingRateImage",
-            "RayTracing",
-            "RepresentativeFragmentTest",
-            "ComputeShaderDerivatives",
-            "MeshShader",
-            "ShaderImageFootprint",
-            "ExclusiveScissor",
-            "DedicatedAllocationImageAliasing",
-            "CoverageReductionMode",
-            "DeviceGeneratedCommands",
-            "InheritedViewportScissor",
-            "PresentBarrier",
-            "DiagnosticsConfig",
-            "FragmentShadingRateEnums",
-            "RayTracingMotionBlur",
-            "ExternalMemoryRDMA",
-            "MemoryDecompression",
-            "LinearColorAttachment",
-            "OpticalFlow",
-            "RayTracingInvocationReorder",
-            "DisplacementMicromap"]
         stream = []
         for fop in self.featureStructs:
             # remove VkPhysicalDevice prefix from structure name
@@ -2526,6 +2530,51 @@ class FeaturesOrPropertiesMethodsGenerator(CTSGenerator):
             constStr = "// Contains const pNext " if pnext and getattr(pnext, "const", False) else ""
             stream.append(constStr + self.pattern.format(fop.name, nameSubStr))
         self.write(combineLines(indentLines(stream), INL_HEADER))
+
+class FeaturesForShaderObjectGenerator(CTSGenerator):
+    def __init__(self, ctsLists, params):
+        CTSGenerator.__init__(self, ctsLists)
+        self.featureStructs = params
+
+    def generate(self):
+        allNames = []
+        stream = ['']
+
+        for struct in self.cts.structs:
+            if re.search(fr'VkPhysicalDevice(\w+)Features', struct.name, re.IGNORECASE):
+                # check if struct extends VkPhysicalDeviceFeatures2
+                if struct.extends is None or 'VkPhysicalDeviceFeatures2' not in struct.extends:
+                    continue
+                # generate base for variable and method name
+                nameSubStr = struct.name[16:]
+                # skip video features
+                if nameSubStr.startswith('Video'):
+                    continue
+                # skip structures that are already in the list
+                if nameSubStr in allNames:
+                    continue
+                # skip shader obiect features, they are always added manually
+                if 'ShaderObject' in nameSubStr:
+                    continue
+                if nameSubStr.startswith('Vulkan1'):
+                    nameSubStr = 'Device' + nameSubStr
+                if nameSubStr[-3:] == "KHR":
+                    nameSubStr = nameSubStr[:-3]
+                elif nameSubStr[-2:] == "NV" and nameSubStr[:-10] in UNSUFFIXED_STRUCTURES:
+                    nameSubStr = nameSubStr[:-2]
+
+                allNames.append(nameSubStr)
+                # save copy of each structure
+                spacing = ' ' * max(1, int(50 - len(nameSubStr)))
+                stream.append(f'auto f{nameSubStr}{spacing}= m_context.get{nameSubStr}();')
+
+        stream.append('\n'\
+            'std::vector<void *> pNextFeatures = {')
+        for n in allNames:
+            stream.append(f'\t&f{n},')
+        stream.append('};\n')
+
+        self.write(combineLines(stream, INL_HEADER))
 
 class DeviceFeatureTestGenerator(CTSGenerator):
     def __init__(self, ctsLists, _):
@@ -3245,25 +3294,26 @@ class ProfileTestsGenerator(CTSGenerator):
                         if "features" in capabilityDefinition:
                             featureStructList = capabilityDefinition["features"]
                             # skip adding comment for empty requirements
-                            if len(featureStructList) == 1 and not list(featureStructList.values())[0]:
-                                continue
-                            featureTableItems.append(f"\t\t// {capabilityName}");
-                            # iterate over required features
-                            for featureStruct in featureStructList:
-                                structName = featureStruct[vkpdLen:]
-                                self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
-                                for feature in featureStructList[featureStruct]:
-                                    featureTableItems.append(f"vk{structName}, {feature}")
-                                featureTableItems.append("\n")
+                            if len(featureStructList) > 0 and list(featureStructList.values())[0]:
+                                featureTableItems.append(f"\t\t// {capabilityName}");
+                                # iterate over required features
+                                for featureStruct in featureStructList:
+                                    structName = featureStruct[vkpdLen:]
+                                    self.constructStruct(structName, featureStructInitNamesList, featureStructInitList)
+                                    for feature in featureStructList[featureStruct]:
+                                        featureTableItems.append(f"vk{structName}, {feature}")
+                                    featureTableItems.append("\n")
                         if "properties" in capabilityDefinition:
                             propertyStructList = capabilityDefinition["properties"]
-                            propertyTableItems.append(f"\t\t// {capabilityName}");
-                            for propertyStruct in propertyStructList:
-                                structName = propertyStruct[vkpdLen:]
-                                self.constructStruct(structName, propertyStructInitNamesList, propertyStructInitList)
-                                for propName, propLimit in propertyStructList[propertyStruct].items():
-                                    self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
-                                propertyTableItems.append("\n")
+                            # skip adding comment for empty requirements
+                            if len(propertyStructList) > 0 and list(propertyStructList.values())[0]:
+                                propertyTableItems.append(f"\t\t// {capabilityName}");
+                                for propertyStruct in propertyStructList:
+                                    structName = propertyStruct[vkpdLen:]
+                                    self.constructStruct(structName, propertyStructInitNamesList, propertyStructInitList)
+                                    for propName, propLimit in propertyStructList[propertyStruct].items():
+                                        self.addPropertyEntries("vk" + structName, propName, propLimit, propertyTableItems)
+                                    propertyTableItems.append("\n")
                         if "extensions" in capabilityDefinition:
                             extensionList = [n for n in capabilityDefinition["extensions"]]
                         if "formats" in capabilityDefinition:
@@ -3281,9 +3331,10 @@ class ProfileTestsGenerator(CTSGenerator):
 
                 # template used to get both device features and device properties
                 structGetterTemplate = "\n"\
-                "\tVkPhysicalDevice{0}2 vk{0}2 = initVulkanStructure(&vk{2});\n"\
+                "\tVkPhysicalDevice{0}2 vk{0}2 = initVulkanStructure({2});\n"\
                 "\tauto& vk{0} = vk{0}2.{1};\n"\
-                "\tvki.getPhysicalDevice{0}2(pd, &vk{0}2);\n"
+                "\tvki.getPhysicalDevice{0}2(pd, &vk{0}2);\n"\
+                "\tDE_UNREF(vk{0});\n"
 
                 # construct function that will validate profile
                 stream.append(f"tcu::TestStatus validate_{profileName}(Context& context)")
@@ -3296,9 +3347,11 @@ class ProfileTestsGenerator(CTSGenerator):
                 "\tTestLog& log = context.getTestContext().getLog();\n")
 
                 stream.extend(featureStructInitList)
-                stream.append(structGetterTemplate.format("Features", "features", featureStructInitNamesList[-1]))
+                lastFeatureStructName = '&vk' + featureStructInitNamesList[-1] if len(featureStructInitNamesList) > 2 else ''
+                stream.append(structGetterTemplate.format("Features", "features", lastFeatureStructName))
                 stream.extend(propertyStructInitList)
-                stream.append(structGetterTemplate.format("Properties", "properties", propertyStructInitNamesList[-1]))
+                lastPropertyStructName = '&vk' + propertyStructInitNamesList[-1] if len(propertyStructInitNamesList) > 2 else ''
+                stream.append(structGetterTemplate.format("Properties", "properties", lastPropertyStructName))
                 if len(featureTableItems):
                     stream.append("\tconst std::vector<FeatureEntry> featureTable {")
                     stream.extend(["\t\tROADMAP_FEATURE_ITEM(" + f + ")," if ("," in f) else f for f in featureTableItems])
@@ -3561,6 +3614,8 @@ class FormatListsGenerator(CTSGenerator):
             'VK_FORMAT_A1B5G5R5_UNORM_PACK16',
             'VK_FORMAT_A8_UNORM',
         ]
+        formatsSupportedBySC = [fe.name for fe in self.vk.enums['VkFormat'].fields]
+        formatsSupportedBySC = list(set(formatsSupportedBySC) - set(listOfFormatsNotSupportedBySC))
 
         formatsSupportedBySC = [fe.name for fe in self.vk.enums['VkFormat'].fields]
         formatsSupportedBySC = list(set(formatsSupportedBySC) - set(listOfFormatsNotSupportedBySC))
@@ -3702,6 +3757,7 @@ if __name__ == "__main__":
         GenData('vkDeviceFeaturesForDefaultDeviceDefs.inl',   FeaturesOrPropertiesMethodsGenerator, (featureStructs, featuresForDDDefsPattern)),
         GenData('vkDeviceFeaturesForContextDecl.inl',         FeaturesOrPropertiesMethodsGenerator, (featureStructs, contextDeclPattern)),
         GenData('vkDeviceFeaturesForContextDefs.inl',         FeaturesOrPropertiesMethodsGenerator, (featureStructs, contextDefsPattern)),
+        GenData('vkDeviceFeaturesForShaderObject.inl',        FeaturesForShaderObjectGenerator, (featureStructs)),
         GenData('vkDeviceFeatureTest.inl',                    DeviceFeatureTestGenerator),
         GenData("vkDeviceFeatures2.inl",                      DeviceFeatures2Generator),
 

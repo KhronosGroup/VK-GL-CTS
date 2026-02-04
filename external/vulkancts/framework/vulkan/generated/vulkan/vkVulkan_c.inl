@@ -2178,7 +2178,7 @@ extern "C" {
 //#define VK_API_VERSION VK_MAKE_API_VERSION(0, 1, 0, 0) // Patch version should always be set to 0
 
 // Version of this file
-#define VK_HEADER_VERSION 339
+#define VK_HEADER_VERSION 341
 
 // Complete version of this file
 #define VK_HEADER_VERSION_COMPLETE VK_MAKE_API_VERSION(0, 1, 4, VK_HEADER_VERSION)
@@ -3451,6 +3451,9 @@ typedef enum VkStructureType {
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_ALIGNMENT_CONTROL_PROPERTIES_MESA = 1000575001,
     VK_STRUCTURE_TYPE_IMAGE_ALIGNMENT_CONTROL_CREATE_INFO_MESA = 1000575002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_FMA_FEATURES_KHR = 1000579000,
+    VK_STRUCTURE_TYPE_PUSH_CONSTANT_BANK_INFO_NV = 1000580000,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_FEATURES_NV = 1000580001,
+    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PUSH_CONSTANT_BANK_PROPERTIES_NV = 1000580002,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_FEATURES_EXT = 1000581000,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_INVOCATION_REORDER_PROPERTIES_EXT = 1000581001,
     VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DEPTH_CLAMP_CONTROL_FEATURES_EXT = 1000582000,
@@ -16634,7 +16637,7 @@ VKAPI_ATTR void VKAPI_CALL vkCmdCuLaunchKernelNVX(
 
 // VK_NVX_image_view_handle is a preprocessor guard. Do not pass it to API calls.
 #define VK_NVX_image_view_handle 1
-#define VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION 3
+#define VK_NVX_IMAGE_VIEW_HANDLE_SPEC_VERSION 4
 #define VK_NVX_IMAGE_VIEW_HANDLE_EXTENSION_NAME "VK_NVX_image_view_handle"
 typedef struct VkImageViewHandleInfoNVX {
     VkStructureType     sType;
@@ -16654,6 +16657,7 @@ typedef struct VkImageViewAddressPropertiesNVX {
 typedef uint32_t (VKAPI_PTR *PFN_vkGetImageViewHandleNVX)(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
 typedef uint64_t (VKAPI_PTR *PFN_vkGetImageViewHandle64NVX)(VkDevice device, const VkImageViewHandleInfoNVX* pInfo);
 typedef VkResult (VKAPI_PTR *PFN_vkGetImageViewAddressNVX)(VkDevice device, VkImageView imageView, VkImageViewAddressPropertiesNVX* pProperties);
+typedef uint64_t (VKAPI_PTR *PFN_vkGetDeviceCombinedImageSamplerIndexNVX)(VkDevice device, uint64_t imageViewIndex, uint64_t samplerIndex);
 
 #ifndef VK_NO_PROTOTYPES
 #ifndef VK_ONLY_EXPORTED_PROTOTYPES
@@ -16673,6 +16677,13 @@ VKAPI_ATTR VkResult VKAPI_CALL vkGetImageViewAddressNVX(
     VkDevice                                    device,
     VkImageView                                 imageView,
     VkImageViewAddressPropertiesNVX*            pProperties);
+#endif
+
+#ifndef VK_ONLY_EXPORTED_PROTOTYPES
+VKAPI_ATTR uint64_t VKAPI_CALL vkGetDeviceCombinedImageSamplerIndexNVX(
+    VkDevice                                    device,
+    uint64_t                                    imageViewIndex,
+    uint64_t                                    samplerIndex);
 #endif
 #endif
 
@@ -19750,7 +19761,7 @@ VKAPI_ATTR void VKAPI_CALL vkSetLocalDimmingAMD(
 
 // VK_EXT_fragment_density_map is a preprocessor guard. Do not pass it to API calls.
 #define VK_EXT_fragment_density_map 1
-#define VK_EXT_FRAGMENT_DENSITY_MAP_SPEC_VERSION 2
+#define VK_EXT_FRAGMENT_DENSITY_MAP_SPEC_VERSION 3
 #define VK_EXT_FRAGMENT_DENSITY_MAP_EXTENSION_NAME "VK_EXT_fragment_density_map"
 typedef struct VkPhysicalDeviceFragmentDensityMapFeaturesEXT {
     VkStructureType    sType;
@@ -26361,6 +26372,33 @@ typedef struct VkImageAlignmentControlCreateInfoMESA {
     const void*        pNext;
     uint32_t           maximumRequestedAlignment;
 } VkImageAlignmentControlCreateInfoMESA;
+
+
+
+// VK_NV_push_constant_bank is a preprocessor guard. Do not pass it to API calls.
+#define VK_NV_push_constant_bank 1
+#define VK_NV_PUSH_CONSTANT_BANK_SPEC_VERSION 1
+#define VK_NV_PUSH_CONSTANT_BANK_EXTENSION_NAME "VK_NV_push_constant_bank"
+typedef struct VkPushConstantBankInfoNV {
+    VkStructureType    sType;
+    const void*        pNext;
+    uint32_t           bank;
+} VkPushConstantBankInfoNV;
+
+typedef struct VkPhysicalDevicePushConstantBankFeaturesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    VkBool32           pushConstantBank;
+} VkPhysicalDevicePushConstantBankFeaturesNV;
+
+typedef struct VkPhysicalDevicePushConstantBankPropertiesNV {
+    VkStructureType    sType;
+    void*              pNext;
+    uint32_t           maxGraphicsPushConstantBanks;
+    uint32_t           maxComputePushConstantBanks;
+    uint32_t           maxGraphicsPushDataBanks;
+    uint32_t           maxComputePushDataBanks;
+} VkPhysicalDevicePushConstantBankPropertiesNV;
 
 
 

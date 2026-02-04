@@ -35,7 +35,7 @@ class QueryPoolConcurrentTests : public tcu::TestCaseGroup
 {
 public:
     QueryPoolConcurrentTests(tcu::TestContext &testCtx);
-    ~QueryPoolConcurrentTests(void);
+    ~QueryPoolConcurrentTests(void) = default;
     void init(void);
 
 private:

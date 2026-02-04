@@ -186,9 +186,38 @@ static MovePtr<TestTexture> createTestTexture(const TcuFormatType format, VkImag
 
 } // namespace
 
+#ifndef CTS_USES_VULKANSC
+bool checkAstc3DfeatureSupport(Context &context)
+{
+    // check  whether all of the ASTC HDR compressed texture formats are supported
+    VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT astc_3d_features;
+    deMemset(&astc_3d_features, 0, sizeof(astc_3d_features));
+    astc_3d_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
+    astc_3d_features.pNext = nullptr;
+    astc_3d_features.textureCompressionASTC_3D = VK_FALSE;
+
+    VkPhysicalDeviceFeatures2 features2;
+    deMemset(&features2, 0, sizeof(features2));
+    features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+    features2.pNext = &astc_3d_features;
+    context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+    if (astc_3d_features.textureCompressionASTC_3D != VK_TRUE)
+        return false;
+    return true;
+}
+
+void checkSupportAstcFormat(Context &context, tcu::CompressedTexFormat compressedFormat)
+{
+    context.requireDeviceFunctionality("VK_EXT_texture_compression_astc_3d");
+
+    if (!checkAstc3DfeatureSupport(context))
+        throw tcu::NotSupportedError(std::string("Unsupported format for sampling: ") +
+                                     getFormatName(mapCompressedTextureFormat(compressedFormat)));
+}
+#endif // CTS_USES_VULKANSC
+
 void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstanceParams params)
 {
-
     const VkSamplerReductionModeCreateInfo *reductionModeInfo      = NULL;
     const VkSamplerYcbcrConversionInfo *ycbcrInfo                  = NULL;
     const VkSamplerCustomBorderColorCreateInfoEXT *borderColorInfo = NULL;
@@ -200,12 +229,25 @@ void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstancePa
         {
         case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
             reductionModeInfo = reinterpret_cast<const VkSamplerReductionModeCreateInfo *>(pNext);
+            if (params.componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY &&
+                params.componentMapping.r != VK_COMPONENT_SWIZZLE_R)
+            {
+                TCU_THROW(NotSupportedError,
+                          "filterMinmaxImageComponentMapping is not supported (R mapping is not IDENTITY)");
+            }
             break;
         case VK_STRUCTURE_TYPE_SAMPLER_YCBCR_CONVERSION_INFO:
             ycbcrInfo = reinterpret_cast<const VkSamplerYcbcrConversionInfo *>(pNext);
             break;
         case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:
             borderColorInfo = reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT *>(pNext);
+            if (!context.getCustomBorderColorFeaturesEXT().customBorderColors)
+                TCU_THROW(NotSupportedError, "customBorderColors are not supported");
+            if (!context.getCustomBorderColorFeaturesEXT().customBorderColorWithoutFormat &&
+                borderColorInfo->format == VK_FORMAT_UNDEFINED)
+            {
+                TCU_THROW(NotSupportedError, "customBorderColorWithoutFormat is not supported");
+            }
             break;
         default:
             TCU_FAIL("Unrecognized sType in chained sampler create info");
@@ -415,14 +457,7 @@ void ImageSamplingInstance::setup()
         {
         case VK_STRUCTURE_TYPE_SAMPLER_REDUCTION_MODE_CREATE_INFO:
         {
-            VkPhysicalDeviceSamplerFilterMinmaxProperties physicalDeviceSamplerMinMaxProperties = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SAMPLER_FILTER_MINMAX_PROPERTIES, nullptr, false, false};
-            VkPhysicalDeviceProperties2 physicalDeviceProperties;
-            physicalDeviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-            physicalDeviceProperties.pNext = &physicalDeviceSamplerMinMaxProperties;
-
-            vki.getPhysicalDeviceProperties2(m_context.getPhysicalDevice(), &physicalDeviceProperties);
-
+            auto physicalDeviceSamplerMinMaxProperties = m_context.getSamplerFilterMinmaxProperties();
             if (physicalDeviceSamplerMinMaxProperties.filterMinmaxImageComponentMapping != VK_TRUE)
             {
                 // If filterMinmaxImageComponentMapping is VK_FALSE the component mapping of the image
@@ -431,13 +466,6 @@ void ImageSamplingInstance::setup()
                 // defined and the other component values are undefined
 
                 m_componentMask = tcu::BVec4(true, false, false, false);
-
-                if (m_componentMapping.r != VK_COMPONENT_SWIZZLE_IDENTITY &&
-                    m_componentMapping.r != VK_COMPONENT_SWIZZLE_R)
-                {
-                    TCU_THROW(NotSupportedError,
-                              "filterMinmaxImageComponentMapping is not supported (R mapping is not IDENTITY)");
-                }
             }
             pNext = reinterpret_cast<const VkSamplerReductionModeCreateInfo *>(pNext)->pNext;
         }
@@ -446,32 +474,8 @@ void ImageSamplingInstance::setup()
             pNext = reinterpret_cast<const VkSamplerYcbcrConversionInfo *>(pNext)->pNext;
             break;
         case VK_STRUCTURE_TYPE_SAMPLER_CUSTOM_BORDER_COLOR_CREATE_INFO_EXT:
-        {
-            const VkSamplerCustomBorderColorCreateInfoEXT customBorderColorCreateInfo =
-                *reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT *>(pNext);
-
-            VkPhysicalDeviceCustomBorderColorFeaturesEXT physicalDeviceCustomBorderColorFeatures = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_CUSTOM_BORDER_COLOR_FEATURES_EXT, nullptr, false, false};
-            VkPhysicalDeviceFeatures2 physicalDeviceFeatures;
-            physicalDeviceFeatures.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
-            physicalDeviceFeatures.pNext = &physicalDeviceCustomBorderColorFeatures;
-
-            vki.getPhysicalDeviceFeatures2(m_context.getPhysicalDevice(), &physicalDeviceFeatures);
-
-            if (physicalDeviceCustomBorderColorFeatures.customBorderColors != VK_TRUE)
-            {
-                TCU_THROW(NotSupportedError, "customBorderColors are not supported");
-            }
-
-            if (physicalDeviceCustomBorderColorFeatures.customBorderColorWithoutFormat != VK_TRUE &&
-                customBorderColorCreateInfo.format == VK_FORMAT_UNDEFINED)
-            {
-                TCU_THROW(NotSupportedError, "customBorderColorWithoutFormat is not supported");
-            }
-
             pNext = reinterpret_cast<const VkSamplerCustomBorderColorCreateInfoEXT *>(pNext)->pNext;
-        }
-        break;
+            break;
         default:
             TCU_FAIL("Unrecognized sType in chained sampler create info");
         }

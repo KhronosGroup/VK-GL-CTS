@@ -2675,8 +2675,14 @@ void TestCasesBuilder::build(vector<OperationTestCase> &testCases, TypeTestResul
             OperationId operation = binaryCase.operationId;
             testCases.emplace_back("denorm_op_var_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_ONE,
                                    binaryCase.opVarResult, fp16NoStorage);
-            testCases.emplace_back("denorm_op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_DENORM,
-                                   binaryCase.opDenormResult, fp16NoStorage);
+            if (operation != OID_SSTEP)
+            {
+                // With flush to zero, the result of calculating a denorm value should be zero, so both arguments of the
+                // SmoothStep function are identical and the result of the function is undefined in those cases. This
+                // cannot be fixed by using two different denorm values due to the DenormFlushToZero execution mode.
+                testCases.emplace_back("denorm_op_denorm_flush_to_zero", B_DENORM_FLUSH, operation, V_DENORM, V_DENORM,
+                                       binaryCase.opDenormResult, fp16NoStorage);
+            }
             testCases.emplace_back("denorm_op_inf_flush_to_zero", B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM,
                                    V_INF, binaryCase.opInfResult, fp16NoStorage);
             testCases.emplace_back("denorm_op_nan_flush_to_zero", B_DENORM_FLUSH | B_ZIN_PRESERVE, operation, V_DENORM,

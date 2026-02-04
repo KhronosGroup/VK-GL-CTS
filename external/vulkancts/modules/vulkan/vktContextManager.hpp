@@ -36,6 +36,7 @@
 #endif
 
 #include <deque>
+#include <functional>
 #include <string>
 #include <tuple>
 #include <typeindex>
@@ -638,7 +639,8 @@ public:
     }
     auto createDevice(const DevCaps &caps, DevCaps::RuntimeData &data) const -> vk::Move<vk::VkDevice>;
     auto findContext(de::SharedPtr<const ContextManager> thiz, vkt::TestCase *testCase,
-                     de::SharedPtr<Context> &defaultContext, vk::BinaryCollection &programs) -> de::SharedPtr<Context>;
+                     de::SharedPtr<Context> &defaultContext, vk::BinaryCollection &programs,
+                     std::function<void(de::SharedPtr<Context>)> onBeforeCreateDevice) -> de::SharedPtr<Context>;
     auto findCustomManager(vkt::TestCase *testCase, de::SharedPtr<ContextManager> defaultContextManager)
         -> de::SharedPtr<ContextManager>;
 #ifndef CTS_USES_VULKANSC

@@ -131,6 +131,7 @@ const vk::VkPhysicalDeviceRayQueryFeaturesKHR&								getRayQueryFeatures							
 const vk::VkPhysicalDeviceRayTracingInvocationReorderFeaturesEXT&			getRayTracingInvocationReorderFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceRayTracingLinearSweptSpheresFeaturesNV&			getRayTracingLinearSweptSpheresFeaturesNV			(void) const;
 const vk::VkPhysicalDeviceRayTracingMaintenance1FeaturesKHR&				getRayTracingMaintenance1Features					(void) const;
+const vk::VkPhysicalDeviceRayTracingMotionBlurFeaturesNV&					getRayTracingMotionBlurFeatures						(void) const;
 const vk::VkPhysicalDeviceRayTracingPipelineFeaturesKHR&					getRayTracingPipelineFeatures						(void) const;
 const vk::VkPhysicalDeviceRayTracingPositionFetchFeaturesKHR&				getRayTracingPositionFetchFeatures					(void) const;
 const vk::VkPhysicalDeviceRepresentativeFragmentTestFeaturesNV&				getRepresentativeFragmentTestFeatures				(void) const;
@@ -163,6 +164,7 @@ const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		getShade
 const vk::VkPhysicalDeviceShaderReplicatedCompositesFeaturesEXT&			getShaderReplicatedCompositesFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderSMBuiltinsFeaturesNV&						getShaderSMBuiltinsFeatures							(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupExtendedTypesFeatures&				getShaderSubgroupExtendedTypesFeatures				(void) const;
+const vk::VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT&				getShaderSubgroupPartitionedFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupRotateFeatures&						getShaderSubgroupRotateFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR&		getShaderSubgroupUniformControlFlowFeatures			(void) const;
 const vk::VkPhysicalDeviceShaderTerminateInvocationFeatures&				getShaderTerminateInvocationFeatures				(void) const;
@@ -176,6 +178,7 @@ const vk::VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR&					getSwapchainMain
 const vk::VkPhysicalDeviceSynchronization2Features&							getSynchronization2Features							(void) const;
 const vk::VkPhysicalDeviceTensorFeaturesARM&								getTensorFeaturesARM								(void) const;
 const vk::VkPhysicalDeviceTexelBufferAlignmentFeaturesEXT&					getTexelBufferAlignmentFeaturesEXT					(void) const;
+const vk::VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT&				getTextureCompressionASTC3DFeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceTextureCompressionASTCHDRFeatures&				getTextureCompressionASTCHDRFeatures				(void) const;
 const vk::VkPhysicalDeviceTimelineSemaphoreFeatures&						getTimelineSemaphoreFeatures						(void) const;
 const vk::VkPhysicalDeviceTransformFeedbackFeaturesEXT&						getTransformFeedbackFeaturesEXT						(void) const;

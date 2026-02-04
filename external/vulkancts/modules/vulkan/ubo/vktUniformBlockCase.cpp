@@ -1678,16 +1678,14 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Va
 }
 
 void generateCompareSrc(std::ostringstream &src, const char *resultVar, const ShaderInterface &interface,
-                        const UniformLayout &layout, const std::map<int, void *> &blockPointers, bool isVertex,
-                        MatrixLoadFlags matrixLoadFlag)
+                        const UniformLayout &layout, const std::map<int, void *> &blockPointers, uint32_t checkFlag,
+                        uint32_t unusedMask, MatrixLoadFlags matrixLoadFlag)
 {
-    uint32_t unusedMask = isVertex ? UNUSED_VERTEX : UNUSED_FRAGMENT;
-
     for (int blockNdx = 0; blockNdx < interface.getNumUniformBlocks(); blockNdx++)
     {
         const UniformBlock &block = interface.getUniformBlock(blockNdx);
 
-        if ((block.getFlags() & (isVertex ? DECLARE_VERTEX : DECLARE_FRAGMENT)) == 0)
+        if ((block.getFlags() & checkFlag) == 0)
             continue; // Skip.
 
         bool hasInstanceName  = block.hasInstanceName();
@@ -1708,10 +1706,10 @@ void generateCompareSrc(std::ostringstream &src, const char *resultVar, const Sh
                 instancePostfix = std::string("[") + indexStr + "]";
             }
 
-            std::string blockInstanceName = block.getBlockName() + instancePostfix;
             std::string srcPrefix = hasInstanceName ? block.getInstanceName() + instancePostfix + "." : std::string("");
-            int blockLayoutNdx    = layout.getBlockLayoutIndex(blockNdx, instanceNdx);
-            void *basePtr         = blockPointers.find(blockLayoutNdx)->second;
+
+            int blockLayoutNdx = layout.getBlockLayoutIndex(blockNdx, instanceNdx);
+            void *basePtr      = blockPointers.find(blockLayoutNdx)->second;
 
             for (UniformBlock::ConstIterator uniformIter = block.begin(); uniformIter != block.end(); uniformIter++)
             {
@@ -1791,7 +1789,7 @@ std::string generateVertexShader(const ShaderInterface &interface, const Uniform
            "    mediump float result = 1.0;\n";
 
     // Value compare.
-    generateCompareSrc(src, "result", interface, layout, blockPointers, true, matrixLoadFlag);
+    generateCompareSrc(src, "result", interface, layout, blockPointers, DECLARE_VERTEX, UNUSED_VERTEX, matrixLoadFlag);
 
     src << "    v_vtxResult = result;\n"
            "}\n";
@@ -1840,7 +1838,8 @@ std::string generateFragmentShader(const ShaderInterface &interface, const Unifo
            "    mediump float result = 1.0;\n";
 
     // Value compare.
-    generateCompareSrc(src, "result", interface, layout, blockPointers, false, matrixLoadFlag);
+    generateCompareSrc(src, "result", interface, layout, blockPointers, DECLARE_FRAGMENT, UNUSED_FRAGMENT,
+                       matrixLoadFlag);
 
     src << "    dEQP_FragColor = vec4(1.0, v_vtxResult, result, 1.0);\n"
            "}\n";
@@ -1848,11 +1847,78 @@ std::string generateFragmentShader(const ShaderInterface &interface, const Unifo
     return src.str();
 }
 
+std::string generateComputeShader(const ShaderInterface &interface, const UniformLayout &layout,
+                                  const std::map<int, void *> &blockPointers, MatrixLoadFlags matrixLoadFlag,
+                                  bool shuffleUniformMembers)
+{
+    std::ostringstream src;
+    src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
+    src << "#extension GL_EXT_shader_16bit_storage : enable\n";
+    src << "#extension GL_EXT_shader_8bit_storage : enable\n";
+    src << "#extension GL_EXT_scalar_block_layout : enable\n";
+    src << "#extension GL_EXT_nonuniform_qualifier : enable\n";
+
+    if (hasUnsizedArray(interface))
+        src << "#extension GL_EXT_uniform_buffer_unsized_array : enable\n";
+
+    src << "layout(local_size_x = 1, local_size_y = 1, local_size_z = 1) in;\n";
+    src << "\n";
+
+    const int numBlocks = interface.getNumUniformBlocks();
+    int maxBinding      = -1;
+    for (int i = 0; i < numBlocks; i++)
+    {
+        if (i > maxBinding)
+            maxBinding = i;
+    }
+    const int imageBinding = maxBinding + 1;
+    src << "layout(set = 0, binding = " << imageBinding << ", rgba8) writeonly uniform image2D outImage;\n\n";
+
+    std::vector<const StructType *> namedStructs;
+    interface.getNamedStructs(namedStructs);
+    for (std::vector<const StructType *>::const_iterator structIter = namedStructs.begin();
+         structIter != namedStructs.end(); structIter++)
+        generateDeclaration(src, **structIter, 0);
+
+    for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+    {
+        const UniformBlock &block = interface.getUniformBlock(blockNdx);
+        if (block.getFlags() & DECLARE_COMPUTE)
+            generateDeclaration(src, blockNdx, block, layout, shuffleUniformMembers);
+    }
+
+    // Comparison utilities
+    src << "\n";
+    generateCompareFuncs(src, interface);
+
+    src << "\n"
+           "void main (void)\n"
+           "{\n"
+           "    ivec2 coord = ivec2(gl_GlobalInvocationID.xy);\n"
+           "    mediump float result = 1.0;\n";
+
+    generateCompareSrc(src, "result", interface, layout, blockPointers, DECLARE_COMPUTE, 0u, matrixLoadFlag);
+
+    src << "    imageStore(outImage, coord, vec4(result));\n"
+           "}\n";
+
+    return src.str();
+}
+
+inline vk::VkQueue getQueue(Context &ctx, bool isCompute = false)
+{
+    return isCompute ? ctx.getComputeQueue() : ctx.getUniversalQueue();
+}
+
+inline uint32_t getQueueNdx(Context &ctx, bool isCompute = false)
+{
+    return isCompute ? ctx.getComputeQueueFamilyIndex() : ctx.getUniversalQueueFamilyIndex();
+}
+
 Move<VkBuffer> createBuffer(Context &context, VkDeviceSize bufferSize, vk::VkBufferUsageFlags usageFlags)
 {
-    const VkDevice vkDevice         = context.getDevice();
-    const DeviceInterface &vk       = context.getDeviceInterface();
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const VkDevice vkDevice   = context.getDevice();
+    const DeviceInterface &vk = context.getDeviceInterface();
 
     const VkBufferCreateInfo bufferInfo = {
         VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
@@ -1861,8 +1927,8 @@ Move<VkBuffer> createBuffer(Context &context, VkDeviceSize bufferSize, vk::VkBuf
         bufferSize,                           // VkDeviceSize size;
         usageFlags,                           // VkBufferUsageFlags usage;
         VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
-        1u,                                   // uint32_t queueFamilyIndexCount;
-        &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
+        0u,                                   // uint32_t queueFamilyIndexCount;
+        nullptr                               // const uint32_t* pQueueFamilyIndices;
     };
 
     return vk::createBuffer(vk, vkDevice, &bufferInfo);
@@ -1871,7 +1937,6 @@ Move<VkBuffer> createBuffer(Context &context, VkDeviceSize bufferSize, vk::VkBuf
 Move<vk::VkImage> createImage2D(Context &context, uint32_t width, uint32_t height, vk::VkFormat format,
                                 vk::VkImageTiling tiling, vk::VkImageUsageFlags usageFlags)
 {
-    const uint32_t queueFamilyIndex    = context.getUniversalQueueFamilyIndex();
     const vk::VkImageCreateInfo params = {
         vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType            sType
         nullptr,                                 // const void*                pNext
@@ -1885,8 +1950,8 @@ Move<vk::VkImage> createImage2D(Context &context, uint32_t width, uint32_t heigh
         tiling,                                  // VkImageTiling            tiling
         usageFlags,                              // VkImageUsageFlags        usage
         vk::VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode            sharingMode
-        1u,                                      // uint32_t                    queueFamilyIndexCount
-        &queueFamilyIndex,                       // const uint32_t*            pQueueFamilyIndices
+        0u,                                      // uint32_t                    queueFamilyIndexCount
+        nullptr,                                 // const uint32_t*            pQueueFamilyIndices
         vk::VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout            initialLayout
     };
 
@@ -1946,9 +2011,9 @@ Move<vk::VkPipelineLayout> createPipelineLayout(Context &context, vk::VkDescript
     return vk::createPipelineLayout(context.getDeviceInterface(), context.getDevice(), &params);
 }
 
-Move<vk::VkCommandPool> createCmdPool(Context &context)
+Move<vk::VkCommandPool> createCmdPool(Context &context, bool isCompute)
 {
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
+    const uint32_t queueFamilyIndex = getQueueNdx(context, isCompute);
 
     return vk::createCommandPool(context.getDeviceInterface(), context.getDevice(),
                                  vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -1966,7 +2031,7 @@ class UniformBlockCaseInstance : public vkt::TestInstance
 {
 public:
     UniformBlockCaseInstance(Context &context, UniformBlockCase::BufferMode bufferMode, const UniformLayout &layout,
-                             const std::map<int, void *> &blockPointers);
+                             const std::map<int, void *> &blockPointers, bool isCompute);
     virtual ~UniformBlockCaseInstance(void);
     virtual tcu::TestStatus iterate(void);
 
@@ -1983,6 +2048,8 @@ private:
     vk::Move<VkDescriptorPool> createDescriptorPool(void) const;
     vk::Move<VkPipeline> createPipeline(vk::VkShaderModule vtxShaderModule, vk::VkShaderModule fragShaderModule,
                                         vk::VkPipelineLayout pipelineLayout, vk::VkRenderPass renderPass) const;
+    vk::Move<VkPipeline> createComputePipeline(vk::VkShaderModule compShaderModule,
+                                               vk::VkPipelineLayout pipelineLayout) const;
 
     vk::VkDescriptorBufferInfo addUniformData(uint32_t size, const void *dataPtr);
 
@@ -1995,15 +2062,18 @@ private:
 
     std::vector<VkBufferSp> m_uniformBuffers;
     std::vector<AllocationSp> m_uniformAllocs;
+
+    const bool m_isCompute;
 };
 
 UniformBlockCaseInstance::UniformBlockCaseInstance(Context &ctx, UniformBlockCase::BufferMode bufferMode,
                                                    const UniformLayout &layout,
-                                                   const std::map<int, void *> &blockPointers)
+                                                   const std::map<int, void *> &blockPointers, bool isCompute)
     : vkt::TestInstance(ctx)
     , m_bufferMode(bufferMode)
     , m_layout(layout)
     , m_blockPointers(blockPointers)
+    , m_isCompute(isCompute)
 {
 }
 
@@ -2015,39 +2085,28 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
 {
     const vk::DeviceInterface &vk   = m_context.getDeviceInterface();
     const vk::VkDevice device       = m_context.getDevice();
-    const vk::VkQueue queue         = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const vk::VkQueue queue         = getQueue(m_context, m_isCompute);
+    const uint32_t queueFamilyIndex = getQueueNdx(m_context, m_isCompute);
 
-    const float positions[] = {-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f,
-                               +1.0f, -1.0f, 0.0f, 1.0f, +1.0f, +1.0f, 0.0f, 1.0f};
-
-    const uint32_t indices[] = {0, 1, 2, 2, 1, 3};
-
-    vk::Unique<VkBuffer> positionsBuffer(
-        createBuffer(m_context, sizeof(positions), vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-    de::UniquePtr<Allocation> positionsAlloc(
-        allocateAndBindMemory(m_context, *positionsBuffer, MemoryRequirement::HostVisible));
-    vk::Unique<VkBuffer> indicesBuffer(createBuffer(
-        m_context, sizeof(indices), vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT | vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
-    de::UniquePtr<Allocation> indicesAlloc(
-        allocateAndBindMemory(m_context, *indicesBuffer, MemoryRequirement::HostVisible));
-
-    int minUniformBufferOffsetAlignment = getminUniformBufferOffsetAlignment(m_context);
-
-    // Upload attrbiutes data
-    {
-        deMemcpy(positionsAlloc->getHostPtr(), positions, sizeof(positions));
-        flushAlloc(vk, device, *positionsAlloc);
-
-        deMemcpy(indicesAlloc->getHostPtr(), indices, sizeof(indices));
-        flushAlloc(vk, device, *indicesAlloc);
-    }
-
-    vk::Unique<VkImage> colorImage(
-        createImage2D(m_context, RENDER_WIDTH, RENDER_HEIGHT, vk::VK_FORMAT_R8G8B8A8_UNORM, vk::VK_IMAGE_TILING_OPTIMAL,
-                      vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT));
+    // Create output image
+    vk::VkImageUsageFlags imageUsage = vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (m_isCompute)
+        imageUsage |= vk::VK_IMAGE_USAGE_STORAGE_BIT;
+    else
+        imageUsage |= vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    vk::Unique<VkImage> colorImage(createImage2D(m_context, RENDER_WIDTH, RENDER_HEIGHT, vk::VK_FORMAT_R8G8B8A8_UNORM,
+                                                 vk::VK_IMAGE_TILING_OPTIMAL, imageUsage));
     de::UniquePtr<Allocation> colorImageAlloc(allocateAndBindMemory(m_context, *colorImage, MemoryRequirement::Any));
     vk::Unique<VkImageView> colorImageView(createAttachmentView(m_context, *colorImage, vk::VK_FORMAT_R8G8B8A8_UNORM));
+
+    // Create result buffer
+    vk::Unique<VkBuffer> resultBuffer(createBuffer(m_context, (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * 4),
+                                                   vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT));
+    de::UniquePtr<Allocation> resultBufferAlloc(
+        allocateAndBindMemory(m_context, *resultBuffer, vk::MemoryRequirement::HostVisible));
+
+    // Create descriptor pool and set
+    int minUniformBufferOffsetAlignment = getminUniformBufferOffsetAlignment(m_context);
 
     vk::Unique<VkDescriptorSetLayout> descriptorSetLayout(createDescriptorSetLayout());
     vk::Unique<VkDescriptorPool> descriptorPool(createDescriptorPool());
@@ -2126,26 +2185,27 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
             }
         }
 
+        // Update storage image descriptor for compute shader
+        if (m_isCompute)
+        {
+            int maxBinding = -1;
+            for (const auto &blk : m_layout.blocks)
+                maxBinding = de::max(maxBinding, blk.bindingNdx);
+
+            int imageBinding = maxBinding + 1;
+
+            const VkDescriptorImageInfo imageInfo = {VK_NULL_HANDLE, *colorImageView, vk::VK_IMAGE_LAYOUT_GENERAL};
+            descriptorSetUpdateBuilder.writeSingle(*descriptorSet,
+                                                   vk::DescriptorSetUpdateBuilder::Location::binding(imageBinding),
+                                                   VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &imageInfo);
+        }
+
         descriptorSetUpdateBuilder.update(vk, device);
     }
 
-    vk::Unique<VkRenderPass> renderPass(createRenderPass(vk::VK_FORMAT_R8G8B8A8_UNORM));
-    vk::Unique<VkFramebuffer> framebuffer(createFramebuffer(*renderPass, *colorImageView));
-    vk::Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(m_context, *descriptorSetLayout));
-
-    vk::Unique<VkShaderModule> vtxShaderModule(
-        vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
-    vk::Unique<VkShaderModule> fragShaderModule(
-        vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
-    vk::Unique<VkPipeline> pipeline(createPipeline(*vtxShaderModule, *fragShaderModule, *pipelineLayout, *renderPass));
-    vk::Unique<VkCommandPool> cmdPool(createCmdPool(m_context));
+    // Command buffer
+    vk::Unique<VkCommandPool> cmdPool(createCmdPool(m_context, m_isCompute));
     vk::Unique<VkCommandBuffer> cmdBuffer(createCmdBuffer(m_context, *cmdPool));
-    vk::Unique<VkBuffer> readImageBuffer(createBuffer(m_context, (vk::VkDeviceSize)(RENDER_WIDTH * RENDER_HEIGHT * 4),
-                                                      vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT));
-    de::UniquePtr<Allocation> readImageAlloc(
-        allocateAndBindMemory(m_context, *readImageBuffer, vk::MemoryRequirement::HostVisible));
-
-    // Record command buffer
     const vk::VkCommandBufferBeginInfo beginInfo = {
         vk::VK_STRUCTURE_TYPE_COMMAND_BUFFER_BEGIN_INFO, // VkStructureType sType;
         nullptr,                                         // const void* pNext;
@@ -2154,59 +2214,147 @@ tcu::TestStatus UniformBlockCaseInstance::iterate(void)
     };
     VK_CHECK(vk.beginCommandBuffer(*cmdBuffer, &beginInfo));
 
-    // Add barrier for initializing image state
+    if (!m_isCompute) // Graphics path
     {
-        const vk::VkImageMemoryBarrier initializeBarrier = {
-            vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
-            nullptr,                                      // const void*                pNext
-            0,                                            // VVkAccessFlags srcAccessMask;
-            vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
-            vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
-            vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout newLayout;
-            queueFamilyIndex,                             // uint32_t srcQueueFamilyIndex;
-            queueFamilyIndex,                             // uint32_t dstQueueFamilyIndex;
-            *colorImage,                                  // VkImage image;
-            {
-                vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
-                0u,                            // uint32_t baseMipLevel;
-                1u,                            // uint32_t mipLevels;
-                0u,                            // uint32_t baseArraySlice;
-                1u,                            // uint32_t arraySize;
-            }                                  // VkImageSubresourceRange    subresourceRange
-        };
+        const float positions[] = {-1.0f, -1.0f, 0.0f, 1.0f, -1.0f, +1.0f, 0.0f, 1.0f,
+                                   +1.0f, -1.0f, 0.0f, 1.0f, +1.0f, +1.0f, 0.0f, 1.0f};
 
-        vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT,
-                              (vk::VkDependencyFlags)0, 0, nullptr, 0, nullptr, 1, &initializeBarrier);
+        const uint32_t indices[] = {0, 1, 2, 2, 1, 3};
+
+        vk::Unique<VkBuffer> positionsBuffer(
+            createBuffer(m_context, sizeof(positions), vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+        de::UniquePtr<Allocation> positionsAlloc(
+            allocateAndBindMemory(m_context, *positionsBuffer, MemoryRequirement::HostVisible));
+        vk::Unique<VkBuffer> indicesBuffer(createBuffer(
+            m_context, sizeof(indices), vk::VK_BUFFER_USAGE_INDEX_BUFFER_BIT | vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT));
+        de::UniquePtr<Allocation> indicesAlloc(
+            allocateAndBindMemory(m_context, *indicesBuffer, MemoryRequirement::HostVisible));
+
+        // Upload attrbiutes data
+        {
+            deMemcpy(positionsAlloc->getHostPtr(), positions, sizeof(positions));
+            flushAlloc(vk, device, *positionsAlloc);
+
+            deMemcpy(indicesAlloc->getHostPtr(), indices, sizeof(indices));
+            flushAlloc(vk, device, *indicesAlloc);
+        }
+
+        vk::Unique<VkRenderPass> renderPass(createRenderPass(vk::VK_FORMAT_R8G8B8A8_UNORM));
+        vk::Unique<VkFramebuffer> framebuffer(createFramebuffer(*renderPass, *colorImageView));
+        vk::Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(m_context, *descriptorSetLayout));
+
+        vk::Unique<VkShaderModule> vtxShaderModule(
+            vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"), 0));
+        vk::Unique<VkShaderModule> fragShaderModule(
+            vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"), 0));
+        vk::Unique<VkPipeline> pipeline(
+            createPipeline(*vtxShaderModule, *fragShaderModule, *pipelineLayout, *renderPass));
+
+        // Add barrier for initializing image state
+        {
+            const vk::VkImageMemoryBarrier initializeBarrier = {
+                vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER,   // VkStructureType sType;
+                nullptr,                                      // const void*                pNext
+                0,                                            // VVkAccessFlags srcAccessMask;
+                vk::VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT,     // VkAccessFlags dstAccessMask;
+                vk::VK_IMAGE_LAYOUT_UNDEFINED,                // VkImageLayout oldLayout;
+                vk::VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout newLayout;
+                queueFamilyIndex,                             // uint32_t srcQueueFamilyIndex;
+                queueFamilyIndex,                             // uint32_t dstQueueFamilyIndex;
+                *colorImage,                                  // VkImage image;
+                {
+                    vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                    0u,                            // uint32_t baseMipLevel;
+                    1u,                            // uint32_t mipLevels;
+                    0u,                            // uint32_t baseArraySlice;
+                    1u,                            // uint32_t arraySize;
+                }                                  // VkImageSubresourceRange    subresourceRange
+            };
+
+            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  vk::VK_PIPELINE_STAGE_ALL_GRAPHICS_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0,
+                                  nullptr, 1, &initializeBarrier);
+        }
+
+        beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT),
+                        tcu::Vec4(0.125f, 0.25f, 0.75f, 1.0f));
+
+        vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
+        vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                                 &*descriptorSet, 0u, nullptr);
+
+        const vk::VkDeviceSize offsets[] = {0u};
+        vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &*positionsBuffer, offsets);
+        vk.cmdBindIndexBuffer(*cmdBuffer, *indicesBuffer, (vk::VkDeviceSize)0, vk::VK_INDEX_TYPE_UINT32);
+
+        vk.cmdDrawIndexed(*cmdBuffer, DE_LENGTH_OF_ARRAY(indices), 1u, 0u, 0u, 0u);
+        endRenderPass(vk, *cmdBuffer);
+
+        copyImageToBuffer(vk, *cmdBuffer, *colorImage, *resultBuffer, tcu::IVec2(RENDER_WIDTH, RENDER_HEIGHT));
+
+        endCommandBuffer(vk, *cmdBuffer);
+
+        // Submit the command buffer
+        submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
     }
+    else // Compute path
+    {
+        vk::Unique<VkPipelineLayout> pipelineLayout(createPipelineLayout(m_context, *descriptorSetLayout));
 
-    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, makeRect2D(0, 0, RENDER_WIDTH, RENDER_HEIGHT),
-                    tcu::Vec4(0.125f, 0.25f, 0.75f, 1.0f));
+        vk::Unique<VkShaderModule> compShaderModule(
+            vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("comp"), 0));
+        vk::Unique<VkPipeline> pipeline(createComputePipeline(*compShaderModule, *pipelineLayout));
 
-    vk.cmdBindPipeline(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipeline);
-    vk.cmdBindDescriptorSets(*cmdBuffer, vk::VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u, &*descriptorSet,
-                             0u, nullptr);
+        // Add barrier for initializing image state
+        {
+            const vk::VkImageMemoryBarrier initializeBarrier = {
+                vk::VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType sType;
+                nullptr,                                    // const void*                pNext
+                0,                                          // VVkAccessFlags srcAccessMask;
+                vk::VK_ACCESS_SHADER_WRITE_BIT,             // VkAccessFlags dstAccessMask;
+                vk::VK_IMAGE_LAYOUT_UNDEFINED,              // VkImageLayout oldLayout;
+                vk::VK_IMAGE_LAYOUT_GENERAL,                // VkImageLayout newLayout;
+                queueFamilyIndex,                           // uint32_t srcQueueFamilyIndex;
+                queueFamilyIndex,                           // uint32_t dstQueueFamilyIndex;
+                *colorImage,                                // VkImage image;
+                {
+                    vk::VK_IMAGE_ASPECT_COLOR_BIT, // VkImageAspectFlags aspectMask;
+                    0u,                            // uint32_t baseMipLevel;
+                    1u,                            // uint32_t mipLevels;
+                    0u,                            // uint32_t baseArraySlice;
+                    1u,                            // uint32_t arraySize;
+                }                                  // VkImageSubresourceRange    subresourceRange
+            };
 
-    const vk::VkDeviceSize offsets[] = {0u};
-    vk.cmdBindVertexBuffers(*cmdBuffer, 0u, 1u, &*positionsBuffer, offsets);
-    vk.cmdBindIndexBuffer(*cmdBuffer, *indicesBuffer, (vk::VkDeviceSize)0, vk::VK_INDEX_TYPE_UINT32);
+            vk.cmdPipelineBarrier(*cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0,
+                                  nullptr, 1, &initializeBarrier);
+        }
 
-    vk.cmdDrawIndexed(*cmdBuffer, DE_LENGTH_OF_ARRAY(indices), 1u, 0u, 0u, 0u);
-    endRenderPass(vk, *cmdBuffer);
+        vk.cmdBindPipeline(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipeline);
+        vk.cmdBindDescriptorSets(*cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, *pipelineLayout, 0u, 1u, &*descriptorSet,
+                                 0u, nullptr);
 
-    copyImageToBuffer(vk, *cmdBuffer, *colorImage, *readImageBuffer, tcu::IVec2(RENDER_WIDTH, RENDER_HEIGHT));
+        // Dispatch width x height as workgroups are 1x1
+        vk.cmdDispatch(*cmdBuffer, RENDER_WIDTH, RENDER_HEIGHT, 1);
 
-    endCommandBuffer(vk, *cmdBuffer);
+        copyImageToBuffer(vk, *cmdBuffer, *colorImage, *resultBuffer, tcu::IVec2(RENDER_WIDTH, RENDER_HEIGHT),
+                          vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_GENERAL, 1u, 1u, 1u,
+                          vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT);
 
-    // Submit the command buffer
-    submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+        endCommandBuffer(vk, *cmdBuffer);
+
+        // Submit the command buffer
+        submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
+    }
 
     // Read back the results
     tcu::Surface surface(RENDER_WIDTH, RENDER_HEIGHT);
     {
         const tcu::TextureFormat textureFormat(tcu::TextureFormat::RGBA, tcu::TextureFormat::UNORM_INT8);
         const tcu::ConstPixelBufferAccess imgAccess(textureFormat, RENDER_WIDTH, RENDER_HEIGHT, 1,
-                                                    readImageAlloc->getHostPtr());
-        invalidateAlloc(vk, device, *readImageAlloc);
+                                                    resultBufferAlloc->getHostPtr());
+        invalidateAlloc(vk, device, *resultBufferAlloc);
 
         tcu::copy(surface.getAccess(), imgAccess);
     }
@@ -2265,7 +2413,6 @@ vk::VkDescriptorBufferInfo UniformBlockCaseInstance::addUniformData(uint32_t siz
         *buffer, // VkBuffer buffer;
         0u,      // VkDeviceSize offset;
         size,    // VkDeviceSize range;
-
     };
 
     m_uniformBuffers.push_back(VkBufferSp(new vk::Unique<vk::VkBuffer>(buffer)));
@@ -2305,48 +2452,81 @@ vk::Move<VkFramebuffer> UniformBlockCaseInstance::createFramebuffer(vk::VkRender
 
 vk::Move<VkDescriptorSetLayout> UniformBlockCaseInstance::createDescriptorSetLayout(void) const
 {
-    int numBlocks      = (int)m_layout.blocks.size();
-    int lastBindingNdx = -1;
-    std::vector<int> lengths;
+    const vk::DeviceInterface &vk = m_context.getDeviceInterface();
+    const vk::VkDevice device     = m_context.getDevice();
 
-    for (int blockNdx = 0; blockNdx < numBlocks; blockNdx++)
+    // Determine shader stages for UBOs. In Compute tests, everything is visible to Compute.
+    vk::VkShaderStageFlags uboStages = m_isCompute ? vk::VK_SHADER_STAGE_COMPUTE_BIT : vk::VK_SHADER_STAGE_ALL;
+
+    // Map to track bindings and counts
+    std::map<int, int> bindingCounts;
+    int maxBinding = -1;
+
+    for (int blockNdx = 0; blockNdx < (int)m_layout.blocks.size(); ++blockNdx)
     {
         const BlockLayoutEntry &block = m_layout.blocks[blockNdx];
-
-        if (block.bindingNdx == lastBindingNdx)
-        {
-            lengths.back()++;
-        }
-        else
-        {
-            lengths.push_back(1);
-            lastBindingNdx = block.bindingNdx;
-        }
+        bindingCounts[block.bindingNdx]++;
+        if (block.bindingNdx > maxBinding)
+            maxBinding = block.bindingNdx;
     }
 
-    vk::DescriptorSetLayoutBuilder layoutBuilder;
-    for (size_t i = 0; i < lengths.size(); i++)
+    // Vectors to hold bindings
+    std::vector<vk::VkDescriptorSetLayoutBinding> bindings;
+
+    // Add UBO bindings
+    for (std::map<int, int>::const_iterator it = bindingCounts.begin(); it != bindingCounts.end(); ++it)
     {
-        if (lengths[i] > 0)
+        const int bindingIdx = it->first;
+        const int count      = it->second;
+
+        if (count > 0)
         {
-            layoutBuilder.addArrayBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, lengths[i], vk::VK_SHADER_STAGE_ALL);
-        }
-        else
-        {
-            layoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, vk::VK_SHADER_STAGE_ALL);
+            vk::VkDescriptorSetLayoutBinding b = {};
+            b.binding                          = (uint32_t)bindingIdx;
+            b.descriptorType                   = vk::VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER;
+            b.descriptorCount                  = (uint32_t)count;
+            b.stageFlags                       = uboStages;
+            b.pImmutableSamplers               = nullptr;
+
+            bindings.push_back(b);
         }
     }
 
-    return layoutBuilder.build(m_context.getDeviceInterface(), m_context.getDevice());
+    // Add Storage Image binding
+    if (m_isCompute)
+    {
+        uint32_t imageBindingIdx = (uint32_t)(maxBinding + 1);
+
+        vk::VkDescriptorSetLayoutBinding b = {};
+        b.binding                          = imageBindingIdx;
+        b.descriptorType                   = vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
+        b.descriptorCount                  = 1u;
+        b.stageFlags                       = vk::VK_SHADER_STAGE_COMPUTE_BIT;
+        b.pImmutableSamplers               = nullptr;
+
+        bindings.push_back(b);
+    }
+
+    // Create Layout Info
+    vk::VkDescriptorSetLayoutCreateInfo layoutInfo = {};
+    layoutInfo.sType                               = vk::VK_STRUCTURE_TYPE_DESCRIPTOR_SET_LAYOUT_CREATE_INFO;
+    layoutInfo.pNext                               = nullptr;
+    layoutInfo.flags                               = 0;
+    layoutInfo.bindingCount                        = (uint32_t)bindings.size();
+    layoutInfo.pBindings                           = bindings.empty() ? nullptr : bindings.data();
+
+    return vk::createDescriptorSetLayout(vk, device, &layoutInfo);
 }
 
 vk::Move<VkDescriptorPool> UniformBlockCaseInstance::createDescriptorPool(void) const
 {
     vk::DescriptorPoolBuilder poolBuilder;
+    poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (int)m_layout.blocks.size());
+    if (m_isCompute)
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, 1u);
 
-    return poolBuilder.addType(VK_DESCRIPTOR_TYPE_UNIFORM_BUFFER, (int)m_layout.blocks.size())
-        .build(m_context.getDeviceInterface(), m_context.getDevice(), VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
-               1u);
+    return poolBuilder.build(m_context.getDeviceInterface(), m_context.getDevice(),
+                             VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 }
 
 vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline(vk::VkShaderModule vtxShaderModule,
@@ -2373,6 +2553,13 @@ vk::Move<VkPipeline> UniformBlockCaseInstance::createPipeline(vk::VkShaderModule
                                     scissors);        // const std::vector<VkRect2D>&      scissors
 }
 
+vk::Move<VkPipeline> UniformBlockCaseInstance::createComputePipeline(vk::VkShaderModule compShaderModule,
+                                                                     vk::VkPipelineLayout pipelineLayout) const
+{
+    return vk::makeComputePipeline(m_context.getDeviceInterface(), m_context.getDevice(), pipelineLayout,
+                                   compShaderModule);
+}
+
 } // namespace
 
 // UniformBlockCase.
@@ -2392,9 +2579,6 @@ UniformBlockCase::~UniformBlockCase(void)
 
 void UniformBlockCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    DE_ASSERT(!m_vertShaderSource.empty());
-    DE_ASSERT(!m_fragShaderSource.empty());
-
     vk::ShaderBuildOptions::Flags flags = vk::ShaderBuildOptions::Flags(0);
     // TODO(dneto): If these tests ever use LAYOUT_RELAXED, then add support
     // here as well.
@@ -2403,39 +2587,32 @@ void UniformBlockCase::initPrograms(vk::SourceCollections &programCollection) co
     else if (usesBlockLayout(LAYOUT_STD430))
         flags = vk::ShaderBuildOptions::FLAG_ALLOW_STD430_UBOS;
 
-    programCollection.glslSources.add("vert")
-        << glu::VertexSource(m_vertShaderSource)
-        << vk::ShaderBuildOptions(programCollection.usedVulkanVersion,
-                                  vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
+    const bool isCompute = usesBlockLayout(DECLARE_COMPUTE);
+    if (!isCompute)
+    {
+        programCollection.glslSources.add("vert")
+            << glu::VertexSource(m_vertShaderSource)
+            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion,
+                                      vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
 
-    programCollection.glslSources.add("frag")
-        << glu::FragmentSource(m_fragShaderSource)
-        << vk::ShaderBuildOptions(programCollection.usedVulkanVersion,
-                                  vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
+        programCollection.glslSources.add("frag")
+            << glu::FragmentSource(m_fragShaderSource)
+            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion,
+                                      vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
+    }
+    else
+    {
+        programCollection.glslSources.add("comp")
+            << glu::ComputeSource(m_compShaderSource)
+            << vk::ShaderBuildOptions(programCollection.usedVulkanVersion,
+                                      vk::getBaselineSpirvVersion(programCollection.usedVulkanVersion), flags);
+    }
 }
 
 TestInstance *UniformBlockCase::createInstance(Context &context) const
 {
-    if (!context.get16BitStorageFeatures().uniformAndStorageBuffer16BitAccess && usesBlockLayout(LAYOUT_16BIT_STORAGE))
-        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer16BitAccess not supported");
-    if (!context.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess && usesBlockLayout(LAYOUT_8BIT_STORAGE))
-        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer8BitAccess not supported");
-    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout &&
-        !context.getUniformBufferStandardLayoutFeatures().uniformBufferStandardLayout && usesBlockLayout(LAYOUT_STD430))
-        TCU_THROW(NotSupportedError, "std430 not supported");
-    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesBlockLayout(LAYOUT_SCALAR))
-        TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
-    if (usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING) &&
-        (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing ||
-         !context.getDescriptorIndexingFeatures().runtimeDescriptorArray))
-        TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
-#ifndef CTS_USES_VULKANSC
-    if (hasUnsizedArray(m_interface) &&
-        !context.getShaderUniformBufferUnsizedArrayFeaturesEXT().shaderUniformBufferUnsizedArray)
-        TCU_THROW(NotSupportedError, "shaderUniformBufferUnsizedArray not supported");
-#endif
-
-    return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers);
+    bool isCompute = usesBlockLayout(DECLARE_COMPUTE);
+    return new UniformBlockCaseInstance(context, m_bufferMode, m_uniformLayout, m_blockPointers, isCompute);
 }
 
 void UniformBlockCase::delayedInit(void)
@@ -2471,10 +2648,41 @@ void UniformBlockCase::delayedInit(void)
     generateValues(m_uniformLayout, m_blockPointers, 1 /* seed */);
 
     // Generate shaders.
-    m_vertShaderSource =
-        generateVertexShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag, m_shuffleUniformMembers);
-    m_fragShaderSource = generateFragmentShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag,
-                                                m_shuffleUniformMembers);
+    const bool isCompute = usesBlockLayout(DECLARE_COMPUTE);
+    if (!isCompute)
+    {
+        m_vertShaderSource = generateVertexShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag,
+                                                  m_shuffleUniformMembers);
+        m_fragShaderSource = generateFragmentShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag,
+                                                    m_shuffleUniformMembers);
+    }
+    else
+    {
+        m_compShaderSource = generateComputeShader(m_interface, m_uniformLayout, m_blockPointers, m_matrixLoadFlag,
+                                                   m_shuffleUniformMembers);
+    }
+}
+
+void UniformBlockCase::checkSupport(Context &context) const
+{
+    if (!context.get16BitStorageFeatures().uniformAndStorageBuffer16BitAccess && usesBlockLayout(LAYOUT_16BIT_STORAGE))
+        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer16BitAccess not supported");
+    if (!context.get8BitStorageFeatures().uniformAndStorageBuffer8BitAccess && usesBlockLayout(LAYOUT_8BIT_STORAGE))
+        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer8BitAccess not supported");
+    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout &&
+        !context.getUniformBufferStandardLayoutFeatures().uniformBufferStandardLayout && usesBlockLayout(LAYOUT_STD430))
+        TCU_THROW(NotSupportedError, "std430 not supported");
+    if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesBlockLayout(LAYOUT_SCALAR))
+        TCU_THROW(NotSupportedError, "scalarBlockLayout not supported");
+    if (usesBlockLayout(LAYOUT_DESCRIPTOR_INDEXING) &&
+        (!context.getDescriptorIndexingFeatures().shaderUniformBufferArrayNonUniformIndexing ||
+         !context.getDescriptorIndexingFeatures().runtimeDescriptorArray))
+        TCU_THROW(NotSupportedError, "Descriptor indexing over uniform buffer not supported");
+#ifndef CTS_USES_VULKANSC
+    if (hasUnsizedArray(m_interface) &&
+        !context.getShaderUniformBufferUnsizedArrayFeaturesEXT().shaderUniformBufferUnsizedArray)
+        TCU_THROW(NotSupportedError, "shaderUniformBufferUnsizedArray not supported");
+#endif
 }
 
 } // namespace ubo

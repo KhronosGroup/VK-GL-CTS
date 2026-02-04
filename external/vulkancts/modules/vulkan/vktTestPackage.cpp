@@ -124,15 +124,11 @@
 #include "vktMeshShaderTests.hpp"
 #include "vktFragmentShadingBarycentricTests.hpp"
 #include "vktShaderBFloat16Tests.hpp"
-
-#ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
 #include "vktVideoTests.hpp"
-#endif // DEQP_EXCLUDE_VK_VIDEO_TESTS
 
 #ifdef CTS_USES_VULKANSC
 #include "vktSafetyCriticalTests.hpp"
 #endif // CTS_USES_VULKANSC
-#include "vktVideoTests.hpp"
 #include "vktShaderObjectTests.hpp"
 #include "vktDGCTests.hpp"
 #include "vktCooperativeVectorTests.hpp"
@@ -469,51 +465,54 @@ void TestCaseExecutor::init(tcu::TestCase *testCase, const std::string &casePath
     vk::SpirVAsmBuildOptions defaultSpirvAsmBuildOptions(usedVulkanVersion, baselineSpirvVersion);
     vk::SourceCollections sourceProgs(usedVulkanVersion, defaultGlslBuildOptions, defaultHlslBuildOptions,
                                       defaultSpirvAsmBuildOptions);
-    const tcu::CommandLine &commandLine = m_contextManager->getCommandLine();
-    const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
+    // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
+    // the function that creates a new device, may throw an exception. All messages, including
+    // logging, are disabled while the test is being processed by the SC in the main process,
+    // so in the event of an exception, control will immediately jump to the exception handler
+    // without any information about the situation. To handle this, we put the test on the list
+    // of tests to run in the subprocess before calling the functions that may throw an exception.
+    auto onBeforeCreateDevice = [&](de::SharedPtr<Context> foundContext) -> void
     {
-#ifdef CTS_USES_VULKANSC
-        // Some functions, such as checkSupport() or initDeviceCapabilities(), and especially
-        // the function that creates a new device, may throw an exception. All messages, including
-        // logging, are disabled while the test is being processed by the SC in the main process,
-        // so in the event of an exception, control will immediately jump to the exception handler
-        // without any information about the situation. To handle this, we put the test on the list
-        // of tests to run in the subprocess before calling the functions that may throw an exception.
-        m_testsForSubprocess.push_back(casePath);
-#endif
-    }
-
-    m_context = m_contextManager->findContext(m_contextManager, vktCase, m_context, m_progCollection);
-
-    {
-#ifdef CTS_USES_VULKANSC
-        const int currentSubprocessCount =
-            getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
-        if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
         {
-            runTestsInSubprocess(testCase->getTestContext());
+#ifdef CTS_USES_VULKANSC
+            const int currentSubprocessCount =
+                getCurrentSubprocessCount(casePath, m_contextManager->getCommandLine().getSubprocessTestCount());
+            if (m_subprocessCount && currentSubprocessCount != m_subprocessCount)
+            {
+                runTestsInSubprocess(testCase->getTestContext());
 
-            // Clean up data after performing tests in subprocess and prepare system for another batch of tests
-            m_testsForSubprocess.clear();
-            const vk::DeviceInterface &vkd = m_context->getDeviceInterface();
-            const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
-            if (dds == nullptr)
-                TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
-            dds->reset();
-            m_resourceInterface->resetObjects();
+                // Clean up data after performing tests in subprocess and prepare system for another batch of tests
+                m_testsForSubprocess.clear();
+                const vk::DeviceInterface &vkd = foundContext->getDeviceInterface();
+                const vk::DeviceDriverSC *dds  = dynamic_cast<const vk::DeviceDriverSC *>(&vkd);
+                if (dds == nullptr)
+                    TCU_THROW(InternalError, "Undefined device driver for Vulkan SC");
+                dds->reset();
+                m_resourceInterface->resetObjects();
 
-            suppressStandardOutput();
-            log.supressLogging(true);
-        }
-        m_subprocessCount = currentSubprocessCount;
+                suppressStandardOutput();
+                log.supressLogging(true);
+            }
+            m_subprocessCount = currentSubprocessCount;
+            m_testsForSubprocess.push_back(casePath);
 #endif // CTS_USES_VULKANSC
-    }
+        }
 
-    m_resourceInterface->initTestCase(casePath);
+        m_resourceInterface->initTestCase(casePath);
+        // non-const delayedInit() is called before const checkSupport() so that changes
+        // to the vktCase object made in delayedInit() are visible to other test methods.
+        vktCase->delayedInit();
+        vktCase->checkSupport(*foundContext);
+        m_progCollection.clear();
+        vktCase->initPrograms(sourceProgs);
+    };
 
-    m_progCollection.clear();
-    vktCase->initPrograms(sourceProgs);
+    m_context =
+        m_contextManager->findContext(m_contextManager, vktCase, m_context, m_progCollection, onBeforeCreateDevice);
+
+    const tcu::CommandLine &commandLine = testCase->getTestContext().getCommandLine();
+    const bool doShaderLog              = commandLine.isLogDecompiledSpirvEnabled() && log.isShaderLoggingEnabled();
 
     for (vk::GlslSourceCollection::Iterator progIter = sourceProgs.glslSources.begin();
          progIter != sourceProgs.glslSources.end(); ++progIter)
@@ -1345,9 +1344,7 @@ void TestPackage::init(void)
     addRootChild("fragment_shading_barycentric", m_caseListFilter, FragmentShadingBarycentric::createTests);
     // Amber depth pipeline tests
     addRootChild("depth", m_caseListFilter, cts_amber::createAmberDepthGroup);
-#ifndef DEQP_EXCLUDE_VK_VIDEO_TESTS
     addRootChild("video", m_caseListFilter, video::createTests);
-#endif
     addRootChild("shader_object", m_caseListFilter, ShaderObject::createTests);
     addRootChild("dgc", m_caseListFilter, DGC::createTests);
     addRootChild("cooperative_vector", m_caseListFilter, cooperative_vector::createTests);

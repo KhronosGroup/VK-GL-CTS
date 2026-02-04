@@ -37,6 +37,7 @@ Contents
     - [Test Logs](#test-logs)
   - [Debugging Test Failures](#debugging-test-failures)
   - [Waivers](#waivers)
+    - [Waiver File Format](#waiver-file-format)
   - [Creating a Submission Package](#creating-a-submission-package)
   - [Submission Update Package](#submission-update-package)
   - [Passing Criteria](#passing-criteria)
@@ -796,6 +797,54 @@ can be progressed as speedily as possible. Such bug report must
 include a link to suggested file changes. Issues must be labeled `Waiver` and `OpenGL-ES`
 (for OpenGL ES submissions) or `Waiver` and `OpenGL` (for OpenGL submissions) and
 identify the CTS release tag and affected tests.
+
+### Waiver File Format
+
+The `--waivers` (for cts-runner) or `--deqp-waiver-file` (for individual test modules)
+command line options allow you to specify an XML file containing tests that should be
+waived.
+
+Each `<waiver>` entry must contain `vendor` and `url` string attributes.
+- Vendor string can use wildcard `*`
+- `url` should be a full path to gitlab issue(s)
+- Waiver tag should contain one `<description>` child that describes issue
+- Waiver tag should containing one `<renderer_list>` child
+- Renderer list should have one or more `<r>` elements containing renderer names for which this waiver was created
+- String in `<r>` tags can use wildcard `*`
+- Waiver tag should contain one or more `<t>` elements containing test paths that should be waived
+- String in `<t>` tags can use wildcard `*`
+
+**XML Schema:**
+
+```xml
+<xs:schema xmlns:xs="http://www.w3.org/2001/XMLSchema">
+<xs:element name="waiver_list">
+<xs:complexType>
+	<xs:sequence>
+		<xs:element name="waiver" maxOccurs="unbounded">
+		<xs:complexType>
+			<xs:sequence>
+				<xs:element name="description" type="xs:string"/>
+				<xs:element name="renderer_list">
+				<xs:complexType>
+					<xs:sequence>
+						<xs:element name="r" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+					</xs:sequence>
+				</xs:complexType>
+				</xs:element>
+				<xs:element name="t" type="xs:string" minOccurs="1" maxOccurs="unbounded"/>
+			</xs:sequence>
+			<xs:attribute name="vendor" type="xs:string" use="required"/>
+			<xs:attribute name="url" type="xs:string" use="required"/>
+		</xs:complexType>
+		</xs:element>
+	</xs:sequence>
+</xs:complexType>
+</xs:element>
+</xs:schema>
+```
+
+See `external/openglcts/data/gl_cts/data/mustpass/waivers/waivers.xml` for real-world examples.
 
 Creating a Submission Package
 ------------------------

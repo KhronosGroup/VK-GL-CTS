@@ -59,13 +59,8 @@ public:
     uint64_t checkTimestampsSupported(const vk::InstanceInterface &vki, const vk::VkPhysicalDevice physDevice,
                                       const uint32_t queueFamilyIndex)
     {
-        const std::vector<vk::VkQueueFamilyProperties> queueProperties =
-            vk::getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
-        DE_ASSERT(queueFamilyIndex < queueProperties.size());
-        const uint32_t &validBits = queueProperties[queueFamilyIndex].timestampValidBits;
-
-        if (validBits == 0)
-            throw tcu::NotSupportedError("Queue does not support timestamps");
+        const auto queueProperties = vk::getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
+        const uint32_t &validBits  = queueProperties[queueFamilyIndex].timestampValidBits;
 
         checkValidBits(validBits, queueFamilyIndex);
         return timestampMaskFromValidBits(validBits);
@@ -195,6 +190,15 @@ public:
         {
             TCU_THROW(NotSupportedError, "Requires maintenance 7 feature which is not supported");
         }
+
+        const auto &vki                 = ctx.getInstanceInterface();
+        const auto physDevice           = ctx.getPhysicalDevice();
+        const uint32_t queueFamilyIndex = ctx.getUniversalQueueFamilyIndex();
+        const auto queueProperties      = getPhysicalDeviceQueueFamilyProperties(vki, physDevice);
+
+        DE_ASSERT(queueFamilyIndex < queueProperties.size());
+        if (queueProperties[queueFamilyIndex].timestampValidBits == 0)
+            throw tcu::NotSupportedError("Queue does not support timestamps");
     }
 
     std::string getRequiredCapabilitiesId() const override

@@ -53,6 +53,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureGeometryLinea
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_LINEAR_SWEPT_SPHERES_DATA_NV;
 }
 
+template<> VkStructureType getStructureType<VkAccelerationStructureGeometryMotionTrianglesDataNV> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_MOTION_TRIANGLES_DATA_NV;
+}
+
 template<> VkStructureType getStructureType<VkAccelerationStructureGeometrySpheresDataNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_SPHERES_DATA_NV;
@@ -71,6 +76,11 @@ template<> VkStructureType getStructureType<VkAccelerationStructureInfoNV> (void
 template<> VkStructureType getStructureType<VkAccelerationStructureMemoryRequirementsInfoNV> (void)
 {
 	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MEMORY_REQUIREMENTS_INFO_NV;
+}
+
+template<> VkStructureType getStructureType<VkAccelerationStructureMotionInfoNV> (void)
+{
+	return VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV;
 }
 
 template<> VkStructureType getStructureType<VkAccelerationStructureTrianglesDisplacementMicromapNV> (void)
@@ -2738,6 +2748,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMaintenanc
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MAINTENANCE_1_FEATURES_KHR;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingMotionBlurFeaturesNV> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_MOTION_BLUR_FEATURES_NV;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceRayTracingPipelineFeaturesKHR> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_RAY_TRACING_PIPELINE_FEATURES_KHR;
@@ -2943,6 +2958,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupExtend
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_EXTENDED_TYPES_FEATURES;
 }
 
+template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupPartitionedFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_PARTITIONED_FEATURES_EXT;
+}
+
 template<> VkStructureType getStructureType<VkPhysicalDeviceShaderSubgroupRotateFeatures> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_SUBGROUP_ROTATE_FEATURES;
@@ -3046,6 +3066,11 @@ template<> VkStructureType getStructureType<VkPhysicalDeviceTexelBufferAlignment
 template<> VkStructureType getStructureType<VkPhysicalDeviceTexelBufferAlignmentProperties> (void)
 {
 	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXEL_BUFFER_ALIGNMENT_PROPERTIES;
+}
+
+template<> VkStructureType getStructureType<VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT> (void)
+{
+	return VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
 }
 
 template<> VkStructureType getStructureType<VkPhysicalDeviceTextureCompressionASTCHDRFeatures> (void)

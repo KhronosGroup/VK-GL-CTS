@@ -672,24 +672,7 @@ DepthRangeUnrestrictedTestInstance::DepthRangeUnrestrictedTestInstance(Context &
 {
     const DeviceInterface &vk       = m_context.getDeviceInterface();
     const VkDevice vkDevice         = m_context.getDevice();
-    const uint32_t queueFamilyIndex = context.getUniversalQueueFamilyIndex();
-
-    if (!isSupportedDepthStencilFormat(m_context.getInstanceInterface(), m_context.getPhysicalDevice(),
-                                       param.depthFormat))
-    {
-        throw tcu::NotSupportedError("Unsupported depth format");
-    }
-
-    VkPhysicalDeviceFeatures features = m_context.getDeviceFeatures();
-    if (param.depthClampEnable && features.depthClamp == false)
-    {
-        throw tcu::NotSupportedError("Unsupported feature: depthClamp");
-    }
-
-    if (param.depthBoundsTestEnable && features.depthBounds == false)
-    {
-        throw tcu::NotSupportedError("Unsupported feature: depthBounds");
-    }
+    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
 
     // Create vertex buffer
     {
@@ -1374,6 +1357,18 @@ void DepthRangeUnrestrictedTest::checkSupport(Context &context) const
 {
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_param.pipelineConstructionType);
+
+    if (!isSupportedDepthStencilFormat(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                       m_param.depthFormat))
+    {
+        TCU_THROW(NotSupportedError, "Unsupported depth format");
+    }
+
+    const VkPhysicalDeviceFeatures &features = context.getDeviceFeatures();
+    if (m_param.depthClampEnable && features.depthClamp == false)
+        TCU_THROW(NotSupportedError, "Unsupported feature: depthClamp");
+    if (m_param.depthBoundsTestEnable && features.depthBounds == false)
+        TCU_THROW(NotSupportedError, "Unsupported feature: depthBounds");
 }
 } // namespace
 

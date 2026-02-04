@@ -80,18 +80,19 @@ class BuildConfigGen:
         return True
 
 class UnixConfig(BuildConfigGen):
-    def __init__ (self, target, buildType, cc, cpp, cflags):
+    def __init__ (self, target, buildType, cc, cpp, cflags, extraConfigArgs=None):
         self.target = target
         self.buildType = buildType
         self.cc = cc
         self.cpp = cpp
         self.cflags = cflags
+        self.extraConfigArgs = extraConfigArgs if extraConfigArgs else []
 
     def isAvailable (self, env):
         return which(self.cc) != None and which(self.cpp) != None
 
     def getBuildConfig (self, env, buildDir):
-        args = makeBuildArgs(self.target, self.cc, self.cpp, self.cflags)
+        args = makeBuildArgs(self.target, self.cc, self.cpp, self.cflags) + self.extraConfigArgs
         return BuildConfig(buildDir, self.buildType, args, env.srcDir)
 
 class VSConfig(BuildConfigGen):
@@ -179,6 +180,14 @@ BUILD_TARGETS = [
                      "clang" + CLANG_VERSION,
                      "clang++" + CLANG_VERSION,
                      CLANG_64BIT_CFLAGS),
+          ANY_UNIX_GENERATOR),
+    Build("clang-64-debug-no-video",
+          UnixConfig("null",
+                     "Debug",
+                     "clang" + CLANG_VERSION,
+                     "clang++" + CLANG_VERSION,
+                     CLANG_64BIT_CFLAGS,
+                     ["-DDEQP_DISABLE_VK_VIDEO_TESTS=ON"]),
           ANY_UNIX_GENERATOR),
     Build("gcc-32-debug",
           UnixConfig("null",

@@ -1122,9 +1122,10 @@ tcu::TestStatus CopySSBOToImageTestInstance::iterate(void)
     return tcu::TestStatus::pass("Compute succeeded");
 }
 
-Move<VkDevice> getRobustDevice(Context &context, bool enable64BitIndexing)
+Move<VkDevice> getRobustDevice(Context &context, bool enable64BitIndexing, bool enableShaderObject)
 {
     DE_UNREF(enable64BitIndexing);
+    DE_UNREF(enableShaderObject);
     const auto &vki           = context.getInstanceInterface();
     const float queuePriority = 1.0f;
     // Create a universal queue that supports graphics and compute
@@ -1151,6 +1152,14 @@ Move<VkDevice> getRobustDevice(Context &context, bool enable64BitIndexing)
         indexingFeatures.shader64BitIndexing = true;
         indexingFeatures.pNext               = pNext;
         pNext                                = &indexingFeatures;
+    }
+
+    VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures = initVulkanStructure();
+    if (enableShaderObject)
+    {
+        shaderObjectFeatures.shaderObject = true;
+        shaderObjectFeatures.pNext        = pNext;
+        pNext                             = &shaderObjectFeatures;
     }
 #endif
 
@@ -1411,7 +1420,11 @@ tcu::TestStatus BufferToBufferInvertTestInstance::iterate(void)
         Move<VkDevice> robustDevice;
         if (m_doBoundsCheck)
         {
-            robustDevice = getRobustDevice(m_context, bufferSizeBytes >= (1ULL << 32));
+            const bool enableShaderObject =
+                (m_computePipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_SPIRV) ||
+                (m_computePipelineConstructionType == COMPUTE_PIPELINE_CONSTRUCTION_TYPE_SHADER_OBJECT_BINARY);
+
+            robustDevice = getRobustDevice(m_context, bufferSizeBytes >= (1ULL << 32), enableShaderObject);
         }
 
         const auto &vki     = m_context.getInstanceInterface();

@@ -635,7 +635,8 @@ de::SharedPtr<ContextManager> ContextManager::findCustomManager(vkt::TestCase *t
 
 de::SharedPtr<Context> ContextManager::findContext(de::SharedPtr<const ContextManager> thiz, TestCase *testCase,
                                                    de::SharedPtr<Context> &defaultContext,
-                                                   vk::BinaryCollection &programs)
+                                                   vk::BinaryCollection &programs,
+                                                   std::function<void(de::SharedPtr<Context>)> onBeforeCreateDevice)
 {
     de::SharedPtr<Context> checkContext;
 
@@ -673,14 +674,12 @@ de::SharedPtr<Context> ContextManager::findContext(de::SharedPtr<const ContextMa
             if (ctx.second->id == searchedId)
             {
                 checkContext = ctx.first;
-                testCase->delayedInit();
-                testCase->checkSupport(*checkContext);
+                onBeforeCreateDevice(checkContext);
                 return checkContext;
             }
         }
 
-        testCase->delayedInit();
-        testCase->checkSupport(*checkContext);
+        onBeforeCreateDevice(checkContext);
 
         de::SharedPtr<DevCaps::RuntimeData> runtimeData(new DevCaps::RuntimeData);
         de::SharedPtr<DevCaps> caps(new DevCaps(searchedId, this, testContext));

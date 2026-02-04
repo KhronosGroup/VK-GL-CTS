@@ -5277,6 +5277,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 1, "VK_NV_per_stage_descriptor_set"),
 	std::make_tuple(1, 0, "VK_NV_present_barrier"),
 	std::make_tuple(1, 0, "VK_NV_present_metering"),
+	std::make_tuple(1, 0, "VK_NV_push_constant_bank"),
 	std::make_tuple(1, 0, "VK_NV_raw_access_chains"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing"),
 	std::make_tuple(1, 0, "VK_NV_ray_tracing_invocation_reorder"),
