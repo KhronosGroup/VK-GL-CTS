@@ -7085,6 +7085,20 @@ struct VkPhysicalDeviceShaderIntegerDotProductProperties
 	VkBool32		integerDotProductAccumulatingSaturating64BitMixedSignednessAccelerated;
 };
 
+struct VkPhysicalDeviceShaderLongVectorFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		longVector;
+};
+
+struct VkPhysicalDeviceShaderLongVectorPropertiesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	uint32_t		maxVectorComponents;
+};
+
 struct VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR
 {
 	VkStructureType	sType;
@@ -7104,6 +7118,16 @@ struct VkPhysicalDeviceShaderModuleIdentifierPropertiesEXT
 	VkStructureType	sType;
 	void*			pNext;
 	uint8_t			shaderModuleIdentifierAlgorithmUUID[VK_UUID_SIZE];
+};
+
+struct VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT
+{
+	VkStructureType	sType;
+	void*			pNext;
+	VkBool32		shaderFloat4;
+	VkBool32		shaderFloat6;
+	VkBool32		shaderFloat8UnsignedE8M0;
+	VkBool32		shaderMXInt8;
 };
 
 struct VkPhysicalDeviceShaderObjectFeaturesEXT

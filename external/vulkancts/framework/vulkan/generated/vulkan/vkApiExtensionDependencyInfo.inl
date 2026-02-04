@@ -1929,6 +1929,18 @@ bool check_VK_EXT_shader_object(const tcu::UVec2& v, const ExtPropVect& vIEP, co
 	return (((isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_KHR_dynamic_rendering")) || isCompatible(1, 3, v));
 }
 
+bool check_VK_EXT_shader_ocp_microscaling_types(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_EXT_shader_ocp_microscaling_types"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_get_physical_device_properties2,VK_VERSION_1_1
+	return (isSupported(vIEP, "VK_KHR_get_physical_device_properties2") || isCompatible(1, 1, v));
+}
+
 bool check_VK_EXT_shader_replicated_composites(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4293,6 +4305,18 @@ bool check_VK_OHOS_external_memory(const tcu::UVec2& v, const ExtPropVect& vIEP,
 	return (((isSupported(vDEP, "VK_KHR_sampler_ycbcr_conversion") && isSupported(vDEP, "VK_KHR_external_memory") && isSupported(vDEP, "VK_KHR_dedicated_allocation")) || isCompatible(1, 1, v)) && isSupported(vDEP, "VK_EXT_queue_family_foreign"));
 }
 
+bool check_VK_QCOM_cooperative_matrix_conversion(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
+{
+	DE_UNREF(v);
+	DE_UNREF(vIEP);
+
+	if (!isSupported(vDEP, "VK_QCOM_cooperative_matrix_conversion"))
+		return true;
+
+	// depends attribute in xml: VK_KHR_cooperative_matrix
+	return isSupported(vDEP, "VK_KHR_cooperative_matrix");
+}
+
 bool check_VK_QCOM_data_graph_model(const tcu::UVec2& v, const ExtPropVect& vIEP, const ExtPropVect& vDEP)
 {
 	DE_UNREF(v);
@@ -4657,6 +4681,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_EXT_shader_long_vector",								&check_VK_EXT_shader_long_vector),
 	std::make_pair("VK_EXT_shader_module_identifier",						&check_VK_EXT_shader_module_identifier),
 	std::make_pair("VK_EXT_shader_object",									&check_VK_EXT_shader_object),
+	std::make_pair("VK_EXT_shader_ocp_microscaling_types",					&check_VK_EXT_shader_ocp_microscaling_types),
 	std::make_pair("VK_EXT_shader_replicated_composites",					&check_VK_EXT_shader_replicated_composites),
 	std::make_pair("VK_EXT_shader_subgroup_partitioned",					&check_VK_EXT_shader_subgroup_partitioned),
 	std::make_pair("VK_EXT_shader_tile_image",								&check_VK_EXT_shader_tile_image),
@@ -4846,6 +4871,7 @@ static const DependencyCheckVect deviceExtensionDependencies
 	std::make_pair("VK_NV_shading_rate_image",								&check_VK_NV_shading_rate_image),
 	std::make_pair("VK_NV_win32_keyed_mutex",								&check_VK_NV_win32_keyed_mutex),
 	std::make_pair("VK_OHOS_external_memory",								&check_VK_OHOS_external_memory),
+	std::make_pair("VK_QCOM_cooperative_matrix_conversion",					&check_VK_QCOM_cooperative_matrix_conversion),
 	std::make_pair("VK_QCOM_data_graph_model",								&check_VK_QCOM_data_graph_model),
 	std::make_pair("VK_QCOM_filter_cubic_clamp",							&check_VK_QCOM_filter_cubic_clamp),
 	std::make_pair("VK_QCOM_filter_cubic_weights",							&check_VK_QCOM_filter_cubic_weights),
@@ -5034,6 +5060,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 2, "VK_EXT_shader_long_vector"),
 	std::make_tuple(1, 0, "VK_EXT_shader_module_identifier"),
 	std::make_tuple(1, 0, "VK_EXT_shader_object"),
+	std::make_tuple(1, 0, "VK_EXT_shader_ocp_microscaling_types"),
 	std::make_tuple(1, 0, "VK_EXT_shader_replicated_composites"),
 	std::make_tuple(1, 0, "VK_EXT_shader_stencil_export"),
 	std::make_tuple(1, 0, "VK_EXT_shader_subgroup_ballot"),
@@ -5297,6 +5324,7 @@ static const std::tuple<uint32_t, uint32_t, const char*>	extensionRequiredCoreVe
 	std::make_tuple(1, 0, "VK_NV_win32_keyed_mutex"),
 	std::make_tuple(1, 0, "VK_OHOS_external_memory"),
 	std::make_tuple(1, 0, "VK_OHOS_surface"),
+	std::make_tuple(1, 0, "VK_QCOM_cooperative_matrix_conversion"),
 	std::make_tuple(1, 3, "VK_QCOM_data_graph_model"),
 	std::make_tuple(1, 0, "VK_QCOM_filter_cubic_clamp"),
 	std::make_tuple(1, 0, "VK_QCOM_filter_cubic_weights"),

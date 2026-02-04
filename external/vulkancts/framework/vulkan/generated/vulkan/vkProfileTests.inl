@@ -245,8 +245,19 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 
 	VkPhysicalDeviceVulkan11Features vkVulkan11Features = initVulkanStructure();
 	VkPhysicalDeviceVulkan12Features vkVulkan12Features = initVulkanStructure(&vkVulkan11Features);
+	VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR vkDynamicRenderingLocalReadFeaturesKHR = initVulkanStructure(&vkVulkan12Features);
+	VkPhysicalDeviceShaderQuadControlFeaturesKHR vkShaderQuadControlFeaturesKHR = initVulkanStructure(&vkDynamicRenderingLocalReadFeaturesKHR);
+	VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR vkShaderMaximalReconvergenceFeaturesKHR = initVulkanStructure(&vkShaderQuadControlFeaturesKHR);
+	VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR vkShaderSubgroupUniformControlFlowFeaturesKHR = initVulkanStructure(&vkShaderMaximalReconvergenceFeaturesKHR);
+	VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR vkShaderSubgroupRotateFeaturesKHR = initVulkanStructure(&vkShaderSubgroupUniformControlFlowFeaturesKHR);
+	VkPhysicalDeviceShaderFloatControls2FeaturesKHR vkShaderFloatControls2FeaturesKHR = initVulkanStructure(&vkShaderSubgroupRotateFeaturesKHR);
+	VkPhysicalDeviceShaderExpectAssumeFeaturesKHR vkShaderExpectAssumeFeaturesKHR = initVulkanStructure(&vkShaderFloatControls2FeaturesKHR);
+	VkPhysicalDeviceLineRasterizationFeaturesKHR vkLineRasterizationFeaturesKHR = initVulkanStructure(&vkShaderExpectAssumeFeaturesKHR);
+	VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR vkVertexAttributeDivisorFeaturesKHR = initVulkanStructure(&vkLineRasterizationFeaturesKHR);
+	VkPhysicalDeviceIndexTypeUint8FeaturesKHR vkIndexTypeUint8FeaturesKHR = initVulkanStructure(&vkVertexAttributeDivisorFeaturesKHR);
+	VkPhysicalDeviceMaintenance5FeaturesKHR vkMaintenance5FeaturesKHR = initVulkanStructure(&vkIndexTypeUint8FeaturesKHR);
 
-	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkVulkan12Features);
+	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkMaintenance5FeaturesKHR);
 	auto& vkFeatures = vkFeatures2.features;
 	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
 	DE_UNREF(vkFeatures);
@@ -274,6 +285,45 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderInt8),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderFloat16),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, storageBuffer8BitAccess),
+
+
+		// vulkanextensionrequirements_roadmap2024
+		ROADMAP_FEATURE_ITEM(vkDynamicRenderingLocalReadFeaturesKHR, dynamicRenderingLocalRead),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderQuadControlFeaturesKHR, shaderQuadControl),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderMaximalReconvergenceFeaturesKHR, shaderMaximalReconvergence),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderSubgroupUniformControlFlowFeaturesKHR, shaderSubgroupUniformControlFlow),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderSubgroupRotateFeaturesKHR, shaderSubgroupRotate),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderFloatControls2FeaturesKHR, shaderFloatControls2),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderExpectAssumeFeaturesKHR, shaderExpectAssume),
+
+
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, rectangularLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, bresenhamLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, smoothLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledRectangularLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledBresenhamLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledSmoothLines),
+
+
+		ROADMAP_FEATURE_ITEM(vkVertexAttributeDivisorFeaturesKHR, vertexAttributeInstanceRateDivisor),
+
+
+		ROADMAP_FEATURE_ITEM(vkIndexTypeUint8FeaturesKHR, indexTypeUint8),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance5FeaturesKHR, maintenance5),
 	};
 	for (const auto &testedFeature : featureTable)
 	{
@@ -343,8 +393,24 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 
 	VkPhysicalDeviceVulkan14Features vkVulkan14Features = initVulkanStructure();
 	VkPhysicalDeviceRobustness2FeaturesKHR vkRobustness2FeaturesKHR = initVulkanStructure(&vkVulkan14Features);
+	VkPhysicalDevicePipelineBinaryFeaturesKHR vkPipelineBinaryFeaturesKHR = initVulkanStructure(&vkRobustness2FeaturesKHR);
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR vkFragmentShadingRateFeaturesKHR = initVulkanStructure(&vkPipelineBinaryFeaturesKHR);
+	VkPhysicalDeviceShaderClockFeaturesKHR vkShaderClockFeaturesKHR = initVulkanStructure(&vkFragmentShadingRateFeaturesKHR);
+	VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR vkWorkgroupMemoryExplicitLayoutFeaturesKHR = initVulkanStructure(&vkShaderClockFeaturesKHR);
+	VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR vkComputeShaderDerivativesFeaturesKHR = initVulkanStructure(&vkWorkgroupMemoryExplicitLayoutFeaturesKHR);
+	VkPhysicalDeviceMaintenance7FeaturesKHR vkMaintenance7FeaturesKHR = initVulkanStructure(&vkComputeShaderDerivativesFeaturesKHR);
+	VkPhysicalDeviceMaintenance8FeaturesKHR vkMaintenance8FeaturesKHR = initVulkanStructure(&vkMaintenance7FeaturesKHR);
+	VkPhysicalDeviceMaintenance9FeaturesKHR vkMaintenance9FeaturesKHR = initVulkanStructure(&vkMaintenance8FeaturesKHR);
+	VkPhysicalDeviceDepthClampZeroOneFeaturesKHR vkDepthClampZeroOneFeaturesKHR = initVulkanStructure(&vkMaintenance9FeaturesKHR);
+	VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR vkCopyMemoryIndirectFeaturesKHR = initVulkanStructure(&vkDepthClampZeroOneFeaturesKHR);
+	VkPhysicalDeviceShaderUntypedPointersFeaturesKHR vkShaderUntypedPointersFeaturesKHR = initVulkanStructure(&vkCopyMemoryIndirectFeaturesKHR);
+	VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR vkPresentModeFifoLatestReadyFeaturesKHR = initVulkanStructure(&vkShaderUntypedPointersFeaturesKHR);
+	VkPhysicalDevicePresentId2FeaturesKHR vkPresentId2FeaturesKHR = initVulkanStructure(&vkPresentModeFifoLatestReadyFeaturesKHR);
+	VkPhysicalDevicePresentWait2FeaturesKHR vkPresentWait2FeaturesKHR = initVulkanStructure(&vkPresentId2FeaturesKHR);
+	VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR vkSwapchainMaintenance1FeaturesKHR = initVulkanStructure(&vkPresentWait2FeaturesKHR);
+	VkPhysicalDeviceCooperativeMatrixFeaturesKHR vkCooperativeMatrixFeaturesKHR = initVulkanStructure(&vkSwapchainMaintenance1FeaturesKHR);
 
-	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkRobustness2FeaturesKHR);
+	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkCooperativeMatrixFeaturesKHR);
 	auto& vkFeatures = vkFeatures2.features;
 	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
 	DE_UNREF(vkFeatures);
@@ -358,11 +424,61 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan14requirements_roadmap2026
 		ROADMAP_FEATURE_ITEM(vkVulkan14Features, hostImageCopy),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, pushDescriptor),
 
 
+		// vulkanextensionrequirements_roadmap2026
 		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, robustBufferAccess2),
 		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, robustImageAccess2),
 		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, nullDescriptor),
+
+
+		ROADMAP_FEATURE_ITEM(vkPipelineBinaryFeaturesKHR, pipelineBinaries),
+
+
+		ROADMAP_FEATURE_ITEM(vkFragmentShadingRateFeaturesKHR, pipelineFragmentShadingRate),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderClockFeaturesKHR, shaderSubgroupClock),
+
+
+		ROADMAP_FEATURE_ITEM(vkWorkgroupMemoryExplicitLayoutFeaturesKHR, workgroupMemoryExplicitLayout),
+
+
+		ROADMAP_FEATURE_ITEM(vkComputeShaderDerivativesFeaturesKHR, computeDerivativeGroupLinear),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance7FeaturesKHR, maintenance7),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance8FeaturesKHR, maintenance8),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance9FeaturesKHR, maintenance9),
+
+
+		ROADMAP_FEATURE_ITEM(vkDepthClampZeroOneFeaturesKHR, depthClampZeroOne),
+
+
+		ROADMAP_FEATURE_ITEM(vkCopyMemoryIndirectFeaturesKHR, indirectMemoryCopy),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderUntypedPointersFeaturesKHR, shaderUntypedPointers),
+
+
+		ROADMAP_FEATURE_ITEM(vkPresentModeFifoLatestReadyFeaturesKHR, presentModeFifoLatestReady),
+
+
+		ROADMAP_FEATURE_ITEM(vkPresentId2FeaturesKHR, presentId2),
+
+
+		ROADMAP_FEATURE_ITEM(vkPresentWait2FeaturesKHR, presentWait2),
+
+
+		ROADMAP_FEATURE_ITEM(vkSwapchainMaintenance1FeaturesKHR, swapchainMaintenance1),
+
+
+		ROADMAP_FEATURE_ITEM(vkCooperativeMatrixFeaturesKHR, cooperativeMatrix),
 	};
 	for (const auto &testedFeature : featureTable)
 	{
@@ -417,6 +533,7 @@ tcu::TestStatus validate_roadmap_2026(Context& context)
 		"VK_KHR_shader_untyped_pointers",
 		"VK_KHR_surface",
 		"VK_KHR_swapchain",
+		"VK_KHR_get_surface_capabilities2",
 		"VK_KHR_present_mode_fifo_latest_ready",
 		"VK_KHR_present_id2",
 		"VK_KHR_present_wait2",

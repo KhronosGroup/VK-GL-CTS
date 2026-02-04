@@ -155,8 +155,10 @@ const vk::VkPhysicalDeviceShaderFloatControls2Features&						getShaderFloatContr
 const vk::VkPhysicalDeviceShaderFmaFeaturesKHR&								getShaderFmaFeatures								(void) const;
 const vk::VkPhysicalDeviceShaderImageAtomicInt64FeaturesEXT&				getShaderImageAtomicInt64FeaturesEXT				(void) const;
 const vk::VkPhysicalDeviceShaderIntegerDotProductFeatures&					getShaderIntegerDotProductFeatures					(void) const;
+const vk::VkPhysicalDeviceShaderLongVectorFeaturesEXT&						getShaderLongVectorFeaturesEXT						(void) const;
 const vk::VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR&			getShaderMaximalReconvergenceFeatures				(void) const;
 const vk::VkPhysicalDeviceShaderModuleIdentifierFeaturesEXT&				getShaderModuleIdentifierFeaturesEXT				(void) const;
+const vk::VkPhysicalDeviceShaderOCPMicroscalingTypesFeaturesEXT&			getShaderOCPMicroscalingTypesFeaturesEXT			(void) const;
 const vk::VkPhysicalDeviceShaderObjectFeaturesEXT&							getShaderObjectFeaturesEXT							(void) const;
 const vk::VkPhysicalDeviceShaderQuadControlFeaturesKHR&						getShaderQuadControlFeatures						(void) const;
 const vk::VkPhysicalDeviceShaderRelaxedExtendedInstructionFeaturesKHR&		getShaderRelaxedExtendedInstructionFeatures			(void) const;
