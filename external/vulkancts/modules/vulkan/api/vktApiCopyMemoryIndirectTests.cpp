@@ -381,7 +381,7 @@ CopyMemoryToImageIndirect::CopyMemoryToImageIndirect(Context &context, TestParam
             1u,                                                                // uint32_t mipLevels;
             getArraySize(m_params.dst.image),                                  // uint32_t arraySize;
             VK_SAMPLE_COUNT_1_BIT,                                             // uint32_t samples;
-            VK_IMAGE_TILING_OPTIMAL,                                           // VkImageTiling tiling;
+            m_params.dst.image.tiling,                                         // VkImageTiling tiling;
             VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT, // VkImageUsageFlags usage;
             VK_SHARING_MODE_EXCLUSIVE,                                         // VkSharingMode sharingMode;
             0u,                                                                // uint32_t queueFamilyIndexCount;
@@ -745,7 +745,9 @@ public:
         const vk::VkFormatProperties properties =
             vk::getPhysicalDeviceFormatProperties(context.getInstanceInterface(), context.getPhysicalDevice(), format);
 
-        const vk::VkFormatFeatureFlags features = properties.optimalTilingFeatures;
+        const vk::VkFormatFeatureFlags features(m_params.dst.image.tiling == vk::VK_IMAGE_TILING_OPTIMAL ?
+                                                    properties.optimalTilingFeatures :
+                                                    properties.linearTilingFeatures);
 
         if ((features & vk::VK_FORMAT_FEATURE_TRANSFER_DST_BIT) == 0)
             TCU_THROW(NotSupportedError, "Format doesn't support transfer operations");
