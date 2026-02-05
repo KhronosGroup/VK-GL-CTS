@@ -103,15 +103,6 @@ public:
         setDynamicDepthStencilState(0.0f, 1.0f);
 
         const vk::VkExtent3D imageExtent = {WIDTH, HEIGHT, 1};
-
-        vk::VkImageFormatProperties imageFormatProperties(getPhysicalDeviceImageFormatProperties(
-            vkInstance, vkPhysicalDevice, m_colorAttachmentFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL,
-            vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
-                vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
-            0));
-        if ((imageFormatProperties.sampleCounts & m_samples) == 0)
-            TCU_THROW(NotSupportedError, "Color image type not supported");
-
         const ImageCreateInfo imageCreateInfo(
             vk::VK_IMAGE_TYPE_2D, m_colorAttachmentFormat, imageExtent, 1, 1, m_samples, vk::VK_IMAGE_TILING_OPTIMAL,
             vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
@@ -451,16 +442,37 @@ public:
 
 } // namespace
 
+static void checkSupport(Context &context, vk::VkSampleCountFlags samples)
+{
+    const vk::InstanceInterface &vkInstance     = context.getInstanceInterface();
+    const vk::VkPhysicalDevice vkPhysicalDevice = context.getPhysicalDevice();
+
+    const auto colorFormat = vk::VK_FORMAT_R8G8B8A8_UNORM;
+    vk::VkImageFormatProperties imageFormatProperties(getPhysicalDeviceImageFormatProperties(
+        vkInstance, vkPhysicalDevice, colorFormat, vk::VK_IMAGE_TYPE_2D, vk::VK_IMAGE_TILING_OPTIMAL,
+        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT |
+            vk::VK_IMAGE_USAGE_TRANSFER_DST_BIT,
+        0));
+    if ((imageFormatProperties.sampleCounts & samples) == 0)
+        TCU_THROW(NotSupportedError, "Color image type not supported");
+}
+
+static void commonCheckSupport(Context &context)
+{
+    checkSupport(context, vk::VK_SAMPLE_COUNT_1_BIT);
+}
+
+static void resolveCheckSupport(Context &context)
+{
+    checkSupport(context, vk::VK_SAMPLE_COUNT_2_BIT);
+}
+
 DynamicStateClearTests::DynamicStateClearTests(tcu::TestContext &testCtx,
                                                vk::PipelineConstructionType pipelineConstructionType)
     : TestCaseGroup(testCtx, "image")
     , m_pipelineConstructionType(pipelineConstructionType)
 {
     /* Left blank on purpose */
-}
-
-DynamicStateClearTests::~DynamicStateClearTests()
-{
 }
 
 void DynamicStateClearTests::init(void)
@@ -470,13 +482,20 @@ void DynamicStateClearTests::init(void)
     shaderPaths[glu::SHADERTYPE_FRAGMENT] = "vulkan/dynamic_state/VertexFetch.frag";
 
     // Clear attachment after setting dynamic states
-    addChild(new InstanceFactory<ClearTestInstance>(m_testCtx, "clear", m_pipelineConstructionType, shaderPaths));
+    addChild(new InstanceFactory<ClearTestInstance, FunctionSupport0>(m_testCtx, "clear", m_pipelineConstructionType,
+                                                                      shaderPaths, commonCheckSupport));
+
     // Blit image after setting dynamic states
-    addChild(new InstanceFactory<BlitTestInstance>(m_testCtx, "blit", m_pipelineConstructionType, shaderPaths));
+    addChild(new InstanceFactory<BlitTestInstance, FunctionSupport0>(m_testCtx, "blit", m_pipelineConstructionType,
+                                                                     shaderPaths, commonCheckSupport));
+
     // Copy image after setting dynamic states
-    addChild(new InstanceFactory<CopyTestInstance>(m_testCtx, "copy", m_pipelineConstructionType, shaderPaths));
+    addChild(new InstanceFactory<CopyTestInstance, FunctionSupport0>(m_testCtx, "copy", m_pipelineConstructionType,
+                                                                     shaderPaths, commonCheckSupport));
+
     // Resolve image after setting dynamic states
-    addChild(new InstanceFactory<ResolveTestInstance>(m_testCtx, "resolve", m_pipelineConstructionType, shaderPaths));
+    addChild(new InstanceFactory<ResolveTestInstance, FunctionSupport0>(
+        m_testCtx, "resolve", m_pipelineConstructionType, shaderPaths, resolveCheckSupport));
 }
 
 } // namespace DynamicState

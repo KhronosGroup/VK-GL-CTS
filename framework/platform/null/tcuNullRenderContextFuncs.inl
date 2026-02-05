@@ -1,7 +1,7 @@
 /* WARNING: This is auto-generated file. Do not modify, since changes will
  * be lost! Modify the generating script instead.
  *
- * Generated from Khronos GL API description (gl.xml) revision d8371b44919d61c02e60f446a4b5461fda910f71.
+ * Generated from Khronos GL API description (gl.xml) revision 7d0cb181dace7461bc4f26650fec71efeacc18a5.
  */
 
 GLW_APICALL void GLW_APIENTRY glActiveShaderProgram (GLuint pipeline, GLuint program)
@@ -4569,6 +4569,17 @@ GLW_APICALL void GLW_APIENTRY glNamedFramebufferTextureLayerEXT (GLuint framebuf
 	DE_UNREF(texture);
 	DE_UNREF(level);
 	DE_UNREF(layer);
+
+}
+
+GLW_APICALL void GLW_APIENTRY glNamedFramebufferTextureMultiviewOVR (GLuint framebuffer, GLenum attachment, GLuint texture, GLint level, GLint baseViewIndex, GLsizei numViews)
+{
+	DE_UNREF(framebuffer);
+	DE_UNREF(attachment);
+	DE_UNREF(texture);
+	DE_UNREF(level);
+	DE_UNREF(baseViewIndex);
+	DE_UNREF(numViews);
 
 }
 

@@ -526,7 +526,6 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
 
     VkPhysicalDeviceScalarBlockLayoutFeatures sblFeatures = initVulkanStructure();
     sblFeatures.scalarBlockLayout                         = true;
-    addToChainVulkanStructure(&nextPtr, sblFeatures);
 
 #ifndef CTS_USES_VULKANSC
     VkPhysicalDeviceMultiDrawFeaturesEXT multiDrawFeatures = initVulkanStructure();
@@ -556,7 +555,12 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
     if ((m_params.mode == TestMode::TM_DRAW_INDEXED_INDIRECT_COUNT) && (apiVersion > VK_MAKE_API_VERSION(0, 1, 1, 0)))
     {
         vulkan12Features.drawIndirectCount = true;
+        vulkan12Features.scalarBlockLayout = true;
         addToChainVulkanStructure(&nextPtr, vulkan12Features);
+    }
+    else
+    {
+        addToChainVulkanStructure(&nextPtr, sblFeatures);
     }
 
 #ifndef CTS_USES_VULKANSC
@@ -800,6 +804,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
         makeBufferCreateInfo(vertexBufferSize, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT | commonUsage);
     BufferWithMemory vertexBuffer(vk, device, allocator, vertexBufferInfo, memReq);
     deMemcpy(vertexBuffer.getAllocation().getHostPtr(), vertices.data(), (size_t)vertexBufferSize);
+    flushAlloc(vk, device, vertexBuffer.getAllocation());
 
     // build index data
     const uint32_t leadingCount = m_params.leadingCount;
@@ -838,6 +843,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
         makeBufferCreateInfo(indexBufferSize, VK_BUFFER_USAGE_INDEX_BUFFER_BIT | commonUsage);
     BufferWithMemory indexBuffer(vk, device, allocator, indexBufferInfo, memReq);
     deMemcpy(indexBuffer.getAllocation().getHostPtr(), indices.data(), size_t(indexBufferSize));
+    flushAlloc(vk, device, indexBuffer.getAllocation());
 
     // create indirect buffer
     const VkDrawIndexedIndirectCommand drawIndirectCommand{
@@ -854,6 +860,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     if ((m_params.mode == TM_DRAW_INDEXED_INDIRECT) || (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT))
     {
         deMemcpy(indirectBuffer.getAllocation().getHostPtr(), &drawIndirectCommand, indirectBufferSize);
+        flushAlloc(vk, device, indirectBuffer.getAllocation());
     }
 
     // create indirect count buffer
@@ -864,6 +871,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     if (m_params.mode == TM_DRAW_INDEXED_INDIRECT_COUNT)
     {
         *static_cast<uint32_t *>(indirectCountBuffer.getAllocation().getHostPtr()) = 1u;
+        flushAlloc(vk, device, indirectCountBuffer.getAllocation());
     }
 
     // create output buffer that will be used to read rendered image

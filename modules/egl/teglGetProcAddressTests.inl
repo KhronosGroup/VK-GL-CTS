@@ -910,6 +910,11 @@ static const char* s_GL_OES_EGL_image[] =
 	"glEGLImageTargetTexture2DOES",
 };
 
+static const char* s_GL_OES_EGL_image_external[] =
+{
+	"glEGLImageTargetTexture2DOES",
+};
+
 static const char* s_GL_OES_blend_equation_separate[] =
 {
 	"glBlendEquationSeparateOES",
@@ -1132,6 +1137,11 @@ static const char* s_GL_ANGLE_translated_shader_source[] =
 	"glGetTranslatedShaderSourceANGLE",
 };
 
+static const char* s_GL_ARM_shader_core_properties[] =
+{
+	"glMaxActiveShaderCoresARM",
+};
+
 static const char* s_GL_EXT_EGL_image_storage[] =
 {
 	"glEGLImageTargetTexStorageEXT",
@@ -1247,6 +1257,12 @@ static const char* s_GL_EXT_fragment_shading_rate[] =
 	"glShadingRateCombinerOpsEXT",
 };
 
+static const char* s_GL_EXT_framebuffer_blit_layers[] =
+{
+	"glBlitFramebufferLayerEXT",
+	"glBlitFramebufferLayersEXT",
+};
+
 static const char* s_GL_EXT_geometry_shader[] =
 {
 	"glFramebufferTextureEXT",
@@ -1289,6 +1305,14 @@ static const char* s_GL_EXT_memory_object_win32[] =
 {
 	"glImportMemoryWin32HandleEXT",
 	"glImportMemoryWin32NameEXT",
+};
+
+static const char* s_GL_EXT_mesh_shader[] =
+{
+	"glDrawMeshTasksEXT",
+	"glDrawMeshTasksIndirectEXT",
+	"glMultiDrawMeshTasksIndirectEXT",
+	"glMultiDrawMeshTasksIndirectCountEXT",
 };
 
 static const char* s_GL_EXT_multi_draw_indirect[] =
@@ -1544,6 +1568,20 @@ static const char* s_GL_MESA_framebuffer_flip_y[] =
 {
 	"glFramebufferParameteriMESA",
 	"glGetFramebufferParameterivMESA",
+};
+
+static const char* s_GL_MESA_sampler_objects[] =
+{
+	"glBindSampler",
+	"glDeleteSamplers",
+	"glGenSamplers",
+	"glGetSamplerParameterfv",
+	"glGetSamplerParameteriv",
+	"glIsSampler",
+	"glSamplerParameterf",
+	"glSamplerParameterfv",
+	"glSamplerParameteri",
+	"glSamplerParameteriv",
 };
 
 static const char* s_GL_NV_bindless_texture[] =
@@ -1841,6 +1879,11 @@ static const char* s_GL_NV_shading_rate_image[] =
 	"glShadingRateSampleOrderCustomNV",
 };
 
+static const char* s_GL_NV_texture_barrier[] =
+{
+	"glTextureBarrierNV",
+};
+
 static const char* s_GL_NV_viewport_array[] =
 {
 	"glDepthRangeArrayfvNV",
@@ -1970,6 +2013,7 @@ static const char* s_GL_OES_viewport_array[] =
 static const char* s_GL_OVR_multiview[] =
 {
 	"glFramebufferTextureMultiviewOVR",
+	"glNamedFramebufferTextureMultiviewOVR",
 };
 
 static const char* s_GL_OVR_multiview_multisampled_render_to_texture[] =
@@ -2092,6 +2136,7 @@ static const struct
 	{ "GL_IMG_user_clip_plane",								DE_LENGTH_OF_ARRAY(s_GL_IMG_user_clip_plane),							s_GL_IMG_user_clip_plane							},
 	{ "GL_NV_fence",										DE_LENGTH_OF_ARRAY(s_GL_NV_fence),										s_GL_NV_fence										},
 	{ "GL_OES_EGL_image",									DE_LENGTH_OF_ARRAY(s_GL_OES_EGL_image),									s_GL_OES_EGL_image									},
+	{ "GL_OES_EGL_image_external",							DE_LENGTH_OF_ARRAY(s_GL_OES_EGL_image_external),						s_GL_OES_EGL_image_external							},
 	{ "GL_OES_blend_equation_separate",						DE_LENGTH_OF_ARRAY(s_GL_OES_blend_equation_separate),					s_GL_OES_blend_equation_separate					},
 	{ "GL_OES_blend_func_separate",							DE_LENGTH_OF_ARRAY(s_GL_OES_blend_func_separate),						s_GL_OES_blend_func_separate						},
 	{ "GL_OES_blend_subtract",								DE_LENGTH_OF_ARRAY(s_GL_OES_blend_subtract),							s_GL_OES_blend_subtract								},
@@ -2115,6 +2160,7 @@ static const struct
 	{ "GL_ANGLE_framebuffer_multisample",					DE_LENGTH_OF_ARRAY(s_GL_ANGLE_framebuffer_multisample),					s_GL_ANGLE_framebuffer_multisample					},
 	{ "GL_ANGLE_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_ANGLE_instanced_arrays),						s_GL_ANGLE_instanced_arrays							},
 	{ "GL_ANGLE_translated_shader_source",					DE_LENGTH_OF_ARRAY(s_GL_ANGLE_translated_shader_source),				s_GL_ANGLE_translated_shader_source					},
+	{ "GL_ARM_shader_core_properties",						DE_LENGTH_OF_ARRAY(s_GL_ARM_shader_core_properties),					s_GL_ARM_shader_core_properties						},
 	{ "GL_EXT_EGL_image_storage",							DE_LENGTH_OF_ARRAY(s_GL_EXT_EGL_image_storage),							s_GL_EXT_EGL_image_storage							},
 	{ "GL_EXT_base_instance",								DE_LENGTH_OF_ARRAY(s_GL_EXT_base_instance),								s_GL_EXT_base_instance								},
 	{ "GL_EXT_blend_func_extended",							DE_LENGTH_OF_ARRAY(s_GL_EXT_blend_func_extended),						s_GL_EXT_blend_func_extended						},
@@ -2131,11 +2177,13 @@ static const struct
 	{ "GL_EXT_draw_transform_feedback",						DE_LENGTH_OF_ARRAY(s_GL_EXT_draw_transform_feedback),					s_GL_EXT_draw_transform_feedback					},
 	{ "GL_EXT_external_buffer",								DE_LENGTH_OF_ARRAY(s_GL_EXT_external_buffer),							s_GL_EXT_external_buffer							},
 	{ "GL_EXT_fragment_shading_rate",						DE_LENGTH_OF_ARRAY(s_GL_EXT_fragment_shading_rate),						s_GL_EXT_fragment_shading_rate						},
+	{ "GL_EXT_framebuffer_blit_layers",						DE_LENGTH_OF_ARRAY(s_GL_EXT_framebuffer_blit_layers),					s_GL_EXT_framebuffer_blit_layers					},
 	{ "GL_EXT_geometry_shader",								DE_LENGTH_OF_ARRAY(s_GL_EXT_geometry_shader),							s_GL_EXT_geometry_shader							},
 	{ "GL_EXT_instanced_arrays",							DE_LENGTH_OF_ARRAY(s_GL_EXT_instanced_arrays),							s_GL_EXT_instanced_arrays							},
 	{ "GL_EXT_memory_object",								DE_LENGTH_OF_ARRAY(s_GL_EXT_memory_object),								s_GL_EXT_memory_object								},
 	{ "GL_EXT_memory_object_fd",							DE_LENGTH_OF_ARRAY(s_GL_EXT_memory_object_fd),							s_GL_EXT_memory_object_fd							},
 	{ "GL_EXT_memory_object_win32",							DE_LENGTH_OF_ARRAY(s_GL_EXT_memory_object_win32),						s_GL_EXT_memory_object_win32						},
+	{ "GL_EXT_mesh_shader",									DE_LENGTH_OF_ARRAY(s_GL_EXT_mesh_shader),								s_GL_EXT_mesh_shader								},
 	{ "GL_EXT_multi_draw_indirect",							DE_LENGTH_OF_ARRAY(s_GL_EXT_multi_draw_indirect),						s_GL_EXT_multi_draw_indirect						},
 	{ "GL_EXT_multiview_draw_buffers",						DE_LENGTH_OF_ARRAY(s_GL_EXT_multiview_draw_buffers),					s_GL_EXT_multiview_draw_buffers						},
 	{ "GL_EXT_occlusion_query_boolean",						DE_LENGTH_OF_ARRAY(s_GL_EXT_occlusion_query_boolean),					s_GL_EXT_occlusion_query_boolean					},
@@ -2166,6 +2214,7 @@ static const struct
 	{ "GL_KHR_robustness",									DE_LENGTH_OF_ARRAY(s_GL_KHR_robustness),								s_GL_KHR_robustness									},
 	{ "GL_KHR_parallel_shader_compile",						DE_LENGTH_OF_ARRAY(s_GL_KHR_parallel_shader_compile),					s_GL_KHR_parallel_shader_compile					},
 	{ "GL_MESA_framebuffer_flip_y",							DE_LENGTH_OF_ARRAY(s_GL_MESA_framebuffer_flip_y),						s_GL_MESA_framebuffer_flip_y						},
+	{ "GL_MESA_sampler_objects",							DE_LENGTH_OF_ARRAY(s_GL_MESA_sampler_objects),							s_GL_MESA_sampler_objects							},
 	{ "GL_NV_bindless_texture",								DE_LENGTH_OF_ARRAY(s_GL_NV_bindless_texture),							s_GL_NV_bindless_texture							},
 	{ "GL_NV_blend_equation_advanced",						DE_LENGTH_OF_ARRAY(s_GL_NV_blend_equation_advanced),					s_GL_NV_blend_equation_advanced						},
 	{ "GL_NV_clip_space_w_scaling",							DE_LENGTH_OF_ARRAY(s_GL_NV_clip_space_w_scaling),						s_GL_NV_clip_space_w_scaling						},
@@ -2194,6 +2243,7 @@ static const struct
 	{ "GL_NV_sample_locations",								DE_LENGTH_OF_ARRAY(s_GL_NV_sample_locations),							s_GL_NV_sample_locations							},
 	{ "GL_NV_scissor_exclusive",							DE_LENGTH_OF_ARRAY(s_GL_NV_scissor_exclusive),							s_GL_NV_scissor_exclusive							},
 	{ "GL_NV_shading_rate_image",							DE_LENGTH_OF_ARRAY(s_GL_NV_shading_rate_image),							s_GL_NV_shading_rate_image							},
+	{ "GL_NV_texture_barrier",								DE_LENGTH_OF_ARRAY(s_GL_NV_texture_barrier),							s_GL_NV_texture_barrier								},
 	{ "GL_NV_viewport_array",								DE_LENGTH_OF_ARRAY(s_GL_NV_viewport_array),								s_GL_NV_viewport_array								},
 	{ "GL_NV_viewport_swizzle",								DE_LENGTH_OF_ARRAY(s_GL_NV_viewport_swizzle),							s_GL_NV_viewport_swizzle							},
 	{ "GL_OES_copy_image",									DE_LENGTH_OF_ARRAY(s_GL_OES_copy_image),								s_GL_OES_copy_image									},

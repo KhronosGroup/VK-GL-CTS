@@ -5,6 +5,7 @@
  * --------------------
  *
  * Copyright (c) 2015 Google Inc.
+ * Copyright (c) 2024-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -91,6 +92,12 @@ std::vector<vk::VkSparseImageMemoryRequirements> getDeviceImageSparseMemoryRequi
 #endif // CTS_USES_VULKANSC
 
 VkDeviceAddress getBufferDeviceAddress(const DeviceInterface &vk, VkDevice device, VkBuffer buffer);
+
+#ifndef CTS_USES_VULKANSC
+VkMemoryRequirements getTensorMemoryRequirements(const DeviceInterface &vk, VkDevice device, VkTensorARM tensor);
+std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> getDataGraphPipelineSessionBindPointRequirements(
+    const DeviceInterface &vk, VkDevice device, VkDataGraphPipelineSessionARM session);
+#endif // CTS_USES_VULKANSC
 
 std::vector<VkLayerProperties> enumerateInstanceLayerProperties(const PlatformInterface &vkp);
 std::vector<VkExtensionProperties> enumerateInstanceExtensionProperties(const PlatformInterface &vkp,

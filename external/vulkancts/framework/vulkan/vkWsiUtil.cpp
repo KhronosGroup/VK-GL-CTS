@@ -688,6 +688,82 @@ VkBool32 isDisplaySurface(Type wsiType)
     }
 }
 
+Move<VkSwapchainKHR> createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                                        const VkSwapchainCreateInfoKHR *pCreateInfo,
+                                        const VkAllocationCallbacks *pAllocator)
+{
+    try
+    {
+        return createSwapchainKHR(vk, device, pCreateInfo, pAllocator);
+    }
+    catch (const vk::Error &error)
+    {
+        switch (wsiType)
+        {
+        case TYPE_XLIB:
+        case TYPE_XCB:
+        case TYPE_WAYLAND:
+        case TYPE_ANDROID:
+        case TYPE_WIN32:
+        case TYPE_METAL:
+        case TYPE_HEADLESS:
+            throw error;
+
+        case TYPE_DIRECT_DRM:
+        case TYPE_DIRECT:
+            // "Swapchain creation may fail if that VkDisplayKHR is not acquired by the application.
+            // In this scenario VK_ERROR_INITIALIZATION_FAILED is returned."
+            if (error.getError() == VK_ERROR_INITIALIZATION_FAILED)
+                TCU_THROW(NotSupportedError,
+                          "Swapchain creation on VkDisplayKHR not acquired by the application is unsupported");
+            throw error;
+
+        default:
+            DE_FATAL("Unknown WSI type");
+            break;
+        }
+    }
+    catch (...)
+    {
+        throw;
+    }
+    DE_FATAL("Unreachable");
+    VkSwapchainKHR object = VK_NULL_HANDLE;
+    return Move<VkSwapchainKHR>(check<VkSwapchainKHR>(object), Deleter<VkSwapchainKHR>(vk, device, pAllocator));
+}
+
+VkResult createWsiSwapchain(Type wsiType, const DeviceInterface &vk, VkDevice device,
+                            const VkSwapchainCreateInfoKHR *pCreateInfo, const VkAllocationCallbacks *pAllocator,
+                            VkSwapchainKHR *object)
+{
+    VkResult result = vk.createSwapchainKHR(device, pCreateInfo, pAllocator, object);
+    switch (wsiType)
+    {
+    case TYPE_XLIB:
+    case TYPE_XCB:
+    case TYPE_WAYLAND:
+    case TYPE_ANDROID:
+    case TYPE_WIN32:
+    case TYPE_METAL:
+    case TYPE_HEADLESS:
+        return result;
+
+    case TYPE_DIRECT_DRM:
+    case TYPE_DIRECT:
+        // "Swapchain creation may fail if that VkDisplayKHR is not acquired by the application.
+        // In this scenario VK_ERROR_INITIALIZATION_FAILED is returned."
+        if (result == VK_ERROR_INITIALIZATION_FAILED)
+            TCU_THROW(NotSupportedError,
+                      "Swapchain creation on VkDisplayKHR not acquired by the application is unsupported");
+        return result;
+
+    default:
+        DE_FATAL("Unknown WSI type");
+        break;
+    }
+    return result;
+}
+
 Move<VkRenderPass> WsiTriangleRenderer::createRenderPass(const DeviceInterface &vkd, const VkDevice device,
                                                          const VkFormat colorAttachmentFormat,
                                                          const bool explicitLayoutTransitions)

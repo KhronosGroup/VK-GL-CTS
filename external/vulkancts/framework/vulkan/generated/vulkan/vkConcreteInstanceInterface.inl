@@ -4,7 +4,6 @@
  */
 
 virtual VkResult	acquireDrmDisplayEXT												(VkPhysicalDevice physicalDevice, int32_t drmFd, VkDisplayKHR display) const;
-virtual VkResult	acquireWinrtDisplayNV												(VkPhysicalDevice physicalDevice, VkDisplayKHR display) const;
 virtual VkResult	acquireXlibDisplayEXT												(VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, VkDisplayKHR display) const;
 virtual VkResult	createAndroidSurfaceKHR												(VkInstance instance, const VkAndroidSurfaceCreateInfoKHR* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkSurfaceKHR* pSurface) const;
 virtual VkResult	createDebugReportCallbackEXT										(VkInstance instance, const VkDebugReportCallbackCreateInfoEXT* pCreateInfo, const VkAllocationCallbacks* pAllocator, VkDebugReportCallbackEXT* pCallback) const;
@@ -68,7 +67,6 @@ virtual VkResult	getPhysicalDeviceImageFormatProperties2								(VkPhysicalDevic
 virtual void		getPhysicalDeviceMemoryProperties									(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties* pMemoryProperties) const;
 virtual void		getPhysicalDeviceMemoryProperties2									(VkPhysicalDevice physicalDevice, VkPhysicalDeviceMemoryProperties2* pMemoryProperties) const;
 virtual void		getPhysicalDeviceMultisamplePropertiesEXT							(VkPhysicalDevice physicalDevice, VkSampleCountFlagBits samples, VkMultisamplePropertiesEXT* pMultisampleProperties) const;
-virtual VkResult	getPhysicalDeviceOpticalFlowImageFormatsNV							(VkPhysicalDevice physicalDevice, const VkOpticalFlowImageFormatInfoNV* pOpticalFlowImageFormatInfo, uint32_t* pFormatCount, VkOpticalFlowImageFormatPropertiesNV* pImageFormatProperties) const;
 virtual VkResult	getPhysicalDevicePresentRectanglesKHR								(VkPhysicalDevice physicalDevice, VkSurfaceKHR surface, uint32_t* pRectCount, VkRect2D* pRects) const;
 virtual void		getPhysicalDeviceProperties											(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties* pProperties) const;
 virtual void		getPhysicalDeviceProperties2										(VkPhysicalDevice physicalDevice, VkPhysicalDeviceProperties2* pProperties) const;
@@ -98,6 +96,5 @@ virtual VkBool32	getPhysicalDeviceWin32PresentationSupportKHR						(VkPhysicalDe
 virtual VkBool32	getPhysicalDeviceXcbPresentationSupportKHR							(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::XcbConnectionPtr connection, pt::XcbVisualid visual_id) const;
 virtual VkBool32	getPhysicalDeviceXlibPresentationSupportKHR							(VkPhysicalDevice physicalDevice, uint32_t queueFamilyIndex, pt::XlibDisplayPtr dpy, pt::XlibVisualID visualID) const;
 virtual VkResult	getRandROutputDisplayEXT											(VkPhysicalDevice physicalDevice, pt::XlibDisplayPtr dpy, pt::RROutput rrOutput, VkDisplayKHR* pDisplay) const;
-virtual VkResult	getWinrtDisplayNV													(VkPhysicalDevice physicalDevice, uint32_t deviceRelativeId, VkDisplayKHR* pDisplay) const;
 virtual VkResult	releaseDisplayEXT													(VkPhysicalDevice physicalDevice, VkDisplayKHR display) const;
 virtual void		submitDebugUtilsMessageEXT											(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, VkDebugUtilsMessageTypeFlagsEXT messageTypes, const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData) const;

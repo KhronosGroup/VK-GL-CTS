@@ -2485,6 +2485,12 @@ TransformFeedbackStreamsTestInstance::TransformFeedbackStreamsTestInstance(Conte
 
     if (geomPointSizeRequired && !features.shaderTessellationAndGeometryPointSize)
         TCU_THROW(NotSupportedError, "shaderTessellationAndGeometryPointSize feature is not supported");
+
+    if (m_parameters.testType == TEST_TYPE_STREAMS_CLIPDISTANCE && !features.shaderClipDistance)
+        TCU_THROW(NotSupportedError, std::string("shaderClipDistance feature is not supported"));
+
+    if (m_parameters.testType == TEST_TYPE_STREAMS_CULLDISTANCE && !features.shaderCullDistance)
+        TCU_THROW(NotSupportedError, std::string("shaderCullDistance feature is not supported"));
 }
 
 bool TransformFeedbackStreamsTestInstance::verifyImage(const VkFormat imageFormat, const VkExtent2D &size,
@@ -4502,7 +4508,9 @@ void TransformFeedbackTestCase::checkSupport(Context &context) const
     if (m_parameters.testType == TEST_TYPE_DRAW_INDIRECT ||
         m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_MULTIVIEW ||
         m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET ||
-        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW)
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_OFFSET_MULTIVIEW ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET ||
+        m_parameters.testType == TEST_TYPE_DRAW_INDIRECT_COUNTER_BUFFER_OFFSET_MULTIVIEW)
     {
         const auto &limits                         = context.getDeviceProperties().limits;
         const uint32_t tfBufferDataSizeSupported   = xfbProperties.maxTransformFeedbackBufferDataSize;

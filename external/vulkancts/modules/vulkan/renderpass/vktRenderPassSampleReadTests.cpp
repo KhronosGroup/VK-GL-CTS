@@ -115,35 +115,16 @@ Move<VkImageView> createImageView(const DeviceInterface &vk, VkDevice device, Vk
     return createImageView(vk, device, &pCreateInfo);
 }
 
-Move<VkImage> createImage(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, const DeviceInterface &vkd,
-                          VkDevice device, VkFormat vkFormat, VkSampleCountFlagBits sampleCountBit,
-                          VkImageUsageFlags usage, uint32_t width, uint32_t height)
+Move<VkImage> createImage(const DeviceInterface &vkd, VkDevice device, VkFormat vkFormat,
+                          VkSampleCountFlagBits sampleCountBit, VkImageUsageFlags usage, uint32_t width,
+                          uint32_t height)
 {
-    try
-    {
-        const VkImageType imageType(VK_IMAGE_TYPE_2D);
-        const VkImageTiling imageTiling(VK_IMAGE_TILING_OPTIMAL);
-        const VkImageFormatProperties imageFormatProperties(
-            getPhysicalDeviceImageFormatProperties(vki, physicalDevice, vkFormat, imageType, imageTiling, usage, 0u));
-        const VkExtent3D imageExtent = {width, height, 1u};
+    const VkImageType imageType(VK_IMAGE_TYPE_2D);
+    const VkImageTiling imageTiling(VK_IMAGE_TILING_OPTIMAL);
+    const VkExtent3D imageExtent = {width, height, 1u};
 
-        if (imageFormatProperties.maxExtent.width < imageExtent.width ||
-            imageFormatProperties.maxExtent.height < imageExtent.height ||
-            ((imageFormatProperties.sampleCounts & sampleCountBit) == 0))
-        {
-            TCU_THROW(NotSupportedError, "Image type not supported");
-        }
-
-        return createImage(vkd, device, 0u, imageType, vkFormat, imageExtent, 1u, 1u, sampleCountBit, imageTiling,
-                           usage, VK_SHARING_MODE_EXCLUSIVE, 0u, nullptr, VK_IMAGE_LAYOUT_UNDEFINED);
-    }
-    catch (const vk::Error &error)
-    {
-        if (error.getError() == VK_ERROR_FORMAT_NOT_SUPPORTED)
-            TCU_THROW(NotSupportedError, "Image format not supported");
-
-        throw;
-    }
+    return createImage(vkd, device, 0u, imageType, vkFormat, imageExtent, 1u, 1u, sampleCountBit, imageTiling, usage,
+                       VK_SHARING_MODE_EXCLUSIVE, 0u, nullptr, VK_IMAGE_LAYOUT_UNDEFINED);
 }
 
 Move<VkImageView> createImageView(const DeviceInterface &vkd, VkDevice device, VkImage image, VkFormat format,
@@ -542,7 +523,7 @@ class SampleReadTestInstance : public TestInstance
 {
 public:
     SampleReadTestInstance(Context &context, TestConfig config);
-    ~SampleReadTestInstance(void);
+    ~SampleReadTestInstance(void) = default;
 
     tcu::TestStatus iterate(void);
 
@@ -610,8 +591,8 @@ SampleReadTestInstance::SampleReadTestInstance(Context &context, TestConfig conf
     , m_sampleCount(config.sampleCount)
     , m_width(32u)
     , m_height(32u)
-    , m_srcImage(createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(),
-                             context.getDevice(), VK_FORMAT_R32_UINT, sampleCountBitFromSampleCount(m_sampleCount),
+    , m_srcImage(createImage(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R32_UINT,
+                             sampleCountBitFromSampleCount(m_sampleCount),
                              VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT, m_width,
                              m_height))
     , m_srcImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
@@ -621,8 +602,7 @@ SampleReadTestInstance::SampleReadTestInstance(Context &context, TestConfig conf
     , m_srcInputImageView(createImageView(context.getDeviceInterface(), context.getDevice(), *m_srcImage,
                                           VK_FORMAT_R32_UINT, VK_IMAGE_ASPECT_COLOR_BIT))
     , m_srcInputImageReadLayout(chooseSrcInputImageLayout(config.groupParams))
-    , m_dstMultisampleImage(createImage(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                        context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R8_UNORM,
+    , m_dstMultisampleImage(createImage(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R8_UNORM,
                                         sampleCountBitFromSampleCount(m_sampleCount),
                                         VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT, m_width, m_height))
     , m_dstMultisampleImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
@@ -630,8 +610,7 @@ SampleReadTestInstance::SampleReadTestInstance(Context &context, TestConfig conf
     , m_dstMultisampleImageView(createImageView(context.getDeviceInterface(), context.getDevice(),
                                                 *m_dstMultisampleImage, VK_FORMAT_R8_UNORM, VK_IMAGE_ASPECT_COLOR_BIT))
     , m_dstSinglesampleImage(
-          createImage(context.getInstanceInterface(), context.getPhysicalDevice(), context.getDeviceInterface(),
-                      context.getDevice(), VK_FORMAT_R8_UNORM, VK_SAMPLE_COUNT_1_BIT,
+          createImage(context.getDeviceInterface(), context.getDevice(), VK_FORMAT_R8_UNORM, VK_SAMPLE_COUNT_1_BIT,
                       VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, m_width, m_height))
     , m_dstSinglesampleImageMemory(createImageMemory(context.getDeviceInterface(), context.getDevice(),
                                                      context.getDefaultAllocator(), *m_dstSinglesampleImage))
@@ -663,10 +642,6 @@ SampleReadTestInstance::SampleReadTestInstance(Context &context, TestConfig conf
 {
     createRenderPipeline();
     createSubpassPipeline();
-}
-
-SampleReadTestInstance::~SampleReadTestInstance(void)
-{
 }
 
 tcu::TestStatus SampleReadTestInstance::iterate(void)
@@ -1122,10 +1097,22 @@ struct Programs
     }
 };
 
+bool isFormatSupported(const InstanceInterface &vki, VkPhysicalDevice physicalDevice, VkFormat format,
+                       VkImageUsageFlags usage, uint32_t sampleCount)
+{
+    const VkImageFormatProperties imageFormatProperties(getPhysicalDeviceImageFormatProperties(
+        vki, physicalDevice, format, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL, usage, 0u));
+
+    return imageFormatProperties.maxExtent.width >= 32u && imageFormatProperties.maxExtent.height >= 32u &&
+           (imageFormatProperties.sampleCounts & sampleCountBitFromSampleCount(sampleCount));
+}
+
 void checkSupport(vkt::Context &context, TestConfig config)
 {
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          config.groupParams->pipelineConstructionType);
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
+    checkPipelineConstructionRequirements(vki, physicalDevice, config.groupParams->pipelineConstructionType);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 
     if (config.groupParams->renderingType == RENDERING_TYPE_RENDERPASS2)
@@ -1139,6 +1126,17 @@ void checkSupport(vkt::Context &context, TestConfig config)
             !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadMultisampledAttachments)
             TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadMultisampledAttachments not supported");
 #endif
+    }
+
+    const auto srcImageUsage        = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    const auto dstMultisampleUsage  = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    const auto dstSinglesampleUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+    if (!isFormatSupported(vki, physicalDevice, VK_FORMAT_R32_UINT, srcImageUsage, config.sampleCount) ||
+        !isFormatSupported(vki, physicalDevice, VK_FORMAT_R8_UNORM, dstMultisampleUsage, config.sampleCount) ||
+        !isFormatSupported(vki, physicalDevice, VK_FORMAT_R8_UNORM, dstSinglesampleUsage, 1))
+    {
+        TCU_THROW(NotSupportedError, "Format not supported");
     }
 }
 

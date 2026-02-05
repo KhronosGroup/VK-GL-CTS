@@ -219,9 +219,7 @@ public:
         , m_param(*param)
     {
     }
-    virtual ~ExecutablePropertiesTest(void)
-    {
-    }
+    virtual ~ExecutablePropertiesTest(void) = default;
 
 protected:
     const ExecutablePropertiesTestParam m_param;
@@ -231,7 +229,7 @@ class ExecutablePropertiesTestInstance : public vkt::TestInstance
 {
 public:
     ExecutablePropertiesTestInstance(Context &context, const ExecutablePropertiesTestParam *param);
-    virtual ~ExecutablePropertiesTestInstance(void);
+    virtual ~ExecutablePropertiesTestInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
 
 protected:
@@ -243,7 +241,6 @@ protected:
     const ExecutablePropertiesTestParam *m_param;
 
     Move<VkPipelineCache> m_cache;
-    bool m_extensions;
 
     Move<VkPipeline> m_pipeline[PIPELINE_CACHE_NDX_COUNT];
 
@@ -257,7 +254,6 @@ ExecutablePropertiesTestInstance::ExecutablePropertiesTestInstance(Context &cont
                                                                    const ExecutablePropertiesTestParam *param)
     : TestInstance(context)
     , m_param(param)
-    , m_extensions(m_context.requireDeviceFunctionality("VK_KHR_pipeline_executable_properties"))
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
@@ -271,10 +267,6 @@ ExecutablePropertiesTestInstance::ExecutablePropertiesTestInstance(Context &cont
     };
 
     m_cache = createPipelineCache(vk, vkDevice, &pipelineCacheCreateInfo);
-}
-
-ExecutablePropertiesTestInstance::~ExecutablePropertiesTestInstance(void)
-{
 }
 
 tcu::TestStatus ExecutablePropertiesTestInstance::iterate(void)
@@ -733,9 +725,7 @@ public:
         : ExecutablePropertiesTest(testContext, name, param)
     {
     }
-    virtual ~GraphicsExecutablePropertiesTest(void)
-    {
-    }
+    virtual ~GraphicsExecutablePropertiesTest(void) = default;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
     void checkSupport(Context &context) const;
@@ -745,7 +735,7 @@ class GraphicsExecutablePropertiesTestInstance : public ExecutablePropertiesTest
 {
 public:
     GraphicsExecutablePropertiesTestInstance(Context &context, const ExecutablePropertiesTestParam *param);
-    virtual ~GraphicsExecutablePropertiesTestInstance(void);
+    virtual ~GraphicsExecutablePropertiesTestInstance(void) = default;
 
 protected:
     void preparePipelineWrapper(GraphicsPipelineWrapper &gpw, ShaderWrapper vertShaderModule,
@@ -866,6 +856,8 @@ TestInstance *GraphicsExecutablePropertiesTest::createInstance(Context &context)
 
 void GraphicsExecutablePropertiesTest::checkSupport(Context &context) const
 {
+    context.requireDeviceFunctionality("VK_KHR_pipeline_executable_properties");
+
     VkShaderStageFlags shaderFlags    = m_param.getShaderFlags();
     VkPhysicalDeviceFeatures features = context.getDeviceFeatures();
     if ((shaderFlags & VK_SHADER_STAGE_GEOMETRY_BIT) && (features.geometryShader == VK_FALSE))
@@ -941,10 +933,6 @@ GraphicsExecutablePropertiesTestInstance::GraphicsExecutablePropertiesTestInstan
     for (uint32_t ndx = 0; ndx < PIPELINE_CACHE_NDX_COUNT; ndx++)
         preparePipelineWrapper(m_pipelineWrapper[ndx], vertShaderModule, tescShaderModule, teseShaderModule,
                                geomShaderModule, fragShaderModule);
-}
-
-GraphicsExecutablePropertiesTestInstance::~GraphicsExecutablePropertiesTestInstance(void)
-{
 }
 
 void GraphicsExecutablePropertiesTestInstance::preparePipelineWrapper(
@@ -1062,9 +1050,8 @@ public:
         : ExecutablePropertiesTest(testContext, name, param)
     {
     }
-    virtual ~ComputeExecutablePropertiesTest(void)
-    {
-    }
+    virtual ~ComputeExecutablePropertiesTest(void) = default;
+    virtual void checkSupport(Context &context) const;
     virtual void initPrograms(SourceCollections &programCollection) const;
     virtual TestInstance *createInstance(Context &context) const;
 };
@@ -1073,7 +1060,7 @@ class ComputeExecutablePropertiesTestInstance : public ExecutablePropertiesTestI
 {
 public:
     ComputeExecutablePropertiesTestInstance(Context &context, const ExecutablePropertiesTestParam *param);
-    virtual ~ComputeExecutablePropertiesTestInstance(void);
+    virtual ~ComputeExecutablePropertiesTestInstance(void) = default;
 
 protected:
     void buildDescriptorSets(uint32_t ndx);
@@ -1094,6 +1081,11 @@ protected:
 
     Move<VkPipelineLayout> m_pipelineLayout[PIPELINE_CACHE_NDX_COUNT];
 };
+
+void ComputeExecutablePropertiesTest::checkSupport(Context &context) const
+{
+    context.requireDeviceFunctionality("VK_KHR_pipeline_executable_properties");
+}
 
 void ComputeExecutablePropertiesTest::initPrograms(SourceCollections &programCollection) const
 {
@@ -1214,10 +1206,6 @@ ComputeExecutablePropertiesTestInstance::ComputeExecutablePropertiesTestInstance
         buildShader(ndx);
         buildPipeline(ndx);
     }
-}
-
-ComputeExecutablePropertiesTestInstance::~ComputeExecutablePropertiesTestInstance(void)
-{
 }
 
 } // namespace

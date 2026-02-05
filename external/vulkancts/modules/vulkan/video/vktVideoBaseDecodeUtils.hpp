@@ -879,8 +879,8 @@ public:
     // Called for custom NAL parsing (not required)
     void UnhandledNALU(const uint8_t *pbData, size_t cbData) override;
 
-    virtual void StartVideoSequence(const VkParserDetectedVideoFormat *pVideoFormat);
-    virtual int32_t DecodePictureWithParameters(de::MovePtr<CachedDecodeParameters> &params);
+    void StartVideoSequence(const VkParserDetectedVideoFormat *pVideoFormat);
+    int32_t DecodePictureWithParameters(de::MovePtr<CachedDecodeParameters> &params);
     VkDeviceSize GetBitstreamBuffer(VkDeviceSize size, VkDeviceSize minBitstreamBufferOffsetAlignment,
                                     VkDeviceSize minBitstreamBufferSizeAlignment,
                                     const uint8_t *pInitializeBufferMemory, VkDeviceSize initializeBufferMemorySize,
@@ -1052,6 +1052,11 @@ public:
         bufferFrames(framesToCheck);
         m_decoder->decodeFramesOutOfOrder();
     }
+    void releaseFrame(DecodedFrame *pFrame)
+    {
+        m_decoder->ReleaseDisplayedFrame(pFrame);
+    }
+
     std::shared_ptr<VideoBaseDecoder> m_decoder{};
     VkVideoParser m_parser{};
     std::shared_ptr<Demuxer> m_demuxer{};

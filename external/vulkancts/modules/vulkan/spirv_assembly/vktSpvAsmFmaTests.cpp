@@ -34,6 +34,7 @@
 #include <string>
 #include <array>
 #include <cassert>
+#include <cmath>
 
 #include <fenv.h>
 

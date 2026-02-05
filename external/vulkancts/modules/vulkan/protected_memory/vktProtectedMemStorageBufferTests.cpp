@@ -128,17 +128,19 @@ void static addBufferCopyCmd(const vk::DeviceInterface &vk, vk::VkCommandBuffer 
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType        sType
         nullptr,                                     // const void*            pNext
         vk::VK_ACCESS_HOST_WRITE_BIT,                // VkAccessFlags        srcAccessMask
-        vk::VK_ACCESS_SHADER_WRITE_BIT,              // VkAccessFlags        dstAccessMask
-        queueFamilyIndex,                            // uint32_t                srcQueueFamilyIndex
-        queueFamilyIndex,                            // uint32_t                dstQueueFamilyIndex
-        srcBuffer,                                   // VkBuffer                buffer
-        0u,                                          // VkDeviceSize            offset
-        VK_WHOLE_SIZE,                               // VkDeviceSize            size
+        // VUID-vkCmdPipelineBarrier-pBufferMemoryBarriers-02818
+        vk::VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags        dstAccessMask
+        queueFamilyIndex,                 // uint32_t                srcQueueFamilyIndex
+        queueFamilyIndex,                 // uint32_t                dstQueueFamilyIndex
+        srcBuffer,                        // VkBuffer                buffer
+        0u,                               // VkDeviceSize            offset
+        VK_WHOLE_SIZE,                    // VkDeviceSize            size
     };
 
     vk.cmdPipelineBarrier(cmdBuffer,
-                          vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, // srcStageMask
-                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT,    // dstStageMask
+                          // VUID-vkCmdPipelineBarrier-pBufferMemoryBarriers-02817
+                          vk::VK_PIPELINE_STAGE_HOST_BIT,     // srcStageMask
+                          vk::VK_PIPELINE_STAGE_TRANSFER_BIT, // dstStageMask
                           (vk::VkDependencyFlags)0, 0, nullptr, 1, &dstWriteStartBarrier, 0, nullptr);
 
     const vk::VkBufferCopy copyRegion = {
@@ -151,13 +153,14 @@ void static addBufferCopyCmd(const vk::DeviceInterface &vk, vk::VkCommandBuffer 
     const vk::VkBufferMemoryBarrier dstWriteEndBarrier = {
         vk::VK_STRUCTURE_TYPE_BUFFER_MEMORY_BARRIER, // VkStructureType        sType
         nullptr,                                     // const void*            pNext
-        vk::VK_ACCESS_SHADER_WRITE_BIT,              // VkAccessFlags        srcAccessMask
-        vk::VK_ACCESS_SHADER_READ_BIT,               // VkAccessFlags        dstAccessMask
-        queueFamilyIndex,                            // uint32_t                srcQueueFamilyIndex
-        queueFamilyIndex,                            // uint32_t                dstQueueFamilyIndex
-        dstBuffer,                                   // VkBuffer                buffer
-        0u,                                          // VkDeviceSize            offset
-        VK_WHOLE_SIZE,                               // VkDeviceSize            size
+        // VUID-vkCmdPipelineBarrier-pBufferMemoryBarriers-02817
+        vk::VK_ACCESS_TRANSFER_WRITE_BIT, // VkAccessFlags        srcAccessMask
+        vk::VK_ACCESS_SHADER_READ_BIT,    // VkAccessFlags        dstAccessMask
+        queueFamilyIndex,                 // uint32_t                srcQueueFamilyIndex
+        queueFamilyIndex,                 // uint32_t                dstQueueFamilyIndex
+        dstBuffer,                        // VkBuffer                buffer
+        0u,                               // VkDeviceSize            offset
+        VK_WHOLE_SIZE,                    // VkDeviceSize            size
     };
 
     vk.cmdPipelineBarrier(cmdBuffer,

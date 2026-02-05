@@ -414,7 +414,7 @@ tcu::TestStatus VideoBaseTestInstance::validateEncodedContent(
                                        basicDecoder->dpbAndOutputCoincide() ? VK_IMAGE_LAYOUT_VIDEO_DECODE_DPB_KHR :
                                                                               VK_IMAGE_LAYOUT_VIDEO_DECODE_DST_KHR,
                                        &frame);
-
+        processor.releaseFrame(&frame);
         if (frame.displayWidth != expectedOutputExtent.width || frame.displayHeight != expectedOutputExtent.height)
         {
             return tcu::TestStatus::fail(

@@ -693,7 +693,8 @@ static tcu::TestStatus swapchainCreateTest(Context &context, TestParams testPara
 
             swapchainInfo.pNext = &testParams.control;
 
-            Move<VkSwapchainKHR> swapchain = createSwapchainKHR(devHelper.vkd, devHelper.device.get(), &swapchainInfo);
+            Move<VkSwapchainKHR> swapchain =
+                createWsiSwapchain(testParams.wsiType, devHelper.vkd, devHelper.device.get(), &swapchainInfo);
 
             uint32_t imageCount = 0;
             devHelper.vkd.getSwapchainImagesKHR(devHelper.device.get(), swapchain.get(), &imageCount, nullptr);

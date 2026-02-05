@@ -459,6 +459,7 @@ tcu::TestStatus GraphicsPipelineInternalCacheTestInstance::iterate(void)
 
     VkPipelineBinaryInfoKHR binaryInfo[4];
     VkPipelineBinaryInfoKHR *binaryInfoPtr[4];
+    VkPipelineBinaryInfoKHR *binaryInfoPtrMonolithic = nullptr;
     deMemset(binaryInfoPtr, 0, 4 * sizeof(nullptr));
 
     // create pipeline form internal cache or fallback to normal pipeline when binary data is not valid
@@ -468,6 +469,11 @@ tcu::TestStatus GraphicsPipelineInternalCacheTestInstance::iterate(void)
         {
             binaryInfo[i]    = pipelineBinaryWrapper[i].preparePipelineBinaryInfo();
             binaryInfoPtr[i] = &binaryInfo[i];
+        }
+
+        if (pipelineConstructionType == PipelineConstructionType::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+        {
+            binaryInfoPtrMonolithic = binaryInfoPtr[0];
         }
     }
 
@@ -484,7 +490,7 @@ tcu::TestStatus GraphicsPipelineInternalCacheTestInstance::iterate(void)
         .setupFragmentShaderState2(pipelineLayout, *renderPass, 0u, fragShader, 0, 0, 0, 0, VK_NULL_HANDLE, {}, {},
                                    binaryInfoPtr[2])
         .setupFragmentOutputState(*renderPass, 0, 0, 0, VK_NULL_HANDLE, {}, {}, binaryInfoPtr[3])
-        .buildPipeline(VK_NULL_HANDLE, VK_NULL_HANDLE, 0, {}, binaryInfoPtr[0]);
+        .buildPipeline(VK_NULL_HANDLE, VK_NULL_HANDLE, 0, {}, binaryInfoPtrMonolithic);
 
     const auto queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
     const auto cmdPool =

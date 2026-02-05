@@ -127,38 +127,6 @@ inline VkClearDepthStencilValue makeClearDepthStencilValue (float depth, uint32_
 	return res;
 }
 
-inline VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV makeClusterAccelerationStructureBuildClustersBottomLevelInfoNV (uint32_t clusterReferencesCount, uint32_t clusterReferencesStride, VkDeviceAddress clusterReferences)
-{
-	VkClusterAccelerationStructureBuildClustersBottomLevelInfoNV res;
-	res.clusterReferencesCount	= clusterReferencesCount;
-	res.clusterReferencesStride	= clusterReferencesStride;
-	res.clusterReferences		= clusterReferences;
-	return res;
-}
-
-inline VkClusterAccelerationStructureGetTemplateIndicesInfoNV makeClusterAccelerationStructureGetTemplateIndicesInfoNV (VkDeviceAddress clusterTemplateAddress)
-{
-	VkClusterAccelerationStructureGetTemplateIndicesInfoNV res;
-	res.clusterTemplateAddress	= clusterTemplateAddress;
-	return res;
-}
-
-inline VkClusterAccelerationStructureMoveObjectsInfoNV makeClusterAccelerationStructureMoveObjectsInfoNV (VkDeviceAddress srcAccelerationStructure)
-{
-	VkClusterAccelerationStructureMoveObjectsInfoNV res;
-	res.srcAccelerationStructure	= srcAccelerationStructure;
-	return res;
-}
-
-inline VkClusterAccelerationStructureOpInputNV makeClusterAccelerationStructureOpInputNV (VkClusterAccelerationStructureClustersBottomLevelInputNV* pClustersBottomLevel, VkClusterAccelerationStructureTriangleClusterInputNV* pTriangleClusters, VkClusterAccelerationStructureMoveObjectsInputNV* pMoveObjects)
-{
-	VkClusterAccelerationStructureOpInputNV res;
-	res.pClustersBottomLevel	= pClustersBottomLevel;
-	res.pTriangleClusters		= pTriangleClusters;
-	res.pMoveObjects			= pMoveObjects;
-	return res;
-}
-
 inline VkCoarseSampleLocationNV makeCoarseSampleLocationNV (uint32_t pixelX, uint32_t pixelY, uint32_t sample)
 {
 	VkCoarseSampleLocationNV res;
@@ -237,17 +205,6 @@ inline VkDecompressMemoryRegionEXT makeDecompressMemoryRegionEXT (VkDeviceAddres
 	res.dstAddress			= dstAddress;
 	res.compressedSize		= compressedSize;
 	res.decompressedSize	= decompressedSize;
-	return res;
-}
-
-inline VkDecompressMemoryRegionNV makeDecompressMemoryRegionNV (VkDeviceAddress srcAddress, VkDeviceAddress dstAddress, VkDeviceSize compressedSize, VkDeviceSize decompressedSize, VkMemoryDecompressionMethodFlagsNV decompressionMethod)
-{
-	VkDecompressMemoryRegionNV res;
-	res.srcAddress			= srcAddress;
-	res.dstAddress			= dstAddress;
-	res.compressedSize		= compressedSize;
-	res.decompressedSize	= decompressedSize;
-	res.decompressionMethod	= decompressionMethod;
 	return res;
 }
 
@@ -338,14 +295,6 @@ inline VkDeviceFaultAddressInfoEXT makeDeviceFaultAddressInfoEXT (VkDeviceFaultA
 	res.addressType			= addressType;
 	res.reportedAddress		= reportedAddress;
 	res.addressPrecision	= addressPrecision;
-	return res;
-}
-
-inline VkDeviceOrHostAddressConstAMDX makeDeviceOrHostAddressConstAMDX (VkDeviceAddress deviceAddress, const void* hostAddress)
-{
-	VkDeviceOrHostAddressConstAMDX res;
-	res.deviceAddress	= deviceAddress;
-	res.hostAddress		= hostAddress;
 	return res;
 }
 
@@ -640,15 +589,6 @@ inline VkOffset3D makeOffset3D (int32_t x, int32_t y, int32_t z)
 	return res;
 }
 
-inline VkPartitionedAccelerationStructureUpdateInstanceDataNV makePartitionedAccelerationStructureUpdateInstanceDataNV (uint32_t instanceIndex, uint32_t instanceContributionToHitGroupIndex, VkDeviceAddress accelerationStructure)
-{
-	VkPartitionedAccelerationStructureUpdateInstanceDataNV res;
-	res.instanceIndex						= instanceIndex;
-	res.instanceContributionToHitGroupIndex	= instanceContributionToHitGroupIndex;
-	res.accelerationStructure				= accelerationStructure;
-	return res;
-}
-
 inline VkPastPresentationTimingGOOGLE makePastPresentationTimingGOOGLE (uint32_t presentID, uint64_t desiredPresentTime, uint64_t actualPresentTime, uint64_t earliestPresentTime, uint64_t presentMargin)
 {
 	VkPastPresentationTimingGOOGLE res;
@@ -669,17 +609,6 @@ inline VkPerformanceCounterResultKHR makePerformanceCounterResultKHR (int32_t in
 	res.uint64	= uint64;
 	res.float32	= float32;
 	res.float64	= float64;
-	return res;
-}
-
-inline VkPerformanceValueDataINTEL makePerformanceValueDataINTEL (uint32_t value32, uint64_t value64, float valueFloat, VkBool32 valueBool, const char* valueString)
-{
-	VkPerformanceValueDataINTEL res;
-	res.value32		= value32;
-	res.value64		= value64;
-	res.valueFloat	= valueFloat;
-	res.valueBool	= valueBool;
-	res.valueString	= valueString;
 	return res;
 }
 
@@ -824,17 +753,6 @@ inline VkSetStateFlagsIndirectCommandNV makeSetStateFlagsIndirectCommandNV (uint
 	return res;
 }
 
-inline VkShaderResourceUsageAMD makeShaderResourceUsageAMD (uint32_t numUsedVgprs, uint32_t numUsedSgprs, uint32_t ldsSizePerLocalWorkGroup, size_t ldsUsageSizeInBytes, size_t scratchMemUsageInBytes)
-{
-	VkShaderResourceUsageAMD res;
-	res.numUsedVgprs				= numUsedVgprs;
-	res.numUsedSgprs				= numUsedSgprs;
-	res.ldsSizePerLocalWorkGroup	= ldsSizePerLocalWorkGroup;
-	res.ldsUsageSizeInBytes			= ldsUsageSizeInBytes;
-	res.scratchMemUsageInBytes		= scratchMemUsageInBytes;
-	return res;
-}
-
 inline VkShadingRatePaletteNV makeShadingRatePaletteNV (uint32_t shadingRatePaletteEntryCount, const VkShadingRatePaletteEntryNV* pShadingRatePaletteEntries)
 {
 	VkShadingRatePaletteNV res;
@@ -910,14 +828,6 @@ inline VkStencilOpState makeStencilOpState (VkStencilOp failOp, VkStencilOp pass
 	res.compareMask	= compareMask;
 	res.writeMask	= writeMask;
 	res.reference	= reference;
-	return res;
-}
-
-inline VkStridedDeviceAddressNV makeStridedDeviceAddressNV (VkDeviceAddress startAddress, VkDeviceSize strideInBytes)
-{
-	VkStridedDeviceAddressNV res;
-	res.startAddress	= startAddress;
-	res.strideInBytes	= strideInBytes;
 	return res;
 }
 

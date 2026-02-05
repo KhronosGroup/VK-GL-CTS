@@ -168,6 +168,8 @@ set(DEQP_VK_PIPELINE_SRCS
 	vktPipelineNoQueuesTests.hpp
 	vktPipelineDualBlendTests.cpp
 	vktPipelineDualBlendTests.hpp
+	vktPipelineShaderComponentDecoratedLayoutMatchingTests.cpp
+	vktPipelineShaderComponentDecoratedLayoutMatchingTests.hpp
 	)
 
 #vktPipelinePushDescriptorTests.cpp				- missing VK_DESCRIPTOR_SET_LAYOUT_CREATE_PUSH_DESCRIPTOR_BIT_KHR

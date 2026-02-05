@@ -126,7 +126,9 @@ void uploadTestTextureSparse(const vk::DeviceInterface &vk, vk::VkDevice device,
                              const vk::VkImageCreateInfo &imageCreateInfo, vk::VkQueue universalQueue,
                              uint32_t universalQueueFamilyIndex, vk::VkQueue sparseQueue, vk::Allocator &allocator,
                              std::vector<de::SharedPtr<vk::Allocation>> &allocations, const TestTexture &srcTexture,
-                             vk::VkImage destImage);
+                             vk::VkImage destImage,
+                             vk::VkImageLayout destImageLayout       = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
+                             vk::VkPipelineStageFlags destStageFlags = vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT);
 
 class TestTexture
 {

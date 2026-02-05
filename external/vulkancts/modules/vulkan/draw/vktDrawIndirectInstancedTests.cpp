@@ -569,6 +569,14 @@ void DrawIndirectInstancedCase::checkSupport(Context &context) const
 
     if (m_params.groupParams->useDynamicRendering)
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+
+    if (m_params.drawCount > 1)
+    {
+        context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_MULTI_DRAW_INDIRECT);
+
+        if (context.getDeviceProperties().limits.maxDrawIndirectCount < m_params.drawCount)
+            TCU_THROW(NotSupportedError, "maxDrawIndirectCount too low");
+    }
 }
 
 void DrawIndirectInstancedCase::initPrograms(vk::SourceCollections &programCollection) const

@@ -346,8 +346,8 @@ tcu::TestStatus DynamicOffsetPCInstance::iterate(void)
     auto &outputAlloc = outputBuffer.getAllocation();
     invalidateAlloc(ctx.vkd, ctx.device, outputAlloc);
 
-    std::vector<tcu::Vec4> expected(itemCount, tcu::Vec4(0.0f));
-    std::vector<tcu::Vec4> result(itemCount, tcu::Vec4(0.0f));
+    std::vector<float> expected(dataSizeStorage / sizeof(float), 0.0f);
+    std::vector<float> result(dataSizeStorage / sizeof(float), 0.0f);
 
     memcpy(de::dataOrNull(result), outputAlloc.getHostPtr(), de::dataSize(result));
     {

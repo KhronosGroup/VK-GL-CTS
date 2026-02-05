@@ -2239,7 +2239,7 @@ Move<VkSwapchainKHR> makeSwapchain(const DeviceInterface &vk, const VkDevice dev
         VK_NULL_HANDLE                                            // VkSwapchainKHR oldSwapchain;
     };
 
-    return createSwapchainKHR(vk, device, &swapchainInfo);
+    return createWsiSwapchain(wsiType, vk, device, &swapchainInfo);
 }
 
 tcu::TestStatus testSwapchainMutable(Context &context, CaseDef caseDef)

@@ -1633,10 +1633,21 @@ static uint32_t getVecStd430ByteAlignment(glu::DataType type)
     }
 }
 
+static VkQueue getQueue(Context &context, const UserQueue &userQueue)
+{
+    return userQueue.queue == VK_NULL_HANDLE ? context.getUniversalQueue() : userQueue.queue;
+}
+
+static uint32_t getQueueFamilyIndex(Context &context, const UserQueue &userQueue)
+{
+    return userQueue.queueFamilyIndex == VK_QUEUE_FAMILY_IGNORED ? context.getUniversalQueueFamilyIndex() :
+                                                                   userQueue.queueFamilyIndex;
+}
+
 class BufferIoExecutor : public ShaderExecutor
 {
 public:
-    BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec);
+    BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec, const UserQueue &userQueue);
     virtual ~BufferIoExecutor(void);
 
 protected:
@@ -1673,6 +1684,7 @@ protected:
 protected:
     Move<VkBuffer> m_inputBuffer;
     Move<VkBuffer> m_outputBuffer;
+    const UserQueue m_userQueue;
 
 private:
     struct VarLayout
@@ -1701,7 +1713,9 @@ private:
     vector<VarLayout> m_outputLayout;
 };
 
-BufferIoExecutor::BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec) : ShaderExecutor(context, shaderSpec)
+BufferIoExecutor::BufferIoExecutor(Context &context, const ShaderSpec &shaderSpec, const UserQueue &userQueue)
+    : ShaderExecutor(context, shaderSpec)
+    , m_userQueue(userQueue)
 {
     computeVarLayout(m_shaderSpec.inputs, &m_inputLayout);
     computeVarLayout(m_shaderSpec.outputs, &m_outputLayout);
@@ -2004,7 +2018,7 @@ void BufferIoExecutor::initBuffers(int numValues)
     // Upload data to buffer
     const VkDevice vkDevice         = m_context.getDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const uint32_t queueFamilyIndex = getQueueFamilyIndex(m_context, m_userQueue);
     Allocator &memAlloc             = m_context.getDefaultAllocator();
 
     const VkBufferCreateInfo inputBufferParams = {
@@ -2047,7 +2061,8 @@ void BufferIoExecutor::initBuffers(int numValues)
 class ComputeShaderExecutor : public BufferIoExecutor
 {
 public:
-    ComputeShaderExecutor(Context &context, const ShaderSpec &shaderSpec, VkDescriptorSetLayout extraResourcesLayout);
+    ComputeShaderExecutor(Context &context, const ShaderSpec &shaderSpec, VkDescriptorSetLayout extraResourcesLayout,
+                          const UserQueue &userQueue);
     virtual ~ComputeShaderExecutor(void);
 
     static void generateSources(const ShaderSpec &shaderSpec, SourceCollections &programCollection);
@@ -2060,12 +2075,14 @@ protected:
 
 private:
     const VkDescriptorSetLayout m_extraResourcesLayout;
+    const UserQueue m_userQueue;
 };
 
 ComputeShaderExecutor::ComputeShaderExecutor(Context &context, const ShaderSpec &shaderSpec,
-                                             VkDescriptorSetLayout extraResourcesLayout)
-    : BufferIoExecutor(context, shaderSpec)
+                                             VkDescriptorSetLayout extraResourcesLayout, const UserQueue &userQueue)
+    : BufferIoExecutor(context, shaderSpec, userQueue)
     , m_extraResourcesLayout(extraResourcesLayout)
+    , m_userQueue(userQueue)
 {
 }
 
@@ -2799,8 +2816,8 @@ void ComputeShaderExecutor::execute(int numValues, const void *const *inputs, vo
 {
     const VkDevice vkDevice         = m_context.getDevice();
     const DeviceInterface &vk       = m_context.getDeviceInterface();
-    const VkQueue queue             = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue             = getQueue(m_context, m_userQueue);
+    const uint32_t queueFamilyIndex = getQueueFamilyIndex(m_context, m_userQueue);
 
     DescriptorPoolBuilder descriptorPoolBuilder;
     DescriptorSetLayoutBuilder descriptorSetLayoutBuilder;
@@ -2995,7 +3012,7 @@ private:
 
 MeshTaskShaderExecutor::MeshTaskShaderExecutor(Context &context, const ShaderSpec &shaderSpec,
                                                VkDescriptorSetLayout extraResourcesLayout)
-    : BufferIoExecutor(context, shaderSpec)
+    : BufferIoExecutor(context, shaderSpec, UserQueue())
     , m_extraResourcesLayout(extraResourcesLayout)
 {
 }
@@ -3257,7 +3274,7 @@ private:
 
 TessellationExecutor::TessellationExecutor(Context &context, const ShaderSpec &shaderSpec,
                                            VkDescriptorSetLayout extraResourcesLayout)
-    : BufferIoExecutor(context, shaderSpec)
+    : BufferIoExecutor(context, shaderSpec, UserQueue())
     , m_extraResourcesLayout(extraResourcesLayout)
 {
     const VkPhysicalDeviceFeatures &features = context.getDeviceFeatures();
@@ -3904,7 +3921,7 @@ void generateSources(glu::ShaderType shaderType, const ShaderSpec &shaderSpec, v
 }
 
 ShaderExecutor *createExecutor(Context &context, glu::ShaderType shaderType, const ShaderSpec &shaderSpec,
-                               VkDescriptorSetLayout extraResourcesLayout)
+                               VkDescriptorSetLayout extraResourcesLayout, const UserQueue &userQueue)
 {
     switch (shaderType)
     {
@@ -3919,7 +3936,7 @@ ShaderExecutor *createExecutor(Context &context, glu::ShaderType shaderType, con
     case glu::SHADERTYPE_FRAGMENT:
         return new FragmentShaderExecutor(context, shaderSpec, extraResourcesLayout);
     case glu::SHADERTYPE_COMPUTE:
-        return new ComputeShaderExecutor(context, shaderSpec, extraResourcesLayout);
+        return new ComputeShaderExecutor(context, shaderSpec, extraResourcesLayout, userQueue);
 #ifndef CTS_USES_VULKANSC
     case glu::SHADERTYPE_MESH:
         return new MeshTaskShaderExecutor(context, shaderSpec, extraResourcesLayout);

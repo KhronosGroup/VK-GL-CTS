@@ -30,6 +30,7 @@
 #include "deStringUtil.hpp"
 #include "xeXMLParser.hpp"
 #include "tcuCommandLine.hpp"
+#include "tcuDefs.hpp"
 
 namespace tcu
 {
@@ -154,18 +155,40 @@ void WaiverTreeBuilder::build(void)
     readWaivedTestsFromXML();
     buildTreeFromPathList();
     constructFinalTree();
+
+    if (m_testList.empty())
+    {
+        if (!m_waiverFile.empty())
+        {
+            tcu::print("WARNING: No matching waivers found in '%s' for current vendor/device.\n", m_waiverFile.c_str());
+        }
+    }
+    else
+    {
+        tcu::print("Waivers loaded successfully from '%s'\n", m_waiverFile.c_str());
+    }
 }
 
 void WaiverTreeBuilder::readWaivedTestsFromXML()
 {
     std::ifstream iStream(m_waiverFile);
     if (!iStream.is_open())
+    {
+        tcu::printError("ERROR: Waiver file '%s' could not be opened. No tests will be waived.\n",
+                        m_waiverFile.c_str());
         return;
+    }
 
     // get whole waiver file content
     std::stringstream buffer;
     buffer << iStream.rdbuf();
     std::string wholeContent = buffer.str();
+
+    if (wholeContent.empty())
+    {
+        tcu::printError("ERROR: Waiver file '%s' is empty. No tests will be waived.\n", m_waiverFile.c_str());
+        return;
+    }
 
     // feed parser with xml content
     xe::xml::Parser xmlParser;

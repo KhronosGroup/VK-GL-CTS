@@ -341,15 +341,16 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
 #ifndef CTS_USES_VULKANSC
             auto preRenderBarriers = [&]()
             {
-                // Transition Images
+                // VUID-vkCmdDraw-None-09600
                 initialTransitionColor2DImage(
-                    vk, *cmdBuffer, colorTargetImages[draw]->object(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                    vk, *cmdBuffer, colorTargetImages[draw]->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                     VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
 
                 if (useMultisampling)
                 {
+                    // VUID-vkCmdDraw-None-09600
                     initialTransitionColor2DImage(
-                        vk, *cmdBuffer, multisampleImages[draw]->object(), VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                        vk, *cmdBuffer, multisampleImages[draw]->object(), VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,
                         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT);
                 }
             };
@@ -367,7 +368,7 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
                         VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout imageLayout;
                         VK_RESOLVE_MODE_NONE,                            // VkResolveModeFlagBits resolveMode;
                         VK_NULL_HANDLE,                                  // VkImageView resolveImageView;
-                        VK_IMAGE_LAYOUT_GENERAL,                         // VkImageLayout resolveImageLayout;
+                        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,        // VkImageLayout resolveImageLayout;
                         VK_ATTACHMENT_LOAD_OP_CLEAR,                     // VkAttachmentLoadOp loadOp;
                         VK_ATTACHMENT_STORE_OP_STORE,                    // VkAttachmentStoreOp storeOp;
                         clearColor                                       // VkClearValue clearValue;
@@ -458,6 +459,13 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
 
                     if (!m_groupParams->secondaryCmdBufferCompletelyContainsDynamicRenderpass)
                         endRendering(vk, *cmdBuffer);
+
+                    // Transition color image to transfer src for readback
+                    transition2DImage(vk, *cmdBuffer, colorTargetImages[draw]->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
+
                     endCommandBuffer(vk, *cmdBuffer);
                 }
                 else
@@ -468,6 +476,12 @@ tcu::TestStatus MultisampleLinearInterpolationTestInstance::iterate(void)
                     vk.cmdBeginRendering(*cmdBuffer, &renderingInfo);
                     drawCommands(*cmdBuffer);
                     endRendering(vk, *cmdBuffer);
+
+                    // Transition color image to transfer src for readback
+                    transition2DImage(vk, *cmdBuffer, colorTargetImages[draw]->object(), VK_IMAGE_ASPECT_COLOR_BIT,
+                                      VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, VK_IMAGE_LAYOUT_TRANSFER_SRC_OPTIMAL,
+                                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_ACCESS_TRANSFER_READ_BIT,
+                                      VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT);
 
                     endCommandBuffer(vk, *cmdBuffer);
                 }

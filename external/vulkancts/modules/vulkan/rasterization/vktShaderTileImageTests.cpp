@@ -436,32 +436,36 @@ void ShaderTileImageTestCase::getColorTestTypeFS(std::stringstream &fragShader) 
     for (uint32_t i = 0; i < attachmentCount; i++)
     {
         // if (previous[0].x == 0 && patchIndex == 1)", initial write
+        //  out0.x = 0
         //  out0.y = float(patchIndex + zero + gl_SampleID +  0);"
         // else if (previous[0].x == 0 && (previous[0].y + 1) == (patchIndex + gl_SampleID + 0))"
+        //  out0.x = 0
         //  out0.y = float(previous[0].y + 1);"
         // else
-        //  out0.y = float(previous[0].y);"
         //  out0.x = 1;" // error
+        //  out0.y = float(previous[0].y);"
         fragShader << "    if (previous[" << i << "].x == 0 && patchIndex == 1)\n"
                    << "    {\n"
+                   << "        out" << i << ".x = 0;\n"
                    << "        out" << i << ".y = ${OUTPUT_BASIC_TYPE}(patchIndex + zero + gl_SampleID + " << i
                    << ");\n"
                    << "    }\n"
                    << "    else if (previous[" << i << "].x == 0 && (previous[" << i
                    << "].y + 1) == (patchIndex + gl_SampleID + " << i << "))\n"
                    << "    {\n"
+                   << "        out" << i << ".x = 0;\n"
                    << "        out" << i << ".y = ${OUTPUT_BASIC_TYPE}(previous[" << i << "].y + 1 + zero);\n"
                    << "    }\n"
                    << "    else\n"
                    << "    {\n"
-                   << "        out" << i << ".y = ${OUTPUT_BASIC_TYPE}(previous[" << i << "].y);\n" // for debug purpose
                    << "        out" << i << ".x = 1;\n"                                             // error
+                   << "        out" << i << ".y = ${OUTPUT_BASIC_TYPE}(previous[" << i << "].y);\n" // for debug purpose
                    << "    }\n";
 
         if (normalizedColorFormat)
         {
             // out0.y *= invAmplifier;
-            fragShader << "        out" << i << ".y *= " << invAmplifier << ";\n";
+            fragShader << "    out" << i << ".y *= " << invAmplifier << ";\n";
         }
     }
     fragShader << "}\n";
@@ -556,19 +560,24 @@ void ShaderTileImageTestCase::getHelperClassTestTypeFS(std::stringstream &fragSh
         fragShader
             << "    if (patchIndex == 1 && err != 1)\n"
             << "    {\n"
+            << "        out0.x = 0;\n"
             << "        out0.y = ${OUTPUT_BASIC_TYPE}(patchIndex);\n"
-            << "        out0.x = 0;\n" // error
+            << "        out1.x = 0;\n"
+            << "        out1.y = 0;\n"
             << "    }\n"
             << "    else if (previous.x == 0 && err != 1 && ((previous.y + 1) == patchIndex || previous.y == 0))\n"
             << "    {\n"
+            << "        out0.x = 0;\n"
+            << "        out0.y = 0;\n"
+            << "        out1.x = 0;\n"
             << "        out1.y = ${OUTPUT_BASIC_TYPE}(max(dx, dy) + 1);\n" // last 1 is to differentiate clear value
             << "    }\n"
             << "    else\n"
             << "    {\n"
-            << "        out0.y = ${OUTPUT_BASIC_TYPE}(previous.y);\n" // for debug purpose
             << "        out0.x = 1;\n"                                // error
+            << "        out0.y = ${OUTPUT_BASIC_TYPE}(previous.y);\n" // for debug purpose
+            << "        out1.x = 1;\n"                                // error
             << "        out1.y = ${OUTPUT_BASIC_TYPE}(previous.x);\n"
-            << "        out1.x = 1;\n" // error
             << "    }\n";
     }
     fragShader << "}\n";
@@ -642,20 +651,21 @@ void ShaderTileImageTestCase::getSampleMaskTypeFS(std::stringstream &fragShader)
     addOverhead(fragShader);
 
     // write output
-    fragShader << "if (!error && (previous + 1 == patchIndex))\n"
+    fragShader << "    if (!error && (previous + 1 == patchIndex))\n"
                << "    {\n"
+               << "        out0.x = 0;\n"
                << "        out0.y = ${OUTPUT_BASIC_TYPE}(previous + 1 + zero);\n"
                << "    }\n"
                << "    else\n"
                << "    {\n"
-               << "        out0.y = ${OUTPUT_BASIC_TYPE}(previous);\n"
                << "        out0.x = 1;\n" // error
+               << "        out0.y = ${OUTPUT_BASIC_TYPE}(previous);\n"
                << "    }\n";
 
     const float invAmplifier = 1.0f / static_cast<float>(amplifier);
     if (normalizedColorFormat)
     {
-        fragShader << "        out0.y *= " << invAmplifier << ";\n";
+        fragShader << "    out0.y *= " << invAmplifier << ";\n";
     }
 
     fragShader << "}\n";
@@ -706,17 +716,19 @@ void ShaderTileImageTestCase::getDepthTestTypeFS(std::stringstream &fragShader) 
     fragShader
         << "    if (previous.x == 0 && patchIndex == 1)\n"
         << "    {\n"
+        << "        out0.x = 0;\n"
         << "        out0.y = (1u + zero + gl_SampleID);\n"
         << "    }\n"
         << "    else if (previous.x == 0 && (previous.y + 1) == (patchIndex + gl_SampleID) && (previousDepth + 1) "
            "== (patchIndex + gl_SampleID))\n"
         << "    {\n"
+        << "        out0.x = 0;\n"
         << "        out0.y = ${OUTPUT_BASIC_TYPE}(previousDepth + 1 + zero);\n"
         << "    }\n"
         << "    else\n"
         << "    {\n"
-        << "        out0.y = ${OUTPUT_BASIC_TYPE}(previousDepth);\n" // debug purpose
         << "        out0.x = 1;\n"                                   // error
+        << "        out0.y = ${OUTPUT_BASIC_TYPE}(previousDepth);\n" // debug purpose
         << "    }\n";
 
     if (multiSampleTest)
@@ -765,12 +777,13 @@ void ShaderTileImageTestCase::getStencilTestTypeFS(std::stringstream &fragShader
     // write output
     fragShader << "    if (previous.x == 0 && (previous.y + 1) == patchIndex && (previousStencil + 1) == patchIndex)\n"
                << "    {\n"
+               << "        out0.x = 0;\n"
                << "        out0.y = ${OUTPUT_BASIC_TYPE}(previousStencil + 1 + zero);\n"
                << "    }\n"
                << "    else\n"
                << "    {\n"
-               << "        out0.y = ${OUTPUT_BASIC_TYPE}(previousStencil);\n" // debug purpose
                << "        out0.x = 1;\n"                                     // error
+               << "        out0.y = ${OUTPUT_BASIC_TYPE}(previousStencil);\n" // debug purpose
                << "    }\n"
                << "}\n";
 }

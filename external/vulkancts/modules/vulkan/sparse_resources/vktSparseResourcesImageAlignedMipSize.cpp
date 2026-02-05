@@ -223,7 +223,7 @@ tcu::TestStatus ImageAlignedMipSizeInstance::iterate(void)
             }
 
             lod++;
-        } while (extent.width != 1 || extent.height != 1 || extent.depth != 1);
+        } while ((extent.width != 1 || extent.height != 1 || extent.depth != 1) && lod < imageCreateInfo.mipLevels);
 
         if (lod != aspectRequirements.imageMipTailFirstLod)
             return tcu::TestStatus::fail("Unexpected first LOD for mip tail.");

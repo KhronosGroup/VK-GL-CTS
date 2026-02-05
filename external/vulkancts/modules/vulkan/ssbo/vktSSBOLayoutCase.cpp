@@ -2721,6 +2721,9 @@ void SSBOLayoutCase::checkSupport(Context &context) const
         TCU_THROW(NotSupportedError, "VK_KHR_relaxed_block_layout not supported");
     if (!context.get16BitStorageFeatures().storageBuffer16BitAccess && uses16BitStorage(m_interface))
         TCU_THROW(NotSupportedError, "storageBuffer16BitAccess not supported");
+    // VUID-RuntimeSpirv-uniformAndStorageBuffer16BitAccess-06332
+    if (!context.get16BitStorageFeatures().uniformAndStorageBuffer16BitAccess && uses16BitStorage(m_interface))
+        TCU_THROW(NotSupportedError, "uniformAndStorageBuffer16BitAccess not supported");
     if (!context.get8BitStorageFeatures().storageBuffer8BitAccess && uses8BitStorage(m_interface))
         TCU_THROW(NotSupportedError, "storageBuffer8BitAccess not supported");
     if (!context.getScalarBlockLayoutFeatures().scalarBlockLayout && usesScalarLayout(m_interface))

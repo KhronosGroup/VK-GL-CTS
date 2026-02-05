@@ -26,6 +26,7 @@
 #include "vkDefs.hpp"
 #include "deStringUtil.hpp"
 #include "vkValidatorOptions.hpp"
+#include "tcuMaybe.hpp"
 
 #include <string>
 
@@ -44,6 +45,7 @@ struct SpirVAsmBuildOptions
     bool supports_VK_KHR_spirv_1_4;
     bool supports_VK_KHR_maintenance4;
     bool supports_VK_KHR_maintenance9;
+    tcu::Maybe<SpirvValidatorOptions> validatorOptions;
 
     SpirVAsmBuildOptions(uint32_t vulkanVersion_, SpirvVersion targetVersion_, bool allowSpirv14 = false,
                          bool allowMaintenance4 = false, bool allowMaintenance9 = false)
@@ -66,6 +68,9 @@ struct SpirVAsmBuildOptions
 
     SpirvValidatorOptions getSpirvValidatorOptions() const
     {
+        if (validatorOptions)
+            return *validatorOptions;
+
         SpirvValidatorOptions result(vulkanVersion);
         result.supports_VK_KHR_spirv_1_4 = supports_VK_KHR_spirv_1_4;
         if (supports_VK_KHR_maintenance4)
@@ -73,6 +78,12 @@ struct SpirVAsmBuildOptions
         if (supports_VK_KHR_maintenance9)
             result.flags = result.flags | SpirvValidatorOptions::FLAG_SPIRV_VALIDATOR_ALLOW_NON_32_BIT_BITWISE;
         return result;
+    }
+
+    SpirVAsmBuildOptions &operator<<(const SpirvValidatorOptions &validatorOptions_)
+    {
+        validatorOptions = validatorOptions_;
+        return *this;
     }
 };
 

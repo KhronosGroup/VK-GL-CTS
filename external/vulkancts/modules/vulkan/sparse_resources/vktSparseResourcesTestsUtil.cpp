@@ -1255,6 +1255,40 @@ vk::VkFormat getPlaneCompatibleFormatForWriting(const vk::PlanarFormatDescriptio
     return result;
 }
 
+vk::VkFormat getStorageCompatibleFormat(vk::VkFormat planeFormat)
+{
+    // Map packed formats without storage support to block-compatible formats that do
+    // These mappings match what the shader expects (see getOpTypeImageSparse)
+    switch (planeFormat)
+    {
+    // 10-bit/12-bit 1-component packed formats -> R16
+    case vk::VK_FORMAT_R10X6_UNORM_PACK16:
+    case vk::VK_FORMAT_R12X4_UNORM_PACK16:
+        return vk::VK_FORMAT_R16_UNORM;
+
+    // 10-bit/12-bit 2-component packed formats -> RG16
+    case vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16:
+    case vk::VK_FORMAT_R12X4G12X4_UNORM_2PACK16:
+        return vk::VK_FORMAT_R16G16_UNORM;
+
+    // 10-bit/12-bit 4-component packed formats -> RGBA16
+    case vk::VK_FORMAT_R10X6G10X6B10X6A10X6_UNORM_4PACK16:
+    case vk::VK_FORMAT_R12X4G12X4B12X4A12X4_UNORM_4PACK16:
+        return vk::VK_FORMAT_R16G16B16A16_UNORM;
+
+    // 422 packed formats that are treated as RGBA16 in shaders
+    case vk::VK_FORMAT_G10X6B10X6G10X6R10X6_422_UNORM_4PACK16:
+    case vk::VK_FORMAT_B10X6G10X6R10X6G10X6_422_UNORM_4PACK16:
+    case vk::VK_FORMAT_G12X4B12X4G12X4R12X4_422_UNORM_4PACK16:
+    case vk::VK_FORMAT_B12X4G12X4R12X4G12X4_422_UNORM_4PACK16:
+        return vk::VK_FORMAT_R16G16B16A16_UNORM;
+
+    // All other formats use themselves (R8, R16, etc. already support storage)
+    default:
+        return planeFormat;
+    }
+}
+
 bool areLsb6BitsDontCare(vk::VkFormat format)
 {
     if ((format == vk::VK_FORMAT_R10X6_UNORM_PACK16) || (format == vk::VK_FORMAT_R10X6G10X6_UNORM_2PACK16) ||

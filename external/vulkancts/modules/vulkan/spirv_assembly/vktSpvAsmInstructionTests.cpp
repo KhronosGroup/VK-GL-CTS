@@ -50,7 +50,6 @@
 #include "deUniquePtr.hpp"
 #include "deMath.h"
 #include "deRandom.hpp"
-#include "tcuStringTemplate.hpp"
 
 #include "vktSpvAsmCrossStageInterfaceTests.hpp"
 #include "vktSpvAsm8bitStorageTests.hpp"
@@ -9671,8 +9670,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                                                       ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
 
         // Shader stages: vertex, geometry and fragment
@@ -9682,8 +9681,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                                                       ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module_geom", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module_geom", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
 
         // Shader stages: vertex, tessellation control, tessellation evaluation and fragment
@@ -9695,8 +9694,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                 ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module_tessc_tesse", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module_tessc_tesse", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
 
         // Shader stages: vertex, tessellation control, tessellation evaluation, geometry and fragment
@@ -9709,8 +9708,8 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
                 ShaderElement("module", "main", VK_SHADER_STAGE_FRAGMENT_BIT)};
 
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), "same_module_tessc_tesse_geom", createCombinedModule, runAndVerifyDefaultPipeline,
-                createInstanceContext(combinedPipeline, map<string, string>()));
+                moduleTests.get(), "same_module_tessc_tesse_geom", defaultCheckSupport, createCombinedModule,
+                runAndVerifyDefaultPipeline, createInstanceContext(combinedPipeline, map<string, string>()));
         }
     }
 
@@ -9742,13 +9741,13 @@ tcu::TestCaseGroup *createModuleTests(tcu::TestContext &testCtx)
             0)
         {
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), name, createMultipleEntries, runAndVerifyDefaultPipeline,
+                moduleTests.get(), name, defaultCheckSupport, createMultipleEntries, runAndVerifyDefaultPipeline,
                 createInstanceContext(pipeline, defaultColors, defaultColors, map<string, string>()));
         }
         else
         {
             addFunctionCaseWithPrograms<InstanceContext>(
-                moduleTests.get(), name, createMultipleEntries, runAndVerifyDefaultPipeline,
+                moduleTests.get(), name, defaultCheckSupport, createMultipleEntries, runAndVerifyDefaultPipeline,
                 createInstanceContext(pipeline, defaultColors, invertedColors, map<string, string>()));
         }
     }
@@ -9810,6 +9809,11 @@ std::string getUnusedVarTestName(const ShaderTaskArray &shaderTasks, const Varia
     return testName;
 }
 
+static void checkUnusedVariableSupport(Context &context, UnusedVariableContext ctx)
+{
+    defaultCheckSupport(context, ctx.instanceContext);
+}
+
 tcu::TestCaseGroup *createUnusedVariableTests(tcu::TestContext &testCtx)
 {
     de::MovePtr<tcu::TestCaseGroup> moduleTests(new tcu::TestCaseGroup(testCtx, "unused_variables"));
@@ -9841,9 +9845,9 @@ tcu::TestCaseGroup *createUnusedVariableTests(tcu::TestContext &testCtx)
             const VariableLocation &location   = testLocations[locationNdx];
             std::string testName               = getUnusedVarTestName(shaderTasks, location);
 
-            addFunctionCaseWithPrograms<UnusedVariableContext>(moduleTests.get(), testName, createUnusedVariableModules,
-                                                               runAndVerifyUnusedVariablePipeline,
-                                                               createUnusedVariableContext(shaderTasks, location));
+            addFunctionCaseWithPrograms<UnusedVariableContext>(
+                moduleTests.get(), testName, checkUnusedVariableSupport, createUnusedVariableModules,
+                runAndVerifyUnusedVariablePipeline, createUnusedVariableContext(shaderTasks, location));
         }
     }
 

@@ -100,6 +100,7 @@ struct ImageSamplingInstanceParams
     const vk::VkPipelineCreateFlags pipelineCreateFlags;
 };
 
+void checkSupportAstcFormat(Context &context, tcu::CompressedTexFormat compressedFormat);
 void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstanceParams params);
 
 class ImageSamplingInstance : public vkt::TestInstance

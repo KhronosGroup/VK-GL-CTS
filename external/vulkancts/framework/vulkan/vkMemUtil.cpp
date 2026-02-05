@@ -4,6 +4,7 @@
  *
  * Copyright (c) 2019 Google Inc.
  * Copyright (c) 2019 The Khronos Group Inc.
+ * Copyright (c) 2024-2025 ARM Ltd.
  *
  * Licensed under the Apache License, Version 2.0 (the "License");
  * you may not use this file except in compliance with the License.
@@ -34,6 +35,21 @@
 #include <vector>
 #include <algorithm>
 #include <memory>
+
+#undef ENABLE_DMA_HEAP_ALLOCATOR
+#if (DE_OS == DE_OS_ANDROID) || defined(__linux) || defined(__linux__)
+#include <linux/version.h>
+#if LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#define ENABLE_DMA_HEAP_ALLOCATOR 1
+
+#include <sys/types.h>
+#include <sys/stat.h>
+#include <fcntl.h>
+#include <unistd.h>
+#include <sys/ioctl.h>
+#include <linux/dma-heap.h>
+#endif // LINUX_VERSION_CODE >= KERNEL_VERSION(5, 6, 0)
+#endif // (DE_OS == DE_OS_ANDROID) || defined(__linux) || defined(__linux__)
 
 namespace vk
 {
@@ -293,9 +309,13 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
     Move<VkDeviceMemory> mem = allocateMemory(m_vk, m_device, &allocInfo);
     MovePtr<HostPtr> hostPtr;
 
-    if (requirement & MemoryRequirement::HostVisible)
+    const bool requestedHostVisible = requirement & MemoryRequirement::HostVisible;
+    const bool isHostVisible        = isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex);
+    DE_UNREF(requestedHostVisible);
+    DE_ASSERT(!requestedHostVisible || isHostVisible);
+
+    if (isHostVisible)
     {
-        DE_ASSERT(isHostVisibleMemory(m_memProps, allocInfo.memoryTypeIndex));
         hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, memReqs.size, 0u));
     }
 
@@ -331,6 +351,256 @@ MovePtr<Allocation> SimpleAllocator::allocate(const VkMemoryRequirements &memReq
     );
     return SimpleAllocator::allocate(memReqs, requirement, tcu::just(intent));
 }
+
+#if ENABLE_DMA_HEAP_ALLOCATOR
+
+namespace
+{
+
+class DmaHeapBufferFd
+{
+public:
+    explicit DmaHeapBufferFd(const int fd) : m_fd(fd)
+    {
+    }
+
+    ~DmaHeapBufferFd()
+    {
+        reset();
+    }
+
+    DmaHeapBufferFd(const DmaHeapBufferFd &)            = delete;
+    DmaHeapBufferFd &operator=(const DmaHeapBufferFd &) = delete;
+
+    DmaHeapBufferFd(DmaHeapBufferFd &&other) : m_fd(other.m_fd)
+    {
+        other.m_fd = -1;
+    }
+
+    DmaHeapBufferFd &operator=(DmaHeapBufferFd &&other)
+    {
+        this->reset(other.release());
+        return *this;
+    }
+
+    int operator*()
+    {
+        return m_fd;
+    }
+
+    /* Release ownership of held file descriptor */
+    int release()
+    {
+        const int returned_fd = m_fd;
+        m_fd                  = -1;
+
+        return returned_fd;
+    }
+
+    /* Close held file descriptor and optionally take ownership of new one */
+    void reset(const int fd = -1)
+    {
+        if (m_fd >= 0)
+        {
+            const int result = ::close(m_fd);
+            DE_UNREF(result);
+            DE_ASSERT(result == 0);
+        }
+
+        DE_ASSERT(fd >= -1);
+
+        m_fd = fd;
+    }
+
+private:
+    int m_fd;
+};
+
+static DmaHeapBufferFd allocateDmaHeapBuffer(const uint64_t size)
+{
+    // Open the system DMA heap device
+    const int dmaHeapFd = ::open("/dev/dma_heap/system", O_RDONLY | O_CLOEXEC);
+    if (dmaHeapFd == -1)
+    {
+        TCU_THROW(NotSupportedError, "Could not open DMA heap device");
+    }
+
+    dma_heap_allocation_data dmaHeapAllocData{};
+    dmaHeapAllocData.len      = size;
+    dmaHeapAllocData.fd_flags = O_RDWR | O_CLOEXEC;
+
+    // Issue ioctl to allocate the DMA buffer from the heap device
+    const int allocResult = ::ioctl(dmaHeapFd, DMA_HEAP_IOCTL_ALLOC, &dmaHeapAllocData);
+
+    ::close(dmaHeapFd);
+
+    if (allocResult != 0)
+    {
+        TCU_THROW(NotSupportedError, "Error while allocating DMA heap memory");
+    }
+
+    return DmaHeapBufferFd(dmaHeapAllocData.fd);
+}
+
+} // namespace
+
+DmaHeapAllocator::DmaHeapAllocator(const DeviceInterface &vk, VkDevice device,
+                                   const VkPhysicalDeviceMemoryProperties &deviceMemProps,
+                                   const OptionalOffsetParams &offsetParams)
+    : m_vk(vk)
+    , m_device(device)
+    , m_memProps(deviceMemProps)
+    , m_offsetParams(offsetParams)
+{
+    if (m_offsetParams)
+    {
+        const auto zero = VkDeviceSize{0};
+        DE_UNREF(zero); // For release builds.
+        // If an offset is provided, a non-coherent atom size must be provided too.
+        DE_ASSERT(m_offsetParams->offset == zero || m_offsetParams->nonCoherentAtomSize != zero);
+    }
+}
+
+bool DmaHeapAllocator::isSupported()
+{
+    return true;
+}
+
+MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment)
+{
+    DE_UNREF(allocInfo);
+    DE_UNREF(alignment);
+
+    // VkMemoryAllocateInfo-based allocation not supported
+    DE_ASSERT(false);
+    return {};
+}
+
+MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
+                                               VkMemoryAllocateFlags allocFlags)
+{
+    DE_UNREF(memReqs);
+    DE_UNREF(intent);
+    DE_UNREF(allocFlags);
+
+    // Intent-based allocation not supported
+    DE_ASSERT(false);
+    return {};
+}
+
+MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
+                                               uint64_t memoryOpaqueCaptureAddr)
+{
+    DE_UNREF(memoryOpaqueCaptureAddr);
+
+    // Align the offset to the requirements.
+    // Aligning to the non coherent atom size prevents flush and memory invalidation valid usage errors.
+    const auto requiredAlignment =
+        (m_offsetParams ? de::lcm(m_offsetParams->nonCoherentAtomSize, memReqs.alignment) : memReqs.alignment);
+    const auto offset = (m_offsetParams ? de::roundUp(m_offsetParams->offset, requiredAlignment) : 0);
+
+    const VkDeviceSize allocationSize = memReqs.size + offset;
+
+    // Allocate the DMA heap memory of the requested size
+    DmaHeapBufferFd dmaBufFd(allocateDmaHeapBuffer(allocationSize));
+
+    // Attempt to find a memory type that is compatible with the memory requirements object, the requested memory requirement and the DMA buffer heap allocation
+    VkMemoryFdPropertiesKHR memoryFdProperties{};
+    memoryFdProperties.sType = VK_STRUCTURE_TYPE_MEMORY_FD_PROPERTIES_KHR;
+
+    const VkResult properties_result = m_vk.getMemoryFdPropertiesKHR(
+        m_device, VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT, *dmaBufFd, &memoryFdProperties);
+    VK_CHECK(properties_result);
+
+    const uint32_t dmaBufCompatibleTypes          = memoryFdProperties.memoryTypeBits;
+    const uint32_t testRequirementCompatibleTypes = getCompatibleMemoryTypes(m_memProps, requirement);
+    const uint32_t requirementsCompatibleTypes    = memReqs.memoryTypeBits;
+
+    const uint32_t memoryTypeCandidates =
+        dmaBufCompatibleTypes & testRequirementCompatibleTypes & requirementsCompatibleTypes;
+
+    if (memoryTypeCandidates == 0)
+    {
+        TCU_THROW(NotSupportedError,
+                  "Could not find any memory type compatible with both requested memory and DMA heap memory");
+    }
+
+    const uint32_t chosenMemoryType = static_cast<uint32_t>(deCtz32(memoryTypeCandidates));
+
+    // Import the DMA heap allocation into a Vulkan memory object
+    const VkImportMemoryFdInfoKHR fd_import_info = {VK_STRUCTURE_TYPE_IMPORT_MEMORY_FD_INFO_KHR, nullptr,
+                                                    VK_EXTERNAL_MEMORY_HANDLE_TYPE_DMA_BUF_BIT_EXT, *dmaBufFd};
+
+    const VkMemoryAllocateInfo info = {VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, &fd_import_info, allocationSize,
+                                       chosenMemoryType};
+
+    Move<VkDeviceMemory> mem = allocateMemory(m_vk, m_device, &info);
+
+    // Successful memory allocation has taken ownership of the file descriptor
+    dmaBufFd.release();
+
+    MovePtr<HostPtr> hostPtr;
+
+    if (isHostVisibleMemory(m_memProps, info.memoryTypeIndex))
+        hostPtr = MovePtr<HostPtr>(new HostPtr(m_vk, m_device, *mem, offset, memReqs.size, 0u));
+
+    return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, static_cast<size_t>(offset)));
+}
+
+#else
+
+DmaHeapAllocator::DmaHeapAllocator(const DeviceInterface &vk, VkDevice device,
+                                   const VkPhysicalDeviceMemoryProperties &deviceMemProps,
+                                   const OptionalOffsetParams &offsetParams)
+    : m_vk(vk)
+    , m_device(device)
+    , m_memProps(deviceMemProps)
+    , m_offsetParams(offsetParams)
+{
+    // DMA heap allocation is not supported
+    DE_ASSERT(false);
+}
+
+bool DmaHeapAllocator::isSupported()
+{
+    return false;
+}
+
+MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryAllocateInfo &allocInfo, VkDeviceSize alignment)
+{
+    DE_UNREF(allocInfo);
+    DE_UNREF(alignment);
+
+    // DMA heap allocation are not supported
+    DE_ASSERT(false);
+    return {};
+}
+
+MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryRequirements &memReqs, HostIntent intent,
+                                               VkMemoryAllocateFlags allocFlags)
+{
+    DE_UNREF(memReqs);
+    DE_UNREF(intent);
+    DE_UNREF(allocFlags);
+
+    // DMA heap allocation are not supported
+    DE_ASSERT(false);
+    return {};
+}
+
+MovePtr<Allocation> DmaHeapAllocator::allocate(const VkMemoryRequirements &memReqs, MemoryRequirement requirement,
+                                               uint64_t memoryOpaqueCaptureAddr)
+{
+    DE_UNREF(memReqs);
+    DE_UNREF(requirement);
+    DE_UNREF(memoryOpaqueCaptureAddr);
+
+    // DMA heap allocation are not supported
+    DE_ASSERT(false);
+    return {};
+}
+
+#endif // ENABLE_DMA_HEAP_ALLOCATOR
 
 MovePtr<Allocation> allocateExtended(const InstanceInterface &vki, const DeviceInterface &vkd,
                                      const VkPhysicalDevice &physDevice, const VkDevice device,
@@ -750,6 +1020,89 @@ de::MovePtr<Allocation> bindBuffer(const DeviceInterface &vk, const VkDevice dev
     VK_CHECK(vk.bindBufferMemory(device, buffer, alloc->getMemory(), alloc->getOffset()));
     return alloc;
 }
+
+#ifndef CTS_USES_VULKANSC
+MovePtr<Allocation> bindTensor(const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
+                               const VkTensorARM tensor, const MemoryRequirement requirement,
+                               VkDeviceSize *allocationSize)
+{
+    const VkMemoryRequirements tensor_requirements = getTensorMemoryRequirements(vk, device, tensor);
+    MovePtr<Allocation> alloc(allocator.allocate(tensor_requirements, requirement));
+
+    if (allocationSize != nullptr)
+    {
+        *allocationSize = tensor_requirements.size;
+    }
+
+    const VkBindTensorMemoryInfoARM bindInfo = {
+        VK_STRUCTURE_TYPE_BIND_TENSOR_MEMORY_INFO_ARM, nullptr, tensor, alloc->getMemory(), alloc->getOffset(),
+    };
+
+    VK_CHECK(vk.bindTensorMemoryARM(device, 1, &bindInfo));
+
+    return alloc;
+}
+
+std::vector<de::MovePtr<Allocation>> bindDataGraphSession(
+    const DeviceInterface &vk, const VkDevice device, Allocator &allocator, const VkDataGraphPipelineSessionARM session,
+    const std::vector<VkDataGraphPipelineSessionBindPointRequirementARM> &bindPoints,
+    const MemoryRequirement requirement, VkDeviceSize *allocationSize, bool testRequiresTransient)
+{
+    vk::VkDeviceSize _allocationSize = 0;
+
+    std::vector<de::MovePtr<Allocation>> allocations;
+    allocations.resize(bindPoints.size());
+
+    bool transientBindPointPresent = false;
+
+    for (size_t i = 0; i < bindPoints.size(); i++)
+    {
+        VkDataGraphPipelineSessionMemoryRequirementsInfoARM memInfo = {
+            VK_STRUCTURE_TYPE_DATA_GRAPH_PIPELINE_SESSION_MEMORY_REQUIREMENTS_INFO_ARM, // VkStructureType                           sType;
+            nullptr,                 // const void*                               pNext;
+            session,                 // VkDataGraphPipelineSessionARM             session;
+            bindPoints[i].bindPoint, // VkDataGraphPipelineSessionBindPointARM    bindPoint;
+            0,                       // uint32_t                                  objectIndex;
+        };
+
+        VkMemoryRequirements2 memReq2;
+        deMemset(&memReq2, 0, sizeof(memReq2));
+        memReq2.sType = VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2;
+        vk.getDataGraphPipelineSessionMemoryRequirementsARM(device, &memInfo, &memReq2);
+
+        _allocationSize += memReq2.memoryRequirements.size;
+        allocations[i] = allocator.allocate(memReq2.memoryRequirements, requirement);
+
+        if (bindPoints[i].bindPoint == VK_DATA_GRAPH_PIPELINE_SESSION_BIND_POINT_TRANSIENT_ARM &&
+            memReq2.memoryRequirements.size > 0)
+        {
+            transientBindPointPresent = true;
+        }
+
+        const VkBindDataGraphPipelineSessionMemoryInfoARM bindInfo = {
+            VK_STRUCTURE_TYPE_BIND_DATA_GRAPH_PIPELINE_SESSION_MEMORY_INFO_ARM, //     VkStructureType                           sType;
+            nullptr,                     //     const void*                               pNext;
+            session,                     //     VkDataGraphPipelineSessionARM             session;
+            bindPoints[i].bindPoint,     //     VkDataGraphPipelineSessionBindPointARM    bindPoint;
+            0,                           //     uint32_t                                  resourceIndex;
+            allocations[i]->getMemory(), //     VkDeviceMemory                            memory;
+            allocations[i]->getOffset(), //     VkDeviceSize                              memoryOffset;
+        };
+
+        VK_CHECK(vk.bindDataGraphPipelineSessionMemoryARM(device, 1, &bindInfo));
+    }
+
+    TCU_CHECK(!testRequiresTransient || transientBindPointPresent);
+
+    if (allocationSize != nullptr)
+    {
+        *allocationSize = _allocationSize;
+    }
+
+    return allocations;
+}
+
+#endif // CTS_USES_VULKANSC
 
 void zeroBuffer(const DeviceInterface &vk, const VkDevice device, const Allocation &alloc, const VkDeviceSize size)
 {

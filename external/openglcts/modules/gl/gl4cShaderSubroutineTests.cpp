@@ -8832,14 +8832,14 @@ void FunctionalTest16::verifySubroutineUniformValuesForShaderStage(
 
     if (verification == SUBROUTINE_UNIFORMS_SET_TO_VALID_VALUES)
     {
-        if (!((result_values[0] == (GLuint)shader_stage.subroutine1_uniform_location ||
-               result_values[0] == (GLuint)shader_stage.subroutine2_uniform_location) &&
-              (result_values[1] == (GLuint)shader_stage.subroutine1_uniform_location ||
-               result_values[1] == (GLuint)shader_stage.subroutine2_uniform_location) &&
-              (result_values[2] == (GLuint)shader_stage.subroutine3_uniform_location ||
-               result_values[2] == (GLuint)shader_stage.subroutine4_uniform_location) &&
-              (result_values[3] == (GLuint)shader_stage.subroutine3_uniform_location ||
-               result_values[3] == (GLuint)shader_stage.subroutine4_uniform_location)))
+        if (!((result_values[0] == (GLuint)shader_stage.function1_index ||
+               result_values[0] == (GLuint)shader_stage.function2_index) &&
+              (result_values[1] == (GLuint)shader_stage.function1_index ||
+               result_values[1] == (GLuint)shader_stage.function2_index) &&
+              (result_values[2] == (GLuint)shader_stage.function3_index ||
+               result_values[2] == (GLuint)shader_stage.function4_index) &&
+              (result_values[3] == (GLuint)shader_stage.function3_index ||
+               result_values[3] == (GLuint)shader_stage.function4_index)))
         {
             m_testCtx.getLog() << tcu::TestLog::Message
                                << "SUBROUTINE_UNIFORMS_SET_TO_VALID_VALUES validation failed. "
@@ -8847,10 +8847,8 @@ void FunctionalTest16::verifySubroutineUniformValuesForShaderStage(
                                << Utils::getShaderStageStringFromGLEnum(shader_stage.gl_stage)
                                << "], "
                                   "expected data:["
-                               << shader_stage.subroutine1_uniform_location << " OR "
-                               << shader_stage.subroutine2_uniform_location << " x 2, "
-                               << shader_stage.subroutine3_uniform_location << " OR "
-                               << shader_stage.subroutine4_uniform_location
+                               << shader_stage.function1_index << " OR " << shader_stage.function2_index << " x 2, "
+                               << shader_stage.function3_index << " OR " << shader_stage.function4_index
                                << " x 2], "
                                   "found data:["
                                << result_values[0] << ", " << result_values[1] << ", " << result_values[2] << ", "

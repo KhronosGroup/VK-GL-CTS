@@ -2575,6 +2575,7 @@ tcu::TestStatus unalignedSpecConstantTest(Context &context)
     {
         auto &alloc = buffer.getAllocation();
         memcpy(alloc.getHostPtr(), de::dataOrNull(outputData), de::dataSize(outputData));
+        flushAlloc(ctx.vkd, ctx.device, alloc);
     }
 
     DescriptorPoolBuilder poolBuilder;

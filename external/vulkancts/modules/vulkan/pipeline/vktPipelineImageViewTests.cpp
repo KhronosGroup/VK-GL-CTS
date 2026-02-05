@@ -136,6 +136,11 @@ ImageSamplingInstanceParams ImageViewTest::getImageSamplingInstanceParams(
 
 void ImageViewTest::checkSupport(Context &context) const
 {
+#ifndef CTS_USES_VULKANSC
+    if (isAstc3DFormat(m_imageFormat))
+        checkSupportAstcFormat(context, mapVkCompressedFormat(m_imageFormat));
+#endif // CTS_USES_VULKANSC
+
     checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
                                           m_pipelineConstructionType);
 
@@ -834,6 +839,26 @@ tcu::TestCaseGroup *createImageViewTests(tcu::TestContext &testCtx, PipelineCons
         VK_FORMAT_BC5_SNORM_BLOCK,
     };
 
+#ifndef CTS_USES_VULKANSC
+    const VkFormat astc3DFormats[] = {
+        VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT,  VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT, VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT,
+        VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT,   VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT,
+    };
+#endif // CTS_USES_VULKANSC
+
     de::MovePtr<tcu::TestCaseGroup> imageTests(new tcu::TestCaseGroup(testCtx, "image_view"));
     de::MovePtr<tcu::TestCaseGroup> viewTypeTests(new tcu::TestCaseGroup(testCtx, "view_type"));
 
@@ -868,6 +893,29 @@ tcu::TestCaseGroup *createImageViewTests(tcu::TestContext &testCtx, PipelineCons
             formatGroup->addChild(subresourceRangeTests.release());
             formatTests->addChild(formatGroup.release());
         }
+
+#ifndef CTS_USES_VULKANSC
+        for (size_t formatNdx = 0; formatNdx < DE_LENGTH_OF_ARRAY(astc3DFormats); formatNdx++)
+        {
+            const VkFormat format = astc3DFormats[formatNdx];
+
+            // only use astc 3D formats with 3D textures.
+            if (viewType != VK_IMAGE_VIEW_TYPE_3D)
+                break;
+
+            de::MovePtr<tcu::TestCaseGroup> formatGroup(
+                new tcu::TestCaseGroup(testCtx, getFormatCaseName(format).c_str()));
+
+            de::MovePtr<tcu::TestCaseGroup> subresourceRangeTests =
+                createSubresourceRangeTests(testCtx, pipelineConstructionType, viewType, format);
+            de::MovePtr<tcu::TestCaseGroup> componentSwizzleTests =
+                createComponentSwizzleTests(testCtx, pipelineConstructionType, viewType, format);
+
+            formatGroup->addChild(componentSwizzleTests.release());
+            formatGroup->addChild(subresourceRangeTests.release());
+            formatTests->addChild(formatGroup.release());
+        }
+#endif // CTS_USES_VULKANSC
 
         viewTypeGroup->addChild(formatTests.release());
         viewTypeTests->addChild(viewTypeGroup.release());

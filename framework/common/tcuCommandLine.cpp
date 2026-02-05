@@ -172,7 +172,9 @@ void registerOptions(de::cmdline::Parser &parser)
                                                                         {"xml-caselist", RUNMODE_DUMP_XML_CASELIST},
                                                                         {"txt-caselist", RUNMODE_DUMP_TEXT_CASELIST},
                                                                         {"stdout-caselist", RUNMODE_DUMP_STDOUT_CASELIST},
-                                                                        {"amber-verify", RUNMODE_VERIFY_AMBER_COHERENCY}};
+                                                                        {"amber-verify", RUNMODE_VERIFY_AMBER_COHERENCY},
+                                                                        {"txt-trie", RUNMODE_DUMP_TEXT_TRIE},
+                                                                        {"stdout-trie", RUNMODE_DUMP_STDOUT_TRIE}};
     static const NamedValue<WindowVisibility> s_visibilites[]        = {{"windowed", WINDOWVISIBILITY_WINDOWED},
                                                                         {"fullscreen", WINDOWVISIBILITY_FULLSCREEN},
                                                                         {"hidden", WINDOWVISIBILITY_HIDDEN}};
@@ -701,6 +703,15 @@ static void parseCaseTrie(CaseTreeNode *root, std::istream &in,
     }
 }
 
+static void trimString(std::string &s)
+{
+    // Trim at the start.
+    s.erase(s.begin(), std::find_if(s.begin(), s.end(), [](unsigned char ch) { return !std::isspace(ch); }));
+
+    // Trim at the end.
+    s.erase(std::find_if(s.rbegin(), s.rend(), [](unsigned char ch) { return !std::isspace(ch); }).base(), s.end());
+}
+
 static void parseSimpleCaseList(vector<CaseTreeNode *> &nodeStack, std::istream &in, bool reportDuplicates,
                                 std::unordered_map<test_case_hash_t, string> &hashCollisionDetectionMap)
 {
@@ -708,90 +719,105 @@ static void parseSimpleCaseList(vector<CaseTreeNode *> &nodeStack, std::istream 
     //         function fine, albeit more slowly, if that is not the case.
     int stackPos = 0;
     string curName;
+    string line;
 
-    for (;;)
+    // Outer loop to iterate every line.
+    while (in.good())
     {
-        const int curChr = in.get();
+        std::getline(in, line);
+        if (in.fail())
+            break;
 
-        if (curChr == std::char_traits<char>::eof() || curChr == 0 || curChr == '\n' || curChr == '\r')
+        trimString(line);
+        if (line.empty() || line.front() == '#') // Ignore empty lines and comments.
+            continue;
+
+        std::istringstream inputLine(line);
+
+        for (;;)
         {
-            if (curName.empty())
-                throw std::invalid_argument("Empty test case name");
+            const int curChr = inputLine.get();
 
-            test_case_hash_t hash = hashTestNodeName(curName, &hashCollisionDetectionMap);
-            if (!nodeStack[stackPos]->hasChild(hash))
+            if (curChr == std::char_traits<char>::eof() || curChr == 0 || curChr == '\n' || curChr == '\r')
             {
-                CaseTreeNode *const newChild = new CaseTreeNode(hash);
+                if (curName.empty())
+                    throw std::invalid_argument("Empty test case name");
 
-                try
+                test_case_hash_t hash = hashTestNodeName(curName, &hashCollisionDetectionMap);
+                if (!nodeStack[stackPos]->hasChild(hash))
                 {
-                    nodeStack[stackPos]->addChild(newChild);
-                }
-                catch (...)
-                {
-                    delete newChild;
-                    throw;
-                }
-            }
-            else if (reportDuplicates)
-                throw std::invalid_argument("Duplicate test case");
-
-            curName.clear();
-            stackPos = 0;
-
-            if (curChr == '\r' && in.peek() == '\n')
-                in.get();
-
-            {
-                const int nextChr = in.peek();
-
-                if (nextChr == std::char_traits<char>::eof() || nextChr == 0)
-                    break;
-            }
-        }
-        else if (curChr == '.')
-        {
-            if (curName.empty())
-                throw std::invalid_argument("Empty test group name");
-
-            if ((int)nodeStack.size() <= stackPos + 1)
-                nodeStack.resize(nodeStack.size() * 2, nullptr);
-
-            test_case_hash_t hash = hashTestNodeName(curName, &hashCollisionDetectionMap);
-            if (!nodeStack[stackPos + 1] || nodeStack[stackPos + 1]->getHash() != hash)
-            {
-                CaseTreeNode *curGroup = nodeStack[stackPos]->getChild(hash);
-
-                if (!curGroup)
-                {
-                    curGroup = new CaseTreeNode(hash);
+                    CaseTreeNode *const newChild = new CaseTreeNode(hash);
 
                     try
                     {
-                        nodeStack[stackPos]->addChild(curGroup);
+                        nodeStack[stackPos]->addChild(newChild);
                     }
                     catch (...)
                     {
-                        delete curGroup;
+                        delete newChild;
                         throw;
                     }
                 }
+                else if (reportDuplicates)
+                    throw std::invalid_argument("Duplicate test case");
 
-                nodeStack[stackPos + 1] = curGroup;
+                curName.clear();
+                stackPos = 0;
 
-                if ((int)nodeStack.size() > stackPos + 2)
-                    nodeStack[stackPos + 2] = nullptr; // Invalidate rest of entries
+                if (curChr == '\r' && inputLine.peek() == '\n')
+                    inputLine.get();
+
+                {
+                    const int nextChr = inputLine.peek();
+
+                    if (nextChr == std::char_traits<char>::eof() || nextChr == 0)
+                        break;
+                }
             }
+            else if (curChr == '.')
+            {
+                if (curName.empty())
+                    throw std::invalid_argument("Empty test group name");
 
-            DE_ASSERT(nodeStack[stackPos + 1]->getHash() == hash);
+                if ((int)nodeStack.size() <= stackPos + 1)
+                    nodeStack.resize(nodeStack.size() * 2, nullptr);
 
-            curName.clear();
-            stackPos += 1;
+                test_case_hash_t hash = hashTestNodeName(curName, &hashCollisionDetectionMap);
+                if (!nodeStack[stackPos + 1] || nodeStack[stackPos + 1]->getHash() != hash)
+                {
+                    CaseTreeNode *curGroup = nodeStack[stackPos]->getChild(hash);
+
+                    if (!curGroup)
+                    {
+                        curGroup = new CaseTreeNode(hash);
+
+                        try
+                        {
+                            nodeStack[stackPos]->addChild(curGroup);
+                        }
+                        catch (...)
+                        {
+                            delete curGroup;
+                            throw;
+                        }
+                    }
+
+                    nodeStack[stackPos + 1] = curGroup;
+
+                    if ((int)nodeStack.size() > stackPos + 2)
+                        nodeStack[stackPos + 2] = nullptr; // Invalidate rest of entries
+                }
+
+                DE_ASSERT(nodeStack[stackPos + 1]->getHash() == hash);
+
+                curName.clear();
+                stackPos += 1;
+            }
+            else if (isValidTestCaseNameChar((char)curChr))
+                curName += (char)curChr;
+            else
+                throw std::invalid_argument("Illegal character in test case name");
         }
-        else if (isValidTestCaseNameChar((char)curChr))
-            curName += (char)curChr;
-        else
-            throw std::invalid_argument("Illegal character in test case name");
     }
 }
 

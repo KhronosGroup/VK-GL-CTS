@@ -18,8 +18,7 @@
  *
  *//*!
  * \file vktBindingDescriptorCombinationTests.cpp
- * \brief Test using both descriptor buffers & legacy descriptors in
- *        the same command buffer.
+ * \brief Test using descriptor buffers in combination with other extensions.
  *//*--------------------------------------------------------------------*/
 
 #include "deSharedPtr.hpp"
@@ -27,13 +26,16 @@
 #include "deMemory.h"
 #include "vktBindingDescriptorCombinationTests.hpp"
 #include "vktTestGroupUtil.hpp"
+#include "vkBarrierUtil.hpp"
 #include "vkBufferWithMemory.hpp"
 #include "vkBuilderUtil.hpp"
+#include "vkImageUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkMemUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vkRefUtil.hpp"
+#include "tcuVectorUtil.hpp"
 #include <utility>
 #include <array>
 
@@ -47,6 +49,7 @@ using namespace vk;
 enum class TestType
 {
     DESCRIPTOR_BUFFER_AND_LEGACY_DESCRIPTOR_IN_COMMAND_BUFFER = 0,
+    DESCRIPTOR_BUFFER_CAPTURE_REPLAY_WITH_CUSTOM_BORDER_COLOR = 1,
 };
 
 struct TestParams
@@ -338,6 +341,234 @@ Move<VkPipeline> DescriptorCombinationTestInstance::createBasicPipeline(VkPipeli
     return createComputePipeline(vk, device, VK_NULL_HANDLE, &pipelineCreateInfo);
 }
 
+class DescriptorCustomBorderColorTestInstance : public TestInstance
+{
+public:
+    DescriptorCustomBorderColorTestInstance(Context &context, const TestParams &params);
+
+    tcu::TestStatus iterate() override;
+
+protected:
+    TestParams m_params;
+};
+
+DescriptorCustomBorderColorTestInstance::DescriptorCustomBorderColorTestInstance(Context &context,
+                                                                                 const TestParams &params)
+    : TestInstance(context)
+    , m_params(params)
+{
+}
+
+tcu::TestStatus DescriptorCustomBorderColorTestInstance::iterate()
+{
+    // Coverage for capture/replay with custom border color;
+    // Create samplers A, B, C  ->  replay samplers C, B, A;
+    // Draw uding samplers to verify that border colors are fine.
+
+    const DeviceInterface &vk = m_context.getDeviceInterface();
+    const VkDevice device     = m_context.getDevice();
+    Allocator &allocator      = m_context.getDefaultAllocator();
+
+    const uint32_t size        = 8;
+    const VkFormat format      = VK_FORMAT_R8G8B8A8_UNORM;
+    const uint32_t numSamplers = 3;
+    const VkExtent3D imageExtent{size, size, 1};
+    const std::vector<VkViewport> viewports{makeViewport(size, size)};
+    const std::vector<VkRect2D> scissors{makeRect2D(size, size)};
+    const uint32_t descriptorBufferIndices     = 0;
+    const VkDeviceSize descriptorBufferOffsets = 0;
+    auto srr                                   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    VkImageCreateInfo textureInfo = initVulkanStructure();
+    textureInfo.imageType         = VK_IMAGE_TYPE_2D;
+    textureInfo.format            = format;
+    textureInfo.extent            = imageExtent;
+    textureInfo.mipLevels         = 1u;
+    textureInfo.arrayLayers       = 1u;
+    textureInfo.samples           = VK_SAMPLE_COUNT_1_BIT;
+    textureInfo.tiling            = VK_IMAGE_TILING_OPTIMAL;
+    textureInfo.usage             = VK_IMAGE_USAGE_SAMPLED_BIT | VK_IMAGE_USAGE_TRANSFER_DST_BIT;
+
+    auto usage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+    ImageWithMemory textureImage(vk, device, allocator, textureInfo, MemoryRequirement::Any);
+    auto textureImageView = makeImageView(vk, device, *textureImage, VK_IMAGE_VIEW_TYPE_2D, format, srr);
+    ImageWithBuffer colorBuffer(vk, device, allocator, imageExtent, format, usage, VK_IMAGE_TYPE_2D);
+
+    VkSamplerCustomBorderColorCreateInfoEXT customBorderColorInfo = initVulkanStructure();
+    customBorderColorInfo.format                                  = format;
+
+    VkSamplerCreateInfo createInfo = initVulkanStructure(&customBorderColorInfo);
+    createInfo.flags               = VK_SAMPLER_CREATE_DESCRIPTOR_BUFFER_CAPTURE_REPLAY_BIT_EXT;
+    createInfo.addressModeU        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    createInfo.addressModeV        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    createInfo.addressModeW        = VK_SAMPLER_ADDRESS_MODE_CLAMP_TO_BORDER;
+    createInfo.maxAnisotropy       = 1.0f;
+    createInfo.borderColor         = VK_BORDER_COLOR_FLOAT_CUSTOM_EXT;
+
+    // create samplers A, B, C
+    tcu::Vec4 colors[]{
+        {1.0f, 0.0f, 0.0f, 1.0f},
+        {0.0f, 1.0f, 0.0f, 1.0f},
+        {1.0f, 0.0f, 1.0f, 1.0f},
+    };
+    Move<VkSampler> samplers[numSamplers];
+    for (uint32_t i = 0; i < numSamplers; ++i)
+    {
+        std::memcpy(&customBorderColorInfo.customBorderColor.float32, &colors[i], sizeof(VkClearColorValue));
+        samplers[i] = createSampler(vk, device, &createInfo);
+    }
+
+    auto renderPass  = makeRenderPass(vk, device, format);
+    auto framebuffer = makeFramebuffer(vk, device, *renderPass, colorBuffer.getImageView(), size, size);
+
+    DescriptorSetLayoutBuilder dslBuilder;
+    dslBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE, VK_SHADER_STAGE_FRAGMENT_BIT);
+    for (uint32_t i = 0; i < numSamplers; ++i)
+        dslBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    const auto descriptorSetLayout(
+        dslBuilder.build(vk, device, VK_DESCRIPTOR_SET_LAYOUT_CREATE_DESCRIPTOR_BUFFER_BIT_EXT));
+
+    // check how big descriptor buffer we need
+    VkDeviceSize bufferSize = 0ull;
+    vk.getDescriptorSetLayoutSizeEXT(device, *descriptorSetLayout, &bufferSize);
+
+    // create buffer for descriptor buffer
+    const auto bufferUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT | VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+                             VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT |
+                             VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+    VkBufferCreateInfo bufferCreateInfo = makeBufferCreateInfo(bufferSize, bufferUsage);
+    BufferWithMemory bufferWithMemory(vk, device, allocator, bufferCreateInfo,
+                                      MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress);
+
+    // get adress of descriptor buffer
+    VkBufferDeviceAddressInfo bufferAddressInfo                  = initVulkanStructure();
+    bufferAddressInfo.buffer                                     = *bufferWithMemory;
+    VkDescriptorBufferBindingInfoEXT descriptorBufferBindingInfo = initVulkanStructure();
+    descriptorBufferBindingInfo.address = vk.getBufferDeviceAddress(device, &bufferAddressInfo);
+    descriptorBufferBindingInfo.usage =
+        VK_BUFFER_USAGE_RESOURCE_DESCRIPTOR_BUFFER_BIT_EXT | VK_BUFFER_USAGE_SAMPLER_DESCRIPTOR_BUFFER_BIT_EXT;
+
+    auto &bufferAllocation        = bufferWithMemory.getAllocation();
+    char *descriptorBufferHostPtr = static_cast<char *>(bufferAllocation.getHostPtr());
+
+    // place texture image into descriptor buffer
+    const auto &dbProperties    = m_context.getDescriptorBufferPropertiesEXT();
+    const auto sampledImageSize = dbProperties.sampledImageDescriptorSize;
+    std::vector<uint8_t> firstDescriptorData(sampledImageSize);
+    VkDescriptorImageInfo imageInfo{VK_NULL_HANDLE, *textureImageView, VK_IMAGE_LAYOUT_ATTACHMENT_OPTIMAL};
+    VkDescriptorGetInfoEXT descGetInfo = initVulkanStructure();
+    descGetInfo.type                   = VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE;
+    descGetInfo.data.pSampledImage     = &imageInfo;
+    vk.getDescriptorEXT(device, &descGetInfo, sampledImageSize, descriptorBufferHostPtr);
+
+    // place samplers into descriptor buffer in order A, B, C (order of creation)
+    descriptorBufferHostPtr += sampledImageSize;
+    const auto samplerDescriptorSize = dbProperties.samplerDescriptorSize;
+    for (uint32_t i = 0; i < numSamplers; ++i)
+    {
+        descGetInfo.type          = VK_DESCRIPTOR_TYPE_SAMPLER;
+        descGetInfo.data.pSampler = &*samplers[i];
+        vk.getDescriptorEXT(device, &descGetInfo, samplerDescriptorSize, descriptorBufferHostPtr);
+        descriptorBufferHostPtr += samplerDescriptorSize;
+    }
+    flushAlloc(vk, device, bufferAllocation);
+
+    // capture replay data for all samplers
+    const auto samplerReplaySize = dbProperties.samplerCaptureReplayDescriptorDataSize;
+    std::vector<uint8_t> captureReplayData(numSamplers * samplerReplaySize);
+    auto *captureReplayDataPtr                 = captureReplayData.data();
+    VkSamplerCaptureDescriptorDataInfoEXT info = initVulkanStructure();
+    for (uint32_t i = 0; i < numSamplers; ++i)
+    {
+        info.sampler = *samplers[i];
+        vk.getSamplerOpaqueCaptureDescriptorDataEXT(device, &info, captureReplayDataPtr);
+        captureReplayDataPtr += samplerReplaySize;
+    }
+
+    // destroy all samplers
+    for (uint32_t i = 0; i < numSamplers; ++i)
+        samplers[i] = Move<VkSampler>();
+
+    // recreate samplers in order C, B, A (reverse order)
+    VkOpaqueCaptureDescriptorDataCreateInfoEXT opaqueCreateInfo = initVulkanStructure();
+    captureReplayDataPtr                                        = captureReplayData.data() + captureReplayData.size();
+    customBorderColorInfo.pNext                                 = &opaqueCreateInfo;
+    for (uint32_t i = 0; i < numSamplers; ++i)
+    {
+        captureReplayDataPtr -= samplerReplaySize;
+        std::memcpy(&customBorderColorInfo.customBorderColor.float32, &colors[numSamplers - 1 - i],
+                    sizeof(VkClearColorValue));
+        opaqueCreateInfo.opaqueCaptureDescriptorData = captureReplayDataPtr;
+        samplers[i]                                  = createSampler(vk, device, &createInfo);
+    }
+
+    // define empty VertexInputState, full screen triangle will be generated in vertex shader
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructure();
+
+    BinaryCollection &bc = m_context.getBinaryCollection();
+    auto vertModule      = createShaderModule(vk, device, bc.get("vert"));
+    auto fragModule      = createShaderModule(vk, device, bc.get("frag"));
+
+    auto pipelineLayout = makePipelineLayout(vk, device, *descriptorSetLayout);
+    auto graphicsPipeline =
+        makeGraphicsPipeline(vk, device, *pipelineLayout, *vertModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
+                             *fragModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, 0, 0,
+                             &vertexInputState, 0, 0, 0, 0, 0, 0, VK_PIPELINE_CREATE_DESCRIPTOR_BUFFER_BIT_EXT);
+
+    const auto bpg = VK_PIPELINE_BIND_POINT_GRAPHICS;
+    auto cmdPool   = makeCommandPool(vk, device, m_context.getUniversalQueueFamilyIndex());
+    auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
+
+    beginCommandBuffer(vk, *cmdBuffer);
+
+    // transition texture image to SHADER_READ_ONLY_OPTIMAL
+    const auto textureBarrier =
+        makeImageMemoryBarrier(VK_ACCESS_NONE, VK_ACCESS_SHADER_READ_BIT, VK_IMAGE_LAYOUT_UNDEFINED,
+                               VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL, *textureImage, srr);
+    vk.cmdPipelineBarrier(*cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0, 0,
+                          nullptr, 0, nullptr, 1, &textureBarrier);
+
+    beginRenderPass(vk, *cmdBuffer, *renderPass, *framebuffer, scissors[0], tcu::Vec4(1.0f, 0.0f, 0.0f, 1.0f));
+
+    vk.cmdBindPipeline(*cmdBuffer, bpg, *graphicsPipeline);
+    vk.cmdBindDescriptorBuffersEXT(*cmdBuffer, 1, &descriptorBufferBindingInfo);
+    vk.cmdSetDescriptorBufferOffsetsEXT(*cmdBuffer, bpg, *pipelineLayout, 0, 1, &descriptorBufferIndices,
+                                        &descriptorBufferOffsets);
+    vk.cmdDraw(*cmdBuffer, 3u, 1u, 0u, 0u);
+
+    endRenderPass(vk, *cmdBuffer);
+
+    copyImageToBuffer(vk, *cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), tcu::IVec2(size),
+                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
+    endCommandBuffer(vk, *cmdBuffer);
+    submitCommandsAndWait(vk, device, m_context.getUniversalQueue(), *cmdBuffer);
+
+    auto &allocation = colorBuffer.getBufferAllocation();
+    invalidateAlloc(vk, device, allocation);
+    uint8_t *bufferPtr = static_cast<uint8_t *>(allocation.getHostPtr());
+
+    // verify result
+    tcu::Vec4 expectedColor = tcu::mix(tcu::mix(colors[0], colors[1], 0.25f), colors[2], 0.7f);
+    for (uint32_t i = 0; i < 4u; ++i)
+    {
+        // it should be sufficient to verify just few fragments
+        uint8_t *fragment = bufferPtr + (i * 4 * (size + i * 2));
+        tcu::Vec4 renderedColor(fragment[0], fragment[1], fragment[2], fragment[3]);
+        renderedColor = renderedColor / 255.0f;
+
+        if (tcu::boolAny(tcu::greaterThan(tcu::absDiff(expectedColor, renderedColor), tcu::Vec4(0.05f))))
+        {
+            tcu::PixelBufferAccess resultAccess(mapVkFormat(format), size, size, 1, bufferPtr);
+            m_context.getTestContext().getLog() << tcu::LogImage("image", "", resultAccess);
+
+            return tcu::TestStatus::fail("Fail");
+        }
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 class DescriptorCombinationTestCase : public TestCase
 {
 public:
@@ -361,47 +592,94 @@ DescriptorCombinationTestCase::DescriptorCombinationTestCase(tcu::TestContext &t
 void DescriptorCombinationTestCase::checkSupport(Context &context) const
 {
     context.requireDeviceFunctionality("VK_EXT_descriptor_buffer");
-    context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+    if (m_params.testType == TestType::DESCRIPTOR_BUFFER_AND_LEGACY_DESCRIPTOR_IN_COMMAND_BUFFER)
+        context.requireDeviceFunctionality("VK_KHR_push_descriptor");
+    if (m_params.testType == TestType::DESCRIPTOR_BUFFER_CAPTURE_REPLAY_WITH_CUSTOM_BORDER_COLOR)
+    {
+        context.requireDeviceFunctionality("VK_EXT_custom_border_color");
+        if (!context.getDescriptorBufferFeaturesEXT().descriptorBufferCaptureReplay)
+            TCU_THROW(NotSupportedError, "descriptorBufferCaptureReplay is not supported");
+    }
 }
 
 void DescriptorCombinationTestCase::initPrograms(vk::SourceCollections &programs) const
 {
-    const char *compInitSrc{"#version 460\n"
-                            "layout(local_size_x = 4, local_size_y = 4) in;\n"
-                            "layout(push_constant) uniform Params { int mulVal; } params;\n"
-                            "layout(binding = 0, std430) buffer OutBuf { uint v[]; } outBuf;\n"
-                            "void main()\n"
-                            "{\n"
-                            "  outBuf.v[gl_LocalInvocationIndex] = gl_LocalInvocationIndex * params.mulVal;\n"
-                            "}\n"};
+    if (m_params.testType == TestType::DESCRIPTOR_BUFFER_AND_LEGACY_DESCRIPTOR_IN_COMMAND_BUFFER)
+    {
+        const char *compInitSrc{"#version 460\n"
+                                "layout(local_size_x = 4, local_size_y = 4) in;\n"
+                                "layout(push_constant) uniform Params { int mulVal; } params;\n"
+                                "layout(binding = 0, std430) buffer OutBuf { uint v[]; } outBuf;\n"
+                                "void main()\n"
+                                "{\n"
+                                "  outBuf.v[gl_LocalInvocationIndex] = gl_LocalInvocationIndex * params.mulVal;\n"
+                                "}\n"};
 
-    const char *compAddSrc{"#version 460\n"
-                           "layout(local_size_x = 4, local_size_y = 4) in;\n"
-                           "layout(push_constant) uniform Params { int addVal; } params;\n"
-                           "layout(binding = 0, std430) buffer InOutBuf { uint v[]; } inOutBuf;\n"
-                           "void main()\n"
-                           "{\n"
-                           "  uint value = inOutBuf.v[gl_LocalInvocationIndex];"
-                           "  inOutBuf.v[gl_LocalInvocationIndex] = value + params.addVal;\n"
-                           "}\n"};
+        const char *compAddSrc{"#version 460\n"
+                               "layout(local_size_x = 4, local_size_y = 4) in;\n"
+                               "layout(push_constant) uniform Params { int addVal; } params;\n"
+                               "layout(binding = 0, std430) buffer InOutBuf { uint v[]; } inOutBuf;\n"
+                               "void main()\n"
+                               "{\n"
+                               "  uint value = inOutBuf.v[gl_LocalInvocationIndex];"
+                               "  inOutBuf.v[gl_LocalInvocationIndex] = value + params.addVal;\n"
+                               "}\n"};
 
-    programs.glslSources.add("comp_init") << glu::ComputeSource(compInitSrc);
-    programs.glslSources.add("comp_add") << glu::ComputeSource(compAddSrc);
+        programs.glslSources.add("comp_init") << glu::ComputeSource(compInitSrc);
+        programs.glslSources.add("comp_add") << glu::ComputeSource(compAddSrc);
+    }
+    else if (m_params.testType == TestType::DESCRIPTOR_BUFFER_CAPTURE_REPLAY_WITH_CUSTOM_BORDER_COLOR)
+    {
+        programs.glslSources.add("vert") << glu::VertexSource(R"(
+            #version 460
+            void main()
+            {
+                const float x = (-1.0+4.0*((gl_VertexIndex & 2)>>1));
+                const float y = ( 1.0-4.0* (gl_VertexIndex % 2));
+                gl_Position = vec4(x, y, 1.0, 1.0);
+            })");
+
+        programs.glslSources.add("frag") << glu::FragmentSource(R"(
+            #version 460
+            layout(binding = 0) uniform texture2D tex;
+            layout(binding = 1) uniform sampler samplerA;
+            layout(binding = 2) uniform sampler samplerB;
+            layout(binding = 3) uniform sampler samplerC;
+            layout(location = 0) out vec4 outColor;
+            void main()
+            {
+                vec2 uv = vec2(2.0, 2.0);
+                vec4 colorA = texture(sampler2D(tex, samplerA), uv);
+                vec4 colorB = texture(sampler2D(tex, samplerB), uv);
+                vec4 colorC = texture(sampler2D(tex, samplerC), uv);
+                outColor = mix(mix(colorA, colorB, 0.25), colorC, 0.7);
+            })");
+    }
 }
 
 TestInstance *DescriptorCombinationTestCase::createInstance(Context &context) const
 {
+    if (m_params.testType == TestType::DESCRIPTOR_BUFFER_CAPTURE_REPLAY_WITH_CUSTOM_BORDER_COLOR)
+        return new DescriptorCustomBorderColorTestInstance(context, m_params);
+
     return new DescriptorCombinationTestInstance(context, m_params);
 }
 
 void populateDescriptorCombinationTests(tcu::TestCaseGroup *topGroup)
 {
-    tcu::TestContext &testCtx = topGroup->getTestContext();
+    std::pair<std::string, TestType> caseList[]{{"descriptor_buffer_and_legacy_descriptor_in_command_buffer",
+                                                 TestType::DESCRIPTOR_BUFFER_AND_LEGACY_DESCRIPTOR_IN_COMMAND_BUFFER},
+                                                {"descriptor_buffer_capture_replay_with_custom_border_color",
+                                                 TestType::DESCRIPTOR_BUFFER_CAPTURE_REPLAY_WITH_CUSTOM_BORDER_COLOR}};
 
+    tcu::TestContext &testCtx = topGroup->getTestContext();
     de::MovePtr<tcu::TestCaseGroup> basicGroup(new tcu::TestCaseGroup(testCtx, "basic"));
-    basicGroup->addChild(
-        new DescriptorCombinationTestCase(testCtx, "descriptor_buffer_and_legacy_descriptor_in_command_buffer",
-                                          {TestType::DESCRIPTOR_BUFFER_AND_LEGACY_DESCRIPTOR_IN_COMMAND_BUFFER}));
+
+    for (const auto &caseInfo : caseList)
+    {
+        TestParams params{caseInfo.second};
+        basicGroup->addChild(new DescriptorCombinationTestCase(testCtx, caseInfo.first, params));
+    }
 
     topGroup->addChild(basicGroup.release());
 }

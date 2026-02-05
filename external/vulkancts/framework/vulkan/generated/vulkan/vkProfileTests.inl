@@ -18,6 +18,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkVulkan13Features);
 	auto& vkFeatures = vkFeatures2.features;
 	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
+	DE_UNREF(vkFeatures);
 
 	VkPhysicalDeviceVulkan11Properties vkVulkan11Properties = initVulkanStructure();
 	VkPhysicalDeviceVulkan12Properties vkVulkan12Properties = initVulkanStructure(&vkVulkan11Properties);
@@ -26,6 +27,7 @@ tcu::TestStatus validate_roadmap_2022(Context& context)
 	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure(&vkVulkan13Properties);
 	auto& vkProperties = vkProperties2.properties;
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
+	DE_UNREF(vkProperties);
 
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan10requirements
@@ -243,16 +245,29 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 
 	VkPhysicalDeviceVulkan11Features vkVulkan11Features = initVulkanStructure();
 	VkPhysicalDeviceVulkan12Features vkVulkan12Features = initVulkanStructure(&vkVulkan11Features);
+	VkPhysicalDeviceDynamicRenderingLocalReadFeaturesKHR vkDynamicRenderingLocalReadFeaturesKHR = initVulkanStructure(&vkVulkan12Features);
+	VkPhysicalDeviceShaderQuadControlFeaturesKHR vkShaderQuadControlFeaturesKHR = initVulkanStructure(&vkDynamicRenderingLocalReadFeaturesKHR);
+	VkPhysicalDeviceShaderMaximalReconvergenceFeaturesKHR vkShaderMaximalReconvergenceFeaturesKHR = initVulkanStructure(&vkShaderQuadControlFeaturesKHR);
+	VkPhysicalDeviceShaderSubgroupUniformControlFlowFeaturesKHR vkShaderSubgroupUniformControlFlowFeaturesKHR = initVulkanStructure(&vkShaderMaximalReconvergenceFeaturesKHR);
+	VkPhysicalDeviceShaderSubgroupRotateFeaturesKHR vkShaderSubgroupRotateFeaturesKHR = initVulkanStructure(&vkShaderSubgroupUniformControlFlowFeaturesKHR);
+	VkPhysicalDeviceShaderFloatControls2FeaturesKHR vkShaderFloatControls2FeaturesKHR = initVulkanStructure(&vkShaderSubgroupRotateFeaturesKHR);
+	VkPhysicalDeviceShaderExpectAssumeFeaturesKHR vkShaderExpectAssumeFeaturesKHR = initVulkanStructure(&vkShaderFloatControls2FeaturesKHR);
+	VkPhysicalDeviceLineRasterizationFeaturesKHR vkLineRasterizationFeaturesKHR = initVulkanStructure(&vkShaderExpectAssumeFeaturesKHR);
+	VkPhysicalDeviceVertexAttributeDivisorFeaturesKHR vkVertexAttributeDivisorFeaturesKHR = initVulkanStructure(&vkLineRasterizationFeaturesKHR);
+	VkPhysicalDeviceIndexTypeUint8FeaturesKHR vkIndexTypeUint8FeaturesKHR = initVulkanStructure(&vkVertexAttributeDivisorFeaturesKHR);
+	VkPhysicalDeviceMaintenance5FeaturesKHR vkMaintenance5FeaturesKHR = initVulkanStructure(&vkIndexTypeUint8FeaturesKHR);
 
-	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkVulkan12Features);
+	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkMaintenance5FeaturesKHR);
 	auto& vkFeatures = vkFeatures2.features;
 	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
+	DE_UNREF(vkFeatures);
 
 	VkPhysicalDeviceVulkan12Properties vkVulkan12Properties = initVulkanStructure();
 
 	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure(&vkVulkan12Properties);
 	auto& vkProperties = vkProperties2.properties;
 	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
+	DE_UNREF(vkProperties);
 
 	const std::vector<FeatureEntry> featureTable {
 		// vulkan10requirements_roadmap2024
@@ -270,6 +285,45 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderInt8),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, shaderFloat16),
 		ROADMAP_FEATURE_ITEM(vkVulkan12Features, storageBuffer8BitAccess),
+
+
+		// vulkanextensionrequirements_roadmap2024
+		ROADMAP_FEATURE_ITEM(vkDynamicRenderingLocalReadFeaturesKHR, dynamicRenderingLocalRead),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderQuadControlFeaturesKHR, shaderQuadControl),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderMaximalReconvergenceFeaturesKHR, shaderMaximalReconvergence),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderSubgroupUniformControlFlowFeaturesKHR, shaderSubgroupUniformControlFlow),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderSubgroupRotateFeaturesKHR, shaderSubgroupRotate),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderFloatControls2FeaturesKHR, shaderFloatControls2),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderExpectAssumeFeaturesKHR, shaderExpectAssume),
+
+
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, rectangularLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, bresenhamLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, smoothLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledRectangularLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledBresenhamLines),
+		ROADMAP_FEATURE_ITEM(vkLineRasterizationFeaturesKHR, stippledSmoothLines),
+
+
+		ROADMAP_FEATURE_ITEM(vkVertexAttributeDivisorFeaturesKHR, vertexAttributeInstanceRateDivisor),
+
+
+		ROADMAP_FEATURE_ITEM(vkIndexTypeUint8FeaturesKHR, indexTypeUint8),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance5FeaturesKHR, maintenance5),
 	};
 	for (const auto &testedFeature : featureTable)
 	{
@@ -329,7 +383,183 @@ tcu::TestStatus validate_roadmap_2024(Context& context)
 	return tcu::TestStatus::pass("Profile supported");
 }
 
+tcu::TestStatus validate_roadmap_2026(Context& context)
+{
+	const VkBool32 checkAlways = true;
+	bool oneOrMoreChecksFailed = false;
+	auto pd = context.getPhysicalDevice();
+	const auto &vki = context.getInstanceInterface();
+	TestLog& log = context.getTestContext().getLog();
+
+	VkPhysicalDeviceVulkan14Features vkVulkan14Features = initVulkanStructure();
+	VkPhysicalDeviceRobustness2FeaturesKHR vkRobustness2FeaturesKHR = initVulkanStructure(&vkVulkan14Features);
+	VkPhysicalDevicePipelineBinaryFeaturesKHR vkPipelineBinaryFeaturesKHR = initVulkanStructure(&vkRobustness2FeaturesKHR);
+	VkPhysicalDeviceFragmentShadingRateFeaturesKHR vkFragmentShadingRateFeaturesKHR = initVulkanStructure(&vkPipelineBinaryFeaturesKHR);
+	VkPhysicalDeviceShaderClockFeaturesKHR vkShaderClockFeaturesKHR = initVulkanStructure(&vkFragmentShadingRateFeaturesKHR);
+	VkPhysicalDeviceWorkgroupMemoryExplicitLayoutFeaturesKHR vkWorkgroupMemoryExplicitLayoutFeaturesKHR = initVulkanStructure(&vkShaderClockFeaturesKHR);
+	VkPhysicalDeviceComputeShaderDerivativesFeaturesKHR vkComputeShaderDerivativesFeaturesKHR = initVulkanStructure(&vkWorkgroupMemoryExplicitLayoutFeaturesKHR);
+	VkPhysicalDeviceMaintenance7FeaturesKHR vkMaintenance7FeaturesKHR = initVulkanStructure(&vkComputeShaderDerivativesFeaturesKHR);
+	VkPhysicalDeviceMaintenance8FeaturesKHR vkMaintenance8FeaturesKHR = initVulkanStructure(&vkMaintenance7FeaturesKHR);
+	VkPhysicalDeviceMaintenance9FeaturesKHR vkMaintenance9FeaturesKHR = initVulkanStructure(&vkMaintenance8FeaturesKHR);
+	VkPhysicalDeviceDepthClampZeroOneFeaturesKHR vkDepthClampZeroOneFeaturesKHR = initVulkanStructure(&vkMaintenance9FeaturesKHR);
+	VkPhysicalDeviceCopyMemoryIndirectFeaturesKHR vkCopyMemoryIndirectFeaturesKHR = initVulkanStructure(&vkDepthClampZeroOneFeaturesKHR);
+	VkPhysicalDeviceShaderUntypedPointersFeaturesKHR vkShaderUntypedPointersFeaturesKHR = initVulkanStructure(&vkCopyMemoryIndirectFeaturesKHR);
+	VkPhysicalDevicePresentModeFifoLatestReadyFeaturesKHR vkPresentModeFifoLatestReadyFeaturesKHR = initVulkanStructure(&vkShaderUntypedPointersFeaturesKHR);
+	VkPhysicalDevicePresentId2FeaturesKHR vkPresentId2FeaturesKHR = initVulkanStructure(&vkPresentModeFifoLatestReadyFeaturesKHR);
+	VkPhysicalDevicePresentWait2FeaturesKHR vkPresentWait2FeaturesKHR = initVulkanStructure(&vkPresentId2FeaturesKHR);
+	VkPhysicalDeviceSwapchainMaintenance1FeaturesKHR vkSwapchainMaintenance1FeaturesKHR = initVulkanStructure(&vkPresentWait2FeaturesKHR);
+	VkPhysicalDeviceCooperativeMatrixFeaturesKHR vkCooperativeMatrixFeaturesKHR = initVulkanStructure(&vkSwapchainMaintenance1FeaturesKHR);
+
+	VkPhysicalDeviceFeatures2 vkFeatures2 = initVulkanStructure(&vkCooperativeMatrixFeaturesKHR);
+	auto& vkFeatures = vkFeatures2.features;
+	vki.getPhysicalDeviceFeatures2(pd, &vkFeatures2);
+	DE_UNREF(vkFeatures);
+
+
+	VkPhysicalDeviceProperties2 vkProperties2 = initVulkanStructure();
+	auto& vkProperties = vkProperties2.properties;
+	vki.getPhysicalDeviceProperties2(pd, &vkProperties2);
+	DE_UNREF(vkProperties);
+
+	const std::vector<FeatureEntry> featureTable {
+		// vulkan14requirements_roadmap2026
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, hostImageCopy),
+		ROADMAP_FEATURE_ITEM(vkVulkan14Features, pushDescriptor),
+
+
+		// vulkanextensionrequirements_roadmap2026
+		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, robustBufferAccess2),
+		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, robustImageAccess2),
+		ROADMAP_FEATURE_ITEM(vkRobustness2FeaturesKHR, nullDescriptor),
+
+
+		ROADMAP_FEATURE_ITEM(vkPipelineBinaryFeaturesKHR, pipelineBinaries),
+
+
+		ROADMAP_FEATURE_ITEM(vkFragmentShadingRateFeaturesKHR, pipelineFragmentShadingRate),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderClockFeaturesKHR, shaderSubgroupClock),
+
+
+		ROADMAP_FEATURE_ITEM(vkWorkgroupMemoryExplicitLayoutFeaturesKHR, workgroupMemoryExplicitLayout),
+
+
+		ROADMAP_FEATURE_ITEM(vkComputeShaderDerivativesFeaturesKHR, computeDerivativeGroupLinear),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance7FeaturesKHR, maintenance7),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance8FeaturesKHR, maintenance8),
+
+
+		ROADMAP_FEATURE_ITEM(vkMaintenance9FeaturesKHR, maintenance9),
+
+
+		ROADMAP_FEATURE_ITEM(vkDepthClampZeroOneFeaturesKHR, depthClampZeroOne),
+
+
+		ROADMAP_FEATURE_ITEM(vkCopyMemoryIndirectFeaturesKHR, indirectMemoryCopy),
+
+
+		ROADMAP_FEATURE_ITEM(vkShaderUntypedPointersFeaturesKHR, shaderUntypedPointers),
+
+
+		ROADMAP_FEATURE_ITEM(vkPresentModeFifoLatestReadyFeaturesKHR, presentModeFifoLatestReady),
+
+
+		ROADMAP_FEATURE_ITEM(vkPresentId2FeaturesKHR, presentId2),
+
+
+		ROADMAP_FEATURE_ITEM(vkPresentWait2FeaturesKHR, presentWait2),
+
+
+		ROADMAP_FEATURE_ITEM(vkSwapchainMaintenance1FeaturesKHR, swapchainMaintenance1),
+
+
+		ROADMAP_FEATURE_ITEM(vkCooperativeMatrixFeaturesKHR, cooperativeMatrix),
+	};
+	for (const auto &testedFeature : featureTable)
+	{
+	    if (!testedFeature.fieldPtr[0])
+	    {
+	        log << TestLog::Message
+	            << "Feature " << testedFeature.fieldName << " is not supported"
+	            << TestLog::EndMessage;
+	        oneOrMoreChecksFailed = true;
+	    }
+	}
+
+	const std::vector<FeatureLimitTableItem> propertyTable {
+		// vulkan10requirements_roadmap2026
+		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorUniformBuffers), LIM_MIN_UINT32(200) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorStorageBuffers), LIM_MIN_UINT32(200) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxPerStageDescriptorInputAttachments), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxDescriptorSetStorageBuffers), LIM_MIN_UINT32(1800) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxDescriptorSetUniformBuffers), LIM_MIN_UINT32(1800) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxDescriptorSetInputAttachments), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxVertexOutputComponents), LIM_MIN_UINT32(124) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationControlPerVertexInputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationControlPerVertexOutputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationControlTotalOutputComponents), LIM_MIN_UINT32(4096) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationEvaluationInputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxTessellationEvaluationOutputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxGeometryOutputComponents), LIM_MIN_UINT32(128) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFragmentInputComponents), LIM_MIN_UINT32(112) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFragmentOutputAttachments), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxComputeSharedMemorySize), LIM_MIN_UINT32(32768) },
+		{ PN(checkAlways), PN(vkProperties.limits.subPixelPrecisionBits), LIM_MIN_UINT32(8) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxViewportDimensions[0]), LIM_MIN_UINT32(8192) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxViewportDimensions[1]), LIM_MIN_UINT32(8192) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFramebufferWidth), LIM_MIN_UINT32(8192) },
+		{ PN(checkAlways), PN(vkProperties.limits.maxFramebufferHeight), LIM_MIN_UINT32(8192) },
+	};
+	for (const auto& testedProperty : propertyTable)
+	    oneOrMoreChecksFailed |= !validateLimit(testedProperty, log);
+
+	std::vector<std::string> extensionList {
+		"VK_KHR_robustness2",
+		"VK_KHR_pipeline_binary",
+		"VK_KHR_fragment_shading_rate",
+		"VK_KHR_shader_clock",
+		"VK_KHR_workgroup_memory_explicit_layout",
+		"VK_KHR_compute_shader_derivatives",
+		"VK_KHR_maintenance7",
+		"VK_KHR_maintenance8",
+		"VK_KHR_maintenance9",
+		"VK_KHR_depth_clamp_zero_one",
+		"VK_KHR_copy_memory_indirect",
+		"VK_KHR_shader_untyped_pointers",
+		"VK_KHR_surface",
+		"VK_KHR_swapchain",
+		"VK_KHR_get_surface_capabilities2",
+		"VK_KHR_present_mode_fifo_latest_ready",
+		"VK_KHR_present_id2",
+		"VK_KHR_present_wait2",
+		"VK_KHR_surface_maintenance1",
+		"VK_KHR_swapchain_maintenance1",
+		"VK_KHR_cooperative_matrix"
+	};
+	const auto deviceExtensions = enumerateDeviceExtensionProperties(vki, pd, nullptr);
+	for (const auto& testedExtension : extensionList)
+	{
+	    if (isExtensionStructSupported(deviceExtensions, RequiredExtension(testedExtension)) ||
+	        context.isInstanceFunctionalitySupported(testedExtension))
+	        continue;
+	    log << TestLog::Message
+	        << testedExtension << " is not supported"
+	        << TestLog::EndMessage;
+	    oneOrMoreChecksFailed = true;
+	}
+
+	if (oneOrMoreChecksFailed)
+	    TCU_THROW(NotSupportedError, "Profile not supported");
+	return tcu::TestStatus::pass("Profile supported");
+}
+
 static const std::vector<ProfileEntry> profileEntries {
 	{ "roadmap_2022", checkApiVersionSupport<1, 3>, validate_roadmap_2022 },
 	{ "roadmap_2024", checkApiVersionSupport<1, 3>, validate_roadmap_2024 },
+	{ "roadmap_2026", checkApiVersionSupport<1, 4>, validate_roadmap_2026 },
 };

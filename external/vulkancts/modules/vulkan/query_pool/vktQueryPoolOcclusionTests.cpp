@@ -397,10 +397,6 @@ BasicOcclusionQueryTestInstance::BasicOcclusionQueryTestInstance(vkt::Context &c
         testVector.queryResultsStride == sizeof(uint64_t) && testVector.queryResultsAvailability == false &&
         testVector.primitiveTopology == VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
 
-    if ((m_testVector.queryControlFlags & VK_QUERY_CONTROL_PRECISE_BIT) &&
-        !m_context.getDeviceFeatures().occlusionQueryPrecise)
-        throw tcu::NotSupportedError("Precise occlusion queries are not supported");
-
     m_stateObjects.reset(new StateObjects(m_context.getDeviceInterface(), m_context, NUM_VERTICES_IN_DRAWCALL,
                                           m_testVector.primitiveTopology, m_testVector.noColorAttachments));
 
@@ -439,15 +435,6 @@ tcu::TestStatus BasicOcclusionQueryTestInstance::iterate(void)
     const VkDevice device     = m_context.getDevice();
     const VkQueue queue       = m_context.getUniversalQueue();
     const DeviceInterface &vk = m_context.getDeviceInterface();
-
-    if (m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
-    {
-        // Check VK_EXT_host_query_reset is supported
-        m_context.requireDeviceFunctionality("VK_EXT_host_query_reset");
-        if (m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
-            throw tcu::NotSupportedError(
-                std::string("Implementation doesn't support resetting queries from the host").c_str());
-    }
 
     const CmdPoolCreateInfo cmdPoolCreateInfo(m_context.getUniversalQueueFamilyIndex());
     Move<VkCommandPool> cmdPool = createCommandPool(vk, device, &cmdPoolCreateInfo);
@@ -701,10 +688,6 @@ OcclusionQueryTestInstance::OcclusionQueryTestInstance(vkt::Context &context,
     const VkDevice device     = m_context.getDevice();
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
-    if ((m_testVector.queryControlFlags & VK_QUERY_CONTROL_PRECISE_BIT) &&
-        !m_context.getDeviceFeatures().occlusionQueryPrecise)
-        throw tcu::NotSupportedError("Precise occlusion queries are not supported");
-
     m_stateObjects.reset(new StateObjects(m_context.getDeviceInterface(), m_context,
                                           NUM_VERTICES_IN_DRAWCALL + NUM_VERTICES_IN_PARTIALLY_OCCLUDED_DRAWCALL +
                                               NUM_VERTICES_IN_OCCLUDER_DRAWCALL,
@@ -759,15 +742,6 @@ tcu::TestStatus OcclusionQueryTestInstance::iterate(void)
     const DeviceInterface &vk = m_context.getDeviceInterface();
     tcu::TestLog &log         = m_context.getTestContext().getLog();
     std::vector<tcu::Vec4> vertices(NUM_VERTICES);
-
-    if (m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
-    {
-        // Check VK_EXT_host_query_reset is supported
-        m_context.requireDeviceFunctionality("VK_EXT_host_query_reset");
-        if (m_context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
-            throw tcu::NotSupportedError(
-                std::string("Implementation doesn't support resetting queries from the host").c_str());
-    }
 
     // 1st triangle
     vertices[START_VERTEX + 0] = tcu::Vec4(0.5, 0.5, 0.5, 1.0);
@@ -1431,6 +1405,21 @@ private:
     {
         if (m_testVector.useDeviceAddressCommands)
             context.requireDeviceFunctionality("VK_KHR_device_address_commands");
+
+        if ((m_testVector.queryControlFlags & vk::VK_QUERY_CONTROL_PRECISE_BIT) &&
+            !context.getDeviceFeatures().occlusionQueryPrecise)
+            throw tcu::NotSupportedError("Precise occlusion queries are not supported");
+
+        if (std::is_same<Instance, BasicOcclusionQueryTestInstance>::value)
+        {
+            if (m_testVector.queryResultsMode == RESULTS_MODE_GET_RESET)
+            {
+                // Check VK_EXT_host_query_reset is supported
+                context.requireDeviceFunctionality("VK_EXT_host_query_reset");
+                if (context.getHostQueryResetFeatures().hostQueryReset == VK_FALSE)
+                    throw tcu::NotSupportedError("Implementation doesn't support resetting queries from the host");
+            }
+        }
     }
 
     vkt::TestInstance *createInstance(vkt::Context &context) const

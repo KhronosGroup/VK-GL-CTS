@@ -5266,8 +5266,9 @@ qpTestResult_e ReconvergenceTestComputeInstance::calculateAndLogResult(const tcu
     const uint32_t maxLoc = static_cast<uint32_t>(ref.size());
     tcu::TestLog &log     = m_context.getTestContext().getLog();
     qpTestResult res      = QP_TEST_RESULT_PASS;
-    DE_ASSERT(subgroupSize * shaderMaxLoc <= maxLoc);
+    DE_ASSERT(invocationStride * shaderMaxLoc <= maxLoc);
     DE_UNREF(shaderMaxLoc);
+    DE_UNREF(subgroupSize);
 
     uint32_t mismatchCount            = 0u;
     const uint32_t printMismatchCount = 5u;

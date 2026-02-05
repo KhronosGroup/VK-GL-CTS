@@ -54,6 +54,8 @@ add_subdirectory(video)
 add_subdirectory(shader_object)
 add_subdirectory(device_generated_commands)
 add_subdirectory(cooperative_vector)
+add_subdirectory(tensor)
+add_subdirectory(data_graph)
 
 include_directories(
 	api
@@ -103,14 +105,16 @@ include_directories(
 	reconvergence
 	mesh_shader
 	fragment_shading_barycentric
-	video
 	cooperative_vector
 	${DEQP_INL_DIR}
 	sc
-	video
 	shader_object
 	device_generated_commands
+	tensor
+	data_graph
 	)
+
+include_directories(video)
 
 set(DEQP_VK_SRCS
 	vktTestCaseDefs.hpp
@@ -182,11 +186,16 @@ set(DEQP_VK_LIBS
 	deqp-vk-reconvergence
 	deqp-vk-mesh-shader
 	deqp-vk-fragment-shading-barycentric
-	deqp-vk-video
 	deqp-vk-shader-object
 	deqp-vk-dgc
 	deqp-vk-cooperative_vector
+	deqp-vk-tensor
+	deqp-vk-data-graph
 	)
+
+list(APPEND DEQP_VK_LIBS
+	deqp-vk-video
+)
 
 set(DEQP_VKSC_LIBS
 	tcutil
@@ -246,6 +255,10 @@ endif ()
 PCH(DEQP_VK_SRCS pch.cpp)
 
 add_deqp_module(deqp-vk "${DEQP_VK_SRCS}" "${DEQP_VK_LIBS}" "tcutil-platform" vktTestPackageEntry.cpp )
+
+if (NOT DEQP_DISABLE_VK_VIDEO_TESTS)
+	target_compile_definitions(deqp-vk-package PRIVATE DE_BUILD_VIDEO)
+endif()
 
 add_deqp_module_skip_android(deqp-vksc "${DEQP_VK_SRCS}" "${DEQP_VKSC_LIBS}" "tcutil-sc-platform" vktTestPackageEntrySC.cpp)
 

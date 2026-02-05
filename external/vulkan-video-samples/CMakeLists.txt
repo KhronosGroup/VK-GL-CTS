@@ -17,7 +17,7 @@ if (CMAKE_COMPILER_IS_GNUCC OR CMAKE_C_COMPILER_ID MATCHES "Clang")
     else()
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -std=c99 ${COMMON_COMPILE_FLAGS}")
     endif()
-    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_COMPILE_FLAGS} -std=c++11 -fno-rtti")
+    set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} ${COMMON_COMPILE_FLAGS} -std=c++17 -fno-rtti")
     if (UNIX)
         set(CMAKE_C_FLAGS "${CMAKE_C_FLAGS} -fvisibility=hidden")
         set(CMAKE_CXX_FLAGS "${CMAKE_CXX_FLAGS} -fvisibility=hidden")
@@ -28,10 +28,23 @@ set(VK_VIDEO_ENCODER_LIBS_SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/src/vk_video_
 set(VK_VIDEO_COMMON_LIBS_SOURCE_ROOT "${CMAKE_CURRENT_SOURCE_DIR}/src/common/libs" CACHE STRING "Root path to common vkvideo libs sources")
 set(SCRIPTS_DIR "${CMAKE_CURRENT_SOURCE_DIR}/src/scripts")
 
+# Include CMake modules from VVS
+list(APPEND CMAKE_MODULE_PATH "${CMAKE_CURRENT_SOURCE_DIR}/src/cmake")
+
+# Use FindShaderc.cmake to find or build shaderc
+include(FetchContent)
+include(FindShaderc)
+
 include_directories(
     ${CMAKE_CURRENT_SOURCE_DIR}/src/common/include
     ${CMAKE_CURRENT_SOURCE_DIR}/../../external/vulkancts/framework/vulkan/generated/vulkan
     )
+
+# Add shaderc includes if found by FindShaderc.cmake
+if(SHADERC_INCLUDE_DIR)
+    include_directories(${SHADERC_INCLUDE_DIR})
+    message(STATUS "VVS: Using shaderc includes from ${SHADERC_INCLUDE_DIR}")
+endif()
 
 macro(generate_dispatch_table out)
     add_custom_command(OUTPUT ${out}
@@ -168,3 +181,12 @@ message(STATUS "VULKAN_VIDEO_ENCODER_INCLUDE_DIRS: ${VULKAN_VIDEO_ENCODER_INCLUD
 message(STATUS "VULKAN_VIDEO_ENCODER_LIBRARY: ${VULKAN_VIDEO_ENCODER_LIBRARY}")
 message(STATUS "VULKAN_VIDEO_PARSER_INCLUDE_DIRS: ${VULKAN_VIDEO_PARSER_INCLUDE_DIRS}")
 message(STATUS "VULKAN_VIDEO_PARSER_LIBRARY: ${VULKAN_VIDEO_PARSER_LIBRARY}")
+
+# Report shaderc status
+if(SHADERC_SHARED_LIBRARY)
+    message(STATUS "VVS: Using shaderc library: ${SHADERC_SHARED_LIBRARY}")
+elseif(SHADERC_LIB)
+    message(STATUS "VVS: Building shaderc from source as: ${SHADERC_LIB}")
+else()
+    message(WARNING "VVS: Shaderc not found - shader compilation will not be available")
+endif()

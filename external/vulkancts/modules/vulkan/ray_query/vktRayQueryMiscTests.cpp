@@ -64,10 +64,25 @@ void checkRayQuerySupport(Context &context)
     context.requireDeviceFunctionality("VK_KHR_ray_query");
 }
 
+struct DynamicIndexingParams
+{
+    bool useFirst = false; // Make the code using the queries come before the code that initializes them.
+
+    uint32_t getLocalSizeX() const
+    {
+        return (useFirst ? 2u : 48u);
+    }
+
+    uint32_t getNumQueries() const
+    {
+        return (useFirst ? 2u : 48u);
+    }
+};
+
 class DynamicIndexingCase : public vkt::TestCase
 {
 public:
-    DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name);
+    DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name, const DynamicIndexingParams &params);
     virtual ~DynamicIndexingCase(void)
     {
     }
@@ -76,31 +91,35 @@ public:
     virtual void checkSupport(Context &context) const override;
     virtual TestInstance *createInstance(Context &context) const override;
 
-    // Constants and data types.
-    static constexpr uint32_t kLocalSizeX = 48u;
-    static constexpr uint32_t kNumQueries = 48u;
-
     // This must match the shader.
     struct InputData
     {
         uint32_t goodQueryIndex;
         uint32_t proceedQueryIndex;
     };
+
+protected:
+    const DynamicIndexingParams m_params;
 };
 
 class DynamicIndexingInstance : public vkt::TestInstance
 {
 public:
-    DynamicIndexingInstance(Context &context);
+    DynamicIndexingInstance(Context &context, const DynamicIndexingParams &params);
     virtual ~DynamicIndexingInstance(void)
     {
     }
 
     virtual tcu::TestStatus iterate(void);
+
+protected:
+    const DynamicIndexingParams m_params;
 };
 
-DynamicIndexingCase::DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name)
+DynamicIndexingCase::DynamicIndexingCase(tcu::TestContext &testCtx, const std::string &name,
+                                         const DynamicIndexingParams &params)
     : vkt::TestCase(testCtx, name)
+    , m_params(params)
 {
 }
 
@@ -110,11 +129,22 @@ void DynamicIndexingCase::initPrograms(vk::SourceCollections &programCollection)
 
     std::ostringstream src;
 
+    const std::string initializationLoop =
+        "    // Initialize all queries. Only goodQueryIndex will have the right origin for a hit.\n"
+        "    for (int i = 0; i < numQueries; i++) {\n"
+        "        origin = ((i == inputValues.goodQueryIndex) ? vec3(0, 0, 0) : vec3(5, 5, 0));\n"
+        "        rayQueryInitializeEXT(rayQueries[i], topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
+        "    }\n";
+
+    const std::string usageLoop = "    // Attempt to proceed with the good query to confirm a hit.\n"
+                                  "    while (rayQueryProceedEXT(rayQueries[inputValues.proceedQueryIndex]))\n"
+                                  "        outputBlock.outputData[gl_LocalInvocationID.x] = 1u; \n";
+
     src << "#version 460\n"
         << "#extension GL_EXT_ray_query : require\n"
         << "#extension GL_EXT_ray_tracing : require\n"
         << "\n"
-        << "layout (local_size_x=" << kLocalSizeX << ", local_size_y=1, local_size_z=1) in; \n"
+        << "layout (local_size_x=" << m_params.getLocalSizeX() << ", local_size_y=1, local_size_z=1) in; \n"
         << "\n"
         << "struct InputData {\n"
         << "    uint goodQueryIndex;\n"
@@ -131,7 +161,7 @@ void DynamicIndexingCase::initPrograms(vk::SourceCollections &programCollection)
         << "\n"
         << "void main()\n"
         << "{\n"
-        << "    const uint numQueries = " << kNumQueries << ";\n"
+        << "    const uint numQueries = " << m_params.getNumQueries() << ";\n"
         << "\n"
         << "    const uint rayFlags = 0u; \n"
         << "    const uint cullMask = 0xFFu;\n"
@@ -143,17 +173,22 @@ void DynamicIndexingCase::initPrograms(vk::SourceCollections &programCollection)
         << "    vec3 origin;\n"
         << "\n"
         << "    InputData inputValues = inputBlock.inputData[gl_LocalInvocationID.x];\n"
-        << "\n"
-        << "    // Initialize all queries. Only goodQueryIndex will have the right origin for a hit.\n"
-        << "    for (int i = 0; i < numQueries; i++) {\n"
-        << "        origin = ((i == inputValues.goodQueryIndex) ? vec3(0, 0, 0) : vec3(5, 5, 0));\n"
-        << "        rayQueryInitializeEXT(rayQueries[i], topLevelAS, rayFlags, cullMask, origin, tmin, direct, tmax);\n"
-        << "    }\n"
-        << "\n"
-        << "    // Attempt to proceed with the good query to confirm a hit.\n"
-        << "    while (rayQueryProceedEXT(rayQueries[inputValues.proceedQueryIndex]))\n"
-        << "        outputBlock.outputData[gl_LocalInvocationID.x] = 1u; \n"
-        << "}\n";
+        << "\n";
+
+    if (m_params.useFirst)
+    {
+        src << "    for (int i = 0; i < 2; ++i) {\n"
+            << "        if (i > 0) {\n"
+            << usageLoop << "            continue;\n"
+            << "        }\n"
+            << initializationLoop << "    }\n";
+    }
+    else
+    {
+        src << initializationLoop << "\n" << usageLoop;
+    }
+
+    src << "}\n";
 
     programCollection.glslSources.add("comp") << glu::ComputeSource(updateRayTracingGLSL(src.str())) << buildOptions;
 }
@@ -173,10 +208,12 @@ void DynamicIndexingCase::checkSupport(Context &context) const
 
 vkt::TestInstance *DynamicIndexingCase::createInstance(Context &context) const
 {
-    return new DynamicIndexingInstance(context);
+    return new DynamicIndexingInstance(context, m_params);
 }
 
-DynamicIndexingInstance::DynamicIndexingInstance(Context &context) : vkt::TestInstance(context)
+DynamicIndexingInstance::DynamicIndexingInstance(Context &context, const DynamicIndexingParams &params)
+    : vkt::TestInstance(context)
+    , m_params(params)
 {
 }
 
@@ -193,9 +230,9 @@ uint32_t getRndIndex(de::Random &rng, uint32_t size)
 
 tcu::TestStatus DynamicIndexingInstance::iterate(void)
 {
-    using InputData            = DynamicIndexingCase::InputData;
-    constexpr auto kLocalSizeX = DynamicIndexingCase::kLocalSizeX;
-    constexpr auto kNumQueries = DynamicIndexingCase::kNumQueries;
+    using InputData        = DynamicIndexingCase::InputData;
+    const auto kLocalSizeX = m_params.getLocalSizeX();
+    const auto kNumQueries = m_params.getNumQueries();
 
     const auto &vkd   = m_context.getDeviceInterface();
     const auto device = m_context.getDevice();
@@ -204,34 +241,34 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
     const auto qIndex = m_context.getUniversalQueueFamilyIndex();
 
     de::Random rng(1604936737u);
-    InputData inputDataArray[kLocalSizeX];
-    uint32_t outputDataArray[kLocalSizeX];
+    std::vector<InputData> inputDataArray(kLocalSizeX);
+    std::vector<uint32_t> outputDataArray(kLocalSizeX);
 
     // Prepare input buffer.
-    for (int i = 0; i < DE_LENGTH_OF_ARRAY(inputDataArray); ++i)
+    for (size_t i = 0; i < inputDataArray.size(); ++i)
     {
         // The two values will contain the same query index.
         inputDataArray[i].goodQueryIndex    = getRndIndex(rng, kNumQueries);
         inputDataArray[i].proceedQueryIndex = inputDataArray[i].goodQueryIndex;
     }
 
-    const auto inputBufferSize = static_cast<VkDeviceSize>(sizeof(inputDataArray));
+    const auto inputBufferSize = static_cast<VkDeviceSize>(de::dataSize(inputDataArray));
     const auto inputBufferInfo = makeBufferCreateInfo(inputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     BufferWithMemory inputBuffer(vkd, device, alloc, inputBufferInfo, MemoryRequirement::HostVisible);
     auto &inputBufferAlloc = inputBuffer.getAllocation();
     void *inputBufferPtr   = inputBufferAlloc.getHostPtr();
 
-    deMemcpy(inputBufferPtr, inputDataArray, static_cast<size_t>(inputBufferSize));
+    memcpy(inputBufferPtr, de::dataOrNull(inputDataArray), de::dataSize(inputDataArray));
     flushAlloc(vkd, device, inputBufferAlloc);
 
     // Prepare output buffer.
-    const auto outputBufferSize = static_cast<VkDeviceSize>(sizeof(outputDataArray));
+    const auto outputBufferSize = static_cast<VkDeviceSize>(de::dataSize(outputDataArray));
     const auto outputBufferInfo = makeBufferCreateInfo(outputBufferSize, VK_BUFFER_USAGE_STORAGE_BUFFER_BIT);
     BufferWithMemory outputBuffer(vkd, device, alloc, outputBufferInfo, MemoryRequirement::HostVisible);
     auto &outputBufferAlloc = outputBuffer.getAllocation();
     void *outputBufferPtr   = outputBufferAlloc.getHostPtr();
 
-    deMemset(outputBufferPtr, 0, static_cast<size_t>(outputBufferSize));
+    memset(outputBufferPtr, 0, static_cast<size_t>(outputBufferSize));
     flushAlloc(vkd, device, outputBufferAlloc);
 
     // Prepare acceleration structures.
@@ -340,9 +377,9 @@ tcu::TestStatus DynamicIndexingInstance::iterate(void)
 
     // Check output buffer.
     invalidateAlloc(vkd, device, outputBufferAlloc);
-    deMemcpy(outputDataArray, outputBufferPtr, static_cast<size_t>(outputBufferSize));
+    memcpy(de::dataOrNull(outputDataArray), outputBufferPtr, de::dataSize(outputDataArray));
 
-    for (int i = 0; i < DE_LENGTH_OF_ARRAY(outputDataArray); ++i)
+    for (size_t i = 0; i < outputDataArray.size(); ++i)
     {
         constexpr auto expected = 1u;
         const auto &value       = outputDataArray[i];
@@ -1934,8 +1971,14 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
     // Miscellaneous ray query tests
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "misc"));
 
-    // Dynamic indexing of ray queries
-    group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing"));
+    // Dynamic indexing of ray queries, with and without using the queries first in code.
+    {
+        DynamicIndexingParams params;
+        group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing", params));
+
+        params.useFirst = true;
+        group->addChild(new DynamicIndexingCase(testCtx, "dynamic_indexing_use_first", params));
+    }
 
     addFunctionCaseWithPrograms(group.get(), "reuse_scratch_buffer", checkRayQuerySupport,
                                 initReuseScratchBufferPrograms, reuseScratchBufferInstance);

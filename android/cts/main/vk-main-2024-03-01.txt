@@ -4,6 +4,7 @@ vk-main-2024-03-01/clipping.txt
 vk-main-2024-03-01/compute.txt
 vk-main-2024-03-01/conditional-rendering.txt
 vk-main-2024-03-01/cooperative-vector.txt
+vk-main-2024-03-01/data-graph.txt
 vk-main-2024-03-01/descriptor-indexing.txt
 vk-main-2024-03-01/dgc.txt
 vk-main-2024-03-01/draw.txt
@@ -15,6 +16,7 @@ vk-main-2024-03-01/fragment-shading-rate.txt
 vk-main-2024-03-01/geometry.txt
 vk-main-2024-03-01/glsl.txt
 vk-main-2024-03-01/image/2d-array-compatible.txt
+vk-main-2024-03-01/image/astc-decode-mode.txt
 vk-main-2024-03-01/image/atomic-operations.txt
 vk-main-2024-03-01/image/concurrent-copy.txt
 vk-main-2024-03-01/image/depth-stencil-separate-access.txt
@@ -67,6 +69,7 @@ vk-main-2024-03-01/ssbo.txt
 vk-main-2024-03-01/subgroups.txt
 vk-main-2024-03-01/synchronization.txt
 vk-main-2024-03-01/synchronization2.txt
+vk-main-2024-03-01/tensor.txt
 vk-main-2024-03-01/tessellation.txt
 vk-main-2024-03-01/texture.txt
 vk-main-2024-03-01/transform-feedback.txt

@@ -242,7 +242,8 @@ private:
 Texture2DFilteringTestInstance::Texture2DFilteringTestInstance(Context &context, const ParameterType &testParameters)
     : TestInstance(context)
     , m_testParameters(testParameters)
-    , m_renderer(context, testParameters.sampleCount, TEX2D_VIEWPORT_WIDTH, TEX2D_VIEWPORT_HEIGHT)
+    , m_renderer(context, testParameters.sampleCount, TEX2D_VIEWPORT_WIDTH, TEX2D_VIEWPORT_HEIGHT,
+                 makeComponentMappingRGBA(), false, false, m_testParameters.useCompute)
     , m_caseNdx(0)
 {
     const bool mipmaps  = m_testParameters.mipmaps;
@@ -478,7 +479,8 @@ TextureCubeFilteringTestInstance::TextureCubeFilteringTestInstance(Context &cont
                                                                    const ParameterType &testParameters)
     : TestInstance(context)
     , m_testParameters(testParameters)
-    , m_renderer(context, testParameters.sampleCount, TEXCUBE_VIEWPORT_SIZE, TEXCUBE_VIEWPORT_SIZE)
+    , m_renderer(context, testParameters.sampleCount, TEXCUBE_VIEWPORT_SIZE, TEXCUBE_VIEWPORT_SIZE,
+                 makeComponentMappingRGBA(), false, false, m_testParameters.useCompute)
     , m_caseNdx(0)
 {
     const int numLevels                  = deLog2Floor32(m_testParameters.size) + 1;
@@ -753,7 +755,8 @@ Texture2DArrayFilteringTestInstance::Texture2DArrayFilteringTestInstance(Context
                                                                          const ParameterType &testParameters)
     : TestInstance(context)
     , m_testParameters(testParameters)
-    , m_renderer(context, testParameters.sampleCount, TEX3D_VIEWPORT_WIDTH, TEX3D_VIEWPORT_HEIGHT)
+    , m_renderer(context, testParameters.sampleCount, TEX3D_VIEWPORT_WIDTH, TEX3D_VIEWPORT_HEIGHT,
+                 makeComponentMappingRGBA(), false, false, m_testParameters.useCompute)
     , m_caseNdx(0)
 {
     const int numLevels                  = deLog2Floor32(de::max(m_testParameters.width, m_testParameters.height)) + 1;
@@ -1002,7 +1005,8 @@ private:
 Texture3DFilteringTestInstance::Texture3DFilteringTestInstance(Context &context, const ParameterType &testParameters)
     : TestInstance(context)
     , m_testParameters(testParameters)
-    , m_renderer(context, testParameters.sampleCount, TEX3D_VIEWPORT_WIDTH, TEX3D_VIEWPORT_HEIGHT)
+    , m_renderer(context, testParameters.sampleCount, TEX3D_VIEWPORT_WIDTH, TEX3D_VIEWPORT_HEIGHT,
+                 makeComponentMappingRGBA(), false, false, m_testParameters.useCompute)
     , m_caseNdx(0)
 {
     const int numLevels =
@@ -1351,12 +1355,18 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = filterableFormatsByType[fmtNdx].aspectMask;
                 testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program2D);
+                testParameters.useCompute = false;
 
                 // Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
                 if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
                 {
                     filterGroup->addChild(
                         new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                    // Compute case.
+                    testParameters.useCompute = true;
+                    filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(
+                        testCtx, (name + "_compute").c_str(), testParameters));
                 }
             }
             formatsGroup->addChild(filterGroup.release());
@@ -1389,9 +1399,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+                testParameters.useCompute = false;
 
                 filterGroup->addChild(
                     new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                // Compute case.
+                testParameters.useCompute = true;
+                filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(
+                    testCtx, (name + "_compute").c_str(), testParameters));
             }
             sizesGroup->addChild(filterGroup.release());
         }
@@ -1429,9 +1445,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                         testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                         testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+                        testParameters.useCompute = false;
 
                         wrapSGroup->addChild(
                             new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                        // Compute case.
+                        testParameters.useCompute = true;
+                        wrapSGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(
+                            testCtx, (name + "_compute").c_str(), testParameters));
                     }
                     magFilterGroup->addChild(wrapSGroup.release());
                 }
@@ -1480,12 +1502,18 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = filterableFormatsByType[fmtNdx].aspectMask;
                 testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program2D);
+                testParameters.useCompute = false;
 
                 // Some combinations of the tests have to be skipped due to the restrictions of the verifiers.
                 if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
                 {
                     filterGroup->addChild(
                         new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                    // Compute case.
+                    testParameters.useCompute = true;
+                    filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(
+                        testCtx, (name + "_compute").c_str(), testParameters));
                 }
             }
             formatsGroup->addChild(filterGroup.release());
@@ -1517,9 +1545,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 testParameters.programs.push_back(PROGRAM_2D_FLOAT);
+                testParameters.useCompute = false;
 
                 filterGroup->addChild(
                     new TextureTestCase<Texture2DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                // Compute case.
+                testParameters.useCompute = true;
+                filterGroup->addChild(new TextureTestCase<Texture2DFilteringTestInstance>(
+                    testCtx, (name + "_compute").c_str(), testParameters));
             }
             sizesGroup->addChild(filterGroup.release());
         }
@@ -1571,12 +1605,18 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                     testParameters.aspectMask = filterableFormatsByType[fmtNdx].aspectMask;
                     testParameters.programs.push_back(filterableFormatsByType[fmtNdx].programCube);
+                    testParameters.useCompute = false;
 
                     // Some tests have to be skipped due to the restrictions of the verifiers.
                     if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
                     {
                         minfilterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(
                             testCtx, name.c_str(), testParameters));
+
+                        // Compute case.
+                        testParameters.useCompute = true;
+                        minfilterGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(
+                            testCtx, (name + "_compute").c_str(), testParameters));
                     }
                 }
 
@@ -1620,9 +1660,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                     testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                     testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
+                    testParameters.useCompute = false;
 
                     minFilterModesGroup->addChild(
                         new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                    // Compute case.
+                    testParameters.useCompute = true;
+                    minFilterModesGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(
+                        testCtx, (name + "_compute").c_str(), testParameters));
                 }
                 filterGroup->addChild(minFilterModesGroup.release());
             }
@@ -1668,9 +1714,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                             testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                             testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
+                            testParameters.useCompute = false;
 
                             wrapTGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(
                                 testCtx, name.c_str(), testParameters));
+
+                            // Compute case.
+                            testParameters.useCompute = true;
+                            wrapTGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(
+                                testCtx, (name + "_compute").c_str(), testParameters));
                         }
                         wrapSGroup->addChild(wrapTGroup.release());
                     }
@@ -1698,9 +1750,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
             testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
             testParameters.programs.push_back(PROGRAM_CUBE_FLOAT);
+            testParameters.useCompute = false;
 
             onlyFaceInteriorGroup->addChild(
                 new TextureTestCase<TextureCubeFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+            // Compute case.
+            testParameters.useCompute = true;
+            onlyFaceInteriorGroup->addChild(new TextureTestCase<TextureCubeFilteringTestInstance>(
+                testCtx, (name + "_compute").c_str(), testParameters));
         }
 
         groupCube->addChild(formatsGroup.release());
@@ -1746,12 +1804,18 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = filterableFormatsByType[fmtNdx].aspectMask;
                 testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program2DArray);
+                testParameters.useCompute = false;
 
                 // Some tests have to be skipped due to the restrictions of the verifiers.
                 if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
                 {
                     filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(
                         testCtx, name.c_str(), testParameters));
+
+                    // Compute case.
+                    testParameters.useCompute = true;
+                    filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(
+                        testCtx, (name + "_compute").c_str(), testParameters));
                 }
             }
             formatsGroup->addChild(filterGroup.release());
@@ -1784,9 +1848,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
+                testParameters.useCompute = false;
 
                 filterGroup->addChild(
                     new TextureTestCase<Texture2DArrayFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                // Compute case.
+                testParameters.useCompute = true;
+                filterGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(
+                    testCtx, (name + "_compute").c_str(), testParameters));
             }
             sizesGroup->addChild(filterGroup.release());
         }
@@ -1823,9 +1893,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                         testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                         testParameters.programs.push_back(PROGRAM_2D_ARRAY_FLOAT);
+                        testParameters.useCompute = false;
 
                         wrapSGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(
                             testCtx, name.c_str(), testParameters));
+
+                        // Compute case.
+                        testParameters.useCompute = true;
+                        wrapSGroup->addChild(new TextureTestCase<Texture2DArrayFilteringTestInstance>(
+                            testCtx, (name + "_compute").c_str(), testParameters));
                     }
                     magFilterGroup->addChild(wrapSGroup.release());
                 }
@@ -1877,12 +1953,18 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = filterableFormatsByType[fmtNdx].aspectMask;
                 testParameters.programs.push_back(filterableFormatsByType[fmtNdx].program3D);
+                testParameters.useCompute = false;
 
                 // Some tests have to be skipped due to the restrictions of the verifiers.
                 if (verifierCanBeUsed(testParameters.format, testParameters.minFilter, testParameters.magFilter))
                 {
                     filterGroup->addChild(
                         new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                    // Compute case.
+                    testParameters.useCompute = true;
+                    filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(
+                        testCtx, (name + "_compute").c_str(), testParameters));
                 }
             }
             formatsGroup->addChild(filterGroup.release());
@@ -1916,9 +1998,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                 testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                 testParameters.programs.push_back(PROGRAM_3D_FLOAT);
+                testParameters.useCompute = false;
 
                 filterGroup->addChild(
                     new TextureTestCase<Texture3DFilteringTestInstance>(testCtx, name.c_str(), testParameters));
+
+                // Compute case.
+                testParameters.useCompute = true;
+                filterGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(
+                    testCtx, (name + "_compute").c_str(), testParameters));
             }
             sizesGroup->addChild(filterGroup.release());
         }
@@ -1961,9 +2049,15 @@ void populateTextureFilteringTests(tcu::TestCaseGroup *textureFilteringTests)
 
                             testParameters.aspectMask = VK_IMAGE_ASPECT_COLOR_BIT;
                             testParameters.programs.push_back(PROGRAM_3D_FLOAT);
+                            testParameters.useCompute = false;
 
                             wrapTGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(
                                 testCtx, name.c_str(), testParameters));
+
+                            // Compute case.
+                            testParameters.useCompute = true;
+                            wrapTGroup->addChild(new TextureTestCase<Texture3DFilteringTestInstance>(
+                                testCtx, (name + "_compute").c_str(), testParameters));
                         }
                         wrapSGroup->addChild(wrapTGroup.release());
                     }

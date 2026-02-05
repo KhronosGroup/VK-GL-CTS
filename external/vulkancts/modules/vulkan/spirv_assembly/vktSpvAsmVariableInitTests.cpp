@@ -316,6 +316,11 @@ void addGraphicsVariableInitPrivateTest(tcu::TestCaseGroup *group)
     }
 }
 
+void outputCheckSupport(Context &context, ShaderParams params)
+{
+    defaultCheckSupport(context, params.context);
+}
+
 tcu::TestStatus outputTest(Context &context, ShaderParams params)
 {
     return runAndVerifyDefaultPipeline(context, params.context);
@@ -643,7 +648,8 @@ void addGraphicsVariableInitOutputTest(tcu::TestCaseGroup *group)
             const ShaderParams shaderParams = {instanceContext, testParams[paramIdx].type};
 
             addFunctionCaseWithPrograms<ShaderParams>(outputGroup, testParams[paramIdx].name.c_str(),
-                                                      addShaderCodeOutput, outputTest, shaderParams);
+                                                      outputCheckSupport, addShaderCodeOutput, outputTest,
+                                                      shaderParams);
         }
     }
 }

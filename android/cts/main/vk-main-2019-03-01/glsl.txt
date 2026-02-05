@@ -2101,11 +2101,6 @@ dEQP-VK.glsl.builtin_var.fragdepth.triangle_list_d32_sfloat_no_depth_clamp
 dEQP-VK.glsl.builtin_var.fragdepth.triangle_list_d32_sfloat_s8_uint
 dEQP-VK.glsl.builtin_var.fragdepth.triangle_list_d32_sfloat_s8_uint_no_depth_clamp
 dEQP-VK.glsl.builtin_var.fragdepth.triangle_list_x8_d24_unorm_pack32_no_depth_clamp
-dEQP-VK.glsl.builtin_var.frontfacing.line_list
-dEQP-VK.glsl.builtin_var.frontfacing.point_list
-dEQP-VK.glsl.builtin_var.frontfacing.triangle_fan
-dEQP-VK.glsl.builtin_var.frontfacing.triangle_list
-dEQP-VK.glsl.builtin_var.frontfacing.triangle_strip
 dEQP-VK.glsl.builtin_var.input_variations.input_builtin
 dEQP-VK.glsl.builtin_var.input_variations.input_builtin_constant
 dEQP-VK.glsl.builtin_var.input_variations.input_builtin_varying

@@ -175,8 +175,10 @@ RaytracedGeometryBase::RaytracedGeometryBase(VkGeometryTypeKHR geometryType, VkF
     , m_indexType(indexType)
     , m_geometryFlags((VkGeometryFlagsKHR)0u)
     , m_hasOpacityMicromap(false)
+    , m_hasMotionBlur(false)
     , m_useEndcaps(false)
     , m_doBLASCopy(false)
+
 {
     if (m_geometryType == VK_GEOMETRY_TYPE_AABBS_KHR)
         DE_ASSERT(m_vertexFormat == VK_FORMAT_R32G32B32_SFLOAT);
@@ -865,7 +867,8 @@ void BottomLevelAccelerationStructure::addGeometry(de::SharedPtr<RaytracedGeomet
 
 void BottomLevelAccelerationStructure::addGeometry(
     const std::vector<tcu::Vec3> &geometryData, const bool triangles, const VkGeometryFlagsKHR geometryFlags,
-    const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap)
+    const VkAccelerationStructureTrianglesOpacityMicromapEXT *opacityGeometryMicromap,
+    const VkAccelerationStructureGeometryMotionTrianglesDataNV *motionData)
 {
     DE_ASSERT(geometryData.size() > 0);
     DE_ASSERT((triangles && geometryData.size() % 3 == 0) || (!triangles && geometryData.size() % 2 == 0));
@@ -887,6 +890,8 @@ void BottomLevelAccelerationStructure::addGeometry(
     geometry->setGeometryFlags(geometryFlags);
     if (opacityGeometryMicromap)
         geometry->setOpacityMicromap(opacityGeometryMicromap);
+    if (motionData)
+        geometry->setMotionBlur(motionData);
     addGeometry(geometry);
 }
 
@@ -2120,6 +2125,9 @@ void BottomLevelAccelerationStructureKHR::prepareGeometries(
         if (geometryData->getHasOpacityMicromap())
             accelerationStructureGeometryTrianglesDataKHR.pNext = &geometryData->getOpacityMicromap();
 
+        if (geometryData->getHasMotionBlur())
+            accelerationStructureGeometryTrianglesDataKHR.pNext = &geometryData->getMotionBlurData();
+
         const VkAccelerationStructureGeometryAabbsDataKHR accelerationStructureGeometryAabbsDataKHR = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_GEOMETRY_AABBS_DATA_KHR, //  VkStructureType sType;
             nullptr,                                                          //  const void* pNext;
@@ -3251,14 +3259,14 @@ void TopLevelAccelerationStructure::createAndDeserializeFrom(const DeviceInterfa
 BufferWithMemory *createInstanceBuffer(
     const DeviceInterface &vk, const VkDevice device, Allocator &allocator,
     std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> bottomLevelInstances,
-    std::vector<InstanceData> instanceData, const bool tryCachedMemory)
+    std::vector<InstanceData> instanceData, const bool tryCachedMemory, size_t instanceSize)
 {
     DE_ASSERT(bottomLevelInstances.size() != 0);
     DE_ASSERT(bottomLevelInstances.size() == instanceData.size());
     DE_UNREF(instanceData);
 
     BufferWithMemory *result           = nullptr;
-    const VkDeviceSize bufferSizeBytes = bottomLevelInstances.size() * sizeof(VkAccelerationStructureInstanceKHR);
+    const VkDeviceSize bufferSizeBytes = bottomLevelInstances.size() * instanceSize;
     const VkBufferCreateInfo bufferCreateInfo =
         makeBufferCreateInfo(bufferSizeBytes, VK_BUFFER_USAGE_ACCELERATION_STRUCTURE_BUILD_INPUT_READ_ONLY_BIT_KHR |
                                                   VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
@@ -3282,7 +3290,8 @@ BufferWithMemory *createInstanceBuffer(
 void updateSingleInstance(const DeviceInterface &vk, const VkDevice device,
                           const BottomLevelAccelerationStructure &bottomLevelAccelerationStructure,
                           const InstanceData &instanceData, uint8_t *bufferLocation,
-                          VkAccelerationStructureBuildTypeKHR buildType, bool inactiveInstances)
+                          VkAccelerationStructureBuildTypeKHR buildType, bool inactiveInstances,
+                          bool isMotionInstance = false)
 {
     const VkAccelerationStructureKHR accelerationStructureKHR = *bottomLevelAccelerationStructure.getPtr();
 
@@ -3320,13 +3329,22 @@ void updateSingleInstance(const DeviceInterface &vk, const VkDevice device,
         structureReference                                   //  uint64_t accelerationStructureReference;
     );
 
-    deMemcpy(bufferLocation, &accelerationStructureInstanceKHR, sizeof(VkAccelerationStructureInstanceKHR));
+    VkAccelerationStructureMotionInstanceNV motionInstanceDataNV = {};
+    if (isMotionInstance)
+    {
+        motionInstanceDataNV.type =
+            VK_ACCELERATION_STRUCTURE_MOTION_INSTANCE_TYPE_STATIC_NV; // Only supports Static for now
+        motionInstanceDataNV.data.staticInstance = accelerationStructureInstanceKHR;
+        deMemcpy(bufferLocation, &motionInstanceDataNV, sizeof(VkAccelerationStructureMotionInstanceNV));
+    }
+    else
+        deMemcpy(bufferLocation, &accelerationStructureInstanceKHR, sizeof(VkAccelerationStructureInstanceKHR));
 }
 
 void updateInstanceBuffer(const DeviceInterface &vk, const VkDevice device,
                           const std::vector<de::SharedPtr<BottomLevelAccelerationStructure>> &bottomLevelInstances,
                           const std::vector<InstanceData> &instanceData, const BufferWithMemory *instanceBuffer,
-                          VkAccelerationStructureBuildTypeKHR buildType, bool inactiveInstances)
+                          VkAccelerationStructureBuildTypeKHR buildType, bool inactiveInstances, bool isMotionInstance)
 {
     DE_ASSERT(bottomLevelInstances.size() != 0);
     DE_ASSERT(bottomLevelInstances.size() == instanceData.size());
@@ -3334,13 +3352,14 @@ void updateInstanceBuffer(const DeviceInterface &vk, const VkDevice device,
     auto &instancesAlloc      = instanceBuffer->getAllocation();
     auto bufferStart          = reinterpret_cast<uint8_t *>(instancesAlloc.getHostPtr());
     VkDeviceSize bufferOffset = 0ull;
-
+    VkDeviceSize instanceSize = isMotionInstance ? sizeof(VkAccelerationStructureMotionInstanceDataNV) :
+                                                   sizeof(VkAccelerationStructureInstanceKHR);
     for (size_t instanceNdx = 0; instanceNdx < bottomLevelInstances.size(); ++instanceNdx)
     {
         const auto &blas = *bottomLevelInstances[instanceNdx];
         updateSingleInstance(vk, device, blas, instanceData[instanceNdx], bufferStart + bufferOffset, buildType,
-                             inactiveInstances);
-        bufferOffset += sizeof(VkAccelerationStructureInstanceKHR);
+                             inactiveInstances, isMotionInstance);
+        bufferOffset += instanceSize;
     }
 
     flushMappedMemoryRange(vk, device, instancesAlloc.getMemory(), instancesAlloc.getOffset(), VK_WHOLE_SIZE);
@@ -3369,6 +3388,7 @@ public:
     void setUsePPGeometries(const bool usePPGeometries) override;
     void setTryCachedMemory(const bool tryCachedMemory) override;
     void setUseDeviceAddressCommands(const bool useDeviceAddressCommands) override;
+    void setMaxMotionInstances(const uint32_t maxMotionInstances) override;
     VkBuildAccelerationStructureFlagsKHR getBuildFlags() const override;
 
     void getCreationSizes(const DeviceInterface &vk, const VkDevice device, const VkDeviceSize structureSize,
@@ -3433,6 +3453,7 @@ protected:
     uint32_t m_indirectBufferStride;
     bool m_usePPGeometries;
     bool m_tryCachedMemory;
+    uint32_t m_maxMotionInstances;
     int32_t m_instanceBufferAddressOffset;
     bool m_useDeviceAddressCommands;
 
@@ -3482,6 +3503,7 @@ TopLevelAccelerationStructureKHR::TopLevelAccelerationStructureKHR()
     , m_indirectBufferStride(0)
     , m_usePPGeometries(false)
     , m_tryCachedMemory(true)
+    , m_maxMotionInstances(0)
     , m_instanceBufferAddressOffset(0)
     , m_useDeviceAddressCommands(false)
 {
@@ -3547,6 +3569,11 @@ void TopLevelAccelerationStructureKHR::setTryCachedMemory(const bool tryCachedMe
 void TopLevelAccelerationStructureKHR::setUseDeviceAddressCommands(const bool useDeviceAddressCommands)
 {
     m_useDeviceAddressCommands = useDeviceAddressCommands;
+}
+
+void TopLevelAccelerationStructureKHR::setMaxMotionInstances(const uint32_t maxMotionInstances)
+{
+    m_maxMotionInstances = maxMotionInstances;
 }
 
 void TopLevelAccelerationStructureKHR::setIndirectBuildParameters(const VkBuffer indirectBuffer,
@@ -3753,12 +3780,21 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
     const VkAccelerationStructureTypeKHR structureType =
         (m_createGeneric ? VK_ACCELERATION_STRUCTURE_TYPE_GENERIC_KHR : VK_ACCELERATION_STRUCTURE_TYPE_TOP_LEVEL_KHR);
 
+    VkAccelerationStructureMotionInfoNV motionInfo = {};
+    if (m_maxMotionInstances)
+    {
+        motionInfo.sType        = VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_MOTION_INFO_NV;
+        motionInfo.pNext        = pNext;
+        motionInfo.maxInstances = m_maxMotionInstances;
+        motionInfo.flags        = 0;
+    }
+
     if (m_useDeviceAddressCommands)
     {
         auto bufferDeviceAddress = getBufferDeviceAddress(vk, device, createInfoBuffer);
         const VkAccelerationStructureCreateInfo2KHR accelerationStructureCreateInfo2KHR{
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_2_KHR, // VkStructureType sType;
-            pNext,                                                      // const void *pNext;
+            m_maxMotionInstances ? &motionInfo : pNext,                 // const void *pNext;
             m_createFlags,                          // VkAccelerationStructureCreateFlagsKHR createFlags;
             {bufferDeviceAddress, m_structureSize}, // VkDeviceAddressRangeKHR addressRange;
             0,                                      // VkAddressCommandFlagsKHR addressFlags;
@@ -3768,9 +3804,9 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
     }
     else
     {
-        const VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR{
+        const VkAccelerationStructureCreateInfoKHR accelerationStructureCreateInfoKHR = {
             VK_STRUCTURE_TYPE_ACCELERATION_STRUCTURE_CREATE_INFO_KHR, //  VkStructureType sType;
-            pNext,                                                    //  const void* pNext;
+            m_maxMotionInstances ? &motionInfo : pNext,               //  const void* pNext;
             m_createFlags,    //  VkAccelerationStructureCreateFlagsKHR createFlags;
             createInfoBuffer, //  VkBuffer buffer;
             0u,               //  VkDeviceSize offset;
@@ -3822,9 +3858,13 @@ void TopLevelAccelerationStructureKHR::create(const DeviceInterface &vk, const V
             MemoryRequirement::HostVisible | MemoryRequirement::Coherent | MemoryRequirement::DeviceAddress));
     }
 
+    size_t instanceSize = m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV ?
+                              sizeof(VkAccelerationStructureMotionInstanceNV) :
+                              sizeof(VkAccelerationStructureInstanceKHR);
+
     if (!m_bottomLevelInstances.empty())
-        m_instanceBuffer = de::MovePtr<BufferWithMemory>(
-            createInstanceBuffer(vk, device, allocator, m_bottomLevelInstances, m_instanceData, m_tryCachedMemory));
+        m_instanceBuffer = de::MovePtr<BufferWithMemory>(createInstanceBuffer(
+            vk, device, allocator, m_bottomLevelInstances, m_instanceData, m_tryCachedMemory, instanceSize));
 }
 
 void TopLevelAccelerationStructureKHR::updateInstanceMatrix(const DeviceInterface &vk, const VkDevice device,
@@ -3857,8 +3897,9 @@ void TopLevelAccelerationStructureKHR::build(const DeviceInterface &vk, const Vk
     DE_ASSERT(m_accelerationStructureKHR.get() != VK_NULL_HANDLE);
     DE_ASSERT(m_buildScratchSize != 0);
 
+    const bool isInstanceMotion = !!(m_createFlags & VK_ACCELERATION_STRUCTURE_CREATE_MOTION_BIT_NV);
     updateInstanceBuffer(vk, device, m_bottomLevelInstances, m_instanceData, m_instanceBuffer.get(), m_buildType,
-                         m_inactiveInstances);
+                         m_inactiveInstances, isInstanceMotion);
 
     VkAccelerationStructureGeometryKHR accelerationStructureGeometryKHR;
     const auto accelerationStructureGeometryKHRPtr = &accelerationStructureGeometryKHR;

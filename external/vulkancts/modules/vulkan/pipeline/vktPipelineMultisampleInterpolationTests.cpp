@@ -101,6 +101,7 @@ public:
 
     void init(void);
     void initPrograms(vk::SourceCollections &programCollection) const;
+    void checkImagesSupport(Context &context) const;
     void checkSupport(Context &context) const;
     TestInstance *createInstance(Context &context) const;
     static MultisampleCaseBase *createCase(tcu::TestContext &testCtx, const std::string &name,
@@ -108,9 +109,38 @@ public:
 };
 
 template <typename CaseClassName>
+void MSCase<CaseClassName>::checkImagesSupport(Context &context) const
+{
+    const InstanceInterface &instance     = context.getInstanceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+
+    // check if image size does not exceed device limits
+    auto imageType = IMAGE_TYPE_2D;
+    validateImageSize(instance, physicalDevice, imageType, m_imageMSParams.imageSize);
+
+    // check if device supports image format as color attachment
+    validateImageFeatureFlags(instance, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM,
+                              VK_FORMAT_FEATURE_COLOR_ATTACHMENT_BIT);
+
+    VkImageCreateFlags flags = 0u;
+    auto extent              = makeExtent3D(getLayerSize(imageType, m_imageMSParams.imageSize));
+    auto arrayLayers         = getNumLayers(imageType, m_imageMSParams.imageSize);
+
+    // validate multisampled image
+    VkImageUsageFlags usage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
+    validateImageInfo(instance, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, extent, mapImageType(imageType),
+                      m_imageMSParams.numSamples, VK_IMAGE_TILING_OPTIMAL, usage, flags, arrayLayers);
+
+    // validate resolve image
+    validateImageInfo(instance, physicalDevice, VK_FORMAT_R8G8B8A8_UNORM, extent, mapImageType(imageType),
+                      VK_SAMPLE_COUNT_1_BIT, VK_IMAGE_TILING_OPTIMAL, usage, flags, arrayLayers);
+}
+
+template <typename CaseClassName>
 void MSCase<CaseClassName>::checkSupport(Context &context) const
 {
     checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
 
 #ifndef CTS_USES_VULKANSC
     if (context.isDeviceFunctionalitySupported("VK_KHR_portability_subset") &&
@@ -266,9 +296,8 @@ void MSCase<MSCaseSampleQualifierDistinctValues>::initPrograms(vk::SourceCollect
 template <>
 void MSCase<MSCaseSampleQualifierDistinctValues>::checkSupport(Context &context) const
 {
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_imageMSParams.pipelineConstructionType);
-
+    checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
     context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
 }
 
@@ -1102,8 +1131,8 @@ void MSCase<MSCaseCentroidQualifierInsidePrimitive>::initPrograms(vk::SourceColl
 template <>
 void MSCase<MSCaseCentroidQualifierInsidePrimitive>::checkSupport(Context &context) const
 {
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_imageMSParams.pipelineConstructionType);
+    checkGraphicsPipelineLibrarySupport(context);
+    checkImagesSupport(context);
 }
 
 template <>

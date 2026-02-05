@@ -43,6 +43,13 @@ const unsigned int testCycles = 1000u;
 const unsigned int testCycles = 100u;
 #endif // CTS_USES_VULKANSC
 
+enum TestType
+{
+    TT_BASIC_INVARIANCE = 0,
+    TT_REQUIREMENTS_MATCHING,
+    TT_DEDICATED_REQUIREMENTS,
+};
+
 // All legal memory combinations (spec chapter 10.2: Device Memory)
 const unsigned int legalMemoryTypeCount                        = 11u;
 const MemoryRequirement legalMemoryTypes[legalMemoryTypeCount] = {
@@ -175,12 +182,22 @@ ImageAllocator::ImageAllocator(deRandom &random, bool dedicated, std::vector<int
     else
         m_colorFormat = (VkFormat)optimalformats[deRandom_getUint32(&random) % optimalformats.size()];
 
-    int widthAlignment  = (isYCbCr420Format(m_colorFormat) || isYCbCr422Format(m_colorFormat)) ? 2 : 1;
-    int heightAlignment = isYCbCr420Format(m_colorFormat) ? 2 : 1;
+    if (isPvrtc1Format(m_colorFormat))
+    {
+        // See VUID-VkImageCreateInfo-format-09583 and VUID-VkImageCreateInfo-format-09584
+        // PVRTC1 textures have to have both a width and height that is a power of 2.
+        m_size = tcu::IVec2(1 << (deRandom_getUint32(&random) % 4 + 1), 1 << (deRandom_getUint32(&random) % 4 + 1));
+    }
+    else
+    {
+        int widthAlignment  = (isYCbCr420Format(m_colorFormat) || isYCbCr422Format(m_colorFormat)) ? 2 : 1;
+        int heightAlignment = isYCbCr420Format(m_colorFormat) ? 2 : 1;
 
-    // Random small size for causing potential alignment issues
-    m_size = tcu::IVec2((deRandom_getUint32(&random) % 16 + 3) & ~(widthAlignment - 1),
-                        (deRandom_getUint32(&random) % 16 + 3) & ~(heightAlignment - 1));
+        // Random small size for causing potential alignment issues
+        m_size = tcu::IVec2((deRandom_getUint32(&random) % 16 + 3) & ~(widthAlignment - 1),
+                            (deRandom_getUint32(&random) % 16 + 3) & ~(heightAlignment - 1));
+    }
+
     // Pick random memory type from the supported set
     m_memoryType = memoryTypes[deRandom_getUint32(&random) % memoryTypes.size()];
 }
@@ -418,12 +435,17 @@ tcu::TestStatus InvarianceInstance::iterate(void)
 class AlignmentMatchingInstance : public vkt::TestInstance
 {
 public:
-    AlignmentMatchingInstance(Context &context);
+    AlignmentMatchingInstance(Context &context, TestType testType);
     virtual ~AlignmentMatchingInstance(void) = default;
     virtual tcu::TestStatus iterate(void);
+
+private:
+    TestType m_testType;
 };
 
-AlignmentMatchingInstance::AlignmentMatchingInstance(Context &context) : vkt::TestInstance(context)
+AlignmentMatchingInstance::AlignmentMatchingInstance(Context &context, TestType testType)
+    : vkt::TestInstance(context)
+    , m_testType(testType)
 {
 }
 
@@ -516,8 +538,9 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
             nullptr,                                            // const void*        pNext
             *baseImage                                          // VkImage            image
         };
+        const uint32_t count = m_testType == TT_DEDICATED_REQUIREMENTS ? 4 : 2;
         std::vector<VkMemoryRequirements2> requirements2(
-            4,
+            count,
             {
                 VK_STRUCTURE_TYPE_MEMORY_REQUIREMENTS_2, // VkStructureType        sType
                 nullptr,                                 // void*                pNext
@@ -549,43 +572,48 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
         }
 
         VkMemoryDedicatedRequirements dedicatedRequirements1 = initVulkanStructure();
-        requirements2[2].pNext                               = &dedicatedRequirements1;
-        dedicatedRequirements1.prefersDedicatedAllocation    = 2;
-        dedicatedRequirements1.requiresDedicatedAllocation   = 2;
-        vk.getBufferMemoryRequirements2(device, &bufferMemoryRequirementsInfo, &requirements2[2]);
-
-        if (!areRequirementsTheSame(requirements2[0], requirements2[2]))
-        {
-            success = false;
-            log << tcu::TestLog::Message
-                << "vkGetBufferMemoryRequirements2 and vkGetBufferMemoryRequirements2 with\n"
-                   "VkMemoryDedicatedRequirements report diferent memory requirements\n"
-                << tcu::TestLog::EndMessage;
-        }
-
         VkMemoryDedicatedRequirements dedicatedRequirements2 = initVulkanStructure();
-        requirements2[3].pNext                               = &dedicatedRequirements2;
-        dedicatedRequirements2.prefersDedicatedAllocation    = 3;
-        dedicatedRequirements2.requiresDedicatedAllocation   = 3;
-        vk.getDeviceBufferMemoryRequirements(device, &bufferMemInfo, &requirements2[3]);
+        if (m_testType == TT_DEDICATED_REQUIREMENTS)
+        {
+            requirements2[2].pNext                             = &dedicatedRequirements1;
+            dedicatedRequirements1.prefersDedicatedAllocation  = 2;
+            dedicatedRequirements1.requiresDedicatedAllocation = 2;
+            vk.getBufferMemoryRequirements2(device, &bufferMemoryRequirementsInfo, &requirements2[2]);
 
-        if (!areRequirementsTheSame(requirements2[0], requirements2[3]))
-        {
-            success = false;
-            log << tcu::TestLog::Message
-                << "vkGetBufferMemoryRequirements2 with VkMemoryDedicatedRequirements\n"
-                   "and vkGetDeviceBufferMemoryRequirements with VkMemoryDedicatedRequirements\n"
-                   "report diferent memory requirements\n"
-                << tcu::TestLog::EndMessage;
-        }
-        if (dedicatedRequirements1.prefersDedicatedAllocation != dedicatedRequirements2.prefersDedicatedAllocation ||
-            dedicatedRequirements1.requiresDedicatedAllocation != dedicatedRequirements2.requiresDedicatedAllocation)
-        {
-            success = false;
-            log << tcu::TestLog::Message
-                << "VkMemoryDedicatedRequirements with vkGetBufferMemoryRequirements2\n"
-                   " doesn't match VkMemoryDedicatedRequirements with vkGetDeviceBufferMemoryRequirements\n"
-                << tcu::TestLog::EndMessage;
+            if (!areRequirementsTheSame(requirements2[0], requirements2[2]))
+            {
+                success = false;
+                log << tcu::TestLog::Message
+                    << "vkGetBufferMemoryRequirements2 and vkGetBufferMemoryRequirements2 with\n"
+                       "VkMemoryDedicatedRequirements report diferent memory requirements\n"
+                    << tcu::TestLog::EndMessage;
+            }
+
+            requirements2[3].pNext                             = &dedicatedRequirements2;
+            dedicatedRequirements2.prefersDedicatedAllocation  = 3;
+            dedicatedRequirements2.requiresDedicatedAllocation = 3;
+            vk.getDeviceBufferMemoryRequirements(device, &bufferMemInfo, &requirements2[3]);
+
+            if (!areRequirementsTheSame(requirements2[0], requirements2[3]))
+            {
+                success = false;
+                log << tcu::TestLog::Message
+                    << "vkGetBufferMemoryRequirements2 with VkMemoryDedicatedRequirements\n"
+                       "and vkGetDeviceBufferMemoryRequirements with VkMemoryDedicatedRequirements\n"
+                       "report diferent memory requirements\n"
+                    << tcu::TestLog::EndMessage;
+            }
+            if (dedicatedRequirements1.prefersDedicatedAllocation !=
+                    dedicatedRequirements2.prefersDedicatedAllocation ||
+                dedicatedRequirements1.requiresDedicatedAllocation !=
+                    dedicatedRequirements2.requiresDedicatedAllocation)
+            {
+                success = false;
+                log << tcu::TestLog::Message
+                    << "VkMemoryDedicatedRequirements with vkGetBufferMemoryRequirements2\n"
+                       " doesn't match VkMemoryDedicatedRequirements with vkGetDeviceBufferMemoryRequirements\n"
+                    << tcu::TestLog::EndMessage;
+            }
         }
 
         // Similarly, vkGetImageCreateInfoMemoryRequirementsKHR will report the same memory requirements as
@@ -605,42 +633,48 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
                 << tcu::TestLog::EndMessage;
         }
 
-        dedicatedRequirements1.prefersDedicatedAllocation  = 2;
-        dedicatedRequirements1.requiresDedicatedAllocation = 2;
-        vk.getImageMemoryRequirements2(device, &imageMemoryRequirementsInfo, &requirements2[2]);
-
-        if (!areRequirementsTheSame(requirements2[0], requirements2[2]))
+        if (m_testType == TT_DEDICATED_REQUIREMENTS)
         {
-            success = false;
-            log << tcu::TestLog::Message
-                << "vkGetImageMemoryRequirements2 and vkGetImageMemoryRequirements2 with\n"
-                   "VkMemoryDedicatedRequirements report diferent memory requirements\n"
-                << tcu::TestLog::EndMessage;
-        }
+            dedicatedRequirements1.prefersDedicatedAllocation  = 2;
+            dedicatedRequirements1.requiresDedicatedAllocation = 2;
+            vk.getImageMemoryRequirements2(device, &imageMemoryRequirementsInfo, &requirements2[2]);
 
-        dedicatedRequirements2.prefersDedicatedAllocation  = 3;
-        dedicatedRequirements2.requiresDedicatedAllocation = 3;
-        vk.getDeviceImageMemoryRequirements(device, &imageMemInfo, &requirements2[3]);
+            if (!areRequirementsTheSame(requirements2[0], requirements2[2]))
+            {
+                success = false;
+                log << tcu::TestLog::Message
+                    << "vkGetImageMemoryRequirements2 and vkGetImageMemoryRequirements2 with\n"
+                       "VkMemoryDedicatedRequirements report diferent memory requirements\n"
+                    << tcu::TestLog::EndMessage;
+            }
 
-        if (!areRequirementsTheSame(requirements2[0], requirements2[3]))
-        {
-            success = false;
-            log << tcu::TestLog::Message
-                << "vkGetImageMemoryRequirements2 with VkMemoryDedicatedRequirements\n"
-                   "and vkGetDeviceImageMemoryRequirements with VkMemoryDedicatedRequirements\n"
-                   "report diferent memory requirements\n"
-                << tcu::TestLog::EndMessage;
-        }
-        if (dedicatedRequirements1.prefersDedicatedAllocation != dedicatedRequirements2.prefersDedicatedAllocation ||
-            dedicatedRequirements1.requiresDedicatedAllocation != dedicatedRequirements2.requiresDedicatedAllocation)
-        {
-            success = false;
-            log << tcu::TestLog::Message
-                << "VkMemoryDedicatedRequirements with vkGetImageMemoryRequirements2\n"
-                   " doesn't match VkMemoryDedicatedRequirements with vkGetDeviceImageMemoryRequirements\n"
-                << tcu::TestLog::EndMessage;
-        }
+            dedicatedRequirements2.prefersDedicatedAllocation  = 3;
+            dedicatedRequirements2.requiresDedicatedAllocation = 3;
+            vk.getDeviceImageMemoryRequirements(device, &imageMemInfo, &requirements2[3]);
 
+            if (!areRequirementsTheSame(requirements2[0], requirements2[3]))
+            {
+                success = false;
+                log << tcu::TestLog::Message
+                    << "vkGetImageMemoryRequirements2 with VkMemoryDedicatedRequirements\n"
+                       "and vkGetDeviceImageMemoryRequirements with VkMemoryDedicatedRequirements\n"
+                       "report diferent memory requirements\n"
+                    << tcu::TestLog::EndMessage;
+            }
+            if (dedicatedRequirements1.prefersDedicatedAllocation !=
+                    dedicatedRequirements2.prefersDedicatedAllocation ||
+                dedicatedRequirements1.requiresDedicatedAllocation !=
+                    dedicatedRequirements2.requiresDedicatedAllocation)
+            {
+                success = false;
+                log << tcu::TestLog::Message
+                    << "VkMemoryDedicatedRequirements with vkGetImageMemoryRequirements2\n"
+                       " doesn't match VkMemoryDedicatedRequirements with vkGetDeviceImageMemoryRequirements\n"
+                    << tcu::TestLog::EndMessage;
+            }
+        }
+#else
+        (void)m_testType;
 #endif // CTS_USES_VULKANSC
     }
 
@@ -690,12 +724,6 @@ tcu::TestStatus AlignmentMatchingInstance::iterate(void)
     return tcu::TestStatus::fail("Fail");
 }
 
-enum TestType
-{
-    TT_BASIC_INVARIANCE = 0,
-    TT_REQUIREMENTS_MATCHING
-};
-
 class InvarianceCase : public vkt::TestCase
 {
 public:
@@ -717,15 +745,15 @@ InvarianceCase::InvarianceCase(tcu::TestContext &testCtx, const std::string &nam
 
 TestInstance *InvarianceCase::createInstance(Context &context) const
 {
-    if (TT_REQUIREMENTS_MATCHING == m_testType)
-        return new AlignmentMatchingInstance(context);
+    if (TT_REQUIREMENTS_MATCHING == m_testType || TT_DEDICATED_REQUIREMENTS == m_testType)
+        return new AlignmentMatchingInstance(context, m_testType);
 
     return new InvarianceInstance(context, 0x600613);
 }
 
 void InvarianceCase::checkSupport(Context &context) const
 {
-    if (TT_REQUIREMENTS_MATCHING == m_testType)
+    if (TT_REQUIREMENTS_MATCHING == m_testType || TT_DEDICATED_REQUIREMENTS == m_testType)
         context.requireDeviceFunctionality("VK_KHR_maintenance4");
 }
 
@@ -735,6 +763,8 @@ tcu::TestCaseGroup *createMemoryRequirementInvarianceTests(tcu::TestContext &tes
 
     invarianceTests->addChild(new InvarianceCase(testCtx, "random", TT_BASIC_INVARIANCE));
     invarianceTests->addChild(new InvarianceCase(testCtx, "memory_requirements_matching", TT_REQUIREMENTS_MATCHING));
+    invarianceTests->addChild(
+        new InvarianceCase(testCtx, "memory_dedicated_requirements_matching", TT_DEDICATED_REQUIREMENTS));
 
     return invarianceTests.release();
 }

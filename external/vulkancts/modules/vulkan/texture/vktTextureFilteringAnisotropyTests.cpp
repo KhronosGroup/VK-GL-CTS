@@ -56,13 +56,14 @@ struct AnisotropyParams : public ReferenceParams
 {
     AnisotropyParams(const TextureType texType_, const float maxAnisotropy_, const Sampler::FilterMode minFilter_,
                      const Sampler::FilterMode magFilter_, const bool singleLevelImage_ = false,
-                     const bool mipMap_ = false)
+                     const bool mipMap_ = false, const bool useCompute_ = false)
         : ReferenceParams(texType_)
         , maxAnisotropy(maxAnisotropy_)
         , minFilter(minFilter_)
         , magFilter(magFilter_)
         , singleLevelImage(singleLevelImage_)
         , mipMap(mipMap_)
+        , useCompute(useCompute_)
     {
     }
 
@@ -71,6 +72,7 @@ struct AnisotropyParams : public ReferenceParams
     Sampler::FilterMode magFilter;
     bool singleLevelImage;
     bool mipMap;
+    bool useCompute;
 };
 
 class FilteringAnisotropyInstance : public vkt::TestInstance
@@ -104,7 +106,8 @@ public:
     tcu::TestStatus iterate(void)
     {
         TextureRenderer renderer(m_context, VK_SAMPLE_COUNT_1_BIT, ANISOTROPY_TEST_RESOLUTION,
-                                 ANISOTROPY_TEST_RESOLUTION);
+                                 ANISOTROPY_TEST_RESOLUTION, vk::makeComponentMappingRGBA(), false, false,
+                                 m_refParams.useCompute);
         TestTexture2DSp texture;
 
         if (m_refParams.singleLevelImage)
@@ -230,11 +233,19 @@ tcu::TestCaseGroup *createFilteringAnisotropyTests(tcu::TestContext &testCtx)
                 for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); magFilterNdx++)
                 {
                     AnisotropyParams refParams(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx], minFilters[minFilterNdx],
-                                               magFilters[magFilterNdx]);
+                                               magFilters[magFilterNdx], false, false, false);
                     levelAnisotropyGroups->addChild(new FilteringAnisotropyTests(
                         testCtx,
                         "mag_" + string(magFilterName[magFilterNdx]) + "_min_" + string(minFilterName[minFilterNdx]),
                         refParams));
+
+                    // Compute case
+                    refParams.useCompute = true;
+                    levelAnisotropyGroups->addChild(
+                        new FilteringAnisotropyTests(testCtx,
+                                                     "mag_" + string(magFilterName[magFilterNdx]) + "_min_" +
+                                                         string(minFilterName[minFilterNdx]) + "_compute",
+                                                     refParams));
                 }
             basicTests->addChild(levelAnisotropyGroups.release());
         }
@@ -255,11 +266,19 @@ tcu::TestCaseGroup *createFilteringAnisotropyTests(tcu::TestContext &testCtx)
                 for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); magFilterNdx++)
                 {
                     AnisotropyParams refParams(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx], minFilters[minFilterNdx],
-                                               magFilters[magFilterNdx], true);
+                                               magFilters[magFilterNdx], true, false, false);
                     levelAnisotropyGroups->addChild(new FilteringAnisotropyTests(
                         testCtx,
                         "mag_" + string(magFilterName[magFilterNdx]) + "_min_" + string(minFilterName[minFilterNdx]),
                         refParams));
+
+                    // Compute case
+                    refParams.useCompute = true;
+                    levelAnisotropyGroups->addChild(
+                        new FilteringAnisotropyTests(testCtx,
+                                                     "mag_" + string(magFilterName[magFilterNdx]) + "_min_" +
+                                                         string(minFilterName[minFilterNdx]) + "_compute",
+                                                     refParams));
                 }
             singleLevelImageTests->addChild(levelAnisotropyGroups.release());
         }
@@ -281,11 +300,19 @@ tcu::TestCaseGroup *createFilteringAnisotropyTests(tcu::TestContext &testCtx)
                 for (int magFilterNdx = 0; magFilterNdx < DE_LENGTH_OF_ARRAY(magFilters); magFilterNdx++)
                 {
                     AnisotropyParams refParams(TEXTURETYPE_2D, maxAnisotropy[anisotropyNdx], minFilters[minFilterNdx],
-                                               magFilters[magFilterNdx], false, true);
+                                               magFilters[magFilterNdx], false, true, false);
                     levelAnisotropyGroups->addChild(new FilteringAnisotropyTests(
                         testCtx,
                         "mag_" + string(magFilterName[magFilterNdx]) + "_min_" + string(minFilterName[minFilterNdx]),
                         refParams));
+
+                    // Compute case
+                    refParams.useCompute = true;
+                    levelAnisotropyGroups->addChild(
+                        new FilteringAnisotropyTests(testCtx,
+                                                     "mag_" + string(magFilterName[magFilterNdx]) + "_min_" +
+                                                         string(minFilterName[minFilterNdx]) + "_compute",
+                                                     refParams));
                 }
             mipmapTests->addChild(levelAnisotropyGroups.release());
         }

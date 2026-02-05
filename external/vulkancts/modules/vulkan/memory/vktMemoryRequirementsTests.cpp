@@ -1129,6 +1129,58 @@ bool ImageMemoryRequirementsOriginal::isImageSupported(const Context &context, c
         if (!features.textureCompressionASTC_LDR)
             return false;
         break;
+#ifndef CTS_USES_VULKANSC
+    case VK_FORMAT_ASTC_3x3x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_3x3x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_UNORM_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_SRGB_BLOCK_EXT:
+    case VK_FORMAT_ASTC_3x3x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x3x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x3_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_4x4x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x4x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x4_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_5x5x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x5x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x5_SFLOAT_BLOCK_EXT:
+    case VK_FORMAT_ASTC_6x6x6_SFLOAT_BLOCK_EXT:
+    {
+        if (!context.isDeviceFunctionalitySupported("VK_EXT_texture_compression_astc_3d"))
+            return false;
+
+        VkPhysicalDeviceTextureCompressionASTC3DFeaturesEXT astc_3d_features;
+        deMemset(&astc_3d_features, 0, sizeof(astc_3d_features));
+        astc_3d_features.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_TEXTURE_COMPRESSION_ASTC_3D_FEATURES_EXT;
+        astc_3d_features.pNext = nullptr;
+        astc_3d_features.textureCompressionASTC_3D = VK_FALSE;
+
+        VkPhysicalDeviceFeatures2 features2;
+        deMemset(&features2, 0, sizeof(features2));
+        features2.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_FEATURES_2;
+        features2.pNext = &astc_3d_features;
+        context.getInstanceInterface().getPhysicalDeviceFeatures2(context.getPhysicalDevice(), &features2);
+
+        if (astc_3d_features.textureCompressionASTC_3D != VK_TRUE)
+            return false;
+        break;
+    }
+#endif // CTS_USES_VULKANSC
 
     default:
         break;
@@ -1627,6 +1679,12 @@ bool isMultiplaneImageSupported(const InstanceInterface &vki, const VkPhysicalDe
         (info.usage & (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_DEPTH_STENCIL_ATTACHMENT_BIT |
                        VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT)) == 0u)
         return false;
+
+#ifndef CTS_USES_VULKANSC
+    // VUID-VkImageCreateInfo-flags-02565
+    if ((info.flags & VK_IMAGE_CREATE_SUBSAMPLED_BIT_EXT) && info.tiling == VK_IMAGE_TILING_LINEAR)
+        return false;
+#endif
 
     const VkPhysicalDeviceFeatures features = getPhysicalDeviceFeatures(vki, physicalDevice);
 
