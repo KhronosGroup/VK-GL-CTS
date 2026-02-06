@@ -1811,11 +1811,12 @@ void TestCasesBuilder::init()
         Op("distance", FLOAT_ARITHMETIC, "%result             = OpExtInst %type_float %std450 Distance %arg1 %arg2\n",
            B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
     mo[OID_CROSS]    = Op("cross", FLOAT_ARITHMETIC,
-                          "%vec1               = OpCompositeConstruct %type_float_vec3 %arg1 %arg1 %arg1\n"
-                             "%vec2               = OpCompositeConstruct %type_float_vec3 %arg2 %arg2 %arg2\n"
+                          "%vec1               = OpCompositeConstruct %type_float_vec3 %c_float_0 %arg1 %c_float_0\n"
+                             "%vec2               = OpCompositeConstruct %type_float_vec3 %c_float_0 %c_float_0 %arg2\n"
                              "%tmpVec             = OpExtInst %type_float_vec3 %std450 Cross %vec1 %vec2\n"
                              "%result             = OpCompositeExtract %type_float %tmpVec 0\n",
-                          B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"vec1", "vec2", "tmpVec", "result"});
+                          B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT,
+                          {"vec1", "vec2", "tmpVec", "result"});
     mo[OID_FACE_FWD] = Op("face_fwd", FLOAT_ARITHMETIC,
                           "%result             = OpExtInst %type_float %std450 FaceForward %c_float_1 %arg1 %arg2\n",
                           B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT);
@@ -1960,10 +1961,12 @@ void TestCasesBuilder::init()
                            B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT,
                            {"vec1", "vecN", "tmpVec", "result"});
     mo[OID_MAT_DET]   = Op("mat_det", FLOAT_ARITHMETIC,
-                           "%col                = OpCompositeConstruct %type_float_vec2 %arg1 %arg1\n"
-                             "%mat                = OpCompositeConstruct %type_float_mat2x2 %col %col\n"
+                           "%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_0\n"
+                             "%col2               = OpCompositeConstruct %type_float_vec2 %c_float_0 %arg1\n"
+                             "%mat                = OpCompositeConstruct %type_float_mat2x2 %col1 %col2\n"
                              "%result             = OpExtInst %type_float %std450 Determinant %mat\n",
-                           B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT, {"col", "mat", "result"});
+                           B_STATEMENT_USAGE_COMMANDS_CONST_FLOAT | B_STATEMENT_USAGE_COMMANDS_TYPE_FLOAT,
+                           {"col1", "col2", "mat", "result"});
     mo[OID_MAT_INV]   = Op("mat_inv", FLOAT_ARITHMETIC,
                            "%col1               = OpCompositeConstruct %type_float_vec2 %arg1 %c_float_1\n"
                              "%col2               = OpCompositeConstruct %type_float_vec2 %c_float_1 %c_float_1\n"
