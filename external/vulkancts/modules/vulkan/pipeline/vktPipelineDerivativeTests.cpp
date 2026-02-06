@@ -60,7 +60,9 @@ namespace
 void checkSupport(Context &context, bool useMaintenance5)
 {
     if (useMaintenance5)
-        context.requireDeviceFunctionality("VK_KHR_maintenance5");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5") &&
+            !context.isDeviceFunctionalitySupported("VK_KHR_extended_flags"))
+            TCU_THROW(NotSupportedError, "Extensions VK_KHR_maintenance5 and VK_KHR_extended_flags not supported");
 }
 
 void initComputeDerivativePrograms(SourceCollections &sources, bool)

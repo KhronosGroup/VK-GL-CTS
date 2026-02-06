@@ -4095,6 +4095,14 @@ bool checkAstc3DfeatureSupport(Context &context)
 }
 #endif // CTS_USES_VULKANSC
 
+void checkExtendedFlagsSupport(Context &context)
+{
+    (void)context;
+#ifndef CTS_USES_VULKANSC
+    context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
+#endif
+}
+
 void checkYcbcrApiSupport(Context &context)
 {
     // check if YCbcr API and are supported by implementation
@@ -4838,18 +4846,21 @@ VkSampleCountFlags getRequiredOptimalTilingSampleCounts(const VkPhysicalDeviceLi
 struct ImageFormatPropertyCase
 {
     typedef tcu::TestStatus (*Function)(Context &context, const VkFormat format, const VkImageType imageType,
-                                        const VkImageTiling tiling);
+                                        const VkImageTiling tiling, bool extendedFlags);
 
     Function testFunction;
     VkFormat format;
     VkImageType imageType;
     VkImageTiling tiling;
+    bool extendedFlags;
 
-    ImageFormatPropertyCase(Function testFunction_, VkFormat format_, VkImageType imageType_, VkImageTiling tiling_)
+    ImageFormatPropertyCase(Function testFunction_, VkFormat format_, VkImageType imageType_, VkImageTiling tiling_,
+                            bool extendedFlags_)
         : testFunction(testFunction_)
         , format(format_)
         , imageType(imageType_)
         , tiling(tiling_)
+        , extendedFlags(extendedFlags_)
     {
     }
 
@@ -4858,12 +4869,13 @@ struct ImageFormatPropertyCase
         , format(VK_FORMAT_UNDEFINED)
         , imageType(VK_CORE_IMAGE_TYPE_LAST)
         , tiling(VK_CORE_IMAGE_TILING_LAST)
+        , extendedFlags(false)
     {
     }
 };
 
 tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, const VkImageType imageType,
-                                      const VkImageTiling tiling)
+                                      const VkImageTiling tiling, bool extendedFlags)
 {
     if (isYCbCrFormat(format))
         // check if Ycbcr format enums are valid given the version and extensions
@@ -4920,18 +4932,44 @@ tcu::TestStatus imageFormatProperties(Context &context, const VkFormat format, c
 
             const bool isRequiredCombination = isRequiredImageParameterCombination(
                 deviceFeatures, format, formatProperties, imageType, tiling, curUsageFlags, curCreateFlags);
-            VkImageFormatProperties properties;
-            VkResult queryResult;
+            VkImageFormatProperties properties = {};
+            VkResult queryResult               = VK_SUCCESS;
 
-            log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", " << getImageTilingStr(tiling)
-                << ", " << getImageUsageFlagsStr(curUsageFlags) << ", " << getImageCreateFlagsStr(curCreateFlags)
-                << TestLog::EndMessage;
+            if (!extendedFlags)
+            {
+                log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", " << getImageTilingStr(tiling)
+                    << ", " << getImageUsageFlagsStr(curUsageFlags) << ", " << getImageCreateFlagsStr(curCreateFlags)
+                    << TestLog::EndMessage;
 
-            // Set return value to known garbage
-            deMemset(&properties, 0xcd, sizeof(properties));
+                // Set return value to known garbage
+                deMemset(&properties, 0xcd, sizeof(properties));
 
-            queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
-                context.getPhysicalDevice(), format, imageType, tiling, curUsageFlags, curCreateFlags, &properties);
+                queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties(
+                    context.getPhysicalDevice(), format, imageType, tiling, curUsageFlags, curCreateFlags, &properties);
+            }
+            else
+            {
+#ifndef CTS_USES_VULKANSC
+                log << TestLog::Message << "Testing " << getImageTypeStr(imageType) << ", " << getImageTilingStr(tiling)
+                    << ", " << getImageUsageFlagsStr(curUsageFlags) << ", " << getImageCreateFlagsStr(curCreateFlags)
+                    << " with VkImageCreateFlags2CreateInfoKHR" << TestLog::EndMessage;
+
+                VkImageCreateFlags2CreateInfoKHR imageCreateFlags2Info = initVulkanStructure();
+                imageCreateFlags2Info.flags                            = curCreateFlags;
+                VkImageUsageFlags2CreateInfoKHR imageUsageFlags2Info   = initVulkanStructure(&imageCreateFlags2Info);
+                imageUsageFlags2Info.usage                             = curUsageFlags;
+                VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2      = initVulkanStructure(&imageUsageFlags2Info);
+                imageFormatInfo2.format                                = format;
+                imageFormatInfo2.type                                  = imageType;
+                imageFormatInfo2.tiling                                = tiling;
+                imageFormatInfo2.usage                                 = (VkImageUsageFlags)0xFFFFFFFFu;
+                imageFormatInfo2.flags                                 = (VkImageCreateFlags)0xFFFFFFFFu;
+                VkImageFormatProperties2 imageFormatProperties2        = initVulkanStructure();
+                queryResult = context.getInstanceInterface().getPhysicalDeviceImageFormatProperties2(
+                    context.getPhysicalDevice(), &imageFormatInfo2, &imageFormatProperties2);
+                properties = imageFormatProperties2.imageFormatProperties;
+#endif
+            }
 
             if (queryResult == VK_SUCCESS)
             {
@@ -7919,11 +7957,13 @@ tcu::TestStatus devicePropertyExtensionsConsistencyVulkan14(Context &context)
 #endif // CTS_USES_VULKANSC
 
 tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, const VkImageType imageType,
-                                       const VkImageTiling tiling)
+                                       const VkImageTiling tiling, bool extendedFlags)
 {
     if (isYCbCrFormat(format))
         // check if Ycbcr format enums are valid given the version and extensions
         checkYcbcrApiSupport(context);
+    if (extendedFlags)
+        checkExtendedFlagsSupport(context);
 
     TestLog &log = context.getTestContext().getLog();
 
@@ -7947,15 +7987,13 @@ tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, 
 
         for (VkImageCreateFlags curCreateFlags = 0; curCreateFlags <= allCreateFlags; curCreateFlags++)
         {
-            const VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {
-                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
-                nullptr,
-                format,
-                imageType,
-                tiling,
-                curUsageFlags,
-                curCreateFlags};
-
+            VkPhysicalDeviceImageFormatInfo2 imageFormatInfo = {VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_IMAGE_FORMAT_INFO_2,
+                                                                nullptr,
+                                                                format,
+                                                                imageType,
+                                                                tiling,
+                                                                curUsageFlags,
+                                                                curCreateFlags};
             VkImageFormatProperties coreProperties;
             VkImageFormatProperties2 extProperties;
             VkResult coreResult;
@@ -7970,6 +8008,28 @@ tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, 
             coreResult = vki.getPhysicalDeviceImageFormatProperties(
                 physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.tiling,
                 imageFormatInfo.usage, imageFormatInfo.flags, &coreProperties);
+
+#ifndef CTS_USES_VULKANSC
+            VkImageCreateFlags2CreateInfoKHR createFlags2 = {
+                VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR,
+                nullptr,
+                curCreateFlags,
+            };
+            const VkImageUsageFlags2CreateInfoKHR usageFlags2 = {
+                VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+                &createFlags2,
+                curUsageFlags,
+            };
+
+            if (extendedFlags)
+            {
+                imageFormatInfo.pNext = &usageFlags2;
+                // Swap the usage and create flags, to make sure they are correctly ignored
+                imageFormatInfo.usage = curCreateFlags;
+                imageFormatInfo.flags = curUsageFlags;
+            }
+#endif
+
             extResult = vki.getPhysicalDeviceImageFormatProperties2(physicalDevice, &imageFormatInfo, &extProperties);
 
             TCU_CHECK(extProperties.sType == VK_STRUCTURE_TYPE_IMAGE_FORMAT_PROPERTIES_2);
@@ -7994,8 +8054,11 @@ tcu::TestStatus imageFormatProperties2(Context &context, const VkFormat format, 
 
 #ifndef CTS_USES_VULKANSC
 tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat format, const VkImageType imageType,
-                                             const VkImageTiling tiling)
+                                             const VkImageTiling tiling, bool extendedFlags)
 {
+    if (extendedFlags)
+        checkExtendedFlagsSupport(context);
+
     TestLog &log = context.getTestContext().getLog();
 
     const InstanceInterface &vki          = context.getInstanceInterface();
@@ -8014,6 +8077,21 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
             if (!isValidImageUsageFlagCombination(curUsageFlags))
                 continue;
 
+            const VkImageUsageFlags2CreateInfoKHR usageFlags2 = {
+                VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+                nullptr,
+                curUsageFlags,
+            };
+
+            const VkPhysicalDeviceSparseImageFormatInfo2 extendedUsageIimageFormatInfo = {
+                VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2,
+                &usageFlags2,
+                format,
+                imageType,
+                (VkSampleCountFlagBits)sampleCountBit,
+                ~curUsageFlags,
+                tiling,
+            };
             const VkPhysicalDeviceSparseImageFormatInfo2 imageFormatInfo = {
                 VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SPARSE_IMAGE_FORMAT_INFO_2,
                 nullptr,
@@ -8031,7 +8109,9 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
             vki.getPhysicalDeviceSparseImageFormatProperties(
                 physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.samples,
                 imageFormatInfo.usage, imageFormatInfo.tiling, &numCoreProperties, nullptr);
-            vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, &imageFormatInfo, &numExtProperties,
+            const VkPhysicalDeviceSparseImageFormatInfo2 *imageFormatInfoPtr =
+                extendedFlags ? &extendedUsageIimageFormatInfo : &imageFormatInfo;
+            vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, imageFormatInfoPtr, &numExtProperties,
                                                               nullptr);
 
             if (numCoreProperties != numExtProperties)
@@ -8072,7 +8152,7 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
                 vki.getPhysicalDeviceSparseImageFormatProperties(
                     physicalDevice, imageFormatInfo.format, imageFormatInfo.type, imageFormatInfo.samples,
                     imageFormatInfo.usage, imageFormatInfo.tiling, &numCoreProperties, &coreProperties[0]);
-                vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, &imageFormatInfo, &numExtProperties,
+                vki.getPhysicalDeviceSparseImageFormatProperties2(physicalDevice, imageFormatInfoPtr, &numExtProperties,
                                                                   &extProperties[0]);
 
                 TCU_CHECK((size_t)numCoreProperties == coreProperties.size());
@@ -8107,7 +8187,7 @@ tcu::TestStatus sparseImageFormatProperties2(Context &context, const VkFormat fo
 
 tcu::TestStatus execImageFormatTest(Context &context, ImageFormatPropertyCase testCase)
 {
-    return testCase.testFunction(context, testCase.format, testCase.imageType, testCase.tiling);
+    return testCase.testFunction(context, testCase.format, testCase.imageType, testCase.tiling, testCase.extendedFlags);
 }
 
 void createImageFormatTypeTilingTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCase params)
@@ -8165,25 +8245,40 @@ void createImageFormatTypeTests(tcu::TestCaseGroup *testGroup, ImageFormatProper
 {
     DE_ASSERT(params.tiling == VK_CORE_IMAGE_TILING_LAST);
 
-    testGroup->addChild(createTestGroup(
-        testGroup->getTestContext(), "optimal", createImageFormatTypeTilingTests,
-        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_OPTIMAL)));
-    testGroup->addChild(createTestGroup(
-        testGroup->getTestContext(), "linear", createImageFormatTypeTilingTests,
-        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType, VK_IMAGE_TILING_LINEAR)));
+    testGroup->addChild(
+        createTestGroup(testGroup->getTestContext(), "optimal", createImageFormatTypeTilingTests,
+                        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType,
+                                                VK_IMAGE_TILING_OPTIMAL, params.extendedFlags)));
+    testGroup->addChild(
+        createTestGroup(testGroup->getTestContext(), "linear", createImageFormatTypeTilingTests,
+                        ImageFormatPropertyCase(params.testFunction, VK_FORMAT_UNDEFINED, params.imageType,
+                                                VK_IMAGE_TILING_LINEAR, params.extendedFlags)));
 }
 
 void createImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCase::Function testFunction)
 {
+    testGroup->addChild(createTestGroup(testGroup->getTestContext(), "1d", createImageFormatTypeTests,
+                                        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D,
+                                                                VK_CORE_IMAGE_TILING_LAST, false)));
+    testGroup->addChild(createTestGroup(testGroup->getTestContext(), "2d", createImageFormatTypeTests,
+                                        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D,
+                                                                VK_CORE_IMAGE_TILING_LAST, false)));
+    testGroup->addChild(createTestGroup(testGroup->getTestContext(), "3d", createImageFormatTypeTests,
+                                        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D,
+                                                                VK_CORE_IMAGE_TILING_LAST, false)));
+}
+
+void createExtendedFlagsImageFormatTests(tcu::TestCaseGroup *testGroup, ImageFormatPropertyCase::Function testFunction)
+{
     testGroup->addChild(createTestGroup(
         testGroup->getTestContext(), "1d", createImageFormatTypeTests,
-        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_CORE_IMAGE_TILING_LAST)));
+        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_1D, VK_CORE_IMAGE_TILING_LAST, true)));
     testGroup->addChild(createTestGroup(
         testGroup->getTestContext(), "2d", createImageFormatTypeTests,
-        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_CORE_IMAGE_TILING_LAST)));
+        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_2D, VK_CORE_IMAGE_TILING_LAST, true)));
     testGroup->addChild(createTestGroup(
         testGroup->getTestContext(), "3d", createImageFormatTypeTests,
-        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST)));
+        ImageFormatPropertyCase(testFunction, VK_FORMAT_UNDEFINED, VK_IMAGE_TYPE_3D, VK_CORE_IMAGE_TILING_LAST, true)));
 }
 
 tcu::TestStatus execImageUsageTest(Context &context, ImageUsagePropertyCase testCase)
@@ -8803,8 +8898,12 @@ tcu::TestCaseGroup *createFeatureInfoTests(tcu::TestContext &testCtx)
     infoTests->addChild(
         createTestGroup(testCtx, "image_format_properties2", createImageFormatTests, imageFormatProperties2));
 #ifndef CTS_USES_VULKANSC
+    infoTests->addChild(createTestGroup(testCtx, "extended_flags_image_format_properties2",
+                                        createExtendedFlagsImageFormatTests, imageFormatProperties2));
     infoTests->addChild(createTestGroup(testCtx, "sparse_image_format_properties2", createImageFormatTests,
                                         sparseImageFormatProperties2));
+    infoTests->addChild(createTestGroup(testCtx, "extended_flags_sparse_image_format_properties2",
+                                        createExtendedFlagsImageFormatTests, sparseImageFormatProperties2));
 
     {
         de::MovePtr<tcu::TestCaseGroup> profilesValidationTests(new tcu::TestCaseGroup(testCtx, "profiles"));

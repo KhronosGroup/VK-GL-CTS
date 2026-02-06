@@ -76,6 +76,7 @@ enum TestType
 struct CaseDef
 {
     TestType testType;
+    bool extendedFlags;
 };
 
 #define VALIDATE_FIELD_EQUAL(A, B, X)           \
@@ -362,11 +363,23 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
         &videoProfile,                                 //  const VkVideoProfileInfoKHR* pProfiles;
     };
 
-    const VkPhysicalDeviceVideoFormatInfoKHR videoFormatInfo = {
+    VkPhysicalDeviceVideoFormatInfoKHR videoFormatInfo = {
         VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VIDEO_FORMAT_INFO_KHR, //  VkStructureType sType;
         const_cast<VkVideoProfileListInfoKHR *>(&videoProfiles), //  const void* pNext;
         m_imageUsageFlags,                                       //  VkImageUsageFlags imageUsage;
     };
+#ifndef CTS_USES_VULKANSC
+    const VkImageUsageFlags2CreateInfoKHR usageFlags2Info = {
+        VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+        const_cast<void *>(videoFormatInfo.pNext),
+        (VkImageUsageFlags2KHR)m_imageUsageFlags,
+    };
+    if (m_caseDef.extendedFlags)
+    {
+        videoFormatInfo.pNext      = &usageFlags2Info;
+        videoFormatInfo.imageUsage = 0u;
+    }
+#endif
     const VkImageUsageFlags imageUsageFlagsDPB =
         VK_IMAGE_USAGE_VIDEO_DECODE_DPB_BIT_KHR | VK_IMAGE_USAGE_VIDEO_ENCODE_DPB_BIT_KHR;
     const bool imageUsageDPB = (videoFormatInfo.imageUsage & imageUsageFlagsDPB) != 0;
@@ -389,7 +402,7 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
     }
 
     {
-        const VkVideoFormatPropertiesKHR videoFormatPropertiesKHR = {
+        VkVideoFormatPropertiesKHR videoFormatPropertiesKHR = {
             VK_STRUCTURE_TYPE_VIDEO_FORMAT_PROPERTIES_KHR, //  VkStructureType sType;
             nullptr,                                       //  void* pNext;
             VK_FORMAT_MAX_ENUM,                            //  VkFormat format;
@@ -402,6 +415,35 @@ tcu::TestStatus VideoFormatPropertiesQueryTestInstance<ProfileOperation>::iterat
         };
         std::vector<VkVideoFormatPropertiesKHR> videoFormatProperties(videoFormatPropertiesCount,
                                                                       videoFormatPropertiesKHR);
+
+#ifndef CTS_USES_VULKANSC
+        std::vector<VkImageCreateFlags2CreateInfoKHR> createFlags2Infos(videoFormatPropertiesCount);
+        std::vector<VkImageUsageFlags2CreateInfoKHR> usageFlags2Infos(videoFormatPropertiesCount);
+        if (m_caseDef.extendedFlags)
+        {
+            for (uint32_t i = 0; i < videoFormatPropertiesCount; ++i)
+            {
+                VkImageCreateFlags2CreateInfoKHR createFlags2Info = {
+                    VK_STRUCTURE_TYPE_IMAGE_CREATE_FLAGS_2_CREATE_INFO_KHR,
+                    nullptr,
+                    (VkImageCreateFlags2KHR)videoFormatProperties[i].imageCreateFlags,
+                };
+                VkImageUsageFlags2CreateInfoKHR usageFlags2Info2 = {
+                    VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+                    nullptr,
+                    (VkImageUsageFlags2KHR)videoFormatProperties[i].imageUsageFlags,
+                };
+                createFlags2Infos.push_back(createFlags2Info);
+                usageFlags2Infos.push_back(usageFlags2Info2);
+
+                usageFlags2Infos[i].pNext      = &createFlags2Infos[i];
+                videoFormatProperties[i].pNext = &usageFlags2Infos[i];
+
+                videoFormatProperties[i].imageCreateFlags = 0u;
+                videoFormatProperties[i].imageUsageFlags  = 0u;
+            }
+        }
+#endif
 
         const VkResult result = vk.getPhysicalDeviceVideoFormatPropertiesKHR(
             physicalDevice, &videoFormatInfo, &videoFormatPropertiesCount, videoFormatProperties.data());
@@ -1819,6 +1861,9 @@ void VideoCapabilitiesQueryTestCase::checkSupport(Context &context) const
     default:
         TCU_THROW(NotSupportedError, "Unknown TestType");
     }
+
+    if (m_caseDef.extendedFlags)
+        context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
 }
 
 TestInstance *VideoCapabilitiesQueryTestCase::createInstance(Context &context) const
@@ -2291,14 +2336,21 @@ tcu::TestCaseGroup *createVideoCapabilitiesTests(tcu::TestContext &testCtx)
     // Video encoding and decoding capability query tests
     de::MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(testCtx, "capabilities"));
 
-    for (int testTypeNdx = 0; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
+    for (const bool extendedFlags : {false, true})
     {
-        const TestType testType = static_cast<TestType>(testTypeNdx);
-        const CaseDef caseDef   = {
-            testType, //  TestType testType;
-        };
+        const char *flagsGroupName = extendedFlags ? "extended_flags" : "none";
+        de::MovePtr<tcu::TestCaseGroup> flagsGroup(new tcu::TestCaseGroup(testCtx, flagsGroupName));
+        for (int testTypeNdx = 0; testTypeNdx < TEST_TYPE_LAST; ++testTypeNdx)
+        {
+            const TestType testType = static_cast<TestType>(testTypeNdx);
+            const CaseDef caseDef   = {
+                testType,     //  TestType testType;
+                extendedFlags //  bool extendedFlags;
+            };
 
-        group->addChild(new VideoCapabilitiesQueryTestCase(testCtx, getTestName(testType), caseDef));
+            flagsGroup->addChild(new VideoCapabilitiesQueryTestCase(testCtx, getTestName(testType), caseDef));
+        }
+        group->addChild(flagsGroup.release());
     }
 
     return group.release();

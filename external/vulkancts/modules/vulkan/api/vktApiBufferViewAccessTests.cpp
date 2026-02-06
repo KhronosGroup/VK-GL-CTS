@@ -924,8 +924,9 @@ void BufferViewAllFormatsTestInstance::checkTexelBufferSupport(Context &context,
 #ifndef CTS_USES_VULKANSC
     if (testCase.bindUsage != VK_BUFFER_USAGE_FLAG_BITS_MAX_ENUM)
     {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
-            TCU_THROW(NotSupportedError, "Extension VK_KHR_maintenance5 not supported");
+        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5") &&
+            !context.isDeviceFunctionalitySupported("VK_KHR_extended_flags"))
+            TCU_THROW(NotSupportedError, "Extensions VK_KHR_maintenance5 and VK_KHR_extended_flags not supported");
     }
 #endif
 }

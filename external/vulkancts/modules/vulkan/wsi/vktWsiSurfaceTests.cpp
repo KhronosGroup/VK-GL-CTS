@@ -573,6 +573,85 @@ tcu::TestStatus querySurfaceCapabilities2Test(Context &context, Type wsiType)
     return tcu::TestStatus(results.getResult(), results.getMessage());
 }
 
+tcu::TestStatus querySurfaceCapabilities2ExtendedFlagsTest(Context &context, Type wsiType)
+{
+    tcu::TestLog &log = context.getTestContext().getLog();
+    tcu::ResultCollector results(log);
+
+    const InstanceHelper instHelper(context, wsiType, vector<string>(1, string("VK_KHR_get_surface_capabilities2")));
+    const NativeObjects native(context, instHelper.supportedExtensions, wsiType);
+    const Unique<VkSurfaceKHR> surface(createSurface(instHelper.vki, instHelper.instance, wsiType, native.getDisplay(),
+                                                     native.getWindow(), context.getTestContext().getCommandLine()));
+    const vector<VkPhysicalDevice> physicalDevices = enumeratePhysicalDevices(instHelper.vki, instHelper.instance);
+
+    bool anyDeviceSupportsExtendedFlags = false;
+    for (size_t deviceNdx = 0; deviceNdx < physicalDevices.size(); ++deviceNdx)
+    {
+        const std::vector<VkExtensionProperties> deviceExtensions(
+            enumerateDeviceExtensionProperties(instHelper.vki, physicalDevices[deviceNdx], nullptr));
+        if (!isExtensionStructSupported(deviceExtensions, RequiredExtension("VK_KHR_extended_flags")))
+            continue;
+
+        anyDeviceSupportsExtendedFlags = true;
+        if (isSupportedByAnyQueue(instHelper.vki, physicalDevices[deviceNdx], *surface))
+        {
+            VkSurfaceCapabilitiesKHR refCapabilities =
+                getPhysicalDeviceSurfaceCapabilities(instHelper.vki, physicalDevices[deviceNdx], *surface);
+
+            VkImageUsageFlags2CreateInfoKHR usageFlags2Info = {
+                VK_STRUCTURE_TYPE_IMAGE_USAGE_FLAGS_2_CREATE_INFO_KHR,
+                nullptr,
+                (VkImageUsageFlags2KHR)0u,
+            };
+            VkSurfaceCapabilities2KHR extCapabilities;
+            deMemset(&extCapabilities, 0xcd, sizeof(VkSurfaceCapabilities2KHR));
+            extCapabilities.sType = VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR;
+            extCapabilities.pNext = &usageFlags2Info;
+
+            {
+                const VkPhysicalDeviceSurfaceInfo2KHR surfaceInfo = {
+                    VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SURFACE_INFO_2_KHR, nullptr, *surface};
+                VkPhysicalDeviceSurfaceInfo2KHR infoCopy;
+
+                deMemcpy(&infoCopy, &surfaceInfo, sizeof(VkPhysicalDeviceSurfaceInfo2KHR));
+
+                VK_CHECK(instHelper.vki.getPhysicalDeviceSurfaceCapabilities2KHR(physicalDevices[deviceNdx],
+                                                                                 &surfaceInfo, &extCapabilities));
+
+                results.check(memcmp(&surfaceInfo, &infoCopy, sizeof(VkPhysicalDeviceSurfaceInfo2KHR)) == 0,
+                              "Driver wrote into input struct");
+            }
+
+            results.check(extCapabilities.sType == VK_STRUCTURE_TYPE_SURFACE_CAPABILITIES_2_KHR, "sType modified");
+
+            if (refCapabilities.supportedUsageFlags != ((uint32_t)usageFlags2Info.usage))
+            {
+                log << TestLog::Message << "Device " << deviceNdx << ": expected usage "
+                    << refCapabilities.supportedUsageFlags << ", got " << usageFlags2Info.usage << TestLog::EndMessage;
+                results.fail("Mismatch between VK_KHR_surface and VK_KHR_surface2 with VkImageUsageFlags2CreateInfoKHR "
+                             "query results");
+            }
+            else
+            {
+                // Ignore supportedUsageFlags
+                refCapabilities.supportedUsageFlags                     = 0u;
+                extCapabilities.surfaceCapabilities.supportedUsageFlags = 0u;
+
+                if (refCapabilities != extCapabilities.surfaceCapabilities)
+                {
+                    log << TestLog::Message << "Device " << deviceNdx << ": expected " << refCapabilities << ", got "
+                        << extCapabilities.surfaceCapabilities << TestLog::EndMessage;
+                    results.fail("Mismatch between VK_KHR_surface and VK_KHR_surface2 query results");
+                }
+            }
+        }
+    }
+    if (!anyDeviceSupportsExtendedFlags)
+        TCU_THROW(NotSupportedError, "Extension VK_KHR_extended_flags not supported");
+
+    return tcu::TestStatus(results.getResult(), results.getMessage());
+}
+
 tcu::TestStatus querySurfaceProtectedCapabilitiesTest(Context &context, Type wsiType)
 {
     tcu::TestLog &log = context.getTestContext().getLog();
@@ -1702,6 +1781,9 @@ void createSurfaceTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
     addFunctionCase(testGroup, "query_capabilities", querySurfaceCapabilitiesTest, wsiType);
     // Query extended surface capabilities
     addFunctionCase(testGroup, "query_capabilities2", querySurfaceCapabilities2Test, wsiType);
+    // Query extended surface capabilities with extended flags
+    addFunctionCase(testGroup, "query_capabilities2_extended_flags", querySurfaceCapabilities2ExtendedFlagsTest,
+                    wsiType);
     // Query protected surface capabilities
     addFunctionCase(testGroup, "query_protected_capabilities", querySurfaceProtectedCapabilitiesTest, wsiType);
     // Query and check available surface counters

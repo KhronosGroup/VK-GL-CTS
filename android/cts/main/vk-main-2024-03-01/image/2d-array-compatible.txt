@@ -10,3 +10,15 @@ dEQP-VK.image.2d_array_compatible.3_7_16.linear.2d
 dEQP-VK.image.2d_array_compatible.3_7_16.linear.3d
 dEQP-VK.image.2d_array_compatible.3_7_16.optimal.2d
 dEQP-VK.image.2d_array_compatible.3_7_16.optimal.3d
+dEQP-VK.image.2d_array_compatible.extended_create.linear.2d
+dEQP-VK.image.2d_array_compatible.extended_create.linear.3d
+dEQP-VK.image.2d_array_compatible.extended_create.optimal.2d
+dEQP-VK.image.2d_array_compatible.extended_create.optimal.3d
+dEQP-VK.image.2d_array_compatible.extended_create_usage.linear.2d
+dEQP-VK.image.2d_array_compatible.extended_create_usage.linear.3d
+dEQP-VK.image.2d_array_compatible.extended_create_usage.optimal.2d
+dEQP-VK.image.2d_array_compatible.extended_create_usage.optimal.3d
+dEQP-VK.image.2d_array_compatible.extended_usage.linear.2d
+dEQP-VK.image.2d_array_compatible.extended_usage.linear.3d
+dEQP-VK.image.2d_array_compatible.extended_usage.optimal.2d
+dEQP-VK.image.2d_array_compatible.extended_usage.optimal.3d

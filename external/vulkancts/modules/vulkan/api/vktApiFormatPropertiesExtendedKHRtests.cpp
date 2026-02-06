@@ -36,11 +36,20 @@ namespace
 using namespace vk;
 using namespace vkt;
 
-void checkSupport(Context &context, const VkFormat format)
+struct TestParams
 {
-    DE_UNREF(format);
+    VkFormat format;
+    bool extendedFlags;
+};
+
+void checkSupport(Context &context, const TestParams params)
+{
     context.requireDeviceFunctionality(VK_KHR_FORMAT_FEATURE_FLAGS_2_EXTENSION_NAME);
     context.requireInstanceFunctionality(VK_KHR_GET_PHYSICAL_DEVICE_PROPERTIES_2_EXTENSION_NAME);
+    if (params.extendedFlags)
+    {
+        context.requireDeviceFunctionality(VK_KHR_EXTENDED_FLAGS_EXTENSION_NAME);
+    }
 }
 
 void checkFlags(VkFlags64 reportedFlags, VkFlags64 requestedFlags, const char *setName)
@@ -56,10 +65,31 @@ void checkFlags(VkFlags64 reportedFlags, VkFlags64 requestedFlags, const char *s
     }
 }
 
-tcu::TestStatus test(Context &context, const VkFormat format)
+tcu::TestStatus test(Context &context, const TestParams params)
 {
-    const VkFormatProperties3 formatProperties(context.getFormatProperties(format));
-    const VkFormatProperties3 requiredProperties(context.getRequiredFormatProperties(format));
+    const VkFormatProperties3 requiredProperties(context.getRequiredFormatProperties(params.format));
+    VkFormatProperties3 formatProperties;
+    if (!params.extendedFlags)
+    {
+        formatProperties = context.getFormatProperties(params.format);
+    }
+    else
+    {
+        vk::VkFormatProperties4KHR properties4;
+        deMemset(&properties4, 0, sizeof(vk::VkFormatProperties4KHR));
+        properties4.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_4_KHR;
+        properties4.pNext = nullptr;
+
+        formatProperties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_3;
+        formatProperties.pNext = &properties4;
+
+        vk::VkFormatProperties2 properties;
+        properties.sType = VK_STRUCTURE_TYPE_FORMAT_PROPERTIES_2;
+        properties.pNext = &formatProperties;
+
+        context.getInstanceInterface().getPhysicalDeviceFormatProperties2(context.getPhysicalDevice(), params.format,
+                                                                          &properties);
+    }
 
     checkFlags(formatProperties.bufferFeatures, requiredProperties.bufferFeatures, "Buffer features");
     checkFlags(formatProperties.linearTilingFeatures, requiredProperties.linearTilingFeatures,
@@ -70,13 +100,18 @@ tcu::TestStatus test(Context &context, const VkFormat format)
     return tcu::TestStatus::pass("Pass");
 }
 
-void createTestCases(tcu::TestCaseGroup *group)
+void createTestCases(tcu::TestCaseGroup *group, bool extendedFlags)
 {
     for (VkFormat format = VK_FORMAT_R4G4_UNORM_PACK8; format < VK_CORE_FORMAT_LAST;
          format          = static_cast<VkFormat>(format + 1))
     {
         std::string testName = de::toLower(std::string(getFormatName(format)).substr(10));
-        addFunctionCase(group, testName, checkSupport, test, format);
+
+        TestParams params;
+        params.format        = format;
+        params.extendedFlags = extendedFlags;
+
+        addFunctionCase(group, testName, checkSupport, test, params);
     }
 }
 
@@ -89,7 +124,17 @@ namespace api
 
 tcu::TestCaseGroup *createFormatPropertiesExtendedKHRTests(tcu::TestContext &testCtx)
 {
-    return createTestGroup(testCtx, "format_feature_flags2", createTestCases);
+    de::MovePtr<tcu::TestCaseGroup> formatFeaturesTestGroup(new tcu::TestCaseGroup(testCtx, "format_features"));
+
+    de::MovePtr<tcu::TestCaseGroup> formatFeatureFlags2TestGroup(
+        createTestGroup(testCtx, "format_feature_flags2", createTestCases, false));
+    de::MovePtr<tcu::TestCaseGroup> extendedFlagsTestGroup(
+        createTestGroup(testCtx, "extended_flags", createTestCases, true));
+
+    formatFeaturesTestGroup->addChild(formatFeatureFlags2TestGroup.release());
+    formatFeaturesTestGroup->addChild(extendedFlagsTestGroup.release());
+
+    return formatFeaturesTestGroup.release();
 }
 
 } // namespace api

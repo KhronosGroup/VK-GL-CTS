@@ -10,7 +10,6 @@ vk-main-2020-03-01/geometry.txt
 vk-main-2020-03-01/glsl.txt
 vk-main-2020-03-01/graphicsfuzz.txt
 vk-main-2020-03-01/image.txt
-vk-main-2020-03-01/imageless-framebuffer.txt
 vk-main-2020-03-01/info.txt
 vk-main-2020-03-01/memory.txt
 vk-main-2020-03-01/memory-model.txt

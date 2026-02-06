@@ -367,8 +367,12 @@ struct TestParameters
 {
     Type wsiType;
     TestDimension dimension;
+    bool extendedFlags;
 
-    TestParameters(Type wsiType_, TestDimension dimension_) : wsiType(wsiType_), dimension(dimension_)
+    TestParameters(Type wsiType_, TestDimension dimension_, bool extendedFlags_)
+        : wsiType(wsiType_)
+        , dimension(dimension_)
+        , extendedFlags(extendedFlags_)
     {
     }
 
@@ -625,6 +629,8 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
     vector<string> additionalExtensions;
     if (context.isDeviceFunctionalitySupported("VK_EXT_attachment_feedback_loop_layout"))
         additionalExtensions.push_back("VK_EXT_attachment_feedback_loop_layout");
+    if (params.extendedFlags)
+        additionalExtensions.push_back("VK_KHR_extended_flags");
     const MultiQueueDeviceHelper devHelper(context, instHelper.vki, instHelper.instance, *surface,
                                            additionalExtensions);
 
@@ -638,7 +644,14 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         std::ostringstream subcase;
         subcase << "Sub-case " << (caseNdx + 1) << " / " << cases.size() << ": ";
 
-        VkSwapchainCreateInfoKHR curParams = cases[caseNdx];
+        VkSwapchainCreateInfoKHR curParams                   = cases[caseNdx];
+        VkImageUsageFlags2CreateInfoKHR imageUsageFlags2Info = initVulkanStructure();
+        imageUsageFlags2Info.usage                           = curParams.imageUsage;
+        if (params.extendedFlags)
+        {
+            curParams.pNext      = imageUsageFlags2Info.pNext;
+            curParams.imageUsage = 0u;
+        }
 
         if (curParams.imageSharingMode == VK_SHARING_MODE_CONCURRENT)
         {
@@ -661,11 +674,23 @@ tcu::TestStatus createSwapchainTest(Context &context, TestParameters params)
         //     * imageFormat, imageUsage, imageExtent, and imageArrayLayers must be supported for VK_IMAGE_TYPE_2D
         //     VK_IMAGE_TILING_OPTIMAL images as reported by vkGetPhysicalDeviceImageFormatProperties.
         VkImageFormatProperties properties;
-        const VkResult propertiesResult = instHelper.vki.getPhysicalDeviceImageFormatProperties(
-            devHelper.physicalDevice, curParams.imageFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
-            curParams.imageUsage,
-            0, // flags
-            &properties);
+        VkResult propertiesResult;
+        if (!params.extendedFlags)
+        {
+            propertiesResult = instHelper.vki.getPhysicalDeviceImageFormatProperties(
+                devHelper.physicalDevice, curParams.imageFormat, VK_IMAGE_TYPE_2D, VK_IMAGE_TILING_OPTIMAL,
+                curParams.imageUsage,
+                0, // flags
+                &properties);
+        }
+        else
+        {
+            VkPhysicalDeviceImageFormatInfo2 imageFormatInfo2 = initVulkanStructure(&imageUsageFlags2Info);
+            VkImageFormatProperties2 imageFormatProperties2   = initVulkanStructure();
+            propertiesResult                                  = instHelper.vki.getPhysicalDeviceImageFormatProperties2(
+                devHelper.physicalDevice, &imageFormatInfo2, &imageFormatProperties2);
+            properties = imageFormatProperties2.imageFormatProperties;
+        }
 
         log << TestLog::Message << subcase.str() << "vkGetPhysicalDeviceImageFormatProperties => "
             << getResultStr(propertiesResult) << TestLog::EndMessage;
@@ -991,12 +1016,16 @@ struct GroupParameters
 
     Type wsiType;
     Function function;
+    bool extendedFlags;
 
-    GroupParameters(Type wsiType_, Function function_) : wsiType(wsiType_), function(function_)
+    GroupParameters(Type wsiType_, Function function_, bool extendedFlags_)
+        : wsiType(wsiType_)
+        , function(function_)
+        , extendedFlags(extendedFlags_)
     {
     }
 
-    GroupParameters(void) : wsiType(TYPE_LAST), function(nullptr)
+    GroupParameters(void) : wsiType(TYPE_LAST), function(nullptr), extendedFlags(false)
     {
     }
 };
@@ -1010,7 +1039,7 @@ void populateSwapchainPrivateDataGroup(tcu::TestCaseGroup *testGroup, GroupParam
             continue;
 
         addFunctionCase(testGroup, getTestDimensionName(testDimension), params.function,
-                        TestParameters(params.wsiType, testDimension));
+                        TestParameters(params.wsiType, testDimension, params.extendedFlags));
     }
 }
 
@@ -1507,17 +1536,20 @@ void populateSwapchainGroup(tcu::TestCaseGroup *testGroup, GroupParameters param
         const TestDimension testDimension = (TestDimension)dimensionNdx;
 
         addFunctionCase(testGroup, getTestDimensionName(testDimension), params.function,
-                        TestParameters(params.wsiType, testDimension));
+                        TestParameters(params.wsiType, testDimension, params.extendedFlags));
     }
 
-    ImageSwapchainCreateInfoParams imageSwapchainCreateInfoParams;
-    imageSwapchainCreateInfoParams.wsiType    = params.wsiType;
-    imageSwapchainCreateInfoParams.concurrent = false;
-    addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info", getBasicRenderPrograms,
-                                testImageSwapchainCreateInfo, imageSwapchainCreateInfoParams);
-    imageSwapchainCreateInfoParams.concurrent = true;
-    addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info_concurrent", getBasicRenderPrograms,
-                                testImageSwapchainCreateInfo, imageSwapchainCreateInfoParams);
+    if (!params.extendedFlags)
+    {
+        ImageSwapchainCreateInfoParams imageSwapchainCreateInfoParams;
+        imageSwapchainCreateInfoParams.wsiType    = params.wsiType;
+        imageSwapchainCreateInfoParams.concurrent = false;
+        addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info", getBasicRenderPrograms,
+                                    testImageSwapchainCreateInfo, imageSwapchainCreateInfoParams);
+        imageSwapchainCreateInfoParams.concurrent = true;
+        addFunctionCaseWithPrograms(testGroup, "image_swapchain_create_info_concurrent", getBasicRenderPrograms,
+                                    testImageSwapchainCreateInfo, imageSwapchainCreateInfoParams);
+    }
 }
 
 class FrameStreamObjects
@@ -2933,10 +2965,13 @@ void populateAcquireGroup(tcu::TestCaseGroup *testGroup, Type wsiType)
 void createSwapchainTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
 {
     // Create VkSwapchain with various parameters
-    addTestGroup(testGroup, "create", populateSwapchainGroup, GroupParameters(wsiType, createSwapchainTest));
+    addTestGroup(testGroup, "create", populateSwapchainGroup, GroupParameters(wsiType, createSwapchainTest, false));
     // Simulate OOM using callbacks during swapchain construction
     addTestGroup(testGroup, "simulate_oom", populateSwapchainGroup,
-                 GroupParameters(wsiType, createSwapchainSimulateOOMTest));
+                 GroupParameters(wsiType, createSwapchainSimulateOOMTest, false));
+    // Create VkSwapchain with VkImageUsageFlags2CreateInfoKHR
+    addTestGroup(testGroup, "extended_flags", populateSwapchainGroup,
+                 GroupParameters(wsiType, createSwapchainTest, true));
     // Rendering Tests
     addTestGroup(testGroup, "render", populateRenderGroup, wsiType);
     // Modify VkSwapchain
@@ -2949,7 +2984,7 @@ void createSwapchainTests(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType)
     addTestGroup(testGroup, "acquire", populateAcquireGroup, wsiType);
     // Create VkSwapchain and use VK_EXT_private_data
     addTestGroup(testGroup, "private_data", populateSwapchainPrivateDataGroup,
-                 GroupParameters(wsiType, createSwapchainPrivateDataTest));
+                 GroupParameters(wsiType, createSwapchainPrivateDataTest, false));
 }
 
 } // namespace wsi
