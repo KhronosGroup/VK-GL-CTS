@@ -188,11 +188,9 @@ VkBufferCopy2KHR convertvkBufferCopyTovkBufferCopy2KHR(VkBufferCopy bufferCopy);
 VkBufferImageCopy2KHR convertvkBufferImageCopyTovkBufferImageCopy2KHR(VkBufferImageCopy bufferImageCopy);
 
 #ifndef CTS_USES_VULKANSC
-VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(VkBufferImageCopy bufferImageCopy,
-                                                                                VkDeviceAddress address,
-                                                                                VkDeviceSize size,
-                                                                                VkImageLayout imageLayout,
-                                                                                VkAddressCopyFlagsKHR addressCopyFlags);
+VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
+    VkBufferImageCopy bufferImageCopy, VkDeviceAddress address, VkDeviceSize size, VkImageLayout imageLayout,
+    VkAddressCommandFlagsKHR addressFlags = 0);
 
 VkCopyMemoryToImageIndirectCommandKHR convertvkBufferImageCopyTovkMemoryImageCopyKHR(VkDeviceAddress srcBufferAddress,
                                                                                      VkBufferImageCopy bufferImageCopy);

@@ -397,8 +397,12 @@ void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate(
     }
 #endif // CTS_USES_VULKANSC
 
-    de::SharedPtr<Draw::Buffer> buffer = Buffer::createAndAlloc(
-        m_vkd, m_device, createInfo, m_context.getDefaultAllocator(), MemoryRequirement::HostVisible);
+    bool useDeviceAddress        = (extraUsage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT);
+    vk::MemoryRequirement memReq = (useDeviceAddress) ?
+                                       (vk::MemoryRequirement::DeviceAddress | vk::MemoryRequirement::HostVisible) :
+                                       vk::MemoryRequirement::HostVisible;
+
+    auto buffer = Buffer::createAndAlloc(m_vkd, m_device, createInfo, m_context.getDefaultAllocator(), memReq);
 
     void *conditionalRenderingBufferDataPointer =
         static_cast<char *>(buffer->getBoundMemory().getHostPtr()) + m_conditionalRenderingBufferOffset;
@@ -422,8 +426,12 @@ void ConditionalRenderingBaseTestInstance::createInitBufferWithPredicate(
         }
 #endif // CTS_USES_VULKANSC
 
-        m_conditionalRenderingBuffer = Buffer::createAndAlloc(
-            m_vkd, m_device, createInfo, m_context.getDefaultAllocator(), MemoryRequirement::Local);
+        vk::MemoryRequirement memReqLoc = (useDeviceAddress) ?
+                                              (vk::MemoryRequirement::DeviceAddress | vk::MemoryRequirement::Local) :
+                                              vk::MemoryRequirement::Local;
+
+        m_conditionalRenderingBuffer =
+            Buffer::createAndAlloc(m_vkd, m_device, createInfo, m_context.getDefaultAllocator(), memReqLoc);
 
         auto cmdBuffer = vk::allocateCommandBuffer(m_vkd, m_device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);
 

@@ -503,7 +503,7 @@ FillBufferTestInstance::FillBufferTestInstance(Context &context, TestParams test
 
     testParams.bufferAllocator->createTestBuffer(
         vk, m_device, m_params.dstSize, usage, context, *m_allocator, m_destination,
-        m_params.useDeviceAddressCommands ? MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress :
+        m_params.useDeviceAddressCommands ? (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress) :
                                             MemoryRequirement::HostVisible,
         m_destinationBufferAlloc);
 
@@ -709,8 +709,7 @@ tcu::TestStatus UpdateBufferTestInstance::iterate(void)
             dstFlags = 0;
 
         VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
-        vk.cmdUpdateMemoryKHR(*m_cmdBuffer, &dstRange, dstFlags, TestParams::TEST_DATA_SIZE * sizeof(uint32_t),
-                              &m_params.testData);
+        vk.cmdUpdateMemoryKHR(*m_cmdBuffer, &dstRange, dstFlags, m_params.size, &m_params.testData);
     }
 #endif
 

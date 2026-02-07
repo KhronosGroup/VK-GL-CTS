@@ -1382,7 +1382,7 @@ tcu::TestStatus TransformFeedbackResumeTestInstance::iterate(void)
 
 #ifndef CTS_USES_VULKANSC
     if (m_parameters.useDeviceAddressCommands)
-        tfBufCreateInfo.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+        tfcBufCreateInfo.usage |= VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
 
     if (m_parameters.useMaintenance5)
     {

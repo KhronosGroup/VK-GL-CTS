@@ -274,7 +274,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
                    m_params.dst.image.extent.height, m_params.dst.image.extent.depth);
 
     // Fill m_extendedTextureLevel with copy of m_destinationTextureLevel
-    // Then iterate over each of the regions given in m_params.regions and copy m_sourceTextureLevel content to m_extendedTextureLevel
+    // Then iterate over each of the regions given in m_params.regions and copy m_sourceTextureLevel content to m_expectedTextureLevel
     // This emulates what the HW will be doing.
     generateExpectedResult();
 
@@ -313,14 +313,16 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
     }
 #endif
 
+    tcu::ConstPixelBufferAccess bufferAccess = m_sourceTextureLevel->getAccess();
+    const uint32_t channelSize = bufferAccess.getWidth() * bufferAccess.getHeight() * bufferAccess.getDepth();
+
     // To be able to test ordering depth & stencil differently
     // we take the given copy regions and use that as the desired order
     // and copy the appropriate data into place and compute the appropriate
     // data offsets to be used in the copy command.
     for (uint32_t i = 0; i < m_params.regions.size(); i++)
     {
-        tcu::ConstPixelBufferAccess bufferAccess = m_sourceTextureLevel->getAccess();
-        uint32_t bufferSize        = bufferAccess.getWidth() * bufferAccess.getHeight() * bufferAccess.getDepth();
+        uint32_t bufferSize        = channelSize;
         VkBufferImageCopy copyData = m_params.regions[i].bufferImageCopy;
         char *srcPtr;
 
@@ -352,6 +354,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
             tcu::copy(stencilTexture.getAccess(),
                       tcu::getEffectiveDepthStencilAccess(bufferAccess, tcu::Sampler::MODE_STENCIL));
             srcPtr = (char *)stencilTexture.getAccess().getDataPtr();
+
             // Copy packed stencil-only data to output buffer
             deMemcpy(dstPtr, srcPtr, bufferSize);
             stencilLoaded = true;
@@ -374,8 +377,7 @@ tcu::TestStatus CopyBufferToDepthStencil::iterate(void)
         else if (m_params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
         {
             memoryImageCopies2KHR.push_back(convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
-                copyData, srcBufferAddress, m_bufferSize, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR));
+                copyData, srcBufferAddress, bufferSize, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL));
         }
         else
 #endif
@@ -803,9 +805,6 @@ void addCopyBufferToDepthStencilTests(tcu::TestCaseGroup *group, TestGroupParams
     for (const VkFormat format : formats::depthAndStencilFormats)
         for (const auto offset : useOffset)
         {
-            // TODO: Check that this format is supported before creating tests?
-            //if (isSupportedDepthStencilFormat(vki, physDevice, VK_FORMAT_D24_UNORM_S8_UINT))
-
             CopyRegion copyDepthRegion;
             CopyRegion copyStencilRegion;
             TestParams params;

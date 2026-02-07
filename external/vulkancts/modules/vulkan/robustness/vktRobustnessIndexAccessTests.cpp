@@ -169,6 +169,7 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     const tcu::UVec2 renderSize{16};
     const std::vector<VkViewport> viewports{makeViewport(renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
+    VkPipelineDynamicStateCreateInfo *dynamicStatePtr = nullptr;
 
     VkBufferUsageFlags commonUsage = VK_BUFFER_USAGE_TRANSFER_DST_BIT;
     if (m_params.useDeviceAddressCommands)
@@ -238,6 +239,9 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     VkDeviceAddress outputBufferAddress = 0ull;
 
 #ifndef CTS_USES_VULKANSC
+    VkDynamicState dynamicState{VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE};
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = initVulkanStructure();
+
     VkDeviceAddress vertexBufferAddress        = 0ull;
     VkDeviceAddress indexBufferAddress         = 0ull;
     VkDeviceAddress indirectBufferAddress      = 0ull;
@@ -245,6 +249,10 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
 
     if (m_params.useDeviceAddressCommands)
     {
+        dynamicStateCreateInfo.dynamicStateCount = 1u;
+        dynamicStateCreateInfo.pDynamicStates    = &dynamicState;
+        dynamicStatePtr                          = &dynamicStateCreateInfo;
+
         vertexBufferAddress        = getBufferDeviceAddress(vk, *m_device, *vertexBuffer);
         indexBufferAddress         = getBufferDeviceAddress(vk, *m_device, *indexBuffer);
         indirectBufferAddress      = getBufferDeviceAddress(vk, *m_device, *indirectBuffer);
@@ -284,7 +292,8 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     auto framebuffer = makeFramebuffer(vk, *m_device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
     Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
         vk, *m_device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST);
+        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_POINT_LIST, 0, 0, nullptr, nullptr,
+        nullptr, nullptr, nullptr, dynamicStatePtr);
 
     Move<VkCommandPool> cmdPool =
         createCommandPool(vk, *m_device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
@@ -535,6 +544,7 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
         addToChainVulkanStructure(&nextPtr, multiDrawFeatures);
     }
 
+    VkPhysicalDeviceBufferDeviceAddressFeatures bufferDeviceAddressFeatures  = initVulkanStructure();
     VkPhysicalDeviceDeviceAddressCommandsFeaturesKHR addressCommandsFeatures = initVulkanStructure();
     if (m_params.useDeviceAddressCommands)
     {
@@ -556,11 +566,22 @@ void DrawIndexedTestCase::createDeviceAndDriver(Context &context,
     {
         vulkan12Features.drawIndirectCount = true;
         vulkan12Features.scalarBlockLayout = true;
+        if (m_params.useDeviceAddressCommands)
+            vulkan12Features.bufferDeviceAddress = true;
+
         addToChainVulkanStructure(&nextPtr, vulkan12Features);
     }
     else
     {
         addToChainVulkanStructure(&nextPtr, sblFeatures);
+
+#ifndef CTS_USES_VULKANSC
+        if (m_params.useDeviceAddressCommands)
+        {
+            bufferDeviceAddressFeatures.bufferDeviceAddress = true;
+            addToChainVulkanStructure(&nextPtr, bufferDeviceAddressFeatures);
+        }
+#endif // CTS_USES_VULKANSC
     }
 
 #ifndef CTS_USES_VULKANSC
@@ -767,6 +788,7 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     const tcu::UVec2 renderSize{64, 64};
     const std::vector<VkViewport> viewports{makeViewport(renderSize)};
     const std::vector<VkRect2D> scissors{makeRect2D(renderSize)};
+    VkPipelineDynamicStateCreateInfo *dynamicStatePtr = nullptr;
 
     // build vertices data
     std::vector<tcu::Vec4> vertices{// first triangle in 2nd quarter, it should not be drawn
@@ -882,6 +904,9 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     VkDeviceAddress outputBufferAddress = 0ull;
 
 #ifndef CTS_USES_VULKANSC
+    VkDynamicState dynamicState{VK_DYNAMIC_STATE_VERTEX_INPUT_BINDING_STRIDE};
+    VkPipelineDynamicStateCreateInfo dynamicStateCreateInfo = initVulkanStructure();
+
     VkDeviceAddress vertexBufferAddress        = 0ull;
     VkDeviceAddress indexBufferAddress         = 0ull;
     VkDeviceAddress indirectBufferAddress      = 0ull;
@@ -889,6 +914,10 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
 
     if (m_params.useDeviceAddressCommands)
     {
+        dynamicStateCreateInfo.dynamicStateCount = 1u;
+        dynamicStateCreateInfo.pDynamicStates    = &dynamicState;
+        dynamicStatePtr                          = &dynamicStateCreateInfo;
+
         vertexBufferAddress        = getBufferDeviceAddress(vk, *m_device, *vertexBuffer);
         indexBufferAddress         = getBufferDeviceAddress(vk, *m_device, *indexBuffer);
         indirectBufferAddress      = getBufferDeviceAddress(vk, *m_device, *indirectBuffer);
@@ -929,7 +958,8 @@ tcu::TestStatus BindIndexBuffer2Instance::iterate(void)
     auto framebuffer = makeFramebuffer(vk, device, *renderPass, *colorImageView, renderSize.x(), renderSize.y());
     Move<VkPipeline> graphicsPipeline = makeGraphicsPipeline(
         vk, device, *pipelineLayout, *vertShaderModule, VK_NULL_HANDLE, VK_NULL_HANDLE, VK_NULL_HANDLE,
-        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST);
+        *fragShaderModule, *renderPass, viewports, scissors, VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST, 0, 0, nullptr,
+        nullptr, nullptr, nullptr, nullptr, dynamicStatePtr);
 
     auto cmdPool   = createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIdx);
     auto cmdBuffer = allocateCommandBuffer(vk, device, *cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY);

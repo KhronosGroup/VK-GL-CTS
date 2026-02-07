@@ -471,8 +471,11 @@ tcu::TestStatus IndirectDispatchInstanceBufferUpload::iterate(void)
     vk::VkBufferUsageFlags usage = vk::VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT | vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT;
     if (m_params.useDeviceAddressCommands)
         usage |= vk::VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+    vk::MemoryRequirement memReq = m_params.useDeviceAddressCommands ?
+                                       (vk::MemoryRequirement::DeviceAddress | vk::MemoryRequirement::HostVisible) :
+                                       vk::MemoryRequirement::HostVisible;
     vk::BufferWithMemory indirectBuffer(vkdi, m_device, allocator, vk::makeBufferCreateInfo(m_params.bufferSize, usage),
-                                        vk::MemoryRequirement::HostVisible);
+                                        memReq);
     fillIndirectBufferData(*cmdBuffer, vkdi, indirectBuffer);
 
     vk::VkDeviceAddress indirectBufferAddress = 0ull;

@@ -19282,9 +19282,6 @@ dEQP-VK.api.copy_and_blit.dedicated_allocation.memory_to_image_indirect_transfer
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.partial
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.partial_large
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.partial_large_unaligned_size
-dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.regions
-dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.unaligned_regions
-dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.unaligned_regions_large
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.whole
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_buffer.whole_large
 dEQP-VK.api.copy_and_blit.device_address.buffer_to_depthstencil.buffer_offset_d16_unorm_D

@@ -43,11 +43,9 @@ protected:
 
     de::MovePtr<tcu::TextureLevel> generateFilledBuffer(VkDeviceSize size, FillMode fillMode) const;
 
-    // to avoid ifdefs for SC use int for both copyFlags and asign 1 to them by default
-    // which is equal to VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR
     void recordAndSubmitCommandBuffer(VkQueue queue, VkCommandBuffer commandBuffer, VkDeviceSize srcBufferSize,
                                       VkDeviceSize dstBufferSize, const std::vector<CopyRegion> &regions,
-                                      uint32_t srcCopyFlag = 1, uint32_t dstCopyFlag = 1);
+                                      uint32_t srcCommandFlag = 0, uint32_t dstCommandFlag = 0);
 
 protected:
     virtual void copyRegionToTextureLevel(tcu::ConstPixelBufferAccess, tcu::PixelBufferAccess, CopyRegion,
@@ -190,8 +188,8 @@ de::MovePtr<tcu::TextureLevel> CopyBufferToBuffer::generateFilledBuffer(VkDevice
 void CopyBufferToBuffer::recordAndSubmitCommandBuffer(VkQueue queue, VkCommandBuffer commandBuffer,
                                                       VkDeviceSize srcBufferSize, VkDeviceSize dstBufferSize,
                                                       const std::vector<CopyRegion> &regions,
-                                                      [[maybe_unused]] uint32_t srcCopyFlag,
-                                                      [[maybe_unused]] uint32_t dstCopyFlag)
+                                                      [[maybe_unused]] uint32_t srcCommandFlag,
+                                                      [[maybe_unused]] uint32_t dstCommandFlag)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
@@ -225,8 +223,8 @@ void CopyBufferToBuffer::recordAndSubmitCommandBuffer(VkQueue queue, VkCommandBu
             VkDeviceAddressRangeKHR srcAddressRange{srcBufferDeviceAddress + bc.srcOffset, bc.size};
             VkDeviceAddressRangeKHR dstAddressRange{dstBufferDeviceAddress + bc.dstOffset, bc.size};
 
-            memoryCopies2KHR.push_back({VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR, nullptr, srcAddressRange, srcCopyFlag,
-                                        dstAddressRange, dstCopyFlag});
+            memoryCopies2KHR.push_back({VK_STRUCTURE_TYPE_DEVICE_MEMORY_COPY_KHR, nullptr, srcAddressRange,
+                                        srcCommandFlag, dstAddressRange, dstCommandFlag});
         }
 
         VkCopyDeviceMemoryInfoKHR memorInfo = initVulkanStructure();
@@ -471,6 +469,9 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         group->addChild(new BufferToBufferTestCase(testCtx, "partial", params));
     }
 
+    // regions and unaligned_regions tests cant be executed for DAC
+    // due to VUID-VkCopyDeviceMemoryInfoKHR-srcRange-13015
+    if (!(testGroupParams->extensionFlags & DEVICE_ADDRESS_COMMANDS))
     {
         const uint32_t size = 16;
         TestParams params;
@@ -485,7 +486,7 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         // Copy region with size 1..size
         for (unsigned int i = 1; i <= size; i++)
         {
-            const VkBufferCopy bufferCopy = {
+            const VkBufferCopy bufferCopy{
                 0,        // VkDeviceSize srcOffset;
                 i * size, // VkDeviceSize dstOffset;
                 i,        // VkDeviceSize size;
@@ -497,17 +498,10 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         }
 
         group->addChild(new BufferToBufferTestCase(testCtx, "regions", params));
-    }
 
-    {
-        TestParams params;
-        params.src.buffer.size  = 32;
-        params.dst.buffer.size  = 32;
-        params.allocationKind   = testGroupParams->allocationKind;
-        params.extensionFlags   = testGroupParams->extensionFlags;
-        params.queueSelection   = testGroupParams->queueSelection;
-        params.useSparseBinding = testGroupParams->useSparseBinding;
-        params.useGeneralLayout = testGroupParams->useGeneralLayout;
+        params.regions.clear();
+        params.src.buffer.size = 32;
+        params.dst.buffer.size = 32;
 
         // Copy four unaligned regions
         for (unsigned int i = 0; i < 4; i++)
@@ -595,7 +589,9 @@ void addCopyBufferToBufferTests(tcu::TestCaseGroup *group, TestGroupParamsPtr te
         group->addChild(new BufferToBufferTestCase(testCtx, "partial_large_unaligned_size", params));
     }
 
-    // Unaligned regions large
+    // unaligned_regions_large test cant be executed for DAC
+    // due to VUID-VkCopyDeviceMemoryInfoKHR-srcRange-13015
+    if (!(testGroupParams->extensionFlags & DEVICE_ADDRESS_COMMANDS))
     {
         TestParams params;
         params.src.buffer.size  = 2 * defaultLargeSize;

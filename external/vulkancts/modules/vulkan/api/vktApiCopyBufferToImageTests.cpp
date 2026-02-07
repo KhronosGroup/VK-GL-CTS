@@ -205,12 +205,18 @@ tcu::TestStatus CopyBufferToImage::iterate(void)
     {
 #ifndef CTS_USES_VULKANSC
         VkDeviceAddress srcBufferDeviceAddress = getBufferDeviceAddress(vk, vkDevice, *m_source);
+        int pixelSize                          = m_textureFormat.getPixelSize();
 
         memoryImageCopies2KHR.reserve(m_params.regions.size());
         for (const auto &r : m_params.regions)
         {
+            auto size = std::max(r.bufferImageCopy.bufferRowLength, r.bufferImageCopy.imageExtent.width) *
+                        std::max(r.bufferImageCopy.bufferImageHeight, r.bufferImageCopy.imageExtent.height) * pixelSize;
+            if (r.bufferImageCopy.imageSubresource.layerCount == VK_REMAINING_ARRAY_LAYERS)
+                size *= (m_params.dst.image.extent.depth - r.bufferImageCopy.imageSubresource.baseArrayLayer);
+
             memoryImageCopies2KHR.push_back(convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
-                r.bufferImageCopy, srcBufferDeviceAddress, m_bufferSize, layout, VK_ADDRESS_COPY_DEVICE_LOCAL_BIT_KHR));
+                r.bufferImageCopy, srcBufferDeviceAddress, size, layout));
         }
 
         VkCopyDeviceMemoryImageInfoKHR memorImageInfo = initVulkanStructure();
@@ -725,13 +731,14 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
             params.useGeneralLayout          = testGroupParams->useGeneralLayout;
 
             CopyRegion region;
-            uint32_t divisor = 1;
+            uint32_t divisor          = 1;
+            VkDeviceSize bufferOffset = 0;
             for (int offset = 0;
                  (offset + defaultQuarterSize / divisor < defaultSize) && (defaultQuarterSize > divisor);
                  offset += defaultQuarterSize / divisor++)
             {
                 const VkBufferImageCopy bufferImageCopy = {
-                    0u,                           // VkDeviceSize bufferOffset;
+                    bufferOffset,                 // VkDeviceSize bufferOffset;
                     0u,                           // uint32_t bufferRowLength;
                     0u,                           // uint32_t bufferImageHeight;
                     defaultSourceLayer,           // VkImageSubresourceLayers imageSubresource;
@@ -740,6 +747,12 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
                 };
                 region.bufferImageCopy = bufferImageCopy;
                 params.regions.push_back(region);
+
+                // for cmdCopyMemoryToImageKHR, we need to respect VUID-VkCopyDeviceMemoryImageInfoKHR-addressRange-13026;
+                // copying the same location from the buffer to different parts of the image would trigerr the validation error,
+                // so we need to increase the buffer offset for each region
+                if (params.extensionFlags & DEVICE_ADDRESS_COMMANDS)
+                    bufferOffset += pixelSize * bufferImageCopy.imageExtent.width * bufferImageCopy.imageExtent.height;
             }
 
             const auto testName = std::string("regions") + formatAndSuffix.suffix;

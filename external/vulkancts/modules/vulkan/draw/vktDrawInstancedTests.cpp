@@ -172,10 +172,13 @@ template <typename T>
 de::SharedPtr<Buffer> createAndUploadBuffer(const std::vector<T> data, const DeviceInterface &vk,
                                             const Context &context, VkBufferUsageFlags usage)
 {
+    MemoryRequirement memReq = (usage & VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT) ?
+                                   (MemoryRequirement::HostVisible | MemoryRequirement::DeviceAddress) :
+                                   MemoryRequirement::HostVisible;
+
     const VkDeviceSize dataSize = data.size() * sizeof(T);
-    de::SharedPtr<Buffer> buffer =
-        Buffer::createAndAlloc(vk, context.getDevice(), BufferCreateInfo(dataSize, usage),
-                               context.getDefaultAllocator(), MemoryRequirement::HostVisible);
+    auto buffer                 = Buffer::createAndAlloc(vk, context.getDevice(), BufferCreateInfo(dataSize, usage),
+                                                         context.getDefaultAllocator(), memReq);
 
     uint8_t *ptr = reinterpret_cast<uint8_t *>(buffer->getBoundMemory().getHostPtr());
 
@@ -649,6 +652,10 @@ tcu::TestStatus InstancedDrawInstance::iterate()
         firstInstanceIndicesCount = 1;
     }
 
+    VkBufferUsageFlags commonUsage = 0;
+    if (m_params.useDeviceAddressCommands)
+        commonUsage = VK_BUFFER_USAGE_SHADER_DEVICE_ADDRESS_BIT;
+
     for (uint32_t instanceCount : instanceCounts)
     {
         for (int firstInstanceIndexNdx = 0; firstInstanceIndexNdx < firstInstanceIndicesCount; firstInstanceIndexNdx++)
@@ -662,17 +669,18 @@ tcu::TestStatus InstancedDrawInstance::iterate()
 
             prepareVertexData(prepareCount, drawData.firstInstance,
                               (m_params.testAttribDivisor != ATTRIBUTE_DIVISOR_NONE) ? m_params.attribDivisor : 1);
-            drawData.vertexBuffer = createAndUploadBuffer(m_data, m_vk, m_context, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
-            drawData.vertexBufferSize = m_data.size() * sizeof(VertexPositionAndColor);
-            drawData.instanceBuffer =
-                createAndUploadBuffer(m_instancedColor, m_vk, m_context, VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+            drawData.vertexBuffer =
+                createAndUploadBuffer(m_data, m_vk, m_context, commonUsage | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
+            drawData.vertexBufferSize   = m_data.size() * sizeof(VertexPositionAndColor);
+            drawData.instanceBuffer     = createAndUploadBuffer(m_instancedColor, m_vk, m_context,
+                                                                commonUsage | VK_BUFFER_USAGE_VERTEX_BUFFER_BIT);
             drawData.instanceBufferSize = m_instancedColor.size() * sizeof(tcu::Vec4);
 
             if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED ||
                 m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
             {
                 drawData.indexBuffer =
-                    createAndUploadBuffer(m_indexes, m_vk, m_context, VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
+                    createAndUploadBuffer(m_indexes, m_vk, m_context, commonUsage | VK_BUFFER_USAGE_INDEX_BUFFER_BIT);
                 drawData.indexBufferSize = m_indexes.size() * sizeof(uint32_t);
             }
             if (m_params.function == TestParams::FUNCTION_DRAW_INDIRECT)
@@ -684,8 +692,8 @@ tcu::TestStatus InstancedDrawInstance::iterate()
                     0u,                      // uint32_t firstVertex;
                     drawData.firstInstance   // uint32_t firstInstance;
                 });
-                drawData.indirectBuffer =
-                    createAndUploadBuffer(drawCommands, m_vk, m_context, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+                drawData.indirectBuffer     = createAndUploadBuffer(drawCommands, m_vk, m_context,
+                                                                    commonUsage | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
                 drawData.indirectBufferSize = sizeof(VkDrawIndirectCommand);
             }
             if (m_params.function == TestParams::FUNCTION_DRAW_INDEXED_INDIRECT)
@@ -698,8 +706,8 @@ tcu::TestStatus InstancedDrawInstance::iterate()
                     0,                          // int32_t vertexOffset;
                     drawData.firstInstance      // uint32_t firstInstance;
                 });
-                drawData.indirectBuffer =
-                    createAndUploadBuffer(drawCommands, m_vk, m_context, VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
+                drawData.indirectBuffer     = createAndUploadBuffer(drawCommands, m_vk, m_context,
+                                                                    commonUsage | VK_BUFFER_USAGE_INDIRECT_BUFFER_BIT);
                 drawData.indirectBufferSize = sizeof(VkDrawIndexedIndirectCommand);
             }
 

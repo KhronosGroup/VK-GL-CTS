@@ -609,7 +609,7 @@ MovePtr<Allocation> allocateExtended(const InstanceInterface &vki, const DeviceI
 {
     const VkPhysicalDeviceMemoryProperties memoryProperties = getPhysicalDeviceMemoryProperties(vki, physDevice);
     const uint32_t memoryTypeNdx = selectMatchingMemoryType(memoryProperties, memReqs.memoryTypeBits, requirement);
-    const VkMemoryAllocateInfo allocInfo = {
+    const VkMemoryAllocateInfo allocInfo{
         VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_INFO, //    VkStructureType    sType
         pNext,                                  //    const void*        pNext
         memReqs.size,                           //    VkDeviceSize    allocationSize
@@ -631,13 +631,20 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
                                           const VkPhysicalDevice &physDevice, const VkDevice device,
                                           const VkBuffer buffer, MemoryRequirement requirement)
 {
-    const VkMemoryRequirements memoryRequirements               = getBufferMemoryRequirements(vkd, device, buffer);
-    const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
+    const VkMemoryRequirements memoryRequirements = getBufferMemoryRequirements(vkd, device, buffer);
+    VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo{
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
         nullptr,                                          // const void*            pNext
         VK_NULL_HANDLE,                                   // VkImage                image
         buffer                                            // VkBuffer                buffer
     };
+
+    VkMemoryAllocateFlagsInfo allocFlagsInfo = initVulkanStructure();
+    if (requirement & MemoryRequirement::DeviceAddress)
+    {
+        allocFlagsInfo.flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+        dedicatedAllocationInfo.pNext = &allocFlagsInfo;
+    }
 
     return allocateExtended(vki, vkd, physDevice, device, memoryRequirements, requirement, &dedicatedAllocationInfo);
 }

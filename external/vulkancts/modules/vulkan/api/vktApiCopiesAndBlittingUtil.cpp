@@ -74,12 +74,12 @@ VkDeviceMemoryImageCopyKHR convertvkBufferImageCopyTovkDeviceMemoryImageCopyKHR(
                                                                                 VkDeviceAddress address,
                                                                                 VkDeviceSize size,
                                                                                 VkImageLayout imageLayout,
-                                                                                VkAddressCopyFlagsKHR addressCopyFlags)
+                                                                                VkAddressCommandFlagsKHR addressFlags)
 {
     return {VK_STRUCTURE_TYPE_DEVICE_MEMORY_IMAGE_COPY_KHR,
             nullptr,
-            {address + bufferImageCopy.bufferOffset, size - bufferImageCopy.bufferOffset},
-            addressCopyFlags,
+            {address + bufferImageCopy.bufferOffset, size},
+            addressFlags,
             bufferImageCopy.bufferRowLength,
             bufferImageCopy.bufferImageHeight,
             bufferImageCopy.imageSubresource,
@@ -253,34 +253,19 @@ de::MovePtr<Allocation> allocateImage(const InstanceInterface &vki, const Device
 void checkExtensionSupport(Context &context, uint32_t flags)
 {
     if (flags & COPY_COMMANDS_2)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_commands2"))
-            TCU_THROW(NotSupportedError, "VK_KHR_copy_commands2 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_copy_commands2");
 
     if (flags & SEPARATE_DEPTH_STENCIL_LAYOUT)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_separate_depth_stencil_layouts"))
-            TCU_THROW(NotSupportedError, "VK_KHR_separate_depth_stencil_layouts is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_separate_depth_stencil_layouts");
 
     if (flags & MAINTENANCE_1)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance1"))
-            TCU_THROW(NotSupportedError, "VK_KHR_maintenance1 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_maintenance1");
 
     if (flags & MAINTENANCE_5)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_maintenance5"))
-            TCU_THROW(NotSupportedError, "VK_KHR_maintenance5 is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_maintenance5");
 
     if (flags & INDIRECT_COPY)
-    {
-        if (!context.isDeviceFunctionalitySupported("VK_KHR_copy_memory_indirect"))
-            TCU_THROW(NotSupportedError, "VK_KHR_copy_memory_indirect is not supported");
-    }
+        context.requireDeviceFunctionality("VK_KHR_copy_memory_indirect");
 
     if (flags & SPARSE_BINDING)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SPARSE_BINDING);
@@ -290,6 +275,9 @@ void checkExtensionSupport(Context &context, uint32_t flags)
 
     if (flags & MAINTENANCE_10)
         context.requireDeviceFunctionality("VK_KHR_maintenance10");
+
+    if (flags & DEVICE_ADDRESS_COMMANDS)
+        context.requireDeviceFunctionality("VK_KHR_device_address_commands");
 }
 
 uint32_t getArraySize(const ImageParms &parms)
