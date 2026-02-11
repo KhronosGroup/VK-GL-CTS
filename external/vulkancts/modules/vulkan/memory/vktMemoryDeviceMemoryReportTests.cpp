@@ -1607,7 +1607,7 @@ void checkSupport<ImageView>(Context &context, ImageView::Parameters parameters)
     if (parameters.viewType == vk::VK_IMAGE_VIEW_TYPE_CUBE_ARRAY)
         context.requireDeviceCoreFeature(vkt::DEVICE_CORE_FEATURE_IMAGE_CUBE_ARRAY);
 
-    context.requireDeviceFunctionality("VK_EXT_device_memory_report");
+    checkSupport(context);
 }
 
 template <typename Object>
