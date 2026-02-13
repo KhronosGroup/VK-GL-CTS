@@ -3681,7 +3681,7 @@ void generateDefaultNormalBlocks(uint8_t *dst, size_t numBlocks, int blockWidth,
 
     blockParams.weightGridWidth       = 3;
     blockParams.weightGridHeight      = 3;
-    blockParams.weightGridHeight      = blockDepth > 1 ? 3 : 1;
+    blockParams.weightGridDepth       = blockDepth > 1 ? 3 : 1;
     blockParams.weightISEParams       = ISEParams(ISEMODE_PLAIN_BIT, 5);
     blockParams.isDualPlane           = false;
     blockParams.numPartitions         = 1;
