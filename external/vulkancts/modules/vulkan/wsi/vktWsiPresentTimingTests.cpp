@@ -807,8 +807,11 @@ void updateSwapchainTimingProperties(const DeviceInterface &vkd, vk::VkDevice de
         0,       // uint64_t refreshInterval;
     };
 
-    VK_CHECK(vkd.getSwapchainTimingPropertiesEXT(device, swapchain, &swapchainTimingProperties,
-                                                 &pth.timingPropertiesCounter));
+    auto result = vkd.getSwapchainTimingPropertiesEXT(device, swapchain, &swapchainTimingProperties,
+                                                      &pth.timingPropertiesCounter);
+    if ((result != VK_SUCCESS) && (result != VK_NOT_READY))
+        TCU_FAIL("Failed to get swapchain timing properties");
+
     if (swapchainTimingProperties.refreshDuration == 0)
         pth.refreshCycleDuration = kDefaultRefreshCycleDurationNs;
     else
