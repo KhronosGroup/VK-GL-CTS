@@ -1,0 +1,1 @@
+dEQP-VK.subgroups.shader_quad_control.terminated_invocation

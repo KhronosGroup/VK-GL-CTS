@@ -1,0 +1,3 @@
+# broken in FBO surface mode and cause trouble for other tests
+dEQP-GLES3.functional.fbo.api.*
+dEQP-GLES3.functional.fbo.render.*

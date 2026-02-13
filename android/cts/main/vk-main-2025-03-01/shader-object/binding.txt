@@ -1,0 +1,3 @@
+dEQP-VK.shader_object.binding.unbind_mesh_draw_vertex
+dEQP-VK.shader_object.binding.unbind_task_mesh
+dEQP-VK.shader_object.binding.unbind_vtg
