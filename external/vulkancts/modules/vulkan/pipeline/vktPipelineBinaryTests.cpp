@@ -1228,7 +1228,10 @@ tcu::TestStatus PipelineBinaryKeyTestInstance::iterate(void)
         }
     }
 
-    return testOk ? tcu::TestStatus::pass("Passed") : tcu::TestStatus::pass("Failed");
+    if (!testOk)
+        TCU_FAIL("Failed");
+
+    return tcu::TestStatus::pass("Passed");
 }
 
 class BaseTestCase : public vkt::TestCase
