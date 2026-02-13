@@ -114,6 +114,7 @@ struct TestParams
     VkFormat densityMapFormat;
     VkFormat depthFormat;
     const SharedGroupParams groupParams;
+    bool checkDensityFormula;
 };
 
 struct Vertex4RGBA
@@ -1634,6 +1635,23 @@ void FragmentDensityMapTest::checkSupport(Context &context) const
 
     if (m_testParams.colorSamples != VK_SAMPLE_COUNT_1_BIT)
         context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_SAMPLE_RATE_SHADING);
+
+    if (m_testParams.checkDensityFormula)
+    {
+        uint32_t specVersion = 0;
+        for (const auto &ext : vk::enumerateDeviceExtensionProperties(context.getInstanceInterface(),
+                                                                      context.getPhysicalDevice(), nullptr))
+        {
+            if (strcmp(ext.extensionName, "VK_EXT_fragment_density_map") == 0)
+            {
+                specVersion = ext.specVersion;
+                break;
+            }
+        }
+        if (specVersion < 3)
+            TCU_THROW(NotSupportedError,
+                      "Density formula tests requires minimum VK_EXT_fragment_density_map in spec version 3");
+    }
 }
 
 tcu::Vec2 getFormatDelta(VkFormat densityMapFormat)
@@ -3153,6 +3171,21 @@ tcu::TestStatus FragmentDensityMapTestInstance::verifyImage(const DeviceHelper &
 
             if ((densityClamped + 0.01) < densityMult)
                 return tcu::TestStatus::fail("Wrong value of FragSizeEXT variable");
+
+            if (m_testParams.checkDensityFormula)
+            {
+                const float ratio =
+                    static_cast<float>(m_renderSize.x()) / static_cast<float>(m_testParams.densityMapSize.x());
+
+                // Compute expectedMaxTexelSize = 2^ceil(log2(floor(ratio))) for 33.0f/16.0f ratio expect 2
+                // the old pre spec version 3 formula 2^ceil(log2(ratio)) would give us 4
+                int expectedMaxTexelSize = static_cast<int>(std::exp2(std::ceil(std::log2(std::floor(ratio)))));
+
+                const float minDensityClamped = 1.0f / static_cast<float>(expectedMaxTexelSize * expectedMaxTexelSize);
+
+                if (densityClamped + 0.01f < minDensityClamped)
+                    return tcu::TestStatus::fail("FragSizeEXT exceeds max allowed by texel size formula");
+            }
 
             auto it = colorCount.find(outputColor);
             if (it == end(colorCount))
@@ -5075,6 +5108,49 @@ static void createChildren(tcu::TestCaseGroup *fdmTests, const SharedGroupParams
                 }
                 renderGroup->addChild(sizeGroup.release());
             }
+
+            // Verifies 2^ceil(log2(floor(fb / fdm))) texel-size formula in VK_EXT_fragment_density_map spec version 3
+            if (groupParams->renderingType != RENDERING_TYPE_RENDERPASS_LEGACY)
+            {
+                de::MovePtr<tcu::TestCaseGroup> floorSizeGroup(new tcu::TestCaseGroup(testCtx, "density_formula"));
+                de::MovePtr<tcu::TestCaseGroup> sample1Group(new tcu::TestCaseGroup(testCtx, "1_sample"));
+
+                TestParams floorParams{
+                    false,                 // dynamicDensityMap
+                    false,                 // deferredDensityMap
+                    false,                 // nonSubsampledImages
+                    false,                 // subsampledLoads
+                    false,                 // coarseReconstruction
+                    false,                 // imagelessFramebuffer
+                    false,                 // useMemoryAccess
+                    false,                 // useMaintenance5
+                    1,                     // samplersCount
+                    1u,                    // viewCount
+                    false,                 // multiViewport
+                    render.makeCopy,       // makeCopy
+                    false,                 // depthEnabled
+                    false,                 // addZeroOffset
+                    33.0f / 16.0f,         // renderMultiplier
+                    VK_SAMPLE_COUNT_1_BIT, // colorSamples
+                    {4, 4},                // fragmentArea
+                    {16, 16},              // densityMapSize
+                    VK_FORMAT_R8G8_UNORM,  // densityMapFormat
+                    VK_FORMAT_D16_UNORM,   // depthFormat
+                    groupParams,           // groupParams
+                    true,                  // checkDensityFormula
+                };
+
+                sample1Group->addChild(new FragmentDensityMapTest(testCtx, "static_subsampled_4_4", floorParams));
+                floorParams.deferredDensityMap = true;
+                sample1Group->addChild(new FragmentDensityMapTest(testCtx, "deferred_subsampled_4_4", floorParams));
+                floorParams.deferredDensityMap = false;
+                floorParams.dynamicDensityMap  = true;
+                sample1Group->addChild(new FragmentDensityMapTest(testCtx, "dynamic_subsampled_4_4", floorParams));
+
+                floorSizeGroup->addChild(sample1Group.release());
+                renderGroup->addChild(floorSizeGroup.release());
+            }
+
             viewGroup->addChild(renderGroup.release());
         }
         fdmTests->addChild(viewGroup.release());
