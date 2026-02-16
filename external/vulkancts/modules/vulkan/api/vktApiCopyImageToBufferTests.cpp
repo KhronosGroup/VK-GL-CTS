@@ -406,6 +406,13 @@ CopyCompressedImageToBuffer::CopyCompressedImageToBuffer(Context &context, const
 {
 }
 
+void hexDump(std::ostream &out, const std::string &header, const uint8_t *data, uint32_t dataSize)
+{
+    out << header;
+    for (uint32_t i = 0u; i < dataSize; ++i)
+        out << " " << std::hex << std::setw(2) << std::setfill('0') << static_cast<int>(data[i]);
+}
+
 tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
@@ -592,17 +599,55 @@ tcu::TestStatus CopyCompressedImageToBuffer::iterate(void)
             m_context.resetCommandPoolForVKSC(vkDevice, commandPool);
 
             invalidateAlloc(vk, vkDevice, m_destination->getAllocation());
+
             // Read and compare buffer data.
             const uint8_t *referenceData = (uint8_t *)compressedMipLevelToCheck.getData();
             const uint8_t *resultData    = (uint8_t *)m_destination->getAllocation().getHostPtr();
-            int result                   = deMemCmp(referenceData, resultData, bufferSize);
-            if (result != 0)
+            int retcode                  = deMemCmp(referenceData, resultData, bufferSize);
+
+            const bool fail = (retcode != 0);
+            auto &log       = m_context.getTestContext().getLog();
+
+            if (fail || log.logAllImages())
+            {
+                const auto decompressionParams = tcu::TexDecompressionParams(tcu::TexDecompressionParams::ASTCMODE_LDR);
+                const auto compressedFormat    = compressedMipLevelToCheck.getFormat();
+                const auto logFormat           = tcu::getUncompressedFormat(compressedFormat);
+                const tcu::IVec3 mipExtent(compressedMipLevelToCheck.getWidth(), compressedMipLevelToCheck.getHeight(),
+                                           compressedMipLevelToCheck.getDepth());
+
+                tcu::TextureLevel refLevel(logFormat, mipExtent.x(), mipExtent.y(), mipExtent.z());
+                tcu::PixelBufferAccess reference = refLevel.getAccess();
+                compressedMipLevelToCheck.decompress(reference, decompressionParams);
+
+                tcu::TextureLevel resLevel(logFormat, mipExtent.x(), mipExtent.y(), mipExtent.z());
+                tcu::PixelBufferAccess result = resLevel.getAccess();
+                tcu::decompress(result, compressedFormat, resultData, decompressionParams);
+
+                const auto setName = "MipLevel" + std::to_string(mipLevelToCheckIdx) + "-ArrayLayer" +
+                                     std::to_string(arrayLayerToCheckIdx);
+                log << tcu::TestLog::ImageSet(setName.c_str(), "")
+                    << tcu::TestLog::Image(setName + "-ResultBuffer", "", result)
+                    << tcu::TestLog::Image(setName + "-Reference", "", reference) << tcu::TestLog::EndImageSet;
+
+                std::ostringstream refDump;
+                std::ostringstream resDump;
+
+                hexDump(refDump, "Ref. Block:", referenceData, bufferSize);
+                hexDump(resDump, "Res. Block:", resultData, bufferSize);
+
+                log << tcu::TestLog::Message << refDump.str() << tcu::TestLog::EndMessage << tcu::TestLog::Message
+                    << resDump.str() << tcu::TestLog::EndMessage;
+            }
+
+            if (fail)
             {
                 std::ostringstream msg;
                 msg << "Incorrect data retrieved for mip level " << mipLevelToCheckIdx << ", layer "
                     << arrayLayerToCheckIdx << " - extents (" << compressedMipLevelToCheck.getWidth() << ", "
-                    << compressedMipLevelToCheck.getHeight() << ")";
-                return tcu::TestStatus::fail(msg.str());
+                    << compressedMipLevelToCheck.getHeight() << "); check log for more info";
+
+                TCU_FAIL(msg.str());
             }
         }
 
