@@ -627,14 +627,45 @@ MovePtr<Allocation> allocateExtended(const InstanceInterface &vki, const DeviceI
     return MovePtr<Allocation>(new SimpleAllocation(mem, hostPtr, 0u));
 }
 
+namespace
+{
+
+std::unique_ptr<VkMemoryAllocateFlagsInfo> getMemoryAllocateFlagsInfo(MemoryRequirement requirement)
+{
+    VkMemoryAllocateFlags flags = 0u;
+
+    if (requirement & MemoryRequirement::DeviceAddress)
+        flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_BIT;
+
+    if (requirement & MemoryRequirement::DeviceAddressCaptureReplay)
+        flags |= VK_MEMORY_ALLOCATE_DEVICE_ADDRESS_CAPTURE_REPLAY_BIT;
+
+    std::unique_ptr<VkMemoryAllocateFlagsInfo> info;
+    if (flags != 0u)
+    {
+        info.reset(new VkMemoryAllocateFlagsInfo{
+            VK_STRUCTURE_TYPE_MEMORY_ALLOCATE_FLAGS_INFO,
+            nullptr,
+            flags,
+            0u,
+        });
+    }
+
+    return info;
+}
+
+} // namespace
+
 de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const DeviceInterface &vkd,
                                           const VkPhysicalDevice &physDevice, const VkDevice device,
                                           const VkBuffer buffer, MemoryRequirement requirement)
 {
-    const VkMemoryRequirements memoryRequirements               = getBufferMemoryRequirements(vkd, device, buffer);
+    const auto memoryRequirements = getBufferMemoryRequirements(vkd, device, buffer);
+    const auto flagsInfo          = getMemoryAllocateFlagsInfo(requirement);
+
     const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
-        nullptr,                                          // const void*            pNext
+        flagsInfo.get(),                                  // const void*            pNext
         VK_NULL_HANDLE,                                   // VkImage                image
         buffer                                            // VkBuffer                buffer
     };
@@ -646,10 +677,12 @@ de::MovePtr<Allocation> allocateDedicated(const InstanceInterface &vki, const De
                                           const VkPhysicalDevice &physDevice, const VkDevice device,
                                           const VkImage image, MemoryRequirement requirement)
 {
-    const VkMemoryRequirements memoryRequirements               = getImageMemoryRequirements(vkd, device, image);
+    const auto memoryRequirements = getImageMemoryRequirements(vkd, device, image);
+    const auto flagsInfo          = getMemoryAllocateFlagsInfo(requirement);
+
     const VkMemoryDedicatedAllocateInfo dedicatedAllocationInfo = {
         VK_STRUCTURE_TYPE_MEMORY_DEDICATED_ALLOCATE_INFO, // VkStructureType        sType
-        nullptr,                                          // const void*            pNext
+        flagsInfo.get(),                                  // const void*            pNext
         image,                                            // VkImage                image
         VK_NULL_HANDLE                                    // VkBuffer                buffer
     };
