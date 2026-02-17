@@ -188,17 +188,27 @@ struct TestParams
 
     VerifyPushConstants verifyConstants[RegionCount];
 
-    bool
-        isMultisampledRenderToSingleSampled; //!< Whether the test should use VK_EXT_multisampled_render_to_single_sampled or normal multisampling
-    bool
-        clearBeforeRenderPass; //!< Whether loadOp=CLEAR should be used, or clear is done before render pass and loadOp=LOAD is used
-    bool renderToWholeFramebuffer; //!< Whether the test should render to the whole framebuffer.
-    bool
-        testBlendsColors; //!< Whether the test blends colors or overwrites them.  Tests don't adapt to this automatically, it's informative for shader generation.
-    bool dynamicRendering;     //!< Whether the test should use dynamic rendering.
-    bool useGarbageAttachment; //!< Whether the test uses garbage attachments.
-    bool
-        renderToAttachment; //!< Whether the test renders to input attachment in previous subpass or if it's initialize outside of render pass
+    //!< Whether the test should use VK_EXT_multisampled_render_to_single_sampled or normal multisampling
+    bool isMultisampledRenderToSingleSampled;
+    //!< Whether loadOp=CLEAR should be used, or clear is done before render pass and loadOp=LOAD is used
+    bool clearBeforeRenderPass;
+    //!< Whether the test should render to the whole framebuffer.
+    bool renderToWholeFramebuffer;
+    //!< Whether the test blends colors or overwrites them.  Tests don't adapt to this automatically, it's informative for shader generation.
+    bool testBlendsColors;
+    //!< Whether the test should use dynamic rendering.
+    bool dynamicRendering;
+    //!< Whether the resolve attachment is also used as input attachment in the pass
+    bool resolveUsedAsInput = false;
+    //!< Whether VK_EXT_shader_stencil_export should be used to unresolve stencil
+    bool useShaderStencilExport = false;
+    //!< Whether depth/stencil input attachments should also be tested
+    bool useDepthStencilInputAttachments = false;
+    //!< Whether the test uses garbage attachments.
+    bool useGarbageAttachment = false;
+    //!< Whether the test renders to input attachment in previous subpass or if it's initialize outside of render pass
+    bool renderToAttachment;
+
     ImageMemoryType imageMemoryType; //!< Whether the test use AHB images
 
     struct PerPass
@@ -325,6 +335,15 @@ struct WorkingData
 {
     UVec2 framebufferSize; //!< Size of the framebuffer
     UVec4 renderArea;      //!< Render area
+
+    // The layouts to use for the attachments.  In some tests, the attachments are simultaneously
+    // used as input attachments, so they need a different layout.
+    //
+    // Only used with dynamic rendering.
+    VkImageLayout colorLayout               = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkImageLayout depthStencilLayout        = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    VkImageLayout resolveColorLayout        = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
+    VkImageLayout resolveDepthStencilLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
 
     Move<VkBuffer> vertexBuffer;                 //!< Contains a fullscreen triangle
     MovePtr<Allocation> vertexBufferAlloc;       //!< Storage for vertexBuffer
@@ -575,15 +594,38 @@ Move<VkImageView> Image::makeView(const DeviceInterface &vk, const VkDevice devi
                          format, makeImageSubresourceRange(aspect, 0u, 1u, 0u, layerCount));
 }
 
+enum class Blend
+{
+    Yes,
+    No,
+};
+
+enum class DepthTest
+{
+    No,
+    Greater,
+    AlwaysAndWrite,
+};
+
+enum class StencilTest
+{
+    No,
+    IncrementAndClamp,
+    Replace,
+};
+
+constexpr uint32_t kAllStencilBits = ~0u;
+
 //! Create a test-specific MSAA pipeline
 MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline(
     const InstanceInterface &vki, const DeviceInterface &vk, const VkPhysicalDevice physicalDevice,
     const VkDevice device, const std::vector<std::string> &deviceExtensions,
     const PipelineConstructionType pipelineConstructionType, const PipelineLayoutWrapper &pipelineLayout,
     const VkRenderPass renderPass, VkPipelineRenderingCreateInfoKHR *pipelineRenderingCreateInfo,
-    const ShaderWrapper vertexModule, const ShaderWrapper fragmentModule, const bool enableBlend,
-    const bool enableDepthStencilWrite, const bool enableDepthTest, const uint32_t intWriteMask,
-    const uint32_t subpassNdx, const int32_t integerAttachmentLocation, const UVec4 &viewportIn, const UVec4 &scissorIn,
+    VkRenderingInputAttachmentIndexInfo *renderingInputCreateInfo, const ShaderWrapper vertexModule,
+    const ShaderWrapper fragmentModule, const Blend blend, const DepthTest depth, const StencilTest stencil,
+    const uint32_t stencilWriteMask, const uint32_t intWriteMask, const uint32_t subpassNdx,
+    const int32_t integerAttachmentLocation, const UVec4 &viewportIn, const UVec4 &scissorIn,
     const VkSampleCountFlagBits numSamples, const bool garbageAttachment, const bool singleAttachment = false)
 {
     std::vector<VkVertexInputBindingDescription> vertexInputBindingDescriptions;
@@ -654,44 +696,44 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline(
         VK_FALSE                                                  // VkBool32 alphaToOneEnable;
     };
 
-    // Simply increment the buffer
     const VkStencilOpState stencilOpState =
-        makeStencilOpState(VK_STENCIL_OP_KEEP,                // stencil fail
-                           VK_STENCIL_OP_INCREMENT_AND_CLAMP, // depth & stencil pass
-                           VK_STENCIL_OP_KEEP,                // depth only fail
-                           VK_COMPARE_OP_ALWAYS,              // compare op
-                           ~0u,                               // compare mask
-                           ~0u,                               // write mask
-                           0u);                               // reference
+        makeStencilOpState(VK_STENCIL_OP_KEEP, // stencil fail
+                           stencil == StencilTest::IncrementAndClamp ? VK_STENCIL_OP_INCREMENT_AND_CLAMP :
+                                                                       VK_STENCIL_OP_REPLACE, // depth & stencil pass
+                           VK_STENCIL_OP_KEEP,                                                // depth only fail
+                           VK_COMPARE_OP_ALWAYS,                                              // compare op
+                           ~0u,                                                               // compare mask
+                           stencilWriteMask,                                                  // write mask
+                           stencilWriteMask);                                                 // reference
 
     // Enable depth write and test if needed
     VkPipelineDepthStencilStateCreateInfo pipelineDepthStencilStateInfo = {
-        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO,     // VkStructureType sType;
-        nullptr,                                                        // const void* pNext;
-        (VkPipelineDepthStencilStateCreateFlags)0,                      // VkPipelineDepthStencilStateCreateFlags flags;
-        VK_TRUE,                                                        // VkBool32 depthTestEnable;
-        enableDepthStencilWrite,                                        // VkBool32 depthWriteEnable;
-        enableDepthTest ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_ALWAYS, // VkCompareOp depthCompareOp;
-        VK_FALSE,                                                       // VkBool32 depthBoundsTestEnable;
-        VK_TRUE,                                                        // VkBool32 stencilTestEnable;
-        stencilOpState,                                                 // VkStencilOpState front;
-        stencilOpState,                                                 // VkStencilOpState back;
-        0.0f,                                                           // float minDepthBounds;
-        1.0f,                                                           // float maxDepthBounds;
+        VK_STRUCTURE_TYPE_PIPELINE_DEPTH_STENCIL_STATE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                                                    // const void* pNext;
+        (VkPipelineDepthStencilStateCreateFlags)0,                  // VkPipelineDepthStencilStateCreateFlags flags;
+        VK_TRUE,                                                    // VkBool32 depthTestEnable;
+        depth == DepthTest::AlwaysAndWrite,                         // VkBool32 depthWriteEnable;
+        depth == DepthTest::Greater ? VK_COMPARE_OP_GREATER : VK_COMPARE_OP_ALWAYS, // VkCompareOp depthCompareOp;
+        VK_FALSE,                                                                   // VkBool32 depthBoundsTestEnable;
+        stencil != StencilTest::No,                                                 // VkBool32 stencilTestEnable;
+        stencilOpState,                                                             // VkStencilOpState front;
+        stencilOpState,                                                             // VkStencilOpState back;
+        0.0f,                                                                       // float minDepthBounds;
+        1.0f,                                                                       // float maxDepthBounds;
     };
 
     // Always blend by addition.  This is used to verify the combination of multiple draw calls.
     const VkColorComponentFlags colorComponentsAll =
         VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
     VkPipelineColorBlendAttachmentState defaultBlendAttachmentState = {
-        enableBlend ? VK_TRUE : VK_FALSE, // VkBool32 blendEnable;
-        VK_BLEND_FACTOR_ONE,              // VkBlendFactor srcColorBlendFactor;
-        VK_BLEND_FACTOR_ONE,              // VkBlendFactor dstColorBlendFactor;
-        VK_BLEND_OP_ADD,                  // VkBlendOp colorBlendOp;
-        VK_BLEND_FACTOR_ONE,              // VkBlendFactor srcAlphaBlendFactor;
-        VK_BLEND_FACTOR_ONE,              // VkBlendFactor dstAlphaBlendFactor;
-        VK_BLEND_OP_ADD,                  // VkBlendOp alphaBlendOp;
-        colorComponentsAll,               // VkColorComponentFlags colorWriteMask;
+        blend == Blend::Yes ? VK_TRUE : VK_FALSE, // VkBool32 blendEnable;
+        VK_BLEND_FACTOR_ONE,                      // VkBlendFactor srcColorBlendFactor;
+        VK_BLEND_FACTOR_ONE,                      // VkBlendFactor dstColorBlendFactor;
+        VK_BLEND_OP_ADD,                          // VkBlendOp colorBlendOp;
+        VK_BLEND_FACTOR_ONE,                      // VkBlendFactor srcAlphaBlendFactor;
+        VK_BLEND_FACTOR_ONE,                      // VkBlendFactor dstAlphaBlendFactor;
+        VK_BLEND_OP_ADD,                          // VkBlendOp alphaBlendOp;
+        colorComponentsAll,                       // VkColorComponentFlags colorWriteMask;
     };
 
     VkPipelineColorBlendAttachmentState blendAttachmentStates[4] = {
@@ -701,7 +743,7 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline(
         defaultBlendAttachmentState,
     };
 
-    if (enableBlend && integerAttachmentLocation >= 0)
+    if (blend == Blend::Yes && integerAttachmentLocation >= 0)
     {
         // Disable blend for the integer attachment unconditionally
         blendAttachmentStates[integerAttachmentLocation].blendEnable = VK_FALSE;
@@ -750,8 +792,10 @@ MovePtr<GraphicsPipelineWrapper> makeGraphicsPipeline(
             viewports, scissors, pipelineLayout, renderPass, subpassNdx, vertexModule, &pipelineRasterizationStateInfo,
             ShaderWrapper(), ShaderWrapper(), ShaderWrapper(), nullptr, nullptr,
             garbageAttachment ? &pipelineRenderingCreateInfoWithGarbage : pipelineRenderingCreateInfo)
-        .setupFragmentShaderState(pipelineLayout, renderPass, subpassNdx, fragmentModule,
-                                  &pipelineDepthStencilStateInfo, &pipelineMultisampleStateInfo)
+        .setupFragmentShaderState2(
+            pipelineLayout, renderPass, subpassNdx, fragmentModule, 0, &pipelineDepthStencilStateInfo,
+            &pipelineMultisampleStateInfo, nullptr, VK_NULL_HANDLE, {},
+            renderingInputCreateInfo ? renderingInputCreateInfo : RenderingInputAttachmentIndexInfoWrapper())
         .setRenderingColorAttachmentsInfo(pipelineRenderingCreateInfo)
         .setupFragmentOutputState(renderPass, subpassNdx, &pipelineColorBlendStateInfo, &pipelineMultisampleStateInfo)
         .buildPipeline();
@@ -1219,17 +1263,29 @@ void initializeAttachmentDescriptions(const TestParams &params, std::vector<VkAt
         });
 }
 
+enum class ResolveUse
+{
+    Auto,
+    AsInput,
+};
+
 void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &wd,
                                         std::vector<VkRenderingAttachmentInfo> &colorAttachmentInfos,
                                         VkRenderingAttachmentInfo &depthStencilAttachmentInfo,
                                         std::vector<VkFormat> &colorAttachmentFormats, const int32_t attachmentNdxes[8],
-                                        uint32_t &attachmentUseMask, uint32_t passNdx)
+                                        uint32_t &attachmentUseMask, uint32_t passNdx, ResolveUse resolveUse)
 {
     // The attachments are either cleared already or should be cleared now. If an attachment was used in a previous render pass,
     // it will override these values to always LOAD and use the SHADER_READ_ONLY layout. It's SHADER_READ_ONLY because final layout
     // is always that for simplicity.
+    //
+    // For the resolveUsedAsInput tests, use LOAD_OP_DONT_CARE because the MSAA data is populated
+    // from the resolve attachment.
+    const bool resolveUsedAsInput = resolveUse == ResolveUse::AsInput;
     const VkAttachmentLoadOp loadOp =
-        params.clearBeforeRenderPass ? VK_ATTACHMENT_LOAD_OP_LOAD : VK_ATTACHMENT_LOAD_OP_CLEAR;
+        params.clearBeforeRenderPass ?
+            resolveUsedAsInput ? VK_ATTACHMENT_LOAD_OP_DONT_CARE : VK_ATTACHMENT_LOAD_OP_LOAD :
+            VK_ATTACHMENT_LOAD_OP_CLEAR;
     const TestParams::PerPass &perPass = params.perPass[passNdx];
 
     const VkRenderingAttachmentInfo emptyRenderingAttachmentInfo = {
@@ -1257,7 +1313,7 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
             VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType            sType
             nullptr,                                     // const void*                pNext
             wd.floatColor1.view.get(),                   // VkImageView                imageView
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout            imageLayout
+            wd.colorLayout,                              // VkImageLayout            imageLayout
             VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits    resolveMode
             VK_NULL_HANDLE,                              // VkImageView                resolveImageView
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout            resolveImageLayout
@@ -1268,15 +1324,18 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
         };
 
         // Enable resolve image if it's used.
-        if (attachmentNdxes[4] >= 0)
+        if (!resolveUsedAsInput)
         {
-            renderingAttachmentInfo.resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT;
-            renderingAttachmentInfo.resolveImageView   = wd.floatResolve1.view.get();
-            renderingAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        }
-        else if (params.numFloatColor1Samples == VK_SAMPLE_COUNT_1_BIT)
-        {
-            renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+            if (attachmentNdxes[4] >= 0)
+            {
+                renderingAttachmentInfo.resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT;
+                renderingAttachmentInfo.resolveImageView   = wd.floatResolve1.view.get();
+                renderingAttachmentInfo.resolveImageLayout = wd.resolveColorLayout;
+            }
+            else if (params.numFloatColor1Samples == VK_SAMPLE_COUNT_1_BIT)
+            {
+                renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+            }
         }
 
         colorAttachmentInfos[perPass.floatColor1Location]   = renderingAttachmentInfo;
@@ -1290,7 +1349,7 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
             VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType            sType
             nullptr,                                     // const void*                pNext
             wd.floatColor2.view.get(),                   // VkImageView                imageView
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout            imageLayout
+            wd.colorLayout,                              // VkImageLayout            imageLayout
             VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits    resolveMode
             VK_NULL_HANDLE,                              // VkImageView                resolveImageView
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout            resolveImageLayout
@@ -1300,15 +1359,18 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
             params.clearValues[1]                         // VkClearValue                clearValue
         };
 
-        if (attachmentNdxes[5] >= 0)
+        if (!resolveUsedAsInput)
         {
-            renderingAttachmentInfo.resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT;
-            renderingAttachmentInfo.resolveImageView   = wd.floatResolve2.view.get();
-            renderingAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        }
-        else if (params.numFloatColor2Samples == VK_SAMPLE_COUNT_1_BIT)
-        {
-            renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+            if (attachmentNdxes[5] >= 0)
+            {
+                renderingAttachmentInfo.resolveMode        = VK_RESOLVE_MODE_AVERAGE_BIT;
+                renderingAttachmentInfo.resolveImageView   = wd.floatResolve2.view.get();
+                renderingAttachmentInfo.resolveImageLayout = wd.resolveColorLayout;
+            }
+            else if (params.numFloatColor2Samples == VK_SAMPLE_COUNT_1_BIT)
+            {
+                renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_AVERAGE_BIT;
+            }
         }
 
         colorAttachmentInfos[perPass.floatColor2Location]   = renderingAttachmentInfo;
@@ -1322,7 +1384,7 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
             VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType            sType
             nullptr,                                     // const void*                pNext
             wd.intColor.view.get(),                      // VkImageView                imageView
-            VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,    // VkImageLayout            imageLayout
+            wd.colorLayout,                              // VkImageLayout            imageLayout
             VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits    resolveMode
             VK_NULL_HANDLE,                              // VkImageView                resolveImageView
             VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout            resolveImageLayout
@@ -1332,15 +1394,18 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
             params.clearValues[2]                         // VkClearValue                clearValue
         };
 
-        if (attachmentNdxes[6] >= 0)
+        if (!resolveUsedAsInput)
         {
-            renderingAttachmentInfo.resolveMode        = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
-            renderingAttachmentInfo.resolveImageView   = wd.intResolve.view.get();
-            renderingAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL;
-        }
-        else if (params.numIntColorSamples == VK_SAMPLE_COUNT_1_BIT)
-        {
-            renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+            if (attachmentNdxes[6] >= 0)
+            {
+                renderingAttachmentInfo.resolveMode        = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+                renderingAttachmentInfo.resolveImageView   = wd.intResolve.view.get();
+                renderingAttachmentInfo.resolveImageLayout = wd.resolveColorLayout;
+            }
+            else if (params.numIntColorSamples == VK_SAMPLE_COUNT_1_BIT)
+            {
+                renderingAttachmentInfo.resolveMode = VK_RESOLVE_MODE_SAMPLE_ZERO_BIT;
+            }
         }
 
         colorAttachmentInfos[perPass.intColorLocation]   = renderingAttachmentInfo;
@@ -1352,28 +1417,31 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
     {
 
         VkRenderingAttachmentInfo renderingAttachmentInfo = {
-            VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO,      // VkStructureType            sType
-            nullptr,                                          // const void*                pNext
-            wd.depthStencil.view.get(),                       // VkImageView                imageView
-            VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL, // VkImageLayout            imageLayout
-            VK_RESOLVE_MODE_NONE,                             // VkResolveModeFlagBits    resolveMode
-            VK_NULL_HANDLE,                                   // VkImageView                resolveImageView
-            VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout            resolveImageLayout
+            VK_STRUCTURE_TYPE_RENDERING_ATTACHMENT_INFO, // VkStructureType            sType
+            nullptr,                                     // const void*                pNext
+            wd.depthStencil.view.get(),                  // VkImageView                imageView
+            wd.depthStencilLayout,                       // VkImageLayout            imageLayout
+            VK_RESOLVE_MODE_NONE,                        // VkResolveModeFlagBits    resolveMode
+            VK_NULL_HANDLE,                              // VkImageView                resolveImageView
+            VK_IMAGE_LAYOUT_UNDEFINED,                   // VkImageLayout            resolveImageLayout
             (attachmentUseMask & (1 << 3)) != 0 ? VK_ATTACHMENT_LOAD_OP_LOAD :
                                                   loadOp, // VkAttachmentLoadOp        loadOp
             VK_ATTACHMENT_STORE_OP_STORE,                 // VkAttachmentStoreOp        storeOp
             params.clearValues[3]                         // VkClearValue                clearValue
         };
 
-        if (attachmentNdxes[7] >= 0)
+        if (!resolveUsedAsInput)
         {
-            renderingAttachmentInfo.resolveMode        = params.perPass[passNdx].depthStencilResolveMode;
-            renderingAttachmentInfo.resolveImageView   = wd.depthStencilResolve.view.get();
-            renderingAttachmentInfo.resolveImageLayout = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        }
-        else if (params.numDepthStencilSamples == VK_SAMPLE_COUNT_1_BIT)
-        {
-            renderingAttachmentInfo.resolveMode = params.perPass[passNdx].depthStencilResolveMode;
+            if (attachmentNdxes[7] >= 0)
+            {
+                renderingAttachmentInfo.resolveMode        = params.perPass[passNdx].depthStencilResolveMode;
+                renderingAttachmentInfo.resolveImageView   = wd.depthStencilResolve.view.get();
+                renderingAttachmentInfo.resolveImageLayout = wd.resolveDepthStencilLayout;
+            }
+            else if (params.numDepthStencilSamples == VK_SAMPLE_COUNT_1_BIT)
+            {
+                renderingAttachmentInfo.resolveMode = params.perPass[passNdx].depthStencilResolveMode;
+            }
         }
 
         depthStencilAttachmentInfo = renderingAttachmentInfo;
@@ -1383,15 +1451,29 @@ void initializeRenderingAttachmentInfos(const TestParams &params, WorkingData &w
 
 void initResolveImageLayouts(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
 {
-    const DeviceInterface &vk                       = context.getDeviceInterface();
-    const VkImageMemoryBarrier imageBarrierTemplate = {
+    const DeviceInterface &vk                                 = context.getDeviceInterface();
+    const VkImageMemoryBarrier imageBarrierTemplatePreCleared = {
         VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
         nullptr,                                // const void*                pNext
-        0,                                      // VkAccessFlags            srcAccessMask
+        VK_ACCESS_TRANSFER_WRITE_BIT,           // VkAccessFlags              srcAccessMask;
+        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,    // VkAccessFlags            dstAccessMask
+        VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,   // VkImageLayout              oldLayout;
+        wd.resolveColorLayout,                  // VkImageLayout            newLayout
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t                    srcQueueFamilyIndex
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t                    dstQueueFamilyIndex
+        VK_NULL_HANDLE,                         // VkImage                    image
+        makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
+                                  1u), // VkImageSubresourceRange    subresourceRange
+    };
+
+    const VkImageMemoryBarrier imageBarrierTemplateUndefined = {
+        VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER, // VkStructureType            sType
+        nullptr,                                // const void*                pNext
+        0,                                      // VkAccessFlags              srcAccessMask;
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags            dstAccessMask
-        VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout            oldLayout
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // VkImageLayout            newLayout
+        VK_IMAGE_LAYOUT_UNDEFINED,                        // VkImageLayout              oldLayout;
+        wd.resolveColorLayout,                            // VkImageLayout            newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    dstQueueFamilyIndex
         VK_NULL_HANDLE,                                   // VkImage                    image
@@ -1399,40 +1481,53 @@ void initResolveImageLayouts(Context &context, const TestParams &params, Working
                                   1u), // VkImageSubresourceRange    subresourceRange
     };
 
-    std::vector<VkImageMemoryBarrier> barriers;
-
-    if (wd.floatResolve1.image)
+    auto issueBarriers = [&](bool clearedAndUnresolveSource)
     {
-        barriers.push_back(imageBarrierTemplate);
-        barriers.back().image = *wd.floatResolve1.image;
-    }
+        std::vector<VkImageMemoryBarrier> barriers;
+        const VkImageMemoryBarrier &barrierTemplate =
+            clearedAndUnresolveSource ? imageBarrierTemplatePreCleared : imageBarrierTemplateUndefined;
 
-    if (wd.floatResolve2.image)
-    {
-        barriers.push_back(imageBarrierTemplate);
-        barriers.back().image = *wd.floatResolve2.image;
-    }
+        if (wd.floatResolve1.image)
+        {
+            barriers.push_back(barrierTemplate);
+            barriers.back().image = *wd.floatResolve1.image;
+        }
 
-    if (wd.intResolve.image)
-    {
-        barriers.push_back(imageBarrierTemplate);
-        barriers.back().image = *wd.intResolve.image;
-    }
+        if (wd.floatResolve2.image)
+        {
+            barriers.push_back(barrierTemplate);
+            barriers.back().image = *wd.floatResolve2.image;
+        }
 
-    if (wd.depthStencilResolve.image)
-    {
-        barriers.push_back(imageBarrierTemplate);
-        barriers.back().image                       = *wd.depthStencilResolve.image;
-        barriers.back().newLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
-        barriers.back().subresourceRange.aspectMask = getDepthStencilAspectFlags(params.depthStencilFormat);
-    }
+        if (wd.intResolve.image)
+        {
+            barriers.push_back(barrierTemplate);
+            barriers.back().image = *wd.intResolve.image;
+        }
 
-    if (!barriers.empty())
-    {
-        vk.cmdPipelineBarrier(*testObjects.cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
-                              0u, 0u, nullptr, 0u, nullptr, static_cast<uint32_t>(barriers.size()), barriers.data());
-    }
+        if (wd.depthStencilResolve.image)
+        {
+            barriers.push_back(barrierTemplate);
+            barriers.back().image                       = *wd.depthStencilResolve.image;
+            barriers.back().newLayout                   = wd.resolveDepthStencilLayout;
+            barriers.back().subresourceRange.aspectMask = getDepthStencilAspectFlags(params.depthStencilFormat);
+        }
+
+        if (!barriers.empty())
+        {
+            vk.cmdPipelineBarrier(
+                *testObjects.cmdBuffer,
+                clearedAndUnresolveSource ? VK_PIPELINE_STAGE_TRANSFER_BIT : VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                clearedAndUnresolveSource ?
+                    VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT :
+                    VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                0u, 0u, nullptr, 0u, nullptr, static_cast<uint32_t>(barriers.size()), barriers.data());
+        }
+    };
+
+    // Resolve images are always output only, unless they are simultaneously used as input (and are
+    // therefore also cleared).
+    issueBarriers(params.resolveUsedAsInput);
 }
 
 void preRenderingImageLayoutTransition(Context &context, const TestParams &params, WorkingData &wd,
@@ -1449,11 +1544,11 @@ void preRenderingImageLayoutTransition(Context &context, const TestParams &param
         VK_ACCESS_COLOR_ATTACHMENT_READ_BIT |
             VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags              dstAccessMask;
         preCleared ? VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL :
-                     VK_IMAGE_LAYOUT_UNDEFINED,   // VkImageLayout              oldLayout;
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL, // VkImageLayout              newLayout;
-        VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   srcQueueFamilyIndex;
-        VK_QUEUE_FAMILY_IGNORED,                  // uint32_t                   dstQueueFamilyIndex;
-        VK_NULL_HANDLE,                           // VkImage                    image;
+                     VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout              oldLayout;
+        wd.colorLayout,                         // VkImageLayout              newLayout;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   srcQueueFamilyIndex;
+        VK_QUEUE_FAMILY_IGNORED,                // uint32_t                   dstQueueFamilyIndex;
+        VK_NULL_HANDLE,                         // VkImage                    image;
         makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u,
                                   1u), // VkImageSubresourceRange    subresourceRange;
     };
@@ -1472,7 +1567,7 @@ void preRenderingImageLayoutTransition(Context &context, const TestParams &param
     barriers[3].image = *wd.depthStencil.image;
     barriers[3].dstAccessMask =
         VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_READ_BIT | VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-    barriers[3].newLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+    barriers[3].newLayout                   = wd.depthStencilLayout;
     barriers[3].subresourceRange.aspectMask = getDepthStencilAspectFlags(params.depthStencilFormat);
 
     if (inputAttachmentsCase && !params.renderToAttachment)
@@ -1500,7 +1595,7 @@ void postRenderingImageLayoutTransition(Context &context, const TestParams &para
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags            srcAccessMask
         VK_ACCESS_SHADER_READ_BIT,                        // VkAccessFlags            dstAccessMask
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // VkImageLayout            oldLayout
+        wd.colorLayout,                                   // VkImageLayout            oldLayout
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // VkImageLayout            newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   srcQueueFamilyIndex;
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                   dstQueueFamilyIndex;
@@ -1540,7 +1635,7 @@ void postRenderingImageLayoutTransition(Context &context, const TestParams &para
         barriers.push_back(imageBarrierTemplate);
         barriers.back().image                       = *wd.depthStencil.image;
         barriers.back().srcAccessMask               = VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT;
-        barriers.back().oldLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        barriers.back().oldLayout                   = wd.depthStencilLayout;
         barriers.back().newLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         barriers.back().subresourceRange.aspectMask = getDepthStencilAspectFlags(params.depthStencilFormat);
     }
@@ -1562,7 +1657,7 @@ void postRenderingResolveImageLayoutTransition(Context &context, const TestParam
         VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
             VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags            srcAccessMask
         VK_ACCESS_SHADER_READ_BIT,                        // VkAccessFlags            dstAccessMask
-        VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL,         // VkImageLayout            oldLayout
+        wd.resolveColorLayout,                            // VkImageLayout            oldLayout
         VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,         // VkImageLayout            newLayout
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    srcQueueFamilyIndex
         VK_QUEUE_FAMILY_IGNORED,                          // uint32_t                    dstQueueFamilyIndex
@@ -1595,7 +1690,7 @@ void postRenderingResolveImageLayoutTransition(Context &context, const TestParam
     {
         barriers.push_back(imageBarrierTemplate);
         barriers.back().image                       = *wd.depthStencilResolve.image;
-        barriers.back().oldLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_ATTACHMENT_OPTIMAL;
+        barriers.back().oldLayout                   = wd.resolveDepthStencilLayout;
         barriers.back().newLayout                   = VK_IMAGE_LAYOUT_DEPTH_STENCIL_READ_ONLY_OPTIMAL;
         barriers.back().subresourceRange.aspectMask = getDepthStencilAspectFlags(params.depthStencilFormat);
     }
@@ -1993,9 +2088,9 @@ void createWorkingData(Context &context, const TestParams &params, WorkingData &
     {
         // A fullscreen triangle
         const std::vector<Vec4> vertices = {
-            Vec4(-1.0f, -1.0f, 0.0f, 1.0f),
-            Vec4(3.0f, -1.0f, 0.0f, 1.0f),
-            Vec4(-1.0f, 3.0f, 0.0f, 1.0f),
+            Vec4(-1.0f, -1.0f, 0.7f, 1.0f),
+            Vec4(3.0f, -1.0f, 0.7f, 1.0f),
+            Vec4(-1.0f, 3.0f, 0.7f, 1.0f),
         };
 
         const VkDeviceSize vertexBufferSize = static_cast<VkDeviceSize>(sizeof(vertices[0]) * vertices.size());
@@ -2039,7 +2134,27 @@ void checkRequirements(Context &context, TestParams params)
     context.requireDeviceFunctionality("VK_KHR_create_renderpass2");
 
     if (params.dynamicRendering)
+    {
         context.requireDeviceFunctionality("VK_KHR_dynamic_rendering");
+        if (params.resolveUsedAsInput)
+        {
+            context.requireDeviceFunctionality("VK_KHR_dynamic_rendering_local_read");
+            if (params.useShaderStencilExport)
+            {
+                context.requireDeviceFunctionality("VK_EXT_shader_stencil_export");
+            }
+
+            if (params.useDepthStencilInputAttachments)
+            {
+                // After promoting DRLR to vk1.4, reading depth/stencil is guarded by a property
+                if (context.getEquivalentApiVersion() >= VK_API_VERSION_1_4 &&
+                    !context.getDeviceVulkan14Properties().dynamicRenderingLocalReadDepthStencilAttachments)
+                {
+                    TCU_THROW(NotSupportedError, "dynamicRenderingLocalReadDepthStencilAttachments not supported");
+                }
+            }
+        }
+    }
 
     if (params.isMultisampledRenderToSingleSampled)
     {
@@ -2215,14 +2330,52 @@ void clearImagesBeforeDraw(Context &context, const TestParams &params, WorkingDa
     vk.cmdPipelineBarrier(*testObjects.cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT, 0u,
                           0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(preClearBarriers), preClearBarriers);
 
+    if (params.resolveUsedAsInput)
+    {
+        preClearBarriers[0].image = *wd.floatResolve1.image;
+        preClearBarriers[1].image = *wd.floatResolve2.image;
+        preClearBarriers[2].image = *wd.intResolve.image;
+        preClearBarriers[3].image = *wd.depthStencilResolve.image;
+
+        vk.cmdPipelineBarrier(*testObjects.cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_TRANSFER_BIT,
+                              0u, 0u, nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(preClearBarriers), preClearBarriers);
+    }
+
+    // When the attachments are initialized from the resolve attachment, clear them to some garbage
+    // value.
+    VkClearValue toBeOverwritten     = {};
+    toBeOverwritten.color.float32[0] = 0.1234f;
+    toBeOverwritten.color.float32[1] = 0.2345f;
+    toBeOverwritten.color.float32[2] = 0.3456f;
+    toBeOverwritten.color.float32[3] = 0.4567f;
+
     vk.cmdClearColorImage(*testObjects.cmdBuffer, firstImage, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          &params.clearValues[0].color, 1, &preClearBarriers[0].subresourceRange);
+                          params.resolveUsedAsInput ? &toBeOverwritten.color : &params.clearValues[0].color, 1,
+                          &preClearBarriers[0].subresourceRange);
     vk.cmdClearColorImage(*testObjects.cmdBuffer, *wd.floatColor2.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          &params.clearValues[1].color, 1, &preClearBarriers[1].subresourceRange);
+                          params.resolveUsedAsInput ? &toBeOverwritten.color : &params.clearValues[1].color, 1,
+                          &preClearBarriers[1].subresourceRange);
     vk.cmdClearColorImage(*testObjects.cmdBuffer, *wd.intColor.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                          &params.clearValues[2].color, 1, &preClearBarriers[2].subresourceRange);
+                          params.resolveUsedAsInput ? &toBeOverwritten.color : &params.clearValues[2].color, 1,
+                          &preClearBarriers[2].subresourceRange);
     vk.cmdClearDepthStencilImage(*testObjects.cmdBuffer, *wd.depthStencil.image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
-                                 &params.clearValues[3].depthStencil, 1, &preClearBarriers[3].subresourceRange);
+                                 params.resolveUsedAsInput && params.useDepthStencilInputAttachments ?
+                                     &toBeOverwritten.depthStencil :
+                                     &params.clearValues[3].depthStencil,
+                                 1, &preClearBarriers[3].subresourceRange);
+
+    if (params.resolveUsedAsInput)
+    {
+        vk.cmdClearColorImage(*testObjects.cmdBuffer, preClearBarriers[0].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              &params.clearValues[0].color, 1, &preClearBarriers[0].subresourceRange);
+        vk.cmdClearColorImage(*testObjects.cmdBuffer, preClearBarriers[1].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              &params.clearValues[1].color, 1, &preClearBarriers[1].subresourceRange);
+        vk.cmdClearColorImage(*testObjects.cmdBuffer, preClearBarriers[2].image, VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
+                              &params.clearValues[2].color, 1, &preClearBarriers[2].subresourceRange);
+        vk.cmdClearDepthStencilImage(*testObjects.cmdBuffer, preClearBarriers[3].image,
+                                     VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, &params.clearValues[3].depthStencil, 1,
+                                     &preClearBarriers[3].subresourceRange);
+    }
 
     const VkMemoryBarrier postClearBarrier = {
         VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType    sType;
@@ -2269,8 +2422,9 @@ void startRenderPass(Context &context, WorkingData &wd, TestObjects &testObjects
 }
 
 void startRendering(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects,
-                    uint32_t colorAttachmentCount, std::vector<VkRenderingAttachmentInfo> &colorAttachmentInfos,
-                    VkRenderingAttachmentInfo &depthStencilAttachmentInfo, uint32_t renderPassNdx)
+                    uint32_t colorAttachmentCount, const std::vector<VkRenderingAttachmentInfo> &colorAttachmentInfos,
+                    const VkRenderingAttachmentInfo &depthAttachmentInfo,
+                    const VkRenderingAttachmentInfo &stencilAttachmentInfo, uint32_t renderPassNdx)
 {
     const DeviceInterface &vk          = context.getDeviceInterface();
     const TestParams::PerPass &perPass = params.perPass[renderPassNdx];
@@ -2320,10 +2474,10 @@ void startRendering(Context &context, const TestParams &params, WorkingData &wd,
         colorAttachmentCount,             // uint32_t                                colorAttachmentCount
         colorAttachmentInfos.data(),      // const VkRenderingAttachmentInfo*        pColorAttachments
         useDepthStencil && isDepthFormat(params.depthStencilFormat) ?
-            &depthStencilAttachmentInfo :
+            &depthAttachmentInfo :
             nullptr, // const VkRenderingAttachmentInfo*        pDepthAttachment
         useDepthStencil && isStencilFormat(params.depthStencilFormat) ?
-            &depthStencilAttachmentInfo :
+            &stencilAttachmentInfo :
             nullptr // const VkRenderingAttachmentInfo*        pStencilAttachment
     };
 
@@ -3342,7 +3496,8 @@ void drawBasic(Context &context, const TestParams &params, WorkingData &wd, Test
         if (params.dynamicRendering)
         {
             initializeRenderingAttachmentInfos(params, wd, colorAttachmentInfos, depthStencilAttachmentInfo,
-                                               colorAttachmentFormats, attachmentNdxes, attachmentUseMask, 0u);
+                                               colorAttachmentFormats, attachmentNdxes, attachmentUseMask, 0u,
+                                               ResolveUse::Auto);
 
             pipelineRenderingCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,     // VkStructureType    sType
@@ -3390,14 +3545,15 @@ void drawBasic(Context &context, const TestParams &params, WorkingData &wd, Test
         testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
             pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
-            params.dynamicRendering ? &pipelineRenderingCreateInfo : nullptr, vertexModule, fragmentModule, false, true,
-            false, 0, 0, params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples,
+            params.dynamicRendering ? &pipelineRenderingCreateInfo : nullptr, nullptr, vertexModule, fragmentModule,
+            Blend::No, DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits, 0, 0,
+            params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples,
             params.useGarbageAttachment));
 
         if (params.dynamicRendering)
         {
             startRendering(context, params, wd, testObjects, static_cast<uint32_t>(colorAttachmentFormats.size()),
-                           colorAttachmentInfos, depthStencilAttachmentInfo, 0u);
+                           colorAttachmentInfos, depthStencilAttachmentInfo, depthStencilAttachmentInfo, 0u);
         }
         else
         {
@@ -3650,7 +3806,8 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         if (params.dynamicRendering)
         {
             initializeRenderingAttachmentInfos(params, wd, colorAttachmentInfos, depthStencilAttachmentInfo,
-                                               colorAttachmentFormats, attachmentNdxes, attachmentUseMask, 0u);
+                                               colorAttachmentFormats, attachmentNdxes, attachmentUseMask, 0u,
+                                               ResolveUse::Auto);
 
             pipelineRenderingCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,     // VkStructureType    sType
@@ -3706,7 +3863,7 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         if (params.dynamicRendering)
         {
             startRendering(context, params, wd, testObjects, static_cast<uint32_t>(colorAttachmentFormats.size()),
-                           colorAttachmentInfos, depthStencilAttachmentInfo, 0u);
+                           colorAttachmentInfos, depthStencilAttachmentInfo, depthStencilAttachmentInfo, 0u);
         }
         else
         {
@@ -3717,8 +3874,9 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
             pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
-            params.dynamicRendering ? &pipelineRenderingCreateInfo : nullptr, vertexModule, fragmentModule, false, true,
-            false, 0, 0, params.perPass[0].intColorLocation, regions[0], regions[0], params.perPass[0].numSamples,
+            params.dynamicRendering ? &pipelineRenderingCreateInfo : nullptr, nullptr, vertexModule, fragmentModule,
+            Blend::No, DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits, 0, 0,
+            params.perPass[0].intColorLocation, regions[0], regions[0], params.perPass[0].numSamples,
             params.useGarbageAttachment));
 
         const VkDeviceSize vertexBufferOffset = 0;
@@ -3769,8 +3927,9 @@ void drawClearAttachments(Context &context, const TestParams &params, WorkingDat
         testObjects.graphicsPipelines.push_back(makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
             pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
-            params.dynamicRendering ? &pipelineRenderingCreateInfo : nullptr, vertexModule, fragmentModule, false, true,
-            false, 0, 0, params.perPass[0].intColorLocation, regions[1], regions[1], params.perPass[0].numSamples,
+            params.dynamicRendering ? &pipelineRenderingCreateInfo : nullptr, nullptr, vertexModule, fragmentModule,
+            Blend::No, DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits, 0, 0,
+            params.perPass[0].intColorLocation, regions[1], regions[1], params.perPass[0].numSamples,
             params.useGarbageAttachment));
 
         vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
@@ -3853,9 +4012,10 @@ void drawOnePass(Context &context, const TestParams &params, WorkingData &wd, Te
         testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
             pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
-            params.dynamicRendering ? pipelineRenderingCreateInfo : nullptr, vertexModule, fragmentModule, true, true,
-            false, 1 << passNdx, subpassNdx, perPass.intColorLocation, regions[regionNdx], regions[regionNdx],
-            perPass.numSamples, params.useGarbageAttachment));
+            params.dynamicRendering ? pipelineRenderingCreateInfo : nullptr, nullptr, vertexModule, fragmentModule,
+            Blend::Yes, DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits, 1 << passNdx,
+            subpassNdx, perPass.intColorLocation, regions[regionNdx], regions[regionNdx], perPass.numSamples,
+            params.useGarbageAttachment));
 
         vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
                             &regions[regionNdx]);
@@ -3870,9 +4030,10 @@ void drawOnePass(Context &context, const TestParams &params, WorkingData &wd, Te
             testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
                 vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
                 pipelineLayout, params.dynamicRendering ? VK_NULL_HANDLE : *testObjects.renderPassFramebuffers.back(),
-                params.dynamicRendering ? pipelineRenderingCreateInfo : nullptr, vertexModule, fragmentModule, true,
-                false, true, 1 << passNdx, subpassNdx, perPass.intColorLocation, regions[regionNdx], regions[regionNdx],
-                perPass.numSamples, params.useGarbageAttachment));
+                params.dynamicRendering ? pipelineRenderingCreateInfo : nullptr, nullptr, vertexModule, fragmentModule,
+                Blend::Yes, DepthTest::Greater, StencilTest::IncrementAndClamp, kAllStencilBits, 1 << passNdx,
+                subpassNdx, perPass.intColorLocation, regions[regionNdx], regions[regionNdx], perPass.numSamples,
+                params.useGarbageAttachment));
 
             vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
                                 &regions[regionNdx]);
@@ -4158,7 +4319,7 @@ void drawMultiRenderPass(Context &context, const TestParams &params, WorkingData
         {
             initializeRenderingAttachmentInfos(params, wd, colorAttachmentInfos, depthStencilAttachmentInfo,
                                                colorAttachmentFormats, attachmentNdxes, attachmentUseMask,
-                                               renderPassNdx);
+                                               renderPassNdx, ResolveUse::Auto);
 
             pipelineRenderingCreateInfo = {
                 VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,     // VkStructureType    sType
@@ -4224,7 +4385,7 @@ void drawMultiRenderPass(Context &context, const TestParams &params, WorkingData
         if (params.dynamicRendering)
         {
             startRendering(context, params, wd, testObjects, static_cast<uint32_t>(colorAttachmentFormats.size()),
-                           colorAttachmentInfos, depthStencilAttachmentInfo, renderPassNdx);
+                           colorAttachmentInfos, depthStencilAttachmentInfo, depthStencilAttachmentInfo, renderPassNdx);
         }
         else
         {
@@ -4973,9 +5134,9 @@ void copyToInputAttachment(Context &context, const TestParams &params, WorkingDa
     {
         testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
             vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-            pipelineLayout, *testObjects.dataRenderPassFramebuffer, nullptr, vertexModule, fragmentModule2, false, true,
-            false, 0, 0, 0, regions[regionNdx], regions[regionNdx], params.perPass[0].numSamples,
-            params.useGarbageAttachment, true));
+            pipelineLayout, *testObjects.dataRenderPassFramebuffer, nullptr, nullptr, vertexModule, fragmentModule2,
+            Blend::No, DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits, 0, 0, 0,
+            regions[regionNdx], regions[regionNdx], params.perPass[0].numSamples, params.useGarbageAttachment, true));
 
         vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
                             &regions[regionNdx]);
@@ -5226,8 +5387,9 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
         {
             testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
                 vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-                pipelineLayout, *testObjects.renderPassFramebuffers.back(), nullptr, vertexModule, fragmentModule0,
-                false, true, false, 0, 0, params.perPass[0].intColorLocation, regions[regionNdx], regions[regionNdx],
+                pipelineLayout, *testObjects.renderPassFramebuffers.back(), nullptr, nullptr, vertexModule,
+                fragmentModule0, Blend::No, DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits,
+                0, 0, params.perPass[0].intColorLocation, regions[regionNdx], regions[regionNdx],
                 params.perPass[0].numSamples, params.useGarbageAttachment));
 
             vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
@@ -5246,9 +5408,10 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
         {
             testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
                 vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-                inputPipelineLayout, *testObjects.renderPassFramebuffers.back(), nullptr, vertexModule,
-                fragmentModuleIn, false, false, false, 0, 1, params.perPass[1].intColorLocation, regions[regionNdx],
-                regions[regionNdx], params.perPass[1].numSamples, params.useGarbageAttachment));
+                inputPipelineLayout, *testObjects.renderPassFramebuffers.back(), nullptr, nullptr, vertexModule,
+                fragmentModuleIn, Blend::No, DepthTest::No, StencilTest::IncrementAndClamp, kAllStencilBits, 0, 1,
+                params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx],
+                params.perPass[1].numSamples, params.useGarbageAttachment));
 
             vk.cmdPushConstants(*testObjects.cmdBuffer, *inputPipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0,
                                 sizeof(UVec4), &regions[regionNdx]);
@@ -5262,8 +5425,9 @@ void drawInputAttachments(Context &context, const TestParams &params, WorkingDat
         {
             testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
                 vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
-                pipelineLayout, *testObjects.renderPassFramebuffers.back(), nullptr, vertexModule, fragmentModule1,
-                true, false, false, 0xC, 1, params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx],
+                pipelineLayout, *testObjects.renderPassFramebuffers.back(), nullptr, nullptr, vertexModule,
+                fragmentModule1, Blend::Yes, DepthTest::No, StencilTest::IncrementAndClamp, kAllStencilBits, 0xC, 1,
+                params.perPass[1].intColorLocation, regions[regionNdx], regions[regionNdx],
                 params.perPass[1].numSamples, params.useGarbageAttachment));
 
             vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
@@ -5557,6 +5721,722 @@ tcu::TestStatus testPerfQuery(Context &context, VkFormat format)
     return tcu::TestStatus::pass("Pass");
 }
 
+void initResolveAsInputPrograms(SourceCollections &programCollection, const TestParams params)
+{
+    // Vertex shader - position
+    {
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+            << "\n"
+            << "layout(location = 0) in  vec4 in_position;\n"
+            << "\n"
+            << "out gl_PerVertex {\n"
+            << "    vec4 gl_Position;\n"
+            << "};\n"
+            << "\n"
+            << "void main(void)\n"
+            << "{\n"
+            << "    gl_Position = in_position;\n"
+            << "}\n";
+
+        programCollection.glslSources.add("vert") << glu::VertexSource(src.str());
+    }
+
+    const bool usesSignedIntFormat = params.intColorFormat == VK_FORMAT_R16G16B16A16_SINT;
+    const char *intTypePrefix      = usesSignedIntFormat ? "i" : "u";
+    const char *intType            = usesSignedIntFormat ? "int" : "uint";
+
+    const bool readDepthAspect   = isDepthFormat(params.depthStencilFormat) && params.useDepthStencilInputAttachments;
+    const bool readStencilAspect = isStencilFormat(params.depthStencilFormat) && params.useDepthStencilInputAttachments;
+
+    // Unresolve shader.  Loads from input attachments (single sampled) and populates the multisampled color attachments.
+    {
+        const TestParams::PerPass &perPass = params.perPass[0];
+
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
+        if (readStencilAspect && params.useShaderStencilExport)
+            src << "#extension GL_ARB_shader_stencil_export : require\n";
+        src << "\n"
+            << "layout(location = " << perPass.floatColor1Location << ") out vec4 o_color1;\n"
+            << "layout(location = " << perPass.floatColor2Location << ") out vec4 o_color2;\n"
+            << "layout(location = " << perPass.intColorLocation << ") out " << intTypePrefix
+            << "vec4 o_color3;\n"
+            // Note: input_attachment_index doesn't matter since there is no mapping to color
+            // attachments; these are all read-only input attachments.  They are given something
+            // that doesn't really match the color attachments.
+            << "layout(input_attachment_index = 2, set = 0, binding = 0) uniform subpassInput i_color1;\n"
+            << "layout(input_attachment_index = 0, set = 0, binding = 1) uniform subpassInput i_color2;\n"
+            << "layout(input_attachment_index = 1, set = 0, binding = 2) uniform " << intTypePrefix
+            << "subpassInput i_color3;\n";
+        if (readDepthAspect)
+            src << "layout(input_attachment_index = 3, set = 0, binding = 3) uniform subpassInput i_depth;\n";
+        if (readStencilAspect && params.useShaderStencilExport)
+            src << "layout(input_attachment_index = 3, set = 0, binding = 4) uniform usubpassInput i_stencil;\n";
+        src << "\n"
+            << "void main(void)\n"
+            << "{\n"
+            << "    o_color1 = subpassLoad(i_color1);\n"
+            << "    o_color2 = subpassLoad(i_color2);\n"
+            << "    o_color3 = subpassLoad(i_color3);\n";
+        if (readDepthAspect)
+            src << "    gl_FragDepth = subpassLoad(i_depth).x;\n";
+        if (readStencilAspect && params.useShaderStencilExport)
+            src << "    gl_FragStencilRefARB = int(subpassLoad(i_stencil).x);\n";
+        src << "}\n";
+
+        programCollection.glslSources.add("unresolve") << glu::FragmentSource(src.str());
+    }
+
+    if (readStencilAspect && !params.useShaderStencilExport)
+    {
+        // When unresolving stencil without VK_EXT_shader_stencil_export, the test would draw 8
+        // times, setting the stencil write mask to a bit.  The shader has a binary choice to either
+        // write 1 or not to stencil via `discard;`.  This requires that stencil is cleared to 0
+        // beforehand.
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+            << "\n"
+            << "layout(input_attachment_index = 0, set = 0, binding = 4) uniform usubpassInput i_stencil;\n"
+            << "layout(push_constant) uniform PushConstants {\n"
+            << "    uint bit;\n"
+            << "} params;\n"
+            << "void main(void)\n"
+            << "{\n"
+            << "    uint stencilValue = subpassLoad(i_stencil).x;\n"
+            << "    if ((stencilValue >> params.bit & 1u) == 0)\n"
+            << "    {\n"
+            << "        discard;\n"
+            << "    }\n"
+            << "}\n";
+
+        programCollection.glslSources.add("unresolve_stencil_no_export") << glu::FragmentSource(src.str());
+    }
+
+    {
+        // When unresolve happens, it writes the clear color (as found in the resolve attachments)
+        // to the MSAA attachments.  The shader uses input attachments to read this color and modify
+        // it differently per sample.  A non-linear modification is done so that it can be proved
+        // that rendering did happen per sample.
+        //
+        // For color 1, the output per sample is:
+        //
+        //     pow(color, gl_SampleID + 1)
+        //
+        // For color 2, the output per sample is:
+        //
+        //     pow(color, gl_SampleID + 1) * pow(depth, gl_SampleID + 1)
+        //
+        // For color 3, the output per sample is:
+        //
+        //     color * (gl_SampleID + 1) * (gl_SampleID + 2) + stencil * (gl_SampleID + 3)
+        //
+        // Note that for color 3, SAMPLE_ZERO is used to resolve, so only color*2+stencil*3 remains.
+        const TestParams::PerPass &perPass = params.perPass[0];
+
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n";
+        src << "\n"
+            << "layout(location = " << perPass.floatColor1Location << ") out vec4 o_color1;\n"
+            << "layout(location = " << perPass.floatColor2Location << ") out vec4 o_color2;\n"
+            << "layout(location = " << perPass.intColorLocation << ") out " << intTypePrefix << "vec4 o_color3;\n"
+            << "layout(input_attachment_index = 0, set = 0, binding = 0) uniform subpassInputMS i_color1;\n"
+            << "layout(input_attachment_index = 1, set = 0, binding = 1) uniform subpassInputMS i_color2;\n"
+            << "layout(input_attachment_index = 2, set = 0, binding = 2) uniform " << intTypePrefix
+            << "subpassInputMS i_color3;\n";
+        if (readDepthAspect)
+            src << "layout(input_attachment_index = 3, set = 0, binding = 3) uniform subpassInputMS i_depth;\n";
+        if (readStencilAspect)
+            src << "layout(input_attachment_index = 3, set = 0, binding = 4) uniform usubpassInputMS i_stencil;\n";
+        src << "\n"
+            << "void main(void)\n"
+            << "{\n"
+            << "    int id = gl_SampleID;\n"
+            << "    " << intType << " idMatchingColor3 = " << intType << "(id);\n"
+            << "    vec4 c1 = subpassLoad(i_color1, id);\n"
+            << "    vec4 c2 = subpassLoad(i_color2, id);\n"
+            << "    " << intTypePrefix << "vec4 c3 = subpassLoad(i_color3, id);\n"
+            << "    o_color1 = pow(c1, vec4(id + 1));\n"
+            << "    o_color2 = pow(c2, vec4(id + 1));\n"
+            << "    o_color3 = c3 * (idMatchingColor3 + 1) * (idMatchingColor3 + 2);\n";
+        if (readDepthAspect)
+        {
+            src << "    float d = subpassLoad(i_depth, id).x;\n"
+                << "    o_color2 += pow(d, float(id + 1));\n";
+        }
+        if (readStencilAspect)
+        {
+            src << "    " << intType << " s = " << intType << "(subpassLoad(i_stencil, id).x);\n"
+                << "    o_color3 += s * (idMatchingColor3 + 3);\n";
+        }
+        src << "}\n";
+
+        programCollection.glslSources.add("frag") << glu::FragmentSource(src.str());
+    }
+
+    // Compute shader - verify the results of rendering
+    //
+    // When rendering is done to every sample and the attachment is resolved, we expect:
+    //
+    // - For color 1: (v1+v1^2+..+v1^n) / n
+    // - For color 2: (v2+v2^2+..+v2^n) / n + (d+d^2+..+d^n) / n
+    // - For color 3: v3*2 + s*3
+    // - For depth: 0.7, which is the value dictated by vertex data
+    // - For stencil: s + 1
+    //
+    // where:
+    //
+    // - n is the number of samples
+    // - v1 is clear color 1
+    // - v2 is clear color 2
+    // - v3 is clear color 3
+    // - d is clear depth value
+    // - s is clear stencil value
+    {
+        const TestParams::PerPass &perPass = params.perPass[0];
+
+        // The shader outputs up to 16 samples
+        const uint32_t numSamples = static_cast<uint32_t>(perPass.numSamples);
+
+        auto sumPowers = [numSamples](float f)
+        {
+            // Note that while f+f^2+..+f^n equals (1-f^(n+1)) / (1-f), the sum is done via a loop
+            // because f is a small number smaller than 1 and calculating f^(n+1) may lose too much
+            // precision.
+            float result       = 0;
+            float runningPower = f;
+            for (uint32_t i = 0; i < numSamples; ++i)
+            {
+                result += runningPower;
+                runningPower *= f;
+            }
+            return result;
+        };
+
+        const float expectColor1[4] = {
+            sumPowers(params.clearValues[0].color.float32[0]) / (float)numSamples,
+            sumPowers(params.clearValues[0].color.float32[1]) / (float)numSamples,
+            sumPowers(params.clearValues[0].color.float32[2]) / (float)numSamples,
+            sumPowers(params.clearValues[0].color.float32[3]) / (float)numSamples,
+        };
+
+        const float depthContributionToColor2 =
+            readDepthAspect ? sumPowers(params.clearValues[3].depthStencil.depth) / (float)numSamples : 0.0f;
+        const float expectColor2[4] = {
+            sumPowers(params.clearValues[1].color.float32[0]) / (float)numSamples + depthContributionToColor2,
+            sumPowers(params.clearValues[1].color.float32[1]) / (float)numSamples + depthContributionToColor2,
+            sumPowers(params.clearValues[1].color.float32[2]) / (float)numSamples + depthContributionToColor2,
+            sumPowers(params.clearValues[1].color.float32[3]) / (float)numSamples + depthContributionToColor2,
+        };
+
+        const int32_t stencilContributionToColor3 =
+            readStencilAspect ? params.clearValues[3].depthStencil.stencil * 3 : 0;
+        const int32_t expectColor3[4] = {
+            params.clearValues[2].color.int32[0] * 2 + stencilContributionToColor3,
+            params.clearValues[2].color.int32[1] * 2 + stencilContributionToColor3,
+            params.clearValues[2].color.int32[2] * 2 + stencilContributionToColor3,
+            params.clearValues[2].color.int32[3] * 2 + stencilContributionToColor3,
+        };
+
+        std::ostringstream src;
+        src << glu::getGLSLVersionDeclaration(glu::GLSL_VERSION_450) << "\n"
+            << "#extension GL_EXT_samplerless_texture_functions : require\n"
+            << "\n"
+            << "layout(push_constant) uniform PushConstants {\n"
+            << "    uvec4 area;\n"
+            << "} params;\n"
+            << "\n"
+            << "layout(local_size_x = 8, local_size_y = 8) in;\n"
+            << "layout(set = 0, binding = 0, std430) writeonly buffer Output {\n"
+            << "    uint colorVerification[3];\n"
+            << "    uint depthVerification;\n"
+            << "    uint stencilVerification;\n"
+            << "} sb_out;\n"
+            << "layout(set = 0, binding = 1) uniform texture2D color1Image;\n"
+            << "layout(set = 0, binding = 2) uniform texture2D color2Image;\n"
+            << "layout(set = 0, binding = 3) uniform " << (usesSignedIntFormat ? "i" : "u")
+            << "texture2D color3Image;\n";
+        if (isDepthFormat(params.depthStencilFormat))
+            src << "layout(set = 0, binding = 4) uniform texture2D depthImage;\n";
+        if (isStencilFormat(params.depthStencilFormat))
+            src << "layout(set = 0, binding = 5) uniform utexture2D stencilImage;\n";
+        src << "layout(set = 0, binding = 6, rgba8) uniform writeonly image2DArray verify;\n"
+            << "\n"
+            << "bool fmatches(float a, float b, float error)\n"
+            << "{\n"
+            << "    return abs(a - b) < error;\n"
+            << "}\n"
+            << "bool umatches(uint a, uint b)\n"
+            << "{\n"
+            << "    return a == b;\n"
+            << "}\n"
+            << "bool v4matches(vec4 a, vec4 b, float error)\n"
+            << "{\n"
+            << "    return all(lessThan(abs(a - b), vec4(error)));\n"
+            << "}\n"
+            << "bool i4matches(ivec4 a, ivec4 b)\n"
+            << "{\n"
+            << "    return all(equal(a, b));\n"
+            << "}\n"
+            << "\n"
+            << "void main (void)\n"
+            << "{\n"
+            << "    if (any(greaterThanEqual(gl_GlobalInvocationID.xy, params.area.zw)))\n"
+            << "        return;\n"
+            << "\n"
+            << "    uvec2 coords = params.area.xy + gl_GlobalInvocationID.xy;\n"
+            << "    vec2 uv = (vec2(gl_GlobalInvocationID.xy) + vec2(0.5)) / vec2(params.area.zw);\n"
+            << "\n"
+            << "    vec4 result1 = vec4(1, 0, 0, 1);\n"
+            << "    vec4 color1 = texelFetch(color1Image, ivec2(coords), 0);\n"
+            << "    if (v4matches(color1, vec4(" << expectColor1[0] << ", " << expectColor1[1] << ", "
+            << expectColor1[2] << ", " << expectColor1[3] << "), 0.01))\n"
+            << "    {\n"
+            << "        atomicAdd(sb_out.colorVerification[0], 1);\n"
+            << "        result1 = vec4(0, 1, 0, 1);\n"
+            << "    }\n"
+            << "    imageStore(verify, ivec3(coords, 0), result1);\n"
+            << "\n"
+            << "    vec4 result2 = vec4(1, 0, 0, 1);\n"
+            << "    vec4 color2 = texelFetch(color2Image, ivec2(coords), 0);\n"
+            << "    if (v4matches(color2, vec4(" << expectColor2[0] << ", " << expectColor2[1] << ", "
+            << expectColor2[2] << ", " << expectColor2[3] << "), 0.01))\n"
+            << "    {\n"
+            << "        atomicAdd(sb_out.colorVerification[1], 1);\n"
+            << "        result2 = vec4(0, 1, 0, 1);\n"
+            << "    }\n"
+            << "    imageStore(verify, ivec3(coords, 1), result2);\n"
+            << "\n"
+            << "    vec4 result3 = vec4(1, 0, 0, 1);\n"
+            << "    ivec4 color3 = ivec4(texelFetch(color3Image, ivec2(coords), 0));\n"
+            << "    if (i4matches(color3, ivec4(" << expectColor3[0] << ", " << expectColor3[1] << ", "
+            << expectColor3[2] << ", " << expectColor3[3] << ")))\n"
+            << "    {\n"
+            << "        atomicAdd(sb_out.colorVerification[2], 1);\n"
+            << "        result3 = vec4(0, 1, 0, 1);\n"
+            << "    }\n"
+            << "    imageStore(verify, ivec3(coords, 2), result3);\n"
+            << "\n";
+        if (isDepthFormat(params.depthStencilFormat))
+        {
+            const float expect = 0.7f;
+
+            src << "    vec4 resultDepth = vec4(1, 0, 0, 1);\n"
+                << "    float depth  = texelFetch(depthImage, ivec2(coords), 0).r;\n"
+                << "    if (fmatches(depth, " << expect << ", 0.01))\n"
+                << "    {\n"
+                << "        atomicAdd(sb_out.depthVerification, 1);\n"
+                << "        resultDepth = vec4(0, 1, 0, 1);\n"
+                << "    }\n"
+                << "    imageStore(verify, ivec3(coords, 3), resultDepth);\n";
+        }
+        if (isStencilFormat(params.depthStencilFormat))
+        {
+            const uint32_t expect = params.clearValues[3].depthStencil.stencil + 1;
+
+            src << "    vec4 resultStencil = vec4(1, 0, 0, 1);\n"
+                << "    uint stencil = texelFetch(stencilImage, ivec2(coords), 0).r;\n"
+                << "    if (umatches(stencil, " << expect << "u))\n"
+                << "    {\n"
+                << "        atomicAdd(sb_out.stencilVerification, 1);\n"
+                << "        resultStencil = vec4(0, 1, 0, 1);\n"
+                << "    }\n"
+                << "    imageStore(verify, ivec3(coords, 4), resultStencil);\n";
+        }
+        src << "}\n";
+
+        programCollection.glslSources.add("comp") << glu::ComputeSource(src.str());
+    }
+
+    // Always generate constant-color checks as they are used by vkCmdClearAttachments tests
+    initConstantColorVerifyPrograms(programCollection, params);
+}
+
+void drawUnresolve(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects,
+                   const ShaderWrapper &vertexModule, VkDescriptorSetLayout descriptorSetLayout,
+                   const PipelineLayoutWrapper &pipelineLayout,
+                   VkPipelineRenderingCreateInfo *pipelineRenderingCreateInfo,
+                   VkRenderingInputAttachmentIndexInfo *renderingInputCreateInfo)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const DeviceInterface &vk             = context.getDeviceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkDevice device                 = context.getDevice();
+
+    const VkDeviceSize vertexBufferOffset = 0;
+    vk.cmdBindVertexBuffers(*testObjects.cmdBuffer, 0u, 1u, &wd.vertexBuffer.get(), &vertexBufferOffset);
+
+    // The first draw unresolves color and depth attachments.  If useShaderStencilExport, it also
+    // unresolves stencil and we're done.  If !useShaderStencilExport, 8 draw calls are issued which
+    // unresolve stencil bit by bit.
+    const ShaderWrapper fragmentModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("unresolve"), 0u));
+
+    testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
+        vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType, pipelineLayout,
+        VK_NULL_HANDLE, pipelineRenderingCreateInfo, renderingInputCreateInfo, vertexModule, fragmentModule, Blend::No,
+        DepthTest::AlwaysAndWrite, params.useShaderStencilExport ? StencilTest::Replace : StencilTest::No,
+        kAllStencilBits, 0, 0, params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea,
+        params.perPass[0].numSamples, params.useGarbageAttachment));
+
+    const VkDescriptorImageInfo color1Info =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatResolve1.view, wd.resolveColorLayout);
+    const VkDescriptorImageInfo color2Info =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatResolve2.view, wd.resolveColorLayout);
+    const VkDescriptorImageInfo color3Info =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.intResolve.view, wd.resolveColorLayout);
+    const VkDescriptorImageInfo depthInfo = makeDescriptorImageInfo(
+        VK_NULL_HANDLE,
+        isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyResolveImageView : *wd.stencilOnlyResolveImageView,
+        wd.resolveDepthStencilLayout);
+    const VkDescriptorImageInfo stencilInfo = makeDescriptorImageInfo(
+        VK_NULL_HANDLE,
+        isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyResolveImageView : *wd.depthOnlyResolveImageView,
+        wd.resolveDepthStencilLayout);
+
+    testObjects.descriptorSets.emplace_back(
+        makeDescriptorSet(vk, device, *testObjects.descriptorPools.back(), descriptorSetLayout));
+
+    DescriptorSetUpdateBuilder builder;
+
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color1Info);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color2Info);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(2u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color3Info);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(3u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthInfo);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(4u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilInfo);
+
+    builder.update(vk, device);
+
+    UVec4 pushConstants(0, 0, 0, 0);
+    vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
+                        &pushConstants);
+    (*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
+    vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                             &testObjects.descriptorSets.back().get(), 0u, nullptr);
+    vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
+
+    if (isStencilFormat(params.depthStencilFormat) && !params.useShaderStencilExport &&
+        params.useDepthStencilInputAttachments)
+    {
+        const ShaderWrapper fragmentModuleStencil(
+            ShaderWrapper(vk, device, context.getBinaryCollection().get("unresolve_stencil_no_export"), 0u));
+
+        // Set each bit with a draw call; the draw call can only discard or not, so its stencil output is binary.
+        for (uint32_t bit = 0; bit < 8; ++bit)
+        {
+            testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
+                vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType,
+                pipelineLayout, VK_NULL_HANDLE, pipelineRenderingCreateInfo, renderingInputCreateInfo, vertexModule,
+                fragmentModuleStencil, Blend::No, DepthTest::No, StencilTest::Replace, 1u << bit, 0, 0,
+                params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples,
+                params.useGarbageAttachment));
+
+            pushConstants[0] = bit;
+            vk.cmdPushConstants(*testObjects.cmdBuffer, *pipelineLayout, VK_SHADER_STAGE_FRAGMENT_BIT, 0, sizeof(UVec4),
+                                &pushConstants);
+            (*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
+            vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
+        }
+    }
+}
+
+void drawBlendIntoUnresolvedValues(Context &context, const TestParams &params, WorkingData &wd,
+                                   TestObjects &testObjects, const ShaderWrapper &vertexModule,
+                                   VkDescriptorSetLayout descriptorSetLayout,
+                                   const PipelineLayoutWrapper &pipelineLayout,
+                                   VkPipelineRenderingCreateInfo *pipelineRenderingCreateInfo,
+                                   VkRenderingInputAttachmentIndexInfo *renderingInputCreateInfo)
+{
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    const DeviceInterface &vk             = context.getDeviceInterface();
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const VkDevice device                 = context.getDevice();
+
+    // Issue a draw call that mixes the unresolved values with a per-sample value.  The verification
+    // pass can then simultaneously ensure that unresolve was done correctly to every sample and
+    // that rendering was indeed done multisampled.
+    const ShaderWrapper fragmentModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("frag"), 0u));
+
+    testObjects.graphicsPipelines.push_back(pipeline::makeGraphicsPipeline(
+        vki, vk, physicalDevice, device, context.getDeviceExtensions(), params.pipelineConstructionType, pipelineLayout,
+        VK_NULL_HANDLE, pipelineRenderingCreateInfo, renderingInputCreateInfo, vertexModule, fragmentModule, Blend::No,
+        DepthTest::AlwaysAndWrite, StencilTest::IncrementAndClamp, kAllStencilBits, 0, 0,
+        params.perPass[0].intColorLocation, wd.renderArea, wd.renderArea, params.perPass[0].numSamples,
+        params.useGarbageAttachment));
+
+    const VkDescriptorImageInfo color1Info =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor1.view, wd.colorLayout);
+    const VkDescriptorImageInfo color2Info =
+        makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.floatColor2.view, wd.colorLayout);
+    const VkDescriptorImageInfo color3Info = makeDescriptorImageInfo(VK_NULL_HANDLE, *wd.intColor.view, wd.colorLayout);
+    const VkDescriptorImageInfo depthInfo  = makeDescriptorImageInfo(
+        VK_NULL_HANDLE, isDepthFormat(params.depthStencilFormat) ? *wd.depthOnlyImageView : *wd.stencilOnlyImageView,
+        wd.depthStencilLayout);
+    const VkDescriptorImageInfo stencilInfo = makeDescriptorImageInfo(
+        VK_NULL_HANDLE, isStencilFormat(params.depthStencilFormat) ? *wd.stencilOnlyImageView : *wd.depthOnlyImageView,
+        wd.depthStencilLayout);
+
+    testObjects.descriptorSets.emplace_back(
+        makeDescriptorSet(vk, device, *testObjects.descriptorPools.back(), descriptorSetLayout));
+
+    DescriptorSetUpdateBuilder builder;
+
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(0u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color1Info);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color2Info);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(2u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &color3Info);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(3u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &depthInfo);
+    builder.writeSingle(*testObjects.descriptorSets.back(), DescriptorSetUpdateBuilder::Location::binding(4u),
+                        VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, &stencilInfo);
+
+    builder.update(vk, device);
+
+    (*testObjects.graphicsPipelines.back()).bind(*testObjects.cmdBuffer);
+    vk.cmdBindDescriptorSets(*testObjects.cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, *pipelineLayout, 0u, 1u,
+                             &testObjects.descriptorSets.back().get(), 0u, nullptr);
+    vk.cmdDraw(*testObjects.cmdBuffer, 3, 1u, 0u, 0u);
+}
+
+void dispatchVerifyResolveAsInput(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
+{
+    const DeviceInterface &vk = context.getDeviceInterface();
+    const VkDevice device     = context.getDevice();
+
+    postDrawBarrier(context, testObjects);
+
+    const VkPushConstantRange &verifyPushConstantRange = {
+        VK_SHADER_STAGE_COMPUTE_BIT,          // VkShaderStageFlags    stageFlags;
+        0,                                    // uint32_t              offset;
+        static_cast<uint32_t>(sizeof(UVec4)), // uint32_t              size;
+    };
+
+    Move<VkPipelineLayout> verifyPipelineLayout;
+    setupVerifyDescriptorSetAndPipeline(context, params, wd, testObjects, &verifyPushConstantRange,
+                                        verifyPipelineLayout);
+
+    vk.cmdPushConstants(*testObjects.cmdBuffer, *verifyPipelineLayout, VK_SHADER_STAGE_COMPUTE_BIT, 0, sizeof(UVec4),
+                        &wd.renderArea);
+    vk.cmdDispatch(*testObjects.cmdBuffer, (wd.renderArea.z() + 7) / 8, (wd.renderArea.w() + 7) / 8, 1);
+
+    postVerifyBarrier(context, testObjects, wd.verificationBuffer);
+
+    invalidateAlloc(vk, device, *wd.verificationBufferAlloc);
+}
+
+void unresolveDrawAndResolve(Context &context, const TestParams &params, WorkingData &wd, TestObjects &testObjects)
+{
+    const DeviceInterface &vk = context.getDeviceInterface();
+    const VkDevice device     = context.getDevice();
+
+    clearImagesBeforeDraw(context, params, wd, testObjects);
+
+    // Avoid write-after-write hazards in layout transitions by pre-transitioning attachments.
+    preRenderingImageLayoutTransition(context, params, wd, testObjects);
+    initResolveImageLayouts(context, params, wd, testObjects);
+
+    const ShaderWrapper vertexModule(ShaderWrapper(vk, device, context.getBinaryCollection().get("vert"), 0u));
+
+    // The first draw call unresolves color and depth values.  If VK_EXT_shader_stencil_export is
+    // supported, it will also unresolve stencil.
+    const Unique<VkDescriptorSetLayout> descriptorSetLayout(
+        DescriptorSetLayoutBuilder()
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .addSingleBinding(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, VK_SHADER_STAGE_FRAGMENT_BIT)
+            .build(vk, device));
+
+    testObjects.descriptorPools.emplace_back(
+        DescriptorPoolBuilder()
+            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+            .addType(VK_DESCRIPTOR_TYPE_INPUT_ATTACHMENT, 2u)
+            .build(vk, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 2u));
+
+    const VkPushConstantRange &pushConstantRange = {
+        VK_SHADER_STAGE_FRAGMENT_BIT,         // VkShaderStageFlags    stageFlags;
+        0,                                    // uint32_t              offset;
+        static_cast<uint32_t>(sizeof(UVec4)), // uint32_t              size;
+    };
+
+    const PipelineLayoutWrapper pipelineLayout(params.pipelineConstructionType, vk, device, 1, &*descriptorSetLayout, 1,
+                                               &pushConstantRange);
+
+    std::vector<VkImage> images;
+    std::vector<VkImageView> attachments;
+    int32_t attachmentNdxes[8] = {-1, -1, -1, -1, -1, -1, -1, -1};
+    uint32_t attachmentUseMask = 0;
+
+    VkPipelineRenderingCreateInfo pipelineRenderingCreateInfo;
+    std::vector<VkFormat> colorAttachmentFormats = {VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED, VK_FORMAT_UNDEFINED,
+                                                    VK_FORMAT_UNDEFINED};
+    std::vector<VkRenderingAttachmentInfo> colorAttachmentInfos(4u);
+    VkRenderingAttachmentInfo depthAttachmentInfo;
+    VkRenderingAttachmentInfo stencilAttachmentInfo;
+
+    initializeAttachments(params, wd, images, attachments, 0, attachmentNdxes);
+    initializeRenderingAttachmentInfos(params, wd, colorAttachmentInfos, depthAttachmentInfo, colorAttachmentFormats,
+                                       attachmentNdxes, attachmentUseMask, 0, ResolveUse::AsInput);
+
+    // The stencil attachment info is the same as depth's, except if !useShaderStencilExport,
+    // stencil must be cleared to 0.
+    stencilAttachmentInfo = depthAttachmentInfo;
+    if (!params.useShaderStencilExport)
+    {
+        stencilAttachmentInfo.loadOp                          = VK_ATTACHMENT_LOAD_OP_CLEAR;
+        stencilAttachmentInfo.clearValue.depthStencil.stencil = 0;
+    }
+
+    pipelineRenderingCreateInfo = {
+        VK_STRUCTURE_TYPE_PIPELINE_RENDERING_CREATE_INFO,     // VkStructureType    sType
+        nullptr,                                              // const void*        pNext
+        0u,                                                   // uint32_t            viewMask
+        static_cast<uint32_t>(colorAttachmentFormats.size()), // uint32_t            colorAttachmentCount
+        colorAttachmentFormats.data(),                        // const VkFormat*    pColorAttachmentFormats
+        VK_FORMAT_UNDEFINED,                                  // VkFormat            depthAttachmentFormat
+        VK_FORMAT_UNDEFINED                                   // VkFormat            stencilAttachmentFormat
+    };
+
+    if (isDepthFormat(params.depthStencilFormat))
+        pipelineRenderingCreateInfo.depthAttachmentFormat = params.depthStencilFormat;
+    if (isStencilFormat(params.depthStencilFormat))
+        pipelineRenderingCreateInfo.stencilAttachmentFormat = params.depthStencilFormat;
+
+    startRendering(context, params, wd, testObjects, static_cast<uint32_t>(colorAttachmentFormats.size()),
+                   colorAttachmentInfos, depthAttachmentInfo, stencilAttachmentInfo, 0);
+
+    // Add the input attachment mapping to pipeline create info, and set the same mapping in the
+    // render pass.
+    constexpr uint32_t kUnresolveColorInputIndices[4]                     = {VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED,
+                                                                             VK_ATTACHMENT_UNUSED, VK_ATTACHMENT_UNUSED};
+    constexpr uint32_t kUnresolveDepthStencilInputIndex                   = VK_ATTACHMENT_UNUSED;
+    VkRenderingInputAttachmentIndexInfo unresolveRenderingInputCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO,
+        nullptr,
+        4,
+        kUnresolveColorInputIndices,
+        &kUnresolveDepthStencilInputIndex, // pDepthInputAttachmentIndex
+        &kUnresolveDepthStencilInputIndex, // pStencilInputAttachmentIndex
+    };
+
+    vk.cmdSetRenderingInputAttachmentIndices(*testObjects.cmdBuffer, &unresolveRenderingInputCreateInfo);
+
+    drawUnresolve(context, params, wd, testObjects, vertexModule, *descriptorSetLayout, pipelineLayout,
+                  &pipelineRenderingCreateInfo, &unresolveRenderingInputCreateInfo);
+
+    // End render pass.  Because the previous draw used the resolve attachments as read-only inputs,
+    // it couldn't use them as actual resolve attachments.  A new render pass must start to draw and
+    // resolve.
+    vk.cmdEndRendering(*testObjects.cmdBuffer);
+
+    // Issue a barrier.  Two bits of synchronization is needed:
+    //
+    // - The MSAA attachments were written to, but are now going to be used as input attachments.
+    // - The resolve attachments were read from, but are now going to be written to.  Note that
+    //   depth/stencil resolve happen in the COLOR_ATTACHMENT_OUTPUT stage.
+    //
+    // For the first barrier, we need an attachment output / write -> fragment shader / input
+    // barrier.  The second barrier needs a fragment shader / input -> color output / write barrier.
+    const VkMemoryBarrier attachmentsBarrier = {
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER, // VkStructureType    sType;
+        nullptr,                          // const void*        pNext;
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT |
+            VK_ACCESS_DEPTH_STENCIL_ATTACHMENT_WRITE_BIT, // VkAccessFlags      srcAccessMask;
+        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,              // VkAccessFlags      dstAccessMask;
+    };
+
+    vk.cmdPipelineBarrier(*testObjects.cmdBuffer,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT | VK_PIPELINE_STAGE_EARLY_FRAGMENT_TESTS_BIT |
+                              VK_PIPELINE_STAGE_LATE_FRAGMENT_TESTS_BIT,
+                          VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u, &attachmentsBarrier,
+                          0u, nullptr, 0u, nullptr);
+
+    const VkMemoryBarrier resolveBarrier = {
+        VK_STRUCTURE_TYPE_MEMORY_BARRIER,     // VkStructureType    sType;
+        nullptr,                              // const void*        pNext;
+        VK_ACCESS_INPUT_ATTACHMENT_READ_BIT,  // VkAccessFlags      srcAccessMask;
+        VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, // VkAccessFlags      dstAccessMask;
+    };
+
+    vk.cmdPipelineBarrier(*testObjects.cmdBuffer, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT,
+                          VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, VK_DEPENDENCY_BY_REGION_BIT, 1u,
+                          &resolveBarrier, 0u, nullptr, 0u, nullptr);
+
+    // Start a new render pass
+    images.clear();
+    attachments.clear();
+    std::fill(colorAttachmentFormats.begin(), colorAttachmentFormats.end(), VK_FORMAT_UNDEFINED);
+    initializeAttachments(params, wd, images, attachments, 0, attachmentNdxes);
+    initializeRenderingAttachmentInfos(params, wd, colorAttachmentInfos, depthAttachmentInfo, colorAttachmentFormats,
+                                       attachmentNdxes, attachmentUseMask, 0, ResolveUse::Auto);
+
+    // The MSAA data does not need to be retained at the end, since it's resolved.
+    for (auto &info : colorAttachmentInfos)
+    {
+        info.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    }
+    depthAttachmentInfo.storeOp = VK_ATTACHMENT_STORE_OP_DONT_CARE;
+    stencilAttachmentInfo       = depthAttachmentInfo;
+    startRendering(context, params, wd, testObjects, static_cast<uint32_t>(colorAttachmentFormats.size()),
+                   colorAttachmentInfos, depthAttachmentInfo, stencilAttachmentInfo, 0);
+
+    // Add the input attachment mapping to pipeline create info, and set the same mapping in the
+    // render pass.
+    constexpr uint32_t kColorInputIndices[4]                     = {0, 1, 2, VK_ATTACHMENT_UNUSED};
+    constexpr uint32_t kDepthStencilInputIndex                   = 3;
+    VkRenderingInputAttachmentIndexInfo renderingInputCreateInfo = {
+        VK_STRUCTURE_TYPE_RENDERING_INPUT_ATTACHMENT_INDEX_INFO,
+        nullptr,
+        4,
+        kColorInputIndices,
+        &kDepthStencilInputIndex, // pDepthInputAttachmentIndex
+        &kDepthStencilInputIndex, // pStencilInputAttachmentIndex
+    };
+
+    vk.cmdSetRenderingInputAttachmentIndices(*testObjects.cmdBuffer, &renderingInputCreateInfo);
+
+    drawBlendIntoUnresolvedValues(context, params, wd, testObjects, vertexModule, *descriptorSetLayout, pipelineLayout,
+                                  &pipelineRenderingCreateInfo, &renderingInputCreateInfo);
+
+    vk.cmdEndRendering(*testObjects.cmdBuffer);
+
+    postRenderingImageLayoutTransition(context, params, wd, testObjects);
+    postRenderingResolveImageLayoutTransition(context, params, wd, testObjects);
+
+    // Verify results
+    dispatchVerifyResolveAsInput(context, params, wd, testObjects);
+}
+
+//! Verify resolve attachment can be used as input attachment correctly.
+tcu::TestStatus testResolveAsInput(Context &context, const TestParams params)
+{
+    WorkingData wd;
+    TestObjects testObjects(context);
+    testStart(context, params, wd, testObjects);
+
+    // In this test, the resolve attachment is used as input.  The GENERAL layout is used for them.
+    // The color and depth/stencil attachments are also used as input.  The RENDERING_LOCAL_READ
+    // layout is used for them.
+    wd.colorLayout = wd.depthStencilLayout = VK_IMAGE_LAYOUT_RENDERING_LOCAL_READ;
+    wd.resolveColorLayout = wd.resolveDepthStencilLayout = VK_IMAGE_LAYOUT_GENERAL;
+
+    unresolveDrawAndResolve(context, params, wd, testObjects);
+
+    testEnd(context, params, wd, testObjects);
+
+    return verify(context, params, wd);
+}
+
 std::string getFormatShortString(const VkFormat format)
 {
     std::string s(de::toLower(getFormatName(format)));
@@ -5684,14 +6564,13 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                         testParams.pipelineConstructionType = pipelineConstructionType;
                                         testParams.isMultisampledRenderToSingleSampled =
                                             isMultisampledRenderToSingleSampled;
-                                        testParams.floatColor1Format    = color1Format;
-                                        testParams.floatColor2Format    = color2Format;
-                                        testParams.intColorFormat       = color3Format;
-                                        testParams.depthStencilFormat   = depthStencilFormat;
-                                        testParams.dynamicRendering     = dynamicRendering;
-                                        testParams.useGarbageAttachment = false;
-                                        testParams.renderToAttachment   = true;
-                                        testParams.imageMemoryType      = imageMemoryType;
+                                        testParams.floatColor1Format  = color1Format;
+                                        testParams.floatColor2Format  = color2Format;
+                                        testParams.intColorFormat     = color3Format;
+                                        testParams.depthStencilFormat = depthStencilFormat;
+                                        testParams.dynamicRendering   = dynamicRendering;
+                                        testParams.renderToAttachment = true;
+                                        testParams.imageMemoryType    = imageMemoryType;
 
                                         generateBasicTest(rng, testParams, sampleCount, resolveMode,
                                                           renderToWholeFramebuffer);
@@ -5749,14 +6628,13 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                     testParams.pipelineConstructionType = pipelineConstructionType;
                                     testParams.isMultisampledRenderToSingleSampled =
                                         isMultisampledRenderToSingleSampled;
-                                    testParams.floatColor1Format    = color1Format;
-                                    testParams.floatColor2Format    = color2Format;
-                                    testParams.intColorFormat       = color3Format;
-                                    testParams.depthStencilFormat   = depthStencilFormat;
-                                    testParams.dynamicRendering     = dynamicRendering;
-                                    testParams.useGarbageAttachment = false;
-                                    testParams.renderToAttachment   = true;
-                                    testParams.imageMemoryType      = IMAGE_MEMORY_DEFAULT;
+                                    testParams.floatColor1Format  = color1Format;
+                                    testParams.floatColor2Format  = color2Format;
+                                    testParams.intColorFormat     = color3Format;
+                                    testParams.depthStencilFormat = depthStencilFormat;
+                                    testParams.dynamicRendering   = dynamicRendering;
+                                    testParams.renderToAttachment = true;
+                                    testParams.imageMemoryType    = IMAGE_MEMORY_DEFAULT;
 
                                     generateBasicTest(rng, testParams, sampleCount, resolveMode,
                                                       renderToWholeFramebuffer);
@@ -5819,7 +6697,6 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
             testParams.intColorFormat                      = color3FormatRange[color3FormatNdx];
             testParams.depthStencilFormat                  = depthStencilFormatRange[depthStencilFormatNdx];
             testParams.dynamicRendering                    = false;
-            testParams.useGarbageAttachment                = false;
             testParams.renderToAttachment                  = true;
             testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
@@ -5887,7 +6764,6 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
             testParams.intColorFormat                      = color3FormatRange[color3FormatNdx];
             testParams.depthStencilFormat                  = depthStencilFormatRange[depthStencilFormatNdx];
             testParams.dynamicRendering                    = dynamicRendering;
-            testParams.useGarbageAttachment                = false;
             testParams.renderToAttachment                  = true;
             testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
 
@@ -5962,14 +6838,13 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                                         testParams.pipelineConstructionType = pipelineConstructionType;
                                         testParams.isMultisampledRenderToSingleSampled =
                                             isMultisampledRenderToSingleSampled;
-                                        testParams.floatColor1Format    = color1Format;
-                                        testParams.floatColor2Format    = color2Format;
-                                        testParams.intColorFormat       = color3Format;
-                                        testParams.depthStencilFormat   = depthStencilFormat;
-                                        testParams.dynamicRendering     = false;
-                                        testParams.useGarbageAttachment = false;
-                                        testParams.renderToAttachment   = renderToAttachment;
-                                        testParams.imageMemoryType      = IMAGE_MEMORY_DEFAULT;
+                                        testParams.floatColor1Format  = color1Format;
+                                        testParams.floatColor2Format  = color2Format;
+                                        testParams.intColorFormat     = color3Format;
+                                        testParams.depthStencilFormat = depthStencilFormat;
+                                        testParams.dynamicRendering   = false;
+                                        testParams.renderToAttachment = renderToAttachment;
+                                        testParams.imageMemoryType    = IMAGE_MEMORY_DEFAULT;
 
                                         generateInputAttachmentsTest(rng, testParams, sampleCount, resolveMode,
                                                                      renderToWholeFramebuffer, renderToAttachment);
@@ -6066,6 +6941,84 @@ void createMultisampledTestsInGroup(tcu::TestCaseGroup *rootGroup, const bool is
                             addFunctionCaseWithPrograms(group.get(), testName.c_str(), checkRequirements,
                                                         initBasicPrograms, testBasic, testParams);
                         }
+
+        rootGroup->addChild(group.release());
+    }
+
+    // Test 8: Test that emulating the functionality of VK_EXT_multisampled_render_to_single_sampled
+    // with VK_KHR_dynamic_rendering_local_read can be done in two passes.  Per
+    // https://gitlab.khronos.org/vulkan/vulkan/-/issues/4687, it is impossible to do this in a
+    // single pass because there is no way to map the input attachments to resolve attachments.
+    if (dynamicRendering && !isMultisampledRenderToSingleSampled &&
+        pipelineConstructionType != vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC)
+    {
+        MovePtr<tcu::TestCaseGroup> group(new tcu::TestCaseGroup(rootGroup->getTestContext(), "emulate_msrtss"));
+
+        const VkSampleCountFlagBits sampleCounts[] = {
+            VK_SAMPLE_COUNT_2_BIT,
+            VK_SAMPLE_COUNT_4_BIT,
+        };
+
+        de::Random rng(0x12348765);
+
+        for (const VkFormat color1Format : color1FormatRange)
+            for (const VkFormat color2Format : color2FormatRange)
+                for (const VkFormat color3Format : color3FormatRange)
+                    for (const VkSampleCountFlagBits sampleCount : sampleCounts)
+                    {
+                        TestParams testParams;
+                        deMemset(&testParams, 0, sizeof(testParams));
+
+                        testParams.pipelineConstructionType            = pipelineConstructionType;
+                        testParams.isMultisampledRenderToSingleSampled = false;
+                        testParams.floatColor1Format                   = color1Format;
+                        testParams.floatColor2Format                   = color2Format;
+                        testParams.intColorFormat                      = color3Format;
+                        testParams.dynamicRendering                    = true;
+                        testParams.resolveUsedAsInput                  = true;
+                        testParams.renderToAttachment                  = true;
+                        testParams.imageMemoryType                     = IMAGE_MEMORY_DEFAULT;
+                        testParams.useDepthStencilInputAttachments     = true;
+                        // The resolve attachments must be cleared before the render pass; there is
+                        // no LOAD_OP_CLEAR for resolve attachments with dynamic rendering.
+                        testParams.clearBeforeRenderPass = true;
+
+                        for (const VkFormat depthStencilFormat : depthStencilFormatRange)
+                        {
+                            testParams.depthStencilFormat = depthStencilFormat;
+
+                            generateBasicTest(rng, testParams, sampleCount, VK_RESOLVE_MODE_SAMPLE_ZERO_BIT, true);
+
+                            // Combination of framebuffer attachment formats
+                            const std::string caseName =
+                                getFormatCaseName(color1Format, color2Format, color3Format, depthStencilFormat) + "_" +
+                                getSampleCountCaseName(sampleCount);
+                            addFunctionCaseWithPrograms(group.get(), caseName.c_str(), checkRequirements,
+                                                        initResolveAsInputPrograms, testResolveAsInput, testParams);
+
+                            if (isStencilFormat(depthStencilFormat))
+                            {
+                                testParams.useShaderStencilExport = true;
+
+                                addFunctionCaseWithPrograms(group.get(), (caseName + "_with_stencil_export").c_str(),
+                                                            checkRequirements, initResolveAsInputPrograms,
+                                                            testResolveAsInput, testParams);
+                            }
+                        }
+
+                        // To account for `dynamicRenderingLocalReadDepthStencilAttachments`,
+                        // a variant of the test excludes depth/stencil reads.
+                        testParams.depthStencilFormat              = depthStencilFormatRange[0];
+                        testParams.useDepthStencilInputAttachments = false;
+                        testParams.useShaderStencilExport          = false;
+
+                        const std::string caseName =
+                            getFormatCaseName(color1Format, color2Format, color3Format, testParams.depthStencilFormat) +
+                            "_" + getSampleCountCaseName(sampleCount);
+
+                        addFunctionCaseWithPrograms(group.get(), (caseName + "_no_ds_read").c_str(), checkRequirements,
+                                                    initResolveAsInputPrograms, testResolveAsInput, testParams);
+                    }
 
         rootGroup->addChild(group.release());
     }
