@@ -170,6 +170,7 @@ enum class TestType
     TERMINATE_ANY_HIT_DYNAMICALLY,
     TERMINATE_INTERSECTION_STATICALLY,
     TERMINATE_INTERSECTION_DYNAMICALLY,
+    HIT_ATTRIBUTE_CLOSEST_HIT_CORRECTNESS,
     USE_MEMORY_ACCESS,
 
     COUNT
@@ -3078,6 +3079,199 @@ private:
 
     VkSpecializationInfo m_specializationInfo;
     VkSpecializationMapEntry m_specializationInfoMapEntry;
+};
+
+class HitAttributeClosestHitCorrectnessTest : public TestBase
+{
+public:
+    HitAttributeClosestHitCorrectnessTest(const AccelerationStructureLayout &asStructureLayout)
+        : m_asStructureLayout(asStructureLayout)
+    {
+    }
+
+    ~HitAttributeClosestHitCorrectnessTest()
+    {
+        /* Stub */
+    }
+
+    std::vector<std::string> getAHitShaderCollectionShaderNames() const final
+    {
+        return {};
+    }
+
+    tcu::UVec3 getDispatchSize() const final
+    {
+        return tcu::UVec3(1, 1, 1);
+    }
+
+    uint32_t getResultBufferSize() const final
+    {
+        return static_cast<uint32_t>(3 * sizeof(uint32_t));
+    }
+
+    std::vector<TopLevelAccelerationStructure *> getTLASPtrVecToBind() const final
+    {
+        DE_ASSERT(m_tlPtr != nullptr);
+
+        return {m_tlPtr.get()};
+    }
+
+    void resetTLAS() final
+    {
+        m_tlPtr.reset();
+    }
+
+    void initAS(vkt::Context &context, RayTracingProperties * /* rtPropertiesPtr */,
+                VkCommandBuffer commandBuffer) final
+    {
+        // 3 overlapping AABBs at identical bounds (0,0,0)-(1,1,1) via zero inter-cell delta
+        std::unique_ptr<GridASProvider> asProviderPtr(
+            new GridASProvider(tcu::Vec3(0, 0, 0), /* gridStartXYZ          */
+                               tcu::Vec3(1, 1, 1), /* gridCellSizeXYZ       */
+                               tcu::UVec3(3, 1, 1),
+                               tcu::Vec3(0, 0, 0), /* gridInterCellDeltaXYZ */
+                               GeometryType::AABB));
+
+        m_tlPtr = asProviderPtr->createTLAS(context, m_asStructureLayout, commandBuffer, 0, /* bottomLevelGeometryFlags */
+                                            nullptr,                                        /* optASPropertyProviderPtr */
+                                            nullptr);                                       /* optASFeedbackPtr         */
+    }
+
+    void initPrograms(SourceCollections &programCollection) const final
+    {
+        const vk::ShaderBuildOptions buildOptions(programCollection.usedVulkanVersion, vk::SPIRV_VERSION_1_4,
+                                                  0u,    /* flags        */
+                                                  true); /* allowSpirv14 */
+
+        // Ray generation shader: single ray from (0.5, -1.0, 0.5) in direction (0, 1, 0)
+        {
+            std::stringstream css;
+
+            css << "#version 460 core\n"
+                   "\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "\n"
+                   "layout(location = 0)              rayPayloadEXT uint               unusedPayload;\n"
+                   "layout(set      = 0, binding = 1) uniform accelerationStructureEXT accelerationStructure;\n"
+                   "\n"
+                   "void main()\n"
+                   "{\n"
+                   "    uint  rayFlags = 0;\n"
+                   "    uint  cullMask = 0xFF;\n"
+                   "    float tmin     = 0.001;\n"
+                   "    float tmax     = 100.0;\n"
+                   "    vec3  origin   = vec3(0.5, -1.0, 0.5);\n"
+                   "    vec3  direct   = vec3(0.0, 1.0, 0.0);\n"
+                   "\n"
+                   "    traceRayEXT(accelerationStructure, rayFlags, cullMask, 0, 0, 0, origin, tmin, direct, tmax, "
+                   "0);\n"
+                   "}\n";
+
+            programCollection.glslSources.add("rgen") << glu::RaygenSource(css.str()) << buildOptions;
+        }
+
+        // Intersection shader: each primitive reports a unique T and hitAttribute value
+        // primitiveID 0 -> T=0.3, attr=1 (closest)
+        // primitiveID 1 -> T=0.5, attr=2
+        // primitiveID 2 -> T=0.7, attr=3
+        {
+            std::stringstream css;
+
+            css << "#version 460 core\n"
+                   "\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "\n"
+                   "hitAttributeEXT block\n"
+                   "{\n"
+                   "    uint value;\n"
+                   "};\n"
+                   "\n"
+                   "void main()\n"
+                   "{\n"
+                   "    value = gl_PrimitiveID + 1;\n"
+                   "    reportIntersectionEXT(0.3 + 0.2 * float(gl_PrimitiveID), 0);\n"
+                   "}\n";
+
+            programCollection.glslSources.add("intersection") << glu::IntersectionSource(css.str()) << buildOptions;
+        }
+
+        // Closest hit shader: stores hitAttribute value, primitiveID, and atomic counter
+        {
+            std::stringstream css;
+
+            css << "#version 460 core\n"
+                   "\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "\n"
+                   "hitAttributeEXT block\n"
+                   "{\n"
+                   "    uint value;\n"
+                   "};\n"
+                   "\n"
+                   "layout(location = 0) rayPayloadInEXT uint unusedPayload;\n"
+                   "layout(set      = 0, binding = 0, std430) buffer result\n"
+                   "{\n"
+                   "    uint hitAttributeValue;\n"
+                   "    uint primitiveID;\n"
+                   "    uint nCHits;\n"
+                   "};\n"
+                   "\n"
+                   "void main()\n"
+                   "{\n"
+                   "    hitAttributeValue = value;\n"
+                   "    primitiveID       = gl_PrimitiveID;\n"
+                   "    atomicAdd(nCHits, 1);\n"
+                   "}\n";
+
+            programCollection.glslSources.add("chit") << glu::ClosestHitSource(css.str()) << buildOptions;
+        }
+
+        // Miss shader: empty body (should not be invoked)
+        {
+            std::stringstream css;
+
+            css << "#version 460 core\n"
+                   "\n"
+                   "#extension GL_EXT_ray_tracing : require\n"
+                   "\n"
+                   "layout(location = 0) rayPayloadInEXT uint unusedPayload;\n"
+                   "\n"
+                   "void main()\n"
+                   "{\n"
+                   "}\n";
+
+            programCollection.glslSources.add("miss") << glu::MissSource(css.str()) << buildOptions;
+        }
+    }
+
+    bool verifyResultBuffer(vkt::Context &context, BufferWithMemory &buffer) const final
+    {
+        de::MovePtr<BufferWithMemory> resultBufferPtr = copyDeviceBufferToHost(context, buffer);
+        const uint32_t *resultU32Ptr                  = (uint32_t *)resultBufferPtr->getAllocation().getHostPtr();
+
+        const auto hitAttributeValue = resultU32Ptr[0];
+        const auto primitiveID       = resultU32Ptr[1];
+        const auto nCHits            = resultU32Ptr[2];
+
+        // Expect exactly 1 closest hit invocation
+        if (nCHits != 1)
+            return false;
+
+        // Expect the closest hit to be from primitiveID 0 (T=0.3, the smallest)
+        if (primitiveID != 0)
+            return false;
+
+        // Expect hitAttributeEXT value to be 1 (corresponding to primitiveID 0)
+        if (hitAttributeValue != 1)
+            return false;
+
+        return true;
+    }
+
+private:
+    const AccelerationStructureLayout m_asStructureLayout;
+
+    std::unique_ptr<TopLevelAccelerationStructure> m_tlPtr;
 };
 
 class MAXRTInvocationsSupportedTest : public TestBase, public ASPropertyProvider, public IGridASFeedback
@@ -10098,6 +10292,15 @@ void RayTracingTestCase::initPrograms(SourceCollections &programCollection) cons
         break;
     }
 
+    case TestType::HIT_ATTRIBUTE_CLOSEST_HIT_CORRECTNESS:
+    {
+        m_testPtr.reset(new HitAttributeClosestHitCorrectnessTest(m_data.asLayout));
+
+        m_testPtr->initPrograms(programCollection);
+
+        break;
+    }
+
     case TestType::MAX_RT_INVOCATIONS_SUPPORTED:
     {
         m_testPtr.reset(new MAXRTInvocationsSupportedTest(m_data.geometryType, m_data.asLayout));
@@ -10285,6 +10488,16 @@ TestInstance *RayTracingTestCase::createInstance(Context &context) const
         if (m_testPtr == nullptr)
         {
             m_testPtr.reset(new MAXRayHitAttributeSizeTest(m_data.geometryType, m_data.asLayout));
+        }
+
+        break;
+    }
+
+    case TestType::HIT_ATTRIBUTE_CLOSEST_HIT_CORRECTNESS:
+    {
+        if (m_testPtr == nullptr)
+        {
+            m_testPtr.reset(new HitAttributeClosestHitCorrectnessTest(m_data.asLayout));
         }
 
         break;
@@ -10571,6 +10784,17 @@ tcu::TestCaseGroup *createMiscTests(tcu::TestContext &testCtx)
 
         miscGroupPtr->addChild(newTestCase1Ptr);
         miscGroupPtr->addChild(newTestCase2Ptr);
+    }
+
+    {
+        // Verifies that hitAttributeEXT in closest hit shader matches the intersection that produced the closest T,
+        // not the most recently invoked intersection shader.
+        auto newTestCasePtr = new RayTracingTestCase(
+            testCtx, "hitattribute_closest_hit_correctness",
+            CaseDef{TestType::HIT_ATTRIBUTE_CLOSEST_HIT_CORRECTNESS, GeometryType::AABB,
+                    AccelerationStructureLayout::ONE_TL_ONE_BL_ONE_GEOMETRY});
+
+        miscGroupPtr->addChild(newTestCasePtr);
     }
 
     for (auto currentGeometryType = GeometryType::FIRST; currentGeometryType != GeometryType::COUNT;
