@@ -3420,6 +3420,7 @@ void generateBlockCaseTestData(vector<uint8_t> &dst, CompressedTexFormat format,
                 NormalBlockParams blockParams;
                 blockParams.weightGridWidth       = 3;
                 blockParams.weightGridHeight      = 4;
+                blockParams.weightGridDepth       = 1;
                 blockParams.weightISEParams       = ISEParams(ISEMODE_PLAIN_BIT, 2);
                 blockParams.isDualPlane           = false;
                 blockParams.numPartitions         = 1;
