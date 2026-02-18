@@ -610,6 +610,7 @@ void add2dBufferToImageTests(tcu::TestCaseGroup *group, TestGroupParamsPtr testG
         // On some implementations, the hardware does not natively support these, so we try linear too.
         {VK_FORMAT_R32G32B32_SFLOAT, VK_IMAGE_TILING_OPTIMAL, "_rgb32_sfloat"},
         {VK_FORMAT_R32G32B32_SFLOAT, VK_IMAGE_TILING_LINEAR, "_rgb32_sfloat_linear"},
+        {VK_FORMAT_R64_UINT, VK_IMAGE_TILING_OPTIMAL, "_r64_uint"},
     };
 
     const auto imageType = VK_IMAGE_TYPE_2D;
