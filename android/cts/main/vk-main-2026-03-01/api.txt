@@ -41,6 +41,7 @@ dEQP-VK.api.buffer_view.access.uniform_texel_buffer.r64_sfloat
 dEQP-VK.api.buffer_view.access.uniform_texel_buffer.r64_sint
 dEQP-VK.api.buffer_view.access.uniform_texel_buffer.r64_uint
 dEQP-VK.api.command_buffers.pipeline_shader_object_mix_with_secondaries
+dEQP-VK.api.command_buffers.secondary_on_transfer_queue
 dEQP-VK.api.command_buffers.secondary_push_constants_2
 dEQP-VK.api.command_buffers.secondary_push_descriptor_set_2
 dEQP-VK.api.command_buffers.secondary_push_descriptor_set_with_template
