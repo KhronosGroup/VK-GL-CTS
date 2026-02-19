@@ -83,6 +83,7 @@ struct TestParams
     bool useMaintenance5;
     bool useLinkTimeOptimizations;
     bool retainLinkTimeOptimizations;
+    bool rgenMissInLibrary;
     uint32_t width;
     uint32_t height;
 
@@ -708,7 +709,7 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
         rtPipelines[idx] = rtPipeline;
 
         // prepare all shader names for all pipelines
-        if (idx == 0)
+        if (idx == 0 && !m_data.rgenMissInLibrary)
         {
             pipelineShaders[0].push_back(std::make_tuple("rgen", VK_SHADER_STAGE_RAYGEN_BIT_KHR));
             pipelineShaders[0].push_back(std::make_tuple("miss", VK_SHADER_STAGE_MISS_BIT_KHR));
@@ -746,6 +747,27 @@ std::vector<uint32_t> RayTracingPipelineLibraryTestInstance::runTest(bool replay
     {
         for (uint32_t i = 0; i < rtPipelines.size(); ++i)
             compileShaders(m_context, rtPipelines[i], pipelineShaders[i], isecMod);
+    }
+
+    // When rgenMissInLibrary is set, create a separate pipeline library containing
+    // rgen and miss shaders, and link it to the root pipeline first so that its shader
+    // groups (rgen=0, miss=1) appear before hitgroup libraries in the final pipeline.
+    de::SharedPtr<de::MovePtr<RayTracingPipeline>> basePipelineLibrary;
+    if (m_data.rgenMissInLibrary)
+    {
+        basePipelineLibrary = makeVkSharedPtr(de::MovePtr<RayTracingPipeline>(new RayTracingPipeline));
+        VkPipelineCreateFlags baseCreationFlags = VK_PIPELINE_CREATE_LIBRARY_BIT_KHR;
+        basePipelineLibrary->get()->setCreateFlags(baseCreationFlags);
+        basePipelineLibrary->get()->setMaxPayloadSize(16U);
+        basePipelineLibrary->get()->setDeferredOperation(m_data.pipelinesCreatedUsingDHO);
+
+        const auto &binaries = m_context.getBinaryCollection();
+        basePipelineLibrary->get()->addShader(VK_SHADER_STAGE_RAYGEN_BIT_KHR,
+            createShaderModule(vkd, device, binaries.get("rgen")), 0);
+        basePipelineLibrary->get()->addShader(VK_SHADER_STAGE_MISS_BIT_KHR,
+            createShaderModule(vkd, device, binaries.get("miss")), 1);
+
+        rtPipelines[0]->get()->addLibrary(basePipelineLibrary);
     }
 
     // connect libraries into a tree structure
@@ -1083,6 +1105,7 @@ void addPipelineLibraryConfigurationsTests(tcu::TestCaseGroup *group)
                                           false,
                                           false,
                                           false,
+                                          false,
                                           RTPL_DEFAULT_SIZE,
                                           RTPL_DEFAULT_SIZE};
 
@@ -1107,6 +1130,7 @@ void addPipelineLibraryConfigurationsTests(tcu::TestCaseGroup *group)
                                           true,
                                           false,
                                           true,
+                                          false,
                                           RTPL_DEFAULT_SIZE,
                                           RTPL_DEFAULT_SIZE};
         miscGroup->addChild(
@@ -1118,6 +1142,7 @@ void addPipelineLibraryConfigurationsTests(tcu::TestCaseGroup *group)
                                             TestType::DEFAULT,
                                             true,
                                             true,
+                                            false,
                                             false,
                                             false,
                                             RTPL_DEFAULT_SIZE,
@@ -1133,12 +1158,67 @@ void addPipelineLibraryConfigurationsTests(tcu::TestCaseGroup *group)
                                                true,
                                                true,
                                                false,
+                                               false,
                                                RTPL_DEFAULT_SIZE,
                                                RTPL_DEFAULT_SIZE};
         miscGroup->addChild(new RayTracingPipelineLibraryTestCase(
             group->getTestContext(), "retain_link_time_optimizations", testParamsRetainLinkTimeOpt));
 
         group->addChild(miscGroup.release());
+    }
+
+    // Tests where rgen/miss shaders are placed in a separate pipeline library
+    // instead of directly in the root pipeline. This targets a driver bug where
+    // intersection shaders are never invoked when using VK_KHR_pipeline_library
+    // with rgen/miss in a library and hitgroups (with intersection) in other libraries.
+    {
+        de::MovePtr<tcu::TestCaseGroup> rgenMissGroup(
+            new tcu::TestCaseGroup(group->getTestContext(), "rgen_miss_in_library"));
+
+        struct RgenMissLibConfig
+        {
+            LibraryConfiguration libraryConfiguration;
+            const char *name;
+        } rgenMissConfigs[] = {
+            {{0, {{0, 1}}}, "s0_l1"},
+            {{0, {{0, 1}, {0, 1}}}, "s0_l11"},
+            {{0, {{0, 2}, {0, 3}}}, "s0_l23"},
+            {{0, {{0, 1}, {1, 1}}}, "s0_l1_l1"},
+            {{0, {{0, 2}, {1, 3}}}, "s0_l2_l3"},
+        };
+
+        struct
+        {
+            const bool useAABBs;
+            const char *suffix;
+        } rgenMissGeomCases[] = {
+            {false, ""},
+            {true, "_aabbs"},
+        };
+
+        for (const auto &config : rgenMissConfigs)
+        {
+            for (const auto &geomCase : rgenMissGeomCases)
+            {
+                TestParams testParams{config.libraryConfiguration,
+                                      false,
+                                      false,
+                                      TestType::DEFAULT,
+                                      geomCase.useAABBs,
+                                      false,
+                                      false,
+                                      false,
+                                      true,
+                                      RTPL_DEFAULT_SIZE,
+                                      RTPL_DEFAULT_SIZE};
+
+                const std::string testName = std::string(config.name) + geomCase.suffix;
+                rgenMissGroup->addChild(
+                    new RayTracingPipelineLibraryTestCase(group->getTestContext(), testName.c_str(), testParams));
+            }
+        }
+
+        group->addChild(rgenMissGroup.release());
     }
 }
 
