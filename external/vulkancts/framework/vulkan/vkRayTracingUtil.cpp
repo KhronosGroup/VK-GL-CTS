@@ -4637,8 +4637,8 @@ std::vector<de::SharedPtr<Move<VkPipeline>>> RayTracingPipeline::createPipelineW
         DE_ASSERT(m_shadersGroupCreateInfos[groupNdx].sType ==
                   VK_STRUCTURE_TYPE_RAY_TRACING_SHADER_GROUP_CREATE_INFO_KHR);
 
-    DE_ASSERT(m_shaderCreateInfos.size() > 0);
-    DE_ASSERT(m_shadersGroupCreateInfos.size() > 0);
+    DE_ASSERT(m_shaderCreateInfos.size() > 0 || !m_pipelineLibraries.empty());
+    DE_ASSERT(m_shadersGroupCreateInfos.size() > 0 || !m_pipelineLibraries.empty());
 
     std::vector<de::SharedPtr<Move<VkPipeline>>> result, allLibraries, firstLibraries;
     for (auto it = begin(m_pipelineLibraries), eit = end(m_pipelineLibraries); it != eit; ++it)
