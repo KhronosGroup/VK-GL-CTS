@@ -219,7 +219,9 @@ void FragCoordConventionsMultisampleTestCase::init()
             m_testSupported                = true;
         }
         else if (versionGreaterOrEqual(contextType.getAPI(), glu::ApiType::core(3, 0)) &&
-                 m_context.getContextInfo().isExtensionSupported("GL_ARB_fragment_coord_conventions"))
+                 m_context.getContextInfo().isExtensionSupported("GL_ARB_fragment_coord_conventions") &&
+                 m_context.getContextInfo().isExtensionSupported("GL_ARB_explicit_attrib_location") &&
+                 m_context.getContextInfo().isExtensionSupported("GL_ARB_sample_shading"))
         {
             specializationMap["EXTENSION"] = R"(
                 #extension GL_ARB_fragment_coord_conventions: require
