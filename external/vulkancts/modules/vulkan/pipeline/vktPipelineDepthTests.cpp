@@ -1652,6 +1652,7 @@ struct DepthOnlyParams
     PipelineConstructionType pipelineConstructionType;
     DepthOnlyType depthOnlyType;
     bool prepass; // true: pre-pass, false: post-pass.
+    bool addViewIndex;
 
     tcu::IVec3 getExtent() const
     {
@@ -1729,15 +1730,21 @@ void DepthOnlyCase::initPrograms(vk::SourceCollections &programCollection) const
     // We will work with a quad from (0,0) to (1,1) and apply a scale and offset to make it cover whichever part of the
     // screen we want. We will also overwrite the depth with a given value.
     std::ostringstream vert;
-    vert << "#version 460\n"
-         << "layout (push_constant, std430) uniform PushConstantBlock {\n"
+    vert << "#version 460\n";
+    if (m_params.addViewIndex)
+        vert << "#extension GL_EXT_multiview : require\n";
+    vert << "layout (push_constant, std430) uniform PushConstantBlock {\n"
          << "    vec2 scale;\n"
          << "    vec2 offset;\n"
          << "    float depth;\n"
          << "} pc;\n"
          << "layout (location=0) in vec4 inPos;\n"
-         << "void main (void) {\n"
-         << "    gl_Position = vec4(inPos.xy * pc.scale + pc.offset, pc.depth, 1.0);\n"
+         << "void main (void) {\n";
+    if (m_params.addViewIndex)
+        vert << "float depth = pc.depth + gl_ViewIndex;\n";
+    else
+        vert << "float depth = pc.depth;\n";
+    vert << "    gl_Position = vec4(inPos.xy * pc.scale + pc.offset, depth, 1.0);\n"
          << "    gl_PointSize = 1.0;\n"
          << "}\n";
     programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
@@ -2861,9 +2868,14 @@ tcu::TestCaseGroup *createDepthTests(tcu::TestContext &testCtx, PipelineConstruc
 
             for (const bool prepass : {false, true})
             {
-                const DepthOnlyParams params{pipelineConstructionType, depthOnlyTypeCase.depthOnlyType, prepass};
-                const auto testName = std::string(depthOnlyTypeCase.name) + (prepass ? "_prepass" : "_postpass");
-                depthOnlyGroup->addChild(new DepthOnlyCase(testCtx, testName, params));
+                for (const bool addViewIndex : {false, true})
+                {
+                    const DepthOnlyParams params{pipelineConstructionType, depthOnlyTypeCase.depthOnlyType, prepass,
+                                                 addViewIndex};
+                    const auto testName = std::string(depthOnlyTypeCase.name) + (prepass ? "_prepass" : "_postpass") +
+                                          (addViewIndex ? "_add_view_index" : "");
+                    depthOnlyGroup->addChild(new DepthOnlyCase(testCtx, testName, params));
+                }
             }
         }
 

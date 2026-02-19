@@ -358,6 +358,9 @@ public:
     SurfaceKHR(VkInstance, const VkDirectFBSurfaceCreateInfoEXT *)
     {
     }
+    SurfaceKHR(VkInstance, const VkUbmSurfaceCreateInfoSEC *)
+    {
+    }
 #endif // CTS_USES_VULKANSC
     SurfaceKHR(VkInstance, const VkDisplaySurfaceCreateInfoKHR *)
     {

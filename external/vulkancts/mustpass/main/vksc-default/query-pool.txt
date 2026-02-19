@@ -38,6 +38,7 @@ dEQP-VKSC.query_pool.frag_invocations.occlusion.secondary_with_atomic_counter
 dEQP-VKSC.query_pool.frag_invocations.occlusion.secondary_with_vertex_color
 dEQP-VKSC.query_pool.occlusion_query.basic_conservative
 dEQP-VKSC.query_pool.occlusion_query.basic_precise
+dEQP-VKSC.query_pool.occlusion_query.blit
 dEQP-VKSC.query_pool.occlusion_query.clear_attachments_only
 dEQP-VKSC.query_pool.occlusion_query.clear_attachments_with_draw
 dEQP-VKSC.query_pool.occlusion_query.copy_reset_results_conservative_size_32_wait_query_with_availability_draw_points
@@ -466,6 +467,7 @@ dEQP-VKSC.query_pool.occlusion_query.get_results_size_64_stride_8_without_availa
 dEQP-VKSC.query_pool.occlusion_query.get_results_size_64_stride_8_without_availability_dstoffset
 dEQP-VKSC.query_pool.occlusion_query.no_attachments_multisample
 dEQP-VKSC.query_pool.occlusion_query.no_attachments_single_sample
+dEQP-VKSC.query_pool.occlusion_query.resolve
 dEQP-VKSC.query_pool.occlusion_query.stride_max
 dEQP-VKSC.query_pool.occlusion_query.stride_zero
 dEQP-VKSC.query_pool.statistics_query.clipping_invocations.primary.32bits_cmdcopyquerypoolresults_line_list_clear_color_geometry

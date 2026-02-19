@@ -1,0 +1,2 @@
+dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment
+dEQP-VK.fragment_shading_rate.renderpass2.monolithic.misc.test_oob_attachment_robustness2

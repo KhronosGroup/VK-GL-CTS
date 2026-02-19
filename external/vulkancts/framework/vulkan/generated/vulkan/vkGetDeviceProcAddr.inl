@@ -1035,6 +1035,10 @@ tcu::TestStatus        testGetDeviceProcAddr        (Context& context)
 		"vkCreateScreenSurfaceQNX",
 		"vkGetPhysicalDeviceScreenPresentationSupportQNX",
 
+		// "VK_SEC_ubm_surface
+		"vkCreateUbmSurfaceSEC",
+		"vkGetPhysicalDeviceUbmPresentationSupportSEC",
+
 		// "VK_VALVE_descriptor_set_host_mapping
 		"vkGetDescriptorSetHostMappingVALVE",
 		"vkGetDescriptorSetLayoutHostMappingInfoVALVE",

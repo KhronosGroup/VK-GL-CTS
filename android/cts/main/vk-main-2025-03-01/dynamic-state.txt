@@ -1,0 +1,8 @@
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple.after
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.compute.line_stipple.before
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple.after
+dEQP-VK.dynamic_state.monolithic.compute_transfer.single.transfer.line_stipple.before
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple.after
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.compute.line_stipple.before
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple.after
+dEQP-VK.dynamic_state.shader_object_unlinked_spirv.compute_transfer.single.transfer.line_stipple.before

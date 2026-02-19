@@ -103,7 +103,7 @@ BufferAddressCommandFlags::BufferAddressCommandFlags(Context &context, const Tes
     case CommandFlagTestMode::COPY_TO_MEMORY_WITH_UNBOUND_RANGES:
         m_srcBufferSize                 = 512ull;
         m_dstBufferSize                 = 1 << 18;
-        m_dstCommandFlag                = VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+        m_dstCommandFlag                = VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
         m_dstBufferCreateFlag           = VK_BUFFER_CREATE_SPARSE_BINDING_BIT | VK_BUFFER_CREATE_SPARSE_RESIDENCY_BIT;
         m_copyRegion                    = {0u, 0u, 512u};
         m_replaceDstOffsetWithChunkSize = true;

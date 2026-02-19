@@ -2706,7 +2706,6 @@ dEQP-VK.memory.pipeline_barrier.host_write_image_sampled.1048576
 dEQP-VK.memory.pipeline_barrier.host_write_image_sampled.65536
 dEQP-VK.memory.pipeline_barrier.host_write_image_sampled.8192
 dEQP-VK.memory.pipeline_barrier.host_write_index_buffer.1024
-dEQP-VK.memory.pipeline_barrier.host_write_index_buffer.1048576
 dEQP-VK.memory.pipeline_barrier.host_write_index_buffer.65536
 dEQP-VK.memory.pipeline_barrier.host_write_index_buffer.8192
 dEQP-VK.memory.pipeline_barrier.host_write_storage_buffer.1024

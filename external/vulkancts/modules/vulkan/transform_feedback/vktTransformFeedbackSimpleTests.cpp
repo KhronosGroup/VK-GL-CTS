@@ -995,9 +995,9 @@ void TransformFeedbackTestInstance::cmdBindTransformFeedbackBuffers(const Device
     if (m_parameters.useDeviceAddressCommands)
     {
         // use different valid addressFlags in some cases to test them
-        VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_ALWAYS_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+        VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR;
         if (bindingCount == 1)
-            addressFlags = VK_ADDRESS_COMMAND_MAYBE_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+            addressFlags = VK_ADDRESS_COMMAND_UNKNOWN_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR;
 
         std::vector<VkBindTransformFeedbackBuffer2InfoEXT> bindingInfos(bindingCount);
         for (uint32_t i = 0; i < bindingCount; ++i)
@@ -1033,7 +1033,7 @@ void TransformFeedbackTestInstance::cmdBeginTransformFeedback(const DeviceInterf
             counterInfos[i]              = initVulkanStructure();
             counterInfos[i].addressRange = {pCounterBuffersDeviceAddress[i] + pCounterBufferOffsets[i],
                                             pCounterBufferSizes[i]};
-            counterInfos[i].addressFlags = VK_ADDRESS_COMMAND_ALWAYS_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT |
+            counterInfos[i].addressFlags = VK_ADDRESS_COMMAND_UNKNOWN_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR |
                                            VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
         }
         vk.cmdBeginTransformFeedback2EXT(cmdBuffer, firstCounterBuffer, counterBufferCount, counterInfos.data());
@@ -1063,8 +1063,8 @@ void TransformFeedbackTestInstance::cmdEndTransformFeedback(const DeviceInterfac
             counterInfos[i]              = initVulkanStructure();
             counterInfos[i].addressRange = {pCounterBuffersDeviceAddress[i] + pCounterBufferOffsets[i],
                                             pCounterBufferSizes[i]};
-            counterInfos[i].addressFlags = VK_ADDRESS_COMMAND_ALWAYS_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT |
-                                           VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
+            counterInfos[i].addressFlags =
+                VK_ADDRESS_COMMAND_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR | VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
         }
 
         vk.cmdEndTransformFeedback2EXT(cmdBuffer, firstCounterBuffer, counterBufferCount, counterInfos.data());

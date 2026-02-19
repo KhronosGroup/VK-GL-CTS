@@ -1037,7 +1037,7 @@ void InstancedDrawInstance::draw(VkCommandBuffer cmdBuffer, const DrawData &draw
         // use different valid addressFlags in some cases to test them
         VkAddressCommandFlagsKHR addressFlags = 0;
         if (m_params.topology == VK_PRIMITIVE_TOPOLOGY_TRIANGLE_LIST)
-            addressFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+            addressFlags |= VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
         if (m_params.testMultiview)
             addressFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
 

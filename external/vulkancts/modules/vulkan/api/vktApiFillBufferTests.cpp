@@ -551,7 +551,7 @@ tcu::TestStatus FillBufferTestInstance::iterate(void)
         if (m_params.dstOffset)
             dstFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
         if (m_params.size < VK_WHOLE_SIZE)
-            dstFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+            dstFlags |= VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
 
         VkDeviceAddressRangeKHR dstRange{m_destinationDevicceAddress + m_params.dstOffset, m_params.size};
         vk.cmdFillMemoryKHR(*m_cmdBuffer, &dstRange, dstFlags, m_params.testData[0]);
@@ -704,7 +704,7 @@ tcu::TestStatus UpdateBufferTestInstance::iterate(void)
         // use different valid addressFlags in some cases to test them
         VkAddressCommandFlagsKHR dstFlags = VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
         if (m_params.size < TestParams::TEST_DATA_SIZE)
-            dstFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+            dstFlags |= VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
         if (m_params.useTransferOnlyQueue)
             dstFlags = 0;
 

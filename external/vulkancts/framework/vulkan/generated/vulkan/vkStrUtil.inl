@@ -1554,6 +1554,7 @@ std::ostream&	operator<<	(std::ostream& s, const VkTimelineSemaphoreSubmitInfo& 
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommand2KHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTraceRaysIndirectCommandKHR& value);
 std::ostream&	operator<<	(std::ostream& s, const VkTransformMatrixKHR& value);
+std::ostream&	operator<<	(std::ostream& s, const VkUbmSurfaceCreateInfoSEC& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFeaturesEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkValidationFlagsEXT& value);
 std::ostream&	operator<<	(std::ostream& s, const VkVertexInputAttributeDescription& value);

@@ -1235,6 +1235,7 @@ void createGlslTests(tcu::TestCaseGroup *glslTests)
     // Amber GLSL tests.
     glslTests->addChild(cts_amber::createCombinedOperationsGroup(testCtx));
     glslTests->addChild(cts_amber::createCrashTestGroup(testCtx));
+    glslTests->addChild(cts_amber::createLogicalCopyGroup(testCtx));
     glslTests->addChild(shaderexecutor::createShaderExpectAssumeTests(testCtx));
 #endif // CTS_USES_VULKANSC
 }

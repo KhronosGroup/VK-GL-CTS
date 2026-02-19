@@ -7751,6 +7751,8 @@ dEQP-VK.glsl.linkage.varying.struct.vec2
 dEQP-VK.glsl.linkage.varying.struct.vec3
 dEQP-VK.glsl.linkage.varying.struct.vec4
 dEQP-VK.glsl.linkage.varying.usage.readback_1
+dEQP-VK.glsl.logical_copy.initialized_struct
+dEQP-VK.glsl.logical_copy.undefined_memory
 dEQP-VK.glsl.loops.generic.do_while_constant_iterations.basic_highp_float_fragment
 dEQP-VK.glsl.loops.generic.do_while_constant_iterations.basic_highp_float_vertex
 dEQP-VK.glsl.loops.generic.do_while_constant_iterations.basic_highp_int_fragment

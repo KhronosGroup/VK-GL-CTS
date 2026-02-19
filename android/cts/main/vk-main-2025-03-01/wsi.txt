@@ -1,0 +1,6 @@
+dEQP-VK.wsi.headless.maintenance1.present_fence.continuous.null_handles
+dEQP-VK.wsi.headless.maintenance1.present_fence.demand.null_handles
+dEQP-VK.wsi.headless.maintenance1.present_fence.fifo.null_handles
+dEQP-VK.wsi.headless.maintenance1.present_fence.fifo_relaxed.null_handles
+dEQP-VK.wsi.headless.maintenance1.present_fence.immediate.null_handles
+dEQP-VK.wsi.headless.maintenance1.present_fence.mailbox.null_handles

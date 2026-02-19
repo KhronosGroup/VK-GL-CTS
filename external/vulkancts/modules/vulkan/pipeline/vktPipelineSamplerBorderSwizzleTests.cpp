@@ -25,6 +25,9 @@
  *//*--------------------------------------------------------------------*/
 #include "vktPipelineSamplerBorderSwizzleTests.hpp"
 #include "vktPipelineImageUtil.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
+#include "../image/vktImageTestsUtil.hpp"
+#include "vktContextManager.hpp"
 
 #include "vkImageUtil.hpp"
 #include "vkQueryUtil.hpp"
@@ -87,6 +90,7 @@ struct TestParams
     tcu::Maybe<VkClearColorValue> customBorderColor;
     bool useStencilAspect;
     bool disableCustomBorderColorFeatures;
+    bool useCompute;
 
     bool isCustom(void) const
     {
@@ -112,6 +116,38 @@ struct SpecConstants
     //int32_t gatherComp;
 };
 
+enum class FormatType
+{
+    SIGNED_INT = 0,
+    UNSIGNED_INT,
+    FLOAT,
+};
+
+FormatType getFormatType(VkFormat format, bool useStencil)
+{
+    if (isIntFormat(format))
+        return FormatType::SIGNED_INT;
+
+    if (isUintFormat(format) || useStencil)
+        return FormatType::UNSIGNED_INT;
+
+    return FormatType::FLOAT;
+}
+
+// Output color attachment format will vary slightly with the chosen texture format to accomodate different clear colors.
+VkFormat getColorAttachmentFormat(VkFormat textureFormat, bool useStencil)
+{
+    const auto formatType = getFormatType(textureFormat, useStencil);
+
+    if (formatType == FormatType::SIGNED_INT)
+        return VK_FORMAT_R32G32B32A32_SINT;
+
+    if (formatType == FormatType::UNSIGNED_INT)
+        return VK_FORMAT_R32G32B32A32_UINT;
+
+    return VK_FORMAT_R32G32B32A32_SFLOAT;
+}
+
 class BorderSwizzleCase : public vkt::TestCase
 {
 public:
@@ -123,7 +159,8 @@ public:
     std::string getRequiredCapabilitiesId() const override
     {
         return typeid(BorderSwizzleCase).name() +
-               std::string(m_params.disableCustomBorderColorFeatures ? "-NoCustomBorderColor" : "");
+               std::string(m_params.disableCustomBorderColorFeatures ? "-NoCustomBorderColor" : "") +
+               std::string(m_params.useCompute ? "-Compute" : "");
     }
 
     void initDeviceCapabilities(DevCaps &caps) override;
@@ -180,6 +217,18 @@ void BorderSwizzleCase::checkSupport(Context &context) const
         TCU_FAIL("vkGetPhysicalDeviceImageFormatProperties returned " + de::toString(result));
     }
 
+    if (m_params.useCompute)
+    {
+        VkFormat storageFormat = getColorAttachmentFormat(m_params.textureFormat, m_params.useStencilAspect);
+        VkFormatProperties storageFormatProps;
+        vki.getPhysicalDeviceFormatProperties(physicalDevice, storageFormat, &storageFormatProps);
+
+        if (!(storageFormatProps.optimalTilingFeatures & VK_FORMAT_FEATURE_STORAGE_IMAGE_BIT))
+        {
+            TCU_THROW(NotSupportedError, "Output format does not support storage image usage");
+        }
+    }
+
     const auto &borderColorFeatures   = context.getCustomBorderColorFeaturesEXT();
     const auto &borderSwizzleFeatures = context.getBorderColorSwizzleFeaturesEXT();
     const bool identity               = m_params.isIdentity();
@@ -205,8 +254,16 @@ void BorderSwizzleCase::checkSupport(Context &context) const
             TCU_THROW(NotSupportedError, "Swizzle results are undefined without depthStencilSwizzleOneSupport");
     }
 
-    checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                          m_params.pipelineConstructionType);
+    if (!m_params.useCompute)
+    {
+        checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                              m_params.pipelineConstructionType);
+    }
+    else // compute
+    {
+        checkShaderObjectRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                      graphicsToComputeConstructionType(m_params.pipelineConstructionType));
+    }
 
     if (m_params.isCustom())
     {
@@ -253,46 +310,8 @@ void BorderSwizzleCase::checkSupport(Context &context) const
     }
 }
 
-enum class FormatType
-{
-    SIGNED_INT = 0,
-    UNSIGNED_INT,
-    FLOAT,
-};
-
-FormatType getFormatType(VkFormat format, bool useStencil)
-{
-    if (isIntFormat(format))
-        return FormatType::SIGNED_INT;
-
-    if (isUintFormat(format) || useStencil)
-        return FormatType::UNSIGNED_INT;
-
-    return FormatType::FLOAT;
-}
-
-// Output color attachment format will vary slightly with the chosen texture format to accomodate different clear colors.
-VkFormat getColorAttachmentFormat(VkFormat textureFormat, bool useStencil)
-{
-    const auto formatType = getFormatType(textureFormat, useStencil);
-
-    if (formatType == FormatType::SIGNED_INT)
-        return VK_FORMAT_R32G32B32A32_SINT;
-
-    if (formatType == FormatType::UNSIGNED_INT)
-        return VK_FORMAT_R32G32B32A32_UINT;
-
-    return VK_FORMAT_R32G32B32A32_SFLOAT;
-}
-
 void BorderSwizzleCase::initDeviceCapabilities(DevCaps &caps)
 {
-    caps.addExtension("VK_KHR_pipeline_library");
-    caps.addExtension("VK_EXT_graphics_pipeline_library");
-    caps.addExtension("VK_KHR_dynamic_rendering");
-    caps.addExtension("VK_KHR_depth_stencil_resolve");
-    caps.addExtension("VK_KHR_create_renderpass2");
-    caps.addExtension("VK_KHR_multiview");
     caps.addExtension("VK_KHR_maintenance2");
     caps.addExtension("VK_EXT_shader_object");
     caps.addExtension("VK_KHR_maintenance5");
@@ -301,8 +320,6 @@ void BorderSwizzleCase::initDeviceCapabilities(DevCaps &caps)
     caps.addExtension("VK_KHR_maintenance10");
 
     caps.addFeature(&VkPhysicalDeviceMaintenance5Features::maintenance5);
-    caps.addFeature(&VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT::graphicsPipelineLibrary);
-    caps.addFeature(&VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
     caps.addFeature(&VkPhysicalDeviceShaderObjectFeaturesEXT::shaderObject);
     caps.addFeature(&VkPhysicalDeviceBorderColorSwizzleFeaturesEXT::borderColorSwizzle);
     caps.addFeature(&VkPhysicalDeviceBorderColorSwizzleFeaturesEXT::borderColorSwizzleFromImage);
@@ -314,22 +331,41 @@ void BorderSwizzleCase::initDeviceCapabilities(DevCaps &caps)
         caps.addFeature(&VkPhysicalDeviceCustomBorderColorFeaturesEXT::customBorderColorWithoutFormat);
     }
 
+    if (m_params.useCompute)
+    {
+        // Queue selection logic
+        DevCaps::QueueCreateInfo queueInfos[] = {{
+                                                     VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_COMPUTE_BIT, // required flags
+                                                     0u,                                           // excluded flags
+                                                     1u,                                           // count
+                                                     1.0f                                          // priority
+                                                 },
+                                                 {
+                                                     VK_QUEUE_COMPUTE_BIT,  // required flags
+                                                     VK_QUEUE_GRAPHICS_BIT, // excluded flags
+                                                     1u,                    // count
+                                                     1.0f                   // priority
+                                                 }};
+        caps.resetQueues(queueInfos);
+    }
+    else // graphics
+    {
+        caps.addExtension("VK_KHR_pipeline_library");
+        caps.addExtension("VK_EXT_graphics_pipeline_library");
+        caps.addExtension("VK_KHR_dynamic_rendering");
+        caps.addExtension("VK_KHR_depth_stencil_resolve");
+        caps.addExtension("VK_KHR_create_renderpass2");
+        caps.addExtension("VK_KHR_multiview");
+
+        caps.addFeature(&VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT::graphicsPipelineLibrary);
+        caps.addFeature(&VkPhysicalDeviceDynamicRenderingFeatures::dynamicRendering);
+    }
+
     DE_UNREF(caps);
 }
 
 void BorderSwizzleCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    std::ostringstream vert;
-    vert << "#version 450\n"
-         << "\n"
-         << "void main()\n"
-         << "{\n"
-         // Full-screen clockwise triangle strip with 4 vertices.
-         << "    const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
-         << "    const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
-         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
-         << "}\n";
-
     const auto formatType = getFormatType(m_params.textureFormat, m_params.useStencilAspect);
 
     std::string prefix;
@@ -343,35 +379,88 @@ void BorderSwizzleCase::initPrograms(vk::SourceCollections &programCollection) c
     // Note: glslang will complain if the gather component is not a compile-time constant.
     const int gatherComp = (m_params.componentGather ? m_params.componentGather.get() : 0);
 
-    // Note the spec constants here should match the SpecConstants structure.
-    std::ostringstream frag;
-    frag << "#version 450\n"
-         << "\n"
-         << "layout (constant_id=0) const float u = 0.0f;\n"
-         << "layout (constant_id=1) const float v = 0.0f;\n"
-         << "layout (constant_id=2) const int gatherFlag = 0;\n"
-         //<< "layout (constant_id=3) const int gatherComp = 0;\n"
-         << "\n"
-         << "layout (set=0, binding=0) uniform " << samplerType << " texSampler;\n"
-         << "\n"
-         << "layout (location=0) out " << outColorType << " colorOut;\n"
-         << "\n"
-         << "void main()\n"
-         << "{\n"
-         << "    const vec2 coords = vec2(u, v);\n"
-         << "\n"
-         << "    if (gatherFlag != 0)\n"
-         << "    {\n"
-         << "        colorOut = textureGather(texSampler, coords, " << gatherComp << ");\n"
-         << "    }\n"
-         << "    else\n"
-         << "    {\n"
-         << "        colorOut = texture(texSampler, coords);\n"
-         << "    }\n"
-         << "}\n";
+    if (m_params.useCompute)
+    {
+        // Compute shader implementation
+        const VkFormat outputFormat = getColorAttachmentFormat(m_params.textureFormat, m_params.useStencilAspect);
+        const std::string imageType = image::getShaderImageType(mapVkFormat(outputFormat), image::IMAGE_TYPE_2D);
+        const std::string imageFmtQualifier = image::getShaderImageFormatQualifier(mapVkFormat(outputFormat));
 
-    programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
-    programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+        std::ostringstream comp;
+        comp << "#version 450\n"
+             << "\n"
+             << "layout(local_size_x = 16, local_size_y = 16, local_size_z = 1) in;\n"
+             << "\n"
+             << "layout (constant_id=0) const float u = 0.0f;\n"
+             << "layout (constant_id=1) const float v = 0.0f;\n"
+             << "layout (constant_id=2) const int gatherFlag = 0;\n"
+             << "\n"
+             << "layout (set=0, binding=0) uniform " << samplerType << " texSampler;\n"
+             << "layout (set=0, binding=1, " << imageFmtQualifier << ") writeonly uniform " << imageType
+             << " outImage;\n"
+             << "\n"
+             << "void main()\n"
+             << "{\n"
+             << "    const vec2 coords = vec2(u, v);\n"
+             << "    " << outColorType << " colorOut;\n"
+             << "\n"
+             << "    if (gatherFlag != 0)\n"
+             << "    {\n"
+             << "        colorOut = textureGather(texSampler, coords, " << gatherComp << ");\n"
+             << "    }\n"
+             << "    else\n"
+             << "    {\n"
+             << "        colorOut = texture(texSampler, coords);\n"
+             << "    }\n"
+             << "    imageStore(outImage, ivec2(gl_GlobalInvocationID.xy), colorOut);\n"
+             << "}\n";
+
+        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    }
+    else
+    {
+        // Graphics shader implementation
+        std::ostringstream vert;
+        vert << "#version 450\n"
+             << "\n"
+             << "void main()\n"
+             << "{\n"
+             // Full-screen clockwise triangle strip with 4 vertices.
+             << "    const float x = (-1.0+2.0*((gl_VertexIndex & 2)>>1));\n"
+             << "    const float y = ( 1.0-2.0* (gl_VertexIndex % 2));\n"
+             << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+             << "}\n";
+
+        // Note the spec constants here should match the SpecConstants structure.
+        std::ostringstream frag;
+        frag << "#version 450\n"
+             << "\n"
+             << "layout (constant_id=0) const float u = 0.0f;\n"
+             << "layout (constant_id=1) const float v = 0.0f;\n"
+             << "layout (constant_id=2) const int gatherFlag = 0;\n"
+             //<< "layout (constant_id=3) const int gatherComp = 0;\n"
+             << "\n"
+             << "layout (set=0, binding=0) uniform " << samplerType << " texSampler;\n"
+             << "\n"
+             << "layout (location=0) out " << outColorType << " colorOut;\n"
+             << "\n"
+             << "void main()\n"
+             << "{\n"
+             << "    const vec2 coords = vec2(u, v);\n"
+             << "\n"
+             << "    if (gatherFlag != 0)\n"
+             << "    {\n"
+             << "        colorOut = textureGather(texSampler, coords, " << gatherComp << ");\n"
+             << "    }\n"
+             << "    else\n"
+             << "    {\n"
+             << "        colorOut = texture(texSampler, coords);\n"
+             << "    }\n"
+             << "}\n";
+
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+    }
 }
 
 TestInstance *BorderSwizzleCase::createInstance(Context &context) const
@@ -878,8 +967,6 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
     const auto physicalDevice = m_context.getPhysicalDevice();
     const auto device         = m_context.getDevice();
     auto &alloc               = m_context.getDefaultAllocator();
-    const auto queue          = m_context.getUniversalQueue();
-    const auto qIndex         = m_context.getUniversalQueueFamilyIndex();
     const auto extent         = getImageExtent();
     const auto custom         = m_params.isCustom();
     const auto isDSFormat     = isDepthStencilFormat(m_params.textureFormat);
@@ -893,6 +980,10 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
     const auto barrierSubresourceRange = makeImageSubresourceRange(barrierAspect, 0u, 1u, 0u, 1u);
     const auto colorAttachmentFormat   = getColorAttachmentFormat(m_params.textureFormat, hasStencil);
     const auto colorSubresourceRange   = makeImageSubresourceRange(VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u);
+
+    const auto queue = m_params.useCompute ? m_context.getComputeQueue() : m_context.getUniversalQueue();
+    const auto qIndex =
+        m_params.useCompute ? m_context.getComputeQueueFamilyIndex() : m_context.getUniversalQueueFamilyIndex();
 
     // Texture.
     const VkImageCreateInfo textureCreateInfo = {
@@ -929,29 +1020,35 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
 
     const auto textureView = createImageView(vkd, device, &textureViewCreateInfo);
 
-    // Color attachment.
-    const VkImageCreateInfo colorAttachmentInfo = {
-        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                     // VkStructureType sType;
-        nullptr,                                                                 // const void* pNext;
-        0u,                                                                      // VkImageCreateFlags flags;
-        VK_IMAGE_TYPE_2D,                                                        // VkImageType imageType;
-        colorAttachmentFormat,                                                   // VkFormat format;
-        extent,                                                                  // VkExtent3D extent;
-        1u,                                                                      // uint32_t mipLevels;
-        1u,                                                                      // uint32_t arrayLayers;
-        VK_SAMPLE_COUNT_1_BIT,                                                   // VkSampleCountFlagBits samples;
-        VK_IMAGE_TILING_OPTIMAL,                                                 // VkImageTiling tiling;
-        (VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT), // VkImageUsageFlags usage;
-        VK_SHARING_MODE_EXCLUSIVE,                                               // VkSharingMode sharingMode;
-        0u,                                                                      // uint32_t queueFamilyIndexCount;
-        nullptr,                                                                 // const uint32_t* pQueueFamilyIndices;
-        VK_IMAGE_LAYOUT_UNDEFINED,                                               // VkImageLayout initialLayout;
+    // Output image
+    VkImageUsageFlags outputUsage = VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+    if (m_params.useCompute)
+        outputUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
+    else
+        outputUsage |= VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT;
+
+    const VkImageCreateInfo outputImageInfo = {
+        VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO, // VkStructureType sType;
+        nullptr,                             // const void* pNext;
+        0u,                                  // VkImageCreateFlags flags;
+        VK_IMAGE_TYPE_2D,                    // VkImageType imageType;
+        colorAttachmentFormat,               // VkFormat format;
+        extent,                              // VkExtent3D extent;
+        1u,                                  // uint32_t mipLevels;
+        1u,                                  // uint32_t arrayLayers;
+        VK_SAMPLE_COUNT_1_BIT,               // VkSampleCountFlagBits samples;
+        VK_IMAGE_TILING_OPTIMAL,             // VkImageTiling tiling;
+        outputUsage,                         // VkImageUsageFlags usage;
+        VK_SHARING_MODE_EXCLUSIVE,           // VkSharingMode sharingMode;
+        0u,                                  // uint32_t queueFamilyIndexCount;
+        nullptr,                             // const uint32_t* pQueueFamilyIndices;
+        VK_IMAGE_LAYOUT_UNDEFINED,           // VkImageLayout initialLayout;
     };
 
-    ImageWithMemory colorAttachment(vkd, device, alloc, colorAttachmentInfo, MemoryRequirement::Any);
+    ImageWithMemory colorAttachment(vkd, device, alloc, outputImageInfo, MemoryRequirement::Any);
 
     const auto colorAttachmentView = makeImageView(vkd, device, colorAttachment.get(), VK_IMAGE_VIEW_TYPE_2D,
-                                                   colorAttachmentInfo.format, colorSubresourceRange);
+                                                   outputImageInfo.format, colorSubresourceRange);
 
     // Texure sampler.
     de::MovePtr<VkSamplerCustomBorderColorCreateInfoEXT> customBorderColorInfo;
@@ -1014,7 +1111,10 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
 
     // Descriptor set layout.
     DescriptorSetLayoutBuilder dsLayoutBuilder;
-    dsLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
+    dsLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
+                                     m_params.useCompute ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT);
+    if (m_params.useCompute)
+        dsLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, VK_SHADER_STAGE_COMPUTE_BIT);
     const auto dsLayout = dsLayoutBuilder.build(vkd, device);
 
     // Pipeline layout.
@@ -1023,6 +1123,8 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
     // Descriptor pool.
     DescriptorPoolBuilder poolBuilder;
     poolBuilder.addType(VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER);
+    if (m_params.useCompute)
+        poolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE);
     const auto descriptorPool = poolBuilder.build(vkd, device, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1u);
 
     // Descriptor set.
@@ -1035,16 +1137,19 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
             makeDescriptorImageInfo(sampler.get(), textureView.get(), VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL);
         updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(0u),
                                   VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER, &descriptorImageInfo);
+
+        if (m_params.useCompute)
+        {
+            VkDescriptorImageInfo storageImageInfo =
+                makeDescriptorImageInfo(VK_NULL_HANDLE, colorAttachmentView.get(), VK_IMAGE_LAYOUT_GENERAL);
+            updateBuilder.writeSingle(descriptorSet.get(), DescriptorSetUpdateBuilder::Location::binding(1u),
+                                      VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &storageImageInfo);
+        }
+
         updateBuilder.update(vkd, device);
     }
 
-    // Render pass.
-    RenderPassWrapper renderPass(m_params.pipelineConstructionType, vkd, device, colorAttachmentFormat);
-
-    // Shader modules.
-    const auto vertShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
-    const auto fragShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
-
+    // Spec constants
     const SpecConstants specConstantData = {
         m_params.textureCoordinates.x(), m_params.textureCoordinates.y(), (m_params.componentGather ? 1 : 0),
         //(m_params.componentGather ? *m_params.componentGather : -1),
@@ -1064,43 +1169,66 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
         &specConstantData,                                            // const void* pData;
     };
 
-    const VkPipelineVertexInputStateCreateInfo vertexInputInfo = initVulkanStructure();
-
+    // Prepare Pipelines
+    RenderPassWrapper renderPass;
+    ComputePipelineWrapper computePipeline(vkd, device,
+                                           vk::graphicsToComputeConstructionType(m_params.pipelineConstructionType));
+    GraphicsPipelineWrapper graphicsPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(),
+                                             m_params.pipelineConstructionType);
     const std::vector<VkViewport> viewport{makeViewport(extent)};
     const std::vector<VkRect2D> scissor{makeRect2D(extent)};
 
-    VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
-    deMemset(&colorBlendAttachmentState, 0, sizeof(colorBlendAttachmentState));
-    colorBlendAttachmentState.colorWriteMask =
-        (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+    if (m_params.useCompute)
+    {
+        // Pipeline
+        computePipeline.setProgramBinary(m_context.getBinaryCollection().get("comp"));
+        computePipeline.setSpecializationInfo(specializationInfo);
+        computePipeline.setDescriptorSetLayout(dsLayout.get());
+        computePipeline.buildPipeline();
+    }
+    else // graphics
+    {
+        // Render pass.
+        renderPass = RenderPassWrapper(m_params.pipelineConstructionType, vkd, device, colorAttachmentFormat);
 
-    const VkPipelineColorBlendStateCreateInfo colorBlendInfo{
-        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                  // const void* pNext;
-        0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
-        VK_FALSE,                                                 // VkBool32 logicOpEnable;
-        VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
-        1u,                                                       // uint32_t attachmentCount;
-        &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState* pAttachments;
-        {.0f, .0f, .0f, .0f},       // float blendConstants[4];
-    };
+        // Shader modules.
+        const auto vertShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("vert"), 0u);
+        const auto fragShader = ShaderWrapper(vkd, device, m_context.getBinaryCollection().get("frag"), 0u);
 
-    GraphicsPipelineWrapper graphicsPipeline(vki, vkd, physicalDevice, device, m_context.getDeviceExtensions(),
-                                             m_params.pipelineConstructionType);
-    graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-        .setDefaultDepthStencilState()
-        .setDefaultRasterizationState()
-        .setDefaultMultisampleState()
-        .setupVertexInputState(&vertexInputInfo)
-        .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPass, 0u, vertShader)
-        .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, nullptr, nullptr, &specializationInfo)
-        .setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
-        .setMonolithicPipelineLayout(pipelineLayout)
-        .buildPipeline();
+        const VkPipelineVertexInputStateCreateInfo vertexInputInfo = initVulkanStructure();
 
-    // Framebuffer.
-    renderPass.createFramebuffer(vkd, device, colorAttachment.get(), colorAttachmentView.get(), extent.width,
-                                 extent.height);
+        VkPipelineColorBlendAttachmentState colorBlendAttachmentState;
+        deMemset(&colorBlendAttachmentState, 0, sizeof(colorBlendAttachmentState));
+        colorBlendAttachmentState.colorWriteMask =
+            (VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT);
+
+        const VkPipelineColorBlendStateCreateInfo colorBlendInfo{
+            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+            nullptr,                                                  // const void* pNext;
+            0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+            VK_FALSE,                                                 // VkBool32 logicOpEnable;
+            VK_LOGIC_OP_CLEAR,                                        // VkLogicOp logicOp;
+            1u,                                                       // uint32_t attachmentCount;
+            &colorBlendAttachmentState, // const VkPipelineColorBlendAttachmentState* pAttachments;
+            {.0f, .0f, .0f, .0f},       // float blendConstants[4];
+        };
+
+        graphicsPipeline.setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultDepthStencilState()
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setupVertexInputState(&vertexInputInfo)
+            .setupPreRasterizationShaderState(viewport, scissor, pipelineLayout, *renderPass, 0u, vertShader)
+            .setupFragmentShaderState(pipelineLayout, *renderPass, 0u, fragShader, nullptr, nullptr,
+                                      &specializationInfo)
+            .setupFragmentOutputState(*renderPass, 0u, &colorBlendInfo)
+            .setMonolithicPipelineLayout(pipelineLayout)
+            .buildPipeline();
+
+        // Framebuffer.
+        renderPass.createFramebuffer(vkd, device, colorAttachment.get(), colorAttachmentView.get(), extent.width,
+                                     extent.height);
+    }
 
     // Command pool and buffer.
     const auto cmdPool      = makeCommandPool(vkd, device, qIndex);
@@ -1132,24 +1260,45 @@ tcu::TestStatus BorderSwizzleInstance::iterate(void)
     else
         vkd.cmdClearColorImage(cmdBuffer, texture.get(), VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL,
                                &m_params.textureClear.color, 1u, &imageSubresourceRange);
-    vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u,
-                           nullptr, 0u, nullptr, 1u, &postClearBarrier);
+    if (m_params.useCompute)
+    {
+        const VkImageMemoryBarrier barriers[] = {
+            postClearBarrier,
+            makeImageMemoryBarrier(0u, VK_ACCESS_SHADER_WRITE_BIT, VK_IMAGE_LAYOUT_UNDEFINED, VK_IMAGE_LAYOUT_GENERAL,
+                                   colorAttachment.get(), colorSubresourceRange)};
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT, 0u, 0u,
+                               nullptr, 0u, nullptr, DE_LENGTH_OF_ARRAY(barriers), barriers);
 
-    // Read from the texture to render a full-screen quad to the color buffer.
-    renderPass.begin(vkd, cmdBuffer, scissor[0], zeroClearColor);
-    graphicsPipeline.bind(cmdBuffer);
-    vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
-                              &descriptorSet.get(), 0u, nullptr);
-    vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
-    renderPass.end(vkd, cmdBuffer);
+        // Dispatch Compute
+        computePipeline.bind(cmdBuffer);
+        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE, pipelineLayout.get(), 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+        // Workgroup size is 16x16x1, and we have 16x16 image, so 1 workgroup is enough.
+        vkd.cmdDispatch(cmdBuffer, 1u, 1u, 1u);
+    }
+    else // graphics
+    {
+        vkd.cmdPipelineBarrier(cmdBuffer, VK_PIPELINE_STAGE_TRANSFER_BIT, VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, 0u, 0u,
+                               nullptr, 0u, nullptr, 1u, &postClearBarrier);
+
+        // Read from the texture to render a full-screen quad to the color buffer.
+        renderPass.begin(vkd, cmdBuffer, scissor[0], zeroClearColor);
+        graphicsPipeline.bind(cmdBuffer);
+        vkd.cmdBindDescriptorSets(cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, pipelineLayout.get(), 0u, 1u,
+                                  &descriptorSet.get(), 0u, nullptr);
+        vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+        renderPass.end(vkd, cmdBuffer);
+    }
 
     endCommandBuffer(vkd, cmdBuffer);
     submitCommandsAndWait(vkd, device, queue, cmdBuffer);
 
     // Verify color buffer.
+    const auto attachmentLayout =
+        (m_params.useCompute ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
     const auto renderSize           = tcu::UVec2(extent.width, extent.height);
     const auto colorAttachmentLevel = readColorAttachment(vkd, device, queue, qIndex, alloc, colorAttachment.get(),
-                                                          colorAttachmentFormat, renderSize);
+                                                          colorAttachmentFormat, renderSize, attachmentLayout);
     const auto colorPixels          = colorAttachmentLevel->getAccess();
     const auto tcuTextureFormat     = mapVkFormat(m_params.textureFormat);
     const auto borderColor          = getBorderClearColorValue(m_params);
@@ -1571,43 +1720,55 @@ tcu::TestCaseGroup *createSamplerBorderSwizzleTests(tcu::TestContext &testCtx,
 
                         for (const auto &swizzleHint : swizzleHintCases)
                         {
-                            TestParams params;
-                            deMemset(&params, 0, sizeof(TestParams));
-
-                            const uint32_t seed =
-                                baseSeed + static_cast<uint32_t>(format) + static_cast<uint32_t>(mappingIdx) +
-                                static_cast<uint32_t>(borderColorIdx) + static_cast<uint32_t>(gatherIdx);
-                            de::Random rnd(seed);
-
-                            params.pipelineConstructionType = pipelineConstructionType;
-                            params.textureFormat            = format;
-                            if (isDSFormat)
-                                params.textureClear.depthStencil = vk::makeClearDepthStencilValue(0.0f, 0u);
-                            else
-                                params.textureClear.color = getRandomClearColor(format, rnd, false);
-
-                            makeComponentMapping(params.componentMapping, mapping);
-                            params.borderColor        = borderColor.borderType;
-                            params.componentGather    = ((gatherIdx < 0) ? tcu::nothing<int>() : tcu::just(gatherIdx));
-                            params.textureCoordinates = getRandomBorderCoordinates(rnd);
-
-                            if (params.isCustom())
-                                params.customBorderColor = tcu::just(getRandomClearColor(format, rnd, sampleStencil));
-                            else
-                                params.customBorderColor = tcu::nothing<VkClearColorValue>();
-
-                            params.useSamplerSwizzleHint = swizzleHint.useSwizzleHint;
-                            params.useStencilAspect      = sampleStencil;
-
-                            gatherGroup->addChild(new BorderSwizzleCase(testCtx, swizzleHint.name, params));
-
-                            if ((format == VK_FORMAT_B4G4R4A4_UNORM_PACK16 ||
-                                 format == VK_FORMAT_R4G4B4A4_UNORM_PACK16) &&
-                                params.borderColor == VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK)
+                            for (bool useCompute : {false, true})
                             {
-                                params.disableCustomBorderColorFeatures = true;
-                                gatherGroup->addChild(new BorderSwizzleCase(
-                                    testCtx, swizzleHint.name + std::string("_no_border_color_features"), params));
+                                // Clear depth/stencil formats not supported on compute queue.
+                                if (isDSFormat && useCompute)
+                                    continue;
+
+                                TestParams params;
+                                deMemset(&params, 0, sizeof(TestParams));
+
+                                const uint32_t seed = baseSeed + static_cast<uint32_t>(format) +
+                                                      static_cast<uint32_t>(mappingIdx) +
+                                                      static_cast<uint32_t>(borderColorIdx) +
+                                                      static_cast<uint32_t>(gatherIdx) + (useCompute ? 1000 : 0);
+                                de::Random rnd(seed);
+
+                                params.pipelineConstructionType = pipelineConstructionType;
+                                params.textureFormat            = format;
+                                if (isDSFormat)
+                                    params.textureClear.depthStencil = vk::makeClearDepthStencilValue(0.0f, 0u);
+                                else
+                                    params.textureClear.color = getRandomClearColor(format, rnd, false);
+
+                                makeComponentMapping(params.componentMapping, mapping);
+                                params.borderColor     = borderColor.borderType;
+                                params.componentGather = ((gatherIdx < 0) ? tcu::nothing<int>() : tcu::just(gatherIdx));
+                                params.textureCoordinates = getRandomBorderCoordinates(rnd);
+
+                                if (params.isCustom())
+                                    params.customBorderColor =
+                                        tcu::just(getRandomClearColor(format, rnd, sampleStencil));
+                                else
+                                    params.customBorderColor = tcu::nothing<VkClearColorValue>();
+
+                                params.useSamplerSwizzleHint = swizzleHint.useSwizzleHint;
+                                params.useStencilAspect      = sampleStencil;
+                                params.useCompute            = useCompute;
+
+                                std::string testName = swizzleHint.name;
+                                testName += useCompute ? "_compute" : "";
+                                gatherGroup->addChild(new BorderSwizzleCase(testCtx, testName, params));
+
+                                if ((format == VK_FORMAT_B4G4R4A4_UNORM_PACK16 ||
+                                     format == VK_FORMAT_R4G4B4A4_UNORM_PACK16) &&
+                                    params.borderColor == VK_BORDER_COLOR_FLOAT_OPAQUE_BLACK)
+                                {
+                                    params.disableCustomBorderColorFeatures = true;
+                                    gatherGroup->addChild(new BorderSwizzleCase(
+                                        testCtx, testName + std::string("_no_border_color_features"), params));
+                                }
                             }
                         }
 

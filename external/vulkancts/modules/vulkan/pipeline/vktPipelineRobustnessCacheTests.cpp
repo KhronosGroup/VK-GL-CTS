@@ -33,8 +33,10 @@
 #include "vkBuilderUtil.hpp"
 #include "vkTypeUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
 #include "vkCmdUtil.hpp"
 #include "vkImageUtil.hpp"
+#include "vkBarrierUtil.hpp"
 
 namespace vkt
 {
@@ -123,38 +125,59 @@ vk::Move<vk::VkSampler> makeSampler(const vk::DeviceInterface &vk, const vk::VkD
     return createSampler(vk, device, &samplerInfo);
 }
 
+vk::VkQueue getQueue(vkt::Context &context, bool useCompute)
+{
+    return useCompute ? context.getComputeQueue() : context.getUniversalQueue();
+}
+
+uint32_t getQueueFamilyIndex(vkt::Context &context, bool useCompute)
+{
+    return useCompute ? context.getComputeQueueFamilyIndex() : context.getUniversalQueueFamilyIndex();
+}
+
 class PipelineCacheTestInstance : public vkt::TestInstance
 {
 public:
     PipelineCacheTestInstance(vkt::Context &context, vk::PipelineConstructionType pipelineConstructionType,
-                              RobustnessBehaviour robustnessBufferBehaviour, RobustnessType type)
+                              RobustnessBehaviour robustnessBufferBehaviour, RobustnessType type, bool useCompute)
         : vkt::TestInstance(context)
         , m_pipelineConstructionType(pipelineConstructionType)
         , m_robustnessBufferBehaviour(robustnessBufferBehaviour)
         , m_type(type)
+        , m_useCompute(useCompute)
         , m_extent()
     {
     }
 
 private:
     void draw(const vk::GraphicsPipelineWrapper &pipeline);
+    void dispatch(const vk::ComputePipelineWrapper &pipeline);
     bool verifyImage(tcu::Vec4 value, bool oob);
     tcu::TestStatus iterate(void);
 
     const vk::PipelineConstructionType m_pipelineConstructionType;
     const RobustnessBehaviour m_robustnessBufferBehaviour;
     const RobustnessType m_type;
+    const bool m_useCompute;
 
     vk::VkExtent2D m_extent;
     vk::Move<vk::VkCommandPool> m_cmdPool;
     vk::Move<vk::VkCommandBuffer> m_cmdBuffer;
     de::MovePtr<vk::BufferWithMemory> m_buffer;
-    vk::RenderPassWrapper m_renderPass;
     vk::PipelineLayoutWrapper m_pipelineLayout;
     vk::Move<vk::VkDescriptorPool> m_descriptorPool;
     vk::Move<vk::VkDescriptorSet> m_descriptorSet;
-    de::MovePtr<vk::ImageWithMemory> m_colorAttachment;
+    de::MovePtr<vk::ImageWithMemory> m_renderTarget;
     std::unique_ptr<vk::BufferWithMemory> m_outBuffer;
+
+    // Graphics pipeline related
+    vk::RenderPassWrapper m_renderPass;
+    de::MovePtr<vk::GraphicsPipelineWrapper> m_graphicsPipeline;
+    de::MovePtr<vk::GraphicsPipelineWrapper> m_robustGraphicsPipeline;
+
+    // Compute pipeline related
+    de::MovePtr<vk::ComputePipelineWrapper> m_computePipeline;
+    de::MovePtr<vk::ComputePipelineWrapper> m_robustComputePipeline;
 };
 
 void PipelineCacheTestInstance::draw(const vk::GraphicsPipelineWrapper &pipeline)
@@ -182,8 +205,40 @@ void PipelineCacheTestInstance::draw(const vk::GraphicsPipelineWrapper &pipeline
     vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
 
     vk::beginCommandBuffer(vk, *m_cmdBuffer);
-    vk::copyImageToBuffer(vk, *m_cmdBuffer, m_colorAttachment->get(), (*m_outBuffer).get(),
+    vk::copyImageToBuffer(vk, *m_cmdBuffer, m_renderTarget->get(), (*m_outBuffer).get(),
                           tcu::IVec2(m_extent.width, m_extent.height));
+    vk::endCommandBuffer(vk, *m_cmdBuffer);
+    vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+}
+
+void PipelineCacheTestInstance::dispatch(const vk::ComputePipelineWrapper &pipeline)
+{
+    const vk::DeviceInterface &vk = m_context.getDeviceInterface();
+    const vk::VkDevice device     = m_context.getDevice();
+    const vk::VkQueue queue       = m_context.getComputeQueue();
+
+    vk::beginCommandBuffer(vk, *m_cmdBuffer);
+
+    // Predispathch image transition
+    const vk::VkImageMemoryBarrier preDispatchBarrier = vk::makeImageMemoryBarrier(
+        0, vk::VK_ACCESS_SHADER_WRITE_BIT, vk::VK_IMAGE_LAYOUT_UNDEFINED, vk::VK_IMAGE_LAYOUT_GENERAL,
+        m_renderTarget->get(), vk::makeImageSubresourceRange(vk::VK_IMAGE_ASPECT_COLOR_BIT, 0, 1, 0, 1));
+
+    vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                          0, 0, nullptr, 0, nullptr, 1, &preDispatchBarrier);
+
+    pipeline.bind(*m_cmdBuffer);
+    vk.cmdBindDescriptorSets(*m_cmdBuffer, vk::VK_PIPELINE_BIND_POINT_COMPUTE, *m_pipelineLayout, 0, 1,
+                             &*m_descriptorSet, 0, nullptr);
+
+    vk.cmdDispatch(*m_cmdBuffer, m_extent.width / 8, m_extent.height / 8, 1);
+    vk::endCommandBuffer(vk, *m_cmdBuffer);
+    vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
+
+    vk::beginCommandBuffer(vk, *m_cmdBuffer);
+    vk::copyImageToBuffer(vk, *m_cmdBuffer, m_renderTarget->get(), (*m_outBuffer).get(),
+                          tcu::IVec2(m_extent.width, m_extent.height), vk::VK_ACCESS_SHADER_WRITE_BIT,
+                          vk::VK_IMAGE_LAYOUT_GENERAL);
     vk::endCommandBuffer(vk, *m_cmdBuffer);
     vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
 }
@@ -227,8 +282,8 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
     const vk::DeviceInterface &vk             = m_context.getDeviceInterface();
     const vk::VkPhysicalDevice physicalDevice = m_context.getPhysicalDevice();
     const vk::VkDevice device                 = m_context.getDevice();
-    const uint32_t queueFamilyIndex           = m_context.getUniversalQueueFamilyIndex();
-    const vk::VkQueue queue                   = m_context.getUniversalQueue();
+    const uint32_t queueFamilyIndex           = getQueueFamilyIndex(m_context, m_useCompute);
+    const vk::VkQueue queue                   = getQueue(m_context, m_useCompute);
     auto &alloc                               = m_context.getDefaultAllocator();
     const auto &deviceExtensions              = m_context.getDeviceExtensions();
 
@@ -241,13 +296,12 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
     m_cmdPool   = createCommandPool(vk, device, vk::VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex);
     m_cmdBuffer = (allocateCommandBuffer(vk, device, *m_cmdPool, vk::VK_COMMAND_BUFFER_LEVEL_PRIMARY));
 
+    vk::VkBufferUsageFlags bufferUsage =
+        (vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT |
+         vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT);
+    bufferUsage |= (m_type == VERTEX_INPUT) ? vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT : 0;
     m_buffer = de::MovePtr<vk::BufferWithMemory>(new vk::BufferWithMemory(
-        vk, device, alloc,
-        vk::makeBufferCreateInfo(bufferSize,
-                                 vk::VK_BUFFER_USAGE_TRANSFER_SRC_BIT | vk::VK_BUFFER_USAGE_TRANSFER_DST_BIT |
-                                     vk::VK_BUFFER_USAGE_STORAGE_BUFFER_BIT | vk::VK_BUFFER_USAGE_UNIFORM_BUFFER_BIT |
-                                     vk::VK_BUFFER_USAGE_VERTEX_BUFFER_BIT),
-        vk::MemoryRequirement::HostVisible));
+        vk, device, alloc, vk::makeBufferCreateInfo(bufferSize, bufferUsage), vk::MemoryRequirement::HostVisible));
 
     de::MovePtr<vk::BufferWithMemory> indexBuffer = de::MovePtr<vk::BufferWithMemory>(
         new vk::BufferWithMemory(vk, device, alloc,
@@ -262,6 +316,17 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
     const auto imageView                   = makeImageView(vk, device, image->get(), vk::VK_IMAGE_VIEW_TYPE_2D,
                                                            vk::VK_FORMAT_R32G32B32A32_SFLOAT, subresourceRange);
     const auto sampler                     = makeSampler(vk, device);
+
+    const vk::VkImageUsageFlags rtUsage =
+        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_STORAGE_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+
+    m_renderTarget = de::MovePtr<vk::ImageWithMemory>(new vk::ImageWithMemory(
+        vk, device, alloc,
+        makeImageCreateInfo(vk::VK_FORMAT_R32G32B32A32_SFLOAT, {m_extent.width, m_extent.height, 1}, rtUsage),
+        vk::MemoryRequirement::Any));
+
+    const auto renderTargetView = makeImageView(vk, device, m_renderTarget->get(), vk::VK_IMAGE_VIEW_TYPE_2D,
+                                                vk::VK_FORMAT_R32G32B32A32_SFLOAT, subresourceRange);
 
     auto &bufferAlloc      = m_buffer->getAllocation();
     auto &indexBufferAlloc = indexBuffer->getAllocation();
@@ -280,9 +345,8 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
     const std::vector<vk::VkViewport> viewports{makeViewport(m_extent)};
     const std::vector<vk::VkRect2D> scissors{makeRect2D(m_extent)};
 
-    vk::ShaderWrapper vert = vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"));
-    vk::ShaderWrapper frag = vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"));
-
+    // Building descriptor set layout
+    vk::DescriptorSetLayoutBuilder layoutBuilder;
     vk::VkDescriptorType descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER;
     if (m_type == STORAGE)
     {
@@ -296,19 +360,24 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
     {
         descriptorType = vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE;
     }
+    vk::VkShaderStageFlags stage = m_useCompute ? vk::VK_SHADER_STAGE_COMPUTE_BIT : vk::VK_SHADER_STAGE_FRAGMENT_BIT;
+    layoutBuilder.addSingleBinding(descriptorType, stage); // binding 0 (input buffer or image)
 
-    const auto descriptorSetLayout(
-        vk::DescriptorSetLayoutBuilder()
-            .addSingleBinding(descriptorType, vk::VK_SHADER_STAGE_FRAGMENT_BIT)
-            .addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER,
-                              vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT)
-            .build(vk, device));
+    vk::VkShaderStageFlags indexStage = m_useCompute ?
+                                            vk::VK_SHADER_STAGE_COMPUTE_BIT :
+                                            (vk::VK_SHADER_STAGE_VERTEX_BIT | vk::VK_SHADER_STAGE_FRAGMENT_BIT);
+    layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, indexStage); // binding 1 (index buffer)
+    if (m_useCompute)
+        layoutBuilder.addSingleBinding(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE,
+                                       vk::VK_SHADER_STAGE_COMPUTE_BIT); // binding 2 (output image)
+    const auto descriptorSetLayout = layoutBuilder.build(vk, device);
 
     m_pipelineLayout = vk::PipelineLayoutWrapper(m_pipelineConstructionType, vk, device, *descriptorSetLayout);
 
     m_descriptorPool = (vk::DescriptorPoolBuilder()
                             .addType(descriptorType)
                             .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER)
+                            .addType(vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_useCompute ? 1 : 0)
                             .build(vk, device, vk::VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT, 1));
     m_descriptorSet  = makeDescriptorSet(vk, device, *m_descriptorPool, *descriptorSetLayout);
     vk::DescriptorSetUpdateBuilder builder;
@@ -320,82 +389,57 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
                             &descriptorImageInfo);
     builder.writeSingle(*m_descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(1u),
                         vk::VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &indexBufferInfo);
+    if (m_useCompute)
+    {
+        const vk::VkDescriptorImageInfo outputImageInfo =
+            makeDescriptorImageInfo(VK_NULL_HANDLE, renderTargetView.get(), vk::VK_IMAGE_LAYOUT_GENERAL);
+
+        builder.writeSingle(*m_descriptorSet, vk::DescriptorSetUpdateBuilder::Location::binding(2u),
+                            vk::VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, &outputImageInfo);
+    }
     builder.update(vk, device);
-    ;
 
     //buffer to read the output image
     m_outBuffer = makeBufferForImage(vk, device, alloc, vk::VK_FORMAT_R32G32B32A32_SFLOAT, m_extent);
 
-    const auto vertModule = vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("vert"));
-    const auto fragModule = vk::createShaderModule(vk, device, m_context.getBinaryCollection().get("frag"));
-
-    // Color attachment.
-    const vk::VkImageCreateInfo imageCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                       // VkStructureType sType;
-        nullptr,                                                                       // const void* pNext;
-        0u,                                                                            // VkImageCreateFlags flags;
-        vk::VK_IMAGE_TYPE_2D,                                                          // VkImageType imageType;
-        vk::VK_FORMAT_R32G32B32A32_SFLOAT,                                             // VkFormat format;
-        {m_extent.width, m_extent.height, 1},                                          // VkExtent3D extent;
-        1u,                                                                            // uint32_t mipLevels;
-        1u,                                                                            // uint32_t arrayLayers;
-        vk::VK_SAMPLE_COUNT_1_BIT,                                                     // VkSampleCountFlagBits samples;
-        vk::VK_IMAGE_TILING_OPTIMAL,                                                   // VkImageTiling tiling;
-        vk::VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | vk::VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
-        vk::VK_SHARING_MODE_EXCLUSIVE,                                                 // VkSharingMode sharingMode;
-        0u,                            // uint32_t queueFamilyIndexCount;
-        nullptr,                       // const uint32_t* pQueueFamilyIndices;
-        vk::VK_IMAGE_LAYOUT_UNDEFINED, // VkImageLayout initialLayout;
-    };
-
-    m_colorAttachment = de::MovePtr<vk::ImageWithMemory>(
-        new vk::ImageWithMemory(vk, device, alloc, imageCreateInfo, vk::MemoryRequirement::Any));
-    const auto colorAttachmentView = makeImageView(vk, device, m_colorAttachment->get(), vk::VK_IMAGE_VIEW_TYPE_2D,
-                                                   vk::VK_FORMAT_R32G32B32A32_SFLOAT, subresourceRange);
-
-    m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, vk, device, vk::VK_FORMAT_R32G32B32A32_SFLOAT);
-    m_renderPass.createFramebuffer(vk, device, **m_colorAttachment, *colorAttachmentView, 32, 32);
-
-    vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                       // const void* pNext;
-        0u,                                                            // VkPipelineVertexInputStateCreateFlags flags;
-        0u,                                                            // uint32_t vertexBindingDescriptionCount;
-        nullptr, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
-        0u,      // uint32_t vertexAttributeDescriptionCount;
-        nullptr, // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-    };
-
+    // Setting up pipeline primitives
+    vk::VkPipelineVertexInputStateCreateInfo vertexInputStateCreateInfo     = vk::initVulkanStructure();
+    vk::VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = vk::initVulkanStructure();
     vk::VkVertexInputBindingDescription bindingDescription;
-    bindingDescription.binding   = 0;
-    bindingDescription.stride    = sizeof(float);
-    bindingDescription.inputRate = vk::VK_VERTEX_INPUT_RATE_INSTANCE;
-
     std::vector<vk::VkVertexInputAttributeDescription> attributeDescriptions(16);
-    for (uint32_t i = 0; i < (uint32_t)attributeDescriptions.size(); ++i)
-    {
-        attributeDescriptions[i].location = i;
-        attributeDescriptions[i].binding  = 0;
-        attributeDescriptions[i].format   = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
-        attributeDescriptions[i].offset   = (uint32_t)(sizeof(float) * i);
-    }
 
-    if (m_type == VERTEX_INPUT)
+    if (!m_useCompute)
     {
-        vertexInputStateCreateInfo.vertexBindingDescriptionCount   = 1u;
-        vertexInputStateCreateInfo.pVertexBindingDescriptions      = &bindingDescription;
-        vertexInputStateCreateInfo.vertexAttributeDescriptionCount = (uint32_t)attributeDescriptions.size();
-        vertexInputStateCreateInfo.pVertexAttributeDescriptions    = attributeDescriptions.data();
-    }
+        // Setup RenderPass
+        m_renderPass = vk::RenderPassWrapper(m_pipelineConstructionType, vk, device, vk::VK_FORMAT_R32G32B32A32_SFLOAT);
+        m_renderPass.createFramebuffer(vk, device, **m_renderTarget, *renderTargetView, m_extent.width,
+                                       m_extent.height);
 
-    // Input assembly.
-    const vk::VkPipelineInputAssemblyStateCreateInfo inputAssemblyStateCreateInfo = {
-        vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                                         // const void* pNext;
-        0u,                                       // VkPipelineInputAssemblyStateCreateFlags flags;
-        vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP, // VkPrimitiveTopology topology;
-        false,                                    // VkBool32 primitiveRestartEnable;
-    };
+        // Vertex Input State
+        vertexInputStateCreateInfo.sType = vk::VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO;
+        bindingDescription.binding       = 0;
+        bindingDescription.stride        = sizeof(float);
+        bindingDescription.inputRate     = vk::VK_VERTEX_INPUT_RATE_INSTANCE;
+
+        for (uint32_t i = 0; i < (uint32_t)attributeDescriptions.size(); ++i)
+        {
+            attributeDescriptions[i].location = i;
+            attributeDescriptions[i].binding  = 0;
+            attributeDescriptions[i].format   = vk::VK_FORMAT_R32G32B32A32_SFLOAT;
+            attributeDescriptions[i].offset   = (uint32_t)(sizeof(float) * i);
+        }
+
+        if (m_type == VERTEX_INPUT)
+        {
+            vertexInputStateCreateInfo.vertexBindingDescriptionCount   = 1u;
+            vertexInputStateCreateInfo.pVertexBindingDescriptions      = &bindingDescription;
+            vertexInputStateCreateInfo.vertexAttributeDescriptionCount = (uint32_t)attributeDescriptions.size();
+            vertexInputStateCreateInfo.pVertexAttributeDescriptions    = attributeDescriptions.data();
+        }
+
+        inputAssemblyStateCreateInfo.sType    = vk::VK_STRUCTURE_TYPE_PIPELINE_INPUT_ASSEMBLY_STATE_CREATE_INFO;
+        inputAssemblyStateCreateInfo.topology = vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP;
+    }
 
     const vk::VkPipelineCacheCreateInfo pipelineCacheCreateInfo = {
         vk::VK_STRUCTURE_TYPE_PIPELINE_CACHE_CREATE_INFO, // VkStructureType sType;
@@ -407,23 +451,8 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
 
     vk::Move<vk::VkPipelineCache> pipelineCache = createPipelineCache(vk, device, &pipelineCacheCreateInfo);
 
-    vk::GraphicsPipelineWrapper graphicsPipeline(vki, vk, physicalDevice, device, deviceExtensions,
-                                                 m_pipelineConstructionType);
-    graphicsPipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-        .setDefaultRasterizationState()
-        .setDefaultMultisampleState()
-        .setDefaultDepthStencilState()
-        .setDefaultColorBlendState()
-        .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
-        .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, vert)
-        .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
-        .setupFragmentOutputState(*m_renderPass)
-        .setMonolithicPipelineLayout(m_pipelineLayout)
-        .buildPipeline(*pipelineCache);
-
     vk::VkPipelineRobustnessCreateInfoEXT pipelineRobustnessInfo = vk::initVulkanStructure();
     vk::PipelineRobustnessCreateInfoWrapper pipelineRobustnessWrapper(&pipelineRobustnessInfo);
-
     if (m_robustnessBufferBehaviour == ROBUSTNESS)
     {
         if (m_type == STORAGE)
@@ -449,20 +478,58 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
             pipelineRobustnessInfo.images = vk::VK_PIPELINE_ROBUSTNESS_IMAGE_BEHAVIOR_ROBUST_IMAGE_ACCESS_2_EXT;
     }
 
-    vk::GraphicsPipelineWrapper robustPipeline(vki, vk, physicalDevice, device, deviceExtensions,
-                                               m_pipelineConstructionType);
-    robustPipeline.setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
-        .setDefaultRasterizationState()
-        .setDefaultMultisampleState()
-        .setDefaultDepthStencilState()
-        .setDefaultColorBlendState()
-        .setPipelineRobustnessState(pipelineRobustnessWrapper)
-        .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
-        .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, vert)
-        .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
-        .setupFragmentOutputState(*m_renderPass)
-        .setMonolithicPipelineLayout(m_pipelineLayout)
-        .buildPipeline(*pipelineCache, VK_NULL_HANDLE, 0, vk::PipelineCreationFeedbackCreateInfoWrapper());
+    // Create pipelines
+    if (m_useCompute)
+    {
+        const auto compBinary = &m_context.getBinaryCollection().get("comp");
+        const vk::ComputePipelineConstructionType computeConstructionType =
+            vk::graphicsToComputeConstructionType(m_pipelineConstructionType);
+
+        m_computePipeline = de::MovePtr<vk::ComputePipelineWrapper>(
+            new vk::ComputePipelineWrapper(vk, device, computeConstructionType, *compBinary));
+        m_computePipeline->setDescriptorSetLayout(*descriptorSetLayout);
+        m_computePipeline->buildPipeline(*pipelineCache);
+
+        m_robustComputePipeline = de::MovePtr<vk::ComputePipelineWrapper>(
+            new vk::ComputePipelineWrapper(vk, device, computeConstructionType, *compBinary));
+        m_robustComputePipeline->setDescriptorSetLayout(*descriptorSetLayout);
+        m_robustComputePipeline->setPipelineCreatePNext(&pipelineRobustnessInfo);
+        m_robustComputePipeline->buildPipeline(*pipelineCache);
+    }
+    else
+    {
+        vk::ShaderWrapper vert = vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("vert"));
+        vk::ShaderWrapper frag = vk::ShaderWrapper(vk, device, m_context.getBinaryCollection().get("frag"));
+
+        m_graphicsPipeline = de::MovePtr<vk::GraphicsPipelineWrapper>(new vk::GraphicsPipelineWrapper(
+            vki, vk, physicalDevice, device, deviceExtensions, m_pipelineConstructionType));
+        m_graphicsPipeline->setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setDefaultDepthStencilState()
+            .setDefaultColorBlendState()
+            .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+            .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, vert)
+            .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
+            .setupFragmentOutputState(*m_renderPass)
+            .setMonolithicPipelineLayout(m_pipelineLayout)
+            .buildPipeline(*pipelineCache);
+
+        m_robustGraphicsPipeline = de::MovePtr<vk::GraphicsPipelineWrapper>(new vk::GraphicsPipelineWrapper(
+            vki, vk, physicalDevice, device, deviceExtensions, m_pipelineConstructionType));
+        m_robustGraphicsPipeline->setDefaultTopology(vk::VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+            .setDefaultRasterizationState()
+            .setDefaultMultisampleState()
+            .setDefaultDepthStencilState()
+            .setDefaultColorBlendState()
+            .setPipelineRobustnessState(pipelineRobustnessWrapper)
+            .setupVertexInputState(&vertexInputStateCreateInfo, &inputAssemblyStateCreateInfo)
+            .setupPreRasterizationShaderState(viewports, scissors, m_pipelineLayout, *m_renderPass, 0u, vert)
+            .setupFragmentShaderState(m_pipelineLayout, *m_renderPass, 0u, frag)
+            .setupFragmentOutputState(*m_renderPass)
+            .setMonolithicPipelineLayout(m_pipelineLayout)
+            .buildPipeline(*pipelineCache, VK_NULL_HANDLE, 0, vk::PipelineCreationFeedbackCreateInfoWrapper());
+    }
 
     if (m_type == IMAGE)
     {
@@ -524,14 +591,18 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
                               (vk::VkDependencyFlags)0, 0, nullptr, 0u, nullptr, 1u, &preImageBarrier);
         vk.cmdCopyBufferToImage(*m_cmdBuffer, **m_buffer, **image, vk::VK_IMAGE_LAYOUT_TRANSFER_DST_OPTIMAL, 1u,
                                 &copyRegion);
-        vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT,
-                              vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT, (vk::VkDependencyFlags)0, 0, nullptr, 0,
-                              nullptr, 1, &postImageBarrier);
+        vk::VkPipelineStageFlags dstStage =
+            m_useCompute ? vk::VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT : vk::VK_PIPELINE_STAGE_FRAGMENT_SHADER_BIT;
+        vk.cmdPipelineBarrier(*m_cmdBuffer, vk::VK_PIPELINE_STAGE_TRANSFER_BIT, dstStage, (vk::VkDependencyFlags)0, 0,
+                              nullptr, 0, nullptr, 1, &postImageBarrier);
         vk::endCommandBuffer(vk, *m_cmdBuffer);
         vk::submitCommandsAndWait(vk, device, queue, *m_cmdBuffer);
     }
 
-    draw(graphicsPipeline);
+    if (m_useCompute)
+        dispatch(*m_computePipeline);
+    else
+        draw(*m_graphicsPipeline);
 
     if (!verifyImage(tcu::Vec4(values[0]), false))
         return tcu::TestStatus::fail("Fail");
@@ -540,7 +611,10 @@ tcu::TestStatus PipelineCacheTestInstance::iterate(void)
     deMemcpy(indexBufferAlloc.getHostPtr(), &invalidIndex, sizeof(uint32_t));
     flushAlloc(vk, device, indexBufferAlloc);
 
-    draw(robustPipeline);
+    if (m_useCompute)
+        dispatch(*m_robustComputePipeline);
+    else
+        draw(*m_robustGraphicsPipeline);
 
     if (m_robustnessBufferBehaviour == ROBUSTNESS_2)
     {
@@ -556,11 +630,12 @@ class PipelineCacheTestCase : public vkt::TestCase
 public:
     PipelineCacheTestCase(tcu::TestContext &context, const char *name,
                           vk::PipelineConstructionType pipelineConstructionType,
-                          RobustnessBehaviour robustnessBufferBehaviour, RobustnessType type)
+                          RobustnessBehaviour robustnessBufferBehaviour, RobustnessType type, bool useCompute)
         : TestCase(context, name)
         , m_pipelineConstructionType(pipelineConstructionType)
         , m_robustnessBufferBehaviour(robustnessBufferBehaviour)
         , m_type(type)
+        , m_useCompute(useCompute)
     {
     }
 
@@ -569,12 +644,14 @@ private:
     void initPrograms(vk::SourceCollections &programCollection) const;
     vkt::TestInstance *createInstance(vkt::Context &context) const
     {
-        return new PipelineCacheTestInstance(context, m_pipelineConstructionType, m_robustnessBufferBehaviour, m_type);
+        return new PipelineCacheTestInstance(context, m_pipelineConstructionType, m_robustnessBufferBehaviour, m_type,
+                                             m_useCompute);
     }
 
     const vk::PipelineConstructionType m_pipelineConstructionType;
     const RobustnessBehaviour m_robustnessBufferBehaviour;
     const RobustnessType m_type;
+    const bool m_useCompute;
 };
 
 void PipelineCacheTestCase::checkSupport(vkt::Context &context) const
@@ -618,92 +695,116 @@ void PipelineCacheTestCase::checkSupport(vkt::Context &context) const
         }
     }
 
-    vk::checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
-                                              m_pipelineConstructionType);
+    if (m_useCompute)
+    {
+        if (context.getComputeQueueFamilyIndex() == -1)
+            TCU_THROW(NotSupportedError, "Compute queue required");
+    }
+    else
+    {
+        vk::checkPipelineConstructionRequirements(context.getInstanceInterface(), context.getPhysicalDevice(),
+                                                  m_pipelineConstructionType);
+    }
 }
 
 void PipelineCacheTestCase::initPrograms(vk::SourceCollections &programCollection) const
 {
-    if (m_type == VERTEX_INPUT)
+    if (m_useCompute)
     {
-        {
-            std::ostringstream vert;
-            vert << "#version 450\n"
-                 << "layout(location = 0) in float in_values[16];\n"
-                 << "layout(location = 0) out float out_value;\n"
-                 << "layout (set=0, binding=1) restrict readonly buffer IndexBuffer {\n"
-                 << "    uint index;\n"
-                 << "};\n"
-                 << "void main()\n"
-                 << "{\n"
-                 << "    vec2 vertex = vec2(gl_VertexIndex & 1u, (gl_VertexIndex >> 1u) & 1u);\n"
-                 << "    gl_Position = vec4(vertex * 2.0f - 1.0f, 0.0f, 1.0f);\n"
-                 << "    out_value = in_values[index];\n"
-                 << "}\n";
+        std::string descriptor = {};
+        std::string readVal    = {};
 
-            programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
-        }
+        if (m_type == STORAGE)
         {
-            std::ostringstream frag;
-            frag << "#version 450\n"
-                 << "layout (location=0) in float in_value;\n"
-                 << "layout (location=0) out vec4 out_color;\n"
-                 << "void main()\n"
-                 << "{\n"
-                 << "    out_color = vec4(in_value);\n"
-                 << "}\n";
-
-            programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+            descriptor = "layout (set=0, binding=0) restrict readonly buffer StorageBuffer { float values[]; };\n";
+            readVal    = "vec4(values[index])";
         }
+        else if (m_type == UNIFORM)
+        {
+            descriptor = "layout (std140, set=0, binding=0) restrict uniform UniformBuffer { float values[1000]; };\n";
+            readVal    = "vec4(values[index])";
+        }
+        else if (m_type == IMAGE)
+        {
+            descriptor = "layout (set=0, binding=0, rgba32f) uniform image2D tex;\n";
+            readVal    = "imageLoad(tex, ivec2(index, 0))";
+        }
+
+        std::ostringstream comp;
+        comp << "#version 450\n"
+             << "layout(local_size_x = 8, local_size_y = 8) in;\n"
+             << descriptor << "layout (set=0, binding=1) restrict readonly buffer IndexBuffer { uint index; };\n"
+             << "layout (set=0, binding=2, rgba32f) uniform writeonly image2D outImage;\n"
+             << "void main()\n"
+             << "{\n"
+             << "    ivec2 pos = ivec2(gl_GlobalInvocationID.xy);\n"
+             << "    vec4 color = " << readVal << ";\n"
+             << "    imageStore(outImage, pos, color);\n"
+             << "}\n";
+        programCollection.glslSources.add("comp") << glu::ComputeSource(comp.str());
+    }
+    else if (m_type == VERTEX_INPUT)
+    {
+        std::ostringstream vert;
+        vert << "#version 450\n"
+             << "layout(location = 0) in float in_values[16];\n"
+             << "layout(location = 0) out float out_value;\n"
+             << "layout (set=0, binding=1) restrict readonly buffer IndexBuffer { uint index; };\n"
+             << "void main()\n"
+             << "{\n"
+             << "    vec2 vertex = vec2(gl_VertexIndex & 1u, (gl_VertexIndex >> 1u) & 1u);\n"
+             << "    gl_Position = vec4(vertex * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+             << "    out_value = in_values[index];\n"
+             << "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+        std::ostringstream frag;
+        frag << "#version 450\n"
+             << "layout (location=0) in float in_value;\n"
+             << "layout (location=0) out vec4 out_color;\n"
+             << "void main()\n"
+             << "{\n"
+             << "    out_color = vec4(in_value);\n"
+             << "}\n";
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
     }
     else
     {
+        std::ostringstream vert;
+        vert << "#version 450\n"
+             << "void main()\n"
+             << "{\n"
+             << "    vec2 vertex = vec2(gl_VertexIndex & 1u, (gl_VertexIndex >> 1u) & 1u);\n"
+             << "    gl_Position = vec4(vertex * 2.0f - 1.0f, 0.0f, 1.0f);\n"
+             << "}\n";
+        programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+        std::string descriptor = {};
+        std::string write      = {};
+        if (m_type == STORAGE)
         {
-            std::ostringstream vert;
-            vert << "#version 450\n"
-                 << "void main()\n"
-                 << "{\n"
-                 << "    vec2 vertex = vec2(gl_VertexIndex & 1u, (gl_VertexIndex >> 1u) & 1u);\n"
-                 << "    gl_Position = vec4(vertex * 2.0f - 1.0f, 0.0f, 1.0f);\n"
-                 << "}\n";
-
-            programCollection.glslSources.add("vert") << glu::VertexSource(vert.str());
+            descriptor = "layout (set=0, binding=0) restrict readonly buffer StorageBuffer { float values[]; };\n";
+            write      = "    out_color = vec4(values[index]);\n";
         }
+        else if (m_type == UNIFORM)
         {
-            std::string descriptor = {};
-            std::string write      = {};
-            if (m_type == STORAGE)
-            {
-                descriptor = "layout (set=0, binding=0) restrict readonly buffer StorageBuffer {\n"
-                             "    float values[];\n"
-                             "};\n";
-                write      = "    out_color = vec4(values[index]);\n";
-            }
-            else if (m_type == UNIFORM)
-            {
-                descriptor = "layout (std140, set=0, binding=0) restrict uniform UniformBuffer {\n"
-                             "    float values[1000];\n"
-                             "};\n";
-                write      = "    out_color = vec4(values[index]);\n";
-            }
-            else if (m_type == IMAGE)
-            {
-                descriptor = "layout (set=0, binding=0, rgba32f) uniform image2D tex;\n";
-                write      = "    out_color = imageLoad(tex, ivec2(index, 0));\n";
-            }
-
-            std::ostringstream frag;
-            frag << "#version 450\n"
-                 << "layout (location=0) out vec4 out_color;\n"
-                 << descriptor << "layout (set=0, binding=1) restrict readonly buffer IndexBuffer {\n"
-                 << "    uint index;\n"
-                 << "};\n"
-                 << "void main()\n"
-                 << "{\n"
-                 << write << "}\n";
-
-            programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
+            descriptor = "layout (std140, set=0, binding=0) restrict uniform UniformBuffer { float values[1000]; };\n";
+            write      = "    out_color = vec4(values[index]);\n";
         }
+        else if (m_type == IMAGE)
+        {
+            descriptor = "layout (set=0, binding=0, rgba32f) uniform image2D tex;\n";
+            write      = "    out_color = imageLoad(tex, ivec2(index, 0));\n";
+        }
+
+        std::ostringstream frag;
+        frag << "#version 450\n"
+             << "layout (location=0) out vec4 out_color;\n"
+             << descriptor << "layout (set=0, binding=1) restrict readonly buffer IndexBuffer { uint index; };\n"
+             << "void main()\n"
+             << "{\n"
+             << write << "}\n";
+        programCollection.glslSources.add("frag") << glu::FragmentSource(frag.str());
     }
 }
 
@@ -741,7 +842,17 @@ tcu::TestCaseGroup *createPipelineRobustnessCacheTests(tcu::TestContext &testCtx
         for (const auto &typeTest : typeTests)
         {
             robustnessGroup->addChild(new PipelineCacheTestCase(testCtx, typeTest.name, pipelineConstructionType,
-                                                                robustnessTest.robustnessBehaviour, typeTest.type));
+                                                                robustnessTest.robustnessBehaviour, typeTest.type,
+                                                                false));
+
+            // Compute variant
+            if (pipelineConstructionType == vk::PIPELINE_CONSTRUCTION_TYPE_MONOLITHIC && typeTest.type != VERTEX_INPUT)
+            {
+                std::string computeName = std::string(typeTest.name) + "_compute";
+                robustnessGroup->addChild(
+                    new PipelineCacheTestCase(testCtx, computeName.c_str(), pipelineConstructionType,
+                                              robustnessTest.robustnessBehaviour, typeTest.type, true));
+            }
         }
         testGroup->addChild(robustnessGroup.release());
     }

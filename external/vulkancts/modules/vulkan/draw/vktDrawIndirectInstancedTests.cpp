@@ -612,7 +612,7 @@ tcu::TestCaseGroup *createIndirectInstancedTests(tcu::TestContext &testCtx, cons
     {
         uint32_t drawCount;
         const char *name;
-    } drawCountTests[] = {{2, "2"}, {4, "4"}, {16, "16"}};
+    } drawCountTests[] = {{1, "1"}, {2, "2"}, {4, "4"}, {16, "16"}};
 
     for (const auto &drawCountTest : drawCountTests)
     {

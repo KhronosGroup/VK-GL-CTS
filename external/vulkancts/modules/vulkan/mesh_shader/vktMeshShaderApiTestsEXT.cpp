@@ -668,7 +668,7 @@ tcu::TestStatus MeshApiInstance::iterate(void)
 
             // use different valid addressFlags in some cases to test them
             drawIndirect2Info.addressFlags = (m_params.drawCount > 1) ?
-                                                 VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR :
+                                                 VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR :
                                                  VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
 
             vkd.cmdDrawMeshTasksIndirect2EXT(rpCmdBuffer, &drawIndirect2Info);
@@ -698,8 +698,8 @@ tcu::TestStatus MeshApiInstance::iterate(void)
             drawIndirectCount2Info.maxDrawCount      = maxCount;
 
             // use different valid addressFlags in some cases to test them
-            VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR |
-                                                    VK_ADDRESS_COMMAND_NEVER_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT |
+            VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR |
+                                                    VK_ADDRESS_COMMAND_UNKNOWN_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR |
                                                     VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
             drawIndirectCount2Info.addressFlags      = m_params.useTask ? 0u : addressFlags;
             drawIndirectCount2Info.countAddressFlags = (m_params.drawCount > 1) ? addressFlags : 0u;

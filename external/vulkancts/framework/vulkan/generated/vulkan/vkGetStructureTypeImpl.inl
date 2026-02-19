@@ -4183,6 +4183,11 @@ template<> VkStructureType getStructureType<VkTimelineSemaphoreSubmitInfo> (void
 	return VK_STRUCTURE_TYPE_TIMELINE_SEMAPHORE_SUBMIT_INFO;
 }
 
+template<> VkStructureType getStructureType<VkUbmSurfaceCreateInfoSEC> (void)
+{
+	return VK_STRUCTURE_TYPE_UBM_SURFACE_CREATE_INFO_SEC;
+}
+
 template<> VkStructureType getStructureType<VkValidationFeaturesEXT> (void)
 {
 	return VK_STRUCTURE_TYPE_VALIDATION_FEATURES_EXT;

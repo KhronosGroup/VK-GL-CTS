@@ -370,6 +370,40 @@ tcu::TestStatus multiSubmissionCase(Context &context, TestConfig config)
     return tcu::TestStatus::pass("Wait and set even on device multi submission tests pass");
 }
 
+static bool checkQueueForExecuteCommands(Context &context, uint32_t familyIndex)
+{
+    const VkPhysicalDevice physicalDevice = context.getPhysicalDevice();
+    const InstanceInterface &vki          = context.getInstanceInterface();
+    uint32_t queueFamilyPropertiesCount   = 0u;
+    std::vector<VkQueueFamilyProperties2> queueFamilyProperties2;
+
+    vki.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount, nullptr);
+
+    if (queueFamilyPropertiesCount <= familyIndex)
+        TCU_FAIL("Device returns less queue families than the required family index");
+
+    queueFamilyProperties2.resize(queueFamilyPropertiesCount);
+
+    for (size_t ndx = 0; ndx < queueFamilyPropertiesCount; ++ndx)
+    {
+        queueFamilyProperties2[ndx].sType = VK_STRUCTURE_TYPE_QUEUE_FAMILY_PROPERTIES_2;
+        queueFamilyProperties2[ndx].pNext = nullptr;
+    }
+
+    vki.getPhysicalDeviceQueueFamilyProperties2(physicalDevice, &queueFamilyPropertiesCount,
+                                                queueFamilyProperties2.data());
+
+    if (queueFamilyPropertiesCount != queueFamilyProperties2.size())
+        TCU_FAIL("Device returns less queue families than initially reported");
+
+    const VkQueueFamilyProperties &queueFamilyProperties = queueFamilyProperties2[familyIndex].queueFamilyProperties;
+
+    if (queueFamilyProperties.queueFlags & (VK_QUEUE_COMPUTE_BIT | VK_QUEUE_GRAPHICS_BIT | VK_QUEUE_TRANSFER_BIT))
+        return true;
+
+    return false;
+}
+
 tcu::TestStatus secondaryCommandBufferCase(Context &context, TestConfig config)
 {
     enum
@@ -388,6 +422,13 @@ tcu::TestStatus secondaryCommandBufferCase(Context &context, TestConfig config)
     const VkDevice device           = getSyncDevice(videoDevice, context);
     const VkQueue queue             = getSyncQueue(videoDevice, context, config.computeQueue);
     const uint32_t queueFamilyIndex = getSyncQueueFamilyIndex(videoDevice, context, config.computeQueue);
+
+    if (!checkQueueForExecuteCommands(context, queueFamilyIndex))
+    {
+        // To avoid VUID-vkCmdExecuteCommands-commandBuffer-cmdpool
+        TCU_THROW(NotSupportedError, "The queue doesn't support for seconday commands execution");
+    }
+
     const Unique<VkFence> fence(createFence(vk, device));
     const Unique<VkCommandPool> cmdPool(
         createCommandPool(vk, device, VK_COMMAND_POOL_CREATE_RESET_COMMAND_BUFFER_BIT, queueFamilyIndex));

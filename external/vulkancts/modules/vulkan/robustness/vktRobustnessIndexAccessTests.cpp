@@ -334,9 +334,9 @@ tcu::TestStatus DrawIndexedInstance::iterate(void)
     if (m_params.useDeviceAddressCommands)
     {
         // use different valid addressFlags in some cases to test them
-        VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_NEVER_ALIASES_TRANSFORM_FEEDBACK_BUFFER_BIT_EXT;
+        VkAddressCommandFlagsKHR addressFlags = VK_ADDRESS_COMMAND_UNKNOWN_TRANSFORM_FEEDBACK_BUFFER_USAGE_BIT_KHR;
         if (m_params.mode == TM_DRAW_INDEXED)
-            addressFlags |= VK_ADDRESS_COMMAND_NEVER_ALIASES_STORAGE_BUFFER_BIT_KHR;
+            addressFlags |= VK_ADDRESS_COMMAND_UNKNOWN_STORAGE_BUFFER_USAGE_BIT_KHR;
         if (m_params.mode == TM_DRAW_INDEXED_INDIRECT)
             addressFlags |= VK_ADDRESS_COMMAND_FULLY_BOUND_BIT_KHR;
 

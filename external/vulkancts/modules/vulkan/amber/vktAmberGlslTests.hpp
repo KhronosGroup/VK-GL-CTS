@@ -34,6 +34,7 @@ namespace cts_amber
 
 tcu::TestCaseGroup *createCombinedOperationsGroup(tcu::TestContext &);
 tcu::TestCaseGroup *createCrashTestGroup(tcu::TestContext &);
+tcu::TestCaseGroup *createLogicalCopyGroup(tcu::TestContext &);
 
 } // namespace cts_amber
 } // namespace vkt
