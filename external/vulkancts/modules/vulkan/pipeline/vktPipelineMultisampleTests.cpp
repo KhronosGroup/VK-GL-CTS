@@ -132,8 +132,7 @@ struct MultisampleTestParams
 };
 
 void initMultisamplePrograms(SourceCollections &sources, MultisampleTestParams params);
-bool isSupportedSampleCount(const InstanceInterface &instanceInterface, VkPhysicalDevice physicalDevice,
-                            VkSampleCountFlagBits rasterizationSamples);
+bool isSupportedSampleCount(Context &context, VkSampleCountFlagBits rasterizationSamples, ImageBackingMode backingMode);
 bool isSupportedDepthStencilFormat(const InstanceInterface &vki, const VkPhysicalDevice physDevice,
                                    const VkFormat format);
 VkPipelineColorBlendAttachmentState getDefaultColorBlendAttachmentState(void);
@@ -864,44 +863,18 @@ protected:
 void commonCheckSupport(Context &context, VkFormat colorFormat, VkSampleCountFlagBits rasterizationSamples,
                         ImageBackingMode backingMode, RenderType renderType)
 {
-    const auto &vki           = context.getInstanceInterface();
-    const auto physicalDevice = context.getPhysicalDevice();
-
-    if (!isSupportedSampleCount(vki, physicalDevice, rasterizationSamples))
+    if (!isSupportedSampleCount(context, rasterizationSamples, backingMode))
         TCU_THROW(NotSupportedError, "Unsupported number of rasterization samples");
 
     if (backingMode == IMAGE_BACKING_MODE_SPARSE)
     {
-        const auto &features        = context.getDeviceFeatures();
-        bool sparseSamplesSupported = false;
-        switch (rasterizationSamples)
-        {
-        case VK_SAMPLE_COUNT_1_BIT:
-            sparseSamplesSupported = features.sparseResidencyImage2D;
-            break;
-        case VK_SAMPLE_COUNT_2_BIT:
-            sparseSamplesSupported = features.sparseResidency2Samples;
-            break;
-        case VK_SAMPLE_COUNT_4_BIT:
-            sparseSamplesSupported = features.sparseResidency4Samples;
-            break;
-        case VK_SAMPLE_COUNT_8_BIT:
-            sparseSamplesSupported = features.sparseResidency8Samples;
-            break;
-        case VK_SAMPLE_COUNT_16_BIT:
-            sparseSamplesSupported = features.sparseResidency16Samples;
-            break;
-        default:
-            break;
-        }
-
-        if (!sparseSamplesSupported)
-            TCU_THROW(NotSupportedError, "Unsupported number of rasterization samples for sparse residency");
-
         if (!context.getDeviceFeatures().sparseBinding)
             TCU_THROW(NotSupportedError, "No sparseBinding support");
 
 #ifndef CTS_USES_VULKANSC
+        const auto &vki           = context.getInstanceInterface();
+        const auto physicalDevice = context.getPhysicalDevice();
+
         VkImageUsageFlags imageUsageFlags = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
         if (renderType == RENDER_TYPE_COPY_SAMPLES)
             imageUsageFlags |= VK_IMAGE_USAGE_INPUT_ATTACHMENT_BIT;
@@ -1069,14 +1042,39 @@ void initAlphaToCoverageColorUnusedAttachmentPrograms(SourceCollections &sources
     sources.glslSources.add("color_frag") << glu::FragmentSource(fragmentSource);
 }
 
-bool isSupportedSampleCount(const InstanceInterface &instanceInterface, VkPhysicalDevice physicalDevice,
-                            VkSampleCountFlagBits rasterizationSamples)
+bool isSupportedSampleCount(Context &context, VkSampleCountFlagBits rasterizationSamples, ImageBackingMode backingMode)
 {
+    const auto &vki           = context.getInstanceInterface();
+    const auto physicalDevice = context.getPhysicalDevice();
+
     VkPhysicalDeviceProperties deviceProperties;
 
-    instanceInterface.getPhysicalDeviceProperties(physicalDevice, &deviceProperties);
+    vki.getPhysicalDeviceProperties(physicalDevice, &deviceProperties);
 
-    return !!(deviceProperties.limits.framebufferColorSampleCounts & rasterizationSamples);
+    if (!(deviceProperties.limits.framebufferColorSampleCounts & rasterizationSamples))
+        return false;
+
+    if (backingMode == IMAGE_BACKING_MODE_SPARSE)
+    {
+        const auto &features = context.getDeviceFeatures();
+        switch (rasterizationSamples)
+        {
+        case VK_SAMPLE_COUNT_1_BIT:
+            return features.sparseResidencyImage2D;
+        case VK_SAMPLE_COUNT_2_BIT:
+            return features.sparseResidency2Samples;
+        case VK_SAMPLE_COUNT_4_BIT:
+            return features.sparseResidency4Samples;
+        case VK_SAMPLE_COUNT_8_BIT:
+            return features.sparseResidency8Samples;
+        case VK_SAMPLE_COUNT_16_BIT:
+            return features.sparseResidency16Samples;
+        default:
+            break;
+        }
+    }
+
+    return true;
 }
 
 bool checkFragmentShadingRateRequirements(Context &context, uint32_t sampleCount)
@@ -2800,7 +2798,7 @@ tcu::TestStatus testRasterSamplesConsistency(Context &context, MultisampleTestPa
     // Do not render with 1 sample (start with samplesNdx = 1).
     for (int samplesNdx = 1; samplesNdx < DE_LENGTH_OF_ARRAY(samples); samplesNdx++)
     {
-        if (!isSupportedSampleCount(context.getInstanceInterface(), context.getPhysicalDevice(), samples[samplesNdx]))
+        if (!isSupportedSampleCount(context, samples[samplesNdx], params.backingMode))
             continue;
 
         if (params.useFragmentShadingRate && !checkFragmentShadingRateRequirements(context, samples[samplesNdx]))
