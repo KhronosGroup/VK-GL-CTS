@@ -1,3 +1,4 @@
 dEQP-VK.shader_object.link.next_stage.geom_no_frag
+dEQP-VK.shader_object.link.next_stage.identically_defined_layouts
 dEQP-VK.shader_object.link.next_stage.tess_no_frag
 dEQP-VK.shader_object.link.next_stage.vert_no_frag
