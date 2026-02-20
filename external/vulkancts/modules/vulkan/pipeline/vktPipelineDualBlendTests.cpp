@@ -32,6 +32,8 @@
 #include "vkImageUtil.hpp"
 #include "vkObjUtil.hpp"
 #include "vktCustomInstancesDevices.hpp"
+#include "vktTestCaseUtil.hpp"
+#include "tcuImageCompare.hpp"
 #include "deRandom.hpp"
 
 #include <algorithm>
@@ -39,6 +41,7 @@
 #include <filesystem>
 #include <functional>
 #include <iomanip>
+#include <memory>
 #include <numeric>
 #include <random>
 #include <sstream>
@@ -1753,6 +1756,329 @@ Move<VkDevice> DualSourceBlendMAInstance::createDualBlendDevice(Context &ctx)
     return createCustomDevice(ctx.getPlatformInterface(), instance, vki, physicalDevice, &deviceParams);
 }
 
+// Apply color blend when one of the outputs has undefined values.
+enum class Assigned
+{
+    NO = 0,        // Avoid assigning a value to the undefined output.
+    FULL_UNDEF,    // Fully assign an undefined value to the undefined output.
+    PARTIAL_UNDEF, // Leave some components unassigned, and assign others.
+    NONE,          // Leave both outputs unassigned.
+    BOTH_FULL,     // Assign a fully undefined value to both outputs.
+};
+
+bool bothValuesUndef(Assigned v)
+{
+    return (v == Assigned::NONE || v == Assigned::BOTH_FULL);
+}
+
+struct UndefOutParams
+{
+    PipelineConstructionType constructionType;
+    Assigned assigned;
+    bool first;   // If true, the first value is undefined; if false, the second one. Irrelevant for Assigned::NONE.
+    bool dynamic; // If true, use dynamic states for color blending.
+
+    // When bothValuesUndef() returns true, use blend factors that guarantee dual blending is active even if that means
+    // the result is undefined and will not be checked. Can only be set to true if bothValuesUndef() is true.
+    bool undefResult;
+
+    bool bothUndef() const
+    {
+        return bothValuesUndef(assigned);
+    }
+
+    bool needsUndefVar() const
+    {
+        return (assigned == Assigned::FULL_UNDEF || assigned == Assigned::BOTH_FULL);
+    }
+
+    uint32_t getRngSeed() const
+    {
+        return ((static_cast<uint32_t>(constructionType) << 16) | (static_cast<uint32_t>(assigned) << 8) |
+                (static_cast<uint32_t>(first) << 1) | static_cast<uint32_t>(dynamic));
+    }
+
+    tcu::Vec4 getDesiredColor() const
+    {
+        const auto seed = getRngSeed();
+        de::Random rng(seed);
+
+        const float r = rng.getFloat();
+        const float g = rng.getFloat();
+        const float b = rng.getFloat();
+        return tcu::Vec4(r, g, b, 1.0f);
+    }
+};
+
+using UndefOutParamsPtr = std::shared_ptr<UndefOutParams>;
+
+void UndefOutCheckSupport(Context &context, UndefOutParamsPtr params)
+{
+    const auto ctx = context.getContextCommonData();
+    checkPipelineConstructionRequirements(ctx.vki, ctx.physicalDevice, params->constructionType);
+
+    if (params->dynamic)
+    {
+        const auto &eds3Features = context.getExtendedDynamicState3FeaturesEXT();
+
+        if (!eds3Features.extendedDynamicState3ColorBlendEnable)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEnable not supported");
+
+        if (!eds3Features.extendedDynamicState3ColorBlendEquation)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3ColorBlendEquation not supported");
+
+        if (!eds3Features.extendedDynamicState3ColorWriteMask)
+            TCU_THROW(NotSupportedError, "extendedDynamicState3ColorWriteMask not supported");
+    }
+
+    context.requireDeviceCoreFeature(DEVICE_CORE_FEATURE_DUAL_SRC_BLEND);
+}
+
+void UndefOutInitPrograms(vk::SourceCollections &dst, UndefOutParamsPtr params)
+{
+    std::ostringstream vert;
+    vert << "#version 460\n"
+         << "void main(void) {\n"
+         << "    const float x = float((gl_VertexIndex >> 1) & 1) * 2.0 - 1.0;\n"
+         << "    const float y = float((gl_VertexIndex >> 0) & 1) * 2.0 - 1.0;\n"
+         << "    gl_Position = vec4(x, y, 0.0, 1.0);\n"
+         << "}\n";
+    dst.glslSources.add("vert") << glu::VertexSource(vert.str());
+
+    // One of the outputs is undefined: this is the critical part of the test.
+    const auto undefIdx     = (params->first ? 0 : 1);
+    const auto desiredColor = params->getDesiredColor();
+
+    std::ostringstream glslColor;
+    glslColor << "vec4" << desiredColor;
+
+    const std::string undefColor("undef");
+    const std::string defColor = glslColor.str();
+    const std::string defComponent("1.0");
+
+    std::ostringstream frag;
+    frag << "#version 460\n"
+         << "layout (location=0, index=0) out vec4 out0;\n"
+         << "layout (location=0, index=1) out vec4 out1;\n"
+         << "void main(void) {\n"
+         << (params->needsUndefVar() ? "    vec4 " + undefColor + ";\n" : "");
+
+    for (int i = 0; i < 2; ++i)
+    {
+        if (i == undefIdx || params->bothUndef())
+        {
+            if (params->assigned == Assigned::FULL_UNDEF || params->assigned == Assigned::BOTH_FULL)
+                frag << "    out" << i << " = " << undefColor << ";\n";
+            else if (params->assigned == Assigned::PARTIAL_UNDEF)
+                frag << "    out" << i << ".a = " << defComponent << ";\n";
+        }
+        else
+            frag << "    out" << i << " = " << defColor << ";\n";
+    }
+
+    frag << "}\n";
+    dst.glslSources.add("frag") << glu::FragmentSource(frag.str());
+}
+
+tcu::TestStatus UndefOutRun(Context &context, UndefOutParamsPtr params)
+{
+    const auto ctx    = context.getContextCommonData();
+    const auto format = VK_FORMAT_R8G8B8A8_UNORM;
+    const tcu::IVec3 extent(1, 1, 1);
+    const auto extentVk  = makeExtent3D(extent);
+    const auto usage     = (VK_IMAGE_USAGE_TRANSFER_SRC_BIT | VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT);
+    const auto imageType = VK_IMAGE_TYPE_2D;
+
+    ImageWithBuffer colorBuffer(ctx.vkd, ctx.device, ctx.allocator, extentVk, format, usage, imageType);
+    RenderPassWrapper renderPass(params->constructionType, ctx.vkd, ctx.device, format);
+    renderPass.createFramebuffer(ctx.vkd, ctx.device, colorBuffer.getImage(), colorBuffer.getImageView(),
+                                 extentVk.width, extentVk.height);
+
+    const auto &binaries = context.getBinaryCollection();
+    ShaderWrapper vertShader(ctx.vkd, ctx.device, binaries.get("vert"));
+    ShaderWrapper fragShader(ctx.vkd, ctx.device, binaries.get("frag"));
+
+    PipelineLayoutWrapper pipelineLayout(params->constructionType, ctx.vkd, ctx.device);
+
+    GraphicsPipelineWrapper pipeline(ctx.vki, ctx.vkd, ctx.physicalDevice, ctx.device, context.getDeviceExtensions(),
+                                     params->constructionType);
+
+    const VkPipelineVertexInputStateCreateInfo vertexInputState = initVulkanStructureConst();
+
+    const std::vector<VkViewport> viewports(1u, makeViewport(extent));
+    const std::vector<VkRect2D> scissors(1u, makeRect2D(extent));
+
+    VkPipelineColorBlendAttachmentState blendAttState;
+    memset(&blendAttState, 0, sizeof(blendAttState));
+
+    VkBool32 blendEnable                 = VK_TRUE;
+    VkColorComponentFlags colorWriteMask = 0xFu;
+
+    // Equation sets Source Factor (SF) and Destination Factor (DF) in:
+    // SC * SF + DC * DF (supposing VK_BLEND_OP_ADD).
+    // SC is Source Color and DC is Destination Color.
+    // Destination Color comes from the render pass clear color.
+    VkColorBlendEquationEXT blendEquation;
+    if (params->bothUndef())
+    {
+        if (params->undefResult)
+        {
+            // Force use of dual blend factors. This will result in undefined values.
+            blendEquation.srcColorBlendFactor = VK_BLEND_FACTOR_SRC1_COLOR;
+            blendEquation.dstColorBlendFactor = VK_BLEND_FACTOR_SRC1_ALPHA;
+            blendEquation.colorBlendOp        = VK_BLEND_OP_ADD;
+            blendEquation.srcAlphaBlendFactor = VK_BLEND_FACTOR_SRC1_ALPHA;
+            blendEquation.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE_MINUS_SRC1_ALPHA;
+            blendEquation.alphaBlendOp        = VK_BLEND_OP_ADD;
+        }
+        else
+        {
+            // SC = undef
+            // SC1 = undef
+            // DC = desired-color
+            // SC * 0.0 + DC * 1.0 = DC = desired-color
+            blendEquation.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+            blendEquation.dstColorBlendFactor = VK_BLEND_FACTOR_ONE;
+            blendEquation.colorBlendOp        = VK_BLEND_OP_ADD;
+            blendEquation.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+            blendEquation.dstAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+            blendEquation.alphaBlendOp        = VK_BLEND_OP_ADD;
+        }
+    }
+    else if (params->first)
+    {
+        DE_ASSERT(!params->undefResult);
+
+        // SC = undef (if partially, .a = 1.0)
+        // SC1 = desired-color
+        // DC = 1.0
+        // SC * 0.0 + DC * SC1 = SC1 = desired-color
+        blendEquation.srcColorBlendFactor = VK_BLEND_FACTOR_ZERO;
+        blendEquation.dstColorBlendFactor = VK_BLEND_FACTOR_SRC1_COLOR;
+        blendEquation.colorBlendOp        = VK_BLEND_OP_ADD;
+        blendEquation.srcAlphaBlendFactor = VK_BLEND_FACTOR_ZERO;
+        blendEquation.dstAlphaBlendFactor =
+            (params->assigned == Assigned::PARTIAL_UNDEF ?
+                 VK_BLEND_FACTOR_SRC_ALPHA /* Would have value 1.0, just like SRC1_ALPHA, so we use it here. */
+                 :
+                 VK_BLEND_FACTOR_SRC1_ALPHA);
+        blendEquation.alphaBlendOp = VK_BLEND_OP_ADD;
+    }
+    else
+    {
+        DE_ASSERT(!params->undefResult);
+
+        // SC = desired-color
+        // SC1 = undef (if partially, .a = 1.0)
+        // DC = 0.0
+        // SC * 1.0 + DC * SC1 = SC = desired-color
+        blendEquation.srcColorBlendFactor =
+            (params->assigned == Assigned::PARTIAL_UNDEF ?
+                 VK_BLEND_FACTOR_SRC1_ALPHA /* Defined to be 1.0, so equivalent to VK_BLEND_FACTOR_ONE. */
+                 :
+                 VK_BLEND_FACTOR_ONE);
+        blendEquation.dstColorBlendFactor = VK_BLEND_FACTOR_SRC1_COLOR;
+        blendEquation.colorBlendOp        = VK_BLEND_OP_ADD;
+        blendEquation.srcAlphaBlendFactor = VK_BLEND_FACTOR_ONE;
+        blendEquation.dstAlphaBlendFactor = VK_BLEND_FACTOR_SRC1_ALPHA;
+        blendEquation.alphaBlendOp        = VK_BLEND_OP_ADD;
+    }
+
+    // The clear color has to work with the blend ops above and the frag shader to give us desired-color.
+    const auto desiredColor = params->getDesiredColor();
+    const auto clearColor = (params->bothUndef() ? desiredColor : (params->first ? tcu::Vec4(1.0f) : tcu::Vec4(0.0f)));
+
+    if (!params->dynamic)
+    {
+        blendAttState.blendEnable    = blendEnable;
+        blendAttState.colorWriteMask = colorWriteMask;
+
+        // Copy the good equation to the static state values.
+        blendAttState.srcColorBlendFactor = blendEquation.srcColorBlendFactor;
+        blendAttState.dstColorBlendFactor = blendEquation.dstColorBlendFactor;
+        blendAttState.colorBlendOp        = blendEquation.colorBlendOp;
+        blendAttState.srcAlphaBlendFactor = blendEquation.srcAlphaBlendFactor;
+        blendAttState.dstAlphaBlendFactor = blendEquation.dstAlphaBlendFactor;
+        blendAttState.alphaBlendOp        = blendEquation.alphaBlendOp;
+    }
+
+    const VkPipelineColorBlendStateCreateInfo colorBlendState = {
+        VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        VK_FALSE,
+        VK_LOGIC_OP_CLEAR,
+        1u,
+        &blendAttState,
+        {0.0f, 0.0f, 0.0f, 0.0f},
+    };
+
+    std::vector<VkDynamicState> dynamicStates;
+    if (params->dynamic)
+    {
+        dynamicStates.reserve(3u);
+        dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_BLEND_ENABLE_EXT);
+        dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_BLEND_EQUATION_EXT);
+        dynamicStates.push_back(VK_DYNAMIC_STATE_COLOR_WRITE_MASK_EXT);
+    }
+    const VkPipelineDynamicStateCreateInfo dynamicState = {
+        VK_STRUCTURE_TYPE_PIPELINE_DYNAMIC_STATE_CREATE_INFO,
+        nullptr,
+        0u,
+        de::sizeU32(dynamicStates),
+        de::dataOrNull(dynamicStates),
+    };
+
+    pipeline.setDefaultRasterizationState()
+        .setDefaultDepthStencilState()
+        .setDefaultMultisampleState()
+        .setDynamicState(&dynamicState)
+        .setDefaultTopology(VK_PRIMITIVE_TOPOLOGY_TRIANGLE_STRIP)
+        .setupVertexInputState(&vertexInputState)
+        .setupPreRasterizationShaderState(viewports, scissors, pipelineLayout, renderPass.get(), 0u, vertShader)
+        .setupFragmentShaderState(pipelineLayout, renderPass.get(), 0u, fragShader)
+        .setupFragmentOutputState(renderPass.get(), 0u, &colorBlendState)
+        .buildPipeline();
+
+    CommandPoolWithBuffer cmd(ctx.vkd, ctx.device, ctx.qfIndex);
+    const auto cmdBuffer = *cmd.cmdBuffer;
+
+    beginCommandBuffer(ctx.vkd, cmdBuffer);
+    renderPass.begin(ctx.vkd, cmdBuffer, scissors.front(), clearColor);
+    pipeline.bind(cmdBuffer);
+    if (params->dynamic)
+    {
+        ctx.vkd.cmdSetColorBlendEnableEXT(cmdBuffer, 0u, 1u, &blendEnable);
+        ctx.vkd.cmdSetColorWriteMaskEXT(cmdBuffer, 0u, 1u, &colorWriteMask);
+        ctx.vkd.cmdSetColorBlendEquationEXT(cmdBuffer, 0u, 1u, &blendEquation);
+    }
+    ctx.vkd.cmdDraw(cmdBuffer, 4u, 1u, 0u, 0u);
+    renderPass.end(ctx.vkd, cmdBuffer);
+    copyImageToBuffer(ctx.vkd, cmdBuffer, colorBuffer.getImage(), colorBuffer.getBuffer(), extent.swizzle(0, 1));
+    endCommandBuffer(ctx.vkd, cmdBuffer);
+    submitCommandsAndWait(ctx.vkd, ctx.device, ctx.queue, cmdBuffer);
+
+    if (!params->undefResult)
+    {
+        auto &colorBufferAlloc = colorBuffer.getBufferAllocation();
+        invalidateAlloc(ctx.vkd, ctx.device, colorBufferAlloc);
+
+        const tcu::Vec4 threshold(0.005f, 0.005f, 0.005f, 1.0f); // 1/255 < 0.005 < 2/255
+        const auto tcuFormat = mapVkFormat(format);
+
+        tcu::TextureLevel refLevel(tcuFormat, extent.x(), extent.y(), extent.z());
+        tcu::PixelBufferAccess reference = refLevel.getAccess();
+        tcu::clear(reference, desiredColor);
+
+        auto &log = context.getTestContext().getLog();
+        tcu::ConstPixelBufferAccess result(tcuFormat, extent, colorBufferAlloc.getHostPtr());
+        if (!tcu::floatThresholdCompare(log, "Result", "", reference, result, threshold, tcu::COMPARE_LOG_ON_ERROR))
+            TCU_FAIL("Unexpected result in color buffer; check log for details --");
+    }
+
+    return tcu::TestStatus::pass("Pass");
+}
+
 } // unnamed namespace
 
 void addDualBlendMultiAttachmentTests(tcu::TestContext &testCtx, tcu::TestCaseGroup *const dualSourceGroup,
@@ -1771,6 +2097,54 @@ void addDualBlendMultiAttachmentTests(tcu::TestContext &testCtx, tcu::TestCaseGr
     }
 
     dualSourceGroup->addChild(multiAttachmentGroup.release());
+}
+
+tcu::TestCaseGroup *createUndefOutputTests(tcu::TestContext &testCtx, vk::PipelineConstructionType constructionType)
+{
+    de::MovePtr<tcu::TestCaseGroup> mainGroup(new tcu::TestCaseGroup(testCtx, "undefined_output"));
+
+    const struct
+    {
+        Assigned assigned;
+        const char *name;
+    } AssignedCases[] = {
+        {Assigned::NO, "_not_assigned"},
+        {Assigned::FULL_UNDEF, "_assign_undef"},
+        {Assigned::PARTIAL_UNDEF, "_partial_undef"},
+        {Assigned::NONE, "none_assigned"},
+        {Assigned::BOTH_FULL, "assign_undef_both"},
+    };
+
+    for (const bool first : {true, false})
+        for (const auto &assignedCase : AssignedCases)
+        {
+            const bool bothUndef = bothValuesUndef(assignedCase.assigned);
+
+            if (bothUndef && !first)
+                continue;
+
+            for (const bool dynamic : {false, true})
+                for (const bool undefResult : {false, true})
+                {
+                    if (undefResult && !bothUndef)
+                        continue;
+
+                    const UndefOutParamsPtr params(new UndefOutParams{
+                        constructionType,
+                        assignedCase.assigned,
+                        first,
+                        dynamic,
+                        undefResult,
+                    });
+                    const auto testName = (params->bothUndef() ? "" : std::string(first ? "first" : "second")) +
+                                          assignedCase.name + (dynamic ? "_dynamic" : "") +
+                                          (undefResult ? "_undef_result" : "");
+                    addFunctionCaseWithPrograms(mainGroup.get(), testName, UndefOutCheckSupport, UndefOutInitPrograms,
+                                                UndefOutRun, params);
+                }
+        }
+
+    return mainGroup.release();
 }
 
 } // namespace pipeline

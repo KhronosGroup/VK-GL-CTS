@@ -2978,6 +2978,7 @@ tcu::TestCaseGroup *createBlendTests(tcu::TestContext &testCtx, PipelineConstruc
         dualSourceBlendTests->addChild(dualSourceFormatTests.release());
 #ifndef CTS_USES_VULKANSC
         addDualBlendMultiAttachmentTests(testCtx, dualSourceBlendTests.operator->(), pipelineConstructionType);
+        dualSourceBlendTests->addChild(createUndefOutputTests(testCtx, pipelineConstructionType));
 #endif
         blendTests->addChild(dualSourceBlendTests.release());
     }
