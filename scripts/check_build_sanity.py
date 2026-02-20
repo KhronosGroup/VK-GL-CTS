@@ -214,8 +214,8 @@ EARLY_SPECIAL_RECIPES = [
             RunScript(os.path.join("scripts", "opengl", "gen_all.py")),
             RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: [] + (["--verbose"] if env.verbose else [])),
             RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: [] + (["--verbose"] if env.verbose else [])),
-            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: ["--api", "SC"] + (["--verbose"] if env.verbose else [])),
-            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: ["--api", "SC"] + (["--verbose"] if env.verbose else [])),
+            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework.py"), lambda env: ["--api", "vulkansc"] + (["--verbose"] if env.verbose else [])),
+            RunScript(os.path.join("external", "vulkancts", "scripts", "gen_framework_c.py"), lambda env: ["--api", "vulkansc"] + (["--verbose"] if env.verbose else [])),
             RunScript(os.path.join("scripts", "gen_android_bp.py")),
             RunScript(os.path.join("scripts", "gen_khronos_cts_bp.py"))
         ]),

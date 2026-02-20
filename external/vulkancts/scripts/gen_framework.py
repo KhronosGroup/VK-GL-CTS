@@ -6,6 +6,7 @@
 #
 # Copyright (c) 2015 Google Inc.
 # Copyright (c) 2025 ARM Ltd.
+# Copyright (c) 2026 RasterGrid Kft.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -42,8 +43,8 @@ from khr_util.format import indentLines, combineLines
 
 VULKAN_XML_DIR = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "xml")
 SCRIPTS_SRC_DIR = os.path.join(os.path.dirname(__file__), "src")
-DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
-                       "SC" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
+DEFAULT_OUTPUT_DIR = { "vulkan" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
+                       "vulkansc" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 vulkanObjectPath = os.path.join(VULKAN_XML_DIR, "..", "scripts")
 sys.path.insert(0, vulkanObjectPath)
@@ -799,7 +800,7 @@ class BasicTypesGenerator(CTSGenerator):
             # we need registry object in this generator, we cant operate on vulkan_object alone
             assert(self.registry)
             yield "// Defines"
-            for line in self.genDefinesSrc("" if self.targetApiName == "vulkan" else "SC"):
+            for line in self.genDefinesSrc(self.targetApiName):
                 yield line
             yield "\n"
 
@@ -983,7 +984,8 @@ class BasicTypesGenerator(CTSGenerator):
 
     def genDefinesSrc (self, apiName):
         def genLines ():
-            apiVariant = 1 if apiName == "SC" else 0
+            apiVariant = 1 if apiName == "vulkansc" else 0
+            apiSuffix = "SC" if apiName == "vulkansc" else ""
             yield f"#define VK_API_VERSION_1_0\t(static_cast<uint32_t>\t(VK_MAKE_API_VERSION(0, 1, 0, 0)))"
             for v in self.vk.versions.values():
                 major, minor = v.name[-3:].split('_')
@@ -1000,7 +1002,7 @@ class BasicTypesGenerator(CTSGenerator):
                 defineType = DEFINITIONS.get(c.name, c.type)
                 yield f"#define {c.name}\t(static_cast<{c.type}>\t({c.valueStr}))"
             logging.debug("Found max framework version for API '%s': %s" % (self.targetApiName, maxApiVersion))
-            yield f"#define VK{apiName}_API_MAX_FRAMEWORK_VERSION\tVK{apiName}_API_VERSION_{maxApiVersion}"
+            yield f"#define VK{apiSuffix}_API_MAX_FRAMEWORK_VERSION\tVK{apiSuffix}_API_VERSION_{maxApiVersion}"
         for line in indentLines(genLines()):
             yield line
 
@@ -1934,8 +1936,8 @@ class SupportedExtensionsGenerator(CTSGenerator):
         for version in map:
             self.write("    if (coreVersion >= " + str(version) + ")")
             self.write("    {")
-            for extension in sorted(map[version], key=lambda e: e.name):
-                self.write('        dst.push_back("' + extension.name + '");')
+            for extension in sorted(map[version]):
+                self.write('        dst.push_back("' + extension + '");')
             self.write("    }")
         if not map:
             self.write("    DE_UNREF(coreVersion);")
@@ -1960,16 +1962,76 @@ class SupportedExtensionsGenerator(CTSGenerator):
                 continue
             if ext.instance:
                 list = instanceMap.get(currVersion)
-                instanceMap[currVersion] = list + [ext] if list else [ext]
+                instanceMap[currVersion] = list + [ext.name] if list else [ext.name]
             else:
                 list = deviceMap.get(currVersion)
-                deviceMap[currVersion] = list + [ext] if list else [ext]
+                deviceMap[currVersion] = list + [ext.name] if list else [ext.name]
+
+        if isSC:
+            # Handle implicitly supported extensions that were promoted in core Vulkan 1.1 and 1.2
+            # therefore are always supported in Vulkan SC
+            # NOTE: This is just a workaround for the general deficiencies of the current state of
+            # the generator scripts and the CTS framework itself
+            instanceMap['VKSC_API_VERSION_1_0'] = [
+                # From Vulkan 1.1
+                'VK_KHR_device_group_creation',
+                'VK_KHR_external_fence_capabilities',
+                'VK_KHR_external_memory_capabilities',
+                'VK_KHR_external_semaphore_capabilities',
+                'VK_KHR_get_physical_device_properties2',
+            ]
+            deviceMap['VKSC_API_VERSION_1_0'] = [
+                # From Vulkan 1.1
+                'VK_KHR_16bit_storage',
+                'VK_KHR_bind_memory2',
+                'VK_KHR_dedicated_allocation',
+                'VK_KHR_descriptor_update_template'
+                'VK_KHR_device_group',
+                'VK_KHR_external_fence',
+                'VK_KHR_external_memory',
+                'VK_KHR_external_semaphore',
+                'VK_KHR_get_memory_requirements2',
+                'VK_KHR_maintenance1',
+                'VK_KHR_maintenance2',
+                'VK_KHR_maintenance3',
+                'VK_KHR_multiview',
+                'VK_KHR_relaxed_block_layout',
+                'VK_KHR_sampler_ycbcr_conversion',
+                'VK_KHR_shader_draw_parameters',
+                'VK_KHR_storage_buffer_storage_class',
+                'VK_KHR_variable_pointers',
+                # From Vulkan 1.2
+                'VK_EXT_descriptor_indexing',
+                'VK_EXT_host_query_reset',
+                'VK_EXT_sampler_filter_minmax',
+                'VK_EXT_scalar_block_layout',
+                'VK_EXT_separate_stencil_usage',
+                'VK_EXT_shader_viewport_index_layer',
+                'VK_KHR_8bit_storage',
+                'VK_KHR_buffer_device_address',
+                'VK_KHR_create_renderpass2',
+                'VK_KHR_depth_stencil_resolve',
+                'VK_KHR_draw_indirect_count',
+                'VK_KHR_driver_properties',
+                'VK_KHR_image_format_list',
+                'VK_KHR_imageless_framebuffer',
+                'VK_KHR_sampler_mirror_clamp_to_edge',
+                'VK_KHR_separate_depth_stencil_layouts',
+                'VK_KHR_shader_atomic_int64',
+                'VK_KHR_shader_float16_int8',
+                'VK_KHR_shader_float_controls',
+                'VK_KHR_shader_subgroup_extended_types',
+                'VK_KHR_spirv_1_4',
+                'VK_KHR_timeline_semaphore',
+                'VK_KHR_uniform_buffer_standard_layout',
+                'VK_KHR_vulkan_memory_model',
+            ]
 
         self.write(INL_HEADER)
         self.write("")
-        self.write("\nvoid getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)\n{" % (" dst" if len(deviceMap) != 0 or isSC else ""))
+        self.write("\nvoid getCoreDeviceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)\n{")
         self.writeExtensionsForVersions(deviceMap)
-        self.write("}\n\nvoid getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>&%s)\n{" % (" dst" if len(instanceMap) != 0 or isSC else ""))
+        self.write("}\n\nvoid getCoreInstanceExtensionsImpl (uint32_t coreVersion, ::std::vector<const char*>& dst)\n{")
         self.writeExtensionsForVersions(instanceMap)
         self.write("}\n")
 
@@ -3742,7 +3804,8 @@ def parseCmdLineArgs():
     parser.add_argument("-a",
                         "--api",
                         dest="api",
-                        default="",
+                        default="vulkan",
+                        choices=["vulkan", "vulkansc"],
                         help="Choose between Vulkan and Vulkan SC")
     parser.add_argument("-o",
                         "--outdir",
@@ -3758,11 +3821,11 @@ def parseCmdLineArgs():
 if __name__ == "__main__":
     args = parseCmdLineArgs()
     initializeLogger(args.verbose)
-    isSC = (args.api=='SC')
+    isSC = (args.api=='vulkansc')
 
     # if argument was specified it is interpreted as a path to which .inl files will be written
     SetOutputDirectory(DEFAULT_OUTPUT_DIR[args.api] if args.outdir == '' else args.outdir)
-    SetTargetApiName('vulkansc' if isSC else 'vulkan')
+    SetTargetApiName(args.api)
     SetMergedApiNames(None)
 
     # parameters used by some of generators

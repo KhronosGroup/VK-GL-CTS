@@ -5,6 +5,7 @@
 # ----------
 #
 # Copyright (c) 2015 Google Inc.
+# Copyright (c) 2026 RasterGrid Kft.
 #
 # Licensed under the Apache License, Version 2.0 (the "License");
 # you may not use this file except in compliance with the License.
@@ -32,7 +33,7 @@ from ctsbuild.common import *
 from khr_util.format import writeInlFile
 
 VULKAN_HEADERS_INCLUDE_DIR      = os.path.join(os.path.dirname(__file__), "..", "..", "vulkan-docs", "src", "include")
-VULKAN_H = { "" : [    os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codecs_common.h"),
+VULKAN_H = { "vulkan" : [    os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codecs_common.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h264std.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h264std_decode.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_h264std_encode.h"),
@@ -45,9 +46,9 @@ VULKAN_H = { "" : [    os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vul
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_vp9std.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vk_video", "vulkan_video_codec_vp9std_decode.h"),
                                 os.path.join(VULKAN_HEADERS_INCLUDE_DIR, "vulkan", "vulkan_core.h") ],
-                        "SC" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
-DEFAULT_OUTPUT_DIR = { "" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
-                        "SC" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
+                       "vulkansc" : [ os.path.join(os.path.dirname(__file__), "src", "vulkan_sc_core.h") ] }
+DEFAULT_OUTPUT_DIR = { "vulkan" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkan"),
+                       "vulkansc" : os.path.join(os.path.dirname(__file__), "..", "framework", "vulkan", "generated", "vulkansc") }
 
 INL_HEADER = """\
 /* WARNING: This is auto-generated file. Do not modify, since changes will
@@ -89,7 +90,8 @@ def parseCmdLineArgs():
     parser.add_argument("-a",
                         "--api",
                         dest="api",
-                        default="",
+                        default="vulkan",
+                        choices=["vulkan", "vulkansc"],
                         help="Choose between Vulkan and Vulkan SC")
     parser.add_argument("-o",
                         "--outdir",
