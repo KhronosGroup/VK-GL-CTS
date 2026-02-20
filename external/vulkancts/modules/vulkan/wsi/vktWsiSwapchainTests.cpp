@@ -1630,9 +1630,10 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-    uint32_t physicalDevicesInGroupCount           = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-    const VkPhysicalDevice *physicalDevicesInGroup = deviceGroupProps[devGroupIdx].physicalDevices;
-    uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface);
+    const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
+                                                               deviceGroupProps[devGroupIdx].physicalDevices +
+                                                                   deviceGroupProps[devGroupIdx].physicalDeviceCount);
+    const uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup, *surface);
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]);
     const float queuePriority     = 1.0f;
@@ -1643,8 +1644,8 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
         nullptr,                                               // pNext
-        physicalDevicesInGroupCount,                           // physicalDeviceCount
-        physicalDevicesInGroup                                 // physicalDevices
+        uint32_t(physicalDevicesInGroup.size()),               // physicalDeviceCount
+        &physicalDevicesInGroup[0]                             // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
@@ -1753,12 +1754,12 @@ tcu::TestStatus deviceGroupRenderTest(Context &context, Type wsiType)
 
                 // render triangle using one or two subdevices when available
                 renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID,
-                                                physicalDevicesInGroupCount, imageNdx, frameNdx);
+                                                uint32_t(physicalDevicesInGroup.size()), imageNdx, frameNdx);
 
                 // submit queue
                 uint32_t deviceMask = (1 << firstDeviceID);
                 std::vector<uint32_t> deviceIndices(1, firstDeviceID);
-                if (physicalDevicesInGroupCount > 1)
+                if (physicalDevicesInGroup.size() > 1)
                 {
                     deviceMask |= (1 << secondDeviceID);
                     deviceIndices.push_back(secondDeviceID);
@@ -1845,9 +1846,10 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t deviceIdx   = context.getTestContext().getCommandLine().getVKDeviceId() - 1u;
     const vector<VkPhysicalDeviceGroupProperties> deviceGroupProps =
         enumeratePhysicalDeviceGroups(instHelper.vki, instHelper.instance);
-    uint32_t physicalDevicesInGroupCount           = deviceGroupProps[devGroupIdx].physicalDeviceCount;
-    const VkPhysicalDevice *physicalDevicesInGroup = deviceGroupProps[devGroupIdx].physicalDevices;
-    uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup[deviceIdx], *surface);
+    const std::vector<VkPhysicalDevice> physicalDevicesInGroup(deviceGroupProps[devGroupIdx].physicalDevices,
+                                                               deviceGroupProps[devGroupIdx].physicalDevices +
+                                                                   deviceGroupProps[devGroupIdx].physicalDeviceCount);
+    const uint32_t queueFamilyIndex = chooseQueueFamilyIndex(instHelper.vki, physicalDevicesInGroup, *surface);
     const std::vector<VkQueueFamilyProperties> queueProps =
         getPhysicalDeviceQueueFamilyProperties(instHelper.vki, physicalDevicesInGroup[deviceIdx]);
     const float queuePriority      = 1.0f;
@@ -1855,15 +1857,15 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
     const uint32_t secondDeviceID  = 1;
     const uint32_t deviceIndices[] = {firstDeviceID, secondDeviceID};
 
-    if (physicalDevicesInGroupCount < 2)
+    if (physicalDevicesInGroup.size() < 2)
         TCU_THROW(NotSupportedError, "Test requires more than 1 device in device group");
 
     // create a device group
     const VkDeviceGroupDeviceCreateInfo groupDeviceInfo = {
         VK_STRUCTURE_TYPE_DEVICE_GROUP_DEVICE_CREATE_INFO_KHR, // stype
         nullptr,                                               // pNext
-        physicalDevicesInGroupCount,                           // physicalDeviceCount
-        physicalDevicesInGroup                                 // physicalDevices
+        uint32_t(physicalDevicesInGroup.size()),               // physicalDeviceCount
+        &physicalDevicesInGroup[0]                             // physicalDevices
     };
     const VkDeviceQueueCreateInfo deviceQueueCreateInfo = {
         VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // type
@@ -2110,7 +2112,7 @@ tcu::TestStatus deviceGroupRenderTest2(Context &context, Type wsiType)
 
                 // render triangle using one or two subdevices when available
                 renderer.recordDeviceGroupFrame(commandBuffer, firstDeviceID, secondDeviceID,
-                                                physicalDevicesInGroupCount, imageNdx, frameNdx);
+                                                uint32_t(physicalDevicesInGroup.size()), imageNdx, frameNdx);
 
                 // submit queue
                 uint32_t deviceMask                                 = (1 << firstDeviceID) | (1 << secondDeviceID);
