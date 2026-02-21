@@ -105,6 +105,9 @@ public:
 
     virtual tcu::TestStatus iterate(void)
     {
+        const VkDevice device     = m_context.getDevice();
+        const DeviceInterface &vk = m_context.getDeviceInterface();
+
         if (m_testParam.shaderType == VK_SHADER_STAGE_COMPUTE_BIT)
         {
             dispatch();
@@ -115,6 +118,7 @@ public:
         }
 
         const uint32_t *outputData = reinterpret_cast<uint32_t *>(m_outputAlloc->getHostPtr());
+        invalidateAlloc(vk, device, *m_outputAlloc);
         return validateOutput(outputData);
     }
 
@@ -595,10 +599,11 @@ private:
 
         void *outputData = m_outputAlloc->getHostPtr();
         deMemset(outputData, 0, sizeof(outputBufferSize));
+        flushAlloc(m_vk, device, *m_outputAlloc);
 
         VK_CHECK(
             m_vk.bindBufferMemory(device, *m_outputBuffer, m_outputAlloc->getMemory(), m_outputAlloc->getOffset()));
-        flushAlloc(m_vk, device, *m_outputAlloc);
+        invalidateAlloc(m_vk, device, *m_outputAlloc);
     }
 
     void generateComputePipeline()

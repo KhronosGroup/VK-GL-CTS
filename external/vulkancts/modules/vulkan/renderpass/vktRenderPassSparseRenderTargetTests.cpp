@@ -70,6 +70,7 @@ de::MovePtr<Allocation> createBufferMemory(const DeviceInterface &vk, VkDevice d
     de::MovePtr<Allocation> allocation(
         allocator.allocate(getBufferMemoryRequirements(vk, device, buffer), MemoryRequirement::HostVisible));
     VK_CHECK(vk.bindBufferMemory(device, buffer, allocation->getMemory(), allocation->getOffset()));
+    invalidateAlloc(vk, device, *allocation);
     return allocation;
 }
 

@@ -2198,6 +2198,12 @@ TransformFeedbackStreamsTestInstance::TransformFeedbackStreamsTestInstance(Conte
 
     if (geomPointSizeRequired && !features.shaderTessellationAndGeometryPointSize)
         TCU_THROW(NotSupportedError, "shaderTessellationAndGeometryPointSize feature is not supported");
+
+    if (m_parameters.testType == TEST_TYPE_STREAMS_CLIPDISTANCE && !features.shaderClipDistance)
+        TCU_THROW(NotSupportedError, std::string("shaderClipDistance feature is not supported"));
+
+    if (m_parameters.testType == TEST_TYPE_STREAMS_CULLDISTANCE && !features.shaderCullDistance)
+        TCU_THROW(NotSupportedError, std::string("shaderCullDistance feature is not supported"));
 }
 
 bool TransformFeedbackStreamsTestInstance::verifyImage(const VkFormat imageFormat, const VkExtent2D &size,
