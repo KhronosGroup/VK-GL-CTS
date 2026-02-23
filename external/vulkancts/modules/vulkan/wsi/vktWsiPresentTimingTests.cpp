@@ -1507,6 +1507,16 @@ tcu::TestStatus retiredSwapchainTest(Context &context, vk::wsi::Type wsiType)
     return tcu::TestStatus::pass("Tests ran successfully");
 }
 
+void presentAtCheckSupport(Context &context, PresentTimingTestConfig config)
+{
+    const auto &presentTimingFeatures = context.getPresentTimingFeaturesEXT();
+
+    if (config.presentAtMode == PresentAtMode::ABSOLUTE && !presentTimingFeatures.presentAtAbsoluteTime)
+        TCU_THROW(NotSupportedError, "presentAtAbsoluteTime is not supported");
+    if (config.presentAtMode == PresentAtMode::RELATIVE && !presentTimingFeatures.presentAtRelativeTime)
+        TCU_THROW(NotSupportedError, "presentAtRelativeTime is not supported");
+}
+
 tcu::TestStatus presentAtTest(Context &context, PresentTimingTestConfig config)
 {
     const InstanceHelper instHelper(context, config.wsiType);
@@ -2244,10 +2254,10 @@ void populatePresentAtGroup(tcu::TestCaseGroup *testGroup, vk::wsi::Type wsiType
                                                           outOfOrderResult.allow,
                                                           partial.allow,
                                                           true};
-                        addFunctionCase(&*partialResultsGroup, "nearest", presentAtTest, config);
+                        addFunctionCase(&*partialResultsGroup, "nearest", presentAtCheckSupport, presentAtTest, config);
 
                         config.presentAtNearestRefreshCycle = false;
-                        addFunctionCase(&*partialResultsGroup, "after", presentAtTest, config);
+                        addFunctionCase(&*partialResultsGroup, "after", presentAtCheckSupport, presentAtTest, config);
 
                         outOfOrderResultsGroup->addChild(partialResultsGroup.release());
                     }
