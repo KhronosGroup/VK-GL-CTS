@@ -34,6 +34,7 @@
 #include "vktPipelineReferenceRenderer.hpp"
 #include "vktPipelineVertexUtil.hpp"
 #include "vkPipelineConstructionUtil.hpp"
+#include "vkComputePipelineConstructionUtil.hpp"
 #include "tcuVectorUtil.hpp"
 #include "deSharedPtr.hpp"
 
@@ -60,7 +61,7 @@ struct ImageSamplingInstanceParams
                                 vk::VkDescriptorType samplingType_ = vk::VK_DESCRIPTOR_TYPE_COMBINED_IMAGE_SAMPLER,
                                 int imageCount_ = 1, AllocationKind allocationKind_ = ALLOCATION_KIND_SUBALLOCATED,
                                 const vk::VkImageLayout imageLayout_ = vk::VK_IMAGE_LAYOUT_SHADER_READ_ONLY_OPTIMAL,
-                                const vk::VkPipelineCreateFlags pipelineCreateFlags_ = 0u)
+                                const vk::VkPipelineCreateFlags pipelineCreateFlags_ = 0u, bool useCompute_ = false)
         : pipelineConstructionType(pipelineConstructionType_)
         , renderSize(renderSize_)
         , imageViewType(imageViewType_)
@@ -78,6 +79,7 @@ struct ImageSamplingInstanceParams
         , allocationKind(allocationKind_)
         , imageLayout(imageLayout_)
         , pipelineCreateFlags(pipelineCreateFlags_)
+        , useCompute(useCompute_)
     {
     }
 
@@ -98,6 +100,7 @@ struct ImageSamplingInstanceParams
     AllocationKind allocationKind;
     const vk::VkImageLayout imageLayout;
     const vk::VkPipelineCreateFlags pipelineCreateFlags;
+    const bool useCompute;
 };
 
 void checkSupportAstcFormat(Context &context, tcu::CompressedTexFormat compressedFormat);
@@ -171,6 +174,9 @@ protected:
     vk::Move<vk::VkCommandBuffer> m_cmdBuffer;
 
     const vk::VkImageLayout m_imageLayout;
+
+    const bool m_useCompute;
+    vk::ComputePipelineWrapper m_computePipeline;
 };
 
 } // namespace pipeline

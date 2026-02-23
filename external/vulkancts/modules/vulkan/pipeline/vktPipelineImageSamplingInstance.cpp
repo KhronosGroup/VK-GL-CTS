@@ -184,6 +184,16 @@ static MovePtr<TestTexture> createTestTexture(const TcuFormatType format, VkImag
     return texture;
 }
 
+inline vk::VkQueue getQueue(Context &ctx, bool useCompute)
+{
+    return useCompute ? ctx.getComputeQueue() : ctx.getUniversalQueue();
+}
+
+inline uint32_t getQueueNdx(Context &ctx, bool useCompute)
+{
+    return useCompute ? ctx.getComputeQueueFamilyIndex() : ctx.getUniversalQueueFamilyIndex();
+}
+
 } // namespace
 
 #ifndef CTS_USES_VULKANSC
@@ -218,6 +228,11 @@ void checkSupportAstcFormat(Context &context, tcu::CompressedTexFormat compresse
 
 void checkSupportImageSamplingInstance(Context &context, ImageSamplingInstanceParams params)
 {
+    if (params.useCompute && isDepthStencilFormat(params.imageFormat))
+    {
+        TCU_THROW(NotSupportedError, "Depth/stencil formats are not supported on compute queue");
+    }
+
     const VkSamplerReductionModeCreateInfo *reductionModeInfo      = NULL;
     const VkSamplerYcbcrConversionInfo *ycbcrInfo                  = NULL;
     const VkSamplerCustomBorderColorCreateInfoEXT *borderColorInfo = NULL;
@@ -433,6 +448,7 @@ ImageSamplingInstance::ImageSamplingInstance(Context &context, ImageSamplingInst
                          params.pipelineCreateFlags)
     , m_pipelineConstructionType(params.pipelineConstructionType)
     , m_imageLayout(params.imageLayout)
+    , m_useCompute(params.useCompute)
 {
 }
 
@@ -442,8 +458,8 @@ void ImageSamplingInstance::setup()
     const DeviceInterface &vk         = m_context.getDeviceInterface();
     const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
     const VkDevice vkDevice           = m_context.getDevice();
-    const VkQueue queue               = m_context.getUniversalQueue();
-    const uint32_t queueFamilyIndex   = m_context.getUniversalQueueFamilyIndex();
+    const VkQueue queue               = getQueue(m_context, m_useCompute);
+    const uint32_t queueFamilyIndex   = getQueueNdx(m_context, m_useCompute);
     SimpleAllocator memAlloc(
         vk, vkDevice,
         getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
@@ -529,7 +545,8 @@ void ImageSamplingInstance::setup()
                                         (*m_imageAllocs[imgNdx])->getOffset()));
 
             // Upload texture data
-            uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, **m_images[imgNdx]);
+            uploadTestTexture(vk, vkDevice, queue, queueFamilyIndex, memAlloc, *m_texture, **m_images[imgNdx],
+                              m_imageLayout, vk::VK_PIPELINE_STAGE_ALL_COMMANDS_BIT);
 
             // Create image view and sampler
             const VkImageViewCreateInfo imageViewParams = {
@@ -550,20 +567,115 @@ void ImageSamplingInstance::setup()
         m_sampler = createSampler(vk, vkDevice, &m_samplerParams);
     }
 
+    // Create color images and views
+    {
+        VkImageUsageFlags colorUsage = VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT;
+        if (m_useCompute)
+            colorUsage |= VK_IMAGE_USAGE_STORAGE_BIT;
+
+        const VkImageCreateInfo colorImageParams = {
+            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                          // VkStructureType sType;
+            nullptr,                                                      // const void* pNext;
+            0u,                                                           // VkImageCreateFlags flags;
+            VK_IMAGE_TYPE_2D,                                             // VkImageType imageType;
+            m_colorFormat,                                                // VkFormat format;
+            {(uint32_t)m_renderSize.x(), (uint32_t)m_renderSize.y(), 1u}, // VkExtent3D extent;
+            1u,                                                           // uint32_t mipLevels;
+            1u,                                                           // uint32_t arrayLayers;
+            VK_SAMPLE_COUNT_1_BIT,                                        // VkSampleCountFlagBits samples;
+            VK_IMAGE_TILING_OPTIMAL,                                      // VkImageTiling tiling;
+            colorUsage,                                                   // VkImageUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,                                    // VkSharingMode sharingMode;
+            1u,                                                           // uint32_t queueFamilyIndexCount;
+            &queueFamilyIndex,                                            // const uint32_t* pQueueFamilyIndices;
+            VK_IMAGE_LAYOUT_UNDEFINED                                     // VkImageLayout initialLayout;
+        };
+
+        m_colorImages.resize(m_imageCount);
+        m_colorImageAllocs.resize(m_imageCount);
+        m_colorAttachmentViews.resize(m_imageCount);
+
+        for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+        {
+            m_colorImages[imgNdx] = SharedImagePtr(new UniqueImage(createImage(vk, vkDevice, &colorImageParams)));
+            m_colorImageAllocs[imgNdx] =
+                SharedAllocPtr(new UniqueAlloc(allocateImage(vki, vk, physDevice, vkDevice, **m_colorImages[imgNdx],
+                                                             MemoryRequirement::Any, memAlloc, m_allocationKind)));
+            VK_CHECK(vk.bindImageMemory(vkDevice, **m_colorImages[imgNdx], (*m_colorImageAllocs[imgNdx])->getMemory(),
+                                        (*m_colorImageAllocs[imgNdx])->getOffset()));
+
+            const VkImageViewCreateInfo colorAttachmentViewParams = {
+                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
+                nullptr,                                    // const void* pNext;
+                0u,                                         // VkImageViewCreateFlags flags;
+                **m_colorImages[imgNdx],                    // VkImage image;
+                VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
+                m_colorFormat,                              // VkFormat format;
+                componentMappingRGBA,                       // VkComponentMapping components;
+                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange subresourceRange;
+            };
+
+            m_colorAttachmentViews[imgNdx] =
+                SharedImageViewPtr(new UniqueImageView(createImageView(vk, vkDevice, &colorAttachmentViewParams)));
+        }
+    }
+
+    // Create vertex buffer (for compute only storage buffer with vertices)
+    {
+        const VkBufferUsageFlags bufferUsage =
+            m_useCompute ? VK_BUFFER_USAGE_STORAGE_BUFFER_BIT : VK_BUFFER_USAGE_VERTEX_BUFFER_BIT;
+
+        const VkDeviceSize vertexBufferSize         = (VkDeviceSize)(m_vertices.size() * sizeof(Vertex4Tex4));
+        const VkBufferCreateInfo vertexBufferParams = {
+            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
+            nullptr,                              // const void* pNext;
+            0u,                                   // VkBufferCreateFlags flags;
+            vertexBufferSize,                     // VkDeviceSize size;
+            bufferUsage,                          // VkBufferUsageFlags usage;
+            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
+            1u,                                   // uint32_t queueFamilyIndexCount;
+            &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
+        };
+
+        DE_ASSERT(vertexBufferSize > 0);
+
+        m_vertexBuffer      = createBuffer(vk, vkDevice, &vertexBufferParams);
+        m_vertexBufferAlloc = allocateBuffer(vki, vk, physDevice, vkDevice, *m_vertexBuffer,
+                                             MemoryRequirement::HostVisible, memAlloc, m_allocationKind);
+        VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(),
+                                     m_vertexBufferAlloc->getOffset()));
+
+        // Load vertices into vertex buffer
+        deMemcpy(m_vertexBufferAlloc->getHostPtr(), &m_vertices[0], (size_t)vertexBufferSize);
+        flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
+    }
+
     // Create descriptor set for image and sampler
     {
         DescriptorPoolBuilder descriptorPoolBuilder;
         if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
             descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_SAMPLER, 1u);
         descriptorPoolBuilder.addType(m_samplingType, m_imageCount);
+        if (m_useCompute)
+        {
+            descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_imageCount);
+            descriptorPoolBuilder.addType(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, 1u);
+        }
         m_descriptorPool = descriptorPoolBuilder.build(
             vk, vkDevice, VK_DESCRIPTOR_POOL_CREATE_FREE_DESCRIPTOR_SET_BIT,
             m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE ? m_imageCount + 1u : m_imageCount);
 
+        const VkShaderStageFlags stageFlags = m_useCompute ? VK_SHADER_STAGE_COMPUTE_BIT : VK_SHADER_STAGE_FRAGMENT_BIT;
+
         DescriptorSetLayoutBuilder setLayoutBuilder;
         if (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE)
-            setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLER, VK_SHADER_STAGE_FRAGMENT_BIT);
-        setLayoutBuilder.addArrayBinding(m_samplingType, m_imageCount, VK_SHADER_STAGE_FRAGMENT_BIT);
+            setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_SAMPLER, stageFlags);
+        setLayoutBuilder.addArrayBinding(m_samplingType, m_imageCount, stageFlags);
+        if (m_useCompute)
+        {
+            setLayoutBuilder.addArrayBinding(VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_imageCount, stageFlags);
+            setLayoutBuilder.addSingleBinding(VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, stageFlags);
+        }
         m_descriptorSetLayout = setLayoutBuilder.build(vk, vkDevice);
 
         const VkDescriptorSetAllocateInfo descriptorSetAllocateInfo = {
@@ -602,325 +714,310 @@ void ImageSamplingInstance::setup()
         setUpdateBuilder.writeArray(*m_descriptorSet, DescriptorSetUpdateBuilder::Location::binding(binding),
                                     m_samplingType, m_imageCount, descriptorImageInfo.data());
         setUpdateBuilder.update(vk, vkDevice);
+
+        // Update storage image bindings if compute shader is used
+        uint32_t storageBindingIndex = (m_samplingType == VK_DESCRIPTOR_TYPE_SAMPLED_IMAGE) ? 2u : 1u;
+        if (m_useCompute)
+        {
+            std::vector<VkDescriptorImageInfo> storageImageInfos(m_imageCount);
+            for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+            {
+                storageImageInfos[imgNdx].sampler     = VK_NULL_HANDLE;
+                storageImageInfos[imgNdx].imageView   = m_colorAttachmentViews[imgNdx]->get();
+                storageImageInfos[imgNdx].imageLayout = VK_IMAGE_LAYOUT_GENERAL;
+            }
+            setUpdateBuilder.writeArray(*m_descriptorSet,
+                                        DescriptorSetUpdateBuilder::Location::binding(storageBindingIndex),
+                                        VK_DESCRIPTOR_TYPE_STORAGE_IMAGE, m_imageCount, storageImageInfos.data());
+
+            VkDescriptorBufferInfo bufferInfo = {*m_vertexBuffer, 0u, VK_WHOLE_SIZE};
+            setUpdateBuilder.writeSingle(*m_descriptorSet,
+                                         DescriptorSetUpdateBuilder::Location::binding(storageBindingIndex + 1),
+                                         VK_DESCRIPTOR_TYPE_STORAGE_BUFFER, &bufferInfo);
+        }
+        setUpdateBuilder.update(vk, vkDevice);
     }
 
-    // Create color images and views
+    if (!m_useCompute)
     {
-        const VkImageCreateInfo colorImageParams = {
-            VK_STRUCTURE_TYPE_IMAGE_CREATE_INFO,                                   // VkStructureType sType;
-            nullptr,                                                               // const void* pNext;
-            0u,                                                                    // VkImageCreateFlags flags;
-            VK_IMAGE_TYPE_2D,                                                      // VkImageType imageType;
-            m_colorFormat,                                                         // VkFormat format;
-            {(uint32_t)m_renderSize.x(), (uint32_t)m_renderSize.y(), 1u},          // VkExtent3D extent;
-            1u,                                                                    // uint32_t mipLevels;
-            1u,                                                                    // uint32_t arrayLayers;
-            VK_SAMPLE_COUNT_1_BIT,                                                 // VkSampleCountFlagBits samples;
-            VK_IMAGE_TILING_OPTIMAL,                                               // VkImageTiling tiling;
-            VK_IMAGE_USAGE_COLOR_ATTACHMENT_BIT | VK_IMAGE_USAGE_TRANSFER_SRC_BIT, // VkImageUsageFlags usage;
-            VK_SHARING_MODE_EXCLUSIVE,                                             // VkSharingMode sharingMode;
-            1u,                                                                    // uint32_t queueFamilyIndexCount;
-            &queueFamilyIndex,        // const uint32_t* pQueueFamilyIndices;
-            VK_IMAGE_LAYOUT_UNDEFINED // VkImageLayout initialLayout;
-        };
 
-        m_colorImages.resize(m_imageCount);
-        m_colorImageAllocs.resize(m_imageCount);
-        m_colorAttachmentViews.resize(m_imageCount);
-
-        for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+        // Create render pass
         {
-            m_colorImages[imgNdx] = SharedImagePtr(new UniqueImage(createImage(vk, vkDevice, &colorImageParams)));
-            m_colorImageAllocs[imgNdx] =
-                SharedAllocPtr(new UniqueAlloc(allocateImage(vki, vk, physDevice, vkDevice, **m_colorImages[imgNdx],
-                                                             MemoryRequirement::Any, memAlloc, m_allocationKind)));
-            VK_CHECK(vk.bindImageMemory(vkDevice, **m_colorImages[imgNdx], (*m_colorImageAllocs[imgNdx])->getMemory(),
-                                        (*m_colorImageAllocs[imgNdx])->getOffset()));
+            std::vector<VkAttachmentDescription> colorAttachmentDescriptions(m_imageCount);
+            std::vector<VkAttachmentReference> colorAttachmentReferences(m_imageCount);
 
-            const VkImageViewCreateInfo colorAttachmentViewParams = {
-                VK_STRUCTURE_TYPE_IMAGE_VIEW_CREATE_INFO,   // VkStructureType sType;
-                nullptr,                                    // const void* pNext;
-                0u,                                         // VkImageViewCreateFlags flags;
-                **m_colorImages[imgNdx],                    // VkImage image;
-                VK_IMAGE_VIEW_TYPE_2D,                      // VkImageViewType viewType;
-                m_colorFormat,                              // VkFormat format;
-                componentMappingRGBA,                       // VkComponentMapping components;
-                {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u} // VkImageSubresourceRange subresourceRange;
+            for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+            {
+                colorAttachmentDescriptions[imgNdx].flags   = 0u;            // VkAttachmentDescriptionFlags flags;
+                colorAttachmentDescriptions[imgNdx].format  = m_colorFormat; // VkFormat format;
+                colorAttachmentDescriptions[imgNdx].samples = VK_SAMPLE_COUNT_1_BIT; // VkSampleCountFlagBits samples;
+                colorAttachmentDescriptions[imgNdx].loadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR; // VkAttachmentLoadOp loadOp;
+                colorAttachmentDescriptions[imgNdx].storeOp =
+                    VK_ATTACHMENT_STORE_OP_STORE; // VkAttachmentStoreOp storeOp;
+                colorAttachmentDescriptions[imgNdx].stencilLoadOp =
+                    VK_ATTACHMENT_LOAD_OP_DONT_CARE; // VkAttachmentLoadOp stencilLoadOp;
+                colorAttachmentDescriptions[imgNdx].stencilStoreOp =
+                    VK_ATTACHMENT_STORE_OP_DONT_CARE; // VkAttachmentStoreOp stencilStoreOp;
+                colorAttachmentDescriptions[imgNdx].initialLayout =
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout initialLayout;
+                colorAttachmentDescriptions[imgNdx].finalLayout =
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout finalLayout;
+
+                colorAttachmentReferences[imgNdx].attachment = (uint32_t)imgNdx; // uint32_t attachment;
+                colorAttachmentReferences[imgNdx].layout =
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout layout;
+            }
+
+            const VkSubpassDescription subpassDescription = {
+                0u,                              // VkSubpassDescriptionFlags flags;
+                VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
+                0u,                              // uint32_t inputAttachmentCount;
+                nullptr,                         // const VkAttachmentReference* pInputAttachments;
+                (uint32_t)m_imageCount,          // uint32_t colorAttachmentCount;
+                &colorAttachmentReferences[0],   // const VkAttachmentReference* pColorAttachments;
+                nullptr,                         // const VkAttachmentReference* pResolveAttachments;
+                nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
+                0u,                              // uint32_t preserveAttachmentCount;
+                nullptr                          // const VkAttachmentReference* pPreserveAttachments;
             };
 
-            m_colorAttachmentViews[imgNdx] =
-                SharedImageViewPtr(new UniqueImageView(createImageView(vk, vkDevice, &colorAttachmentViewParams)));
+            const VkRenderPassCreateInfo renderPassParams = {
+                VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                   // const void* pNext;
+                0u,                                        // VkRenderPassCreateFlags flags;
+                (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
+                &colorAttachmentDescriptions[0],           // const VkAttachmentDescription* pAttachments;
+                1u,                                        // uint32_t subpassCount;
+                &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
+                0u,                                        // uint32_t dependencyCount;
+                nullptr                                    // const VkSubpassDependency* pDependencies;
+            };
+
+            m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
         }
-    }
 
-    // Create render pass
-    {
-        std::vector<VkAttachmentDescription> colorAttachmentDescriptions(m_imageCount);
-        std::vector<VkAttachmentReference> colorAttachmentReferences(m_imageCount);
-
-        for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+        // Create framebuffer
         {
-            colorAttachmentDescriptions[imgNdx].flags   = 0u;                    // VkAttachmentDescriptionFlags flags;
-            colorAttachmentDescriptions[imgNdx].format  = m_colorFormat;         // VkFormat format;
-            colorAttachmentDescriptions[imgNdx].samples = VK_SAMPLE_COUNT_1_BIT; // VkSampleCountFlagBits samples;
-            colorAttachmentDescriptions[imgNdx].loadOp  = VK_ATTACHMENT_LOAD_OP_CLEAR;  // VkAttachmentLoadOp loadOp;
-            colorAttachmentDescriptions[imgNdx].storeOp = VK_ATTACHMENT_STORE_OP_STORE; // VkAttachmentStoreOp storeOp;
-            colorAttachmentDescriptions[imgNdx].stencilLoadOp =
-                VK_ATTACHMENT_LOAD_OP_DONT_CARE; // VkAttachmentLoadOp stencilLoadOp;
-            colorAttachmentDescriptions[imgNdx].stencilStoreOp =
-                VK_ATTACHMENT_STORE_OP_DONT_CARE; // VkAttachmentStoreOp stencilStoreOp;
-            colorAttachmentDescriptions[imgNdx].initialLayout =
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout initialLayout;
-            colorAttachmentDescriptions[imgNdx].finalLayout =
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout finalLayout;
+            std::vector<VkImage> images(m_imageCount);
+            std::vector<VkImageView> pAttachments(m_imageCount);
+            for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+            {
+                images[imgNdx]       = m_colorImages[imgNdx]->get();
+                pAttachments[imgNdx] = m_colorAttachmentViews[imgNdx]->get();
+            }
 
-            colorAttachmentReferences[imgNdx].attachment = (uint32_t)imgNdx; // uint32_t attachment;
-            colorAttachmentReferences[imgNdx].layout =
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout layout;
+            const VkFramebufferCreateInfo framebufferParams = {
+                VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                   // const void* pNext;
+                0u,                                        // VkFramebufferCreateFlags flags;
+                *m_renderPass,                             // VkRenderPass renderPass;
+                (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
+                &pAttachments[0],                          // const VkImageView* pAttachments;
+                (uint32_t)m_renderSize.x(),                // uint32_t width;
+                (uint32_t)m_renderSize.y(),                // uint32_t height;
+                1u                                         // uint32_t layers;
+            };
+
+            m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
         }
 
-        const VkSubpassDescription subpassDescription = {
-            0u,                              // VkSubpassDescriptionFlags flags;
-            VK_PIPELINE_BIND_POINT_GRAPHICS, // VkPipelineBindPoint pipelineBindPoint;
-            0u,                              // uint32_t inputAttachmentCount;
-            nullptr,                         // const VkAttachmentReference* pInputAttachments;
-            (uint32_t)m_imageCount,          // uint32_t colorAttachmentCount;
-            &colorAttachmentReferences[0],   // const VkAttachmentReference* pColorAttachments;
-            nullptr,                         // const VkAttachmentReference* pResolveAttachments;
-            nullptr,                         // const VkAttachmentReference* pDepthStencilAttachment;
-            0u,                              // uint32_t preserveAttachmentCount;
-            nullptr                          // const VkAttachmentReference* pPreserveAttachments;
-        };
-
-        const VkRenderPassCreateInfo renderPassParams = {
-            VK_STRUCTURE_TYPE_RENDER_PASS_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                   // const void* pNext;
-            0u,                                        // VkRenderPassCreateFlags flags;
-            (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
-            &colorAttachmentDescriptions[0],           // const VkAttachmentDescription* pAttachments;
-            1u,                                        // uint32_t subpassCount;
-            &subpassDescription,                       // const VkSubpassDescription* pSubpasses;
-            0u,                                        // uint32_t dependencyCount;
-            nullptr                                    // const VkSubpassDependency* pDependencies;
-        };
-
-        m_renderPass = RenderPassWrapper(m_pipelineConstructionType, vk, vkDevice, &renderPassParams);
-    }
-
-    // Create framebuffer
-    {
-        std::vector<VkImage> images(m_imageCount);
-        std::vector<VkImageView> pAttachments(m_imageCount);
-        for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+        // Create pipeline layout
         {
-            images[imgNdx]       = m_colorImages[imgNdx]->get();
-            pAttachments[imgNdx] = m_colorAttachmentViews[imgNdx]->get();
-        }
-
-        const VkFramebufferCreateInfo framebufferParams = {
-            VK_STRUCTURE_TYPE_FRAMEBUFFER_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                   // const void* pNext;
-            0u,                                        // VkFramebufferCreateFlags flags;
-            *m_renderPass,                             // VkRenderPass renderPass;
-            (uint32_t)m_imageCount,                    // uint32_t attachmentCount;
-            &pAttachments[0],                          // const VkImageView* pAttachments;
-            (uint32_t)m_renderSize.x(),                // uint32_t width;
-            (uint32_t)m_renderSize.y(),                // uint32_t height;
-            1u                                         // uint32_t layers;
-        };
-
-        m_renderPass.createFramebuffer(vk, vkDevice, &framebufferParams, images);
-    }
-
-    // Create pipeline layout
-    {
 #ifndef CTS_USES_VULKANSC
-        VkPipelineLayoutCreateFlags pipelineLayoutFlags =
-            (!isConstructionTypeLibrary(m_pipelineConstructionType)) ?
-                0u :
-                uint32_t(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
+            VkPipelineLayoutCreateFlags pipelineLayoutFlags =
+                (!isConstructionTypeLibrary(m_pipelineConstructionType)) ?
+                    0u :
+                    uint32_t(VK_PIPELINE_LAYOUT_CREATE_INDEPENDENT_SETS_BIT_EXT);
 #else
-        VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
+            VkPipelineLayoutCreateFlags pipelineLayoutFlags = 0u;
 #endif // CTS_USES_VULKANSC
-        VkPipelineLayoutCreateInfo pipelineLayoutParams{
-            VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                       // const void* pNext;
-            pipelineLayoutFlags,                           // VkPipelineLayoutCreateFlags flags;
-            0u,                                            // uint32_t setLayoutCount;
-            nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
-            0u,                                            // uint32_t pushConstantRangeCount;
-            nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
-        };
+            VkPipelineLayoutCreateInfo pipelineLayoutParams{
+                VK_STRUCTURE_TYPE_PIPELINE_LAYOUT_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                       // const void* pNext;
+                pipelineLayoutFlags,                           // VkPipelineLayoutCreateFlags flags;
+                0u,                                            // uint32_t setLayoutCount;
+                nullptr,                                       // const VkDescriptorSetLayout* pSetLayouts;
+                0u,                                            // uint32_t pushConstantRangeCount;
+                nullptr                                        // const VkPushConstantRange* pPushConstantRanges;
+            };
 
-        m_preRasterizationStatePipelineLayout =
-            PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
-        pipelineLayoutParams.setLayoutCount = 1u;
-        pipelineLayoutParams.pSetLayouts    = &m_descriptorSetLayout.get();
-        m_fragmentStatePipelineLayout =
-            PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
-    }
-
-    m_vertexShaderModule   = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
-    m_fragmentShaderModule = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
-
-    // Create pipeline
-    {
-        const VkVertexInputBindingDescription vertexInputBindingDescription = {
-            0u,                         // uint32_t binding;
-            sizeof(Vertex4Tex4),        // uint32_t strideInBytes;
-            VK_VERTEX_INPUT_RATE_VERTEX // VkVertexInputStepRate inputRate;
-        };
-
-        const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] = {
-            {
-                0u,                            // uint32_t location;
-                0u,                            // uint32_t binding;
-                VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
-                0u                             // uint32_t offset;
-            },
-            {
-                1u,                              // uint32_t location;
-                0u,                              // uint32_t binding;
-                VK_FORMAT_R32G32B32A32_SFLOAT,   // VkFormat format;
-                offsetof(Vertex4Tex4, texCoord), // uint32_t offset;
-            }};
-
-        const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
-            VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                                   // const void* pNext;
-            0u,                                                        // VkPipelineVertexInputStateCreateFlags flags;
-            1u,                                                        // uint32_t vertexBindingDescriptionCount;
-            &vertexInputBindingDescription,  // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
-            2u,                              // uint32_t vertexAttributeDescriptionCount;
-            vertexInputAttributeDescriptions // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
-        };
-
-        const std::vector<VkViewport> viewports{makeViewport(m_renderSize)};
-        const std::vector<VkRect2D> scissors{makeRect2D(m_renderSize)};
-
-        std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(m_imageCount);
-
-        for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
-        {
-            colorBlendAttachmentStates[imgNdx].blendEnable = false; // VkBool32 blendEnable;
-            colorBlendAttachmentStates[imgNdx].srcColorBlendFactor =
-                VK_BLEND_FACTOR_ONE; // VkBlendFactor srcColorBlendFactor;
-            colorBlendAttachmentStates[imgNdx].dstColorBlendFactor =
-                VK_BLEND_FACTOR_ZERO;                                          // VkBlendFactor dstColorBlendFactor;
-            colorBlendAttachmentStates[imgNdx].colorBlendOp = VK_BLEND_OP_ADD; // VkBlendOp colorBlendOp;
-            colorBlendAttachmentStates[imgNdx].srcAlphaBlendFactor =
-                VK_BLEND_FACTOR_ONE; // VkBlendFactor srcAlphaBlendFactor;
-            colorBlendAttachmentStates[imgNdx].dstAlphaBlendFactor =
-                VK_BLEND_FACTOR_ZERO;                                          // VkBlendFactor dstAlphaBlendFactor;
-            colorBlendAttachmentStates[imgNdx].alphaBlendOp = VK_BLEND_OP_ADD; // VkBlendOp alphaBlendOp;
-            colorBlendAttachmentStates[imgNdx].colorWriteMask =
-                VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | // VkColorComponentFlags colorWriteMask;
-                VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            m_preRasterizationStatePipelineLayout =
+                PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
+            pipelineLayoutParams.setLayoutCount = 1u;
+            pipelineLayoutParams.pSetLayouts    = &m_descriptorSetLayout.get();
+            m_fragmentStatePipelineLayout =
+                PipelineLayoutWrapper(m_pipelineConstructionType, vk, vkDevice, &pipelineLayoutParams);
         }
 
-        const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
-            VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
-            nullptr,                                                  // const void* pNext;
-            0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
-            false,                                                    // VkBool32 logicOpEnable;
-            VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
-            (uint32_t)m_imageCount,                                   // uint32_t attachmentCount;
-            &colorBlendAttachmentStates[0], // const VkPipelineColorBlendAttachmentState* pAttachments;
-            {0.0f, 0.0f, 0.0f, 0.0f}        // float blendConstants[4];
-        };
+        m_vertexShaderModule   = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_vert"), 0);
+        m_fragmentShaderModule = ShaderWrapper(vk, vkDevice, m_context.getBinaryCollection().get("tex_frag"), 0);
 
-        m_graphicsPipeline.setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
-            .setDefaultDepthStencilState()
-            .setDefaultRasterizationState()
-            .setDefaultMultisampleState()
-            .setupVertexInputState(&vertexInputStateParams)
-            .setupPreRasterizationShaderState(viewports, scissors, m_preRasterizationStatePipelineLayout, *m_renderPass,
-                                              0u, m_vertexShaderModule)
-            .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
-            .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
-            .buildPipeline();
-    }
-
-    // Create vertex buffer
-    {
-        const VkDeviceSize vertexBufferSize         = (VkDeviceSize)(m_vertices.size() * sizeof(Vertex4Tex4));
-        const VkBufferCreateInfo vertexBufferParams = {
-            VK_STRUCTURE_TYPE_BUFFER_CREATE_INFO, // VkStructureType sType;
-            nullptr,                              // const void* pNext;
-            0u,                                   // VkBufferCreateFlags flags;
-            vertexBufferSize,                     // VkDeviceSize size;
-            VK_BUFFER_USAGE_VERTEX_BUFFER_BIT,    // VkBufferUsageFlags usage;
-            VK_SHARING_MODE_EXCLUSIVE,            // VkSharingMode sharingMode;
-            1u,                                   // uint32_t queueFamilyIndexCount;
-            &queueFamilyIndex                     // const uint32_t* pQueueFamilyIndices;
-        };
-
-        DE_ASSERT(vertexBufferSize > 0);
-
-        m_vertexBuffer      = createBuffer(vk, vkDevice, &vertexBufferParams);
-        m_vertexBufferAlloc = allocateBuffer(vki, vk, physDevice, vkDevice, *m_vertexBuffer,
-                                             MemoryRequirement::HostVisible, memAlloc, m_allocationKind);
-        VK_CHECK(vk.bindBufferMemory(vkDevice, *m_vertexBuffer, m_vertexBufferAlloc->getMemory(),
-                                     m_vertexBufferAlloc->getOffset()));
-
-        // Load vertices into vertex buffer
-        deMemcpy(m_vertexBufferAlloc->getHostPtr(), &m_vertices[0], (size_t)vertexBufferSize);
-        flushAlloc(vk, vkDevice, *m_vertexBufferAlloc);
-    }
-
-    // Create command pool
-    m_cmdPool = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
-
-    // Create command buffer
-    {
-        const std::vector<VkClearValue> attachmentClearValues(m_imageCount, defaultClearValue(m_colorFormat));
-
-        std::vector<VkImageMemoryBarrier> preAttachmentBarriers(m_imageCount);
-
-        for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+        // Create pipeline
         {
-            preAttachmentBarriers[imgNdx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; // VkStructureType sType;
-            preAttachmentBarriers[imgNdx].pNext = nullptr;                                // const void* pNext;
-            preAttachmentBarriers[imgNdx].srcAccessMask = 0u; // VkAccessFlags srcAccessMask;
-            preAttachmentBarriers[imgNdx].dstAccessMask =
-                VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;                            // VkAccessFlags dstAccessMask;
-            preAttachmentBarriers[imgNdx].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // VkImageLayout oldLayout;
-            preAttachmentBarriers[imgNdx].newLayout =
-                VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout newLayout;
-            preAttachmentBarriers[imgNdx].srcQueueFamilyIndex =
-                VK_QUEUE_FAMILY_IGNORED; // uint32_t srcQueueFamilyIndex;
-            preAttachmentBarriers[imgNdx].dstQueueFamilyIndex =
-                VK_QUEUE_FAMILY_IGNORED;                                   // uint32_t dstQueueFamilyIndex;
-            preAttachmentBarriers[imgNdx].image = **m_colorImages[imgNdx]; // VkImage image;
-            preAttachmentBarriers[imgNdx].subresourceRange.aspectMask =
-                VK_IMAGE_ASPECT_COLOR_BIT; // VkImageSubresourceRange subresourceRange;
-            preAttachmentBarriers[imgNdx].subresourceRange.baseMipLevel   = 0u;
-            preAttachmentBarriers[imgNdx].subresourceRange.levelCount     = 1u;
-            preAttachmentBarriers[imgNdx].subresourceRange.baseArrayLayer = 0u;
-            preAttachmentBarriers[imgNdx].subresourceRange.layerCount     = 1u;
-        }
+            const VkVertexInputBindingDescription vertexInputBindingDescription = {
+                0u,                         // uint32_t binding;
+                sizeof(Vertex4Tex4),        // uint32_t strideInBytes;
+                VK_VERTEX_INPUT_RATE_VERTEX // VkVertexInputStepRate inputRate;
+            };
 
+            const VkVertexInputAttributeDescription vertexInputAttributeDescriptions[2] = {
+                {
+                    0u,                            // uint32_t location;
+                    0u,                            // uint32_t binding;
+                    VK_FORMAT_R32G32B32A32_SFLOAT, // VkFormat format;
+                    0u                             // uint32_t offset;
+                },
+                {
+                    1u,                              // uint32_t location;
+                    0u,                              // uint32_t binding;
+                    VK_FORMAT_R32G32B32A32_SFLOAT,   // VkFormat format;
+                    offsetof(Vertex4Tex4, texCoord), // uint32_t offset;
+                }};
+
+            const VkPipelineVertexInputStateCreateInfo vertexInputStateParams = {
+                VK_STRUCTURE_TYPE_PIPELINE_VERTEX_INPUT_STATE_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                                   // const void* pNext;
+                0u,                             // VkPipelineVertexInputStateCreateFlags flags;
+                1u,                             // uint32_t vertexBindingDescriptionCount;
+                &vertexInputBindingDescription, // const VkVertexInputBindingDescription* pVertexBindingDescriptions;
+                2u,                             // uint32_t vertexAttributeDescriptionCount;
+                vertexInputAttributeDescriptions // const VkVertexInputAttributeDescription* pVertexAttributeDescriptions;
+            };
+
+            const std::vector<VkViewport> viewports{makeViewport(m_renderSize)};
+            const std::vector<VkRect2D> scissors{makeRect2D(m_renderSize)};
+
+            std::vector<VkPipelineColorBlendAttachmentState> colorBlendAttachmentStates(m_imageCount);
+
+            for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+            {
+                colorBlendAttachmentStates[imgNdx].blendEnable = false; // VkBool32 blendEnable;
+                colorBlendAttachmentStates[imgNdx].srcColorBlendFactor =
+                    VK_BLEND_FACTOR_ONE; // VkBlendFactor srcColorBlendFactor;
+                colorBlendAttachmentStates[imgNdx].dstColorBlendFactor =
+                    VK_BLEND_FACTOR_ZERO;                                          // VkBlendFactor dstColorBlendFactor;
+                colorBlendAttachmentStates[imgNdx].colorBlendOp = VK_BLEND_OP_ADD; // VkBlendOp colorBlendOp;
+                colorBlendAttachmentStates[imgNdx].srcAlphaBlendFactor =
+                    VK_BLEND_FACTOR_ONE; // VkBlendFactor srcAlphaBlendFactor;
+                colorBlendAttachmentStates[imgNdx].dstAlphaBlendFactor =
+                    VK_BLEND_FACTOR_ZERO;                                          // VkBlendFactor dstAlphaBlendFactor;
+                colorBlendAttachmentStates[imgNdx].alphaBlendOp = VK_BLEND_OP_ADD; // VkBlendOp alphaBlendOp;
+                colorBlendAttachmentStates[imgNdx].colorWriteMask =
+                    VK_COLOR_COMPONENT_R_BIT | VK_COLOR_COMPONENT_G_BIT | // VkColorComponentFlags colorWriteMask;
+                    VK_COLOR_COMPONENT_B_BIT | VK_COLOR_COMPONENT_A_BIT;
+            }
+
+            const VkPipelineColorBlendStateCreateInfo colorBlendStateParams = {
+                VK_STRUCTURE_TYPE_PIPELINE_COLOR_BLEND_STATE_CREATE_INFO, // VkStructureType sType;
+                nullptr,                                                  // const void* pNext;
+                0u,                                                       // VkPipelineColorBlendStateCreateFlags flags;
+                false,                                                    // VkBool32 logicOpEnable;
+                VK_LOGIC_OP_COPY,                                         // VkLogicOp logicOp;
+                (uint32_t)m_imageCount,                                   // uint32_t attachmentCount;
+                &colorBlendAttachmentStates[0], // const VkPipelineColorBlendAttachmentState* pAttachments;
+                {0.0f, 0.0f, 0.0f, 0.0f}        // float blendConstants[4];
+            };
+
+            m_graphicsPipeline.setMonolithicPipelineLayout(m_fragmentStatePipelineLayout)
+                .setDefaultDepthStencilState()
+                .setDefaultRasterizationState()
+                .setDefaultMultisampleState()
+                .setupVertexInputState(&vertexInputStateParams)
+                .setupPreRasterizationShaderState(viewports, scissors, m_preRasterizationStatePipelineLayout,
+                                                  *m_renderPass, 0u, m_vertexShaderModule)
+                .setupFragmentShaderState(m_fragmentStatePipelineLayout, *m_renderPass, 0u, m_fragmentShaderModule)
+                .setupFragmentOutputState(*m_renderPass, 0u, &colorBlendStateParams)
+                .buildPipeline();
+        }
+    }
+    else // Compute pipeline setup
+    {
+        m_computePipeline =
+            ComputePipelineWrapper(vk, vkDevice, graphicsToComputeConstructionType(m_pipelineConstructionType),
+                                   m_context.getBinaryCollection().get("tex_comp"));
+        m_computePipeline.setDescriptorSetLayout(m_descriptorSetLayout.get());
+        m_computePipeline.buildPipeline();
+    }
+
+    // Create command pool, buffer and record commands
+    {
+        m_cmdPool   = createCommandPool(vk, vkDevice, VK_COMMAND_POOL_CREATE_TRANSIENT_BIT, queueFamilyIndex);
         m_cmdBuffer = allocateCommandBuffer(vk, vkDevice, *m_cmdPool, VK_COMMAND_BUFFER_LEVEL_PRIMARY);
-
         beginCommandBuffer(vk, *m_cmdBuffer, 0u);
 
-        vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
-                              VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
-                              nullptr, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
+        if (m_useCompute)
+        {
+            std::vector<VkImageMemoryBarrier> preComputeBarriers(m_imageCount);
+            for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+            {
+                preComputeBarriers[imgNdx].sType               = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER;
+                preComputeBarriers[imgNdx].pNext               = nullptr;
+                preComputeBarriers[imgNdx].srcAccessMask       = 0u;
+                preComputeBarriers[imgNdx].dstAccessMask       = VK_ACCESS_SHADER_WRITE_BIT;
+                preComputeBarriers[imgNdx].oldLayout           = VK_IMAGE_LAYOUT_UNDEFINED;
+                preComputeBarriers[imgNdx].newLayout           = VK_IMAGE_LAYOUT_GENERAL;
+                preComputeBarriers[imgNdx].srcQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                preComputeBarriers[imgNdx].dstQueueFamilyIndex = VK_QUEUE_FAMILY_IGNORED;
+                preComputeBarriers[imgNdx].image               = **m_colorImages[imgNdx];
+                preComputeBarriers[imgNdx].subresourceRange    = {VK_IMAGE_ASPECT_COLOR_BIT, 0u, 1u, 0u, 1u};
+            }
 
-        m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
-                           (uint32_t)attachmentClearValues.size(), &attachmentClearValues[0]);
+            vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT, VK_PIPELINE_STAGE_COMPUTE_SHADER_BIT,
+                                  0, 0, nullptr, 0, nullptr, (uint32_t)m_imageCount, preComputeBarriers.data());
 
-        m_graphicsPipeline.bind(*m_cmdBuffer);
+            m_computePipeline.bind(*m_cmdBuffer);
+            vk.cmdBindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_COMPUTE,
+                                     m_computePipeline.getPipelineLayout(), 0, 1, &m_descriptorSet.get(), 0, nullptr);
+            vk.cmdDispatch(*m_cmdBuffer, m_renderSize.x(), m_renderSize.y(), 1);
+        }
+        else // Graphics pipeline
+        {
+            const std::vector<VkClearValue> attachmentClearValues(m_imageCount, defaultClearValue(m_colorFormat));
 
-        m_fragmentStatePipelineLayout.bindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 1,
-                                                         &m_descriptorSet.get(), 0, nullptr);
+            std::vector<VkImageMemoryBarrier> preAttachmentBarriers(m_imageCount);
 
-        const VkDeviceSize vertexBufferOffset = 0;
-        vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
-        vk.cmdDraw(*m_cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
+            for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
+            {
+                preAttachmentBarriers[imgNdx].sType = VK_STRUCTURE_TYPE_IMAGE_MEMORY_BARRIER; // VkStructureType sType;
+                preAttachmentBarriers[imgNdx].pNext = nullptr;                                // const void* pNext;
+                preAttachmentBarriers[imgNdx].srcAccessMask = 0u; // VkAccessFlags srcAccessMask;
+                preAttachmentBarriers[imgNdx].dstAccessMask =
+                    VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT;                            // VkAccessFlags dstAccessMask;
+                preAttachmentBarriers[imgNdx].oldLayout = VK_IMAGE_LAYOUT_UNDEFINED; // VkImageLayout oldLayout;
+                preAttachmentBarriers[imgNdx].newLayout =
+                    VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL; // VkImageLayout newLayout;
+                preAttachmentBarriers[imgNdx].srcQueueFamilyIndex =
+                    VK_QUEUE_FAMILY_IGNORED; // uint32_t srcQueueFamilyIndex;
+                preAttachmentBarriers[imgNdx].dstQueueFamilyIndex =
+                    VK_QUEUE_FAMILY_IGNORED;                                   // uint32_t dstQueueFamilyIndex;
+                preAttachmentBarriers[imgNdx].image = **m_colorImages[imgNdx]; // VkImage image;
+                preAttachmentBarriers[imgNdx].subresourceRange.aspectMask =
+                    VK_IMAGE_ASPECT_COLOR_BIT; // VkImageSubresourceRange subresourceRange;
+                preAttachmentBarriers[imgNdx].subresourceRange.baseMipLevel   = 0u;
+                preAttachmentBarriers[imgNdx].subresourceRange.levelCount     = 1u;
+                preAttachmentBarriers[imgNdx].subresourceRange.baseArrayLayer = 0u;
+                preAttachmentBarriers[imgNdx].subresourceRange.layerCount     = 1u;
+            }
 
-        m_renderPass.end(vk, *m_cmdBuffer);
+            vk.cmdPipelineBarrier(*m_cmdBuffer, VK_PIPELINE_STAGE_TOP_OF_PIPE_BIT,
+                                  VK_PIPELINE_STAGE_COLOR_ATTACHMENT_OUTPUT_BIT, (VkDependencyFlags)0, 0u, nullptr, 0u,
+                                  nullptr, (uint32_t)m_imageCount, &preAttachmentBarriers[0]);
+
+            m_renderPass.begin(vk, *m_cmdBuffer, makeRect2D(0, 0, m_renderSize.x(), m_renderSize.y()),
+                               (uint32_t)attachmentClearValues.size(), &attachmentClearValues[0]);
+
+            m_graphicsPipeline.bind(*m_cmdBuffer);
+
+            m_fragmentStatePipelineLayout.bindDescriptorSets(*m_cmdBuffer, VK_PIPELINE_BIND_POINT_GRAPHICS, 0, 1,
+                                                             &m_descriptorSet.get(), 0, nullptr);
+
+            const VkDeviceSize vertexBufferOffset = 0;
+            vk.cmdBindVertexBuffers(*m_cmdBuffer, 0, 1, &m_vertexBuffer.get(), &vertexBufferOffset);
+            vk.cmdDraw(*m_cmdBuffer, (uint32_t)m_vertices.size(), 1, 0, 0);
+
+            m_renderPass.end(vk, *m_cmdBuffer);
+        }
+
         endCommandBuffer(vk, *m_cmdBuffer);
     }
 }
@@ -933,13 +1030,13 @@ tcu::TestStatus ImageSamplingInstance::iterate(void)
 {
     const DeviceInterface &vk = m_context.getDeviceInterface();
     const VkDevice vkDevice   = m_context.getDevice();
-    const VkQueue queue       = m_context.getUniversalQueue();
+    const VkQueue queue       = getQueue(m_context, m_useCompute);
 
     setup();
 
     submitCommandsAndWait(vk, vkDevice, queue, m_cmdBuffer.get());
 
-    return verifyImage(false);
+    return verifyImage(m_useCompute);
 }
 
 namespace
@@ -1653,11 +1750,15 @@ tcu::TestStatus ImageSamplingInstance::verifyImage(const bool useGeneralLayout)
         for (int imgNdx = 0; imgNdx < m_imageCount; ++imgNdx)
         {
             // Read back result image
+            const auto attachmentAccess =
+                (m_useCompute ? VK_ACCESS_SHADER_WRITE_BIT : VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT);
+            const auto attachmentLayout =
+                (useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL);
+
             UniquePtr<tcu::TextureLevel> result(readColorAttachment(
                 m_context.getDeviceInterface(), m_context.getDevice(), m_context.getUniversalQueue(),
                 m_context.getUniversalQueueFamilyIndex(), m_context.getDefaultAllocator(), **m_colorImages[imgNdx],
-                m_colorFormat, m_renderSize,
-                useGeneralLayout ? VK_IMAGE_LAYOUT_GENERAL : VK_IMAGE_LAYOUT_COLOR_ATTACHMENT_OPTIMAL));
+                m_colorFormat, m_renderSize, attachmentLayout, attachmentAccess));
             const tcu::ConstPixelBufferAccess resultAccess = result->getAccess();
             bool compareOk =
                 validateResultImage(*texture, m_imageViewType, subresource, sampler, m_componentMapping, coordAccess,
