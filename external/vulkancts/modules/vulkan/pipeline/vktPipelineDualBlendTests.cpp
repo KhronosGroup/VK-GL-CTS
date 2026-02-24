@@ -1213,6 +1213,8 @@ tcu::TestStatus DualSourceBlendMAInstance::iterate()
         {
             break;
         }
+
+        m_context.getTestContext().touchWatchdog();
     }
 
     if (0u == failCount)
