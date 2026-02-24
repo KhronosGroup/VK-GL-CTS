@@ -261,7 +261,8 @@ void getLookupScaleBias(vk::VkFormat format, tcu::Vec4 &lookupScale, tcu::Vec4 &
 de::MovePtr<tcu::TextureLevel> readColorAttachment(const vk::DeviceInterface &vk, vk::VkDevice device,
                                                    vk::VkQueue queue, uint32_t queueFamilyIndex,
                                                    vk::Allocator &allocator, vk::VkImage image, vk::VkFormat format,
-                                                   const tcu::UVec2 &renderSize, vk::VkImageLayout oldLayout)
+                                                   const tcu::UVec2 &renderSize, vk::VkImageLayout oldLayout,
+                                                   vk::VkAccessFlags oldAccess)
 {
     Move<VkBuffer> buffer;
     de::MovePtr<Allocation> bufferAlloc;
@@ -299,8 +300,7 @@ de::MovePtr<tcu::TextureLevel> readColorAttachment(const vk::DeviceInterface &vk
     fence = createFence(vk, device);
 
     beginCommandBuffer(vk, *cmdBuffer);
-    copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()),
-                      VK_ACCESS_COLOR_ATTACHMENT_WRITE_BIT, oldLayout);
+    copyImageToBuffer(vk, *cmdBuffer, image, *buffer, tcu::IVec2(renderSize.x(), renderSize.y()), oldAccess, oldLayout);
     endCommandBuffer(vk, *cmdBuffer);
 
     submitCommandsAndWait(vk, device, queue, cmdBuffer.get());
