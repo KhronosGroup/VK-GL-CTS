@@ -21569,8 +21569,9 @@ dEQP-VK.api.copy_and_blit.sparse.image_to_image.simple_tests.whole_image_r32g32b
 dEQP-VK.api.debug_utils.long_labels_graphics
 dEQP-VK.api.debug_utils.long_labels_transfer
 dEQP-VK.api.debug_utils.long_labels_video_decode
-dEQP-VK.api.device_address.command_flags.copy_from_memory_with_unbound_ranges
-dEQP-VK.api.device_address.command_flags.copy_to_memory_with_unbound_ranges
+dEQP-VK.api.device_address.misc.copy_from_memory_with_unbound_ranges
+dEQP-VK.api.device_address.misc.copy_to_memory_with_unbound_ranges
+dEQP-VK.api.device_address.misc.use_all_vertex_index_binds
 dEQP-VK.api.device_init.create_device_unsupported_features.cooperative_vector_features_nv
 dEQP-VK.api.device_init.create_device_unsupported_features.copy_memory_indirect_features_khr
 dEQP-VK.api.device_init.create_device_unsupported_features.custom_resolve_features_ext
