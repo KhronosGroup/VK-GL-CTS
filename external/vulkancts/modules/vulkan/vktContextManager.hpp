@@ -311,6 +311,9 @@ class DevCaps
     bool m_hasInheritedExtensions;
     tcu::TestContext &m_testContext;
     AllocatorParams_ m_allocatorParams;
+    bool m_callCheckSupport;
+    bool m_shouldRecreateDeviceOnTestEnter;
+    bool m_shouldRemoveDeviceOnTestExit;
 
     template <class FeatureStruct, class FieldType>
     bool _addFeatureSet(const FeatureStruct *pSource, FieldType FeatureStruct::*pField, const FieldType &setToValue,
@@ -457,15 +460,44 @@ public:
     {
         m_allocatorParams = allocatorCreateParams;
     }
+
+    void shouldRecreateDeviceOnTestEnter(bool should)
+    {
+        m_shouldRecreateDeviceOnTestEnter = should;
+    }
+    bool shouldRecreateDeviceOnTestEnter() const
+    {
+        return m_shouldRecreateDeviceOnTestEnter;
+    }
+
+    void shouldRemoveDeviceOnTestExit(bool should)
+    {
+        m_shouldRemoveDeviceOnTestExit = should;
+    }
+    bool shouldRemoveDeviceOnTestExit() const
+    {
+        return m_shouldRemoveDeviceOnTestExit;
+    }
+
+    void setCallCheckSupport(bool enable)
+    {
+        m_callCheckSupport = enable;
+    }
+    bool getCallCheckSupport() const
+    {
+        return m_callCheckSupport;
+    }
 };
 
 struct InstCaps
 {
+    friend class ContextManager;
     // Creates InstCaps class with id=DefInstId. This default behavior mostly used in existing code.
     InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine);
     // Creates InstCaps class with id=id_ parameter. This allows the ContextManager class to distinguish
     // whether the test needs a different instance than the default one.
-    InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_);
+    InstCaps(const vk::PlatformInterface &vkPlatform, const tcu::CommandLine &commandLine, const std::string &id_,
+             vkt::TestCase *testCase, const InstCaps *hint = nullptr, bool dontCreateDefaultDeviceFlag = true);
 
     // All fields below are initialized in the same way as in the default instance.
     const uint32_t maximumFrameworkVulkanVersion;
@@ -487,8 +519,35 @@ struct InstCaps
     // concatenated from Core and the internal extension list.
     std::vector<std::string> getExtensions() const;
 
+    // Prevents the creation of a default device on this instance.
+    // By default, this flag is set to false, so the default device
+    // will always be created regardless of the number of
+    // logical devices created by the test
+    bool dontCreateDefaultDevice(bool flag);
+    bool dontCreateDefaultDevice() const;
+
+    // Enables destruction of devices before starting a test.
+    // Whenever function TestCase::getInstanceCapabilitiesId() returns a non-default value,
+    // function ContextManager::findContext() attempts to create a new device for the test
+    // if it does not already exist. This ensures that the VkInstance can be forced to hold
+    // only a single VkDevice device.
+    void setDestroyAllDevices(bool all, bool includeDefaultDevice);
+    std::pair<bool, bool> getDestroyAllDevices() const;
+
+    bool shouldRemoveInstanceOnTestExit() const;
+    void shouldRemoveInstanceOnTestExit(bool should);
+
 private:
     std::vector<std::string> m_extensions;
+    std::pair<bool, bool> m_destroyAllDevices;
+    bool m_dontCreateDefaultDevice;
+    bool m_shouldRemoveInstanceOnTestExit;
+    vk::VkPhysicalDevice selectDevice(    //
+        const vk::InstanceInterface &vki, //
+        vk::VkInstance instance,          //
+        const tcu::CommandLine &cmdLine,  //
+        vk::VkPhysicalDevice suggestedDevice) const;
+    vkt::TestCase *m_testCase;
 };
 
 typedef vk::DevFeaturesAndPropertiesImpl<void> DevFeaturesAndProperties;
@@ -534,6 +593,9 @@ class ContextManager
     using Item = std::pair<de::SharedPtr<Context>, de::SharedPtr<DevCaps>>;
     std::vector<Item> m_contexts;
     std::deque<de::SharedPtr<ContextManager>> m_customManagers;
+    const std::pair<bool, bool> m_destroyAllDevices;
+    const bool m_dontCreateDefaultDevice;
+    const bool m_shouldBeRemovedOnTestExit;
 
     friend class TestCaseExecutor;
     typedef std::tuple<int, int, int> Det_;
@@ -638,11 +700,33 @@ public:
         return m_devicePropertiesPtr;
     }
     auto createDevice(const DevCaps &caps, DevCaps::RuntimeData &data) const -> vk::Move<vk::VkDevice>;
-    auto findContext(de::SharedPtr<const ContextManager> thiz, vkt::TestCase *testCase,
-                     de::SharedPtr<Context> &defaultContext, vk::BinaryCollection &programs,
-                     std::function<void(de::SharedPtr<Context>)> onBeforeCreateDevice) -> de::SharedPtr<Context>;
-    auto findCustomManager(vkt::TestCase *testCase, de::SharedPtr<ContextManager> defaultContextManager)
-        -> de::SharedPtr<ContextManager>;
+    de::SharedPtr<Context> getContextForDevice(const std::string &deviceID) const;
+    uint32_t destroyAllDevices(bool includeDefaultDevice);
+    bool destroyDevice(const std::string &deviceID);
+    std::pair<uint32_t, bool> getDeviceCount() const;
+    uint32_t removeDevicesThatShouldBeRemovedOnTestExit(de::SharedPtr<ContextManager> mgr);
+    uint32_t removeInstancesThatShouldBeRemovedOnTestExit(ContextManager *mgr);
+    // In de::SharedPtr<> there is no such thing as std::shared_from_this(), so to the function
+    // is passed a pointer _self_ to ContextManager, for which the findContext function is called.
+    auto findContext(de::SharedPtr<ContextManager> self, vkt::TestCase *testCase,
+                     de::SharedPtr<Context> &defaultContext, de::SharedPtr<ContextManager> defaultManager,
+                     vk::BinaryCollection &programs,
+                     std::function<void(de::SharedPtr<Context>, bool)> onBeforeRunTestCase) -> de::SharedPtr<Context>;
+    auto findCustomManager(vkt::TestCase *testCase, de::SharedPtr<ContextManager> defaultContextManager,
+                           const InstCaps *hintCaps) -> de::SharedPtr<ContextManager>;
+    auto getCustomManagerById(const std::string &managerId) const -> de::SharedPtr<ContextManager>;
+    bool dontCreateDefaultDevice() const
+    {
+        return m_dontCreateDefaultDevice;
+    }
+    bool shouldBeRemovedOnTestExit() const
+    {
+        return m_shouldBeRemovedOnTestExit;
+    }
+    std::pair<bool, bool> getDestroyAllDevices() const
+    {
+        return m_destroyAllDevices;
+    }
 #ifndef CTS_USES_VULKANSC
     auto getDebugReportRecorder() const -> DebugReportRecorderPtr
     {

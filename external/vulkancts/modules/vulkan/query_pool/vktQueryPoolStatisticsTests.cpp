@@ -27,7 +27,6 @@
 #include "vktDrawImageObjectUtil.hpp"
 #include "vktDrawBufferObjectUtil.hpp"
 #include "vktDrawCreateInfoUtil.hpp"
-#include "vktCustomInstancesDevices.hpp"
 #include "vkBuilderUtil.hpp"
 #include "vkRefUtil.hpp"
 #include "vkPrograms.hpp"
@@ -4012,6 +4011,17 @@ public:
             sourceCollections.glslSources.add(m_parameters[shaderNdx].shaderName) << glu::ComputeSource(src.str());
         }
     }
+
+#ifdef CTS_USES_VULKANSC
+    std::string getInstanceCapabilitiesId() const override
+    {
+        return getRequiredCapabilitiesId();
+    }
+    void initInstanceCapabilities(InstCaps &caps) override
+    {
+        caps.shouldRemoveInstanceOnTestExit(true);
+    }
+#endif
 
     std::string getRequiredCapabilitiesId() const override
     {

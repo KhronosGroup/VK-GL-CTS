@@ -130,8 +130,9 @@ public:
     std::size_t getCacheDataSize() const;
     const uint8_t *getCacheData() const;
     VkPipelineCache getPipelineCache(VkDevice device) const;
-    virtual void resetObjects()        = 0;
-    virtual void resetPipelineCaches() = 0;
+    virtual void resetObjects()                                               = 0;
+    virtual void resetPipelineCaches()                                        = 0;
+    virtual bool resetPipelineCache(VkDevice device, bool onlyIfInSubprocess) = 0;
 #endif // CTS_USES_VULKANSC
 
 protected:
@@ -286,6 +287,7 @@ public:
                                  VkPhysicalDevice physicalDevice, uint32_t queueIndex) override;
     void resetObjects() override;
     void resetPipelineCaches() override;
+    bool resetPipelineCache(VkDevice device, bool onlyIfInSubprocess) override;
 #endif // CTS_USES_VULKANSC
 
 protected:

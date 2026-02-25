@@ -123,6 +123,12 @@ std::vector<ShaderStageFlags> getWriteSubCases(ShaderStageFlags selectedStages)
     return std::vector<ShaderStageFlags>(begin(uniqueCases), end(uniqueCases));
 }
 
+bool isExtensionAvailable(const InstanceInterface &vki, VkPhysicalDevice device, const std::string &extension)
+{
+    auto props = enumerateDeviceExtensionProperties(vki, device, nullptr);
+    return isExtensionStructSupported(props, RequiredExtension(extension));
+}
+
 class NoPositionCase : public vkt::TestCase
 {
 public:
@@ -472,13 +478,16 @@ void NoPositionInstance::createDeviceGroup(void)
         physDeviceIdx = 0;
 
     // Enable device features
-    VkPhysicalDeviceFeatures2 deviceFeatures2     = initVulkanStructure();
-    VkDeviceGroupDeviceCreateInfo deviceGroupInfo = initVulkanStructure(&deviceFeatures2);
+    VkPhysicalDeviceMultiviewFeatures multiviewFeatures = vk::initVulkanStructure();
+    VkPhysicalDeviceFeatures2 deviceFeatures2           = initVulkanStructure(&multiviewFeatures);
+    vki.getPhysicalDeviceFeatures2(devGroupProperties.physicalDevices[physDeviceIdx], &deviceFeatures2);
+
+    const auto addFeatures = vk::makeStructChainAdder(&deviceFeatures2);
+
+    VkDeviceGroupDeviceCreateInfo deviceGroupInfo = initVulkanStructure();
     deviceGroupInfo.physicalDeviceCount           = devGroupProperties.physicalDeviceCount;
     deviceGroupInfo.pPhysicalDevices              = devGroupProperties.physicalDevices;
-    const VkPhysicalDeviceFeatures deviceFeatures =
-        getPhysicalDeviceFeatures(instance, deviceGroupInfo.pPhysicalDevices[physDeviceIdx]);
-    deviceFeatures2.features = deviceFeatures;
+    addFeatures(&deviceGroupInfo);
 
     m_physicalDevices.resize(m_numPhysDevices);
     for (uint32_t physDevIdx = 0; physDevIdx < m_numPhysDevices; physDevIdx++)
@@ -503,39 +512,33 @@ void NoPositionInstance::createDeviceGroup(void)
     };
 
     // Enable extensions
-    const auto &contextMultiviewFeatures                = m_context.getMultiviewFeatures();
-    const bool multiViewSupport                         = contextMultiviewFeatures.multiview;
-    VkPhysicalDeviceMultiviewFeatures multiviewFeatures = vk::initVulkanStructure();
+    std::vector<const char *> deviceExtensions;
+
 #ifndef CTS_USES_VULKANSC
     const auto &contextGpl                                         = m_context.getGraphicsPipelineLibraryFeaturesEXT();
     const bool gplSupport                                          = contextGpl.graphicsPipelineLibrary;
     VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT gplFeatures = vk::initVulkanStructure();
-#endif
-    const auto addFeatures = vk::makeStructChainAdder(&deviceFeatures2);
-    if (multiViewSupport)
-        addFeatures(&multiviewFeatures);
-#ifndef CTS_USES_VULKANSC
-    if (isConstructionTypeLibrary(m_params.pipelineConstructionType) && gplSupport)
-        addFeatures(&gplFeatures);
-#endif
-    vki.getPhysicalDeviceFeatures2(deviceGroupInfo.pPhysicalDevices[physDeviceIdx], &deviceFeatures2);
-    // Enable extensions
-    std::vector<const char *> deviceExtensions;
-    if (!isCoreDeviceExtension(m_context.getUsedApiVersion(), "VK_KHR_device_group"))
-        deviceExtensions.push_back("VK_KHR_device_group");
-
-    if (multiViewSupport)
-        deviceExtensions.push_back("VK_KHR_multiview");
-
-#ifndef CTS_USES_VULKANSC
     if (isConstructionTypeLibrary(m_params.pipelineConstructionType) && gplSupport)
     {
+        addFeatures(&gplFeatures);
         deviceExtensions.push_back("VK_KHR_pipeline_library");
         deviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
     }
 #endif
 
-    void *pNext = &deviceGroupInfo;
+    const bool multiViewSupport =
+        multiviewFeatures.multiview &&
+        isExtensionAvailable(vki, deviceGroupInfo.pPhysicalDevices[physDeviceIdx], "VK_KHR_multiview");
+    const bool deviceGroupSupport = devGroupsProperties[0].physicalDeviceCount > 1u;
+
+    // Enable extensions
+    if (deviceGroupSupport)
+        deviceExtensions.push_back("VK_KHR_device_group");
+
+    if (multiViewSupport)
+        deviceExtensions.push_back("VK_KHR_multiview");
+
+    void *pNext = &deviceFeatures2;
 
 #ifdef CTS_USES_VULKANSC
     VkDeviceObjectReservationCreateInfo memReservationInfo = cmdLine.isSubProcess() ?
@@ -584,8 +587,7 @@ void NoPositionInstance::createDeviceGroup(void)
         nullptr,                              // const char* const* ppEnabledLayerNames;
         de::sizeU32(deviceExtensions),        // uint32_t enabledExtensionCount;
         de::dataOrNull(deviceExtensions),     // const char* const* ppEnabledExtensionNames;
-        deviceFeatures2.pNext == nullptr ? &deviceFeatures :
-                                           nullptr, // const VkPhysicalDeviceFeatures* pEnabledFeatures;
+        nullptr,                              // const VkPhysicalDeviceFeatures* pEnabledFeatures;
     };
 
     m_logicalDevice = createCustomDevice(m_context.getTestContext().getCommandLine().isValidationEnabled(),

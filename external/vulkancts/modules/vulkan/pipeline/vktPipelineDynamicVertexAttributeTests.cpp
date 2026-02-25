@@ -102,101 +102,6 @@ vk::VkImageCreateInfo makeImageCreateInfo(const tcu::IVec2 &size, const vk::VkFo
     return imageParams;
 }
 
-vk::Move<vk::VkDevice> createDynamicVertexStateDevice(Context &context, const uint32_t testQueueFamilyIndex,
-                                                      const vk::PipelineConstructionType pipelineConstructionType,
-                                                      std::vector<std::string> &deviceExtensions)
-{
-    DE_UNREF(pipelineConstructionType);
-
-    void *pNext = nullptr;
-
-#ifndef CTS_USES_VULKANSC
-    vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT graphicsPipelineFeatures{
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_GRAPHICS_PIPELINE_LIBRARY_FEATURES_EXT, // VkStructureType sType;
-        pNext,                                                                        // void* pNext;
-        VK_TRUE, // VkBool32 graphicsPipelineLibrary;
-    };
-
-    if (vk::isConstructionTypeLibrary(pipelineConstructionType))
-    {
-        pNext = &graphicsPipelineFeatures;
-        deviceExtensions.push_back("VK_KHR_pipeline_library");
-        deviceExtensions.push_back("VK_EXT_graphics_pipeline_library");
-    }
-    vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR dynamicRenderingFeatures{
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_DYNAMIC_RENDERING_FEATURES_KHR, // VkStructureType sType;
-        pNext,                                                                // void* pNext;
-        VK_TRUE,                                                              // VkBool32 dynamicRendering;
-    };
-    vk::VkPhysicalDeviceShaderObjectFeaturesEXT shaderObjectFeatures{
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_SHADER_OBJECT_FEATURES_EXT, // VkStructureType sType;
-        &dynamicRenderingFeatures,                                        // void* pNext;
-        VK_TRUE,                                                          // VkBool32 shaderObject;
-    };
-
-    if (vk::isConstructionTypeShaderObject(pipelineConstructionType))
-    {
-        pNext = &shaderObjectFeatures;
-        if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_dynamic_rendering"))
-        {
-            deviceExtensions.push_back("VK_KHR_dynamic_rendering");
-            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_create_renderpass2"))
-                deviceExtensions.push_back("VK_KHR_create_renderpass2");
-            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_depth_stencil_resolve"))
-                deviceExtensions.push_back("VK_KHR_depth_stencil_resolve");
-            if (!vk::isCoreDeviceExtension(context.getUsedApiVersion(), "VK_KHR_maintenance2"))
-                deviceExtensions.push_back("VK_KHR_maintenance2");
-        }
-        deviceExtensions.push_back("VK_EXT_shader_object");
-    }
-#endif
-
-    vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT dynamicVertexState{
-        vk::VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_VERTEX_INPUT_DYNAMIC_STATE_FEATURES_EXT, // VkStructureType sType;
-        pNext,                                                                         // void* pNext;
-        VK_TRUE, // VkBool32 vertexInputDynamicState;
-    };
-
-    deviceExtensions.push_back("VK_EXT_vertex_input_dynamic_state");
-
-    vk::VkPhysicalDeviceFeatures2 physDeviceFeats2 = context.getDeviceFeatures2();
-
-    physDeviceFeats2.features = context.getDeviceFeatures();
-    physDeviceFeats2.pNext    = &dynamicVertexState;
-
-    const float queuePriority = 1.0f;
-
-    const vk::VkDeviceQueueCreateInfo queueParams = {
-        vk::VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO, // VkStructureType sType;
-        nullptr,                                        // const void* pNext;
-        0u,                                             // VkDeviceQueueCreateFlags flags;
-        testQueueFamilyIndex,                           // uint32_t queueFamilyIndex;
-        1u,                                             // uint32_t queueCount;
-        &queuePriority                                  // const float* pQueuePriorities;
-    };
-
-    std::vector<const char *> extensionPtrs;
-    for (const auto &ext : deviceExtensions)
-        extensionPtrs.push_back(ext.c_str());
-
-    const vk::VkDeviceCreateInfo deviceInfo = {
-        vk::VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO, // VkStructureType sType;
-        &physDeviceFeats2,                        // const void* pNext;
-        0u,                                       // VkDeviceCreateFlags flags;
-        1u,                                       // uint32_t queueCreateInfoCount;
-        &queueParams,                             // const VkDeviceQueueCreateInfo* pQueueCreateInfos;
-        0u,                                       // uint32_t enabledLayerCount;
-        nullptr,                                  // const char* const* ppEnabledLayerNames;
-        (uint32_t)extensionPtrs.size(),           // uint32_t enabledExtensionCount;
-        extensionPtrs.data(),                     // const char* const* ppEnabledExtensionNames;
-        NULL                                      // const VkPhysicalDeviceFeatures* pEnabledFeatures;
-    };
-
-    return createCustomDevice(context.getTestContext().getCommandLine().isValidationEnabled(),
-                              context.getPlatformInterface(), context.getInstance(), context.getInstanceInterface(),
-                              context.getPhysicalDevice(), &deviceInfo);
-}
-
 class NonSequentialInstance : public TestInstance
 {
 public:
@@ -229,21 +134,22 @@ private:
 
 tcu::TestStatus NonSequentialInstance::iterate(void)
 {
-    tcu::TestLog &log                              = m_context.getTestContext().getLog();
-    const vk::PlatformInterface &vkp               = m_context.getPlatformInterface();
-    const vk::VkInstance vki                       = m_context.getInstance();
-    const vk::InstanceInterface &instanceInterface = m_context.getInstanceInterface();
-    const uint32_t queueFamilyIndex                = m_context.getUniversalQueueFamilyIndex();
-    const vk::VkPhysicalDevice physicalDevice      = m_context.getPhysicalDevice();
-    std::vector<std::string> deviceExtensions;
-    const vk::Move<vk::VkDevice> device =
-        createDynamicVertexStateDevice(m_context, queueFamilyIndex, m_pipelineConstructionType, deviceExtensions);
-    const vk::DeviceDriver vk(vkp, vki, *device, m_context.getUsedApiVersion(),
-                              m_context.getTestContext().getCommandLine());
-    vk::SimpleAllocator allocator(
-        vk, *device,
-        getPhysicalDeviceMemoryProperties(m_context.getInstanceInterface(), m_context.getPhysicalDevice()));
-    const vk::VkQueue queue = getDeviceQueue(vk, *device, queueFamilyIndex, 0u);
+    tcu::TestLog &log                               = m_context.getTestContext().getLog();
+    const vk::InstanceInterface &instanceInterface  = m_context.getInstanceInterface();
+    const uint32_t queueFamilyIndex                 = m_context.getDeviceQueueInfo(0).familyIndex;
+    const vk::VkPhysicalDevice physicalDevice       = m_context.getPhysicalDevice();
+    const vk::DeviceInterface &vk                   = m_context.getDeviceInterface();
+    const vk::VkDevice aDevice                      = m_context.getDevice();
+    const vk::VkDevice *device                      = &aDevice;
+    vk::Allocator &allocator                        = m_context.getDefaultAllocator();
+    const vk::VkQueue queue                         = m_context.getDeviceQueueInfo(0).queue;
+    const std::vector<std::string> deviceExtensions = [this]
+    {
+        const std::vector<const char *> &src = m_context.getContextManager()->getDeviceCreationExtensions();
+        std::vector<std::string> exts(src.size());
+        std::transform(src.begin(), src.end(), exts.begin(), [](const char *s) { return std::string(s); });
+        return exts;
+    }();
 
     // Create shaders
     const std::array<vk::ShaderWrapper, 2> vertexShaderModules = {
@@ -527,13 +433,24 @@ public:
     {
     }
 
-    ~NonSequentialCase(void)
-    {
-    }
+    virtual ~NonSequentialCase() = default;
 
     virtual void checkSupport(Context &context) const override;
     virtual void initPrograms(vk::SourceCollections &sourceCollections) const override;
     virtual TestInstance *createInstance(Context &context) const override;
+    virtual std::string getRequiredCapabilitiesId() const override;
+    virtual void initDeviceCapabilities(DevCaps &caps) override;
+
+#ifdef CTS_USES_VULKANSC
+    virtual std::string getInstanceCapabilitiesId() const override
+    {
+        return getRequiredCapabilitiesId();
+    }
+    virtual void initInstanceCapabilities(InstCaps &caps) override
+    {
+        caps.shouldRemoveInstanceOnTestExit(true);
+    }
+#endif
 
 private:
     const vk::PipelineConstructionType m_pipelineConstructionType;
@@ -601,6 +518,46 @@ void NonSequentialCase::initPrograms(vk::SourceCollections &sourceCollections) c
 TestInstance *NonSequentialCase::createInstance(Context &context) const
 {
     return new NonSequentialInstance(context, m_pipelineConstructionType, m_numInstances, m_attributeLocations);
+}
+
+std::string NonSequentialCase::getRequiredCapabilitiesId() const
+{
+    const std::string id(std::type_index(typeid(this)).name());
+    if (vk::isConstructionTypeLibrary(m_pipelineConstructionType))
+        return id + "_pl";
+    if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+        return id + "_so";
+    return id;
+}
+
+void NonSequentialCase::initDeviceCapabilities(DevCaps &caps)
+{
+#ifndef CTS_USES_VULKANSC
+
+    if (vk::isConstructionTypeLibrary(m_pipelineConstructionType))
+    {
+        caps.addFeature(&vk::VkPhysicalDeviceGraphicsPipelineLibraryFeaturesEXT::graphicsPipelineLibrary);
+        caps.addExtension(VK_KHR_PIPELINE_LIBRARY_EXTENSION_NAME);
+        caps.addExtension(VK_EXT_GRAPHICS_PIPELINE_LIBRARY_EXTENSION_NAME);
+    }
+    if (vk::isConstructionTypeShaderObject(m_pipelineConstructionType))
+    {
+        caps.addFeature(&vk::VkPhysicalDeviceDynamicRenderingFeaturesKHR::dynamicRendering);
+        caps.addFeature(&vk::VkPhysicalDeviceShaderObjectFeaturesEXT::shaderObject);
+        caps.addExtension(VK_KHR_DYNAMIC_RENDERING_EXTENSION_NAME);
+        caps.addExtension(VK_EXT_SHADER_OBJECT_EXTENSION_NAME);
+        caps.addExtension(VK_KHR_CREATE_RENDERPASS_2_EXTENSION_NAME);
+        caps.addExtension(VK_KHR_DEPTH_STENCIL_RESOLVE_EXTENSION_NAME);
+        caps.addExtension(VK_KHR_MAINTENANCE_2_EXTENSION_NAME);
+    }
+#endif
+
+    caps.addFeature(&vk::VkPhysicalDeviceVertexInputDynamicStateFeaturesEXT::vertexInputDynamicState);
+    caps.addExtension(VK_EXT_VERTEX_INPUT_DYNAMIC_STATE_EXTENSION_NAME);
+
+    const vk::VkPhysicalDeviceFeatures fs =
+        caps.getContextManager().getDeviceFeaturesAndProperties().getDeviceFeatures();
+    caps.addFeature(fs);
 }
 
 } // namespace
