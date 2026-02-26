@@ -82,9 +82,9 @@ Move<VkDevice> createCustomDevice(Context &context,
     const vk::VkPhysicalDevice physicalDevice =
         chooseDevice(instanceDriver, customInstance, context.getTestContext().getCommandLine());
 #else
-    const vk::VkInstance customInstance                    = context.getInstance();
-    const vk::InstanceInterface &instanceDriver            = context.getInstanceInterface();
-    const vk::VkPhysicalDevice physicalDevice              = context.getPhysicalDevice();
+    const vk::VkInstance customInstance         = context.getInstance();
+    const vk::InstanceInterface &instanceDriver = context.getInstanceInterface();
+    const vk::VkPhysicalDevice physicalDevice   = context.getPhysicalDevice();
 #endif // CTS_USES_VULKANSC
 
     queueFamilyIndex = findQueueFamilyIndexWithCaps(instanceDriver, physicalDevice, VK_QUEUE_TRANSFER_BIT,
@@ -123,14 +123,7 @@ Move<VkDevice> createCustomDevice(Context &context,
         }
     }
 
-#ifndef CTS_USES_VULKANSC
-    auto deviceAddressCommandsFeatures = context.getDeviceAddressCommandsFeatures();
-    if (context.isDeviceFunctionalitySupported("VK_KHR_device_address_commands"))
-    {
-        deviceAddressCommandsFeatures.pNext = pNext;
-        pNext                               = &deviceAddressCommandsFeatures;
-    }
-#else
+#ifdef CTS_USES_VULKANSC
     VkDeviceObjectReservationCreateInfo memReservationInfo = context.getTestContext().getCommandLine().isSubProcess() ?
                                                                  context.getResourceInterface()->getStatMax() :
                                                                  resetDeviceObjectReservationCreateInfo();
@@ -221,8 +214,8 @@ FillWholeBufferTestInstance::FillWholeBufferTestInstance(Context &context, const
     const VkPhysicalDevice physDevice =
         vk::chooseDevice(vki, m_customInstance, m_context.getTestContext().getCommandLine());
 #else
-    const vk::InstanceInterface &vki  = m_context.getInstanceInterface();
-    const VkPhysicalDevice physDevice = m_context.getPhysicalDevice();
+    const vk::InstanceInterface &vki            = m_context.getInstanceInterface();
+    const VkPhysicalDevice physDevice           = m_context.getPhysicalDevice();
 #endif // CTS_USES_VULKANSC
     const DeviceInterface &vk = m_context.getDeviceInterface();
 
@@ -299,12 +292,12 @@ tcu::TestStatus FillWholeBufferTestInstance::iterate(void)
     auto cmdPipelineBarrier2Fun   = &DeviceInterface::cmdPipelineBarrier2;
     auto queueSubmit2Fun          = &DeviceInterface::queueSubmit2;
 #else
-    using BufferMemoryBarrier2        = VkBufferMemoryBarrier2KHR;
-    using DependencyInfo              = VkDependencyInfoKHR;
-    using CommandBufferSubmitInfo     = VkCommandBufferSubmitInfoKHR;
-    using SubmitInfo2                 = VkSubmitInfo2KHR;
-    auto cmdPipelineBarrier2Fun       = &DeviceInterface::cmdPipelineBarrier2KHR;
-    auto queueSubmit2Fun              = &DeviceInterface::queueSubmit2KHR;
+    using BufferMemoryBarrier2                  = VkBufferMemoryBarrier2KHR;
+    using DependencyInfo                        = VkDependencyInfoKHR;
+    using CommandBufferSubmitInfo               = VkCommandBufferSubmitInfoKHR;
+    using SubmitInfo2                           = VkSubmitInfo2KHR;
+    auto cmdPipelineBarrier2Fun                 = &DeviceInterface::cmdPipelineBarrier2KHR;
+    auto queueSubmit2Fun                        = &DeviceInterface::queueSubmit2KHR;
 #endif // CTS_USES_VULKANSC
 
     BufferMemoryBarrier2 gpuToHostBarrier2 = initVulkanStructure();
